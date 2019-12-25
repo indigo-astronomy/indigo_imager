@@ -1,0 +1,13 @@
+#PROPERTY_AREA {
+	/* border-bottom-left-radius: 0; */
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+}
+
+#SELECTION_TEXT {
+	font-weight: bold;
+	background-color: #353535;
+	border-bottom-left-radius: 0;
+	/* border-top-left-radius: 0; */
+	border-bottom-right-radius: 0;
+}

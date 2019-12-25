@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Encoding=UTF-8
+Name=INDIGO Imager
+Comment=INDIGO Imager
+Exec=indigo_imager
+Icon=indigo-imager.png
+Terminal=false
+Type=Application
+Categories=Education;Science;Astronomy;
+Keywords=astronomy
