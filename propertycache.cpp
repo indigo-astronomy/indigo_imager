@@ -28,16 +28,33 @@ QString property_cache::create_key(indigo_property *property) {
 }
 
 bool property_cache::_remove(indigo_property *property) {
+	bool ret = false;
 	QString key = create_key(property);
-	if (contains(key)) {
-		indigo_property *p = value(key);
-		indigo_debug("property: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), p);
-		if (p != nullptr)
-			indigo_release_property(p);
+	if (key.endsWith(".")) {
+		property_cache::iterator i = begin();
+		while (i != end()) {
+			QString k = i.key();
+			if (k.startsWith(key)) {
+				indigo_property *p = i.value();
+				if (property != nullptr) indigo_release_property(p);
+				indigo_debug("property: %s(%s -> %s) == %p\n", __FUNCTION__, key.toUtf8().constData(), k.toUtf8().constData(), p);
+				i = erase(i);
+				ret = true;
+			} else {
+				++i;
+			}
+		}
 	} else {
-		indigo_debug("property: %s(%s) - not cached\n", __FUNCTION__, key.toUtf8().constData());
+		if (contains(key)) {
+			indigo_property *p = value(key);
+			indigo_debug("property: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), p);
+			if (p != nullptr) indigo_release_property(p);
+		} else {
+			indigo_debug("property: %s(%s) - not cached\n", __FUNCTION__, key.toUtf8().constData());
+		}
+		ret = (bool)QHash::remove(key);
 	}
-	return (bool)QHash::remove(key);
+	return ret;
 }
 
 bool property_cache::create(indigo_property *property) {

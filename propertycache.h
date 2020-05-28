@@ -28,11 +28,13 @@ public:
 	};
 
 	~property_cache() {
-		property_cache::iterator i;
-		indigo_debug("property: %s()\n", __FUNCTION__);
-		for (i = begin(); i != end(); ++i) {
+		property_cache::iterator i = begin();
+		while (i != end()) {
 			indigo_property *property = i.value();
+			QString key = i.key();
 			if (property != nullptr) indigo_release_property(property);
+			indigo_debug("property: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), property);
+			i = erase(i);
 		}
 	};
 

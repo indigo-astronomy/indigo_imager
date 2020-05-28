@@ -48,10 +48,12 @@ public:
 	};
 
 	~blob_preview_cache() {
-		blob_preview_cache::iterator i;
-		for (i = begin(); i != end(); ++i) {
+		indigo_debug("preview_cache: %s()\n", __FUNCTION__);
+		blob_preview_cache::iterator i = begin();
+		while (i != end()) {
 			QImage *preview = i.value();
 			if (preview != nullptr) delete(preview);
+			i = erase(i);
 		}
 	};
 
