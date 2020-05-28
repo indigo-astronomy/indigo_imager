@@ -48,7 +48,7 @@ public:
 	};
 
 	~blob_preview_cache() {
-		indigo_debug("preview_cache: %s()\n", __FUNCTION__);
+		indigo_debug("preview: %s()\n", __FUNCTION__);
 		blob_preview_cache::iterator i = begin();
 		while (i != end()) {
 			QImage *preview = i.value();

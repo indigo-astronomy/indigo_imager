@@ -23,6 +23,8 @@
 #include <QTreeView>
 #include <QMenuBar>
 #include <QIcon>
+#include <QLabel>
+#include <QPixmap>
 #include <QPlainTextEdit>
 #include <QScrollArea>
 #include <QMessageBox>
@@ -202,12 +204,17 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	selection_panel->setLayout(selection_layout);
 	selection_layout->addWidget(mProperties);
 
+	mImage = new QLabel();
+	mImage->setBackgroundRole(QPalette::Base);
+	mImage->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+	mImage->setScaledContents(true);
+
 	mScrollArea = new QScrollArea();
 	mScrollArea->setObjectName("PROPERTY_AREA");
-
 	mScrollArea->setWidgetResizable(true);
 	mScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 	mScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+	mScrollArea->setWidget((QWidget*)mImage);
 	mFormLayout->addWidget(mScrollArea);
 	mScrollArea->setMinimumWidth(PROPERTY_AREA_MIN_WIDTH);
 
@@ -281,6 +288,8 @@ ImagerWindow::~ImagerWindow () {
 
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){
 	preview_cache.create(property, item);
+	QImage *image = preview_cache.get(property, item);
+	if (image) mImage->setPixmap(QPixmap::fromImage(*image));
 }
 
 void ImagerWindow::on_obsolete_preview(indigo_property *property, indigo_item *item){
@@ -409,7 +418,6 @@ void ImagerWindow::on_use_suffix_changed(bool status) {
 void ImagerWindow::on_use_state_icons_changed(bool status) {
 	conf.use_state_icons = status;
 	write_conf();
-	mProperties->repaint();
 	indigo_debug("%s\n", __FUNCTION__);
 }
 

@@ -72,6 +72,7 @@ private:
 	QPlainTextEdit* mLog;
 	QTreeView* mProperties;
 	QScrollArea* mScrollArea;
+	QLabel* mImage;
 	QLabel* mSelectionLine;
 	QVBoxLayout* mFormLayout;
 
