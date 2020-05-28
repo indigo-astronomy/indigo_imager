@@ -23,6 +23,7 @@ SOURCES += \
 	indigoclient.cpp \
 	qindigoservers.cpp \
 	blobpreview.cpp \
+	propertycache.cpp \
 	fits/fits.c \
 	debayer/debayer.c \
 
@@ -95,6 +96,7 @@ HEADERS += \
 	qindigoservice.h \
 	indigoclient.h \
 	blobpreview.h \
+	propertycache.h \
 	qindigoservers.h \
 	logger.h \
 	fits/fits.h \

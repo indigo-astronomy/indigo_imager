@@ -31,6 +31,7 @@
 #include "imagerwindow.h"
 #include "qservicemodel.h"
 #include "indigoclient.h"
+#include "propertycache.h"
 #include "qindigoservers.h"
 #include "blobpreview.h"
 #include "logger.h"
@@ -238,6 +239,10 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(&IndigoClient::instance(), &IndigoClient::property_deleted, this, &ImagerWindow::on_message_sent);
 	connect(&IndigoClient::instance(), &IndigoClient::message_sent, this, &ImagerWindow::on_message_sent);
 
+	connect(&IndigoClient::instance(), &IndigoClient::property_defined, this, &ImagerWindow::on_property_define);
+	connect(&IndigoClient::instance(), &IndigoClient::property_changed, this, &ImagerWindow::on_property_define);
+	connect(&IndigoClient::instance(), &IndigoClient::property_deleted, this, &ImagerWindow::on_property_delete);
+
 	connect(&IndigoClient::instance(), &IndigoClient::create_preview, this, &ImagerWindow::on_create_preview);
 	connect(&IndigoClient::instance(), &IndigoClient::obsolete_preview, this, &ImagerWindow::on_obsolete_preview);
 	connect(&IndigoClient::instance(), &IndigoClient::remove_preview, this, &ImagerWindow::on_remove_preview);
@@ -337,10 +342,12 @@ void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
 	property_define_delete(property, message, false);
+	properties.create(property);
 }
 
 void ImagerWindow::on_property_delete(indigo_property* property, char *message) {
 	property_define_delete(property, message, true);
+	properties.remove(property);
 }
 
 void ImagerWindow::property_define_delete(indigo_property* property, char *message, bool action_deleted) {
