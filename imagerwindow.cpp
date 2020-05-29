@@ -216,8 +216,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	camera_frame->setLayout(camera_frame_layout);
 	int row = 0;
 	// camera selection
-	mCameraSelect = new QComboBox();
-	camera_frame_layout->addWidget(mCameraSelect, row, 0, 1, 2);
+	m_camera_select = new QComboBox();
+	camera_frame_layout->addWidget(m_camera_select, row, 0, 1, 2);
 
 	// frame type
 	row++;
@@ -259,6 +259,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	row++;
 	QPushButton *Start = new QPushButton("Start");
 	camera_frame_layout->addWidget(Start, row, 1);
+	connect(Start, &QPushButton::clicked, this, &ImagerWindow::on_start);
 
 	// image area
 	mImage = new QLabel();
@@ -342,6 +343,13 @@ ImagerWindow::~ImagerWindow () {
 	delete mServiceModel;
 }
 
+void ImagerWindow::on_start(bool clicked) {
+	indigo_debug("CALLED: %s\n", __FUNCTION__);
+	static const char * items[] = { CCD_EXPOSURE_ITEM_NAME };
+	static double values[] = { 3.0 };
+	indigo_change_number_property(nullptr, "CCD Imager Simulator @ indigosky", CCD_EXPOSURE_PROPERTY_NAME, 1, items, values);
+}
+
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){
 	preview_cache.create(property, item);
 	QImage *image = preview_cache.get(property, item);
@@ -407,6 +415,10 @@ void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
 	property_define_delete(property, message, false);
+	if (!strncmp(property->name, INFO_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+		m_camera_select->addItem(QString(property->device));
+		indigo_debug("[device] %s\n", property->device);
+	}
 	properties.create(property);
 }
 

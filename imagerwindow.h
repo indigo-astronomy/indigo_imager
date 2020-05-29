@@ -48,6 +48,7 @@ signals:
 	void rebuild_blob_previews();
 
 public slots:
+	void on_start(bool clicked);
 	void on_window_log(indigo_property* property, char *message);
 	void on_property_define(indigo_property* property, char *message);
 	void on_property_delete(indigo_property* property, char *message);
@@ -76,7 +77,7 @@ private:
 	QLabel* mSelectionLine;
 	//QVBoxLayout* mFormLayout;
 
-	QComboBox *mCameraSelect;
+	QComboBox *m_camera_select;
 	QComboBox *m_frame_type_select;
 	QComboBox *m_frame_size_select;
 	QDoubleSpinBox *m_exposure_time;
