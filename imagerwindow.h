@@ -25,10 +25,13 @@
 #include <indigo/indigo_bus.h>
 
 class QPlainTextEdit;
-class QTreeView;
+class QFrame;
 class QServiceModel;
 class QItemSelection;
 class QVBoxLayout;
+class QComboBox;
+class QDoubleSpinBox;
+class QSpinBox;
 class QScrollArea;
 class QIndigoServers;
 class QLabel;
@@ -70,14 +73,19 @@ public slots:
 
 private:
 	QPlainTextEdit* mLog;
-	QTreeView* mProperties;
-	QScrollArea* mScrollArea;
-	QLabel* mImage;
 	QLabel* mSelectionLine;
-	QVBoxLayout* mFormLayout;
+	//QVBoxLayout* mFormLayout;
+
+	QComboBox *mCameraSelect;
+	QComboBox *m_frame_type_select;
+	QComboBox *m_frame_size_select;
+	QDoubleSpinBox *m_exposure_time;
+	QSpinBox *m_frame_count;
+	QScrollArea *mScrollArea;
+	QLabel *mImage;
 
 	QIndigoServers *mIndigoServers;
-	QServiceModel* mServiceModel;
+	QServiceModel *mServiceModel;
 
 	void clear_window();
 };

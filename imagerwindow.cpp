@@ -26,9 +26,13 @@
 #include <QLabel>
 #include <QPixmap>
 #include <QPlainTextEdit>
+#include <QPushButton>
 #include <QScrollArea>
+#include <QComboBox>
+#include <QDoubleSpinBox>
 #include <QMessageBox>
 #include <QActionGroup>
+#include <QLineEdit>
 #include <sys/time.h>
 #include "imagerwindow.h"
 #include "qservicemodel.h"
@@ -188,22 +192,75 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	view->setLayout(propertyLayout);
 	rootLayout->addWidget(view);
 
-	mProperties = new QTreeView;
 	QWidget *form_panel = new QWidget();
-	mFormLayout = new QVBoxLayout();
-	mFormLayout->setSpacing(0);
-	mFormLayout->setContentsMargins(1, 0, 0, 0);
-	//mFormLayout->setMargin(0);
-	form_panel->setLayout(mFormLayout);
+	QVBoxLayout *form_layout = new QVBoxLayout();
+	form_layout->setSpacing(0);
+	form_layout->setContentsMargins(1, 0, 0, 0);
+	//form_layout->setMargin(0);
+	form_panel->setLayout(form_layout);
 
-	QWidget *selection_panel = new QWidget();
-	QVBoxLayout *selection_layout = new QVBoxLayout();
-	selection_layout->setSpacing(0);
-	selection_layout->setContentsMargins(0, 0, 1, 0);
-	//selection_layout->setMargin(0);
-	selection_panel->setLayout(selection_layout);
-	selection_layout->addWidget(mProperties);
+	// Create Camera Control Frame
+	QFrame *camera_frame = new QFrame();
+	QWidget *camera_panel = new QWidget();
+	QVBoxLayout *camera_panel_layout = new QVBoxLayout();
+	camera_frame->setFrameShape(QFrame::StyledPanel);
 
+	camera_panel_layout->setSpacing(0);
+	camera_panel_layout->setContentsMargins(0, 0, 1, 0);
+	//camera_panel_layout->setMargin(0);
+	camera_panel->setLayout(camera_panel_layout);
+	camera_panel_layout->addWidget(camera_frame);
+
+	QGridLayout *camera_frame_layout = new QGridLayout();
+	camera_frame_layout->setAlignment(Qt::AlignTop);
+	camera_frame->setLayout(camera_frame_layout);
+	int row = 0;
+	// camera selection
+	mCameraSelect = new QComboBox();
+	camera_frame_layout->addWidget(mCameraSelect, row, 0, 1, 2);
+
+	// frame type
+	row++;
+	QLabel *label = new QLabel("Frame type:");
+	camera_frame_layout->addWidget(label, row, 0);
+	m_frame_type_select = new QComboBox();
+	camera_frame_layout->addWidget(m_frame_type_select, row, 1);
+
+	// frame size
+	row++;
+	label = new QLabel("Frame size:");
+	camera_frame_layout->addWidget(label, row, 0);
+	m_frame_size_select = new QComboBox();
+	camera_frame_layout->addWidget(m_frame_size_select, row, 1);
+
+	// Exposure time
+	row++;
+	label = new QLabel("Exposure time (s):");
+	camera_frame_layout->addWidget(label, row, 0);
+	m_exposure_time = new QDoubleSpinBox();
+	camera_frame_layout->addWidget(m_exposure_time, row, 1);
+
+	// Frame count
+	row++;
+	label = new QLabel("Number of frames:");
+	camera_frame_layout->addWidget(label, row, 0);
+	m_frame_count = new QSpinBox();
+	camera_frame_layout->addWidget(m_frame_count, row, 1);
+
+	// Frame prefix
+	row++;
+	label = new QLabel("Frame prefix:");
+	camera_frame_layout->addWidget(label, row, 0);
+	QLineEdit *edit = new QLineEdit();
+	camera_frame_layout->addWidget(edit, row, 1);
+
+
+	// Frame prefix
+	row++;
+	QPushButton *Start = new QPushButton("Start");
+	camera_frame_layout->addWidget(Start, row, 1);
+
+	// image area
 	mImage = new QLabel();
 	mImage->setBackgroundRole(QPalette::Base);
 	mImage->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
@@ -215,11 +272,11 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	mScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 	mScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 	mScrollArea->setWidget((QWidget*)mImage);
-	mFormLayout->addWidget(mScrollArea);
+	form_layout->addWidget(mScrollArea);
 	mScrollArea->setMinimumWidth(PROPERTY_AREA_MIN_WIDTH);
 
 	QSplitter* hSplitter = new QSplitter;
-	hSplitter->addWidget(selection_panel);
+	hSplitter->addWidget(camera_panel);
 	hSplitter->addWidget(form_panel);
 	hSplitter->setStretchFactor(0, 45);
 	hSplitter->setStretchFactor(2, 55);
@@ -281,7 +338,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 ImagerWindow::~ImagerWindow () {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
 	delete mLog;
-	delete mFormLayout;
 	delete mIndigoServers;
 	delete mServiceModel;
 }
@@ -374,8 +430,6 @@ void ImagerWindow::clear_window() {
 	mScrollArea->setWidgetResizable(true);
 	mScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 	mScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-	mFormLayout->addWidget(mScrollArea);
-	mScrollArea->setMinimumWidth(600);
 }
 
 
