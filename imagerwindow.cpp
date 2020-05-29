@@ -415,9 +415,11 @@ void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
 	property_define_delete(property, message, false);
-	if (!strncmp(property->name, INFO_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
-		m_camera_select->addItem(QString(property->device));
-		indigo_debug("[device] %s\n", property->device);
+	if (!strncmp(property->name, FILTER_CCD_LIST_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+		for (int i = 0; i < property->count; i++) {
+			m_camera_select->addItem(QString(property->items[i].label)+QString(" @ ")+QString(property->device));
+			indigo_debug("[device] %s\n", property->items[i].label);
+		}
 	}
 	properties.create(property);
 }
