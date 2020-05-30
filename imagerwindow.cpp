@@ -422,6 +422,9 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 				if (m_camera_select->findText(item_label, Qt::MatchStartsWith | Qt::MatchCaseSensitive) < 0) {
 					m_camera_select->addItem(item_label);
 					indigo_debug("[ADD device] %s\n", item_label.toUtf8().data());
+					if (property->items[i].sw.value) {
+						m_camera_select->setCurrentIndex(m_camera_select->findText(item_label));
+					}
 				} else {
 					indigo_debug("[DUPLICATE device] %s\n", item_label.toUtf8().data());
 				}
@@ -432,6 +435,9 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 				if (m_camera_select->findText(device) < 0) {
 					m_camera_select->addItem(device, QString(property->device));
 					indigo_debug("[ADD device] %s\n", device.toUtf8().data());
+					if (property->items[i].sw.value) {
+						m_camera_select->setCurrentIndex(m_camera_select->findText(device));
+					}
 				} else {
 					indigo_debug("[DUPLICATE device] %s\n", device.toUtf8().data());
 				}
@@ -444,6 +450,9 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 			if (m_frame_size_select->findText(mode) < 0) {
 				m_frame_size_select->addItem(mode, QString(property->device));
 				indigo_debug("[ADD mode] %s\n", mode.toUtf8().data());
+				if (property->items[i].sw.value) {
+					m_frame_size_select->setCurrentIndex(m_frame_size_select->findText(mode));
+				}
 			} else {
 				indigo_debug("[DUPLICATE mode] %s\n", mode.toUtf8().data());
 			}
@@ -455,6 +464,9 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 			if (m_frame_type_select->findText(type) < 0) {
 				m_frame_type_select->addItem(type, QString(property->device));
 				indigo_debug("[ADD mode] %s\n", type.toUtf8().data());
+				if (property->items[i].sw.value) {
+					m_frame_type_select->setCurrentIndex(m_frame_type_select->findText(type));
+				}
 			} else {
 				indigo_debug("[DUPLICATE mode] %s\n", type.toUtf8().data());
 			}
