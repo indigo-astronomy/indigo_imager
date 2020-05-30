@@ -51,6 +51,7 @@ public slots:
 	void on_start(bool clicked);
 	void on_window_log(indigo_property* property, char *message);
 	void on_property_define(indigo_property* property, char *message);
+	void on_property_change(indigo_property* property, char *message);
 	void on_property_delete(indigo_property* property, char *message);
 	void on_message_sent(indigo_property* property, char *message);
 	void on_blobs_changed(bool status);
