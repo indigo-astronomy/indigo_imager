@@ -27,6 +27,13 @@ QString property_cache::create_key(indigo_property *property) {
 	return key;
 }
 
+QString property_cache::create_key(char *device_name, char *property_name) {
+	QString key(device_name);
+	key.append(".");
+	key.append(property_name);
+	return key;
+}
+
 bool property_cache::_remove(indigo_property *property) {
 	bool ret = false;
 	QString key = create_key(property);
@@ -75,6 +82,21 @@ bool property_cache::create(indigo_property *property) {
 indigo_property* property_cache::get(indigo_property *property) {
 	pthread_mutex_lock(&property_mutex);
 	QString key = create_key(property);
+	if (contains(key)) {
+		indigo_property *p = value(key);
+		indigo_debug("property: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), p);
+		pthread_mutex_unlock(&property_mutex);
+		return p;
+	}
+	indigo_debug("property: %s(%s) - no cache\n", __FUNCTION__, key.toUtf8().constData());
+	pthread_mutex_unlock(&property_mutex);
+	return nullptr;
+}
+
+
+indigo_property* property_cache::get(char *device_name, char *property_name) {
+	pthread_mutex_lock(&property_mutex);
+	QString key = create_key(device_name, property_name);
 	if (contains(key)) {
 		indigo_property *p = value(key);
 		indigo_debug("property: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), p);

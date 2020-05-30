@@ -41,11 +41,13 @@ public:
 private:
 	pthread_mutex_t property_mutex;
 	QString create_key(indigo_property *property);
+	QString create_key(char *device_name, char *property_name);
 	bool _remove(indigo_property *property);
 
 public:
 	bool create(indigo_property *property);
 	indigo_property* get(indigo_property *property);
+	indigo_property* get(char *device_name, char *property_name);
 	bool remove(indigo_property *property);
 };
 

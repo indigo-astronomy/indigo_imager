@@ -414,18 +414,50 @@ void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 }
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
-	property_define_delete(property, message, false);
 	if (!strncmp(property->name, FILTER_CCD_LIST_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
 		for (int i = 0; i < property->count; i++) {
-			m_camera_select->addItem(QString(property->items[i].label)+QString(" @ ")+QString(property->device));
-			indigo_debug("[device] %s\n", property->items[i].label);
+			QString item_name = QString(property->items[i].name);
+			if(!strcmp("NONE", property->items[i].name)) {
+				QString item_label = QString(property->items[i].label);
+				if (m_camera_select->findText(item_label, Qt::MatchStartsWith | Qt::MatchCaseSensitive) < 0) {
+					m_camera_select->addItem(item_label);
+					indigo_debug("[ADD device] %s\n", item_label.toUtf8().data());
+				} else {
+					indigo_debug("[DUPLICATE device] %s\n", item_label.toUtf8().data());
+				}
+			} else {
+				QString domain = QString(property->device);
+				domain.remove(0, domain.indexOf(" @ "));
+				QString device = QString(property->items[i].label) + domain;
+				if (m_camera_select->findText(device) < 0) {
+					m_camera_select->addItem(device, QString(property->device));
+					indigo_debug("[ADD device] %s\n", device.toUtf8().data());
+				} else {
+					indigo_debug("[DUPLICATE device] %s\n", device.toUtf8().data());
+				}
+			}
 		}
 	}
 	properties.create(property);
 }
 
 void ImagerWindow::on_property_delete(indigo_property* property, char *message) {
-	property_define_delete(property, message, true);
+	if (!strncmp(property->name, FILTER_CCD_LIST_PROPERTY_NAME, INDIGO_NAME_SIZE) || property->name[0] == '\0') {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		indigo_property *p = properties.get(property->device, FILTER_CCD_LIST_PROPERTY_NAME);
+		if (p) {
+			for (int i = 0; i < p->count; i++) {
+				QString device = QString(p->device);
+				int index = m_camera_select->findData(device);
+				if (index >= 0) {
+					m_camera_select->removeItem(index);
+					indigo_debug("[REMOVE device] %s at index\n", device.toUtf8().data(), index);
+				} else {
+					indigo_debug("[No device] %s\n", device.toUtf8().data());
+				}
+			}
+		}
+	}
 	properties.remove(property);
 }
 
