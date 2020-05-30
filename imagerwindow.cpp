@@ -438,6 +438,28 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 			}
 		}
 	}
+	if (!strncmp(property->name, CCD_MODE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+		for (int i = 0; i < property->count; i++) {
+			QString mode = QString(property->items[i].label);
+			if (m_frame_size_select->findText(mode) < 0) {
+				m_frame_size_select->addItem(mode, QString(property->device));
+				indigo_debug("[ADD mode] %s\n", mode.toUtf8().data());
+			} else {
+				indigo_debug("[DUPLICATE mode] %s\n", mode.toUtf8().data());
+			}
+		}
+	}
+	if (!strncmp(property->name, CCD_FRAME_TYPE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+		for (int i = 0; i < property->count; i++) {
+			QString type = QString(property->items[i].label);
+			if (m_frame_type_select->findText(type) < 0) {
+				m_frame_type_select->addItem(type, QString(property->device));
+				indigo_debug("[ADD mode] %s\n", type.toUtf8().data());
+			} else {
+				indigo_debug("[DUPLICATE mode] %s\n", type.toUtf8().data());
+			}
+		}
+	}
 	properties.create(property);
 }
 
@@ -454,6 +476,38 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 					indigo_debug("[REMOVE device] %s at index\n", device.toUtf8().data(), index);
 				} else {
 					indigo_debug("[No device] %s\n", device.toUtf8().data());
+				}
+			}
+		}
+	}
+	if (!strncmp(property->name, CCD_MODE_PROPERTY_NAME, INDIGO_NAME_SIZE) || property->name[0] == '\0') {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		indigo_property *p = properties.get(property->device, CCD_MODE_PROPERTY_NAME);
+		if (p) {
+			for (int i = 0; i < p->count; i++) {
+				QString device = QString(p->device);
+				int index = m_frame_size_select->findData(device);
+				if (index >= 0) {
+					m_frame_size_select->removeItem(index);
+					indigo_debug("[REMOVE frame] %s at index\n", device.toUtf8().data(), index);
+				} else {
+					indigo_debug("[No frame] %s\n", device.toUtf8().data());
+				}
+			}
+		}
+	}
+	if (!strncmp(property->name, CCD_FRAME_TYPE_PROPERTY_NAME, INDIGO_NAME_SIZE) || property->name[0] == '\0') {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		indigo_property *p = properties.get(property->device, CCD_FRAME_TYPE_PROPERTY_NAME);
+		if (p) {
+			for (int i = 0; i < p->count; i++) {
+				QString device = QString(p->device);
+				int index = m_frame_type_select->findData(device);
+				if (index >= 0) {
+					m_frame_type_select->removeItem(index);
+					indigo_debug("[REMOVE frame] %s at index\n", device.toUtf8().data(), index);
+				} else {
+					indigo_debug("[No frame] %s\n", device.toUtf8().data());
 				}
 			}
 		}
