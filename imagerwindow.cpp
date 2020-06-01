@@ -321,6 +321,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	connect(&Logger::instance(), &Logger::do_log, this, &ImagerWindow::on_window_log);
 
+	connect(m_camera_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_camera_selected);
+
 	//connect(mProperties->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ImagerWindow::on_selection_changed);
 	//connect(this, &ImagerWindow::enable_blobs, mPropertyModel, &PropertyModel::enable_blobs);
 	//connect(this, &ImagerWindow::rebuild_blob_previews, mPropertyModel, &PropertyModel::rebuild_blob_previews);
@@ -571,6 +573,21 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 void ImagerWindow::property_define_delete(indigo_property* property, char *message, bool action_deleted) {
 	Q_UNUSED(message);
 
+}
+
+void ImagerWindow::on_camera_selected(int index) {
+	static char selected_camera[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
+	QString q_camera_str = m_camera_select->currentText();
+	int idx = q_camera_str.indexOf(" @ ");
+	if (idx >=0) q_camera_str.truncate(idx);
+	strncpy(selected_camera, q_camera_str.toUtf8().constData(), INDIGO_NAME_SIZE);
+	strncpy(selected_agent, m_camera_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+
+	indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_camera);
+	static const char * items[] = { selected_camera };
+
+	static bool values[] = { true };
+	indigo_change_switch_property(nullptr, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME, 1, items, values);
 }
 
 

@@ -73,6 +73,8 @@ public slots:
 	void on_obsolete_preview(indigo_property *property, indigo_item *item);
 	void on_remove_preview(indigo_property *property, indigo_item *item);
 
+	void on_camera_selected(int index);
+
 private:
 	QPlainTextEdit* mLog;
 	QLabel* mSelectionLine;
