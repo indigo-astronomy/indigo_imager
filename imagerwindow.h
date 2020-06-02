@@ -87,6 +87,7 @@ private:
 	QComboBox *m_frame_size_select;
 	QDoubleSpinBox *m_exposure_time;
 	QSpinBox *m_frame_count;
+	QSpinBox *m_frame_delay;
 	QScrollArea *mScrollArea;
 	QLabel *mImage;
 

@@ -349,9 +349,22 @@ ImagerWindow::~ImagerWindow () {
 
 void ImagerWindow::on_start(bool clicked) {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
-	static const char * items[] = { CCD_EXPOSURE_ITEM_NAME };
-	static double values[] = { 3.0 };
-	indigo_change_number_property(nullptr, "CCD Imager Simulator @ indigosky", CCD_EXPOSURE_PROPERTY_NAME, 1, items, values);
+	static double exposure_time;
+	static double frame_count;
+	static char selected_agent[INDIGO_NAME_SIZE];
+	exposure_time = m_exposure_time->value();
+	frame_count = (double)m_frame_count->value();
+	strncpy(selected_agent, m_camera_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	static const char *items[] = { AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME, AGENT_IMAGER_BATCH_COUNT_ITEM_NAME };
+	static double values[2];
+	values[0] = exposure_time;
+	values[1] = frame_count;
+	indigo_change_number_property(nullptr, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME, 2, items, values);
+
+
+	static const char * items2[] = { AGENT_IMAGER_START_EXPOSURE_ITEM_NAME };
+	static bool values2[] = { true };
+	indigo_change_switch_property(nullptr, selected_agent, AGENT_START_PROCESS_PROPERTY_NAME, 1, items2, values2);
 }
 
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){
@@ -464,6 +477,17 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 			}
 		}
 	}
+	if (!strncmp(property->name, AGENT_IMAGER_BATCH_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+		indigo_debug("Set %s", property->name);
+		for (int i = 0; i < property->count; i++) {
+			indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
+			if (!strcmp(property->items[i].name, AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME)) {
+				m_exposure_time->setValue(property->items[i].number.value);
+			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_BATCH_COUNT_ITEM_NAME)) {
+				m_frame_count->setValue((int)property->items[i].number.value);
+			}
+		}
+	}
 	properties.create(property);
 }
 
@@ -498,6 +522,15 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 				m_frame_type_select->setCurrentIndex(m_frame_type_select->findText(property->items[i].label));
 				indigo_debug("[SELECT mode] %s\n", property->items[i].label);
 				break;
+			}
+		}
+	}
+	if (!strncmp(property->name, AGENT_IMAGER_BATCH_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+		for (int i = 0; i < property->count; i++) {
+			if (!strcmp(property->items[i].name, AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME)) {
+				m_exposure_time->setValue(property->items[i].number.value);
+			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_BATCH_COUNT_ITEM_NAME)) {
+				m_frame_count->setValue((int)property->items[i].number.value);
 			}
 		}
 	}
