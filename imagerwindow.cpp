@@ -322,6 +322,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(&Logger::instance(), &Logger::do_log, this, &ImagerWindow::on_window_log);
 
 	connect(m_camera_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_camera_selected);
+	connect(m_frame_size_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_ccd_mode_selected);
+	connect(m_frame_type_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_frame_type_selected);
 
 	//connect(mProperties->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ImagerWindow::on_selection_changed);
 	//connect(this, &ImagerWindow::enable_blobs, mPropertyModel, &PropertyModel::enable_blobs);
@@ -420,30 +422,17 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 	if (!strncmp(property->name, FILTER_CCD_LIST_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
 		for (int i = 0; i < property->count; i++) {
 			QString item_name = QString(property->items[i].name);
-			if(!strcmp("NONE", property->items[i].name)) {
-				QString item_label = QString(property->items[i].label);
-				if (m_camera_select->findText(item_label, Qt::MatchStartsWith | Qt::MatchCaseSensitive) < 0) {
-					m_camera_select->addItem(item_label);
-					indigo_debug("[ADD device] %s\n", item_label.toUtf8().data());
-					if (property->items[i].sw.value) {
-						m_camera_select->setCurrentIndex(m_camera_select->findText(item_label));
-					}
-				} else {
-					indigo_debug("[DUPLICATE device] %s\n", item_label.toUtf8().data());
+			QString domain = QString(property->device);
+			domain.remove(0, domain.indexOf(" @ "));
+			QString device = QString(property->items[i].label) + domain;
+			if (m_camera_select->findText(device) < 0) {
+				m_camera_select->addItem(device, QString(property->device));
+				indigo_debug("[ADD device] %s\n", device.toUtf8().data());
+				if (property->items[i].sw.value) {
+					m_camera_select->setCurrentIndex(m_camera_select->findText(device));
 				}
 			} else {
-				QString domain = QString(property->device);
-				domain.remove(0, domain.indexOf(" @ "));
-				QString device = QString(property->items[i].label) + domain;
-				if (m_camera_select->findText(device) < 0) {
-					m_camera_select->addItem(device, QString(property->device));
-					indigo_debug("[ADD device] %s\n", device.toUtf8().data());
-					if (property->items[i].sw.value) {
-						m_camera_select->setCurrentIndex(m_camera_select->findText(device));
-					}
-				} else {
-					indigo_debug("[DUPLICATE device] %s\n", device.toUtf8().data());
-				}
+				indigo_debug("[DUPLICATE device] %s\n", device.toUtf8().data());
 			}
 		}
 	}
@@ -451,7 +440,7 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 		for (int i = 0; i < property->count; i++) {
 			QString mode = QString(property->items[i].label);
 			if (m_frame_size_select->findText(mode) < 0) {
-				m_frame_size_select->addItem(mode, QString(property->device));
+				m_frame_size_select->addItem(mode, QString(property->items[i].name));
 				indigo_debug("[ADD mode] %s\n", mode.toUtf8().data());
 				if (property->items[i].sw.value) {
 					m_frame_size_select->setCurrentIndex(m_frame_size_select->findText(mode));
@@ -465,7 +454,7 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 		for (int i = 0; i < property->count; i++) {
 			QString type = QString(property->items[i].label);
 			if (m_frame_type_select->findText(type) < 0) {
-				m_frame_type_select->addItem(type, QString(property->device));
+				m_frame_type_select->addItem(type, QString(property->items[i].name));
 				indigo_debug("[ADD mode] %s\n", type.toUtf8().data());
 				if (property->items[i].sw.value) {
 					m_frame_type_select->setCurrentIndex(m_frame_type_select->findText(type));
@@ -483,11 +472,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (!strncmp(property->name, FILTER_CCD_LIST_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
 		for (int i = 0; i < property->count; i++) {
 			QString item_name = QString(property->items[i].name);
-			if(!strcmp("NONE", property->items[i].name) && property->items[i].sw.value) {
-				m_camera_select->setCurrentIndex(m_camera_select->findText(property->items[i].label));
-				indigo_debug("[SSELECT device] %s\n", property->items[i].name);
-				break;
-			} else if (property->items[i].sw.value) {
+			if (property->items[i].sw.value) {
 				QString domain = QString(property->device);
 				domain.remove(0, domain.indexOf(" @ "));
 				QString device = QString(property->items[i].label) + domain;
@@ -570,17 +555,17 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 	properties.remove(property);
 }
 
-void ImagerWindow::property_define_delete(indigo_property* property, char *message, bool action_deleted) {
-	Q_UNUSED(message);
-
-}
 
 void ImagerWindow::on_camera_selected(int index) {
 	static char selected_camera[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
 	QString q_camera_str = m_camera_select->currentText();
 	int idx = q_camera_str.indexOf(" @ ");
 	if (idx >=0) q_camera_str.truncate(idx);
-	strncpy(selected_camera, q_camera_str.toUtf8().constData(), INDIGO_NAME_SIZE);
+	if (q_camera_str.compare("No camera") == 0) {
+		strcpy(selected_camera, "NONE");
+	} else {
+		strncpy(selected_camera, q_camera_str.toUtf8().constData(), INDIGO_NAME_SIZE);
+	}
 	strncpy(selected_agent, m_camera_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
 
 	indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_camera);
@@ -588,6 +573,32 @@ void ImagerWindow::on_camera_selected(int index) {
 
 	static bool values[] = { true };
 	indigo_change_switch_property(nullptr, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME, 1, items, values);
+}
+
+void ImagerWindow::on_ccd_mode_selected(int index) {
+	static char selected_mode[INDIGO_NAME_SIZE];
+	static char selected_agent[INDIGO_NAME_SIZE];
+
+	strncpy(selected_mode, m_frame_size_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	strncpy(selected_agent, m_camera_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+
+	indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_mode);
+	static const char * items[] = { selected_mode };
+	static bool values[] = { true };
+	indigo_change_switch_property(nullptr, selected_agent, CCD_MODE_PROPERTY_NAME, 1, items, values);
+}
+
+void ImagerWindow::on_frame_type_selected(int index) {
+	static char selected_type[INDIGO_NAME_SIZE];
+	static char selected_agent[INDIGO_NAME_SIZE];
+
+	strncpy(selected_type, m_frame_type_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	strncpy(selected_agent, m_camera_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+
+	indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_type);
+	static const char * items[] = { selected_type };
+	static bool values[] = { true };
+	indigo_change_switch_property(nullptr, selected_agent, CCD_FRAME_TYPE_PROPERTY_NAME, 1, items, values);
 }
 
 
