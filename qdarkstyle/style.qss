@@ -702,7 +702,7 @@ QToolButton#qt_toolbar_ext_button {
 /* QAbstractSpinBox ------------------------------------------------------- */
 
 QAbstractSpinBox {
-    background-color: #202020;
+    background-color: #303030;
     border: 1px solid #353535;
     color: #F0F0F0;
     padding-top: 2px;     /* This fix  103, 111*/
@@ -1044,6 +1044,7 @@ QCommandLinkButton:disabled {
 QComboBox {
     border: 1px solid #353535;
     border-radius: 4px;
+    background-color: #303030;
     selection-background-color: #515151;
     padding-top: 2px;     /* This fix  #103, #111*/
     padding-bottom: 2px;  /* This fix  #103, #111*/
@@ -1057,7 +1058,7 @@ QComboBox:disabled {
     color: #787878;
 }
 
-QComboBox:hover{
+QComboBox:hover {
     border: 1px solid #505050;
 }
 
@@ -1066,7 +1067,7 @@ QComboBox:on {
 }
 
 QComboBox QAbstractItemView {
-    background-color: #202020;
+    background-color: #303030;
     border-radius: 4px;
     border: 1px solid #353535;
     selection-color: #D2D2D2;
