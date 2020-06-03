@@ -1045,12 +1045,37 @@ QComboBox {
     border: 1px solid #353535;
     border-radius: 4px;
     background-color: #303030;
-    selection-background-color: #515151;
-    padding-top: 2px;     /* This fix  #103, #111*/
-    padding-bottom: 2px;  /* This fix  #103, #111*/
+    /* selection-background-color: #515151; */
     padding-left: 4px;
-    padding-right: 4px;
-    /* min-width: 75px;  removed to fix 109 */
+    padding-right: 36px;
+    /* 4 + 16*2 See scrollbar size */
+    /* Fixes #103, #111 */
+    min-height: 1.5em;
+    /* padding-top: 2px;     removed to fix #132 */
+    /* padding-bottom: 2px;  removed to fix #132 */
+    /* min-width: 75px;      removed to fix #109 */
+    /* Needed to remove indicator - fix #132 */
+}
+
+QComboBox QAbstractItemView {
+    border: 1px solid #353535;
+    border-radius: 0px;
+    background-color: #303030;
+    selection-background-color: #515151;
+}
+
+QComboBox QAbstractItemView:hover {
+    background-color: #303030;
+    color: #F0F0F0;
+}
+
+QComboBox QAbstractItemView:selected {
+    background: #515151;
+    color: #353535;
+}
+
+QComboBox QAbstractItemView:alternate {
+    background: #303030;
 }
 
 QComboBox:disabled {
@@ -1062,36 +1087,53 @@ QComboBox:hover {
     border: 1px solid #505050;
 }
 
-QComboBox:on {
-    selection-background-color: #202020;
+QComboBox:focus {
+    border: 1px solid #515151;
 }
 
-QComboBox QAbstractItemView {
-    background-color: #303030;
-    border-radius: 4px;
-    border: 1px solid #353535;
-    selection-color: #D2D2D2;
-    selection-background-color: #353535;
+QComboBox:on {
+    selection-background-color: #515151;
+}
+
+QComboBox::indicator {
+    border: none;
+    border-radius: 0;
+    background-color: transparent;
+    selection-background-color: transparent;
+    color: transparent;
+    selection-color: transparent;
+    /* Needed to remove indicator - fix #132 */
+}
+
+QComboBox::indicator:alternate {
+    background: #202020;
+}
+
+QComboBox::item:alternate {
+    background: #202020;
+}
+
+QComboBox::item:checked {
+    font-weight: bold;
+	color: #FFFFFF;
+}
+
+QComboBox::item:selected {
+    border: 0px solid transparent;
 }
 
 QComboBox::drop-down {
     subcontrol-origin: padding;
     subcontrol-position: top right;
     width: 20px;
-    border-left-width: 0px;
-    border-left-color: #353535;
-    border-left-style: solid;
-    border-top-right-radius: 3px;
-    border-bottom-right-radius: 3px;
+    border-left: 0px solid #353535;
 }
 
 QComboBox::down-arrow {
     image: url(:/qss_icons/rc/down_arrow_disabled.png);
 }
 
-QComboBox::down-arrow:on,
-QComboBox::down-arrow:hover,
-QComboBox::down-arrow:focus {
+QComboBox::down-arrow:on, QComboBox::down-arrow:hover, QComboBox::down-arrow:focus {
     image: url(:/qss_icons/rc/down_arrow.png);
 }
 
