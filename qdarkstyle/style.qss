@@ -702,7 +702,7 @@ QToolButton#qt_toolbar_ext_button {
 /* QAbstractSpinBox ------------------------------------------------------- */
 
 QAbstractSpinBox {
-    background-color: #303030;
+    background-color: #252525;
     border: 1px solid #353535;
     color: #F0F0F0;
     padding-top: 2px;     /* This fix  103, 111*/
@@ -756,6 +756,10 @@ QAbstractSpinBox::down-arrow:hover {
 QAbstractSpinBox:hover{
     border: 1px solid #505050;
     color: #F0F0F0;
+}
+
+QAbstractSpinBox:focus{
+    border: 1px solid #505050;
 }
 
 QAbstractSpinBox:selected {
@@ -859,7 +863,9 @@ QProgressBar {
     background-color: #202020;
     border: 1px solid #353535;
     color: #F0F0F0;
-    border-radius: 4px;
+	padding: 0px;
+	height: 2px;
+    border-radius: 8px;
     text-align: center;
 }
 
@@ -867,20 +873,20 @@ QProgressBar:disabled {
     background-color: #202020;
     border: 1px solid #353535;
     color: #787878;
-    border-radius: 4px;
+    border-radius: 8px;
     text-align: center;
 }
 
 QProgressBar::chunk {
     background-color: #515151;
     color: #202020;
-    border-radius: 4px;
+    border-radius: 8px;
 }
 
 QProgressBar::chunk:disabled {
     background-color: #14506E;
     color: #787878;
-    border-radius: 4px;
+    border-radius: 8px;
 }
 
 
@@ -891,12 +897,13 @@ QProgressBar::chunk:disabled {
 /* QPushButton ------------------------------------------------------------ */
 
 QPushButton {
-    background-color: #303030 ;
+    background-color: #282828 ;
     border: 1px solid #454545;
     color: #F0F0F0;
     border-radius: 4px;
     padding: 3px;
     outline: none;
+    min-width: 80px;
 }
 
 QPushButton:disabled {
@@ -940,6 +947,10 @@ QPushButton:hover,
 QPushButton:checked:hover{
     border: 1px solid #505050;
     color: #F0F0F0;
+}
+
+QPushButton:focus {
+	background-color: #353535
 }
 
 QPushButton:selected,
@@ -1044,10 +1055,10 @@ QCommandLinkButton:disabled {
 QComboBox {
     border: 1px solid #353535;
     border-radius: 4px;
-    background-color: #303030;
+    background-color: #252525;
     /* selection-background-color: #515151; */
     padding-left: 4px;
-    padding-right: 36px;
+    padding-right: 4px;
     /* 4 + 16*2 See scrollbar size */
     /* Fixes #103, #111 */
     min-height: 1.5em;
@@ -1060,12 +1071,12 @@ QComboBox {
 QComboBox QAbstractItemView {
     border: 1px solid #353535;
     border-radius: 0px;
-    background-color: #303030;
+    background-color: #252525;
     selection-background-color: #515151;
 }
 
 QComboBox QAbstractItemView:hover {
-    background-color: #303030;
+    background-color: #252525;
     color: #F0F0F0;
 }
 
@@ -1075,7 +1086,7 @@ QComboBox QAbstractItemView:selected {
 }
 
 QComboBox QAbstractItemView:alternate {
-    background: #303030;
+    background: #252525;
 }
 
 QComboBox:disabled {
@@ -1218,7 +1229,7 @@ QSlider::handle:vertical:hover {
 /* QLine ------------------------------------------------------------------ */
 
 QLineEdit {
-    background-color: #202020;
+    background-color: #252525;
     padding-top: 2px;     /* This QLineEdit fix  103, 111 */
     padding-bottom: 2px;  /* This QLineEdit fix  103, 111 */
     padding-left: 4px;
@@ -1234,12 +1245,16 @@ QLineEdit:disabled {
     color: #787878;
 }
 
-QLineEdit:hover{
+QLineEdit:hover {
     border: 1px solid #505050;
     color: #F0F0F0;
 }
 
-QLineEdit:selected{
+QLineEdit:focus {
+    border: 1px solid #505050;
+}
+
+QLineEdit:selected {
     background: #515151;
     color: #353535;
 }

@@ -32,6 +32,7 @@ class QVBoxLayout;
 class QComboBox;
 class QDoubleSpinBox;
 class QSpinBox;
+class QProgressBar;
 class QScrollArea;
 class QIndigoServers;
 class QLabel;
@@ -88,6 +89,9 @@ private:
 	QDoubleSpinBox *m_exposure_time;
 	QSpinBox *m_frame_count;
 	QSpinBox *m_frame_delay;
+
+	QProgressBar *m_exposure_progress;
+	QProgressBar *m_process_progress;
 	QScrollArea *mScrollArea;
 	QLabel *mImage;
 

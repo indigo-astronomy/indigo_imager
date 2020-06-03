@@ -22,6 +22,7 @@
 #include <QSplitter>
 #include <QTreeView>
 #include <QMenuBar>
+#include <QProgressBar>
 #include <QIcon>
 #include <QLabel>
 #include <QPixmap>
@@ -47,7 +48,7 @@
 void write_conf();
 
 ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
-	setWindowTitle(tr("INDIGO Imager"));
+	setWindowTitle(tr("Ain INDIGO Imager"));
 	resize(1024, 768);
 
 	QIcon icon(":resource/appicon.png");
@@ -260,6 +261,20 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	QPushButton *Start = new QPushButton("Start");
 	camera_frame_layout->addWidget(Start, row, 1);
 	connect(Start, &QPushButton::clicked, this, &ImagerWindow::on_start);
+
+	row++;
+	m_exposure_progress = new QProgressBar();
+	camera_frame_layout->addWidget(m_exposure_progress, row, 0, 1, 2);
+	m_exposure_progress->setFormat("Exposure: Idle");
+	m_exposure_progress->setMaximum(1);
+	m_exposure_progress->setValue(0);
+
+	row++;
+	m_process_progress = new QProgressBar();
+	camera_frame_layout->addWidget(m_process_progress, row, 0, 1, 2);
+	m_process_progress->setMaximum(1);
+	m_process_progress->setValue(0);
+	m_process_progress->setFormat("Process: Idle");
 
 	// image area
 	mImage = new QLabel();
@@ -534,6 +549,41 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			}
 		}
 	}
+	if (!strncmp(property->name, AGENT_IMAGER_STATS_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+		double exp_elapsed, exp_time;
+		int frames_complete, frames_total;
+
+		if(property->state == INDIGO_BUSY_STATE) {
+			exp_time = m_exposure_time->value();
+			for (int i = 0; i < property->count; i++) {
+				if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_EXPOSURE_ITEM_NAME)) {
+					exp_elapsed = exp_time - property->items[i].number.value;
+				} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_FRAME_ITEM_NAME)) {
+					frames_complete = (int)property->items[i].number.value;
+				} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_FRAMES_ITEM_NAME)) {
+					frames_total = (int)property->items[i].number.value;
+				}
+			}
+			m_exposure_progress->setMaximum(exp_time);
+			m_exposure_progress->setValue(exp_elapsed);
+			m_exposure_progress->setFormat("Exposure: %v of %m seconds elapsed...");
+
+			m_process_progress->setMaximum(frames_total);
+			m_process_progress->setValue(frames_complete);
+			m_process_progress->setFormat("Process: exposure %v of %m in progress...");
+
+		} else if (property->state == INDIGO_OK_STATE) {
+			m_exposure_progress->setMaximum(100);
+			m_exposure_progress->setValue(100);
+			m_exposure_progress->setFormat("Exposure: Complete");
+			m_process_progress->setMaximum(100);
+			m_process_progress->setValue(100);
+			m_process_progress->setFormat("Process: Complete");
+		} else {
+			m_exposure_progress->setFormat("Exposure: Failed");
+			m_process_progress->setFormat("Process: Failed");
+		}
+	}
 	properties.create(property);
 }
 
@@ -768,14 +818,14 @@ void ImagerWindow::on_about_act() {
 	msgBox.setTextFormat(Qt::RichText);
 	msgBox.setIconPixmap(pixmap.scaledToWidth(96, Qt::SmoothTransformation));
 	msgBox.setText(
-		"<b>INDIGO Imager</b><br>"
+		"<b>Ain INDIGO Imager</b><br>"
 		"Version "
 		PANEL_VERSION
 		"</b><br><br>"
 		"Author:<br>"
 		"Rumen G.Bogdanovski<br>"
 		"You can use this software under the terms of <b>INDIGO Astronomy open-source license</b><br><br>"
-		"Copyright ©2019, The INDIGO Initiative.<br>"
+		"Copyright ©2020, The INDIGO Initiative.<br>"
 		"<a href='http://www.indigo-astronomy.org'>http://www.indigo-astronomy.org</a>"
 	);
 	msgBox.exec();
