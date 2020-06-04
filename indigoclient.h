@@ -24,6 +24,7 @@
 #include <indigo/indigo_bus.h>
 #include "logger.h"
 
+extern bool client_match_device_property(indigo_property *property, const char *device_name, const char *property_name);
 
 class IndigoClient : public QObject
 {

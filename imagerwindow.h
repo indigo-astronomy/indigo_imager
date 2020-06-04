@@ -22,6 +22,7 @@
 
 #include <QApplication>
 #include <QMainWindow>
+#include <QComboBox>
 #include <indigo/indigo_bus.h>
 
 class QPlainTextEdit;
@@ -29,7 +30,6 @@ class QFrame;
 class QServiceModel;
 class QItemSelection;
 class QVBoxLayout;
-class QComboBox;
 class QDoubleSpinBox;
 class QSpinBox;
 class QProgressBar;
@@ -43,6 +43,12 @@ public:
 	explicit ImagerWindow(QWidget *parent = nullptr);
 	virtual ~ImagerWindow();
 	void property_define_delete(indigo_property* property, char *message, bool action_deleted);
+
+	bool get_selected_agent(char * selected_agent) {
+		if (!selected_agent || !m_camera_select) return false;
+		strncpy(selected_agent, m_camera_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+		return true;
+	};
 
 signals:
 	void enable_blobs(bool on);

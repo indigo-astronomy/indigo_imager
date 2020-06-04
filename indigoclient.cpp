@@ -27,6 +27,21 @@ static indigo_result client_attach(indigo_client *client) {
 }
 
 
+bool client_match_device_property(indigo_property *property, const char *device_name, const char *property_name) {
+	if (property_name == nullptr && device_name == nullptr) return false;
+
+	if (property_name == nullptr) {
+		return (!strncmp(property->device, device_name, INDIGO_NAME_SIZE));
+	}
+
+	if (device_name == nullptr) {
+		return (!strncmp(property->name, property_name, INDIGO_NAME_SIZE));
+	}
+
+	return (!strncmp(property->name, property_name, INDIGO_NAME_SIZE) && !strncmp(property->device, device_name, INDIGO_NAME_SIZE));
+}
+
+
 static indigo_result client_define_property(indigo_client *client, indigo_device *device, indigo_property *property, const char *message) {
 	Q_UNUSED(device);
 	//  Deep copy the property so it won't disappear on us later

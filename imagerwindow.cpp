@@ -369,7 +369,7 @@ void ImagerWindow::on_start(bool clicked) {
 	static char selected_agent[INDIGO_NAME_SIZE];
 	exposure_time = m_exposure_time->value();
 	frame_count = (double)m_frame_count->value();
-	strncpy(selected_agent, m_camera_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	get_selected_agent(selected_agent);
 	static const char *items[] = { AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME, AGENT_IMAGER_BATCH_COUNT_ITEM_NAME };
 	static double values[2];
 	values[0] = exposure_time;
@@ -446,8 +446,11 @@ void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 }
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
-	if(strncmp(property->device, "Imager Agent",12)) return;
-	if (!strncmp(property->name, FILTER_CCD_LIST_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+	char selected_agent[INDIGO_VALUE_SIZE];
+	if (!get_selected_agent(selected_agent)) return;
+	if (strncmp(property->device, "Imager Agent",12)) return;
+
+	if (client_match_device_property(property, nullptr, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		for (int i = 0; i < property->count; i++) {
 			QString item_name = QString(property->items[i].name);
 			QString domain = QString(property->device);
@@ -464,7 +467,8 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 			}
 		}
 	}
-	if (!strncmp(property->name, CCD_MODE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME)) {
+		m_frame_size_select->clear();
 		for (int i = 0; i < property->count; i++) {
 			QString mode = QString(property->items[i].label);
 			if (m_frame_size_select->findText(mode) < 0) {
@@ -478,7 +482,8 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 			}
 		}
 	}
-	if (!strncmp(property->name, CCD_FRAME_TYPE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+	if (client_match_device_property(property, selected_agent, CCD_FRAME_TYPE_PROPERTY_NAME)) {
+		m_frame_type_select->clear();
 		for (int i = 0; i < property->count; i++) {
 			QString type = QString(property->items[i].label);
 			if (m_frame_type_select->findText(type) < 0) {
@@ -492,7 +497,7 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 			}
 		}
 	}
-	if (!strncmp(property->name, AGENT_IMAGER_BATCH_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME)) {
 		indigo_debug("Set %s", property->name);
 		for (int i = 0; i < property->count; i++) {
 			indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
@@ -507,8 +512,11 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 }
 
 void ImagerWindow::on_property_change(indigo_property* property, char *message) {
-	if(strncmp(property->device, "Imager Agent",12)) return;
-	if (!strncmp(property->name, FILTER_CCD_LIST_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+	char selected_agent[INDIGO_VALUE_SIZE];
+	if (!get_selected_agent(selected_agent)) return;
+	if (strncmp(property->device, "Imager Agent",12)) return;
+
+	if (client_match_device_property(property, nullptr, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		for (int i = 0; i < property->count; i++) {
 			QString item_name = QString(property->items[i].name);
 			if (property->items[i].sw.value) {
@@ -521,7 +529,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			}
 		}
 	}
-	if (!strncmp(property->name, CCD_MODE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME)) {
 		for (int i = 0; i < property->count; i++) {
 			if (property->items[i].sw.value) {
 				m_frame_size_select->setCurrentIndex(m_frame_size_select->findText(property->items[i].label));
@@ -530,7 +538,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			}
 		}
 	}
-	if (!strncmp(property->name, CCD_FRAME_TYPE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+	if (client_match_device_property(property, selected_agent, CCD_FRAME_TYPE_PROPERTY_NAME)) {
 		for (int i = 0; i < property->count; i++) {
 			QString type = QString(property->items[i].label);
 			if (property->items[i].sw.value) {
@@ -540,7 +548,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			}
 		}
 	}
-	if (!strncmp(property->name, AGENT_IMAGER_BATCH_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME)) {
 		for (int i = 0; i < property->count; i++) {
 			if (!strcmp(property->items[i].name, AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME)) {
 				m_exposure_time->setValue(property->items[i].number.value);
@@ -549,7 +557,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			}
 		}
 	}
-	if (!strncmp(property->name, AGENT_IMAGER_STATS_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_STATS_PROPERTY_NAME)) {
 		double exp_elapsed, exp_time;
 		int frames_complete, frames_total;
 
@@ -589,8 +597,11 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 
 
 void ImagerWindow::on_property_delete(indigo_property* property, char *message) {
-	if(strncmp(property->device, "Imager Agent",12)) return;
-	if (!strncmp(property->name, FILTER_CCD_LIST_PROPERTY_NAME, INDIGO_NAME_SIZE) || property->name[0] == '\0') {
+	char selected_agent[INDIGO_VALUE_SIZE];
+	if (!get_selected_agent(selected_agent)) return;
+	if (strncmp(property->device, "Imager Agent",12)) return;
+
+	if (client_match_device_property(property, nullptr, FILTER_CCD_LIST_PROPERTY_NAME) || property->name[0] == '\0') {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		indigo_property *p = properties.get(property->device, FILTER_CCD_LIST_PROPERTY_NAME);
 		if (p) {
@@ -606,7 +617,7 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 			}
 		}
 	}
-	if (!strncmp(property->name, CCD_MODE_PROPERTY_NAME, INDIGO_NAME_SIZE) || property->name[0] == '\0') {
+	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME) || property->name[0] == '\0') {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		indigo_property *p = properties.get(property->device, CCD_MODE_PROPERTY_NAME);
 		if (p) {
@@ -620,7 +631,7 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 			}
 		}
 	}
-	if (!strncmp(property->name, CCD_FRAME_TYPE_PROPERTY_NAME, INDIGO_NAME_SIZE) || property->name[0] == '\0') {
+	if (client_match_device_property(property, selected_agent, CCD_FRAME_TYPE_PROPERTY_NAME) || property->name[0] == '\0') {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		indigo_property *p = properties.get(property->device, CCD_FRAME_TYPE_PROPERTY_NAME);
 		if (p) {
