@@ -24,12 +24,14 @@ SOURCES += \
 	qindigoservers.cpp \
 	blobpreview.cpp \
 	propertycache.cpp \
+	image-viewer.cpp \
 	fits/fits.c \
 	debayer/debayer.c \
 
 
 RESOURCES += \
 	qdarkstyle/style.qrc \
+	#image-viewer/image-viewer.qrc \
 	resource/control_panel.qss \
 	resource/appicon.png \
 	resource/indigo_logo.png \
@@ -98,7 +100,10 @@ HEADERS += \
 	blobpreview.h \
 	propertycache.h \
 	qindigoservers.h \
+	image-viewer.h \
 	logger.h \
+	#image-viewer/image-viewer.h \
+	#image-viewer/image-viewer-global.h \
 	fits/fits.h \
 	debayer/debayer.h \
 	debayer/pixelformat.h \
@@ -106,6 +111,7 @@ HEADERS += \
 
 
 include(qtzeroconf/qtzeroconf.pri)
+#include(image-viewer/image-viewer.pri)
 
 #unix:!mac {
 #    CONFIG += link_pkgconfig

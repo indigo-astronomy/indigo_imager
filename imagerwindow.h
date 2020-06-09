@@ -24,6 +24,7 @@
 #include <QMainWindow>
 #include <QComboBox>
 #include <indigo/indigo_bus.h>
+#include "image-viewer.h"
 
 class QPlainTextEdit;
 class QFrame;
@@ -36,6 +37,7 @@ class QProgressBar;
 class QScrollArea;
 class QIndigoServers;
 class QLabel;
+
 
 class ImagerWindow : public QMainWindow {
 	Q_OBJECT
@@ -99,8 +101,9 @@ private:
 	QProgressBar *m_exposure_progress;
 	QProgressBar *m_process_progress;
 	QScrollArea *mScrollArea;
-	QLabel *mImage;
-
+	//QLabel *mImage;
+	pal::ImageViewer *m_viewer;
+	QImage *m_image;
 	QIndigoServers *mIndigoServers;
 	QServiceModel *mServiceModel;
 

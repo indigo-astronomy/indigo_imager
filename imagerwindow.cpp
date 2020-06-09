@@ -44,8 +44,11 @@
 #include "logger.h"
 #include "conf.h"
 #include "version.h"
+#include "image-viewer.h"
 
 void write_conf();
+
+pal::ImageViewer *m_viewer;
 
 ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	setWindowTitle(tr("Ain INDIGO Imager"));
@@ -277,17 +280,25 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_process_progress->setFormat("Process: Idle");
 
 	// image area
-	mImage = new QLabel();
-	mImage->setBackgroundRole(QPalette::Base);
-	mImage->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
-	mImage->setScaledContents(true);
+	//mImage = new QLabel();
+	//mImage->setBackgroundRole(QPalette::Base);
+	//mImage->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+	//mImage->setScaledContents(true);
+
+	auto m_viewer = new pal::ImageViewer(this);
+	m_viewer->setText("A test viewer");
+	m_viewer->setToolBarMode(pal::ImageViewer::ToolBarMode::Visible);
+	QString path("/home/rumen/m51_small.png");
+	m_image = new QImage(path);
+	m_viewer->setImage(m_image);
+
 
 	mScrollArea = new QScrollArea();
 	mScrollArea->setObjectName("PROPERTY_AREA");
 	mScrollArea->setWidgetResizable(true);
 	mScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 	mScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-	mScrollArea->setWidget((QWidget*)mImage);
+	mScrollArea->setWidget((QWidget*)m_viewer);
 	form_layout->addWidget(mScrollArea);
 	mScrollArea->setMinimumWidth(PROPERTY_AREA_MIN_WIDTH);
 
@@ -384,8 +395,11 @@ void ImagerWindow::on_start(bool clicked) {
 
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){
 	preview_cache.create(property, item);
+
 	QImage *image = preview_cache.get(property, item);
-	if (image) mImage->setPixmap(QPixmap::fromImage(*image));
+	if (image) {
+		m_viewer->setImage((QImage*)image);
+	}
 }
 
 void ImagerWindow::on_obsolete_preview(indigo_property *property, indigo_item *item){
