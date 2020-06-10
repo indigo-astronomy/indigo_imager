@@ -285,12 +285,12 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	//mImage->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
 	//mImage->setScaledContents(true);
 
-	auto m_viewer = new pal::ImageViewer(this);
+	m_viewer = new pal::ImageViewer(this);
 	m_viewer->setText("A test viewer");
 	m_viewer->setToolBarMode(pal::ImageViewer::ToolBarMode::Visible);
-	QString path("/home/rumen/m51_small.png");
-	m_image = new QImage(path);
-	m_viewer->setImage(m_image);
+	//QString path("/home/rumen/m51_small.png");
+	//m_image = new QImage(path);
+	//m_viewer->setImage(m_image);
 
 
 	mScrollArea = new QScrollArea();
@@ -398,7 +398,8 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 
 	QImage *image = preview_cache.get(property, item);
 	if (image) {
-		m_viewer->setImage((QImage*)image);
+		indigo_error("m_viewer = %p", m_viewer);
+		m_viewer->setImage(*image);
 	}
 }
 

@@ -55,7 +55,7 @@ public:
 
 public slots:
     void setText(const QString &txt);
-    void setImage(QImage *im);
+    void setImage(const QImage &);
 
     void zoomFit();
     void zoomOriginal();
@@ -94,7 +94,6 @@ class PixmapItem : public QObject, public QGraphicsPixmapItem {
 
 public:
     PixmapItem(QGraphicsItem *parent = nullptr);
-	~PixmapItem();
     const QImage & image() const { return m_image; }
 
 public slots:

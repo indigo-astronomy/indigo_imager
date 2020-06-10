@@ -1,5 +1,4 @@
 #include "image-viewer.h"
-#include "indigoclient.h"
 #include <cmath>
 #include <QGraphicsScene>
 #include <QGraphicsView>
@@ -15,7 +14,6 @@ namespace pal {
 
 // Graphics View with better mouse events handling
 class GraphicsView : public QGraphicsView {
-    //Q_OBJECT
 public:
     explicit GraphicsView(ImageViewer *viewer)
         : QGraphicsView()
@@ -129,9 +127,8 @@ const QImage &ImageViewer::image() const {
     return m_pixmap->image();
 }
 
-void ImageViewer::setImage(QImage *im) {
-	indigo_error("m_pixmap %p %p", m_pixmap, this);
-	m_pixmap->setImage(*im);
+void ImageViewer::setImage(const QImage &im) {
+    m_pixmap->setImage(im);
 
     if (m_fit)
         zoomFit();
@@ -253,13 +250,7 @@ void ImageViewer::showEvent(QShowEvent *event) {
 PixmapItem::PixmapItem(QGraphicsItem *parent) :
     QObject(), QGraphicsPixmapItem(parent)
 {
-	indigo_error("%s", __FUNCTION__);
     setAcceptHoverEvents(true);
-}
-
-PixmapItem::~PixmapItem()
-{
-	indigo_error("%s", __FUNCTION__);
 }
 
 void PixmapItem::setImage(QImage im) {
@@ -292,5 +283,3 @@ void PixmapItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event) {
 }
 
 } // namespace pal
-
-//#include "image-viewer.moc"
