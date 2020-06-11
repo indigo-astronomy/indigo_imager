@@ -31,10 +31,11 @@ SOURCES += \
 
 RESOURCES += \
 	qdarkstyle/style.qrc \
-	#image-viewer/image-viewer.qrc \
 	resource/control_panel.qss \
 	resource/appicon.png \
 	resource/indigo_logo.png \
+	resource/zoom-fit-best.png \
+	resource/zoom-original.png \
 	resource/bonjour_service.png \
 	resource/manual_service.png \
 	resource/no-preview.png \

@@ -52,7 +52,7 @@ pal::ImageViewer *m_viewer;
 
 ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	setWindowTitle(tr("Ain INDIGO Imager"));
-	resize(1024, 768);
+	resize(1200, 768);
 
 	QIcon icon(":resource/appicon.png");
 	this->setWindowIcon(icon);
@@ -208,6 +208,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	QWidget *camera_panel = new QWidget();
 	QVBoxLayout *camera_panel_layout = new QVBoxLayout();
 	camera_frame->setFrameShape(QFrame::StyledPanel);
+	camera_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
 
 	camera_panel_layout->setSpacing(0);
 	camera_panel_layout->setContentsMargins(0, 0, 1, 0);
@@ -286,18 +287,14 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	//mImage->setScaledContents(true);
 
 	m_viewer = new pal::ImageViewer(this);
-	m_viewer->setText("A test viewer");
+	m_viewer->setText("No Image");
 	m_viewer->setToolBarMode(pal::ImageViewer::ToolBarMode::Visible);
-	//QString path("/home/rumen/m51_small.png");
-	//m_image = new QImage(path);
-	//m_viewer->setImage(m_image);
-
 
 	mScrollArea = new QScrollArea();
 	mScrollArea->setObjectName("PROPERTY_AREA");
 	mScrollArea->setWidgetResizable(true);
-	mScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-	mScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+	//mScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+	//mScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 	mScrollArea->setWidget((QWidget*)m_viewer);
 	form_layout->addWidget(mScrollArea);
 	mScrollArea->setMinimumWidth(PROPERTY_AREA_MIN_WIDTH);
@@ -305,8 +302,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	QSplitter* hSplitter = new QSplitter;
 	hSplitter->addWidget(camera_panel);
 	hSplitter->addWidget(form_panel);
-	hSplitter->setStretchFactor(0, 45);
-	hSplitter->setStretchFactor(2, 55);
+	hSplitter->setStretchFactor(0, 25);
+	hSplitter->setStretchFactor(1, 55);
 	propertyLayout->addWidget(hSplitter, 85);
 
 

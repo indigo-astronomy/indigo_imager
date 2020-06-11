@@ -96,12 +96,12 @@ void ImageViewer::makeToolbar() {
 
     auto fit = new QToolButton(this);
     fit->setToolTip(tr("Fit image to window"));
-    fit->setIcon(QIcon(":/icons/zoom-fit-best.png"));
+    fit->setIcon(QIcon(":resource/zoom-fit-best.png"));
     connect(fit, SIGNAL(clicked()), SLOT(zoomFit()));
 
     auto orig = new QToolButton(this);
     orig->setToolTip(tr("Resize image to its original size"));
-    orig->setIcon(QIcon(":/icons/zoom-original.png"));
+    orig->setIcon(QIcon(":resource/zoom-original.png"));
     connect(orig, SIGNAL(clicked()), SLOT(zoomOriginal()));
 
     m_toolbar = new QWidget;
