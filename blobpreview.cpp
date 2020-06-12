@@ -47,10 +47,12 @@ void blob_preview_cache::set_stretch_level(preview_stretch level) {
 bool blob_preview_cache::_remove(indigo_property *property, indigo_item *item) {
 	QString key = create_key(property, item);
 	if (contains(key)) {
-		QImage *preview = value(key);
+		preview_image *preview = value(key);
 		indigo_debug("preview: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), preview);
-		if (preview != nullptr)
+		if (preview != nullptr) {
+			if (preview->m_raw_data) free(preview->m_raw_data);
 			delete(preview);
+		}
 	} else {
 		indigo_debug("preview: %s(%s) - no preview\n", __FUNCTION__, key.toUtf8().constData());
 	}
@@ -61,7 +63,7 @@ bool blob_preview_cache::_remove(indigo_property *property, indigo_item *item) {
 bool blob_preview_cache::obsolete(indigo_property *property, indigo_item *item) {
 	QString key = create_key(property, item);
 	if (contains(key)) {
-		QImage *preview = value(key);
+		preview_image *preview = value(key);
 		indigo_debug("preview: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), preview);
 		if (preview != nullptr) {
 			QPainter painter(preview);
@@ -83,7 +85,7 @@ bool blob_preview_cache::create(indigo_property *property, indigo_item *item) {
 	pthread_mutex_lock(&preview_mutex);
 	QString key = create_key(property, item);
 	_remove(property, item);
-	QImage *preview = create_preview(property, item);
+	preview_image *preview = create_preview(property, item);
 	indigo_debug("preview: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), preview);
 	if (preview != nullptr) {
 		insert(key, preview);
@@ -95,11 +97,11 @@ bool blob_preview_cache::create(indigo_property *property, indigo_item *item) {
 }
 
 
-QImage* blob_preview_cache::get(indigo_property *property, indigo_item *item) {
+preview_image* blob_preview_cache::get(indigo_property *property, indigo_item *item) {
 	pthread_mutex_lock(&preview_mutex);
 	QString key = create_key(property, item);
 	if (contains(key)) {
-		QImage *preview = value(key);
+		preview_image *preview = value(key);
 		indigo_debug("preview: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), preview);
 		pthread_mutex_unlock(&preview_mutex);
 		return preview;
@@ -119,10 +121,10 @@ bool blob_preview_cache::remove(indigo_property *property, indigo_item *item) {
 
 // Related Functions
 
-QImage* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_size) {
+preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_size) {
 #if !defined(USE_LIBJPEG)
 
-	QImage* img = new QImage();
+	preview_image* img = new preview_image();
 	img->loadFromData((const uchar*)jpg_buffer, jpg_size, "JPG");
 	return img;
 
@@ -167,11 +169,11 @@ QImage* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_size) {
 	jpeg_finish_decompress(&cinfo);
 	jpeg_destroy_decompress(&cinfo);
 
-	QImage* img;
+	preview_image* img;
 	if (color_space == JCS_GRAYSCALE) {
-		img = new QImage(width, height, QImage::Format_Indexed8);
+		img = new preview_image(width, height, QImage::Format_Indexed8);
 	} else if (color_space == JCS_RGB) {
-		img = new QImage(width, height, QImage::Format_RGB888);
+		img = new preview_image(width, height, QImage::Format_RGB888);
 	} else {
 		indigo_error("JPEG: Unsupported colour space (CS: %d)", color_space);
 		return nullptr;
@@ -187,7 +189,7 @@ QImage* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_size) {
 }
 
 
-QImage* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long fits_size) {
+preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long fits_size) {
 	fits_header header;
 	int *hist;
 	unsigned int pix_format = 0;
@@ -243,7 +245,7 @@ QImage* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long fits_s
 		}
 	}
 
-	QImage *img = create_preview(header.naxisn[0], header.naxisn[1],
+	preview_image *img = create_preview(header.naxisn[0], header.naxisn[1],
 	        pix_format, fits_data, hist, preview_stretch_lut[preview_stretch_level]);
 
 	free(hist);
@@ -252,7 +254,7 @@ QImage* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long fits_s
 }
 
 
-QImage* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size) {
+preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size) {
 	int *hist;
 	unsigned int pix_format;
 	int bitpix;
@@ -315,15 +317,16 @@ QImage* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_si
 		return nullptr;
 	}
 
-	QImage *img = create_preview(header->width, header->height,
+	preview_image *img = create_preview(header->width, header->height,
 	        pix_format, raw_data, hist, preview_stretch_lut[preview_stretch_level]);
 
+	free(raw_data);
 	free(hist);
 	return img;
 }
 
 
-QImage* create_preview(int width, int height, int pix_format, char *image_data, int *hist, double white_threshold) {
+preview_image* create_preview(int width, int height, int pix_format, char *image_data, int *hist, double white_threshold) {
 	int range, max, min = 0, sum;
 	int pix_cnt = width * height;
 	int thresh = white_threshold * pix_cnt;
@@ -366,39 +369,57 @@ QImage* create_preview(int width, int height, int pix_format, char *image_data, 
 
 	indigo_debug("PREVIEW: pix_format = %d sum = %d thresh = %d max = %d min = %d", pix_format, sum, thresh, max, min);
 
-	QImage* img = new QImage(width, height, QImage::Format_RGB888);
+	preview_image* img = new preview_image(width, height, QImage::Format_RGB888);
 	if (pix_format == PIX_FMT_Y8) {
 		uint8_t* buf = (uint8_t*)image_data;
+		uint8_t* pixmap_data = (uint8_t*)malloc(sizeof(uint8_t) * height * width);
 		int index = 0;
 		for (int y = 0; y < height; ++y) {
 			for (int x = 0; x < width; ++x) {
+				pixmap_data[index] = buf[index];
 				int value = buf[index++] - min;
 				if (value >= range) value = 255;
 				else value *= scale;
 				img->setPixel(x, y, qRgb(value, value, value));
 			}
 		}
+		img->m_raw_data = (char*)pixmap_data;
+		img->m_pix_format = PIX_FMT_Y8;
+		img->m_height = height;
+		img->m_width = width;
 	} else if (pix_format == PIX_FMT_Y16) {
 		uint16_t* buf = (uint16_t*)image_data;
+		uint16_t* pixmap_data = (uint16_t*)malloc(sizeof(uint16_t) * height * width);
 		int index = 0;
 		for (int y = 0; y < height; ++y) {
 			for (int x = 0; x < width; ++x) {
+				pixmap_data[index] = buf[index];
 				int value = buf[index++] - min;
 				if (value >= range) value = 255;
 				else value *= scale;
 				img->setPixel(x, y, qRgb(value, value, value));
 			}
 		}
+		img->m_raw_data = (char*)pixmap_data;
+		img->m_pix_format = PIX_FMT_Y16;
+		img->m_height = height;
+		img->m_width = width;
 	} else if (pix_format == PIX_FMT_3RGB24) {
 		int channel_offest = width * height;
 		uint8_t* buf = (uint8_t*)image_data;
+		uint8_t* pixmap_data = (uint8_t*)malloc(sizeof(uint8_t) * height * width * 3);
 		int index = 0;
+		int index2 = 0;
 		for (int y = 0; y < height; ++y) {
 			for (int x = 0; x < width; ++x) {
 				int value_r = buf[index] - min;
 				int value_g = buf[index + channel_offest] - min;
 				int value_b = buf[index + 2 * channel_offest] - min;
+				pixmap_data[index2 + 0] = buf[index];
+				pixmap_data[index2 + 1] = buf[index + channel_offest];
+				pixmap_data[index2 + 2] = buf[index + 2 * channel_offest];
 				index++;
+				index2 += 3;
 				if (value_r >= range) value_r = 255;
 				else value_r *= scale;
 				if (value_g >= range) value_g = 255;
@@ -408,16 +429,26 @@ QImage* create_preview(int width, int height, int pix_format, char *image_data, 
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
 		}
+		img->m_raw_data = (char*)pixmap_data;
+		img->m_pix_format = PIX_FMT_RGB24;
+		img->m_height = height;
+		img->m_width = width;
 	} else if (pix_format == PIX_FMT_3RGB48) {
 		int channel_offest = width * height;
 		uint16_t* buf = (uint16_t*)image_data;
+		uint16_t* pixmap_data = (uint16_t*)malloc(sizeof(uint16_t) * height * width * 3);
 		int index = 0;
+		int index2 = 0;
 		for (int y = 0; y < height; ++y) {
 			for (int x = 0; x < width; ++x) {
 				int value_r = buf[index] - min;
 				int value_g = buf[index + channel_offest] - min;
 				int value_b = buf[index + 2 * channel_offest] - min;
+				pixmap_data[index2 + 0] = buf[index];
+				pixmap_data[index2 + 1] = buf[index + channel_offest];
+				pixmap_data[index2 + 2] = buf[index + 2 * channel_offest];
 				index++;
+				index2 += 3;
 				if (value_r >= range) value_r = 255;
 				else value_r *= scale;
 				if (value_g >= range) value_g = 255;
@@ -427,14 +458,25 @@ QImage* create_preview(int width, int height, int pix_format, char *image_data, 
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
 		}
+		img->m_raw_data = (char*)pixmap_data;
+		img->m_pix_format = PIX_FMT_RGB48;
+		img->m_height = height;
+		img->m_width = width;
 	} else if (pix_format == PIX_FMT_RGB24) {
 		uint8_t* buf = (uint8_t*)image_data;
+		uint8_t* pixmap_data = (uint8_t*)malloc(sizeof(uint8_t) * height * width * 3);
 		int index = 0;
 		for (int y = 0; y < height; ++y) {
 			for (int x = 0; x < width; ++x) {
-				int value_r = buf[index++] - min;
-				int value_g = buf[index++] - min;
-				int value_b = buf[index++] - min;
+				pixmap_data[index] = buf[index];
+				int value_r = buf[index] - min;
+				index++;
+				pixmap_data[index] = buf[index];
+				int value_g = buf[index] - min;
+				index++;
+				pixmap_data[index] = buf[index];
+				int value_b = buf[index] - min;
+				index++;
 
 				if (value_r >= range) value_r = 255;
 				else value_r *= scale;
@@ -445,14 +487,25 @@ QImage* create_preview(int width, int height, int pix_format, char *image_data, 
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
 		}
+		img->m_raw_data = (char*)pixmap_data;
+		img->m_pix_format = PIX_FMT_RGB24;
+		img->m_height = height;
+		img->m_width = width;
 	} else if (pix_format == PIX_FMT_RGB48) {
 		uint16_t* buf = (uint16_t*)image_data;
+		uint16_t* pixmap_data = (uint16_t*)malloc(sizeof(uint16_t) * height * width * 3);
 		int index = 0;
 		for (int y = 0; y < height; ++y) {
 			for (int x = 0; x < width; ++x) {
-				int value_r = buf[index++] - min;
-				int value_g = buf[index++] - min;
-				int value_b = buf[index++] - min;
+				pixmap_data[index] = buf[index];
+				int value_r = buf[index] - min;
+				index++;
+				pixmap_data[index] = buf[index];
+				int value_g = buf[index] - min;
+				index++;
+				pixmap_data[index] = buf[index];
+				int value_b = buf[index] - min;
+				index++;
 
 				if (value_r >= range) value_r = 255;
 				else value_r *= scale;
@@ -463,6 +516,10 @@ QImage* create_preview(int width, int height, int pix_format, char *image_data, 
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
 		}
+		img->m_raw_data = (char*)pixmap_data;
+		img->m_pix_format = PIX_FMT_RGB48;
+		img->m_height = height;
+		img->m_width = width;
 	} else if ((pix_format == PIX_FMT_SBGGR8) || (pix_format == PIX_FMT_SGBRG8) ||
 		       (pix_format == PIX_FMT_SGRBG8) || (pix_format == PIX_FMT_SRGGB8)) {
 		uint8_t* rgb_data = (uint8_t*)malloc(width*height*3);
@@ -484,7 +541,10 @@ QImage* create_preview(int width, int height, int pix_format, char *image_data, 
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
 		}
-		free(rgb_data);
+		img->m_raw_data = (char*)rgb_data;
+		img->m_pix_format = PIX_FMT_RGB24;
+		img->m_height = height;
+		img->m_width = width;
 	} else if ((pix_format == PIX_FMT_SBGGR16) || (pix_format == PIX_FMT_SGBRG16) ||
 		       (pix_format == PIX_FMT_SGRBG16) || (pix_format == PIX_FMT_SRGGB16)) {
 		uint16_t* rgb_data = (uint16_t*)malloc(width*height*6);
@@ -506,7 +566,10 @@ QImage* create_preview(int width, int height, int pix_format, char *image_data, 
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
 		}
-		free(rgb_data);
+		img->m_raw_data = (char*)rgb_data;
+		img->m_pix_format = PIX_FMT_RGB48;
+		img->m_height = height;
+		img->m_width = width;
 	} else {
 		indigo_error("PREVIEW: Unsupported pixel format (%d)", pix_format);
 		return nullptr;
@@ -514,8 +577,8 @@ QImage* create_preview(int width, int height, int pix_format, char *image_data, 
 	return img;
 }
 
-QImage* create_preview(indigo_property *property, indigo_item *item) {
-	QImage *preview = nullptr;
+preview_image* create_preview(indigo_property *property, indigo_item *item) {
+	preview_image *preview = nullptr;
 	if (property->type != INDIGO_BLOB_VECTOR) return nullptr;
 	if ((property->state == INDIGO_OK_STATE) && (item->blob.value != NULL)) {
 		if (!strcmp(item->blob.format, ".jpeg") ||

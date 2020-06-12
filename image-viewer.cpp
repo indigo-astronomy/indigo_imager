@@ -123,11 +123,11 @@ void ImageViewer::setText(const QString &txt) {
     m_text_label->setText(txt);
 }
 
-const QImage &ImageViewer::image() const {
+const preview_image &ImageViewer::image() const {
     return m_pixmap->image();
 }
 
-void ImageViewer::setImage(const QImage &im) {
+void ImageViewer::setImage(const preview_image &im) {
     m_pixmap->setImage(im);
 
     if (m_fit)
@@ -207,9 +207,11 @@ void ImageViewer::zoomOut(int level) {
 
 void ImageViewer::mouseAt(int x, int y) {
     if (m_pixmap->image().valid(x,y)) {
-        QRgb rgb = m_pixmap->image().pixel(x, y);
+        //QRgb rgb = m_pixmap->image().pixel(x, y);
+		int r,g,b;
+		m_pixmap->image().pixel_value(x, y, r, g, b);
         auto s = QString("[%1, %2] (%3, %4, %5)").arg(x).arg(y)
-                    .arg(qRed(rgb)).arg(qGreen(rgb)).arg(qBlue(rgb));
+                    .arg(r).arg(g).arg(b);
         m_pixel_value->setText(s);
     }
     else
@@ -253,11 +255,11 @@ PixmapItem::PixmapItem(QGraphicsItem *parent) :
     setAcceptHoverEvents(true);
 }
 
-void PixmapItem::setImage(QImage im) {
-    if (im.isNull()) {
-        m_image.fill(Qt::white);
-        im=m_image.copy();
-    }
+void PixmapItem::setImage(preview_image im) {
+    //if (im.isNull()) {
+    //    m_image.fill(Qt::white);
+    //    im = m_image.copy();
+    //}
     std::swap(m_image, im);
 
     setPixmap(QPixmap::fromImage(m_image));

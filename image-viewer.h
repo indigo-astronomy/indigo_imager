@@ -2,6 +2,7 @@
 #define IMAGEVIEWER_H
 
 #include <QFrame>
+#include <blobpreview.h>
 #include <QGraphicsPixmapItem>
 
 QT_BEGIN_NAMESPACE
@@ -36,7 +37,7 @@ public:
     QString text() const;
 
     /// The currently displayed image
-    const QImage& image() const;
+    const preview_image& image() const;
 
     /// Access to the pixmap so that other tools can add things to it
     const PixmapItem* pixmapItem() const;
@@ -55,7 +56,7 @@ public:
 
 public slots:
     void setText(const QString &txt);
-    void setImage(const QImage &);
+    void setImage(const preview_image &);
 
     void zoomFit();
     void zoomOriginal();
@@ -94,13 +95,13 @@ class PixmapItem : public QObject, public QGraphicsPixmapItem {
 
 public:
     PixmapItem(QGraphicsItem *parent = nullptr);
-    const QImage & image() const { return m_image; }
+    const preview_image & image() const { return m_image; }
 
 public slots:
-    void setImage(QImage im);
+    void setImage(preview_image im);
 
 signals:
-    void imageChanged(const QImage &);
+    void imageChanged(const preview_image &);
     void sizeChanged(int w, int h);
     void mouseMoved(int x, int y);
 
@@ -110,7 +111,7 @@ protected:
     void hoverMoveEvent(QGraphicsSceneHoverEvent *) override;
 
 private:
-    QImage m_image;
+    preview_image m_image;
 };
 
 } // namespace pal

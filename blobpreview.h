@@ -22,6 +22,7 @@
 #include <QImage>
 #include <QHash>
 #include <indigo/indigo_client.h>
+#include <debayer/pixelformat.h>
 
 #if !defined(INDIGO_WINDOWS)
 #define USE_LIBJPEG
@@ -36,13 +37,74 @@ typedef enum {
 	STRETCH_HARD = 2,
 } preview_stretch;
 
-QImage* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_size);
-QImage* create_fits_preview(unsigned char *fits_buffer, unsigned long fits_size);
-QImage* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size);
-QImage* create_preview(int width, int height, int pixel_format, char *image_data, int *hist, double white_threshold);
-QImage* create_preview(indigo_property *property, indigo_item *item);
+class preview_image: public QImage {
+public:
+	preview_image():
+		m_raw_data(nullptr),
+		m_width(0),
+		m_height(0),
+		m_pix_format(0)
+	{};
 
-class blob_preview_cache: QHash<QString, QImage*> {
+	preview_image(int width, int height, QImage::Format format):
+		QImage(width, height, format),
+		m_raw_data(nullptr),
+		m_width(0),
+		m_height(0),
+		m_pix_format(0)
+	{};
+
+	~preview_image() {
+		//if (m_raw_data != nullptr) free(m_raw_data);
+	};
+
+	int pixel_value(int x, int y, int &r, int &g, int &b) const {
+		if (x < 0 || x >= m_width || y < 0 || y >= m_height) return 0;
+		if (m_pix_format == 0) {
+			QRgb rgb = pixel(x,y);
+			r = qRed(rgb);
+			g = qGreen(rgb);
+			b = qBlue(rgb);
+			return PIX_FMT_RGB24;
+		}
+
+		if (m_pix_format == PIX_FMT_Y8) {
+			uint8_t* pixels = (uint8_t*) m_raw_data;
+			r = pixels[y * m_width + x];
+			g = -1;
+			b = -1;
+		} else if (m_pix_format == PIX_FMT_Y16) {
+			uint16_t* pixels = (uint16_t*) m_raw_data;
+			r = pixels[y * m_width + x];
+			g = -1;
+			b = -1;
+		} else if (m_pix_format == PIX_FMT_RGB24) {
+			uint8_t* pixels = (uint8_t*) m_raw_data;
+			r = pixels[3 * y * m_width + x];
+			g = pixels[3 * y * m_width + x + 1];
+			b = pixels[3 * y * m_width + x + 2];
+		}else if (m_pix_format == PIX_FMT_RGB48) {
+			uint16_t* pixels = (uint16_t*) m_raw_data;
+			r = pixels[3 * y * m_width + x];
+			g = pixels[3 * y * m_width + x + 1];
+			b = pixels[3 * y * m_width + x + 2];
+		}
+		return m_pix_format;
+	};
+
+	char *m_raw_data;
+	int m_width;
+	int m_height;
+	int m_pix_format;
+};
+
+preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_size);
+preview_image* create_fits_preview(unsigned char *fits_buffer, unsigned long fits_size);
+preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size);
+preview_image* create_preview(int width, int height, int pixel_format, char *image_data, int *hist, double white_threshold);
+preview_image* create_preview(indigo_property *property, indigo_item *item);
+
+class blob_preview_cache: QHash<QString, preview_image*> {
 public:
 	blob_preview_cache(): preview_mutex(PTHREAD_MUTEX_INITIALIZER) {
 	};
@@ -51,7 +113,7 @@ public:
 		indigo_debug("preview: %s()\n", __FUNCTION__);
 		blob_preview_cache::iterator i = begin();
 		while (i != end()) {
-			QImage *preview = i.value();
+			preview_image *preview = i.value();
 			if (preview != nullptr) delete(preview);
 			i = erase(i);
 		}
@@ -66,7 +128,7 @@ public:
 	void set_stretch_level(preview_stretch level);
 	bool create(indigo_property *property, indigo_item *item);
 	bool obsolete(indigo_property *property, indigo_item *item);
-	QImage* get(indigo_property *property, indigo_item *item);
+	preview_image* get(indigo_property *property, indigo_item *item);
 	bool remove(indigo_property *property, indigo_item *item);
 };
 

@@ -393,7 +393,7 @@ void ImagerWindow::on_start(bool clicked) {
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){
 	preview_cache.create(property, item);
 
-	QImage *image = preview_cache.get(property, item);
+	preview_image *image = preview_cache.get(property, item);
 	if (image) {
 		indigo_error("m_viewer = %p", m_viewer);
 		m_viewer->setImage(*image);
