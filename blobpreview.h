@@ -114,7 +114,10 @@ public:
 		blob_preview_cache::iterator i = begin();
 		while (i != end()) {
 			preview_image *preview = i.value();
-			if (preview != nullptr) delete(preview);
+			if (preview != nullptr) {
+				if (preview->m_raw_data) free(preview->m_raw_data);
+				delete(preview);
+			}
 			i = erase(i);
 		}
 	};
