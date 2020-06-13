@@ -280,11 +280,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_process_progress->setValue(0);
 	m_process_progress->setFormat("Process: Idle");
 
-	// image area
-	//mImage = new QLabel();
-	//mImage->setBackgroundRole(QPalette::Base);
-	//mImage->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
-	//mImage->setScaledContents(true);
 
 	m_viewer = new pal::ImageViewer(this);
 	m_viewer->setText("No Image");
@@ -335,13 +330,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(&IndigoClient::instance(), &IndigoClient::obsolete_preview, this, &ImagerWindow::on_obsolete_preview);
 	connect(&IndigoClient::instance(), &IndigoClient::remove_preview, this, &ImagerWindow::on_remove_preview);
 
-	//connect(&IndigoClient::instance(), &IndigoClient::property_defined, mPropertyModel, &PropertyModel::define_property);
-	//connect(&IndigoClient::instance(), &IndigoClient::property_changed, mPropertyModel, &PropertyModel::update_property);
-	//connect(&IndigoClient::instance(), &IndigoClient::property_deleted, mPropertyModel, &PropertyModel::delete_property);
-
-	//connect(mPropertyModel, &PropertyModel::property_defined, this, &ImagerWindow::on_property_define);
-	//connect(mPropertyModel, &PropertyModel::property_deleted, this, &ImagerWindow::on_property_delete);
-
 	connect(&Logger::instance(), &Logger::do_log, this, &ImagerWindow::on_window_log);
 
 	connect(m_camera_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_camera_selected);
@@ -368,6 +356,8 @@ ImagerWindow::~ImagerWindow () {
 	delete mLog;
 	delete mIndigoServers;
 	delete mServiceModel;
+	delete m_viewer;
+	IndigoClient::instance().stop();
 }
 
 void ImagerWindow::on_start(bool clicked) {
@@ -391,12 +381,21 @@ void ImagerWindow::on_start(bool clicked) {
 }
 
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){
-	preview_cache.create(property, item);
+	char selected_agent[INDIGO_VALUE_SIZE];
 
-	preview_image *image = preview_cache.get(property, item);
-	if (image) {
-		indigo_error("m_viewer = %p", m_viewer);
-		m_viewer->setImage(*image);
+	if (!get_selected_agent(selected_agent) || strncmp(property->device, "Imager Agent",12)) {
+		return;
+	}
+
+	if (client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME)) {
+		preview_cache.create(property, item);
+		free(item->blob.value);
+		preview_image *image = preview_cache.get(property, item);
+		if (image) {
+			indigo_error("m_viewer = %p", m_viewer);
+			m_viewer->setText("UNSAVED" + QString(item->blob.format));
+			m_viewer->setImage(*image);
+		}
 	}
 }
 
@@ -461,7 +460,6 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 	char selected_agent[INDIGO_VALUE_SIZE];
 
 	if (!get_selected_agent(selected_agent) || strncmp(property->device, "Imager Agent",12)) {
-		indigo_release_property(property);
 		return;
 	}
 
@@ -529,7 +527,6 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 void ImagerWindow::on_property_change(indigo_property* property, char *message) {
 	char selected_agent[INDIGO_VALUE_SIZE];
 	if (!get_selected_agent(selected_agent) || strncmp(property->device, "Imager Agent",12)) {
-		indigo_release_property(property);
 		return;
 	}
 
@@ -616,7 +613,6 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 void ImagerWindow::on_property_delete(indigo_property* property, char *message) {
 	char selected_agent[INDIGO_VALUE_SIZE];
 	if (!get_selected_agent(selected_agent) || strncmp(property->device, "Imager Agent",12)) {
-		indigo_release_property(property);
 		return;
 	}
 

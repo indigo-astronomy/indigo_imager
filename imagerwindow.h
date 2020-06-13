@@ -103,7 +103,7 @@ private:
 	QScrollArea *mScrollArea;
 	//QLabel *mImage;
 	pal::ImageViewer *m_viewer;
-	QImage *m_image;
+	//QImage *m_image;
 	QIndigoServers *mIndigoServers;
 	QServiceModel *mServiceModel;
 

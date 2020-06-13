@@ -81,7 +81,7 @@ ImageViewer::ImageViewer(QWidget *parent)
     makeToolbar();
 
     auto box = new QVBoxLayout;
-    box->setContentsMargins(5,0,5,0);
+    box->setContentsMargins(0,0,0,0);
     box->addWidget(m_toolbar);
     box->addWidget(m_view, 1);
     setLayout(box);
@@ -127,8 +127,8 @@ const preview_image &ImageViewer::image() const {
     return m_pixmap->image();
 }
 
-void ImageViewer::setImage(const preview_image &im) {
-    m_pixmap->setImage((preview_image&)im);
+void ImageViewer::setImage(preview_image &im) {
+    m_pixmap->setImage(im);
 
     if (m_fit)
         zoomFit();
@@ -202,20 +202,24 @@ void ImageViewer::zoomIn(int level) {
 void ImageViewer::zoomOut(int level) {
     m_zoom_level -= level;
     m_fit = false;
-    setMatrix();
+	setMatrix();
 }
 
 void ImageViewer::mouseAt(int x, int y) {
-    if (m_pixmap->image().valid(x,y)) {
-        //QRgb rgb = m_pixmap->image().pixel(x, y);
+	if (m_pixmap->image().valid(x,y)) {
 		int r,g,b;
+		qreal scale = std::pow(2.0, m_zoom_level / 10.0) * 100;
 		m_pixmap->image().pixel_value(x, y, r, g, b);
-        auto s = QString("[%1, %2] (%3, %4, %5)").arg(x).arg(y)
-                    .arg(r).arg(g).arg(b);
-        m_pixel_value->setText(s);
-    }
-    else
-        m_pixel_value->setText(QString());
+		QString s;
+		if (g == -1) {
+			s = QString("%1% [%2, %3] (%4)").arg(scale).arg(x).arg(y).arg(r);
+		} else {
+			s = QString("%1% [%2, %3] (%4, %5, %6)").arg(scale).arg(x).arg(y).arg(r).arg(g).arg(b);
+		}
+		m_pixel_value->setText(s);
+	} else {
+		m_pixel_value->setText(QString());
+	}
 }
 
 void ImageViewer::enterEvent(QEvent *event) {
@@ -262,6 +266,8 @@ void PixmapItem::setImage(preview_image im) {
     //}
 	//std::swap(m_image, im);
     m_image = im;
+
+	indigo_error("%s MIMAGE m_raw_data = %p",__FUNCTION__, m_image.m_raw_data);
 
     setPixmap(QPixmap::fromImage(m_image));
 

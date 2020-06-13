@@ -56,7 +56,7 @@ public:
 
 public slots:
     void setText(const QString &txt);
-    void setImage(const preview_image &);
+    void setImage(preview_image &im);
 
     void zoomFit();
     void zoomOriginal();

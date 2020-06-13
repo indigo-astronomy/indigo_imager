@@ -46,6 +46,15 @@ public:
 		m_pix_format(0)
 	{};
 
+	//preview_image(preview_image &&other) = delete;
+	//preview_image(const uchar *data, int width, int height, int bytesPerLine, QImage::Format format, QImageCleanupFunction cleanupFunction = nullptr, void *cleanupInfo = nullptr) = delete;
+	//preview_image(const char *const xpm[]) = delete;
+	//preview_image(uchar *data, int width, int height, int bytesPerLine, QImage::Format format, QImageCleanupFunction cleanupFunction = nullptr, void *cleanupInfo = nullptr)= delete;
+	//preview_image(const uchar *data, int width, int height, QImage::Format format, QImageCleanupFunction cleanupFunction = nullptr, void *cleanupInfo = nullptr)= delete;
+	//preview_image(uchar *data, int width, int height, QImage::Format format, QImageCleanupFunction cleanupFunction = nullptr, void *cleanupInfo = nullptr)= delete;
+	//preview_image(const QSize &size, QImage::Format format)= delete;
+
+
 	preview_image(int width, int height, QImage::Format format):
 		QImage(width, height, format),
 		m_raw_data(nullptr),
@@ -59,7 +68,10 @@ public:
 		m_width = image.m_width;
 		m_height = image.m_height;
 		m_pix_format = image.m_pix_format;
-		if (image.m_raw_data == nullptr) return;
+		if (image.m_raw_data == nullptr) {
+			m_raw_data = nullptr;
+			return;
+		}
 
 		if (m_pix_format == PIX_FMT_Y8) {
 			size = m_width * m_height;
@@ -80,7 +92,11 @@ public:
 		m_width = image.m_width;
 		m_height = image.m_height;
 		m_pix_format = image.m_pix_format;
-		if (image.m_raw_data == nullptr) return *this;
+		if (image.m_raw_data == nullptr) {
+			if (m_raw_data) free(m_raw_data);
+			m_raw_data = nullptr;
+			return *this;
+		}
 
 		if (m_pix_format == PIX_FMT_Y8) {
 			size = m_width * m_height;
@@ -106,8 +122,7 @@ public:
 	};
 
 	int pixel_value(int x, int y, int &r, int &g, int &b) const {
-		if (x < 0 || x >= m_width || y < 0 || y >= m_height) return 0;
-		if (m_pix_format == 0) {
+		if (m_raw_data == nullptr) {
 			QRgb rgb = pixel(x,y);
 			r = qRed(rgb);
 			g = qGreen(rgb);
@@ -115,6 +130,7 @@ public:
 			return PIX_FMT_RGB24;
 		}
 
+		if (x < 0 || x >= m_width || y < 0 || y >= m_height) return 0;
 		if (m_pix_format == PIX_FMT_Y8) {
 			uint8_t* pixels = (uint8_t*) m_raw_data;
 			r = pixels[y * m_width + x];

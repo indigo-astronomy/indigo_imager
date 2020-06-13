@@ -39,6 +39,10 @@ public:
 		m_blobs_enabled = false;
 	}
 
+	~IndigoClient() {
+		stop();
+	}
+
 	void enable_blobs(bool enable) {
 		m_blobs_enabled = enable;
 	};
@@ -48,7 +52,7 @@ public:
 	};
 
 	void start(char *name);
-
+	void stop();
 	Logger* m_logger;
 signals:
 	/* When this signals are issued new copies of the prorpety and message will be passed.

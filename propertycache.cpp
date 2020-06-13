@@ -43,7 +43,6 @@ bool property_cache::_remove(indigo_property *property) {
 			QString k = i.key();
 			if (k.startsWith(key)) {
 				indigo_property *p = i.value();
-				if (property != nullptr) indigo_release_property(p);
 				indigo_debug("property: %s(%s -> %s) == %p\n", __FUNCTION__, key.toUtf8().constData(), k.toUtf8().constData(), p);
 				i = erase(i);
 				ret = true;
@@ -55,7 +54,6 @@ bool property_cache::_remove(indigo_property *property) {
 		if (contains(key)) {
 			indigo_property *p = value(key);
 			indigo_debug("property: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), p);
-			if (p != nullptr) indigo_release_property(p);
 		} else {
 			indigo_debug("property: %s(%s) - not cached\n", __FUNCTION__, key.toUtf8().constData());
 		}
@@ -66,10 +64,11 @@ bool property_cache::_remove(indigo_property *property) {
 
 bool property_cache::create(indigo_property *property) {
 	pthread_mutex_lock(&property_mutex);
-	QString key = create_key(property);
-	_remove(property);
-	indigo_debug("property: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), property);
+	indigo_debug("property: %s() == %p\n", __FUNCTION__, property);
 	if (property != nullptr) {
+		QString key = create_key(property);
+		indigo_debug("property: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), property);
+		_remove(property);
 		insert(key, property);
 		pthread_mutex_unlock(&property_mutex);
 		return true;

@@ -44,21 +44,9 @@ bool client_match_device_property(indigo_property *property, const char *device_
 
 static indigo_result client_define_property(indigo_client *client, indigo_device *device, indigo_property *property, const char *message) {
 	Q_UNUSED(device);
-	//  Deep copy the property so it won't disappear on us later
-	static indigo_property* p = nullptr;
+	if(strncmp(property->device, "Imager Agent",12)) return INDIGO_OK;
+
 	switch (property->type) {
-	case INDIGO_TEXT_VECTOR:
-		p = indigo_init_text_property(nullptr, property->device, property->name, property->group, property->label, property->state, property->perm, property->count);
-		break;
-	case INDIGO_NUMBER_VECTOR:
-		p = indigo_init_number_property(nullptr, property->device, property->name, property->group, property->label, property->state, property->perm, property->count);
-		break;
-	case INDIGO_SWITCH_VECTOR:
-		p = indigo_init_switch_property(nullptr, property->device, property->name, property->group, property->label, property->state, property->perm, property->rule, property->count);
-		break;
-	case INDIGO_LIGHT_VECTOR:
-		p = indigo_init_light_property(nullptr, property->device, property->name, property->group, property->label, property->state, property->count);
-		break;
 	case INDIGO_BLOB_VECTOR:
 		if (device->version < INDIGO_VERSION_2_0)
 			IndigoClient::instance().m_logger->log(property, "BLOB can be used in INDI legacy mode");
@@ -80,18 +68,16 @@ static indigo_result client_define_property(indigo_client *client, indigo_device
 				emit(IndigoClient::instance().remove_preview(property, &property->items[row]));
 			}
 		}
-		p = indigo_init_blob_property(nullptr, property->device, property->name, property->group, property->label, property->state,property->count);
 		break;
 	}
-	memcpy(p, property, sizeof(indigo_property) + property->count * sizeof(indigo_item));
 
 	if (message) {
 		static char *msg;
 		msg = (char*)malloc(INDIGO_VALUE_SIZE);
 		strncpy(msg, message, INDIGO_VALUE_SIZE);
-		emit(IndigoClient::instance().property_defined(p, msg));
+		emit(IndigoClient::instance().property_defined(property, msg));
 	} else {
-		emit(IndigoClient::instance().property_defined(p, NULL));
+		emit(IndigoClient::instance().property_defined(property, NULL));
 	}
 	return INDIGO_OK;
 }
@@ -100,25 +86,14 @@ static indigo_result client_define_property(indigo_client *client, indigo_device
 static indigo_result client_update_property(indigo_client *client, indigo_device *device, indigo_property *property, const char *message) {
 	Q_UNUSED(client);
 	Q_UNUSED(device);
-	static indigo_property* p = nullptr;
+	if(strncmp(property->device, "Imager Agent",12)) return INDIGO_OK;
+
 	switch (property->type) {
-	case INDIGO_TEXT_VECTOR:
-		p = indigo_init_text_property(nullptr, property->device, property->name, property->group, property->label, property->state, property->perm, property->count);
-		break;
-	case INDIGO_NUMBER_VECTOR:
-		p = indigo_init_number_property(nullptr, property->device, property->name, property->group, property->label, property->state, property->perm, property->count);
-		break;
-	case INDIGO_SWITCH_VECTOR:
-		p = indigo_init_switch_property(nullptr, property->device, property->name, property->group, property->label, property->state, property->perm, property->rule, property->count);
-		break;
-	case INDIGO_LIGHT_VECTOR:
-		p = indigo_init_light_property(nullptr, property->device, property->name, property->group, property->label, property->state, property->count);
-		break;
 	case INDIGO_BLOB_VECTOR:
 		if (property->state == INDIGO_OK_STATE) {
 			for (int row = 0; row < property->count; row++) {
 				if (*property->items[row].blob.url && indigo_populate_http_blob_item(&property->items[row])) {
-					indigo_log("Image URL received (%s, %ld bytes)...\n", property->items[0].blob.url, property->items[0].blob.size);
+					indigo_log("Image %s.%s URL received (%s, %ld bytes)...\n", property->device, property->name, property->items[0].blob.url, property->items[0].blob.size);
 				}
 				emit(IndigoClient::instance().create_preview(property, &property->items[row]));
 			}
@@ -131,18 +106,16 @@ static indigo_result client_update_property(indigo_client *client, indigo_device
 				emit(IndigoClient::instance().remove_preview(property, &property->items[row]));
 			}
 		}
-		p = indigo_init_blob_property(nullptr, property->device, property->name, property->group, property->label, property->state,property->count);
 		break;
 	}
 
-	memcpy(p, property, sizeof(indigo_property) + property->count * sizeof(indigo_item));
 	if (message) {
 		static char *msg;
 		msg = (char*)malloc(INDIGO_VALUE_SIZE);
 		strncpy(msg, message, INDIGO_VALUE_SIZE);
-		emit(IndigoClient::instance().property_changed(p, msg));
+		emit(IndigoClient::instance().property_changed(property, msg));
 	} else {
-		emit(IndigoClient::instance().property_changed(p, NULL));
+		emit(IndigoClient::instance().property_changed(property, NULL));
 	}
 	return INDIGO_OK;
 }
@@ -152,6 +125,7 @@ static indigo_result client_delete_property(indigo_client *client, indigo_device
 	Q_UNUSED(client);
 	Q_UNUSED(device);
 	indigo_debug("Deleting property [%s] on device [%s]\n", property->name, property->device);
+	if(strncmp(property->device, "Imager Agent",12)) return INDIGO_OK;
 
 	if (property->type == INDIGO_BLOB_VECTOR) {
 		for (int row = 0; row < property->count; row++) {
@@ -159,18 +133,13 @@ static indigo_result client_delete_property(indigo_client *client, indigo_device
 		}
 	}
 
-	indigo_property* p = new indigo_property;
-	strcpy(p->device, property->device);
-	strcpy(p->group, property->group);
-	strcpy(p->name, property->name);
-
 	if (message) {
 		static char *msg;
 		msg = (char*)malloc(INDIGO_VALUE_SIZE);
 		strncpy(msg, message, INDIGO_VALUE_SIZE);
-		emit(IndigoClient::instance().property_deleted(p, msg));
+		emit(IndigoClient::instance().property_deleted(property, msg));
 	} else {
-		emit(IndigoClient::instance().property_deleted(p, NULL));
+		emit(IndigoClient::instance().property_deleted(property, NULL));
 	}
 	return INDIGO_OK;
 }
@@ -215,4 +184,10 @@ void IndigoClient::start(char *name) {
 	indigo_start();
 	strncpy(client.name, name, INDIGO_NAME_SIZE);
 	indigo_attach_client(&client);
+}
+
+void IndigoClient::stop() {
+	indigo_debug("Shutting down client...\n");
+	indigo_detach_client(&client);
+	indigo_stop();
 }

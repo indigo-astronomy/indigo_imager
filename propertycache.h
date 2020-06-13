@@ -32,8 +32,11 @@ public:
 		while (i != end()) {
 			indigo_property *property = i.value();
 			QString key = i.key();
-			if (property != nullptr) indigo_release_property(property);
-			indigo_debug("property: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), property);
+			if (property != nullptr) {
+				indigo_debug("property: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), property);
+			} else {
+				indigo_debug("property: %s(%s) == EMPTY\n", __FUNCTION__, key.toUtf8().constData());
+			}
 			i = erase(i);
 		}
 	};
