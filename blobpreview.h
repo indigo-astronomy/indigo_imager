@@ -54,8 +54,55 @@ public:
 		m_pix_format(0)
 	{};
 
+	preview_image(preview_image &image): QImage(image) {
+		int size;
+		m_width = image.m_width;
+		m_height = image.m_height;
+		m_pix_format = image.m_pix_format;
+		if (image.m_raw_data == nullptr) return;
+
+		if (m_pix_format == PIX_FMT_Y8) {
+			size = m_width * m_height;
+		} else if (m_pix_format == PIX_FMT_Y16) {
+			size = m_width * m_height * 2;
+		} else if (m_pix_format == PIX_FMT_RGB24) {
+			size = m_width * m_height * 3;
+		} else if (m_pix_format == PIX_FMT_RGB48) {
+			size = m_width * m_height * 6;
+		}
+		m_raw_data = (char*)malloc(size);
+		memcpy(m_raw_data, image.m_raw_data, size);
+	};
+
+	preview_image& operator=(preview_image &image) {
+		QImage::operator=(image);
+		int size;
+		m_width = image.m_width;
+		m_height = image.m_height;
+		m_pix_format = image.m_pix_format;
+		if (image.m_raw_data == nullptr) return *this;
+
+		if (m_pix_format == PIX_FMT_Y8) {
+			size = m_width * m_height;
+		} else if (m_pix_format == PIX_FMT_Y16) {
+			size = m_width * m_height * 2;
+		} else if (m_pix_format == PIX_FMT_RGB24) {
+			size = m_width * m_height * 3;
+		} else if (m_pix_format == PIX_FMT_RGB48) {
+			size = m_width * m_height * 6;
+		}
+
+		if (m_raw_data) free(m_raw_data);
+		m_raw_data = (char*)malloc(size);
+		memcpy(m_raw_data, image.m_raw_data, size);
+		return *this;
+	}
+
 	~preview_image() {
-		//if (m_raw_data != nullptr) free(m_raw_data);
+		if (m_raw_data != nullptr) {
+			free(m_raw_data);
+			m_raw_data = nullptr;
+		}
 	};
 
 	int pixel_value(int x, int y, int &r, int &g, int &b) const {
@@ -115,7 +162,6 @@ public:
 		while (i != end()) {
 			preview_image *preview = i.value();
 			if (preview != nullptr) {
-				if (preview->m_raw_data) free(preview->m_raw_data);
 				delete(preview);
 			}
 			i = erase(i);

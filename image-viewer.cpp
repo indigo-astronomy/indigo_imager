@@ -128,7 +128,7 @@ const preview_image &ImageViewer::image() const {
 }
 
 void ImageViewer::setImage(const preview_image &im) {
-    m_pixmap->setImage(im);
+    m_pixmap->setImage((preview_image&)im);
 
     if (m_fit)
         zoomFit();
@@ -260,12 +260,13 @@ void PixmapItem::setImage(preview_image im) {
     //    m_image.fill(Qt::white);
     //    im = m_image.copy();
     //}
-    std::swap(m_image, im);
+	//std::swap(m_image, im);
+    m_image = im;
 
     setPixmap(QPixmap::fromImage(m_image));
 
-    if (m_image.size() != im.size())
-        emit sizeChanged(m_image.width(), m_image.height());
+    //if (m_image.size() != im.size())
+    //    emit sizeChanged(m_image.width(), m_image.height());
 
     emit imageChanged(m_image);
 }

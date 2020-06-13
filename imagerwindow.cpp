@@ -459,8 +459,11 @@ void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
 	char selected_agent[INDIGO_VALUE_SIZE];
-	if (!get_selected_agent(selected_agent)) return;
-	if (strncmp(property->device, "Imager Agent",12)) return;
+
+	if (!get_selected_agent(selected_agent) || strncmp(property->device, "Imager Agent",12)) {
+		indigo_release_property(property);
+		return;
+	}
 
 	if (client_match_device_property(property, nullptr, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		for (int i = 0; i < property->count; i++) {
@@ -525,8 +528,10 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 
 void ImagerWindow::on_property_change(indigo_property* property, char *message) {
 	char selected_agent[INDIGO_VALUE_SIZE];
-	if (!get_selected_agent(selected_agent)) return;
-	if (strncmp(property->device, "Imager Agent",12)) return;
+	if (!get_selected_agent(selected_agent) || strncmp(property->device, "Imager Agent",12)) {
+		indigo_release_property(property);
+		return;
+	}
 
 	if (client_match_device_property(property, nullptr, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		for (int i = 0; i < property->count; i++) {
@@ -610,8 +615,10 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 
 void ImagerWindow::on_property_delete(indigo_property* property, char *message) {
 	char selected_agent[INDIGO_VALUE_SIZE];
-	if (!get_selected_agent(selected_agent)) return;
-	if (strncmp(property->device, "Imager Agent",12)) return;
+	if (!get_selected_agent(selected_agent) || strncmp(property->device, "Imager Agent",12)) {
+		indigo_release_property(property);
+		return;
+	}
 
 	if (client_match_device_property(property, nullptr, FILTER_CCD_LIST_PROPERTY_NAME) || property->name[0] == '\0') {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);

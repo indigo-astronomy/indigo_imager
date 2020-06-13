@@ -50,7 +50,7 @@ bool blob_preview_cache::_remove(indigo_property *property, indigo_item *item) {
 		preview_image *preview = value(key);
 		indigo_debug("preview: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), preview);
 		if (preview != nullptr) {
-			if (preview->m_raw_data) free(preview->m_raw_data);
+			//if (preview->m_raw_data) free(preview->m_raw_data);
 			delete(preview);
 		}
 	} else {
