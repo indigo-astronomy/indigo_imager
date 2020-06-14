@@ -130,8 +130,7 @@ const preview_image &ImageViewer::image() const {
 void ImageViewer::setImage(preview_image &im) {
     m_pixmap->setImage(im);
 
-    if (m_fit)
-        zoomFit();
+    if (m_fit) zoomFit();
 
     emit imageChanged();
 }

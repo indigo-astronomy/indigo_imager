@@ -390,6 +390,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 	if (client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME)) {
 		preview_cache.create(property, item);
 		free(item->blob.value);
+		item->blob.value = nullptr;
 		preview_image *image = preview_cache.get(property, item);
 		if (image) {
 			indigo_error("m_viewer = %p", m_viewer);
