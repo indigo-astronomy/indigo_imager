@@ -46,8 +46,7 @@ static indigo_result client_define_property(indigo_client *client, indigo_device
 	Q_UNUSED(device);
 	if(strncmp(property->device, "Imager Agent",12)) return INDIGO_OK;
 
-	switch (property->type) {
-	case INDIGO_BLOB_VECTOR:
+	if (property->type == INDIGO_BLOB_VECTOR) {
 		if (device->version < INDIGO_VERSION_2_0)
 			IndigoClient::instance().m_logger->log(property, "BLOB can be used in INDI legacy mode");
 		if (IndigoClient::instance().blobs_enabled()) { // Enagle blob and let adapter decide URL or ALSO
@@ -55,9 +54,12 @@ static indigo_result client_define_property(indigo_client *client, indigo_device
 		}
 		if (property->state == INDIGO_OK_STATE) {
 			for (int row = 0; row < property->count; row++) {
-				if (*property->items[row].blob.url && indigo_populate_http_blob_item(&property->items[row])) {
+				// cache item to pass it with create_preview() signal
+				indigo_item *blob_item = (indigo_item*)malloc(sizeof(indigo_item));
+				memcpy(blob_item, &property->items[row], sizeof(indigo_item));
+				if (*property->items[row].blob.url && indigo_populate_http_blob_item(blob_item)) {
 				}
-				emit(IndigoClient::instance().create_preview(property, &property->items[row]));
+				emit(IndigoClient::instance().create_preview(property, blob_item));
 			}
 		} else if(property->state == INDIGO_BUSY_STATE) {
 			for (int row = 0; row < property->count; row++) {
@@ -68,14 +70,13 @@ static indigo_result client_define_property(indigo_client *client, indigo_device
 				emit(IndigoClient::instance().remove_preview(property, &property->items[row]));
 			}
 		}
-		break;
 	}
 
 	if (message) {
-		static char *msg;
-		msg = (char*)malloc(INDIGO_VALUE_SIZE);
-		strncpy(msg, message, INDIGO_VALUE_SIZE);
-		emit(IndigoClient::instance().property_defined(property, msg));
+		static char *message_copy;
+		message_copy = (char*)malloc(INDIGO_VALUE_SIZE);
+		strncpy(message_copy, message, INDIGO_VALUE_SIZE);
+		emit(IndigoClient::instance().property_defined(property, message_copy));
 	} else {
 		emit(IndigoClient::instance().property_defined(property, NULL));
 	}
@@ -88,14 +89,16 @@ static indigo_result client_update_property(indigo_client *client, indigo_device
 	Q_UNUSED(device);
 	if(strncmp(property->device, "Imager Agent",12)) return INDIGO_OK;
 
-	switch (property->type) {
-	case INDIGO_BLOB_VECTOR:
+	if (property->type == INDIGO_BLOB_VECTOR) {
 		if (property->state == INDIGO_OK_STATE) {
 			for (int row = 0; row < property->count; row++) {
-				if (*property->items[row].blob.url && indigo_populate_http_blob_item(&property->items[row])) {
-					indigo_log("Image %s.%s URL received (%s, %ld bytes)...\n", property->device, property->name, property->items[0].blob.url, property->items[0].blob.size);
+				// cache item to pass it with create_preview() signal
+				indigo_item *blob_item = (indigo_item*)malloc(sizeof(indigo_item));
+				memcpy(blob_item, &property->items[row], sizeof(indigo_item));
+				if (*property->items[row].blob.url && indigo_populate_http_blob_item(blob_item)) {
+					indigo_log("Image %s.%s URL received (%s, %ld bytes)...\n", property->device, property->name, blob_item->blob.url, blob_item->blob.size);
 				}
-				emit(IndigoClient::instance().create_preview(property, &property->items[row]));
+				emit(IndigoClient::instance().create_preview(property, blob_item));
 			}
 		} else if(property->state == INDIGO_BUSY_STATE) {
 			for (int row = 0; row < property->count; row++) {
@@ -106,14 +109,13 @@ static indigo_result client_update_property(indigo_client *client, indigo_device
 				emit(IndigoClient::instance().remove_preview(property, &property->items[row]));
 			}
 		}
-		break;
 	}
 
 	if (message) {
-		static char *msg;
-		msg = (char*)malloc(INDIGO_VALUE_SIZE);
-		strncpy(msg, message, INDIGO_VALUE_SIZE);
-		emit(IndigoClient::instance().property_changed(property, msg));
+		static char *message_copy;
+		message_copy = (char*)malloc(INDIGO_VALUE_SIZE);
+		strncpy(message_copy, message, INDIGO_VALUE_SIZE);
+		emit(IndigoClient::instance().property_changed(property, message_copy));
 	} else {
 		emit(IndigoClient::instance().property_changed(property, NULL));
 	}
@@ -150,15 +152,15 @@ static indigo_result client_send_message(indigo_client *client, indigo_device *d
 
 	if (!message) return INDIGO_OK;
 
-	static char *msg;
-	msg = (char*)malloc(INDIGO_VALUE_SIZE);
+	char *message_copy;
+	message_copy = (char*)malloc(INDIGO_VALUE_SIZE);
 	if ((device) && (device->name[0]) && (device->name[0] != '@')) {
 		// We have device name
-		snprintf(msg, INDIGO_VALUE_SIZE, "%s: %s", device->name, message);
+		snprintf(message_copy, INDIGO_VALUE_SIZE, "%s: %s", device->name, message);
 	} else {
-		snprintf(msg, INDIGO_VALUE_SIZE, "%s", message);
+		snprintf(message_copy, INDIGO_VALUE_SIZE, "%s", message);
 	}
-	emit(IndigoClient::instance().message_sent(NULL, msg));
+	emit(IndigoClient::instance().message_sent(NULL, message_copy));
 	return INDIGO_OK;
 }
 

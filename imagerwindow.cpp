@@ -397,6 +397,9 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 			m_viewer->setText("UNSAVED" + QString(item->blob.format));
 			m_viewer->setImage(*image);
 		}
+		free(item->blob.value);
+		item->blob.value = nullptr;
+		free(item);
 	}
 }
 

@@ -55,18 +55,16 @@ public:
 	void stop();
 	Logger* m_logger;
 signals:
-	/* When this signals are issued new copies of the prorpety and message will be passed.
-	   They need to be freed with free() when not needed.
-	*/
-	void property_defined(indigo_property* property, char *message);
-	void property_changed(indigo_property* property, char *message);
-	void property_deleted(indigo_property* property, char *message);
-	void message_sent(indigo_property* property, char *message);
-
 	/* No copy of the property will be made with this signals.
 	   Do not free().
+	   Only parameters ending with _copy must be freed!
 	*/
-	void create_preview(indigo_property* property, indigo_item *item);
+	void property_defined(indigo_property* property, char *message_copy);
+	void property_changed(indigo_property* property, char *message_copy);
+	void property_deleted(indigo_property* property, char *message_copy);
+	void message_sent(indigo_property* property, char *message_copy);
+
+	void create_preview(indigo_property* property, indigo_item *blob_item_copy);
 	void obsolete_preview(indigo_property* property, indigo_item *item);
 	void remove_preview(indigo_property* property, indigo_item *item);
 };
