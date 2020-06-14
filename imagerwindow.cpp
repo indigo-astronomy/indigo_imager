@@ -357,6 +357,7 @@ ImagerWindow::~ImagerWindow () {
 	delete mIndigoServers;
 	delete mServiceModel;
 	delete m_viewer;
+	//indigo_usleep(2*ONE_SECOND_DELAY);
 	IndigoClient::instance().stop();
 }
 

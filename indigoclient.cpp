@@ -58,6 +58,7 @@ static indigo_result client_define_property(indigo_client *client, indigo_device
 				indigo_item *blob_item = (indigo_item*)malloc(sizeof(indigo_item));
 				memcpy(blob_item, &property->items[row], sizeof(indigo_item));
 				if (*property->items[row].blob.url && indigo_populate_http_blob_item(blob_item)) {
+					property->items[row].blob.value = nullptr;
 				}
 				emit(IndigoClient::instance().create_preview(property, blob_item));
 			}
@@ -96,6 +97,7 @@ static indigo_result client_update_property(indigo_client *client, indigo_device
 				indigo_item *blob_item = (indigo_item*)malloc(sizeof(indigo_item));
 				memcpy(blob_item, &property->items[row], sizeof(indigo_item));
 				if (*property->items[row].blob.url && indigo_populate_http_blob_item(blob_item)) {
+					property->items[row].blob.value = nullptr;
 					indigo_log("Image %s.%s URL received (%s, %ld bytes)...\n", property->device, property->name, blob_item->blob.url, blob_item->blob.size);
 				}
 				emit(IndigoClient::instance().create_preview(property, blob_item));
