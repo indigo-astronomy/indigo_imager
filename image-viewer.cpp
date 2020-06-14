@@ -205,6 +205,7 @@ void ImageViewer::zoomOut(int level) {
 }
 
 void ImageViewer::mouseAt(int x, int y) {
+	indigo_log("COORDS: %d %d" ,x,y);
 	if (m_pixmap->image().valid(x,y)) {
 		int r,g,b;
 		qreal scale = std::pow(2.0, m_zoom_level / 10.0) * 100;
@@ -237,6 +238,7 @@ void ImageViewer::leaveEvent(QEvent *event) {
         if (m_fit)
             zoomFit();
     }
+	emit mouseAt(-1, -1);
 }
 
 void ImageViewer::resizeEvent(QResizeEvent *event) {
