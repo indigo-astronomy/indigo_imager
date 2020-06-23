@@ -414,22 +414,34 @@ ImagerWindow::~ImagerWindow () {
 
 void ImagerWindow::on_start(bool clicked) {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
-	static double exposure_time;
-	static double frame_count;
 	static char selected_agent[INDIGO_NAME_SIZE];
-	exposure_time = m_exposure_time->value();
-	frame_count = (double)m_frame_count->value();
+
 	get_selected_agent(selected_agent);
-	static const char *items[] = { AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME, AGENT_IMAGER_BATCH_COUNT_ITEM_NAME };
-	static double values[2];
-	values[0] = exposure_time;
-	values[1] = frame_count;
-	indigo_change_number_property(nullptr, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME, 2, items, values);
+	static const char *batch_items[] = {
+		AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME,
+		AGENT_IMAGER_BATCH_COUNT_ITEM_NAME
+	};
+	static double batch_values[2];
+	batch_values[0] = (double)m_exposure_time->value();
+	batch_values[1] = (double)m_frame_count->value();
+	indigo_change_number_property(nullptr, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME, 2, batch_items, batch_values);
 
+	static const char *frame_items[] = {
+		CCD_FRAME_LEFT_ITEM_NAME,
+		CCD_FRAME_TOP_ITEM_NAME,
+		CCD_FRAME_WIDTH_ITEM_NAME,
+		CCD_FRAME_HEIGHT_ITEM_NAME
+	};
+	static double frame_values[4];
+	frame_values[0] = (double)m_roi_x->value();
+	frame_values[1] = (double)m_roi_y->value();
+	frame_values[2] = (double)m_roi_w->value();
+	frame_values[3] = (double)m_roi_h->value();
+	indigo_change_number_property(nullptr, selected_agent, CCD_FRAME_PROPERTY_NAME, 4, frame_items, frame_values);
 
-	static const char * items2[] = { AGENT_IMAGER_START_EXPOSURE_ITEM_NAME };
-	static bool values2[] = { true };
-	indigo_change_switch_property(nullptr, selected_agent, AGENT_START_PROCESS_PROPERTY_NAME, 1, items2, values2);
+	static const char *exposure_items[] = { AGENT_IMAGER_START_EXPOSURE_ITEM_NAME };
+	static bool exposure_values[] = { true };
+	indigo_change_switch_property(nullptr, selected_agent, AGENT_START_PROCESS_PROPERTY_NAME, 1, exposure_items, exposure_values);
 }
 
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){
