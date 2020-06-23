@@ -61,7 +61,9 @@ signals:
 	*/
 	void property_defined(indigo_property* property, char *message_copy);
 	void property_changed(indigo_property* property, char *message_copy);
-	void property_deleted(indigo_property* property, char *message_copy);
+	void property_deleted(indigo_property* property_copy, char *message_copy);
+
+	/* property is always NULL */
 	void message_sent(indigo_property* property, char *message_copy);
 
 	void create_preview(indigo_property* property, indigo_item *blob_item_copy);

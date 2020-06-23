@@ -137,13 +137,17 @@ static indigo_result client_delete_property(indigo_client *client, indigo_device
 		}
 	}
 
+	indigo_property *property_copy = (indigo_property*)malloc(sizeof(indigo_property));
+	memcpy(property_copy, property, sizeof(indigo_property));
+	property_copy->count = 0;
+
 	if (message) {
 		static char *msg;
 		msg = (char*)malloc(INDIGO_VALUE_SIZE);
 		strncpy(msg, message, INDIGO_VALUE_SIZE);
-		emit(IndigoClient::instance().property_deleted(property, msg));
+		emit(IndigoClient::instance().property_deleted(property_copy, msg));
 	} else {
-		emit(IndigoClient::instance().property_deleted(property, NULL));
+		emit(IndigoClient::instance().property_deleted(property_copy, NULL));
 	}
 	return INDIGO_OK;
 }

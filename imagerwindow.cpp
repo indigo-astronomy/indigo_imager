@@ -222,60 +222,111 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	int row = 0;
 	// camera selection
 	m_camera_select = new QComboBox();
-	camera_frame_layout->addWidget(m_camera_select, row, 0, 1, 2);
+	camera_frame_layout->addWidget(m_camera_select, row, 0, 1, 4);
 
 	// frame type
 	row++;
 	QLabel *label = new QLabel("Frame type:");
 	camera_frame_layout->addWidget(label, row, 0);
 	m_frame_type_select = new QComboBox();
-	camera_frame_layout->addWidget(m_frame_type_select, row, 1);
+	camera_frame_layout->addWidget(m_frame_type_select, row, 1, 1, 3);
 
 	// frame size
 	row++;
 	label = new QLabel("Frame size:");
 	camera_frame_layout->addWidget(label, row, 0);
 	m_frame_size_select = new QComboBox();
-	camera_frame_layout->addWidget(m_frame_size_select, row, 1);
+	camera_frame_layout->addWidget(m_frame_size_select, row, 1, 1, 3);
+
+	// ROI
+	row++;
+	label = new QLabel("ROI X:");
+	camera_frame_layout->addWidget(label, row, 0);
+	m_roi_x = new QSpinBox();
+	m_roi_x->setMaximum(100000);
+	m_roi_x->setMinimum(0);
+	m_roi_x->setValue(0);
+	m_roi_x->setEnabled(false);
+	camera_frame_layout->addWidget(m_roi_x , row, 1);
+
+	label = new QLabel("W:");
+	camera_frame_layout->addWidget(label, row, 2);
+	m_roi_w = new QSpinBox();
+	m_roi_w->setMaximum(100000);
+	m_roi_w->setMinimum(0);
+	m_roi_w->setValue(0);
+	m_roi_w->setEnabled(false);
+	camera_frame_layout->addWidget(m_roi_w, row, 3);
+
+	// ROI
+	row++;
+	label = new QLabel("ROI Y:");
+	camera_frame_layout->addWidget(label, row, 0);
+	m_roi_y = new QSpinBox();
+	m_roi_y->setMaximum(100000);
+	m_roi_y->setMinimum(0);
+	m_roi_y->setValue(0);
+	m_roi_y->setEnabled(false);
+	camera_frame_layout->addWidget(m_roi_y , row, 1);
+
+	label = new QLabel("H:");
+	camera_frame_layout->addWidget(label, row, 2);
+	m_roi_h = new QSpinBox();
+	m_roi_h->setMaximum(100000);
+	m_roi_h->setMinimum(0);
+	m_roi_h->setValue(0);
+	m_roi_h->setEnabled(false);
+	camera_frame_layout->addWidget(m_roi_h, row, 3);
 
 	// Exposure time
 	row++;
 	label = new QLabel("Exposure time (s):");
 	camera_frame_layout->addWidget(label, row, 0);
 	m_exposure_time = new QDoubleSpinBox();
-	camera_frame_layout->addWidget(m_exposure_time, row, 1);
+	m_exposure_time->setMaximum(10000);
+	camera_frame_layout->addWidget(m_exposure_time, row, 1, 1, 3);
 
 	// Frame count
 	row++;
 	label = new QLabel("Number of frames:");
 	camera_frame_layout->addWidget(label, row, 0);
 	m_frame_count = new QSpinBox();
-	camera_frame_layout->addWidget(m_frame_count, row, 1);
+	m_frame_count->setMaximum(100000);
+	m_frame_count->setMinimum(-1);
+	m_frame_count->setValue(1);
+	camera_frame_layout->addWidget(m_frame_count, row, 1, 1, 3);
 
 	// Frame prefix
 	row++;
 	label = new QLabel("Frame prefix:");
 	camera_frame_layout->addWidget(label, row, 0);
 	QLineEdit *edit = new QLineEdit();
-	camera_frame_layout->addWidget(edit, row, 1);
-
+	camera_frame_layout->addWidget(edit, row, 1, 1, 3);
 
 	// Frame prefix
 	row++;
-	QPushButton *Start = new QPushButton("Start");
-	camera_frame_layout->addWidget(Start, row, 1);
-	connect(Start, &QPushButton::clicked, this, &ImagerWindow::on_start);
+	QPushButton *button = new QPushButton("Pause");
+	camera_frame_layout->addWidget(button, row, 0);
+	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_start);
+
+	button = new QPushButton("Stop");
+	camera_frame_layout->addWidget(button, row, 1);
+	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_start);
+
+	button = new QPushButton("Start");
+	camera_frame_layout->addWidget(button, row, 2, 1, 2);
+	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_start);
 
 	row++;
 	m_exposure_progress = new QProgressBar();
-	camera_frame_layout->addWidget(m_exposure_progress, row, 0, 1, 2);
+	camera_frame_layout->addWidget(m_exposure_progress, row, 0, 1, 4);
 	m_exposure_progress->setFormat("Exposure: Idle");
 	m_exposure_progress->setMaximum(1);
 	m_exposure_progress->setValue(0);
 
 	row++;
 	m_process_progress = new QProgressBar();
-	camera_frame_layout->addWidget(m_process_progress, row, 0, 1, 2);
+	camera_frame_layout->addWidget(m_process_progress, row, 0, 1, 4);
 	m_process_progress->setMaximum(1);
 	m_process_progress->setValue(0);
 	m_process_progress->setFormat("Process: Idle");
@@ -526,12 +577,32 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 			}
 		}
 	}
+	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME)) {
+		indigo_debug("Set %s", property->name);
+		for (int i = 0; i < property->count; i++) {
+			indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
+			if (!strcmp(property->items[i].name, CCD_FRAME_LEFT_ITEM_NAME)) {
+				m_roi_x->setValue((int)property->items[i].number.value);
+				m_roi_x->setEnabled(true);
+			} else if (!strcmp(property->items[i].name, CCD_FRAME_TOP_ITEM_NAME)) {
+				m_roi_y->setValue((int)property->items[i].number.value);
+				m_roi_y->setEnabled(true);
+			} else if (!strcmp(property->items[i].name, CCD_FRAME_WIDTH_ITEM_NAME)) {
+				m_roi_w->setValue((int)property->items[i].number.value);
+				m_roi_w->setEnabled(true);
+			} else if (!strcmp(property->items[i].name, CCD_FRAME_HEIGHT_ITEM_NAME)) {
+				m_roi_h->setValue((int)property->items[i].number.value);
+				m_roi_h->setEnabled(true);
+			}
+
+		}
+	}
 	properties.create(property);
 }
 
 void ImagerWindow::on_property_change(indigo_property* property, char *message) {
 	char selected_agent[INDIGO_VALUE_SIZE];
-	if (!get_selected_agent(selected_agent) || strncmp(property->device, "Imager Agent",12)) {
+	if (!get_selected_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) {
 		return;
 	}
 
@@ -611,15 +682,34 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			m_process_progress->setFormat("Process: Failed");
 		}
 	}
+	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME)) {
+		indigo_debug("Change %s", property->name);
+		for (int i = 0; i < property->count; i++) {
+			indigo_debug("Change %s = %f", property->items[i].name, property->items[i].number.value);
+			if (!strcmp(property->items[i].name, CCD_FRAME_LEFT_ITEM_NAME)) {
+				m_roi_x->setValue((int)property->items[i].number.value);
+			} else if (!strcmp(property->items[i].name, CCD_FRAME_TOP_ITEM_NAME)) {
+				m_roi_y->setValue((int)property->items[i].number.value);
+			} else if (!strcmp(property->items[i].name, CCD_FRAME_WIDTH_ITEM_NAME)) {
+				m_roi_w->setValue((int)property->items[i].number.value);
+			} else if (!strcmp(property->items[i].name, CCD_FRAME_HEIGHT_ITEM_NAME)) {
+				m_roi_h->setValue((int)property->items[i].number.value);
+			}
+
+		}
+	}
 	properties.create(property);
 }
 
 
 void ImagerWindow::on_property_delete(indigo_property* property, char *message) {
 	char selected_agent[INDIGO_VALUE_SIZE];
-	if (!get_selected_agent(selected_agent) || strncmp(property->device, "Imager Agent",12)) {
+	indigo_debug("[REMOVE REMOVE REMOVE REMOVE REMOVE] %s.%s\n", property->device, property->name);
+	if (!get_selected_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) {
+		free(property);
 		return;
 	}
+	indigo_debug("[REMOVE REMOVE REMOVE REMOVE] %s.%s\n", property->device, property->name);
 
 	if (client_match_device_property(property, nullptr, FILTER_CCD_LIST_PROPERTY_NAME) || property->name[0] == '\0') {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
@@ -666,7 +756,19 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 			}
 		}
 	}
+	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME) || property->name[0] == '\0') {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		m_roi_x->setValue(0);
+		m_roi_x->setEnabled(false);
+		m_roi_y->setValue(0);
+		m_roi_y->setEnabled(false);
+		m_roi_w->setValue(0);
+		m_roi_w->setEnabled(false);
+		m_roi_h->setValue(0);
+		m_roi_h->setEnabled(false);
+	}
 	properties.remove(property);
+	free(property);
 }
 
 
@@ -845,7 +947,7 @@ void ImagerWindow::on_log_trace() {
 void ImagerWindow::on_about_act() {
 	QMessageBox msgBox(this);
 	QPixmap pixmap(":resource/indigo_logo.png");
-	msgBox.setWindowTitle("About INDIGO Imager");
+	msgBox.setWindowTitle("About Ain Imager");
 	msgBox.setTextFormat(Qt::RichText);
 	msgBox.setIconPixmap(pixmap.scaledToWidth(96, Qt::SmoothTransformation));
 	msgBox.setText(

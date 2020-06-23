@@ -94,6 +94,8 @@ private:
 	QComboBox *m_camera_select;
 	QComboBox *m_frame_type_select;
 	QComboBox *m_frame_size_select;
+	QSpinBox  *m_roi_x, *m_roi_w;
+	QSpinBox  *m_roi_y, *m_roi_h;
 	QDoubleSpinBox *m_exposure_time;
 	QSpinBox *m_frame_count;
 	QSpinBox *m_frame_delay;
