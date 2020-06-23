@@ -307,11 +307,11 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	row++;
 	QPushButton *button = new QPushButton("Pause");
 	camera_frame_layout->addWidget(button, row, 0);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_start);
+	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_pause);
 
 	button = new QPushButton("Stop");
 	camera_frame_layout->addWidget(button, row, 1);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_start);
+	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
 
 	button = new QPushButton("Start");
 	camera_frame_layout->addWidget(button, row, 2, 1, 2);
@@ -442,6 +442,28 @@ void ImagerWindow::on_start(bool clicked) {
 	static const char *exposure_items[] = { AGENT_IMAGER_START_EXPOSURE_ITEM_NAME };
 	static bool exposure_values[] = { true };
 	indigo_change_switch_property(nullptr, selected_agent, AGENT_START_PROCESS_PROPERTY_NAME, 1, exposure_items, exposure_values);
+}
+
+void ImagerWindow::on_abort(bool clicked) {
+	indigo_debug("CALLED: %s\n", __FUNCTION__);
+	static char selected_agent[INDIGO_NAME_SIZE];
+	get_selected_agent(selected_agent);
+
+	static const char *exposure_items[] = { AGENT_ABORT_PROCESS_ITEM_NAME };
+	static bool exposure_values[] = { true };
+	indigo_change_switch_property(nullptr, selected_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME, 1, exposure_items, exposure_values);
+}
+
+void ImagerWindow::on_pause(bool clicked) {
+	indigo_debug("CALLED: %s\n", __FUNCTION__);
+	/*
+	static char selected_agent[INDIGO_NAME_SIZE];
+	get_selected_agent(selected_agent);
+
+	static const char *exposure_items[] = { AGENT_PAUSE_PROCESS_ITEM_NAME };
+	static bool exposure_values[] = { true };
+	indigo_change_switch_property(nullptr, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME, 1, exposure_items, exposure_values);
+	*/
 }
 
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){
