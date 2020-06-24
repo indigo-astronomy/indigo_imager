@@ -305,11 +305,11 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	// Frame prefix
 	row++;
-	QPushButton *button = new QPushButton("Pause");
-	camera_frame_layout->addWidget(button, row, 0);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_pause);
+	m_pause_button = new QPushButton("Pause");
+	camera_frame_layout->addWidget(m_pause_button, row, 0);
+	connect(m_pause_button, &QPushButton::clicked, this, &ImagerWindow::on_pause);
 
-	button = new QPushButton("Stop");
+	QPushButton *button = new QPushButton("Stop");
 	camera_frame_layout->addWidget(button, row, 1);
 	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
 
@@ -456,14 +456,19 @@ void ImagerWindow::on_abort(bool clicked) {
 
 void ImagerWindow::on_pause(bool clicked) {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
-	/*
+
+	//QPushButton *button = (QPushButton *)sender();
+	//button->setText("Continue");
+
 	static char selected_agent[INDIGO_NAME_SIZE];
 	get_selected_agent(selected_agent);
+
+	indigo_property *p = properties.get(selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME);
+	if (p == nullptr || p->count != 1) return;
 
 	static const char *exposure_items[] = { AGENT_PAUSE_PROCESS_ITEM_NAME };
 	static bool exposure_values[] = { true };
 	indigo_change_switch_property(nullptr, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME, 1, exposure_items, exposure_values);
-	*/
 }
 
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){
@@ -628,7 +633,19 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 				m_roi_h->setValue((int)property->items[i].number.value);
 				m_roi_h->setEnabled(true);
 			}
-
+		}
+	}
+	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
+		indigo_debug("Set %s", property->name);
+		for (int i = 0; i < property->count; i++) {
+			indigo_debug("Set %s = %f", property->items[i].name, property->items[i].sw.value);
+			if (!strcmp(property->items[i].name, AGENT_PAUSE_PROCESS_ITEM_NAME)) {
+				if(property->state == INDIGO_BUSY_STATE) {
+					m_pause_button->setText("Resume");
+				} else {
+					m_pause_button->setText("Pause");
+				}
+			}
 		}
 	}
 	properties.create(property);
@@ -730,6 +747,19 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 				m_roi_h->setValue((int)property->items[i].number.value);
 			}
 
+		}
+	}
+	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
+		indigo_debug("change %s", property->name);
+		for (int i = 0; i < property->count; i++) {
+			indigo_debug("change %s = %f", property->items[i].name, property->items[i].sw.value);
+			if (!strcmp(property->items[i].name, AGENT_PAUSE_PROCESS_ITEM_NAME)) {
+				if(property->state == INDIGO_BUSY_STATE) {
+					m_pause_button->setText("Resume");
+				} else {
+					m_pause_button->setText("Pause");
+				}
+			}
 		}
 	}
 	properties.create(property);

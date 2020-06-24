@@ -28,6 +28,7 @@
 
 class QPlainTextEdit;
 class QFrame;
+class QPushButton;
 class QServiceModel;
 class QItemSelection;
 class QVBoxLayout;
@@ -101,6 +102,7 @@ private:
 	QDoubleSpinBox *m_exposure_time;
 	QSpinBox *m_frame_count;
 	QSpinBox *m_frame_delay;
+	QPushButton *m_pause_button;
 
 	QProgressBar *m_exposure_progress;
 	QProgressBar *m_process_progress;
