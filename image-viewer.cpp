@@ -128,11 +128,12 @@ const preview_image &ImageViewer::image() const {
 }
 
 void ImageViewer::setImage(preview_image &im) {
-    m_pixmap->setImage(im);
+	m_pixmap->setImage(im);
+	m_view->scene()->setSceneRect(0, 0, im.width(), im.height());
 
-    if (m_fit) zoomFit();
+	if (m_fit) zoomFit();
 
-    emit imageChanged();
+	emit imageChanged();
 }
 
 const PixmapItem *ImageViewer::pixmapItem() const {
