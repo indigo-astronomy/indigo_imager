@@ -28,6 +28,7 @@
 #include <QPixmap>
 #include <QPlainTextEdit>
 #include <QPushButton>
+#include <QToolButton>
 #include <QScrollArea>
 #include <QComboBox>
 #include <QDoubleSpinBox>
@@ -303,18 +304,37 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	QLineEdit *edit = new QLineEdit();
 	camera_frame_layout->addWidget(edit, row, 1, 1, 3);
 
-	// Frame prefix
+	// Buttons
 	row++;
+	QWidget *toolbar = new QWidget;
+	QHBoxLayout *toolbox = new QHBoxLayout(toolbar);
+	toolbar->setContentsMargins(1,1,1,1);
+	toolbox->setContentsMargins(1,1,1,1);
+	camera_frame_layout->addWidget(toolbar, row, 0, 1, 4);
+
+
 	m_pause_button = new QPushButton("Pause");
-	camera_frame_layout->addWidget(m_pause_button, row, 0);
+	toolbox->addWidget(m_pause_button);
+	m_pause_button->setStyleSheet("min-width: 30px");
+	m_pause_button->setIcon(QIcon(":resource/pause.png"));
 	connect(m_pause_button, &QPushButton::clicked, this, &ImagerWindow::on_pause);
 
-	QPushButton *button = new QPushButton("Stop");
-	camera_frame_layout->addWidget(button, row, 1);
+	QPushButton *button = new QPushButton("Abort");
+	button->setStyleSheet("min-width: 30px");
+	button->setIcon(QIcon(":resource/stop.png"));
+	toolbox->addWidget(button);
 	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
 
 	button = new QPushButton("Start");
-	camera_frame_layout->addWidget(button, row, 2, 1, 2);
+	button->setStyleSheet("min-width: 30px");
+	button->setIcon(QIcon(":resource/record.png"));
+	toolbox->addWidget(button);
+	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_start);
+
+	button = new QPushButton("Preview");
+	button->setStyleSheet("min-width: 30px");
+	button->setIcon(QIcon(":resource/play.png"));
+	toolbox->addWidget(button);
 	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_start);
 
 	row++;

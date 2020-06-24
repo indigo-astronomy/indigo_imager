@@ -46,39 +46,10 @@ RESOURCES += \
 	resource/led-red-cb.png \
 	resource/led-green-cb.png \
 	resource/led-orange-cb.png \
-	resource/led-grey-dev.png \
-	resource/led-green-dev.png \
-	resource/server.png \
-	resource/ccd-grey.png \
-	resource/ccd-green.png \
-	resource/mount-grey.png \
-	resource/mount-green.png \
-	resource/wheel-grey.png \
-	resource/wheel-green.png \
-	resource/ao-grey.png \
-	resource/ao-green.png \
-	resource/focuser-grey.png \
-	resource/focuser-green.png \
-	resource/gps-grey.png \
-	resource/gps-green.png \
-	resource/guider-grey.png \
-	resource/guider-green.png \
-	resource/dome-grey.png \
-	resource/dome-green.png \
-	resource/weather-grey.png \
-	resource/weather-green.png \
-	resource/powerbox-grey.png \
-	resource/powerbox-green.png \
-	resource/flatbox-grey.png \
-	resource/flatbox-green.png \
-	resource/joystick-grey.png \
-	resource/joystick-green.png \
-	resource/shutter-grey.png \
-	resource/shutter-green.png \
-	resource/sqm-grey.png \
-	resource/sqm-green.png \
-	resource/dustcap-grey.png \
-	resource/dustcap-green.png
+	resource/stop.png \
+	resource/play.png \
+	resource/pause.png \
+	resource/record.png
 
 
 # Additional import path used to resolve QML modules in Qt Creator\'s code model
