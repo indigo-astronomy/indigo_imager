@@ -262,21 +262,18 @@ PixmapItem::PixmapItem(QGraphicsItem *parent) :
 }
 
 void PixmapItem::setImage(preview_image im) {
-    //if (im.isNull()) {
-    //    m_image.fill(Qt::white);
-    //    im = m_image.copy();
-    //}
-	//std::swap(m_image, im);
-    m_image = im;
+	if (im.isNull()) return;
 
+	auto image_size = m_image.size();
+	m_image = im;
 	indigo_error("%s MIMAGE m_raw_data = %p",__FUNCTION__, m_image.m_raw_data);
 
-    setPixmap(QPixmap::fromImage(m_image));
+	setPixmap(QPixmap::fromImage(m_image));
 
-    //if (m_image.size() != im.size())
-    //    emit sizeChanged(m_image.width(), m_image.height());
+	if (image_size != m_image.size())
+		emit sizeChanged(m_image.width(), m_image.height());
 
-    emit imageChanged(m_image);
+	emit imageChanged(m_image);
 }
 
 void PixmapItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
