@@ -100,6 +100,7 @@ private:
 	QSpinBox  *m_roi_x, *m_roi_w;
 	QSpinBox  *m_roi_y, *m_roi_h;
 	QDoubleSpinBox *m_exposure_time;
+	QDoubleSpinBox *m_exposure_delay;
 	QSpinBox *m_frame_count;
 	QSpinBox *m_frame_delay;
 	QPushButton *m_pause_button;

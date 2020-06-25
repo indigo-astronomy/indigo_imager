@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Rumen G.Bogdanovski & David Hulse
+// Copyright (c) 2020 Rumen G.Bogdanovski & David Hulse
 // All rights reserved.
 //
 // You can use this software under the terms of 'INDIGO Astronomy
@@ -285,7 +285,18 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	camera_frame_layout->addWidget(label, row, 0);
 	m_exposure_time = new QDoubleSpinBox();
 	m_exposure_time->setMaximum(10000);
-	camera_frame_layout->addWidget(m_exposure_time, row, 1, 1, 3);
+	m_exposure_time->setMinimum(0);
+	m_exposure_time->setValue(1);
+	camera_frame_layout->addWidget(m_exposure_time, row, 1);
+
+	label = new QLabel(QChar(0x0394)+QString("t:"));
+	camera_frame_layout->addWidget(label, row, 2);
+	m_exposure_delay = new QDoubleSpinBox();
+	m_exposure_delay->setMaximum(10000);
+	m_exposure_delay->setMinimum(0);
+	m_exposure_delay->setValue(0);
+	//m_exposure_delay->setEnabled(false);
+	camera_frame_layout->addWidget(m_exposure_delay, row, 3);
 
 	// Frame count
 	row++;
@@ -439,12 +450,14 @@ void ImagerWindow::on_start(bool clicked) {
 	get_selected_agent(selected_agent);
 	static const char *batch_items[] = {
 		AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME,
+		AGENT_IMAGER_BATCH_DELAY_ITEM_NAME,
 		AGENT_IMAGER_BATCH_COUNT_ITEM_NAME
 	};
-	static double batch_values[2];
+	static double batch_values[3];
 	batch_values[0] = (double)m_exposure_time->value();
-	batch_values[1] = (double)m_frame_count->value();
-	indigo_change_number_property(nullptr, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME, 2, batch_items, batch_values);
+	batch_values[1] = (double)m_exposure_delay->value();
+	batch_values[2] = (double)m_frame_count->value();
+	indigo_change_number_property(nullptr, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME, 3, batch_items, batch_values);
 
 	static const char *frame_items[] = {
 		CCD_FRAME_LEFT_ITEM_NAME,
@@ -631,6 +644,8 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 			indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
 			if (!strcmp(property->items[i].name, AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME)) {
 				m_exposure_time->setValue(property->items[i].number.value);
+			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_BATCH_DELAY_ITEM_NAME)) {
+				m_exposure_delay->setValue((int)property->items[i].number.value);
 			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_BATCH_COUNT_ITEM_NAME)) {
 				m_frame_count->setValue((int)property->items[i].number.value);
 			}
@@ -713,6 +728,8 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		for (int i = 0; i < property->count; i++) {
 			if (!strcmp(property->items[i].name, AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME)) {
 				m_exposure_time->setValue(property->items[i].number.value);
+			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_BATCH_DELAY_ITEM_NAME)) {
+				m_exposure_delay->setValue(property->items[i].number.value);
 			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_BATCH_COUNT_ITEM_NAME)) {
 				m_frame_count->setValue((int)property->items[i].number.value);
 			}
