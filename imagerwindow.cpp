@@ -35,7 +35,12 @@
 #include <QMessageBox>
 #include <QActionGroup>
 #include <QLineEdit>
+#include <QStandardPaths>
+#include <QDir>
+#include <fcntl.h>
+#include <unistd.h>
 #include <sys/time.h>
+
 #include "imagerwindow.h"
 #include "qservicemodel.h"
 #include "indigoclient.h"
@@ -312,10 +317,10 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	// Frame prefix
 	row++;
-	label = new QLabel("Frame prefix:");
+	label = new QLabel("Object:");
 	camera_frame_layout->addWidget(label, row, 0);
-	QLineEdit *edit = new QLineEdit();
-	camera_frame_layout->addWidget(edit, row, 1, 1, 3);
+	m_object_name = new QLineEdit();
+	camera_frame_layout->addWidget(m_object_name, row, 1, 1, 3);
 
 	// Buttons
 	row++;
@@ -543,9 +548,10 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		preview_image *image = preview_cache.get(property, item);
 		if (image) {
 			indigo_error("m_viewer = %p", m_viewer);
-			m_viewer->setText("UNSAVED" + QString(item->blob.format));
+			m_viewer->setText("unsaved" + QString(item->blob.format));
 			m_viewer->setImage(*image);
 		}
+		if (!m_preview) save_blob_item(item);
 		free(item->blob.value);
 		item->blob.value = nullptr;
 		free(item);
@@ -977,6 +983,69 @@ void ImagerWindow::on_frame_type_selected(int index) {
 }
 
 
+void ImagerWindow::save_blob_item(indigo_item *item) {
+	if (item->blob.value != NULL) {
+		char file_name[PATH_LEN];
+		char message[PATH_LEN+100];
+		char location[PATH_LEN];
+
+		if (m_object_name->text().trimmed() == "") {
+			snprintf(message, sizeof(message), "Image not saved, provide object name");
+			on_window_log(NULL, message);
+			return;
+		}
+
+		if (QStandardPaths::displayName(QStandardPaths::PicturesLocation).length() > 0) {
+			QString qlocation = QDir::toNativeSeparators(QDir::homePath() + tr("/") + QStandardPaths::displayName(QStandardPaths::PicturesLocation));
+			strncpy(location, qlocation.toUtf8().constData(), PATH_LEN);
+		} else {
+			if (!getcwd(location, sizeof(location))) {
+				location[0] = '\0';
+			}
+		}
+
+		if (save_blob_item_with_prefix(item, location, file_name)) {
+			m_viewer->setText(file_name);
+			snprintf(message, sizeof(message), "Image saved to '%s'", file_name);
+			on_window_log(NULL, message);
+		} else {
+			snprintf(message, sizeof(message), "Can not save '%s'", file_name);
+			on_window_log(NULL, message);
+		}
+	}
+}
+
+/* C++ looks for method close - maybe name collision so... */
+void close_fd(int fd) {
+	close(fd);
+}
+
+bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *prefix, char *file_name) {
+	int fd;
+	int file_no = 0;
+
+	QString object_name = m_object_name->text().trimmed();
+
+	do {
+
+#if defined(INDIGO_WINDOWS)
+		sprintf(file_name, "%s\\%s_%03d%s", prefix, object_name.toUtf8().constData(), file_no++, item->blob.format);
+		fd = open(file_name, O_CREAT | O_WRONLY | O_EXCL | O_BINARY, 0);
+#else
+		sprintf(file_name, "%s/%s_%03d%s", prefix, object_name.toUtf8().constData(), file_no++, item->blob.format);
+		fd = open(file_name, O_CREAT | O_WRONLY | O_EXCL, S_IRUSR | S_IWUSR);
+#endif
+	} while ((fd < 0) && (errno == EEXIST));
+
+	if (fd < 0) {
+		return false;
+	} else {
+		write(fd, item->blob.value, item->blob.size);
+		close_fd(fd);
+	}
+	return true;
+}
+
 void ImagerWindow::clear_window() {
 	indigo_debug("CLEAR_WINDOW!\n");
 	delete mScrollArea;
@@ -1003,7 +1072,7 @@ void ImagerWindow::on_blobs_changed(bool status) {
 	conf.blobs_enabled = status;
 	IndigoClient::instance().enable_blobs(status);
 	emit(enable_blobs(status));
-	if(status) on_window_log(NULL, "BLOBs enabled");
+	if (status) on_window_log(NULL, "BLOBs enabled");
 	else on_window_log(NULL, "BLOBs disabled");
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);

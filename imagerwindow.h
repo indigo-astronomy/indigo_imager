@@ -105,6 +105,8 @@ private:
 	QDoubleSpinBox *m_exposure_delay;
 	QSpinBox *m_frame_count;
 	QSpinBox *m_frame_delay;
+
+	QLineEdit *m_object_name;
 	QPushButton *m_pause_button;
 
 	QProgressBar *m_exposure_progress;
@@ -116,6 +118,8 @@ private:
 	QIndigoServers *mIndigoServers;
 	QServiceModel *mServiceModel;
 
+	bool save_blob_item_with_prefix(indigo_item *item, const char *prefix, char *file_name);
+	void save_blob_item(indigo_item *item);
 	void clear_window();
 };
 
