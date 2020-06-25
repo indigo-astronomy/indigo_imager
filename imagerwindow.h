@@ -59,6 +59,7 @@ signals:
 
 public slots:
 	void on_start(bool clicked);
+	void on_preview(bool clicked);
 	void on_abort(bool clicked);
 	void on_pause(bool clicked);
 	void on_window_log(indigo_property* property, char *message);
@@ -90,6 +91,7 @@ public slots:
 	void on_frame_type_selected(int index);
 
 private:
+	bool m_preview;
 	QPlainTextEdit* mLog;
 	QLabel* mSelectionLine;
 	//QVBoxLayout* mFormLayout;

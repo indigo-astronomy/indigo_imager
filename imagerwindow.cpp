@@ -66,6 +66,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	mIndigoServers = new QIndigoServers(this);
 
+	m_preview = true;
+
 	//  Set central widget of window
 	QWidget *central = new QWidget;
 	setCentralWidget(central);
@@ -346,7 +348,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	button->setStyleSheet("min-width: 30px");
 	button->setIcon(QIcon(":resource/play.png"));
 	toolbox->addWidget(button);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_start);
+	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_preview);
 
 	row++;
 	m_exposure_progress = new QProgressBar();
@@ -443,6 +445,22 @@ ImagerWindow::~ImagerWindow () {
 	IndigoClient::instance().stop();
 }
 
+
+void ImagerWindow::on_preview(bool clicked) {
+	indigo_debug("CALLED: %s\n", __FUNCTION__);
+	static char selected_agent[INDIGO_NAME_SIZE];
+
+	get_selected_agent(selected_agent);
+	static const char *item[] = {
+		CCD_EXPOSURE_ITEM_NAME,
+	};
+	static double value[1];
+	value[0] = (double)m_exposure_time->value();
+	indigo_change_number_property(nullptr, selected_agent, CCD_EXPOSURE_PROPERTY_NAME, 1, item, value);
+	m_preview = true;
+}
+
+
 void ImagerWindow::on_start(bool clicked) {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
 	static char selected_agent[INDIGO_NAME_SIZE];
@@ -475,6 +493,7 @@ void ImagerWindow::on_start(bool clicked) {
 	static const char *exposure_items[] = { AGENT_IMAGER_START_EXPOSURE_ITEM_NAME };
 	static bool exposure_values[] = { true };
 	indigo_change_switch_property(nullptr, selected_agent, AGENT_START_PROCESS_PROPERTY_NAME, 1, exposure_items, exposure_values);
+	m_preview = false;
 }
 
 void ImagerWindow::on_abort(bool clicked) {
@@ -482,9 +501,15 @@ void ImagerWindow::on_abort(bool clicked) {
 	static char selected_agent[INDIGO_NAME_SIZE];
 	get_selected_agent(selected_agent);
 
-	static const char *exposure_items[] = { AGENT_ABORT_PROCESS_ITEM_NAME };
-	static bool exposure_values[] = { true };
-	indigo_change_switch_property(nullptr, selected_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME, 1, exposure_items, exposure_values);
+	if (m_preview) {
+		static const char *exposure_items[] = { CCD_ABORT_EXPOSURE_ITEM_NAME };
+		static bool exposure_values[] = { true };
+		indigo_change_switch_property(nullptr, selected_agent, CCD_ABORT_EXPOSURE_PROPERTY_NAME, 1, exposure_items, exposure_values);
+	} else {
+		static const char *exposure_items[] = { AGENT_ABORT_PROCESS_ITEM_NAME };
+		static bool exposure_values[] = { true };
+		indigo_change_switch_property(nullptr, selected_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME, 1, exposure_items, exposure_values);
+	}
 }
 
 void ImagerWindow::on_pause(bool clicked) {
@@ -735,11 +760,43 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			}
 		}
 	}
+	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME) && m_preview) {
+		double exp_elapsed, exp_time;
+		if (property->state == INDIGO_BUSY_STATE) {
+			exp_time = m_exposure_time->value();
+			for (int i = 0; i < property->count; i++) {
+				if (!strcmp(property->items[i].name, CCD_EXPOSURE_ITEM_NAME)) {
+					exp_elapsed = exp_time - property->items[i].number.value;
+				}
+			}
+			m_exposure_progress->setMaximum(exp_time);
+			m_exposure_progress->setValue(exp_elapsed);
+			m_exposure_progress->setFormat("Preview: %v of %m seconds elapsed...");
+			m_process_progress->setMaximum(1);
+			m_process_progress->setValue(0);
+			m_process_progress->setFormat("Preview in progress...");
+		} else if(property->state == INDIGO_OK_STATE) {
+			m_exposure_progress->setMaximum(100);
+			m_exposure_progress->setValue(100);
+			m_process_progress->setMaximum(100);
+			m_process_progress->setValue(100);
+			m_exposure_progress->setFormat("Preview: Complete");
+			m_process_progress->setFormat("Process: Complete");
+
+		} else {
+			m_exposure_progress->setMaximum(1);
+			m_exposure_progress->setValue(0);
+			m_process_progress->setMaximum(1);
+			m_process_progress->setValue(0);
+			m_exposure_progress->setFormat("Exposure: Failed");
+			m_process_progress->setFormat("Process: Failed");
+		}
+	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_STATS_PROPERTY_NAME)) {
 		double exp_elapsed, exp_time;
 		int frames_complete, frames_total;
 
-		if(property->state == INDIGO_BUSY_STATE) {
+		if (property->state == INDIGO_BUSY_STATE) {
 			exp_time = m_exposure_time->value();
 			for (int i = 0; i < property->count; i++) {
 				if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_EXPOSURE_ITEM_NAME)) {
@@ -753,11 +810,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			m_exposure_progress->setMaximum(exp_time);
 			m_exposure_progress->setValue(exp_elapsed);
 			m_exposure_progress->setFormat("Exposure: %v of %m seconds elapsed...");
-
 			m_process_progress->setMaximum(frames_total);
 			m_process_progress->setValue(frames_complete);
 			m_process_progress->setFormat("Process: exposure %v of %m in progress...");
-
 		} else if (property->state == INDIGO_OK_STATE) {
 			m_exposure_progress->setMaximum(100);
 			m_exposure_progress->setValue(100);
@@ -766,8 +821,11 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			m_process_progress->setValue(100);
 			m_process_progress->setFormat("Process: Complete");
 		} else {
+			m_exposure_progress->setMaximum(1);
+			m_exposure_progress->setValue(0);
 			m_exposure_progress->setFormat("Exposure: Failed");
-			m_process_progress->setFormat("Process: Failed");
+			m_process_progress->setValue(m_process_progress->value()-1);
+			m_process_progress->setFormat("Process: %v exposures of %m competed");
 		}
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME)) {
