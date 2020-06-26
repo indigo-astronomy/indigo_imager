@@ -1365,7 +1365,7 @@ QTabBar::tab:right:!selected:disabled {
 
 QTabBar::tab:top:!selected {
     border-bottom: 2px solid #202020;
-    margin-top: 2px;
+    margin-top: 0px;
 }
 
 QTabBar::tab:bottom:!selected {
@@ -1388,10 +1388,10 @@ QTabBar::tab:top {
     background-color: #353535;
     color: #F0F0F0;
     margin-left: 2px;
-    padding-left: 4px;
-    padding-right: 4px;
-    padding-top: 2px;
-    padding-bottom: 2px;
+    padding-left: 6px;
+    padding-right: 6px;
+    padding-top: 3px;
+    padding-bottom: 3px;
     min-width: 5px;
     border-bottom: 3px solid #353535;
     border-top-left-radius: 3px;
@@ -1399,16 +1399,15 @@ QTabBar::tab:top {
 }
 
 QTabBar::tab:top:selected {
-    background-color: #505252;
-    color: #F0F0F0;
-    border-bottom: 3px solid #515151;
+    background-color: #383838;
+    border-bottom: 3px solid #404040;
     border-top-left-radius: 3px;
     border-top-right-radius: 3px;
 }
 
 QTabBar::tab:top:!selected:hover {
-    border: 1px solid #505050;
-    border-bottom: 3px solid #505050;
+    border: 1px solid #404040;
+    border-bottom: 3px solid #404040;
 }
 
 QTabBar::tab:bottom {
