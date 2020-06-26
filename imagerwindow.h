@@ -97,6 +97,7 @@ private:
 	//QVBoxLayout* mFormLayout;
 
 	QComboBox *m_camera_select;
+	QComboBox *m_wheel_select;
 	QComboBox *m_frame_type_select;
 	QComboBox *m_frame_size_select;
 	QSpinBox  *m_roi_x, *m_roi_w;
@@ -104,6 +105,7 @@ private:
 	QDoubleSpinBox *m_exposure_time;
 	QDoubleSpinBox *m_exposure_delay;
 	QSpinBox *m_frame_count;
+	QComboBox *m_filter_select;
 	QSpinBox *m_frame_delay;
 
 	QLineEdit *m_object_name;

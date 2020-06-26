@@ -211,8 +211,12 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	//form_layout->setMargin(0);
 	form_panel->setLayout(form_layout);
 
+	QTabWidget *tabWidget = new QTabWidget;
+
 	// Create Camera Control Frame
 	QFrame *camera_frame = new QFrame();
+	QFrame *focuser_frame = new QFrame();
+	QFrame *guider_frame = new QFrame();
 	QWidget *camera_panel = new QWidget();
 	QVBoxLayout *camera_panel_layout = new QVBoxLayout();
 	camera_frame->setFrameShape(QFrame::StyledPanel);
@@ -222,29 +226,50 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	camera_panel_layout->setContentsMargins(0, 0, 1, 0);
 	//camera_panel_layout->setMargin(0);
 	camera_panel->setLayout(camera_panel_layout);
-	camera_panel_layout->addWidget(camera_frame);
+	tabWidget->addTab(camera_frame, "Capture");
+	tabWidget->addTab(focuser_frame, "Focus");
+	tabWidget->addTab(guider_frame, "Guide");
+	camera_panel_layout->addWidget(tabWidget);
+
+
 
 	QGridLayout *camera_frame_layout = new QGridLayout();
 	camera_frame_layout->setAlignment(Qt::AlignTop);
 	camera_frame->setLayout(camera_frame_layout);
 	int row = 0;
 	// camera selection
+	QLabel *label = new QLabel("Camera:");
+	camera_frame_layout->addWidget(label, row, 0);
 	m_camera_select = new QComboBox();
-	camera_frame_layout->addWidget(m_camera_select, row, 0, 1, 4);
+	camera_frame_layout->addWidget(m_camera_select, row, 1, 1, 3);
+
+	// Filter wheel selection
+	row++;
+	label = new QLabel("Wheel:");
+	camera_frame_layout->addWidget(label, row, 0);
+	m_wheel_select = new QComboBox();
+	camera_frame_layout->addWidget(m_wheel_select, row, 1, 1, 3);
+
+	//row++;
+	//QFrame* line = new QFrame();
+	//line->setFrameShape(QFrame::HLine);
+	//line->setFrameShadow(QFrame::Plain);
+	//camera_frame_layout->addWidget(line, row, 0, 1, 4);
 
 	// frame type
 	row++;
-	QLabel *label = new QLabel("Frame type:");
-	camera_frame_layout->addWidget(label, row, 0);
-	m_frame_type_select = new QComboBox();
-	camera_frame_layout->addWidget(m_frame_type_select, row, 1, 1, 3);
-
-	// frame size
-	row++;
-	label = new QLabel("Frame size:");
+	label = new QLabel("Frame:");
 	camera_frame_layout->addWidget(label, row, 0);
 	m_frame_size_select = new QComboBox();
-	camera_frame_layout->addWidget(m_frame_size_select, row, 1, 1, 3);
+	camera_frame_layout->addWidget(m_frame_size_select, row, 1, 1, 2);
+	m_frame_type_select = new QComboBox();
+	camera_frame_layout->addWidget(m_frame_type_select, row, 3);
+
+	// frame size
+	//row++;
+	//label = new QLabel("Frame size:");
+	//camera_frame_layout->addWidget(label, row, 0);
+
 
 	// ROI
 	row++;
@@ -288,7 +313,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	// Exposure time
 	row++;
-	label = new QLabel("Exposure time (s):");
+	label = new QLabel("Exposure (s):");
 	camera_frame_layout->addWidget(label, row, 0);
 	m_exposure_time = new QDoubleSpinBox();
 	m_exposure_time->setMaximum(10000);
@@ -296,7 +321,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_exposure_time->setValue(1);
 	camera_frame_layout->addWidget(m_exposure_time, row, 1);
 
-	label = new QLabel(QChar(0x0394)+QString("t:"));
+	//label = new QLabel(QChar(0x0394)+QString("t:"));
+	label = new QLabel("Delay (s):");
 	camera_frame_layout->addWidget(label, row, 2);
 	m_exposure_delay = new QDoubleSpinBox();
 	m_exposure_delay->setMaximum(10000);
@@ -307,13 +333,18 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	// Frame count
 	row++;
-	label = new QLabel("Number of frames:");
+	label = new QLabel("No frames:");
 	camera_frame_layout->addWidget(label, row, 0);
 	m_frame_count = new QSpinBox();
 	m_frame_count->setMaximum(100000);
 	m_frame_count->setMinimum(-1);
 	m_frame_count->setValue(1);
-	camera_frame_layout->addWidget(m_frame_count, row, 1, 1, 3);
+	camera_frame_layout->addWidget(m_frame_count, row, 1);
+
+	label = new QLabel("Filter:");
+	camera_frame_layout->addWidget(label, row, 2);
+	m_filter_select = new QComboBox();
+	camera_frame_layout->addWidget(m_filter_select, row, 3);
 
 	// Frame prefix
 	row++;
@@ -321,6 +352,12 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	camera_frame_layout->addWidget(label, row, 0);
 	m_object_name = new QLineEdit();
 	camera_frame_layout->addWidget(m_object_name, row, 1, 1, 3);
+
+	//row++;
+	//line = new QFrame();
+	//line->setFrameShape(QFrame::HLine);
+	//line->setFrameShadow(QFrame::Plain);
+	//camera_frame_layout->addWidget(line, row, 0, 1, 4);
 
 	// Buttons
 	row++;
@@ -455,13 +492,26 @@ void ImagerWindow::on_preview(bool clicked) {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
 	static char selected_agent[INDIGO_NAME_SIZE];
 
+	static const char *frame_items[] = {
+		CCD_FRAME_LEFT_ITEM_NAME,
+		CCD_FRAME_TOP_ITEM_NAME,
+		CCD_FRAME_WIDTH_ITEM_NAME,
+		CCD_FRAME_HEIGHT_ITEM_NAME
+	};
+	static double frame_values[4];
+	frame_values[0] = (double)m_roi_x->value();
+	frame_values[1] = (double)m_roi_y->value();
+	frame_values[2] = (double)m_roi_w->value();
+	frame_values[3] = (double)m_roi_h->value();
+	indigo_change_number_property(nullptr, selected_agent, CCD_FRAME_PROPERTY_NAME, 4, frame_items, frame_values);
+
 	get_selected_agent(selected_agent);
-	static const char *item[] = {
+	static const char *exposure_item[] = {
 		CCD_EXPOSURE_ITEM_NAME,
 	};
-	static double value[1];
-	value[0] = (double)m_exposure_time->value();
-	indigo_change_number_property(nullptr, selected_agent, CCD_EXPOSURE_PROPERTY_NAME, 1, item, value);
+	static double exposure_value[1];
+	exposure_value[0] = (double)m_exposure_time->value();
+	indigo_change_number_property(nullptr, selected_agent, CCD_EXPOSURE_PROPERTY_NAME, 1, exposure_item, exposure_value);
 	m_preview = true;
 }
 
@@ -548,7 +598,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		preview_image *image = preview_cache.get(property, item);
 		if (image) {
 			indigo_error("m_viewer = %p", m_viewer);
-			m_viewer->setText("unsaved" + QString(item->blob.format));
+			m_viewer->setText("Unsaved" + QString(item->blob.format));
 			m_viewer->setImage(*image);
 		}
 		if (!m_preview) save_blob_item(item);
