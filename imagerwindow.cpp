@@ -242,6 +242,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	camera_frame_layout->addWidget(label, row, 0);
 	m_camera_select = new QComboBox();
 	camera_frame_layout->addWidget(m_camera_select, row, 1, 1, 3);
+	connect(m_camera_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_camera_selected);
 
 	// Filter wheel selection
 	row++;
@@ -249,6 +250,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	camera_frame_layout->addWidget(label, row, 0);
 	m_wheel_select = new QComboBox();
 	camera_frame_layout->addWidget(m_wheel_select, row, 1, 1, 3);
+	connect(m_wheel_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_wheel_selected);
 
 	//row++;
 	//QFrame* line = new QFrame();
@@ -458,7 +460,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	connect(&Logger::instance(), &Logger::do_log, this, &ImagerWindow::on_window_log);
 
-	connect(m_camera_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_camera_selected);
 	connect(m_frame_size_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_ccd_mode_selected);
 	connect(m_frame_type_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_frame_type_selected);
 
@@ -689,6 +690,23 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 			}
 		}
 	}
+	if (client_match_device_property(property, nullptr, FILTER_WHEEL_LIST_PROPERTY_NAME)) {
+		for (int i = 0; i < property->count; i++) {
+			QString item_name = QString(property->items[i].name);
+			QString domain = QString(property->device);
+			domain.remove(0, domain.indexOf(" @ "));
+			QString device = QString(property->items[i].label) + domain;
+			if (m_wheel_select->findText(device) < 0) {
+				m_wheel_select->addItem(device, QString(property->device));
+				indigo_debug("[ADD device] %s\n", device.toUtf8().data());
+				if (property->items[i].sw.value) {
+					m_wheel_select->setCurrentIndex(m_wheel_select->findText(device));
+				}
+			} else {
+				indigo_debug("[DUPLICATE device] %s\n", device.toUtf8().data());
+			}
+		}
+	}
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME)) {
 		m_frame_size_select->clear();
 		for (int i = 0; i < property->count; i++) {
@@ -751,6 +769,22 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 			}
 		}
 	}
+	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME)) {
+		m_filter_select->clear();
+		for (int i = 0; i < property->count; i++) {
+			QString filter_name = QString(property->items[i].text.value);
+			if (m_filter_select->findText(filter_name) < 0) {
+				m_filter_select->addItem(filter_name, QString(property->items[i].name));
+				indigo_debug("[ADD mode] %s\n", filter_name.toUtf8().data());
+				//if (property->items[i].sw.value) {
+				//	m_filter_select->setCurrentIndex(m_filter_select->findText(filter_name));
+				//}
+			} else {
+				indigo_debug("[DUPLICATE mode] %s\n", filter_name.toUtf8().data());
+			}
+		}
+	}
+
 	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
 		indigo_debug("Set %s", property->name);
 		for (int i = 0; i < property->count; i++) {
@@ -786,6 +820,19 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			}
 		}
 	}
+	if (client_match_device_property(property, nullptr, FILTER_WHEEL_LIST_PROPERTY_NAME)) {
+		for (int i = 0; i < property->count; i++) {
+			QString item_name = QString(property->items[i].name);
+			if (property->items[i].sw.value) {
+				QString domain = QString(property->device);
+				domain.remove(0, domain.indexOf(" @ "));
+				QString device = QString(property->items[i].label) + domain;
+				m_wheel_select->setCurrentIndex(m_wheel_select->findText(device));
+				indigo_debug("[ADD device] %s\n", device.toUtf8().data());
+				break;
+			}
+		}
+	}
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME)) {
 		for (int i = 0; i < property->count; i++) {
 			if (property->items[i].sw.value) {
@@ -802,6 +849,16 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 				m_frame_type_select->setCurrentIndex(m_frame_type_select->findText(property->items[i].label));
 				indigo_debug("[SELECT mode] %s\n", property->items[i].label);
 				break;
+			}
+		}
+	}
+	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_PROPERTY_NAME)) {
+		if (property->count == 1) {
+			indigo_property *p = properties.get(property->device, WHEEL_SLOT_NAME_PROPERTY_NAME);
+			unsigned int current_filter = (unsigned int)property->items[0].number.value - 1;
+			if (p && current_filter < p->count) {
+				m_filter_select->setCurrentIndex(m_filter_select->findText(p->items[current_filter].text.value));
+				indigo_debug("[SELECT mode] %s\n", p->items[current_filter].label);
 			}
 		}
 	}
@@ -942,6 +999,22 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 			}
 		}
 	}
+	if (client_match_device_property(property, nullptr, FILTER_WHEEL_LIST_PROPERTY_NAME) || property->name[0] == '\0') {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		indigo_property *p = properties.get(property->device, FILTER_WHEEL_LIST_PROPERTY_NAME);
+		if (p) {
+			for (int i = 0; i < p->count; i++) {
+				QString device = QString(p->device);
+				int index = m_wheel_select->findData(device);
+				if (index >= 0) {
+					m_wheel_select->removeItem(index);
+					indigo_debug("[REMOVE device] %s at index\n", device.toUtf8().data(), index);
+				} else {
+					indigo_debug("[No device] %s\n", device.toUtf8().data());
+				}
+			}
+		}
+	}
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME) || property->name[0] == '\0') {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		indigo_property *p = properties.get(property->device, CCD_MODE_PROPERTY_NAME);
@@ -982,6 +1055,10 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 		m_roi_h->setValue(0);
 		m_roi_h->setEnabled(false);
 	}
+	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME) || property->name[0] == '\0') {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		m_filter_select->clear();
+	}
 	properties.remove(property);
 	free(property);
 }
@@ -1004,6 +1081,25 @@ void ImagerWindow::on_camera_selected(int index) {
 
 	static bool values[] = { true };
 	indigo_change_switch_property(nullptr, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME, 1, items, values);
+}
+
+void ImagerWindow::on_wheel_selected(int index) {
+	static char selected_wheel[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
+	QString q_wheel_str = m_wheel_select->currentText();
+	int idx = q_wheel_str.indexOf(" @ ");
+	if (idx >=0) q_wheel_str.truncate(idx);
+	if (q_wheel_str.compare("No wheel") == 0) {
+		strcpy(selected_wheel, "NONE");
+	} else {
+		strncpy(selected_wheel, q_wheel_str.toUtf8().constData(), INDIGO_NAME_SIZE);
+	}
+	strncpy(selected_agent, m_wheel_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+
+	indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_wheel);
+	static const char * items[] = { selected_wheel };
+
+	static bool values[] = { true };
+	indigo_change_switch_property(nullptr, selected_agent, FILTER_WHEEL_LIST_PROPERTY_NAME, 1, items, values);
 }
 
 void ImagerWindow::on_ccd_mode_selected(int index) {
