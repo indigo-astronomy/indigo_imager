@@ -25,6 +25,7 @@ SOURCES += \
 	blobpreview.cpp \
 	propertycache.cpp \
 	changeproperty.cpp \
+	handlepropertychange.cpp \
 	image-viewer.cpp \
 	fits/fits.c \
 	debayer/debayer.c \
