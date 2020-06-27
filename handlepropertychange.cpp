@@ -8,6 +8,7 @@
 #include "propertycache.h"
 
 static void add_devices_to_combobox(indigo_property *property, QComboBox *devices_combobox) {
+	int current_index = devices_combobox->currentIndex();
 	for (int i = 0; i < property->count; i++) {
 		QString item_name = QString(property->items[i].name);
 		QString domain = QString(property->device);
@@ -16,7 +17,7 @@ static void add_devices_to_combobox(indigo_property *property, QComboBox *device
 		if (devices_combobox->findText(device) < 0) {
 			devices_combobox->addItem(device, QString(property->device));
 			indigo_debug("[ADD device] %s\n", device.toUtf8().data());
-			if (property->items[i].sw.value) {
+			if (property->items[i].sw.value && current_index < 0) {
 				devices_combobox->setCurrentIndex(devices_combobox->findText(device));
 			}
 		} else {
@@ -369,6 +370,7 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		remove_devices_from_combobox(property->device, FILTER_WHEEL_LIST_PROPERTY_NAME, m_wheel_select);
 	}
+
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME) || property->name[0] == '\0') {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		m_frame_size_select->clear();
