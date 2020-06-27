@@ -24,6 +24,7 @@ SOURCES += \
 	qindigoservers.cpp \
 	blobpreview.cpp \
 	propertycache.cpp \
+	changeproperty.cpp \
 	image-viewer.cpp \
 	fits/fits.c \
 	debayer/debayer.c \

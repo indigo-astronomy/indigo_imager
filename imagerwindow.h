@@ -26,18 +26,29 @@
 #include <indigo/indigo_bus.h>
 #include "image-viewer.h"
 
-class QPlainTextEdit;
-class QFrame;
-class QPushButton;
 class QServiceModel;
-class QItemSelection;
-class QVBoxLayout;
-class QDoubleSpinBox;
-class QSpinBox;
-class QProgressBar;
-class QScrollArea;
 class QIndigoServers;
-class QLabel;
+
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+#include <QSplitter>
+#include <QTreeView>
+#include <QMenuBar>
+#include <QProgressBar>
+#include <QIcon>
+#include <QLabel>
+#include <QPixmap>
+#include <QPlainTextEdit>
+#include <QPushButton>
+#include <QToolButton>
+#include <QScrollArea>
+#include <QComboBox>
+#include <QDoubleSpinBox>
+#include <QMessageBox>
+#include <QActionGroup>
+#include <QLineEdit>
+#include <QStandardPaths>
+#include <QDir>
 
 
 class ImagerWindow : public QMainWindow {
@@ -94,8 +105,6 @@ public slots:
 private:
 	bool m_preview;
 	QPlainTextEdit* mLog;
-	QLabel* mSelectionLine;
-	//QVBoxLayout* mFormLayout;
 
 	QComboBox *m_camera_select;
 	QComboBox *m_wheel_select;
@@ -114,16 +123,24 @@ private:
 
 	QProgressBar *m_exposure_progress;
 	QProgressBar *m_process_progress;
-	QScrollArea *mScrollArea;
-	//QLabel *mImage;
+
 	pal::ImageViewer *m_viewer;
-	//QImage *m_image;
+
 	QIndigoServers *mIndigoServers;
 	QServiceModel *mServiceModel;
 
+	void change_ccd_frame_property(const char *agent) const;
+	void change_ccd_exposure_property(const char *agent) const;
+	void change_ccd_abort_exposure_property(const char *agent) const;
+	void change_ccd_mode_property(const char *agent) const;
+	void change_ccd_frame_type_property(const char *agent) const;
+	void change_agent_batch_property(const char *agent) const;
+	void change_agent_start_exposure_property(const char *agent) const;
+	void change_agent_pause_process_property(const char *agent) const;
+	void change_agent_abort_process_property(const char *agent) const;
+
 	bool save_blob_item_with_prefix(indigo_item *item, const char *prefix, char *file_name);
 	void save_blob_item(indigo_item *item);
-	void clear_window();
 };
 
 #endif // IMAGERWINDOW_H

@@ -258,6 +258,7 @@ void ImageViewer::showEvent(QShowEvent *event) {
 PixmapItem::PixmapItem(QGraphicsItem *parent) :
     QObject(), QGraphicsPixmapItem(parent)
 {
+	//setTransformationMode(Qt::SmoothTransformation);
     setAcceptHoverEvents(true);
 }
 

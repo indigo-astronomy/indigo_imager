@@ -16,27 +16,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-#include <QHBoxLayout>
-#include <QVBoxLayout>
-#include <QSplitter>
-#include <QTreeView>
-#include <QMenuBar>
-#include <QProgressBar>
-#include <QIcon>
-#include <QLabel>
-#include <QPixmap>
-#include <QPlainTextEdit>
-#include <QPushButton>
-#include <QToolButton>
-#include <QScrollArea>
-#include <QComboBox>
-#include <QDoubleSpinBox>
-#include <QMessageBox>
-#include <QActionGroup>
-#include <QLineEdit>
-#include <QStandardPaths>
-#include <QDir>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -264,14 +243,10 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	camera_frame_layout->addWidget(label, row, 0);
 	m_frame_size_select = new QComboBox();
 	camera_frame_layout->addWidget(m_frame_size_select, row, 1, 1, 2);
+	connect(m_frame_size_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_ccd_mode_selected);
 	m_frame_type_select = new QComboBox();
 	camera_frame_layout->addWidget(m_frame_type_select, row, 3);
-
-	// frame size
-	//row++;
-	//label = new QLabel("Frame size:");
-	//camera_frame_layout->addWidget(label, row, 0);
-
+	connect(m_frame_type_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_frame_type_selected);
 
 	// ROI
 	row++;
@@ -412,15 +387,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_viewer = new pal::ImageViewer(this);
 	m_viewer->setText("No Image");
 	m_viewer->setToolBarMode(pal::ImageViewer::ToolBarMode::Visible);
-
-	mScrollArea = new QScrollArea();
-	mScrollArea->setObjectName("PROPERTY_AREA");
-	mScrollArea->setWidgetResizable(true);
-	//mScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-	//mScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-	mScrollArea->setWidget((QWidget*)m_viewer);
-	form_layout->addWidget(mScrollArea);
-	mScrollArea->setMinimumWidth(PROPERTY_AREA_MIN_WIDTH);
+	form_layout->addWidget((QWidget*)m_viewer);
+	m_viewer->setMinimumWidth(PROPERTY_AREA_MIN_WIDTH);
 
 	QSplitter* hSplitter = new QSplitter;
 	hSplitter->addWidget(camera_panel);
@@ -428,7 +396,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	hSplitter->setStretchFactor(0, 25);
 	hSplitter->setStretchFactor(1, 55);
 	propertyLayout->addWidget(hSplitter, 85);
-
 
 	propertyLayout->addWidget(mLog, 15);
 
@@ -460,13 +427,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	connect(&Logger::instance(), &Logger::do_log, this, &ImagerWindow::on_window_log);
 
-	connect(m_frame_size_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_ccd_mode_selected);
-	connect(m_frame_type_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_frame_type_selected);
-
-	//connect(mProperties->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ImagerWindow::on_selection_changed);
-	//connect(this, &ImagerWindow::enable_blobs, mPropertyModel, &PropertyModel::enable_blobs);
-	//connect(this, &ImagerWindow::rebuild_blob_previews, mPropertyModel, &PropertyModel::rebuild_blob_previews);
-
 	//preview_cache.set_stretch_level(conf.preview_stretch_level);
 
 	//  Start up the client
@@ -492,27 +452,10 @@ ImagerWindow::~ImagerWindow () {
 void ImagerWindow::on_preview(bool clicked) {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
 	static char selected_agent[INDIGO_NAME_SIZE];
-
-	static const char *frame_items[] = {
-		CCD_FRAME_LEFT_ITEM_NAME,
-		CCD_FRAME_TOP_ITEM_NAME,
-		CCD_FRAME_WIDTH_ITEM_NAME,
-		CCD_FRAME_HEIGHT_ITEM_NAME
-	};
-	static double frame_values[4];
-	frame_values[0] = (double)m_roi_x->value();
-	frame_values[1] = (double)m_roi_y->value();
-	frame_values[2] = (double)m_roi_w->value();
-	frame_values[3] = (double)m_roi_h->value();
-	indigo_change_number_property(nullptr, selected_agent, CCD_FRAME_PROPERTY_NAME, 4, frame_items, frame_values);
-
 	get_selected_agent(selected_agent);
-	static const char *exposure_item[] = {
-		CCD_EXPOSURE_ITEM_NAME,
-	};
-	static double exposure_value[1];
-	exposure_value[0] = (double)m_exposure_time->value();
-	indigo_change_number_property(nullptr, selected_agent, CCD_EXPOSURE_PROPERTY_NAME, 1, exposure_item, exposure_value);
+
+	change_ccd_frame_property(selected_agent);
+	change_ccd_exposure_property(selected_agent);
 	m_preview = true;
 }
 
@@ -520,35 +463,11 @@ void ImagerWindow::on_preview(bool clicked) {
 void ImagerWindow::on_start(bool clicked) {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
 	static char selected_agent[INDIGO_NAME_SIZE];
-
 	get_selected_agent(selected_agent);
-	static const char *batch_items[] = {
-		AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME,
-		AGENT_IMAGER_BATCH_DELAY_ITEM_NAME,
-		AGENT_IMAGER_BATCH_COUNT_ITEM_NAME
-	};
-	static double batch_values[3];
-	batch_values[0] = (double)m_exposure_time->value();
-	batch_values[1] = (double)m_exposure_delay->value();
-	batch_values[2] = (double)m_frame_count->value();
-	indigo_change_number_property(nullptr, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME, 3, batch_items, batch_values);
 
-	static const char *frame_items[] = {
-		CCD_FRAME_LEFT_ITEM_NAME,
-		CCD_FRAME_TOP_ITEM_NAME,
-		CCD_FRAME_WIDTH_ITEM_NAME,
-		CCD_FRAME_HEIGHT_ITEM_NAME
-	};
-	static double frame_values[4];
-	frame_values[0] = (double)m_roi_x->value();
-	frame_values[1] = (double)m_roi_y->value();
-	frame_values[2] = (double)m_roi_w->value();
-	frame_values[3] = (double)m_roi_h->value();
-	indigo_change_number_property(nullptr, selected_agent, CCD_FRAME_PROPERTY_NAME, 4, frame_items, frame_values);
-
-	static const char *exposure_items[] = { AGENT_IMAGER_START_EXPOSURE_ITEM_NAME };
-	static bool exposure_values[] = { true };
-	indigo_change_switch_property(nullptr, selected_agent, AGENT_START_PROCESS_PROPERTY_NAME, 1, exposure_items, exposure_values);
+	change_agent_batch_property(selected_agent);
+	change_ccd_frame_property(selected_agent);
+	change_agent_start_exposure_property(selected_agent);
 	m_preview = false;
 }
 
@@ -558,13 +477,9 @@ void ImagerWindow::on_abort(bool clicked) {
 	get_selected_agent(selected_agent);
 
 	if (m_preview) {
-		static const char *exposure_items[] = { CCD_ABORT_EXPOSURE_ITEM_NAME };
-		static bool exposure_values[] = { true };
-		indigo_change_switch_property(nullptr, selected_agent, CCD_ABORT_EXPOSURE_PROPERTY_NAME, 1, exposure_items, exposure_values);
+		change_ccd_abort_exposure_property(selected_agent);
 	} else {
-		static const char *exposure_items[] = { AGENT_ABORT_PROCESS_ITEM_NAME };
-		static bool exposure_values[] = { true };
-		indigo_change_switch_property(nullptr, selected_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME, 1, exposure_items, exposure_values);
+		change_agent_abort_process_property(selected_agent);
 	}
 }
 
@@ -580,9 +495,7 @@ void ImagerWindow::on_pause(bool clicked) {
 	indigo_property *p = properties.get(selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME);
 	if (p == nullptr || p->count != 1) return;
 
-	static const char *exposure_items[] = { AGENT_PAUSE_PROCESS_ITEM_NAME };
-	static bool exposure_values[] = { true };
-	indigo_change_switch_property(nullptr, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME, 1, exposure_items, exposure_values);
+	change_agent_pause_process_property(selected_agent);
 }
 
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){
@@ -1078,7 +991,6 @@ void ImagerWindow::on_camera_selected(int index) {
 
 	indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_camera);
 	static const char * items[] = { selected_camera };
-
 	static bool values[] = { true };
 	indigo_change_switch_property(nullptr, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME, 1, items, values);
 }
@@ -1103,29 +1015,21 @@ void ImagerWindow::on_wheel_selected(int index) {
 }
 
 void ImagerWindow::on_ccd_mode_selected(int index) {
-	static char selected_mode[INDIGO_NAME_SIZE];
 	static char selected_agent[INDIGO_NAME_SIZE];
 
-	strncpy(selected_mode, m_frame_size_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
-	strncpy(selected_agent, m_camera_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	get_selected_agent(selected_agent);
 
-	indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_mode);
-	static const char * items[] = { selected_mode };
-	static bool values[] = { true };
-	indigo_change_switch_property(nullptr, selected_agent, CCD_MODE_PROPERTY_NAME, 1, items, values);
+	indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+	change_ccd_mode_property(selected_agent);
 }
 
 void ImagerWindow::on_frame_type_selected(int index) {
-	static char selected_type[INDIGO_NAME_SIZE];
 	static char selected_agent[INDIGO_NAME_SIZE];
 
-	strncpy(selected_type, m_frame_type_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
-	strncpy(selected_agent, m_camera_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	get_selected_agent(selected_agent);
 
-	indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_type);
-	static const char * items[] = { selected_type };
-	static bool values[] = { true };
-	indigo_change_switch_property(nullptr, selected_agent, CCD_FRAME_TYPE_PROPERTY_NAME, 1, items, values);
+	indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+	change_ccd_frame_type_property(selected_agent);
 }
 
 
@@ -1190,17 +1094,6 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 		close_fd(fd);
 	}
 	return true;
-}
-
-void ImagerWindow::clear_window() {
-	indigo_debug("CLEAR_WINDOW!\n");
-	delete mScrollArea;
-
-	mScrollArea = new QScrollArea();
-	mScrollArea->setObjectName("PROPERTY_AREA");
-	mScrollArea->setWidgetResizable(true);
-	mScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-	mScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 }
 
 
