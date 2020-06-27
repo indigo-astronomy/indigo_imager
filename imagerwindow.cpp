@@ -212,7 +212,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	form_panel->setLayout(form_layout);
 
 	QTabWidget *tabWidget = new QTabWidget;
-
 	// Create Camera Control Frame
 	QFrame *camera_frame = new QFrame();
 	QFrame *focuser_frame = new QFrame();
@@ -221,6 +220,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	QVBoxLayout *camera_panel_layout = new QVBoxLayout();
 	camera_frame->setFrameShape(QFrame::StyledPanel);
 	camera_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
+	camera_frame->setContentsMargins(0, 0, 0, 0);
 
 	camera_panel_layout->setSpacing(0);
 	camera_panel_layout->setContentsMargins(0, 0, 1, 0);

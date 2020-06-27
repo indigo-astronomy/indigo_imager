@@ -1273,7 +1273,8 @@ QTabWidget QFrame{
 QTabWidget::pane {
     border: 1px solid #353535;
     border-radius: 4px;
-    padding: 2px;
+	border-top-left-radius: 0px;
+    padding: 0px;
     margin: 0px;
 }
 
@@ -1387,7 +1388,7 @@ QTabBar::tab:right:!selected {
 QTabBar::tab:top {
     background-color: #353535;
     color: #F0F0F0;
-    margin-left: 2px;
+    margin-right: 2px;
     padding-left: 6px;
     padding-right: 6px;
     padding-top: 3px;
