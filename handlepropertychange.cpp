@@ -39,6 +39,22 @@ static void change_devices_combobox_slection(indigo_property *property, QComboBo
 	}
 }
 
+static void remove_devices_from_combobox(char *device_name, char *property_name, QComboBox *devices_combobox) {
+	indigo_property *p = properties.get(device_name, property_name);
+	if (p) {
+		for (int i = 0; i < p->count; i++) {
+			QString device = QString(p->device);
+			int index = devices_combobox->findData(device);
+			if (index >= 0) {
+				devices_combobox->removeItem(index);
+				indigo_debug("[REMOVE device] %s at index\n", device.toUtf8().data(), index);
+			} else {
+				indigo_debug("[No device] %s\n", device.toUtf8().data());
+			}
+		}
+	}
+}
+
 static void add_items_to_combobox(indigo_property *property, QComboBox *items_combobox) {
 	items_combobox->clear();
 	for (int i = 0; i < property->count; i++) {
@@ -347,35 +363,11 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 
 	if (client_match_device_property(property, nullptr, FILTER_CCD_LIST_PROPERTY_NAME) || property->name[0] == '\0') {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
-		indigo_property *p = properties.get(property->device, FILTER_CCD_LIST_PROPERTY_NAME);
-		if (p) {
-			for (int i = 0; i < p->count; i++) {
-				QString device = QString(p->device);
-				int index = m_camera_select->findData(device);
-				if (index >= 0) {
-					m_camera_select->removeItem(index);
-					indigo_debug("[REMOVE device] %s at index\n", device.toUtf8().data(), index);
-				} else {
-					indigo_debug("[No device] %s\n", device.toUtf8().data());
-				}
-			}
-		}
+		remove_devices_from_combobox(property->device, FILTER_CCD_LIST_PROPERTY_NAME, m_camera_select);
 	}
 	if (client_match_device_property(property, nullptr, FILTER_WHEEL_LIST_PROPERTY_NAME) || property->name[0] == '\0') {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
-		indigo_property *p = properties.get(property->device, FILTER_WHEEL_LIST_PROPERTY_NAME);
-		if (p) {
-			for (int i = 0; i < p->count; i++) {
-				QString device = QString(p->device);
-				int index = m_wheel_select->findData(device);
-				if (index >= 0) {
-					m_wheel_select->removeItem(index);
-					indigo_debug("[REMOVE device] %s at index\n", device.toUtf8().data(), index);
-				} else {
-					indigo_debug("[No device] %s\n", device.toUtf8().data());
-				}
-			}
-		}
+		remove_devices_from_combobox(property->device, FILTER_WHEEL_LIST_PROPERTY_NAME, m_wheel_select);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME) || property->name[0] == '\0') {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
