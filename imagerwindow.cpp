@@ -322,6 +322,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	camera_frame_layout->addWidget(label, row, 2);
 	m_filter_select = new QComboBox();
 	camera_frame_layout->addWidget(m_filter_select, row, 3);
+	connect(m_filter_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_filter_selected);
 
 	// Frame prefix
 	row++;
@@ -589,6 +590,15 @@ void ImagerWindow::on_frame_type_selected(int index) {
 
 	indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 	change_ccd_frame_type_property(selected_agent);
+}
+
+void ImagerWindow::on_filter_selected(int index) {
+	static char selected_agent[INDIGO_NAME_SIZE];
+
+	get_selected_agent(selected_agent);
+
+	indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+	change_wheel_slot_property(selected_agent);
 }
 
 

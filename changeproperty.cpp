@@ -100,3 +100,12 @@ void ImagerWindow::change_agent_abort_process_property(const char *agent) const 
 	};
 	indigo_change_switch_property(nullptr, agent, AGENT_ABORT_PROCESS_PROPERTY_NAME, 1, items, values);
 }
+
+void ImagerWindow::change_wheel_slot_property(const char *agent) const {
+	static const char *items[] = {
+		WHEEL_SLOT_ITEM_NAME
+	};
+	static double values[1];
+	values[0] = (double)m_filter_select->currentIndex() + 1;
+	indigo_change_number_property(nullptr, agent, WHEEL_SLOT_PROPERTY_NAME, 1, items, values);
+}

@@ -83,6 +83,28 @@ static void add_items_to_combobox(indigo_property *property, QComboBox *items_co
 	}
 }
 
+static void reset_filter_names(indigo_property *property, QComboBox *filter_select) {
+	filter_select->clear();
+	for (int i = 0; i < property->count; i++) {
+		QString filter_name = QString(property->items[i].text.value);
+		if (filter_select->findText(filter_name) < 0) {
+			filter_select->addItem(filter_name, QString(property->items[i].name));
+			indigo_debug("[ADD mode] %s\n", filter_name.toUtf8().data());
+			//if (property->items[i].sw.value) {
+			//	m_filter_select->setCurrentIndex(m_filter_select->findText(filter_name));
+			//}
+		} else {
+			indigo_debug("[DUPLICATE mode] %s\n", filter_name.toUtf8().data());
+		}
+	}
+}
+
+static void set_filter_selected(indigo_property *property, QComboBox *filter_select) {
+	if (property->count == 1) {
+		indigo_debug("SELECT: %s = %d\n", property->items[0].name, property->items[0].number.value);
+		filter_select->setCurrentIndex((int)property->items[0].number.value-1);
+	}
+}
 
 void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 	char timestamp[16];
@@ -180,19 +202,13 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 		}
 	}
 	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME)) {
-		m_filter_select->clear();
-		for (int i = 0; i < property->count; i++) {
-			QString filter_name = QString(property->items[i].text.value);
-			if (m_filter_select->findText(filter_name) < 0) {
-				m_filter_select->addItem(filter_name, QString(property->items[i].name));
-				indigo_debug("[ADD mode] %s\n", filter_name.toUtf8().data());
-				//if (property->items[i].sw.value) {
-				//	m_filter_select->setCurrentIndex(m_filter_select->findText(filter_name));
-				//}
-			} else {
-				indigo_debug("[DUPLICATE mode] %s\n", filter_name.toUtf8().data());
-			}
-		}
+		reset_filter_names(property, m_filter_select);
+		indigo_property *p = properties.get(property->device, WHEEL_SLOT_PROPERTY_NAME);
+		if (p) set_filter_selected(p, m_filter_select);
+	}
+
+	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_PROPERTY_NAME)) {
+		set_filter_selected(property, m_filter_select);
 	}
 
 	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
@@ -241,6 +257,11 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 				break;
 			}
 		}
+	}
+	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME)) {
+		reset_filter_names(property, m_filter_select);
+		indigo_property *p = properties.get(property->device, WHEEL_SLOT_PROPERTY_NAME);
+		if (p) set_filter_selected(p, m_filter_select);
 	}
 	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_PROPERTY_NAME)) {
 		if (property->count == 1) {
