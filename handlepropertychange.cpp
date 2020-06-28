@@ -41,6 +41,7 @@ static void change_devices_combobox_slection(indigo_property *property, QComboBo
 }
 
 static void remove_devices_from_combobox(char *device_name, char *property_name, QComboBox *devices_combobox) {
+	/*
 	indigo_property *p = properties.get(device_name, property_name);
 	if (p) {
 		for (int i = 0; i < p->count; i++) {
@@ -54,6 +55,16 @@ static void remove_devices_from_combobox(char *device_name, char *property_name,
 			}
 		}
 	}
+	*/
+	int index;
+	QString device = QString(device_name);
+	do {
+		index = devices_combobox->findData(device);
+		if (index >= 0) {
+			devices_combobox->removeItem(index);
+			indigo_debug("[REMOVE device] %s at index\n", device.toUtf8().data(), index);
+		}
+	} while (index >= 0);
 }
 
 static void add_items_to_combobox(indigo_property *property, QComboBox *items_combobox) {
@@ -362,24 +373,29 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 	}
 	indigo_debug("[REMOVE REMOVE REMOVE REMOVE] %s.%s\n", property->device, property->name);
 
-	if (client_match_device_property(property, nullptr, FILTER_CCD_LIST_PROPERTY_NAME) || property->name[0] == '\0') {
+	if (client_match_device_property(property, nullptr, FILTER_CCD_LIST_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, property->device)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		remove_devices_from_combobox(property->device, FILTER_CCD_LIST_PROPERTY_NAME, m_camera_select);
 	}
-	if (client_match_device_property(property, nullptr, FILTER_WHEEL_LIST_PROPERTY_NAME) || property->name[0] == '\0') {
+	if (client_match_device_property(property, nullptr, FILTER_WHEEL_LIST_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, property->device)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		remove_devices_from_combobox(property->device, FILTER_WHEEL_LIST_PROPERTY_NAME, m_wheel_select);
 	}
 
-	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME) || property->name[0] == '\0') {
+	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		m_frame_size_select->clear();
 	}
-	if (client_match_device_property(property, selected_agent, CCD_FRAME_TYPE_PROPERTY_NAME) || property->name[0] == '\0') {
+	if (client_match_device_property(property, selected_agent, CCD_FRAME_TYPE_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		m_frame_type_select->clear();
 	}
-	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME) || property->name[0] == '\0') {
+	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		m_roi_x->setValue(0);
 		m_roi_x->setEnabled(false);
@@ -390,7 +406,8 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 		m_roi_h->setValue(0);
 		m_roi_h->setEnabled(false);
 	}
-	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME) || property->name[0] == '\0') {
+	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		m_filter_select->clear();
 	}

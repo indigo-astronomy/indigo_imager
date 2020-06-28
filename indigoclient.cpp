@@ -41,6 +41,12 @@ bool client_match_device_property(indigo_property *property, const char *device_
 	return (!strncmp(property->name, property_name, INDIGO_NAME_SIZE) && !strncmp(property->device, device_name, INDIGO_NAME_SIZE));
 }
 
+bool client_match_device_no_property(indigo_property *property, const char *device_name) {
+	if (device_name == nullptr) return false;
+
+	return (property->name[0] == '\0' && !strncmp(property->device, device_name, INDIGO_NAME_SIZE));
+}
+
 
 static indigo_result client_define_property(indigo_client *client, indigo_device *device, indigo_property *property, const char *message) {
 	Q_UNUSED(device);
