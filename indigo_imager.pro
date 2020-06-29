@@ -18,6 +18,7 @@ DEFINES += QT_DEPRECATED_WARNINGS QZEROCONF_STATIC
 SOURCES += \
 	main.cpp \
 	qservicemodel.cpp \
+	capture_tab.cpp \
 	imagerwindow.cpp \
 	qindigoservice.cpp \
 	indigoclient.cpp \

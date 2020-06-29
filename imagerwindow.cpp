@@ -187,204 +187,30 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	QVBoxLayout *form_layout = new QVBoxLayout();
 	form_layout->setSpacing(0);
 	form_layout->setContentsMargins(1, 0, 0, 0);
-	//form_layout->setMargin(0);
 	form_panel->setLayout(form_layout);
 
-	QTabWidget *tabWidget = new QTabWidget;
-	// Create Camera Control Frame
-	QFrame *camera_frame = new QFrame();
-	QFrame *focuser_frame = new QFrame();
-	QFrame *guider_frame = new QFrame();
-	QWidget *camera_panel = new QWidget();
-	QVBoxLayout *camera_panel_layout = new QVBoxLayout();
-	camera_frame->setFrameShape(QFrame::StyledPanel);
-	camera_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
-	camera_frame->setContentsMargins(0, 0, 0, 0);
+	// Tools Panel
+	QWidget *tools_panel = new QWidget;
+	QVBoxLayout *tools_panel_layout = new QVBoxLayout();
+	tools_panel_layout->setSpacing(0);
+	tools_panel_layout->setContentsMargins(0, 0, 1, 0);
+	tools_panel->setLayout(tools_panel_layout);
 
-	camera_panel_layout->setSpacing(0);
-	camera_panel_layout->setContentsMargins(0, 0, 1, 0);
-	//camera_panel_layout->setMargin(0);
-	camera_panel->setLayout(camera_panel_layout);
-	tabWidget->addTab(camera_frame, "Capture");
-	tabWidget->addTab(focuser_frame, "Focus");
-	tabWidget->addTab(guider_frame, "Guide");
-	camera_panel_layout->addWidget(tabWidget);
+	// Tools tabbar
+	QTabWidget *tools_tabbar = new QTabWidget;
+	tools_panel_layout->addWidget(tools_tabbar);
 
+	QFrame *capture_frame = new QFrame();
+	tools_tabbar->addTab(capture_frame, "Capture");
+	crate_imager_tab(capture_frame);
 
+	QFrame *focuser_frame = new QFrame;
+	tools_tabbar->addTab(focuser_frame, "Focus");
 
-	QGridLayout *camera_frame_layout = new QGridLayout();
-	camera_frame_layout->setAlignment(Qt::AlignTop);
-	camera_frame->setLayout(camera_frame_layout);
-	int row = 0;
-	// camera selection
-	QLabel *label = new QLabel("Camera:");
-	camera_frame_layout->addWidget(label, row, 0);
-	m_camera_select = new QComboBox();
-	camera_frame_layout->addWidget(m_camera_select, row, 1, 1, 3);
-	connect(m_camera_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_camera_selected);
+	QFrame *guider_frame = new QFrame;
+	tools_tabbar->addTab(guider_frame, "Guide");
 
-	// Filter wheel selection
-	row++;
-	label = new QLabel("Wheel:");
-	camera_frame_layout->addWidget(label, row, 0);
-	m_wheel_select = new QComboBox();
-	camera_frame_layout->addWidget(m_wheel_select, row, 1, 1, 3);
-	connect(m_wheel_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_wheel_selected);
-
-	//row++;
-	//QFrame* line = new QFrame();
-	//line->setFrameShape(QFrame::HLine);
-	//line->setFrameShadow(QFrame::Plain);
-	//camera_frame_layout->addWidget(line, row, 0, 1, 4);
-
-	// frame type
-	row++;
-	label = new QLabel("Frame:");
-	camera_frame_layout->addWidget(label, row, 0);
-	m_frame_size_select = new QComboBox();
-	camera_frame_layout->addWidget(m_frame_size_select, row, 1, 1, 2);
-	connect(m_frame_size_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_ccd_mode_selected);
-	m_frame_type_select = new QComboBox();
-	camera_frame_layout->addWidget(m_frame_type_select, row, 3);
-	connect(m_frame_type_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_frame_type_selected);
-
-	// ROI
-	row++;
-	label = new QLabel("ROI X:");
-	camera_frame_layout->addWidget(label, row, 0);
-	m_roi_x = new QSpinBox();
-	m_roi_x->setMaximum(100000);
-	m_roi_x->setMinimum(0);
-	m_roi_x->setValue(0);
-	m_roi_x->setEnabled(false);
-	camera_frame_layout->addWidget(m_roi_x , row, 1);
-
-	label = new QLabel("W:");
-	camera_frame_layout->addWidget(label, row, 2);
-	m_roi_w = new QSpinBox();
-	m_roi_w->setMaximum(100000);
-	m_roi_w->setMinimum(0);
-	m_roi_w->setValue(0);
-	m_roi_w->setEnabled(false);
-	camera_frame_layout->addWidget(m_roi_w, row, 3);
-
-	// ROI
-	row++;
-	label = new QLabel("ROI Y:");
-	camera_frame_layout->addWidget(label, row, 0);
-	m_roi_y = new QSpinBox();
-	m_roi_y->setMaximum(100000);
-	m_roi_y->setMinimum(0);
-	m_roi_y->setValue(0);
-	m_roi_y->setEnabled(false);
-	camera_frame_layout->addWidget(m_roi_y , row, 1);
-
-	label = new QLabel("H:");
-	camera_frame_layout->addWidget(label, row, 2);
-	m_roi_h = new QSpinBox();
-	m_roi_h->setMaximum(100000);
-	m_roi_h->setMinimum(0);
-	m_roi_h->setValue(0);
-	m_roi_h->setEnabled(false);
-	camera_frame_layout->addWidget(m_roi_h, row, 3);
-
-	// Exposure time
-	row++;
-	label = new QLabel("Exposure (s):");
-	camera_frame_layout->addWidget(label, row, 0);
-	m_exposure_time = new QDoubleSpinBox();
-	m_exposure_time->setMaximum(10000);
-	m_exposure_time->setMinimum(0);
-	m_exposure_time->setValue(1);
-	camera_frame_layout->addWidget(m_exposure_time, row, 1);
-
-	//label = new QLabel(QChar(0x0394)+QString("t:"));
-	label = new QLabel("Delay (s):");
-	camera_frame_layout->addWidget(label, row, 2);
-	m_exposure_delay = new QDoubleSpinBox();
-	m_exposure_delay->setMaximum(10000);
-	m_exposure_delay->setMinimum(0);
-	m_exposure_delay->setValue(0);
-	//m_exposure_delay->setEnabled(false);
-	camera_frame_layout->addWidget(m_exposure_delay, row, 3);
-
-	// Frame count
-	row++;
-	label = new QLabel("No frames:");
-	camera_frame_layout->addWidget(label, row, 0);
-	m_frame_count = new QSpinBox();
-	m_frame_count->setMaximum(100000);
-	m_frame_count->setMinimum(-1);
-	m_frame_count->setValue(1);
-	camera_frame_layout->addWidget(m_frame_count, row, 1);
-
-	label = new QLabel("Filter:");
-	camera_frame_layout->addWidget(label, row, 2);
-	m_filter_select = new QComboBox();
-	camera_frame_layout->addWidget(m_filter_select, row, 3);
-	connect(m_filter_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_filter_selected);
-
-	// Frame prefix
-	row++;
-	label = new QLabel("Object:");
-	camera_frame_layout->addWidget(label, row, 0);
-	m_object_name = new QLineEdit();
-	camera_frame_layout->addWidget(m_object_name, row, 1, 1, 3);
-
-	//row++;
-	//line = new QFrame();
-	//line->setFrameShape(QFrame::HLine);
-	//line->setFrameShadow(QFrame::Plain);
-	//camera_frame_layout->addWidget(line, row, 0, 1, 4);
-
-	// Buttons
-	row++;
-	QWidget *toolbar = new QWidget;
-	QHBoxLayout *toolbox = new QHBoxLayout(toolbar);
-	toolbar->setContentsMargins(1,1,1,1);
-	toolbox->setContentsMargins(1,1,1,1);
-	camera_frame_layout->addWidget(toolbar, row, 0, 1, 4);
-
-
-	m_pause_button = new QPushButton("Pause");
-	toolbox->addWidget(m_pause_button);
-	m_pause_button->setStyleSheet("min-width: 30px");
-	m_pause_button->setIcon(QIcon(":resource/pause.png"));
-	connect(m_pause_button, &QPushButton::clicked, this, &ImagerWindow::on_pause);
-
-	QPushButton *button = new QPushButton("Abort");
-	button->setStyleSheet("min-width: 30px");
-	button->setIcon(QIcon(":resource/stop.png"));
-	toolbox->addWidget(button);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
-
-	button = new QPushButton("Start");
-	button->setStyleSheet("min-width: 30px");
-	button->setIcon(QIcon(":resource/record.png"));
-	toolbox->addWidget(button);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_start);
-
-	button = new QPushButton("Preview");
-	button->setStyleSheet("min-width: 30px");
-	button->setIcon(QIcon(":resource/play.png"));
-	toolbox->addWidget(button);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_preview);
-
-	row++;
-	m_exposure_progress = new QProgressBar();
-	camera_frame_layout->addWidget(m_exposure_progress, row, 0, 1, 4);
-	m_exposure_progress->setFormat("Exposure: Idle");
-	m_exposure_progress->setMaximum(1);
-	m_exposure_progress->setValue(0);
-
-	row++;
-	m_process_progress = new QProgressBar();
-	camera_frame_layout->addWidget(m_process_progress, row, 0, 1, 4);
-	m_process_progress->setMaximum(1);
-	m_process_progress->setValue(0);
-	m_process_progress->setFormat("Process: Idle");
-
-
+	// Image viewer
 	m_viewer = new pal::ImageViewer(this);
 	m_viewer->setText("No Image");
 	m_viewer->setToolBarMode(pal::ImageViewer::ToolBarMode::Visible);
@@ -392,12 +218,12 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_viewer->setMinimumWidth(PROPERTY_AREA_MIN_WIDTH);
 
 	QSplitter* hSplitter = new QSplitter;
-	hSplitter->addWidget(camera_panel);
+	hSplitter->addWidget(tools_panel);
 	hSplitter->addWidget(form_panel);
 	hSplitter->setStretchFactor(0, 25);
 	hSplitter->setStretchFactor(1, 55);
-	propertyLayout->addWidget(hSplitter, 85);
 
+	propertyLayout->addWidget(hSplitter, 85);
 	propertyLayout->addWidget(mLog, 15);
 
 	mServiceModel = new QServiceModel("_indigo._tcp");
@@ -450,55 +276,6 @@ ImagerWindow::~ImagerWindow () {
 }
 
 
-void ImagerWindow::on_preview(bool clicked) {
-	indigo_debug("CALLED: %s\n", __FUNCTION__);
-	static char selected_agent[INDIGO_NAME_SIZE];
-	get_selected_agent(selected_agent);
-
-	change_ccd_frame_property(selected_agent);
-	change_ccd_exposure_property(selected_agent);
-	m_preview = true;
-}
-
-
-void ImagerWindow::on_start(bool clicked) {
-	indigo_debug("CALLED: %s\n", __FUNCTION__);
-	static char selected_agent[INDIGO_NAME_SIZE];
-	get_selected_agent(selected_agent);
-
-	change_agent_batch_property(selected_agent);
-	change_ccd_frame_property(selected_agent);
-	change_agent_start_exposure_property(selected_agent);
-	m_preview = false;
-}
-
-void ImagerWindow::on_abort(bool clicked) {
-	indigo_debug("CALLED: %s\n", __FUNCTION__);
-	static char selected_agent[INDIGO_NAME_SIZE];
-	get_selected_agent(selected_agent);
-
-	if (m_preview) {
-		change_ccd_abort_exposure_property(selected_agent);
-	} else {
-		change_agent_abort_process_property(selected_agent);
-	}
-}
-
-void ImagerWindow::on_pause(bool clicked) {
-	indigo_debug("CALLED: %s\n", __FUNCTION__);
-
-	//QPushButton *button = (QPushButton *)sender();
-	//button->setText("Continue");
-
-	static char selected_agent[INDIGO_NAME_SIZE];
-	get_selected_agent(selected_agent);
-
-	indigo_property *p = properties.get(selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME);
-	if (p == nullptr || p->count != 1) return;
-
-	change_agent_pause_process_property(selected_agent);
-}
-
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){
 	char selected_agent[INDIGO_VALUE_SIZE];
 
@@ -535,72 +312,6 @@ void ImagerWindow::on_message_sent(indigo_property* property, char *message) {
 	on_window_log(property, message);
 	free(message);
 }
-
-
-void ImagerWindow::on_camera_selected(int index) {
-	static char selected_camera[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
-	QString q_camera_str = m_camera_select->currentText();
-	int idx = q_camera_str.indexOf(" @ ");
-	if (idx >=0) q_camera_str.truncate(idx);
-	if (q_camera_str.compare("No camera") == 0) {
-		strcpy(selected_camera, "NONE");
-	} else {
-		strncpy(selected_camera, q_camera_str.toUtf8().constData(), INDIGO_NAME_SIZE);
-	}
-	strncpy(selected_agent, m_camera_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
-
-	indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_camera);
-	static const char * items[] = { selected_camera };
-	static bool values[] = { true };
-	indigo_change_switch_property(nullptr, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME, 1, items, values);
-}
-
-void ImagerWindow::on_wheel_selected(int index) {
-	static char selected_wheel[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
-	QString q_wheel_str = m_wheel_select->currentText();
-	int idx = q_wheel_str.indexOf(" @ ");
-	if (idx >=0) q_wheel_str.truncate(idx);
-	if (q_wheel_str.compare("No wheel") == 0) {
-		strcpy(selected_wheel, "NONE");
-	} else {
-		strncpy(selected_wheel, q_wheel_str.toUtf8().constData(), INDIGO_NAME_SIZE);
-	}
-	strncpy(selected_agent, m_wheel_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
-
-	indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_wheel);
-	static const char * items[] = { selected_wheel };
-
-	static bool values[] = { true };
-	indigo_change_switch_property(nullptr, selected_agent, FILTER_WHEEL_LIST_PROPERTY_NAME, 1, items, values);
-}
-
-void ImagerWindow::on_ccd_mode_selected(int index) {
-	static char selected_agent[INDIGO_NAME_SIZE];
-
-	get_selected_agent(selected_agent);
-
-	indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-	change_ccd_mode_property(selected_agent);
-}
-
-void ImagerWindow::on_frame_type_selected(int index) {
-	static char selected_agent[INDIGO_NAME_SIZE];
-
-	get_selected_agent(selected_agent);
-
-	indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-	change_ccd_frame_type_property(selected_agent);
-}
-
-void ImagerWindow::on_filter_selected(int index) {
-	static char selected_agent[INDIGO_NAME_SIZE];
-
-	get_selected_agent(selected_agent);
-
-	indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-	change_wheel_slot_property(selected_agent);
-}
-
 
 void ImagerWindow::save_blob_item(indigo_item *item) {
 	if (item->blob.value != NULL) {

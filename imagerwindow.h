@@ -130,6 +130,7 @@ private:
 	QIndigoServers *mIndigoServers;
 	QServiceModel *mServiceModel;
 
+	void crate_imager_tab(QFrame *camera_frame);
 	void change_ccd_frame_property(const char *agent) const;
 	void change_ccd_exposure_property(const char *agent) const;
 	void change_ccd_abort_exposure_property(const char *agent) const;
