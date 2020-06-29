@@ -163,6 +163,7 @@ void ImagerWindow::crate_imager_tab(QFrame *capture_frame) {
 
 	m_cooler_onoff = new QCheckBox();
 	cooler_box->addWidget(m_cooler_onoff);
+	m_cooler_onoff->setEnabled(false);
 
 	m_set_temp = new QDoubleSpinBox();
 	m_set_temp->setMaximum(60);

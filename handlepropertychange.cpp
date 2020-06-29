@@ -28,7 +28,6 @@ static void add_devices_to_combobox(indigo_property *property, QComboBox *device
 
 static void change_devices_combobox_slection(indigo_property *property, QComboBox *devices_combobox) {
 	for (int i = 0; i < property->count; i++) {
-		//QString item_name = QString(property->items[i].name);
 		if (property->items[i].sw.value) {
 			QString domain = QString(property->device);
 			domain.remove(0, domain.indexOf(" @ "));
@@ -41,21 +40,6 @@ static void change_devices_combobox_slection(indigo_property *property, QComboBo
 }
 
 static void remove_devices_from_combobox(char *device_name, char *property_name, QComboBox *devices_combobox) {
-	/*
-	indigo_property *p = properties.get(device_name, property_name);
-	if (p) {
-		for (int i = 0; i < p->count; i++) {
-			QString device = QString(p->device);
-			int index = devices_combobox->findData(device);
-			if (index >= 0) {
-				devices_combobox->removeItem(index);
-				indigo_debug("[REMOVE device] %s at index\n", device.toUtf8().data(), index);
-			} else {
-				indigo_debug("[No device] %s\n", device.toUtf8().data());
-			}
-		}
-	}
-	*/
 	int index;
 	QString device = QString(device_name);
 	do {
