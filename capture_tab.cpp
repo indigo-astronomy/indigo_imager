@@ -126,12 +126,56 @@ void ImagerWindow::crate_imager_tab(QFrame *capture_frame) {
 	m_object_name = new QLineEdit();
 	capture_frame_layout->addWidget(m_object_name, row, 1, 1, 3);
 
-	//row++;
-	//line = new QFrame();
-	//line->setFrameShape(QFrame::HLine);
-	//line->setFrameShadow(QFrame::Plain);
-	//capture_frame_layout->addWidget(line, row, 0, 1, 4);
+	// Cooler
+	row++;
+	QFrame *line = new QFrame();
+	line->setFrameShape(QFrame::HLine);
+	line->setFrameShadow(QFrame::Plain);
+	capture_frame_layout->addWidget(line, row, 0, 1, 4);
 
+	row++;
+	QWidget *cooler_bar = new QWidget();
+	cooler_bar->setContentsMargins(0,0,0,0);
+
+	QHBoxLayout *cooler_box = new QHBoxLayout(cooler_bar);
+	cooler_box->setContentsMargins(0,0,0,0);
+
+	capture_frame_layout->addWidget(cooler_bar, row, 0, 1, 4);
+	cooler_bar->setContentsMargins(0,0,0,6);
+
+	label = new QLabel("Cooler (C):");
+	cooler_box->addWidget(label);
+
+	m_current_temp = new QLineEdit();
+	cooler_box->addWidget(m_current_temp);
+	m_current_temp->setStyleSheet("width: 30px");
+	m_current_temp->setText("");
+	m_current_temp->setEnabled(false);
+
+	label = new QLabel("P:");
+	cooler_box->addWidget(label);
+
+	m_cooler_pwr = new QLineEdit();
+	cooler_box->addWidget(m_cooler_pwr);
+	m_cooler_pwr->setStyleSheet("width: 30px");
+	m_cooler_pwr->setText("");
+	m_cooler_pwr->setEnabled(false);
+
+	m_cooler_onoff = new QCheckBox();
+	cooler_box->addWidget(m_cooler_onoff);
+
+	m_set_temp = new QDoubleSpinBox();
+	m_set_temp->setMaximum(60);
+	m_set_temp->setMinimum(-120);
+	m_set_temp->setValue(0);
+	m_set_temp->setEnabled(false);
+	//m_exposure_delay->setEnabled(false);
+	cooler_box->addWidget(m_set_temp);
+
+	//button = new QPushButton("Set");
+	//button->setStyleSheet("min-width: 60px");
+	//button->setIcon(QIcon(":resource/play.png"));
+	//cooler_box->addWidget(button);
 	// Buttons
 	row++;
 	QWidget *toolbar = new QWidget;

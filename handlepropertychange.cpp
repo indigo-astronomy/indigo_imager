@@ -106,6 +106,41 @@ static void set_filter_selected(indigo_property *property, QComboBox *filter_sel
 	}
 }
 
+static void update_cooler_onoff(indigo_property *property, QCheckBox *cooler_onoff) {
+	cooler_onoff->setEnabled(true);
+	for (int i = 0; i < property->count; i++) {
+		if (!strcmp(property->items[i].name, CCD_COOLER_ON_ITEM_NAME)) {
+			cooler_onoff->setChecked(property->items[i].sw.value);
+			break;
+		}
+	}
+}
+
+static void update_ccd_temperature(indigo_property *property, QLineEdit *current_temp, QDoubleSpinBox *set_temp) {
+	indigo_debug("change %s", property->name);
+	if(property->count == 1) {
+		if (property->perm == INDIGO_RO_PERM) {
+			set_temp->setEnabled(false);
+		} else {
+			set_temp->setEnabled(true);
+		}
+		indigo_debug("change %s = %f", property->items[0].name, property->items[0].number.value);
+		char temperature[INDIGO_VALUE_SIZE];
+		snprintf(temperature, INDIGO_VALUE_SIZE, "%.1f", property->items[0].number.value);
+		current_temp->setText(temperature);
+	}
+}
+
+static void update_cooler_power(indigo_property *property, QLineEdit *cooler_pwr) {
+	indigo_debug("change %s", property->name);
+	if(property->count == 1) {
+		indigo_debug("change %s = %f", property->items[0].name, property->items[0].number.value);
+		char power[INDIGO_VALUE_SIZE];
+		snprintf(power, INDIGO_VALUE_SIZE, "%.1f%%", property->items[0].number.value);
+		cooler_pwr->setText(power);
+	}
+}
+
 void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 	char timestamp[16];
 	char log_line[512];
@@ -223,6 +258,15 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 				}
 			}
 		}
+	}
+	if (client_match_device_property(property, selected_agent, CCD_COOLER_PROPERTY_NAME)) {
+		update_cooler_onoff(property, m_cooler_onoff);
+	}
+	if (client_match_device_property(property, selected_agent, CCD_COOLER_POWER_PROPERTY_NAME)) {
+		update_cooler_power(property, m_cooler_pwr);
+	}
+	if (client_match_device_property(property, selected_agent, CCD_TEMPERATURE_PROPERTY_NAME)) {
+		update_ccd_temperature(property, m_current_temp, m_set_temp);
 	}
 	properties.create(property);
 }
@@ -381,6 +425,15 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			}
 		}
 	}
+	if (client_match_device_property(property, selected_agent, CCD_COOLER_PROPERTY_NAME)) {
+		update_cooler_onoff(property, m_cooler_onoff);
+	}
+	if (client_match_device_property(property, selected_agent, CCD_COOLER_POWER_PROPERTY_NAME)) {
+		update_cooler_power(property, m_cooler_pwr);
+	}
+	if (client_match_device_property(property, selected_agent, CCD_TEMPERATURE_PROPERTY_NAME)) {
+		update_ccd_temperature(property, m_current_temp, m_set_temp);
+	}
 	properties.create(property);
 }
 
@@ -431,6 +484,22 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		m_filter_select->clear();
+	}
+	if (client_match_device_property(property, selected_agent, CCD_COOLER_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		m_cooler_onoff->setEnabled(false);
+		m_cooler_onoff->setChecked(false);
+	}
+	if (client_match_device_property(property, selected_agent, CCD_COOLER_POWER_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		indigo_debug("REMOVE %s", property->name);
+		m_cooler_pwr->setText("");
+	}
+	if (client_match_device_property(property, selected_agent, CCD_TEMPERATURE_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		indigo_debug("REMOVE %s", property->name);
+		m_current_temp->setText("");
+		m_set_temp->setEnabled(false);
 	}
 	properties.remove(property);
 	free(property);

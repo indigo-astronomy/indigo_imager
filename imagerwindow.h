@@ -47,6 +47,7 @@ class QIndigoServers;
 #include <QMessageBox>
 #include <QActionGroup>
 #include <QLineEdit>
+#include <QCheckBox>
 #include <QStandardPaths>
 #include <QDir>
 
@@ -124,6 +125,11 @@ private:
 
 	QProgressBar *m_exposure_progress;
 	QProgressBar *m_process_progress;
+
+	QDoubleSpinBox *m_set_temp;
+	QLineEdit *m_current_temp;
+	QLineEdit *m_cooler_pwr;
+	QCheckBox *m_cooler_onoff;
 
 	pal::ImageViewer *m_viewer;
 
