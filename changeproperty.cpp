@@ -109,3 +109,32 @@ void ImagerWindow::change_wheel_slot_property(const char *agent) const {
 	values[0] = (double)m_filter_select->currentIndex() + 1;
 	indigo_change_number_property(nullptr, agent, WHEEL_SLOT_PROPERTY_NAME, 1, items, values);
 }
+
+void ImagerWindow::change_cooler_onoff_property(const char *agent) const {
+	if (m_cooler_onoff->isChecked()) {
+		static const char *items[] = {
+			CCD_COOLER_ON_ITEM_NAME
+		};
+		static bool values[] = {
+			true
+		};
+		indigo_change_switch_property(nullptr, agent, CCD_COOLER_PROPERTY_NAME, 1, items, values);
+	} else {
+		static const char *items[] = {
+			CCD_COOLER_OFF_ITEM_NAME
+		};
+		static bool values[] = {
+			true
+		};
+		indigo_change_switch_property(nullptr, agent, CCD_COOLER_PROPERTY_NAME, 1, items, values);
+	}
+}
+
+void ImagerWindow::change_ccd_temperature_property(const char *agent) const {
+	static const char *items[] = {
+		CCD_TEMPERATURE_ITEM_NAME
+	};
+	static double values[1];
+	values[0] = (double)m_set_temp->value();
+	indigo_change_number_property(nullptr, agent, CCD_TEMPERATURE_PROPERTY_NAME, 1, items, values);
+}

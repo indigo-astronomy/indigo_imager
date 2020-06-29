@@ -164,12 +164,14 @@ void ImagerWindow::crate_imager_tab(QFrame *capture_frame) {
 	m_cooler_onoff = new QCheckBox();
 	cooler_box->addWidget(m_cooler_onoff);
 	m_cooler_onoff->setEnabled(false);
+	connect(m_cooler_onoff, &QCheckBox::toggled, this, &ImagerWindow::on_cooler_onoff);
 
 	m_set_temp = new QDoubleSpinBox();
 	m_set_temp->setMaximum(60);
 	m_set_temp->setMinimum(-120);
 	m_set_temp->setValue(0);
 	m_set_temp->setEnabled(false);
+	connect(m_set_temp, &QDoubleSpinBox::editingFinished, this, &ImagerWindow::on_teperature_set);
 	//m_exposure_delay->setEnabled(false);
 	cooler_box->addWidget(m_set_temp);
 
@@ -337,4 +339,21 @@ void ImagerWindow::on_filter_selected(int index) {
 
 	indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 	change_wheel_slot_property(selected_agent);
+}
+
+void ImagerWindow::on_cooler_onoff(bool state) {
+	static char selected_agent[INDIGO_NAME_SIZE];
+
+	get_selected_agent(selected_agent);
+
+	indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+	change_cooler_onoff_property(selected_agent);
+}
+
+void ImagerWindow::on_teperature_set() {
+	indigo_debug("CALLED: %s\n", __FUNCTION__);
+	static char selected_agent[INDIGO_NAME_SIZE];
+	get_selected_agent(selected_agent);
+
+	change_ccd_temperature_property(selected_agent);
 }

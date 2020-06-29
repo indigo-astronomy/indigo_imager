@@ -103,6 +103,8 @@ public slots:
 	void on_ccd_mode_selected(int index);
 	void on_frame_type_selected(int index);
 	void on_filter_selected(int index);
+	void on_cooler_onoff(bool state);
+	void on_teperature_set();
 
 private:
 	bool m_preview;
@@ -147,6 +149,8 @@ private:
 	void change_agent_pause_process_property(const char *agent) const;
 	void change_agent_abort_process_property(const char *agent) const;
 	void change_wheel_slot_property(const char *agent) const;
+	void change_cooler_onoff_property(const char *agent) const;
+	void change_ccd_temperature_property(const char *agent) const;
 
 	bool save_blob_item_with_prefix(indigo_item *item, const char *prefix, char *file_name);
 	void save_blob_item(indigo_item *item);
