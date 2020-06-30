@@ -413,13 +413,13 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	}
 	indigo_debug("[REMOVE REMOVE REMOVE REMOVE] %s.%s\n", property->device, property->name);
 
-	if (client_match_device_property(property, nullptr, FILTER_CCD_LIST_PROPERTY_NAME) ||
-	    client_match_device_no_property(property, property->device)) {
+	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		m_camera_select->clear();
 	}
-	if (client_match_device_property(property, nullptr, FILTER_WHEEL_LIST_PROPERTY_NAME) ||
-	    client_match_device_no_property(property, property->device)) {
+	if (client_match_device_property(property, selected_agent, FILTER_WHEEL_LIST_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		m_wheel_select->clear();
 	}
@@ -481,12 +481,17 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 	if (client_match_device_property(property, property->device, INFO_PROPERTY_NAME) ||
 		client_match_device_no_property(property, property->device)) {
 		QString name = QString(property->device);
+		int selected_index = m_agent_select->currentIndex();
 		int index = m_agent_select->findText(name);
 		if (index >= 0) {
 			m_agent_select->removeItem(index);
-			indigo_debug("[REMOVE mode] %s\n", name.toUtf8().data());
+			if (selected_index == index) {
+				m_agent_select->setCurrentIndex(0);
+				on_agent_selected(0);
+			}
+			indigo_debug("[REMOVE agent] %s\n", name.toUtf8().data());
 		} else {
-			indigo_debug("[NOT FOUND mode] %s\n", name.toUtf8().data());
+			indigo_debug("[NOT FOUND agent] %s\n", name.toUtf8().data());
 		}
 	}
 	properties.remove(property);

@@ -288,9 +288,11 @@ void ImagerWindow::on_agent_selected(int index) {
 	memset(property, 0, sizeof(indigo_property));
 	get_selected_agent(property->device);
 	property_delete(property, nullptr);
+	free(property);
 
 	// populate them again with the new values
 	// use cache instead of enumeration request
+	/*
 	property_cache::iterator i = properties.begin();
 	while (i != properties.end()) {
 		indigo_property *property = i.value();
@@ -302,8 +304,8 @@ void ImagerWindow::on_agent_selected(int index) {
 			indigo_debug("property: %s(%s) == EMPTY\n", __FUNCTION__, key.toUtf8().constData());
 		}
 		i++;
-	}
-	//indigo_enumerate_properties(nullptr, &INDIGO_ALL_PROPERTIES);
+	} */
+	indigo_enumerate_properties(nullptr, &INDIGO_ALL_PROPERTIES);
 }
 
 void ImagerWindow::on_camera_selected(int index) {
