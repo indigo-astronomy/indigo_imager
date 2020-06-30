@@ -11,7 +11,12 @@ void ImagerWindow::crate_imager_tab(QFrame *capture_frame) {
 	capture_frame->setContentsMargins(0, 0, 0, 0);
 
 	int row = 0;
+	m_agent_select = new QComboBox();
+	capture_frame_layout->addWidget(m_agent_select, row, 0, 1, 4);
+	connect(m_agent_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_agent_selected);
+
 	// camera selection
+	row++;
 	QLabel *label = new QLabel("Camera:");
 	capture_frame_layout->addWidget(label, row, 0);
 	m_camera_select = new QComboBox();
@@ -277,6 +282,30 @@ void ImagerWindow::on_pause(bool clicked) {
 	change_agent_pause_process_property(selected_agent);
 }
 
+void ImagerWindow::on_agent_selected(int index) {
+	// Clear controls
+	indigo_property *property = (indigo_property*)malloc(sizeof(indigo_property));
+	memset(property, 0, sizeof(indigo_property));
+	get_selected_agent(property->device);
+	property_delete(property, nullptr);
+
+	// populate them again with the new values
+	// use cache instead of enumeration request
+	property_cache::iterator i = properties.begin();
+	while (i != properties.end()) {
+		indigo_property *property = i.value();
+		QString key = i.key();
+		if (property != nullptr) {
+			indigo_debug("property: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), property);
+			property_define(property, nullptr);
+		} else {
+			indigo_debug("property: %s(%s) == EMPTY\n", __FUNCTION__, key.toUtf8().constData());
+		}
+		i++;
+	}
+	//indigo_enumerate_properties(nullptr, &INDIGO_ALL_PROPERTIES);
+}
+
 void ImagerWindow::on_camera_selected(int index) {
 	static char selected_camera[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
 	QString q_camera_str = m_camera_select->currentText();
@@ -287,7 +316,7 @@ void ImagerWindow::on_camera_selected(int index) {
 	} else {
 		strncpy(selected_camera, q_camera_str.toUtf8().constData(), INDIGO_NAME_SIZE);
 	}
-	strncpy(selected_agent, m_camera_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	get_selected_agent(selected_agent);
 
 	indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_camera);
 	static const char * items[] = { selected_camera };
@@ -305,7 +334,7 @@ void ImagerWindow::on_wheel_selected(int index) {
 	} else {
 		strncpy(selected_wheel, q_wheel_str.toUtf8().constData(), INDIGO_NAME_SIZE);
 	}
-	strncpy(selected_agent, m_wheel_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	get_selected_agent(selected_agent);
 
 	indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_wheel);
 	static const char * items[] = { selected_wheel };

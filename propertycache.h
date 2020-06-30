@@ -22,7 +22,7 @@
 #include <QHash>
 #include <indigo/indigo_client.h>
 
-class property_cache: QHash<QString, indigo_property*> {
+class property_cache: public QHash<QString, indigo_property*> {
 public:
 	property_cache(): property_mutex(PTHREAD_MUTEX_INITIALIZER) {
 	};

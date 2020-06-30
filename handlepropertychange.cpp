@@ -7,31 +7,11 @@
 #include "indigoclient.h"
 #include "propertycache.h"
 
-static void add_devices_to_combobox(indigo_property *property, QComboBox *devices_combobox) {
-	int current_index = devices_combobox->currentIndex();
-	for (int i = 0; i < property->count; i++) {
-		QString item_name = QString(property->items[i].name);
-		QString domain = QString(property->device);
-		domain.remove(0, domain.indexOf(" @ "));
-		QString device = QString(property->items[i].label) + domain;
-		if (devices_combobox->findText(device) < 0) {
-			devices_combobox->addItem(device, QString(property->device));
-			indigo_debug("[ADD device] %s\n", device.toUtf8().data());
-			if (property->items[i].sw.value && current_index < 0) {
-				devices_combobox->setCurrentIndex(devices_combobox->findText(device));
-			}
-		} else {
-			indigo_debug("[DUPLICATE device] %s\n", device.toUtf8().data());
-		}
-	}
-}
 
 static void change_devices_combobox_slection(indigo_property *property, QComboBox *devices_combobox) {
 	for (int i = 0; i < property->count; i++) {
 		if (property->items[i].sw.value) {
-			QString domain = QString(property->device);
-			domain.remove(0, domain.indexOf(" @ "));
-			QString device = QString(property->items[i].label) + domain;
+			QString device = QString(property->items[i].label);
 			devices_combobox->setCurrentIndex(devices_combobox->findText(device));
 			indigo_debug("[ADD device] %s\n", device.toUtf8().data());
 			break;
@@ -39,30 +19,19 @@ static void change_devices_combobox_slection(indigo_property *property, QComboBo
 	}
 }
 
-static void remove_devices_from_combobox(char *device_name, char *property_name, QComboBox *devices_combobox) {
-	int index;
-	QString device = QString(device_name);
-	do {
-		index = devices_combobox->findData(device);
-		if (index >= 0) {
-			devices_combobox->removeItem(index);
-			indigo_debug("[REMOVE device] %s at index\n", device.toUtf8().data(), index);
-		}
-	} while (index >= 0);
-}
 
 static void add_items_to_combobox(indigo_property *property, QComboBox *items_combobox) {
 	items_combobox->clear();
 	for (int i = 0; i < property->count; i++) {
-		QString mode = QString(property->items[i].label);
-		if (items_combobox->findText(mode) < 0) {
-			items_combobox->addItem(mode, QString(property->items[i].name));
-			indigo_debug("[ADD mode] %s\n", mode.toUtf8().data());
+		QString item = QString(property->items[i].label);
+		if (items_combobox->findText(item) < 0) {
+			items_combobox->addItem(item, QString(property->items[i].name));
+			indigo_debug("[ADD mode] %s\n", item.toUtf8().data());
 			if (property->items[i].sw.value) {
-				items_combobox->setCurrentIndex(items_combobox->findText(mode));
+				items_combobox->setCurrentIndex(items_combobox->findText(item));
 			}
 		} else {
-			indigo_debug("[DUPLICATE mode] %s\n", mode.toUtf8().data());
+			indigo_debug("[DUPLICATE mode] %s\n", item.toUtf8().data());
 		}
 	}
 }
@@ -169,18 +138,28 @@ void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 	mLog->appendHtml(log_line); // Adds the message to the widget
 }
 
-void ImagerWindow::on_property_define(indigo_property* property, char *message) {
+void ImagerWindow::property_define(indigo_property* property, char *message) {
 	char selected_agent[INDIGO_VALUE_SIZE];
 
-	if (!get_selected_agent(selected_agent) || strncmp(property->device, "Imager Agent",12)) {
+	if(!strncmp(property->device, "Imager Agent", 12)) {
+		QString name = QString(property->device);
+		if (m_agent_select->findText(name) < 0) {
+			m_agent_select->addItem(name, name);
+			indigo_debug("[ADD mode] %s\n", name.toUtf8().data());
+		} else {
+			indigo_debug("[DUPLICATE mode] %s\n", name.toUtf8().data());
+		}
+	}
+
+	if (!get_selected_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) {
 		return;
 	}
 
-	if (client_match_device_property(property, nullptr, FILTER_CCD_LIST_PROPERTY_NAME)) {
-		add_devices_to_combobox(property, m_camera_select);
+	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
+		add_items_to_combobox(property, m_camera_select);
 	}
-	if (client_match_device_property(property, nullptr, FILTER_WHEEL_LIST_PROPERTY_NAME)) {
-		add_devices_to_combobox(property, m_wheel_select);
+	if (client_match_device_property(property, selected_agent, FILTER_WHEEL_LIST_PROPERTY_NAME)) {
+		add_items_to_combobox(property, m_wheel_select);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME)) {
 		add_items_to_combobox(property, m_frame_size_select);
@@ -252,6 +231,10 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_agent, CCD_TEMPERATURE_PROPERTY_NAME)) {
 		update_ccd_temperature(property, m_current_temp, m_set_temp);
 	}
+}
+
+void ImagerWindow::on_property_define(indigo_property* property, char *message) {
+	property_define(property, message);
 	properties.create(property);
 }
 
@@ -262,10 +245,11 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		return;
 	}
 
-	if (client_match_device_property(property, nullptr, FILTER_CCD_LIST_PROPERTY_NAME)) {
+	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		change_devices_combobox_slection(property, m_camera_select);
 	}
-	if (client_match_device_property(property, nullptr, FILTER_WHEEL_LIST_PROPERTY_NAME)) {
+
+	if (client_match_device_property(property, selected_agent, FILTER_WHEEL_LIST_PROPERTY_NAME)) {
 		change_devices_combobox_slection(property, m_wheel_select);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME)) {
@@ -421,12 +405,10 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	properties.create(property);
 }
 
-
-void ImagerWindow::on_property_delete(indigo_property* property, char *message) {
+void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	char selected_agent[INDIGO_VALUE_SIZE];
 	indigo_debug("[REMOVE REMOVE REMOVE REMOVE REMOVE] %s.%s\n", property->device, property->name);
 	if (!get_selected_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) {
-		free(property);
 		return;
 	}
 	indigo_debug("[REMOVE REMOVE REMOVE REMOVE] %s.%s\n", property->device, property->name);
@@ -434,12 +416,12 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 	if (client_match_device_property(property, nullptr, FILTER_CCD_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, property->device)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
-		remove_devices_from_combobox(property->device, FILTER_CCD_LIST_PROPERTY_NAME, m_camera_select);
+		m_camera_select->clear();
 	}
 	if (client_match_device_property(property, nullptr, FILTER_WHEEL_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, property->device)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
-		remove_devices_from_combobox(property->device, FILTER_WHEEL_LIST_PROPERTY_NAME, m_wheel_select);
+		m_wheel_select->clear();
 	}
 
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME) ||
@@ -484,6 +466,28 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 		indigo_debug("REMOVE %s", property->name);
 		m_current_temp->setText("");
 		m_set_temp->setEnabled(false);
+	}
+}
+
+void ImagerWindow::on_property_delete(indigo_property* property, char *message) {
+
+	if (strncmp(property->device, "Imager Agent", 12)) {
+		free(property);
+		return;
+	}
+
+	property_delete(property, message);
+
+	if (client_match_device_property(property, property->device, INFO_PROPERTY_NAME) ||
+		client_match_device_no_property(property, property->device)) {
+		QString name = QString(property->device);
+		int index = m_agent_select->findText(name);
+		if (index >= 0) {
+			m_agent_select->removeItem(index);
+			indigo_debug("[REMOVE mode] %s\n", name.toUtf8().data());
+		} else {
+			indigo_debug("[NOT FOUND mode] %s\n", name.toUtf8().data());
+		}
 	}
 	properties.remove(property);
 	free(property);

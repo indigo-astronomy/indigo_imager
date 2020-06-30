@@ -60,11 +60,14 @@ public:
 	void property_define_delete(indigo_property* property, char *message, bool action_deleted);
 
 	bool get_selected_agent(char * selected_agent) {
-		if (!selected_agent || !m_camera_select) return false;
-		strncpy(selected_agent, m_camera_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+		if (!selected_agent || !m_agent_select) return false;
+		strncpy(selected_agent, m_agent_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+		indigo_debug("SELECTED AGENT = %s", selected_agent);
 		return true;
 	};
 
+	void property_delete(indigo_property* property, char *message);
+	void property_define(indigo_property* property, char *message);
 signals:
 	void enable_blobs(bool on);
 	void rebuild_blob_previews();
@@ -98,6 +101,7 @@ public slots:
 	void on_obsolete_preview(indigo_property *property, indigo_item *item);
 	void on_remove_preview(indigo_property *property, indigo_item *item);
 
+	void on_agent_selected(int index);
 	void on_wheel_selected(int index);
 	void on_camera_selected(int index);
 	void on_ccd_mode_selected(int index);
@@ -110,6 +114,7 @@ private:
 	bool m_preview;
 	QPlainTextEdit* mLog;
 
+	QComboBox *m_agent_select;
 	QComboBox *m_camera_select;
 	QComboBox *m_wheel_select;
 	QComboBox *m_frame_type_select;
