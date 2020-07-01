@@ -78,6 +78,14 @@ ImageViewer::ImageViewer(QWidget *parent)
     scene->addItem(m_pixmap);
     connect(m_pixmap, SIGNAL(mouseMoved(int,int)), SLOT(mouseAt(int,int)));
 
+/*
+	QGraphicsRectItem* item1 = new QGraphicsRectItem(0,0,100,100, m_pixmap);
+	item1->setBrush(QBrush(Qt::red));
+	item1->setOpacity(0.2);
+	scene->addItem(item1);
+	item1->setFlags(QGraphicsItem::ItemIsMovable);
+*/
+
     makeToolbar();
 
     auto box = new QVBoxLayout;

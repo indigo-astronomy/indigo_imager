@@ -2,7 +2,7 @@
 #include "propertycache.h"
 #include "conf.h"
 
-void ImagerWindow::crate_imager_tab(QFrame *capture_frame) {
+void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	QGridLayout *capture_frame_layout = new QGridLayout();
 	capture_frame_layout->setAlignment(Qt::AlignTop);
 	capture_frame->setLayout(capture_frame_layout);

@@ -202,10 +202,12 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	QFrame *capture_frame = new QFrame();
 	tools_tabbar->addTab(capture_frame, "Capture");
-	crate_imager_tab(capture_frame);
+	create_imager_tab(capture_frame);
 
 	QFrame *focuser_frame = new QFrame;
 	tools_tabbar->addTab(focuser_frame, "Focus");
+	create_focuser_tab(focuser_frame);
+	//tools_tabbar->setTabEnabled(1, false);
 
 	QFrame *guider_frame = new QFrame;
 	tools_tabbar->addTab(guider_frame, "Guide");

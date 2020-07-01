@@ -103,6 +103,7 @@ public slots:
 
 	void on_agent_selected(int index);
 	void on_wheel_selected(int index);
+	void on_focuser_selected(int index);
 	void on_camera_selected(int index);
 	void on_ccd_mode_selected(int index);
 	void on_frame_type_selected(int index);
@@ -114,6 +115,7 @@ private:
 	bool m_preview;
 	QPlainTextEdit* mLog;
 
+	// Capture tab
 	QComboBox *m_agent_select;
 	QComboBox *m_camera_select;
 	QComboBox *m_wheel_select;
@@ -126,24 +128,27 @@ private:
 	QSpinBox *m_frame_count;
 	QComboBox *m_filter_select;
 	QSpinBox *m_frame_delay;
-
 	QLineEdit *m_object_name;
 	QPushButton *m_pause_button;
-
 	QProgressBar *m_exposure_progress;
 	QProgressBar *m_process_progress;
-
 	QDoubleSpinBox *m_set_temp;
 	QLineEdit *m_current_temp;
 	QLineEdit *m_cooler_pwr;
 	QCheckBox *m_cooler_onoff;
+	// Focuser tabbar
+	QComboBox *m_focuser_select;
+	QSpinBox  *m_star_x;
+	QSpinBox  *m_star_y;
+	QDoubleSpinBox *m_focuser_exposure_time;
 
 	pal::ImageViewer *m_viewer;
 
 	QIndigoServers *mIndigoServers;
 	QServiceModel *mServiceModel;
 
-	void crate_imager_tab(QFrame *camera_frame);
+	void create_focuser_tab(QFrame *capture_frame);
+	void create_imager_tab(QFrame *camera_frame);
 	void change_ccd_frame_property(const char *agent) const;
 	void change_ccd_exposure_property(const char *agent) const;
 	void change_ccd_abort_exposure_property(const char *agent) const;
