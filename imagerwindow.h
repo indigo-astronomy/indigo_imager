@@ -140,6 +140,13 @@ private:
 	QComboBox *m_focuser_select;
 	QSpinBox  *m_star_x;
 	QSpinBox  *m_star_y;
+	QSpinBox  *m_initial_step;
+	QSpinBox  *m_final_step;
+	QSpinBox  *m_focus_backlash;
+	QSpinBox  *m_focus_stack;
+	QSpinBox  *m_focus_position;
+	QSpinBox  *m_focus_steps;
+
 	QDoubleSpinBox *m_focuser_exposure_time;
 
 	pal::ImageViewer *m_viewer;

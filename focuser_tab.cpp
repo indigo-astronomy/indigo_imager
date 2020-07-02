@@ -16,7 +16,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	QLabel *label = new QLabel("Focuser:");
 	focuser_frame_layout->addWidget(label, row, 0);
 	m_focuser_select = new QComboBox();
-	focuser_frame_layout->addWidget(m_wheel_select, row, 1, 1, 3);
+	focuser_frame_layout->addWidget(m_focuser_select, row, 1, 1, 3);
 	connect(m_focuser_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focuser_selected);
 
 	// Star Selection
@@ -49,6 +49,92 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focuser_exposure_time->setValue(1);
 	focuser_frame_layout->addWidget(m_focuser_exposure_time, row, 1);
 
+	label = new QLabel("Method:");
+	focuser_frame_layout->addWidget(label, row, 2);
+	QComboBox *focus_method = new QComboBox();
+	focus_method->addItem("Manual");
+	focus_method->addItem("Auto");
+	focuser_frame_layout->addWidget(focus_method, row, 3);
+	//connect(focus_method, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focuser_selected);
+
+	row++;
+	label = new QLabel("Autofocus setings:");
+	focuser_frame_layout->addWidget(label, row, 0, 1, 4);
+
+	row++;
+	label = new QLabel("Initial Step:");
+	focuser_frame_layout->addWidget(label, row, 0);
+	m_initial_step = new QSpinBox();
+	m_initial_step->setMaximum(1000000);
+	m_initial_step->setMinimum(0);
+	m_initial_step->setValue(0);
+	m_initial_step->setEnabled(false);
+	focuser_frame_layout->addWidget(m_initial_step , row, 1);
+
+	label = new QLabel("Final step:");
+	focuser_frame_layout->addWidget(label, row, 2);
+	m_final_step = new QSpinBox();
+	m_final_step->setMaximum(100000);
+	m_final_step->setMinimum(0);
+	m_final_step->setValue(0);
+	m_final_step->setEnabled(false);
+	focuser_frame_layout->addWidget(m_final_step, row, 3);
+
+	row++;
+	label = new QLabel("Backlash:");
+	focuser_frame_layout->addWidget(label, row, 0);
+	m_focus_backlash = new QSpinBox();
+	m_focus_backlash->setMaximum(1000000);
+	m_focus_backlash->setMinimum(0);
+	m_focus_backlash->setValue(0);
+	m_focus_backlash->setEnabled(false);
+	focuser_frame_layout->addWidget(m_focus_backlash, row, 1);
+
+	label = new QLabel("Stacking:");
+	focuser_frame_layout->addWidget(label, row, 2);
+	m_focus_stack = new QSpinBox();
+	m_focus_stack->setMaximum(100000);
+	m_focus_stack->setMinimum(0);
+	m_focus_stack->setValue(0);
+	m_focus_stack->setEnabled(false);
+	focuser_frame_layout->addWidget(m_focus_stack, row, 3);
+
+	row++;
+	label = new QLabel("Manual focuser control:");
+	focuser_frame_layout->addWidget(label, row, 0, 1, 4);
+
+	row++;
+	label = new QLabel("Absoute Position:");
+	focuser_frame_layout->addWidget(label, row, 0, 1, 2);
+	m_focus_position = new QSpinBox();
+	m_focus_position->setMaximum(1000000);
+	m_focus_position->setMinimum(0);
+	m_focus_position->setValue(0);
+	m_focus_position->setEnabled(false);
+	focuser_frame_layout->addWidget(m_focus_position, row, 2, 1, 2);
+
+	row++;
+	label = new QLabel("Move:");
+	focuser_frame_layout->addWidget(label, row, 0);
+	m_focus_steps = new QSpinBox();
+	m_focus_steps->setMaximum(100000);
+	m_focus_steps->setMinimum(0);
+	m_focus_steps->setValue(0);
+	m_focus_steps->setEnabled(false);
+	focuser_frame_layout->addWidget(m_focus_steps, row, 1);
+
+	QPushButton *but = new QPushButton("In");
+	but->setStyleSheet("min-width: 30px");
+	//but->setIcon(QIcon(":resource/stop.png"));
+	focuser_frame_layout->addWidget(but, row, 2);
+	connect(but, &QPushButton::clicked, this, &ImagerWindow::on_abort);
+
+	but = new QPushButton("Out");
+	but->setStyleSheet("min-width: 30px");
+	//but->setIcon(QIcon(":resource/stop.png"));
+	focuser_frame_layout->addWidget(but);
+	connect(but, &QPushButton::clicked, this, &ImagerWindow::on_abort);
+
 	row++;
 	QWidget *toolbar = new QWidget;
 	QHBoxLayout *toolbox = new QHBoxLayout(toolbar);
@@ -62,7 +148,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	toolbox->addWidget(button);
 	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
 
-	button = new QPushButton("Start");
+	button = new QPushButton("Focus");
 	button->setStyleSheet("min-width: 30px");
 	button->setIcon(QIcon(":resource/record.png"));
 	toolbox->addWidget(button);
