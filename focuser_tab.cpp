@@ -108,7 +108,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	focuser_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_focus_position = new QSpinBox();
 	m_focus_position->setMaximum(1000000);
-	m_focus_position->setMinimum(0);
+	m_focus_position->setMinimum(-1000000);
 	m_focus_position->setValue(0);
 	m_focus_position->setEnabled(false);
 	focuser_frame_layout->addWidget(m_focus_position, row, 2, 1, 2);

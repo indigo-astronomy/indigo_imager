@@ -94,6 +94,19 @@ static void update_cooler_power(indigo_property *property, QLineEdit *cooler_pwr
 	}
 }
 
+static void update_focuser_poition(indigo_property *property, QSpinBox *set_position) {
+	indigo_debug("change %s", property->name);
+	if(property->count == 1) {
+		if (property->perm == INDIGO_RO_PERM) {
+			set_position->setEnabled(false);
+		} else {
+			set_position->setEnabled(true);
+		}
+		indigo_debug("change %s = %f", property->items[0].name, property->items[0].number.value);
+		set_position->setValue((int)property->items[0].number.value);
+	}
+}
+
 void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 	char timestamp[16];
 	char log_line[512];
@@ -161,11 +174,43 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, FILTER_WHEEL_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(property, m_wheel_select);
 	}
+	if (client_match_device_property(property, selected_agent, FILTER_FOCUSER_LIST_PROPERTY_NAME)) {
+		add_items_to_combobox(property, m_focuser_select);
+	}
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME)) {
 		add_items_to_combobox(property, m_frame_size_select);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_TYPE_PROPERTY_NAME)) {
 		add_items_to_combobox(property, m_frame_type_select);
+	}
+	if (client_match_device_property(property, selected_agent, FOCUSER_POSITION_PROPERTY_NAME)) {
+		update_focuser_poition(property, m_focus_position);
+	}
+	if (client_match_device_property(property, selected_agent, FOCUSER_STEPS_PROPERTY_NAME)) {
+		update_focuser_poition(property, m_focus_steps);
+	}
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTED_STAR_PROPERTY_NAME)) {
+		for (int i = 0; i < property->count; i++) {
+			if (!strcmp(property->items[i].name, AGENT_IMAGER_SELECTED_STAR_X_ITEM_NAME)) {
+				m_star_x->setValue(property->items[i].number.value);
+			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_SELECTED_STAR_Y_ITEM_NAME)) {
+				m_star_y->setValue((int)property->items[i].number.value);
+			}
+		}
+	}
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME)) {
+		indigo_debug("Set %s", property->name);
+		for (int i = 0; i < property->count; i++) {
+			if (!strcmp(property->items[i].name, AGENT_IMAGER_FOCUS_INITIAL_ITEM_NAME)) {
+				m_initial_step->setValue(property->items[i].number.value);
+			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_FOCUS_FINAL_ITEM_NAME)) {
+				m_final_step->setValue((int)property->items[i].number.value);
+			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_FOCUS_BACKLASH_ITEM_NAME)) {
+				m_focus_backlash->setValue((int)property->items[i].number.value);
+			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_FOCUS_STACK_ITEM_NAME)) {
+				m_focus_stack->setValue((int)property->items[i].number.value);
+			}
+		}
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME)) {
 		indigo_debug("Set %s", property->name);
@@ -252,6 +297,17 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_agent, FILTER_WHEEL_LIST_PROPERTY_NAME)) {
 		change_devices_combobox_slection(property, m_wheel_select);
 	}
+
+	if (client_match_device_property(property, selected_agent, FILTER_FOCUSER_LIST_PROPERTY_NAME)) {
+		change_devices_combobox_slection(property, m_focuser_select);
+	}
+
+	if (client_match_device_property(property, selected_agent, FOCUSER_POSITION_PROPERTY_NAME)) {
+		update_focuser_poition(property, m_focus_position);
+	}
+	if (client_match_device_property(property, selected_agent, FOCUSER_STEPS_PROPERTY_NAME)) {
+		update_focuser_poition(property, m_focus_steps);
+	}
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME)) {
 		for (int i = 0; i < property->count; i++) {
 			if (property->items[i].sw.value) {
@@ -282,6 +338,28 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			if (p && current_filter < p->count) {
 				m_filter_select->setCurrentIndex(m_filter_select->findText(p->items[current_filter].text.value));
 				indigo_debug("[SELECT mode] %s\n", p->items[current_filter].label);
+			}
+		}
+	}
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTED_STAR_PROPERTY_NAME)) {
+		for (int i = 0; i < property->count; i++) {
+			if (!strcmp(property->items[i].name, AGENT_IMAGER_SELECTED_STAR_X_ITEM_NAME)) {
+				m_star_x->setValue(property->items[i].number.value);
+			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_SELECTED_STAR_Y_ITEM_NAME)) {
+				m_star_y->setValue((int)property->items[i].number.value);
+			}
+		}
+	}
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME)) {
+		for (int i = 0; i < property->count; i++) {
+			if (!strcmp(property->items[i].name, AGENT_IMAGER_FOCUS_INITIAL_ITEM_NAME)) {
+				m_initial_step->setValue(property->items[i].number.value);
+			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_FOCUS_FINAL_ITEM_NAME)) {
+				m_final_step->setValue((int)property->items[i].number.value);
+			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_FOCUS_BACKLASH_ITEM_NAME)) {
+				m_focus_backlash->setValue((int)property->items[i].number.value);
+			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_FOCUS_STACK_ITEM_NAME)) {
+				m_focus_stack->setValue((int)property->items[i].number.value);
 			}
 		}
 	}
@@ -422,6 +500,11 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		m_wheel_select->clear();
+	}
+	if (client_match_device_property(property, selected_agent, FILTER_FOCUSER_LIST_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		m_focuser_select->clear();
 	}
 
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME) ||
