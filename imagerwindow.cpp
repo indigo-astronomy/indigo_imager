@@ -50,7 +50,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	mIndigoServers = new QIndigoServers(this);
 
-	m_preview = true;
+	m_preview = false;
+	m_focusing = false;
 
 	//  Set central widget of window
 	QWidget *central = new QWidget;
@@ -295,7 +296,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 			m_viewer->setText("Unsaved" + QString(item->blob.format));
 			m_viewer->setImage(*image);
 		}
-		if (!m_preview) save_blob_item(item);
+		if (!m_preview && !m_focusing) save_blob_item(item);
 		free(item->blob.value);
 		item->blob.value = nullptr;
 		free(item);

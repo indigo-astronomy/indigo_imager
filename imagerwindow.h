@@ -74,6 +74,7 @@ signals:
 
 public slots:
 	void on_start(bool clicked);
+	void on_focus_start(bool clicked);
 	void on_preview(bool clicked);
 	void on_abort(bool clicked);
 	void on_pause(bool clicked);
@@ -113,6 +114,7 @@ public slots:
 
 private:
 	bool m_preview;
+	bool m_focusing;
 	QPlainTextEdit* mLog;
 
 	// Capture tab
@@ -136,8 +138,10 @@ private:
 	QLineEdit *m_current_temp;
 	QLineEdit *m_cooler_pwr;
 	QCheckBox *m_cooler_onoff;
+
 	// Focuser tabbar
 	QComboBox *m_focuser_select;
+	QComboBox *m_focus_method_select;
 	QSpinBox  *m_star_x;
 	QSpinBox  *m_star_y;
 	QSpinBox  *m_initial_step;
@@ -168,6 +172,10 @@ private:
 	void change_wheel_slot_property(const char *agent) const;
 	void change_cooler_onoff_property(const char *agent) const;
 	void change_ccd_temperature_property(const char *agent) const;
+
+	void change_agent_batch_property_for_focusing(const char *agent) const;
+	void change_agent_start_focusing_property(const char *agent) const;
+	void change_agent_star_selection(const char *agent) const;
 
 	bool save_blob_item_with_prefix(indigo_item *item, const char *prefix, char *file_name);
 	void save_blob_item(indigo_item *item);

@@ -27,7 +27,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_star_x->setMaximum(100000);
 	m_star_x->setMinimum(0);
 	m_star_x->setValue(0);
-	m_star_x->setEnabled(false);
+	//m_star_x->setEnabled(false);
 	focuser_frame_layout->addWidget(m_star_x , row, 1);
 
 	label = new QLabel("Star Y:");
@@ -36,7 +36,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_star_y->setMaximum(100000);
 	m_star_y->setMinimum(0);
 	m_star_y->setValue(0);
-	m_star_y->setEnabled(false);
+	//m_star_y->setEnabled(false);
 	focuser_frame_layout->addWidget(m_star_y, row, 3);
 
 	// Exposure time
@@ -51,10 +51,10 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 
 	label = new QLabel("Method:");
 	focuser_frame_layout->addWidget(label, row, 2);
-	QComboBox *focus_method = new QComboBox();
-	focus_method->addItem("Manual");
-	focus_method->addItem("Auto");
-	focuser_frame_layout->addWidget(focus_method, row, 3);
+	m_focus_method_select = new QComboBox();
+	m_focus_method_select->addItem("Manual");
+	m_focus_method_select->addItem("Auto");
+	focuser_frame_layout->addWidget(m_focus_method_select, row, 3);
 	//connect(focus_method, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focuser_selected);
 
 	row++;
@@ -152,7 +152,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	button->setStyleSheet("min-width: 30px");
 	button->setIcon(QIcon(":resource/record.png"));
 	toolbox->addWidget(button);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_start);
+	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_focus_start);
 
 	button = new QPushButton("Preview");
 	button->setStyleSheet("min-width: 30px");
@@ -177,4 +177,22 @@ void ImagerWindow::on_focuser_selected(int index) {
 	static const char * items[] = { selected_focuser };
 	static bool values[] = { true };
 	indigo_change_switch_property(nullptr, selected_agent, FILTER_FOCUSER_LIST_PROPERTY_NAME, 1, items, values);
+}
+
+void ImagerWindow::on_focus_start(bool clicked) {
+	indigo_debug("CALLED: %s\n", __FUNCTION__);
+	static char selected_agent[INDIGO_NAME_SIZE];
+	get_selected_agent(selected_agent);
+
+
+	change_agent_star_selection(selected_agent);
+	change_agent_batch_property_for_focusing(selected_agent);
+	change_ccd_frame_property(selected_agent);
+	m_preview = true;
+	m_focusing = true;
+	if(m_focus_method_select->currentIndex() == 0) {
+		change_agent_start_exposure_property(selected_agent);
+	} else {
+		change_agent_start_focusing_property(selected_agent);
+	}
 }

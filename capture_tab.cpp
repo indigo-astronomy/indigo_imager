@@ -238,9 +238,10 @@ void ImagerWindow::on_preview(bool clicked) {
 	static char selected_agent[INDIGO_NAME_SIZE];
 	get_selected_agent(selected_agent);
 
+	m_preview = true;
+	m_focusing = false;
 	change_ccd_frame_property(selected_agent);
 	change_ccd_exposure_property(selected_agent);
-	m_preview = true;
 }
 
 
@@ -249,10 +250,11 @@ void ImagerWindow::on_start(bool clicked) {
 	static char selected_agent[INDIGO_NAME_SIZE];
 	get_selected_agent(selected_agent);
 
+	m_preview = false;
+	m_focusing = false;
 	change_agent_batch_property(selected_agent);
 	change_ccd_frame_property(selected_agent);
 	change_agent_start_exposure_property(selected_agent);
-	m_preview = false;
 }
 
 void ImagerWindow::on_abort(bool clicked) {
@@ -260,7 +262,7 @@ void ImagerWindow::on_abort(bool clicked) {
 	static char selected_agent[INDIGO_NAME_SIZE];
 	get_selected_agent(selected_agent);
 
-	if (m_preview) {
+	if (m_preview && !m_focusing) {
 		change_ccd_abort_exposure_property(selected_agent);
 	} else {
 		change_agent_abort_process_property(selected_agent);
