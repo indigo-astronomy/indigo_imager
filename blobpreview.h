@@ -143,14 +143,14 @@ public:
 			b = -1;
 		} else if (m_pix_format == PIX_FMT_RGB24) {
 			uint8_t* pixels = (uint8_t*) m_raw_data;
-			r = pixels[3 * y * m_width + x];
-			g = pixels[3 * y * m_width + x + 1];
-			b = pixels[3 * y * m_width + x + 2];
+			r = pixels[3 * (y * m_width + x)];
+			g = pixels[3 * (y * m_width + x) + 1];
+			b = pixels[3 * (y * m_width + x) + 2];
 		}else if (m_pix_format == PIX_FMT_RGB48) {
 			uint16_t* pixels = (uint16_t*) m_raw_data;
-			r = pixels[3 * y * m_width + x];
-			g = pixels[3 * y * m_width + x + 1];
-			b = pixels[3 * y * m_width + x + 2];
+			r = pixels[3 * (y * m_width + x)];
+			g = pixels[3 * (y * m_width + x) + 1];
+			b = pixels[3 * (y * m_width + x) + 2];
 		}
 		return m_pix_format;
 	};
