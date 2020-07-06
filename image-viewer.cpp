@@ -25,8 +25,8 @@ public:
         setOptimizationFlags(QGraphicsView::DontSavePainterState);
         setViewportUpdateMode(QGraphicsView::SmartViewportUpdate);
         setTransformationAnchor(QGraphicsView::AnchorUnderMouse); // zoom at cursor position
-        setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        //setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        //setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         setInteractive(true);
         setMouseTracking(true);
     }
@@ -146,7 +146,8 @@ void ImageViewer::hydeSelection() {
 
 void ImageViewer::moveSelection(int x, int y) {
 	QRectF br = m_selection->boundingRect();
-    m_selection->setPos(x - br.width() / 2, y - br.height() / 2);
+	indigo_debug("selection %d %d", (int)br.width(), (int)br.height());
+    m_selection->setPos(x - ((int)br.width() - 1) / 2, y - ((int)br.height() - 1) / 2);
 }
 
 

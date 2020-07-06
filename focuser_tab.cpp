@@ -68,7 +68,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_initial_step->setMaximum(1000000);
 	m_initial_step->setMinimum(0);
 	m_initial_step->setValue(0);
-	m_initial_step->setEnabled(false);
+	//m_initial_step->setEnabled(false);
 	focuser_frame_layout->addWidget(m_initial_step , row, 1);
 
 	label = new QLabel("Final step:");
@@ -77,7 +77,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_final_step->setMaximum(100000);
 	m_final_step->setMinimum(0);
 	m_final_step->setValue(0);
-	m_final_step->setEnabled(false);
+	//m_final_step->setEnabled(false);
 	focuser_frame_layout->addWidget(m_final_step, row, 3);
 
 	row++;
@@ -87,7 +87,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_backlash->setMaximum(1000000);
 	m_focus_backlash->setMinimum(0);
 	m_focus_backlash->setValue(0);
-	m_focus_backlash->setEnabled(false);
+	//m_focus_backlash->setEnabled(false);
 	focuser_frame_layout->addWidget(m_focus_backlash, row, 1);
 
 	label = new QLabel("Stacking:");
@@ -96,7 +96,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_stack->setMaximum(100000);
 	m_focus_stack->setMinimum(0);
 	m_focus_stack->setValue(0);
-	m_focus_stack->setEnabled(false);
+	//m_focus_stack->setEnabled(false);
 	focuser_frame_layout->addWidget(m_focus_stack, row, 3);
 
 	row++;
@@ -115,14 +115,15 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 
 	row++;
 	label = new QLabel("Move:");
-	focuser_frame_layout->addWidget(label, row, 0);
+	focuser_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_focus_steps = new QSpinBox();
 	m_focus_steps->setMaximum(100000);
 	m_focus_steps->setMinimum(0);
 	m_focus_steps->setValue(0);
 	m_focus_steps->setEnabled(false);
-	focuser_frame_layout->addWidget(m_focus_steps, row, 1);
+	focuser_frame_layout->addWidget(m_focus_steps, row, 2, 1, 2);
 
+/*
 	QPushButton *but = new QPushButton("In");
 	but->setStyleSheet("min-width: 30px");
 	//but->setIcon(QIcon(":resource/stop.png"));
@@ -134,13 +135,25 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	//but->setIcon(QIcon(":resource/stop.png"));
 	focuser_frame_layout->addWidget(but);
 	connect(but, &QPushButton::clicked, this, &ImagerWindow::on_abort);
-
+*/
 	row++;
 	QWidget *toolbar = new QWidget;
 	QHBoxLayout *toolbox = new QHBoxLayout(toolbar);
 	toolbar->setContentsMargins(1,1,1,1);
 	toolbox->setContentsMargins(1,1,1,1);
 	focuser_frame_layout->addWidget(toolbar, row, 0, 1, 4);
+
+	QPushButton *but = new QPushButton("In");
+	but->setStyleSheet("min-width: 15px");
+	//but->setIcon(QIcon(":resource/stop.png"));
+	toolbox->addWidget(but);
+	connect(but, &QPushButton::clicked, this, &ImagerWindow::on_abort);
+
+	but = new QPushButton("Out");
+	but->setStyleSheet("min-width: 15px");
+	//but->setIcon(QIcon(":resource/stop.png"));
+	toolbox->addWidget(but);
+	connect(but, &QPushButton::clicked, this, &ImagerWindow::on_abort);
 
 	QPushButton *button = new QPushButton("Abort");
 	button->setStyleSheet("min-width: 30px");
@@ -187,6 +200,7 @@ void ImagerWindow::on_focus_start(bool clicked) {
 
 	change_agent_star_selection(selected_agent);
 	change_agent_batch_property_for_focusing(selected_agent);
+	change_agent_focus_params_property(selected_agent);
 	change_ccd_frame_property(selected_agent);
 	m_preview = true;
 	m_focusing = true;
