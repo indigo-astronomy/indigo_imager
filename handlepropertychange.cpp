@@ -7,6 +7,30 @@
 #include "indigoclient.h"
 #include "propertycache.h"
 
+#define set_alert(widget) (widget->setStyleSheet("background-color: #292222;"))
+#define set_idle(widget) (widget->setStyleSheet("background-color: #272727;"))
+#define set_busy(widget) (widget->setStyleSheet("background-color: #292920;"))
+#define set_ok(widget) (widget->setStyleSheet("background-color: #252525;"))
+//#define set_ok(widget) (widget->setStyleSheet("background-color: #202520;"))
+
+template<typename W>
+void set_widget_state(indigo_property *property, W *widget) {
+	switch (property->state) {
+		case INDIGO_IDLE_STATE:
+			set_idle(widget);
+			break;
+		case INDIGO_OK_STATE:
+			set_ok(widget);
+			break;
+		case INDIGO_BUSY_STATE:
+			set_busy(widget);
+			break;
+		case INDIGO_ALERT_STATE:
+			set_alert(widget);
+			break;
+	}
+}
+
 
 static void change_devices_combobox_slection(indigo_property *property, QComboBox *devices_combobox) {
 	for (int i = 0; i < property->count; i++) {
@@ -56,6 +80,7 @@ static void set_filter_selected(indigo_property *property, QComboBox *filter_sel
 	if (property->count == 1) {
 		indigo_debug("SELECT: %s = %d\n", property->items[0].name, property->items[0].number.value);
 		filter_select->setCurrentIndex((int)property->items[0].number.value-1);
+		set_widget_state(property, filter_select);
 	}
 }
 
@@ -81,6 +106,7 @@ static void update_ccd_temperature(indigo_property *property, QLineEdit *current
 		char temperature[INDIGO_VALUE_SIZE];
 		snprintf(temperature, INDIGO_VALUE_SIZE, "%.1f", property->items[0].number.value);
 		current_temp->setText(temperature);
+		set_widget_state(property, current_temp);
 	}
 }
 
@@ -91,6 +117,7 @@ static void update_cooler_power(indigo_property *property, QLineEdit *cooler_pwr
 		char power[INDIGO_VALUE_SIZE];
 		snprintf(power, INDIGO_VALUE_SIZE, "%.1f%%", property->items[0].number.value);
 		cooler_pwr->setText(power);
+		set_widget_state(property, cooler_pwr);
 	}
 }
 
@@ -102,8 +129,23 @@ static void update_focuser_poition(indigo_property *property, QSpinBox *set_posi
 		} else {
 			set_position->setEnabled(true);
 		}
+		set_widget_state(property, set_position);
 		indigo_debug("change %s = %f", property->items[0].name, property->items[0].number.value);
 		set_position->setValue((int)property->items[0].number.value);
+	}
+}
+
+static void update_selection_property(indigo_property *property, QSpinBox *star_x, QSpinBox *star_y, pal::ImageViewer *viewer) {
+	int x, y;
+	for (int i = 0; i < property->count; i++) {
+		if (!strcmp(property->items[i].name, AGENT_IMAGER_SELECTION_X_ITEM_NAME)) {
+			x = (int)property->items[i].number.value;
+		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_SELECTION_Y_ITEM_NAME)) {
+			y = (int)property->items[i].number.value;
+		}
+		star_x->setValue(x);
+		star_y->setValue(y);
+		viewer->moveSelection(x, y);
 	}
 }
 
@@ -190,17 +232,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_focuser_poition(property, m_focus_steps);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME)) {
-		int x, y;
-		for (int i = 0; i < property->count; i++) {
-			if (!strcmp(property->items[i].name, AGENT_IMAGER_SELECTION_X_ITEM_NAME)) {
-				x = (int)property->items[i].number.value;
-			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_SELECTION_Y_ITEM_NAME)) {
-				y = (int)property->items[i].number.value;
-			}
-			m_star_x->setValue(x);
-			m_star_y->setValue(y);
-			m_viewer->moveSelection(x, y);
-		}
+		update_selection_property(property, m_star_x, m_star_y, m_viewer);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME)) {
 		indigo_debug("Set %s", property->name);
@@ -265,8 +297,10 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			if (!strcmp(property->items[i].name, AGENT_PAUSE_PROCESS_ITEM_NAME)) {
 				if(property->state == INDIGO_BUSY_STATE) {
 					m_pause_button->setText("Resume");
+					set_busy(m_pause_button);
 				} else {
 					m_pause_button->setText("Pause");
+					set_ok(m_pause_button);
 				}
 			}
 		}
@@ -339,6 +373,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		if (property->count == 1) {
 			indigo_property *p = properties.get(property->device, WHEEL_SLOT_NAME_PROPERTY_NAME);
 			unsigned int current_filter = (unsigned int)property->items[0].number.value - 1;
+			set_widget_state(property, m_filter_select);
 			if (p && current_filter < p->count) {
 				m_filter_select->setCurrentIndex(m_filter_select->findText(p->items[current_filter].text.value));
 				indigo_debug("[SELECT mode] %s\n", p->items[current_filter].label);
@@ -346,17 +381,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		}
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME)) {
-		int x, y;
-		for (int i = 0; i < property->count; i++) {
-			if (!strcmp(property->items[i].name, AGENT_IMAGER_SELECTION_X_ITEM_NAME)) {
-				x = (int)property->items[i].number.value;
-			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_SELECTION_Y_ITEM_NAME)) {
-				y = (int)property->items[i].number.value;
-			}
-			m_star_x->setValue(x);
-			m_star_y->setValue(y);
-			m_viewer->moveSelection(x, y);
-		}
+		update_selection_property(property, m_star_x, m_star_y, m_viewer);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME)) {
 		for (int i = 0; i < property->count; i++) {
@@ -473,8 +498,10 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			if (!strcmp(property->items[i].name, AGENT_PAUSE_PROCESS_ITEM_NAME)) {
 				if(property->state == INDIGO_BUSY_STATE) {
 					m_pause_button->setText("Resume");
+					set_busy(m_pause_button);
 				} else {
 					m_pause_button->setText("Pause");
+					set_ok(m_pause_button);
 				}
 			}
 		}
