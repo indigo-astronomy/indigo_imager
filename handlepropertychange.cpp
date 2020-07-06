@@ -190,12 +190,16 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_focuser_poition(property, m_focus_steps);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME)) {
+		int x, y;
 		for (int i = 0; i < property->count; i++) {
 			if (!strcmp(property->items[i].name, AGENT_IMAGER_SELECTION_X_ITEM_NAME)) {
-				m_star_x->setValue(property->items[i].number.value);
+				x = (int)property->items[i].number.value;
 			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_SELECTION_Y_ITEM_NAME)) {
-				m_star_y->setValue((int)property->items[i].number.value);
+				y = (int)property->items[i].number.value;
 			}
+			m_star_x->setValue(x);
+			m_star_y->setValue(y);
+			m_viewer->moveSelection(x, y);
 		}
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME)) {
@@ -342,12 +346,16 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		}
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME)) {
+		int x, y;
 		for (int i = 0; i < property->count; i++) {
 			if (!strcmp(property->items[i].name, AGENT_IMAGER_SELECTION_X_ITEM_NAME)) {
-				m_star_x->setValue(property->items[i].number.value);
+				x = (int)property->items[i].number.value;
 			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_SELECTION_Y_ITEM_NAME)) {
-				m_star_y->setValue((int)property->items[i].number.value);
+				y = (int)property->items[i].number.value;
 			}
+			m_star_x->setValue(x);
+			m_star_y->setValue(y);
+			m_viewer->moveSelection(x, y);
 		}
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME)) {

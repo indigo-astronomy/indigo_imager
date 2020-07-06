@@ -112,6 +112,8 @@ public slots:
 	void on_cooler_onoff(bool state);
 	void on_teperature_set();
 
+	void on_image_right_click(int x, int y);
+
 private:
 	bool m_preview;
 	bool m_focusing;

@@ -54,6 +54,10 @@ public:
     bool isAntialiasingEnabled() const;
     void enableAntialiasing(bool on = true);
 
+	void showSelection();
+	void hydeSelection();
+	void moveSelection(int x, int y);
+
 public slots:
     void setText(const QString &txt);
     void setImage(preview_image &im);
@@ -63,9 +67,11 @@ public slots:
     void zoomIn(int level = 1);
     void zoomOut(int level = 1);
     void mouseAt(int x, int y);
+	void mouseRightPressAt(int x, int y);
 
 signals:
     void imageChanged();
+	void mouseRightPress(int x, int y);
     void zoomChanged(double scale);
 
 protected:
@@ -84,6 +90,7 @@ private:
     QLabel *m_pixel_value;
     GraphicsView *m_view;
     PixmapItem *m_pixmap;
+	QGraphicsRectItem *m_selection;
     QWidget *m_toolbar;
     bool m_fit;
     ToolBarMode m_bar_mode;
@@ -103,6 +110,7 @@ public slots:
 signals:
     void imageChanged(const preview_image &);
     void sizeChanged(int w, int h);
+	void mouseRightPress(int x, int y);
     void mouseMoved(int x, int y);
 
 protected:

@@ -77,14 +77,19 @@ ImageViewer::ImageViewer(QWidget *parent)
     m_pixmap = new PixmapItem;
     scene->addItem(m_pixmap);
     connect(m_pixmap, SIGNAL(mouseMoved(int,int)), SLOT(mouseAt(int,int)));
+	connect(m_pixmap, SIGNAL(mouseRightPress(int,int)), SLOT(mouseRightPressAt(int,int)));
 
-/*
-	QGraphicsRectItem* item1 = new QGraphicsRectItem(0,0,100,100, m_pixmap);
-	item1->setBrush(QBrush(Qt::red));
-	item1->setOpacity(0.2);
-	scene->addItem(item1);
-	item1->setFlags(QGraphicsItem::ItemIsMovable);
-*/
+	m_selection = new QGraphicsRectItem(0,0,25,25, m_pixmap);
+	m_selection->setBrush(QBrush(Qt::NoBrush));
+	QPen pen;
+	pen.setCosmetic(true);
+	pen.setWidth(1);
+	pen.setColor(Qt::green);
+	m_selection->setPen(pen);
+	m_selection->setOpacity(0.8);
+//	m_selection->setVisible(false);
+	scene->addItem(m_selection);
+	//item1->setFlags(QGraphicsItem::ItemIsMovable);
 
     makeToolbar();
 
@@ -130,6 +135,20 @@ QString ImageViewer::text() const {
 void ImageViewer::setText(const QString &txt) {
     m_text_label->setText(txt);
 }
+
+void ImageViewer::showSelection() {
+    m_selection->setVisible(true);
+}
+
+void ImageViewer::hydeSelection() {
+    m_selection->setVisible(false);
+}
+
+void ImageViewer::moveSelection(int x, int y) {
+	QRectF br = m_selection->boundingRect();
+    m_selection->setPos(x - br.width() / 2, y - br.height() / 2);
+}
+
 
 const preview_image &ImageViewer::image() const {
     return m_pixmap->image();
@@ -231,6 +250,15 @@ void ImageViewer::mouseAt(int x, int y) {
 	}
 }
 
+void ImageViewer::mouseRightPressAt(int x, int y) {
+	indigo_log("RIGHT CLICK COORDS: %d %d" ,x,y);
+	if (m_pixmap->image().valid(x,y)) {
+		moveSelection(x,y);
+		//m_selection->setPos(x-12,y-12);
+		emit mouseRightPress(x,y);
+	}
+}
+
 void ImageViewer::enterEvent(QEvent *event) {
     QFrame::enterEvent(event);
     if (m_bar_mode == ToolBarMode::AutoHidden) {
@@ -286,7 +314,11 @@ void PixmapItem::setImage(preview_image im) {
 }
 
 void PixmapItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
-    QGraphicsItem::mousePressEvent(event);
+		if(event->button() == Qt::RightButton) {
+			auto pos = event->pos();
+			emit mouseRightPress(int(pos.x()), int(pos.y()));
+		}
+	QGraphicsItem::mousePressEvent(event);
 }
 
 void PixmapItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {

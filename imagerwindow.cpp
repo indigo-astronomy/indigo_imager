@@ -257,6 +257,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	connect(&Logger::instance(), &Logger::do_log, this, &ImagerWindow::on_window_log);
 
+	connect(m_viewer, &pal::ImageViewer::mouseRightPress, this, &ImagerWindow::on_image_right_click);
+
 	//preview_cache.set_stretch_level(conf.preview_stretch_level);
 
 	//  Start up the client
@@ -267,6 +269,11 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	mServiceModel->loadManualServices();
 }
 
+
+void ImagerWindow::on_image_right_click(int x, int y) {
+	m_star_x->setValue(x);
+	m_star_y->setValue(y);
+}
 
 ImagerWindow::~ImagerWindow () {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
