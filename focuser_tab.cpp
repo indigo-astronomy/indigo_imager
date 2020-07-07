@@ -177,6 +177,13 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 
 	row++;
 	row++;
+	label = new QLabel("Drift (X,Y):");
+	focuser_frame_layout->addWidget(label, row, 0, 1, 2);
+	m_drift_label = new QLabel();
+	m_drift_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	focuser_frame_layout->addWidget(m_drift_label, row, 2, 1, 2);
+
+	row++;
 	label = new QLabel("FWHM:");
 	focuser_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_FWHM_label = new QLabel();
@@ -190,7 +197,12 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_HFD_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	focuser_frame_layout->addWidget(m_HFD_label, row, 2, 1, 2);
 
-
+	row++;
+	label = new QLabel("Peak:");
+	focuser_frame_layout->addWidget(label, row, 0, 1, 2);
+	m_peak_label = new QLabel();
+	m_peak_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	focuser_frame_layout->addWidget(m_peak_label, row, 2, 1, 2);
 }
 
 void ImagerWindow::on_focuser_selected(int index) {

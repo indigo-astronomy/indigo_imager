@@ -441,8 +441,10 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_STATS_PROPERTY_NAME)) {
 		double exp_elapsed, exp_time;
+		double drift_x, drift_y;
 		int frames_complete, frames_total;
 
+		exp_time = m_exposure_time->value();
 		for (int i = 0; i < property->count; i++) {
 			if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_FWHM_ITEM_NAME)) {
 				 double FWHM = property->items[i].number.value;
@@ -454,20 +456,29 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 				 char hfd_str[50];
 				 snprintf(hfd_str, 50, "%.2f", HFD);
 				 m_HFD_label->setText(hfd_str);
+			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_PEAK_ITEM_NAME)) {
+				int peak = (int)property->items[i].number.value;
+				char peak_str[50];
+			 	snprintf(peak_str, 50, "%d", peak);
+			 	m_peak_label->setText(peak_str);
+			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_DRIFT_X_ITEM_NAME)) {
+				drift_x = property->items[i].number.value;
+			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_DRIFT_Y_ITEM_NAME)) {
+				drift_y = property->items[i].number.value;
+			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_EXPOSURE_ITEM_NAME)) {
+				exp_elapsed = exp_time - property->items[i].number.value;
+			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_FRAME_ITEM_NAME)) {
+				frames_complete = (int)property->items[i].number.value;
+			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_FRAMES_ITEM_NAME)) {
+				frames_total = (int)property->items[i].number.value;
 			}
 		}
+		char drift_str[50];
+		snprintf(drift_str, 50, "%.2f %.2f", drift_x, drift_y);
+		m_drift_label->setText(drift_str);
+
 
 		if (property->state == INDIGO_BUSY_STATE) {
-			exp_time = m_exposure_time->value();
-			for (int i = 0; i < property->count; i++) {
-				if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_EXPOSURE_ITEM_NAME)) {
-					exp_elapsed = exp_time - property->items[i].number.value;
-				} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_FRAME_ITEM_NAME)) {
-					frames_complete = (int)property->items[i].number.value;
-				} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_FRAMES_ITEM_NAME)) {
-					frames_total = (int)property->items[i].number.value;
-				}
-			}
 			m_exposure_progress->setMaximum(exp_time);
 			m_exposure_progress->setValue(exp_elapsed);
 			m_exposure_progress->setFormat("Exposure: %v of %m seconds elapsed...");
