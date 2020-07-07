@@ -244,13 +244,13 @@ void ImagerWindow::on_focus_start(bool clicked) {
 
 
 	change_agent_star_selection(selected_agent);
-	change_agent_batch_property_for_focusing(selected_agent);
+	change_agent_batch_property(selected_agent);
 	change_agent_focus_params_property(selected_agent);
 	change_ccd_frame_property(selected_agent);
 	m_preview = true;
 	m_focusing = true;
 	if(m_focus_method_select->currentIndex() == 0) {
-		change_agent_start_exposure_property(selected_agent);
+		change_agent_start_preview_property(selected_agent);
 	} else {
 		change_agent_start_focusing_property(selected_agent);
 	}

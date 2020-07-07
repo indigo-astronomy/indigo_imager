@@ -183,7 +183,7 @@ private:
 	void change_cooler_onoff_property(const char *agent) const;
 	void change_ccd_temperature_property(const char *agent) const;
 
-	void change_agent_batch_property_for_focusing(const char *agent) const;
+	void change_agent_start_preview_property(const char *agent) const;
 	void change_agent_start_focusing_property(const char *agent) const;
 	void change_agent_star_selection(const char *agent) const;
 	void change_agent_focus_params_property(const char *agent) const;

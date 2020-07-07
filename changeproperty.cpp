@@ -71,19 +71,6 @@ void ImagerWindow::change_agent_batch_property(const char *agent) const {
 	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_BATCH_PROPERTY_NAME, 3, items, values);
 }
 
-void ImagerWindow::change_agent_batch_property_for_focusing(const char *agent) const {
-	static const char *items[] = {
-		AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME,
-		AGENT_IMAGER_BATCH_DELAY_ITEM_NAME,
-		AGENT_IMAGER_BATCH_COUNT_ITEM_NAME
-	};
-	static double values[3];
-	values[0] = (double)m_focuser_exposure_time->value();
-	values[1] = 0;
-	values[2] = -1;
-	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_BATCH_PROPERTY_NAME, 3, items, values);
-}
-
 void ImagerWindow::change_agent_star_selection(const char *agent) const {
 	static const char *items[] = {
 		AGENT_IMAGER_SELECTION_X_ITEM_NAME,
@@ -123,6 +110,16 @@ void ImagerWindow::change_agent_start_exposure_property(const char *agent) const
 void ImagerWindow::change_agent_start_focusing_property(const char *agent) const {
 	static const char *items[] = {
 		AGENT_IMAGER_START_FOCUSING_ITEM_NAME
+	};
+	static bool values[] = {
+		true
+	};
+	indigo_change_switch_property(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, 1, items, values);
+}
+
+void ImagerWindow::change_agent_start_preview_property(const char *agent) const {
+	static const char *items[] = {
+		AGENT_IMAGER_START_PREVIEW_ITEM_NAME
 	};
 	static bool values[] = {
 		true
