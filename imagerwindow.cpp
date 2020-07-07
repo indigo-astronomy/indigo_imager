@@ -270,11 +270,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 }
 
 
-void ImagerWindow::on_image_right_click(int x, int y) {
-	m_star_x->setValue(x);
-	m_star_y->setValue(y);
-}
-
 ImagerWindow::~ImagerWindow () {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
 	delete mLog;
@@ -309,6 +304,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		free(item);
 	}
 }
+
 
 void ImagerWindow::on_obsolete_preview(indigo_property *property, indigo_item *item){
 	preview_cache.obsolete(property, item);

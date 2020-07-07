@@ -130,6 +130,36 @@ void ImagerWindow::change_agent_start_focusing_property(const char *agent) const
 	indigo_change_switch_property(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, 1, items, values);
 }
 
+
+void ImagerWindow::change_focuser_steps_property(const char *agent) const {
+	static const char *items[] = {
+		FOCUSER_STEPS_ITEM_NAME
+	};
+	static double values[1];
+	values[0] = (double)m_focus_steps->value();
+	indigo_change_number_property(nullptr, agent, FOCUSER_STEPS_PROPERTY_NAME, 1, items, values);
+}
+
+void ImagerWindow::change_focuser_focus_in_property(const char *agent) const {
+	static const char *items[] = {
+		FOCUSER_DIRECTION_MOVE_INWARD_ITEM_NAME
+	};
+	static bool values[] = {
+		true
+	};
+	indigo_change_switch_property(nullptr, agent, FOCUSER_DIRECTION_PROPERTY_NAME, 1, items, values);
+}
+
+void ImagerWindow::change_focuser_focus_out_property(const char *agent) const {
+	static const char *items[] = {
+		FOCUSER_DIRECTION_MOVE_OUTWARD_ITEM_NAME
+	};
+	static bool values[] = {
+		true
+	};
+	indigo_change_switch_property(nullptr, agent, FOCUSER_DIRECTION_PROPERTY_NAME, 1, items, values);
+}
+
 void ImagerWindow::change_agent_pause_process_property(const char *agent) const {
 	static const char *items[] = {
 		AGENT_PAUSE_PROCESS_ITEM_NAME

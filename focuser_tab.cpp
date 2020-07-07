@@ -29,6 +29,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_star_x->setValue(0);
 	//m_star_x->setEnabled(false);
 	focuser_frame_layout->addWidget(m_star_x , row, 1);
+	connect(m_star_x, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_selection_changed);
 
 	label = new QLabel("Star Y:");
 	focuser_frame_layout->addWidget(label, row, 2);
@@ -38,6 +39,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_star_y->setValue(0);
 	//m_star_y->setEnabled(false);
 	focuser_frame_layout->addWidget(m_star_y, row, 3);
+	connect(m_star_y, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_selection_changed);
 
 	// Exposure time
 	row++;
@@ -55,7 +57,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_method_select->addItem("Manual");
 	m_focus_method_select->addItem("Auto");
 	focuser_frame_layout->addWidget(m_focus_method_select, row, 3);
-	//connect(focus_method, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focuser_selected);
+	//connect(focus_method, QOverload<int>::of(&QComboBox::activate), this, &ImagerWindow::on_focuser_selected);
 
 	row++;
 	label = new QLabel("Autofocus setings:");
@@ -147,13 +149,13 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	but->setStyleSheet("min-width: 15px");
 	//but->setIcon(QIcon(":resource/stop.png"));
 	toolbox->addWidget(but);
-	connect(but, &QPushButton::clicked, this, &ImagerWindow::on_abort);
+	connect(but, &QPushButton::clicked, this, &ImagerWindow::on_focus_in);
 
 	but = new QPushButton("Out");
 	but->setStyleSheet("min-width: 15px");
 	//but->setIcon(QIcon(":resource/stop.png"));
 	toolbox->addWidget(but);
-	connect(but, &QPushButton::clicked, this, &ImagerWindow::on_abort);
+	connect(but, &QPushButton::clicked, this, &ImagerWindow::on_focus_out);
 
 	QPushButton *button = new QPushButton("Abort");
 	button->setStyleSheet("min-width: 30px");
@@ -192,6 +194,20 @@ void ImagerWindow::on_focuser_selected(int index) {
 	indigo_change_switch_property(nullptr, selected_agent, FILTER_FOCUSER_LIST_PROPERTY_NAME, 1, items, values);
 }
 
+
+void ImagerWindow::on_selection_changed(int value) {
+	int x = m_star_x->value();
+	int y = m_star_y->value();
+	m_viewer->moveSelection(x, y);
+}
+
+
+void ImagerWindow::on_image_right_click(int x, int y) {
+	m_star_x->setValue(x);
+	m_star_y->setValue(y);
+}
+
+
 void ImagerWindow::on_focus_start(bool clicked) {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
 	static char selected_agent[INDIGO_NAME_SIZE];
@@ -209,4 +225,22 @@ void ImagerWindow::on_focus_start(bool clicked) {
 	} else {
 		change_agent_start_focusing_property(selected_agent);
 	}
+}
+
+void ImagerWindow::on_focus_in(bool clicked) {
+	indigo_debug("CALLED: %s\n", __FUNCTION__);
+	static char selected_agent[INDIGO_NAME_SIZE];
+	get_selected_agent(selected_agent);
+
+	change_focuser_focus_in_property(selected_agent);
+	change_focuser_steps_property(selected_agent);
+}
+
+void ImagerWindow::on_focus_out(bool clicked) {
+	indigo_debug("CALLED: %s\n", __FUNCTION__);
+	static char selected_agent[INDIGO_NAME_SIZE];
+	get_selected_agent(selected_agent);
+
+	change_focuser_focus_out_property(selected_agent);
+	change_focuser_steps_property(selected_agent);
 }

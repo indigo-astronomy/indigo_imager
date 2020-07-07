@@ -74,7 +74,6 @@ signals:
 
 public slots:
 	void on_start(bool clicked);
-	void on_focus_start(bool clicked);
 	void on_preview(bool clicked);
 	void on_abort(bool clicked);
 	void on_pause(bool clicked);
@@ -112,7 +111,12 @@ public slots:
 	void on_cooler_onoff(bool state);
 	void on_teperature_set();
 
+	void on_focus_start(bool clicked);
+	void on_selection_changed(int value);
 	void on_image_right_click(int x, int y);
+	void on_focus_in(bool clicked);
+	void on_focus_out(bool clicked);
+
 
 private:
 	bool m_preview;
@@ -179,6 +183,9 @@ private:
 	void change_agent_start_focusing_property(const char *agent) const;
 	void change_agent_star_selection(const char *agent) const;
 	void change_agent_focus_params_property(const char *agent) const;
+	void change_focuser_steps_property(const char *agent) const;
+	void change_focuser_focus_in_property(const char *agent) const;
+	void change_focuser_focus_out_property(const char *agent) const;
 
 	bool save_blob_item_with_prefix(indigo_item *item, const char *prefix, char *file_name);
 	void save_blob_item(indigo_item *item);
