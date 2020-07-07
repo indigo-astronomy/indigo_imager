@@ -174,6 +174,23 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	button->setIcon(QIcon(":resource/play.png"));
 	toolbox->addWidget(button);
 	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_preview);
+
+	row++;
+	row++;
+	label = new QLabel("FWHM:");
+	focuser_frame_layout->addWidget(label, row, 0, 1, 2);
+	m_FWHM_label = new QLabel();
+	m_FWHM_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	focuser_frame_layout->addWidget(m_FWHM_label, row, 2, 1, 2);
+
+	row++;
+	label = new QLabel("HFD:");
+	focuser_frame_layout->addWidget(label, row, 0, 1, 2);
+	m_HFD_label = new QLabel();
+	m_HFD_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	focuser_frame_layout->addWidget(m_HFD_label, row, 2, 1, 2);
+
+
 }
 
 void ImagerWindow::on_focuser_selected(int index) {

@@ -156,6 +156,8 @@ private:
 	QSpinBox  *m_focus_stack;
 	QSpinBox  *m_focus_position;
 	QSpinBox  *m_focus_steps;
+	QLabel    *m_FWHM_label;
+	QLabel    *m_HFD_label;
 
 	QDoubleSpinBox *m_focuser_exposure_time;
 

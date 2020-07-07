@@ -443,6 +443,20 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		double exp_elapsed, exp_time;
 		int frames_complete, frames_total;
 
+		for (int i = 0; i < property->count; i++) {
+			if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_FWHM_ITEM_NAME)) {
+				 double FWHM = property->items[i].number.value;
+				 char fwhm_str[50];
+				 snprintf(fwhm_str, 50, "%.2f", FWHM);
+				 m_FWHM_label->setText(fwhm_str);
+			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_HFD_ITEM_NAME)) {
+				 double HFD = property->items[i].number.value;
+				 char hfd_str[50];
+				 snprintf(hfd_str, 50, "%.2f", HFD);
+				 m_HFD_label->setText(hfd_str);
+			}
+		}
+
 		if (property->state == INDIGO_BUSY_STATE) {
 			exp_time = m_exposure_time->value();
 			for (int i = 0; i < property->count; i++) {
@@ -458,6 +472,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			m_exposure_progress->setValue(exp_elapsed);
 			m_exposure_progress->setFormat("Exposure: %v of %m seconds elapsed...");
 			m_process_progress->setMaximum(frames_total);
+			indigo_debug("frames total = %d", frames_total);
 			m_process_progress->setValue(frames_complete);
 			m_process_progress->setFormat("Process: exposure %v of %m in progress...");
 		} else if (property->state == INDIGO_OK_STATE) {
