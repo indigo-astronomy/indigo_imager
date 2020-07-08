@@ -87,7 +87,7 @@ ImageViewer::ImageViewer(QWidget *parent)
 	pen.setColor(Qt::green);
 	m_selection->setPen(pen);
 	m_selection->setOpacity(0.8);
-//	m_selection->setVisible(false);
+	m_selection->setVisible(false);
 	scene->addItem(m_selection);
 	//item1->setFlags(QGraphicsItem::ItemIsMovable);
 
@@ -137,26 +137,41 @@ void ImageViewer::setText(const QString &txt) {
 }
 
 void ImageViewer::showSelection() {
-    m_selection->setVisible(true);
+	m_selection_visible = true;
+	if (!m_pixmap->pixmap().isNull()) {
+		m_selection->setVisible(true);
+	}
 }
 
-void ImageViewer::hydeSelection() {
+void ImageViewer::hideSelection() {
+	m_selection_visible = false;
     m_selection->setVisible(false);
 }
 
 void ImageViewer::moveSelection(int x, int y) {
 	QRectF br = m_selection->boundingRect();
+	int cor_x = x - ((int)br.width() - 1) / 2;
+	int cor_y = y - ((int)br.height() - 1) / 2;
+
+	if (!m_pixmap->pixmap().isNull() && ((cor_x < 0) || (cor_y < 0) ||
+	    (cor_x > m_pixmap->pixmap().width() - (int)br.width() + 1) ||
+	    (cor_y > m_pixmap->pixmap().height() - (int)br.height() + 1))) {
+		return;
+	}
 	indigo_debug("selection %d %d", (int)br.width(), (int)br.height());
-    m_selection->setPos(x - ((int)br.width() - 1) / 2, y - ((int)br.height() - 1) / 2);
+	m_selection->setPos(cor_x, cor_y);
 }
 
 
 const preview_image &ImageViewer::image() const {
-    return m_pixmap->image();
+	return m_pixmap->image();
 }
 
 void ImageViewer::setImage(preview_image &im) {
 	m_pixmap->setImage(im);
+	if (!m_pixmap->pixmap().isNull() && m_selection_visible) {
+		m_selection->setVisible(true);
+	}
 	m_view->scene()->setSceneRect(0, 0, im.width(), im.height());
 
 	if (m_fit) zoomFit();

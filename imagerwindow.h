@@ -117,6 +117,7 @@ public slots:
 	void on_focus_in(bool clicked);
 	void on_focus_out(bool clicked);
 
+	void on_tab_changed(int index);
 
 private:
 	bool m_preview;

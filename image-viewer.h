@@ -55,7 +55,7 @@ public:
     void enableAntialiasing(bool on = true);
 
 	void showSelection();
-	void hydeSelection();
+	void hideSelection();
 	void moveSelection(int x, int y);
 
 public slots:
@@ -93,6 +93,7 @@ private:
 	QGraphicsRectItem *m_selection;
     QWidget *m_toolbar;
     bool m_fit;
+	bool m_selection_visible;
     ToolBarMode m_bar_mode;
 };
 

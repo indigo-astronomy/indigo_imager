@@ -212,6 +212,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	QFrame *guider_frame = new QFrame;
 	tools_tabbar->addTab(guider_frame, "Guide");
+	connect(tools_tabbar, &QTabWidget::currentChanged, this, &ImagerWindow::on_tab_changed);
 
 	// Image viewer
 	m_viewer = new pal::ImageViewer(this);
@@ -280,6 +281,10 @@ ImagerWindow::~ImagerWindow () {
 	IndigoClient::instance().stop();
 }
 
+void ImagerWindow::on_tab_changed(int index) {
+	if (index == 1) m_viewer->showSelection();
+	else m_viewer->hideSelection();
+}
 
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){
 	char selected_agent[INDIGO_VALUE_SIZE];

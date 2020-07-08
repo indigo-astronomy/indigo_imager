@@ -429,7 +429,6 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			m_process_progress->setValue(100);
 			m_exposure_progress->setFormat("Preview: Complete");
 			m_process_progress->setFormat("Process: Complete");
-
 		} else {
 			m_exposure_progress->setMaximum(1);
 			m_exposure_progress->setValue(0);
