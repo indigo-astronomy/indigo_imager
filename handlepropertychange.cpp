@@ -33,9 +33,11 @@ static void set_widget_state(indigo_property *property, W *widget) {
 
 template<typename W>
 static void configure_spinbox(indigo_item *item, int perm, W *widget) {
-	widget->setRange(item->number.min, item->number.max);
-	widget->setSingleStep(item->number.step);
-	widget->setValue(item->number.value);
+	if (item != nullptr) {
+		widget->setRange(item->number.min, item->number.max);
+		widget->setSingleStep(item->number.step);
+		widget->setValue(item->number.value);
+	}
 	if (perm == INDIGO_RO_PERM) {
 		widget->setEnabled(false);
 	} else {
@@ -103,11 +105,15 @@ static void update_cooler_onoff(indigo_property *property, QCheckBox *cooler_ono
 	}
 }
 
-static void update_ccd_temperature(indigo_property *property, QLineEdit *current_temp, QDoubleSpinBox *set_temp) {
+static void update_ccd_temperature(indigo_property *property, QLineEdit *current_temp, QDoubleSpinBox *set_temp, bool update_value = false) {
 	indigo_debug("change %s", property->name);
 	if(property->count == 1) {
-		configure_spinbox(&property->items[0], property->perm, set_temp);
-
+		if (update_value) {
+			configure_spinbox(&property->items[0], property->perm, set_temp);
+			set_temp->setValue(property->items[0].number.target);
+		} else {
+			configure_spinbox(nullptr, property->perm, set_temp);
+		}
 		indigo_debug("change %s = %f", property->items[0].name, property->items[0].number.value);
 		char temperature[INDIGO_VALUE_SIZE];
 		snprintf(temperature, INDIGO_VALUE_SIZE, "%.1f", property->items[0].number.value);
@@ -192,6 +198,22 @@ static void update_ccd_frame_property(indigo_property *property, QSpinBox *roi_x
 			configure_spinbox(&property->items[i], property->perm, roi_w);
 		} else if (!strcmp(property->items[i].name, CCD_FRAME_HEIGHT_ITEM_NAME)) {
 			configure_spinbox(&property->items[i], property->perm, roi_h);
+		}
+	}
+}
+
+
+static void update_agent_imager_pause_process_property(indigo_property *property, QPushButton* pause_button) {
+	indigo_debug("Set %s", property->name);
+	for (int i = 0; i < property->count; i++) {
+		if (!strcmp(property->items[i].name, AGENT_PAUSE_PROCESS_ITEM_NAME)) {
+			if(property->state == INDIGO_BUSY_STATE) {
+				pause_button->setText("Resume");
+				set_busy(pause_button);
+			} else {
+				pause_button->setText("Pause");
+				set_ok(pause_button);
+			}
 		}
 	}
 }
@@ -302,19 +324,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 
 	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
-		indigo_debug("Set %s", property->name);
-		for (int i = 0; i < property->count; i++) {
-			indigo_debug("Set %s = %f", property->items[i].name, property->items[i].sw.value);
-			if (!strcmp(property->items[i].name, AGENT_PAUSE_PROCESS_ITEM_NAME)) {
-				if(property->state == INDIGO_BUSY_STATE) {
-					m_pause_button->setText("Resume");
-					set_busy(m_pause_button);
-				} else {
-					m_pause_button->setText("Pause");
-					set_ok(m_pause_button);
-				}
-			}
-		}
+		update_agent_imager_pause_process_property(property, m_pause_button);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_COOLER_PROPERTY_NAME)) {
 		update_cooler_onoff(property, m_cooler_onoff);
@@ -323,7 +333,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_cooler_power(property, m_cooler_pwr);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_TEMPERATURE_PROPERTY_NAME)) {
-		update_ccd_temperature(property, m_current_temp, m_set_temp);
+		update_ccd_temperature(property, m_current_temp, m_set_temp, true);
 	}
 }
 
@@ -469,7 +479,6 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		snprintf(drift_str, 50, "%.2f %.2f", drift_x, drift_y);
 		m_drift_label->setText(drift_str);
 
-
 		if (property->state == INDIGO_BUSY_STATE) {
 			m_exposure_progress->setMaximum(exp_time);
 			m_exposure_progress->setValue(exp_elapsed);
@@ -494,35 +503,10 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		}
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME)) {
-		indigo_debug("Change %s", property->name);
-		for (int i = 0; i < property->count; i++) {
-			indigo_debug("Change %s = %f", property->items[i].name, property->items[i].number.value);
-			if (!strcmp(property->items[i].name, CCD_FRAME_LEFT_ITEM_NAME)) {
-				m_roi_x->setValue((int)property->items[i].number.value);
-			} else if (!strcmp(property->items[i].name, CCD_FRAME_TOP_ITEM_NAME)) {
-				m_roi_y->setValue((int)property->items[i].number.value);
-			} else if (!strcmp(property->items[i].name, CCD_FRAME_WIDTH_ITEM_NAME)) {
-				m_roi_w->setValue((int)property->items[i].number.value);
-			} else if (!strcmp(property->items[i].name, CCD_FRAME_HEIGHT_ITEM_NAME)) {
-				m_roi_h->setValue((int)property->items[i].number.value);
-			}
-
-		}
+		update_ccd_frame_property(property, m_roi_x, m_roi_y, m_roi_w, m_roi_h);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
-		indigo_debug("change %s", property->name);
-		for (int i = 0; i < property->count; i++) {
-			indigo_debug("change %s = %f", property->items[i].name, property->items[i].sw.value);
-			if (!strcmp(property->items[i].name, AGENT_PAUSE_PROCESS_ITEM_NAME)) {
-				if(property->state == INDIGO_BUSY_STATE) {
-					m_pause_button->setText("Resume");
-					set_busy(m_pause_button);
-				} else {
-					m_pause_button->setText("Pause");
-					set_ok(m_pause_button);
-				}
-			}
-		}
+		update_agent_imager_pause_process_property(property, m_pause_button);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_COOLER_PROPERTY_NAME)) {
 		update_cooler_onoff(property, m_cooler_onoff);
