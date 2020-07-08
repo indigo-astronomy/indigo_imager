@@ -14,10 +14,15 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	// Focuser selection
 	row++;
 	QLabel *label = new QLabel("Focuser:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	focuser_frame_layout->addWidget(label, row, 0);
 	m_focuser_select = new QComboBox();
 	focuser_frame_layout->addWidget(m_focuser_select, row, 1, 1, 3);
 	connect(m_focuser_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focuser_selected);
+
+	row++;
+	QSpacerItem *spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	focuser_frame_layout->addItem(spacer, row, 0);
 
 	// Star Selection
 	row++;
@@ -60,7 +65,12 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	//connect(focus_method, QOverload<int>::of(&QComboBox::activate), this, &ImagerWindow::on_focuser_selected);
 
 	row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	focuser_frame_layout->addItem(spacer, row, 0);
+
+	row++;
 	label = new QLabel("Autofocus setings:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	focuser_frame_layout->addWidget(label, row, 0, 1, 4);
 
 	row++;
@@ -102,7 +112,12 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	focuser_frame_layout->addWidget(m_focus_stack, row, 3);
 
 	row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	focuser_frame_layout->addItem(spacer, row, 0);
+
+	row++;
 	label = new QLabel("Manual focuser control:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	focuser_frame_layout->addWidget(label, row, 0, 1, 4);
 
 	row++;
@@ -176,33 +191,37 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_preview);
 
 	row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	focuser_frame_layout->addItem(spacer, row, 0);
+	//focuser_frame_layout->setRowStretch(row, 1 );
+
 	row++;
 	label = new QLabel("Drift (X,Y):");
-	focuser_frame_layout->addWidget(label, row, 0, 1, 2);
+	focuser_frame_layout->addWidget(label, row, 0);
 	m_drift_label = new QLabel();
 	m_drift_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	focuser_frame_layout->addWidget(m_drift_label, row, 2, 1, 2);
+	focuser_frame_layout->addWidget(m_drift_label, row, 1, 1, 2);
 
 	row++;
 	label = new QLabel("FWHM:");
-	focuser_frame_layout->addWidget(label, row, 0, 1, 2);
+	focuser_frame_layout->addWidget(label, row, 0);
 	m_FWHM_label = new QLabel();
 	m_FWHM_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	focuser_frame_layout->addWidget(m_FWHM_label, row, 2, 1, 2);
+	focuser_frame_layout->addWidget(m_FWHM_label, row, 1, 1, 2);
 
 	row++;
 	label = new QLabel("HFD:");
-	focuser_frame_layout->addWidget(label, row, 0, 1, 2);
+	focuser_frame_layout->addWidget(label, row, 0);
 	m_HFD_label = new QLabel();
 	m_HFD_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	focuser_frame_layout->addWidget(m_HFD_label, row, 2, 1, 2);
+	focuser_frame_layout->addWidget(m_HFD_label, row, 1, 1, 2);
 
 	row++;
 	label = new QLabel("Peak:");
-	focuser_frame_layout->addWidget(label, row, 0, 1, 2);
+	focuser_frame_layout->addWidget(label, row, 0);
 	m_peak_label = new QLabel();
 	m_peak_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	focuser_frame_layout->addWidget(m_peak_label, row, 2, 1, 2);
+	focuser_frame_layout->addWidget(m_peak_label, row, 1, 1, 2);
 }
 
 void ImagerWindow::on_focuser_selected(int index) {

@@ -18,6 +18,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	// camera selection
 	row++;
 	QLabel *label = new QLabel("Camera:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	capture_frame_layout->addWidget(label, row, 0);
 	m_camera_select = new QComboBox();
 	capture_frame_layout->addWidget(m_camera_select, row, 1, 1, 3);
@@ -26,11 +27,15 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	// Filter wheel selection
 	row++;
 	label = new QLabel("Wheel:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	capture_frame_layout->addWidget(label, row, 0);
 	m_wheel_select = new QComboBox();
 	capture_frame_layout->addWidget(m_wheel_select, row, 1, 1, 3);
 	connect(m_wheel_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_wheel_selected);
 
+	row++;
+	QSpacerItem *spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	capture_frame_layout->addItem(spacer, row, 0);
 	//row++;
 	//QFrame* line = new QFrame();
 	//line->setFrameShape(QFrame::HLine);
