@@ -196,7 +196,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	//focuser_frame_layout->setRowStretch(row, 1 );
 
 	row++;
-	label = new QLabel("Drift (X,Y):");
+	label = new QLabel("Drift (X, Y):");
 	focuser_frame_layout->addWidget(label, row, 0);
 	m_drift_label = new QLabel();
 	m_drift_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));

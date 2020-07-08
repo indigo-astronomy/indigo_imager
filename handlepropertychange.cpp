@@ -476,7 +476,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			}
 		}
 		char drift_str[50];
-		snprintf(drift_str, 50, "%.2f %.2f", drift_x, drift_y);
+		snprintf(drift_str, 50, "%.2f, %.2f", drift_x, drift_y);
 		m_drift_label->setText(drift_str);
 
 		if (property->state == INDIGO_BUSY_STATE) {

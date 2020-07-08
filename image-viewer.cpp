@@ -88,8 +88,9 @@ ImageViewer::ImageViewer(QWidget *parent)
 	m_selection->setPen(pen);
 	m_selection->setOpacity(0.8);
 	m_selection->setVisible(false);
+	m_selection_visible = false;
 	scene->addItem(m_selection);
-	//item1->setFlags(QGraphicsItem::ItemIsMovable);
+	//m_selection->setFlags(QGraphicsItem::ItemIsMovable);
 
     makeToolbar();
 
@@ -249,16 +250,18 @@ void ImageViewer::zoomOut(int level) {
 }
 
 void ImageViewer::mouseAt(int x, int y) {
-	indigo_log("COORDS: %d %d" ,x,y);
+	//indigo_log("COORDS: %d %d" ,x,y);
 	if (m_pixmap->image().valid(x,y)) {
 		int r,g,b;
 		qreal scale = std::pow(2.0, m_zoom_level / 10.0) * 100;
 		m_pixmap->image().pixel_value(x, y, r, g, b);
 		QString s;
 		if (g == -1) {
-			s = QString("%1% [%2, %3] (%4)").arg(scale).arg(x).arg(y).arg(r);
+			//s = QString("%1% [%2, %3] (%4)").arg(scale).arg(x).arg(y).arg(r);
+			s.sprintf("%.2f%% [%5d, %5d] (%5d)", scale, x, y, r);
 		} else {
-			s = QString("%1% [%2, %3] (%4, %5, %6)").arg(scale).arg(x).arg(y).arg(r).arg(g).arg(b);
+			//s = QString("%1% [%2, %3] (%4, %5, %6)").arg(scale).arg(x).arg(y).arg(r).arg(g).arg(b);
+			s.sprintf("%.2f%% [%5d, %5d] (%5d, %5d, %5d)", scale, x, y, r, g, b);
 		}
 		m_pixel_value->setText(s);
 	} else {
@@ -270,7 +273,6 @@ void ImageViewer::mouseRightPressAt(int x, int y) {
 	indigo_log("RIGHT CLICK COORDS: %d %d" ,x,y);
 	if (m_pixmap->image().valid(x,y)) {
 		moveSelection(x,y);
-		//m_selection->setPos(x-12,y-12);
 		emit mouseRightPress(x,y);
 	}
 }
