@@ -1,3 +1,20 @@
+// Copyright (c) 2020 Rumen G.Bogdanovski
+// All rights reserved.
+//
+// You can use this software under the terms of 'INDIGO Astronomy
+// open-source license' (see LICENSE.md).
+//
+// THIS SOFTWARE IS PROVIDED BY THE AUTHORS 'AS IS' AND ANY EXPRESS
+// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+// GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -46,12 +63,12 @@ static void configure_spinbox(indigo_item *item, int perm, W *widget) {
 }
 
 
-static void change_devices_combobox_slection(indigo_property *property, QComboBox *devices_combobox) {
+static void change_combobox_selection(indigo_property *property, QComboBox *combobox) {
 	for (int i = 0; i < property->count; i++) {
 		if (property->items[i].sw.value) {
-			QString device = QString(property->items[i].label);
-			devices_combobox->setCurrentIndex(devices_combobox->findText(device));
-			indigo_debug("[ADD device] %s\n", device.toUtf8().data());
+			QString item = QString(property->items[i].label);
+			combobox->setCurrentIndex(combobox->findText(item));
+			indigo_debug("[SELECT] %s\n", item.toUtf8().data());
 			break;
 		}
 	}
@@ -218,6 +235,126 @@ static void update_agent_imager_pause_process_property(indigo_property *property
 	}
 }
 
+static void update_wheel_slot_property(indigo_property *property, QComboBox *filter_select) {
+	if (property->count == 1) {
+		indigo_property *p = properties.get(property->device, WHEEL_SLOT_NAME_PROPERTY_NAME);
+		unsigned int current_filter = (unsigned int)property->items[0].number.value - 1;
+		set_widget_state(property, filter_select);
+		if (p && current_filter < p->count) {
+			filter_select->setCurrentIndex(filter_select->findText(p->items[current_filter].text.value));
+			indigo_debug("[SELECT filter] %s\n", p->items[current_filter].label);
+		}
+	}
+}
+
+static void update_agent_imager_stats_property(
+	indigo_property *property,
+	QDoubleSpinBox *exposure_time,
+	QLabel *FWHM_label,
+	QLabel *HFD_label,
+	QLabel *peak_label,
+	QLabel *drift_label,
+	QProgressBar *exposure_progress,
+	QProgressBar *process_progress
+) {
+	double exp_elapsed, exp_time;
+	double drift_x, drift_y;
+	int frames_complete, frames_total;
+
+	exp_time = exposure_time->value();
+	for (int i = 0; i < property->count; i++) {
+		if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_FWHM_ITEM_NAME)) {
+			 double FWHM = property->items[i].number.value;
+			 char fwhm_str[50];
+			 snprintf(fwhm_str, 50, "%.2f", FWHM);
+			 FWHM_label->setText(fwhm_str);
+		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_HFD_ITEM_NAME)) {
+			 double HFD = property->items[i].number.value;
+			 char hfd_str[50];
+			 snprintf(hfd_str, 50, "%.2f", HFD);
+			 HFD_label->setText(hfd_str);
+		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_PEAK_ITEM_NAME)) {
+			int peak = (int)property->items[i].number.value;
+			char peak_str[50];
+			snprintf(peak_str, 50, "%d", peak);
+			peak_label->setText(peak_str);
+		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_DRIFT_X_ITEM_NAME)) {
+			drift_x = property->items[i].number.value;
+		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_DRIFT_Y_ITEM_NAME)) {
+			drift_y = property->items[i].number.value;
+		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_EXPOSURE_ITEM_NAME)) {
+			exp_elapsed = exp_time - property->items[i].number.value;
+		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_FRAME_ITEM_NAME)) {
+			frames_complete = (int)property->items[i].number.value;
+		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_FRAMES_ITEM_NAME)) {
+			frames_total = (int)property->items[i].number.value;
+		}
+	}
+	char drift_str[50];
+	snprintf(drift_str, 50, "%.2f, %.2f", drift_x, drift_y);
+	drift_label->setText(drift_str);
+
+	if (property->state == INDIGO_BUSY_STATE) {
+		exposure_progress->setMaximum(exp_time);
+		exposure_progress->setValue(exp_elapsed);
+		exposure_progress->setFormat("Exposure: %v of %m seconds elapsed...");
+		process_progress->setMaximum(frames_total);
+		indigo_debug("frames total = %d", frames_total);
+		process_progress->setValue(frames_complete);
+		process_progress->setFormat("Process: exposure %v of %m in progress...");
+	} else if (property->state == INDIGO_OK_STATE) {
+		exposure_progress->setMaximum(100);
+		exposure_progress->setValue(100);
+		exposure_progress->setFormat("Exposure: Complete");
+		process_progress->setMaximum(100);
+		process_progress->setValue(100);
+		process_progress->setFormat("Process: Complete");
+	} else {
+		exposure_progress->setMaximum(1);
+		exposure_progress->setValue(0);
+		exposure_progress->setFormat("Exposure: Failed");
+		process_progress->setValue(process_progress->value()-1);
+		process_progress->setFormat("Process: %v exposures of %m competed");
+	}
+}
+
+static void update_ccd_exposure(
+	indigo_property *property,
+	QDoubleSpinBox *exposure_time,
+	QProgressBar *exposure_progress,
+	QProgressBar *process_progress
+) {
+	double exp_elapsed, exp_time;
+	if (property->state == INDIGO_BUSY_STATE) {
+		exp_time = exposure_time->value();
+		for (int i = 0; i < property->count; i++) {
+			if (!strcmp(property->items[i].name, CCD_EXPOSURE_ITEM_NAME)) {
+				exp_elapsed = exp_time - property->items[i].number.value;
+			}
+		}
+		exposure_progress->setMaximum(exp_time);
+		exposure_progress->setValue(exp_elapsed);
+		exposure_progress->setFormat("Preview: %v of %m seconds elapsed...");
+		process_progress->setMaximum(1);
+		process_progress->setValue(0);
+		process_progress->setFormat("Preview in progress...");
+	} else if(property->state == INDIGO_OK_STATE) {
+		exposure_progress->setMaximum(100);
+		exposure_progress->setValue(100);
+		process_progress->setMaximum(100);
+		process_progress->setValue(100);
+		exposure_progress->setFormat("Preview: Complete");
+		process_progress->setFormat("Process: Complete");
+	} else {
+		exposure_progress->setMaximum(1);
+		exposure_progress->setValue(0);
+		process_progress->setMaximum(1);
+		process_progress->setValue(0);
+		exposure_progress->setFormat("Exposure: Failed");
+		process_progress->setFormat("Process: Failed");
+	}
+}
+
 
 void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 	char timestamp[16];
@@ -318,11 +455,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		indigo_property *p = properties.get(property->device, WHEEL_SLOT_PROPERTY_NAME);
 		if (p) set_filter_selected(p, m_filter_select);
 	}
-
 	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_PROPERTY_NAME)) {
 		set_filter_selected(property, m_filter_select);
 	}
-
 	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_pause_process_property(property, m_pause_button);
 	}
@@ -350,17 +485,14 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 
 	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
-		change_devices_combobox_slection(property, m_camera_select);
+		change_combobox_selection(property, m_camera_select);
 	}
-
 	if (client_match_device_property(property, selected_agent, FILTER_WHEEL_LIST_PROPERTY_NAME)) {
-		change_devices_combobox_slection(property, m_wheel_select);
+		change_combobox_selection(property, m_wheel_select);
 	}
-
 	if (client_match_device_property(property, selected_agent, FILTER_FOCUSER_LIST_PROPERTY_NAME)) {
-		change_devices_combobox_slection(property, m_focuser_select);
+		change_combobox_selection(property, m_focuser_select);
 	}
-
 	if (client_match_device_property(property, selected_agent, FOCUSER_POSITION_PROPERTY_NAME)) {
 		update_focuser_poition(property, m_focus_position);
 	}
@@ -368,22 +500,10 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		update_focuser_poition(property, m_focus_steps);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME)) {
-		for (int i = 0; i < property->count; i++) {
-			if (property->items[i].sw.value) {
-				m_frame_size_select->setCurrentIndex(m_frame_size_select->findText(property->items[i].label));
-				indigo_debug("[SELECT mode] %s\n", property->items[i].label);
-				break;
-			}
-		}
+		change_combobox_selection(property, m_frame_size_select);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_TYPE_PROPERTY_NAME)) {
-		for (int i = 0; i < property->count; i++) {
-			if (property->items[i].sw.value) {
-				m_frame_type_select->setCurrentIndex(m_frame_type_select->findText(property->items[i].label));
-				indigo_debug("[SELECT mode] %s\n", property->items[i].label);
-				break;
-			}
-		}
+		change_combobox_selection(property, m_frame_type_select);
 	}
 	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME)) {
 		reset_filter_names(property, m_filter_select);
@@ -391,15 +511,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		if (p) set_filter_selected(p, m_filter_select);
 	}
 	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_PROPERTY_NAME)) {
-		if (property->count == 1) {
-			indigo_property *p = properties.get(property->device, WHEEL_SLOT_NAME_PROPERTY_NAME);
-			unsigned int current_filter = (unsigned int)property->items[0].number.value - 1;
-			set_widget_state(property, m_filter_select);
-			if (p && current_filter < p->count) {
-				m_filter_select->setCurrentIndex(m_filter_select->findText(p->items[current_filter].text.value));
-				indigo_debug("[SELECT mode] %s\n", p->items[current_filter].label);
-			}
-		}
+		update_wheel_slot_property(property, m_filter_select);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME)) {
 		update_selection_property(property, m_star_x, m_star_y, m_viewer);
@@ -410,97 +522,26 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME)) {
 		update_agent_imager_batch_property(property, m_exposure_time, m_exposure_delay, m_frame_count);
 	}
-	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME) && m_preview) {
-		double exp_elapsed, exp_time;
-		if (property->state == INDIGO_BUSY_STATE) {
-			exp_time = m_exposure_time->value();
-			for (int i = 0; i < property->count; i++) {
-				if (!strcmp(property->items[i].name, CCD_EXPOSURE_ITEM_NAME)) {
-					exp_elapsed = exp_time - property->items[i].number.value;
-				}
-			}
-			m_exposure_progress->setMaximum(exp_time);
-			m_exposure_progress->setValue(exp_elapsed);
-			m_exposure_progress->setFormat("Preview: %v of %m seconds elapsed...");
-			m_process_progress->setMaximum(1);
-			m_process_progress->setValue(0);
-			m_process_progress->setFormat("Preview in progress...");
-		} else if(property->state == INDIGO_OK_STATE) {
-			m_exposure_progress->setMaximum(100);
-			m_exposure_progress->setValue(100);
-			m_process_progress->setMaximum(100);
-			m_process_progress->setValue(100);
-			m_exposure_progress->setFormat("Preview: Complete");
-			m_process_progress->setFormat("Process: Complete");
-		} else {
-			m_exposure_progress->setMaximum(1);
-			m_exposure_progress->setValue(0);
-			m_process_progress->setMaximum(1);
-			m_process_progress->setValue(0);
-			m_exposure_progress->setFormat("Exposure: Failed");
-			m_process_progress->setFormat("Process: Failed");
+	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME)) {
+		if (m_preview) {
+			update_ccd_exposure(
+				property,
+				m_exposure_time,
+				m_exposure_progress,
+				m_process_progress
+			);
 		}
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_STATS_PROPERTY_NAME)) {
-		double exp_elapsed, exp_time;
-		double drift_x, drift_y;
-		int frames_complete, frames_total;
-
-		exp_time = m_exposure_time->value();
-		for (int i = 0; i < property->count; i++) {
-			if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_FWHM_ITEM_NAME)) {
-				 double FWHM = property->items[i].number.value;
-				 char fwhm_str[50];
-				 snprintf(fwhm_str, 50, "%.2f", FWHM);
-				 m_FWHM_label->setText(fwhm_str);
-			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_HFD_ITEM_NAME)) {
-				 double HFD = property->items[i].number.value;
-				 char hfd_str[50];
-				 snprintf(hfd_str, 50, "%.2f", HFD);
-				 m_HFD_label->setText(hfd_str);
-			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_PEAK_ITEM_NAME)) {
-				int peak = (int)property->items[i].number.value;
-				char peak_str[50];
-			 	snprintf(peak_str, 50, "%d", peak);
-			 	m_peak_label->setText(peak_str);
-			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_DRIFT_X_ITEM_NAME)) {
-				drift_x = property->items[i].number.value;
-			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_DRIFT_Y_ITEM_NAME)) {
-				drift_y = property->items[i].number.value;
-			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_EXPOSURE_ITEM_NAME)) {
-				exp_elapsed = exp_time - property->items[i].number.value;
-			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_FRAME_ITEM_NAME)) {
-				frames_complete = (int)property->items[i].number.value;
-			} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_FRAMES_ITEM_NAME)) {
-				frames_total = (int)property->items[i].number.value;
-			}
-		}
-		char drift_str[50];
-		snprintf(drift_str, 50, "%.2f, %.2f", drift_x, drift_y);
-		m_drift_label->setText(drift_str);
-
-		if (property->state == INDIGO_BUSY_STATE) {
-			m_exposure_progress->setMaximum(exp_time);
-			m_exposure_progress->setValue(exp_elapsed);
-			m_exposure_progress->setFormat("Exposure: %v of %m seconds elapsed...");
-			m_process_progress->setMaximum(frames_total);
-			indigo_debug("frames total = %d", frames_total);
-			m_process_progress->setValue(frames_complete);
-			m_process_progress->setFormat("Process: exposure %v of %m in progress...");
-		} else if (property->state == INDIGO_OK_STATE) {
-			m_exposure_progress->setMaximum(100);
-			m_exposure_progress->setValue(100);
-			m_exposure_progress->setFormat("Exposure: Complete");
-			m_process_progress->setMaximum(100);
-			m_process_progress->setValue(100);
-			m_process_progress->setFormat("Process: Complete");
-		} else {
-			m_exposure_progress->setMaximum(1);
-			m_exposure_progress->setValue(0);
-			m_exposure_progress->setFormat("Exposure: Failed");
-			m_process_progress->setValue(m_process_progress->value()-1);
-			m_process_progress->setFormat("Process: %v exposures of %m competed");
-		}
+		update_agent_imager_stats_property(property,
+			m_exposure_time,
+			m_FWHM_label,
+			m_HFD_label,
+			m_peak_label,
+			m_drift_label,
+			m_exposure_progress,
+			m_process_progress
+		);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME)) {
 		update_ccd_frame_property(property, m_roi_x, m_roi_y, m_roi_w, m_roi_h);
@@ -543,7 +584,6 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		m_focuser_select->clear();
 	}
-
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
