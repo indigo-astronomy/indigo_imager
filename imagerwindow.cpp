@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Rumen G.Bogdanovski & David Hulse
+// Copyright (c) 2020 Rumen G.Bogdanovski
 // All rights reserved.
 //
 // You can use this software under the terms of 'INDIGO Astronomy
@@ -366,6 +366,15 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 	int file_no = 0;
 
 	QString object_name = m_object_name->text().trimmed();
+	QString filter_name = m_filter_select->currentText().trimmed();
+	QString frame_type = m_frame_type_select->currentText().trimmed();
+	QDateTime date = date.currentDateTime();
+	QString date_str = date.toString("yyyy-MM-dd");
+	if ((filter_name !=  "") && ((frame_type == "Light") || (frame_type == "Flat"))) {
+		object_name = object_name + "_" + date_str + "_" + frame_type + "_" + filter_name;
+	} else {
+		object_name = object_name + "_" + date_str + "_" + frame_type;
+	}
 
 	do {
 

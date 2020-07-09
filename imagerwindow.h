@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Rumen G.Bogdanovski & David Hulse
+// Copyright (c) 2019 Rumen G.Bogdanovski
 // All rights reserved.
 //
 // You can use this software under the terms of 'INDIGO Astronomy
@@ -50,6 +50,7 @@ class QIndigoServers;
 #include <QCheckBox>
 #include <QStandardPaths>
 #include <QDir>
+#include <QDateTime>
 
 
 class ImagerWindow : public QMainWindow {
