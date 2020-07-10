@@ -56,7 +56,6 @@ public:
 	//preview_image(uchar *data, int width, int height, QImage::Format format, QImageCleanupFunction cleanupFunction = nullptr, void *cleanupInfo = nullptr)= delete;
 	//preview_image(const QSize &size, QImage::Format format)= delete;
 
-
 	preview_image(int width, int height, QImage::Format format):
 		QImage(width, height, format),
 		m_raw_data(nullptr),
@@ -71,20 +70,7 @@ public:
 		m_width = image.m_width;
 		m_height = image.m_height;
 		m_pix_format = image.m_pix_format;
-
-		if (image.m_indigo_item == nullptr) {
-			m_indigo_item = nullptr;
-			m_raw_data = nullptr;
-			return;
-		}
-
-		m_indigo_item = (indigo_item*)malloc(sizeof(indigo_item));
-		memcpy(m_indigo_item, image.m_indigo_item, sizeof(indigo_item));
-		if (image.m_indigo_item->blob.value != nullptr) {
-			m_indigo_item->blob.value = (char*)malloc(image.m_indigo_item->blob.size);
-			memcpy(m_indigo_item->blob.value, image.m_indigo_item->blob.value, image.m_indigo_item->blob.size);
-		}
-
+		m_indigo_item = image.m_indigo_item;
 
 		if (image.m_raw_data == nullptr) {
 			m_raw_data = nullptr;
@@ -111,24 +97,12 @@ public:
 		m_height = image.m_height;
 		m_pix_format = image.m_pix_format;
 
-		if (image.m_indigo_item == nullptr) {
-			if (m_raw_data) free(m_raw_data);
-			m_raw_data = nullptr;
-			if (m_indigo_item) {
-				if (m_indigo_item->blob.value) free(m_indigo_item->blob.value);
-				free(m_indigo_item);
-			}
-			m_indigo_item = nullptr;
-			m_raw_data = nullptr;
-			return *this;
+		if (m_indigo_item) {
+			if (m_indigo_item->blob.value) free(m_indigo_item->blob.value);
+			free(m_indigo_item);
 		}
 
-		m_indigo_item = (indigo_item*)malloc(sizeof(indigo_item));
-		memcpy(m_indigo_item, image.m_indigo_item, sizeof(indigo_item));
-		if (image.m_indigo_item->blob.value != nullptr) {
-			m_indigo_item->blob.value = (char*)malloc(image.m_indigo_item->blob.size);
-			memcpy(m_indigo_item->blob.value, image.m_indigo_item->blob.value, image.m_indigo_item->blob.size);
-		}
+		m_indigo_item = image.m_indigo_item;
 
 		if (image.m_raw_data == nullptr) {
 			if (m_raw_data) free(m_raw_data);
@@ -162,7 +136,6 @@ public:
 			free(m_indigo_item);
 			m_indigo_item = nullptr;
 		}
-
 	};
 
 	int pixel_value(int x, int y, int &r, int &g, int &b) const {

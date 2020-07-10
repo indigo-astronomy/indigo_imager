@@ -314,9 +314,9 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 			m_viewer->setText("Unsaved" + QString(item->blob.format));
 		}
 		if (!m_preview && !m_focusing) save_blob_item(item);
-		free(item->blob.value);
-		item->blob.value = nullptr;
-		free(item);
+		//free(item->blob.value);
+		//item->blob.value = nullptr;
+		//free(item);
 	}
 }
 

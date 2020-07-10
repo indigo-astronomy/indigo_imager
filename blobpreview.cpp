@@ -678,10 +678,7 @@ preview_image* create_preview(indigo_item *item) {
 		}
 	}
 	if (preview) {
-		preview->m_indigo_item = (indigo_item*)malloc(sizeof(indigo_item));
-		memcpy(preview->m_indigo_item, item, sizeof(indigo_item));
-		preview->m_indigo_item->blob.value = (char*)malloc(item->blob.size);
-		memcpy(preview->m_indigo_item->blob.value, item->blob.value, item->blob.size);
+		preview->m_indigo_item = item;
 	}
 	return preview;
 }
