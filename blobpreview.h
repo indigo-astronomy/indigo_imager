@@ -114,7 +114,10 @@ public:
 		if (image.m_indigo_item == nullptr) {
 			if (m_raw_data) free(m_raw_data);
 			m_raw_data = nullptr;
-			if (m_indigo_item) free(m_indigo_item);
+			if (m_indigo_item) {
+				if (m_indigo_item->blob.value) free(m_indigo_item->blob.value);
+				free(m_indigo_item);
+			}
 			m_indigo_item = nullptr;
 			m_raw_data = nullptr;
 			return *this;
