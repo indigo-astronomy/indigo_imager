@@ -42,7 +42,6 @@ class preview_image: public QImage {
 public:
 	preview_image():
 		m_raw_data(nullptr),
-		m_indigo_item(nullptr),
 		m_width(0),
 		m_height(0),
 		m_pix_format(0)
@@ -59,7 +58,6 @@ public:
 	preview_image(int width, int height, QImage::Format format):
 		QImage(width, height, format),
 		m_raw_data(nullptr),
-		m_indigo_item(nullptr),
 		m_width(0),
 		m_height(0),
 		m_pix_format(0)
@@ -70,7 +68,6 @@ public:
 		m_width = image.m_width;
 		m_height = image.m_height;
 		m_pix_format = image.m_pix_format;
-		m_indigo_item = image.m_indigo_item;
 
 		if (image.m_raw_data == nullptr) {
 			m_raw_data = nullptr;
@@ -96,13 +93,6 @@ public:
 		m_width = image.m_width;
 		m_height = image.m_height;
 		m_pix_format = image.m_pix_format;
-
-		if (m_indigo_item) {
-			if (m_indigo_item->blob.value) free(m_indigo_item->blob.value);
-			free(m_indigo_item);
-		}
-
-		m_indigo_item = image.m_indigo_item;
 
 		if (image.m_raw_data == nullptr) {
 			if (m_raw_data) free(m_raw_data);
@@ -130,11 +120,6 @@ public:
 		if (m_raw_data != nullptr) {
 			free(m_raw_data);
 			m_raw_data = nullptr;
-		}
-		if (m_indigo_item != nullptr) {
-			if (m_indigo_item->blob.value != nullptr) free(m_indigo_item->blob.value);
-			free(m_indigo_item);
-			m_indigo_item = nullptr;
 		}
 	};
 
@@ -173,7 +158,6 @@ public:
 	};
 
 	char *m_raw_data;
-	indigo_item *m_indigo_item;
 	int m_width;
 	int m_height;
 	int m_pix_format;
@@ -213,7 +197,7 @@ public:
 	void set_stretch_level(preview_stretch level);
 	QString create_key(indigo_property *property, indigo_item *item);
 	bool create(indigo_property *property, indigo_item *item);
-	bool recreate(QString &key);
+	bool recreate(QString &key, indigo_item *item);
 	bool obsolete(indigo_property *property, indigo_item *item);
 	preview_image* get(indigo_property *property, indigo_item *item);
 	preview_image* get(QString &key);

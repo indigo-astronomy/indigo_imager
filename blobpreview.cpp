@@ -51,7 +51,6 @@ bool blob_preview_cache::_remove(indigo_property *property, indigo_item *item) {
 		preview_image *preview = value(key);
 		indigo_debug("preview: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), preview);
 		if (preview != nullptr) {
-			//if (preview->m_raw_data) free(preview->m_raw_data);
 			delete(preview);
 		}
 	} else {
@@ -65,7 +64,6 @@ bool blob_preview_cache::_remove(QString &key) {
 		preview_image *preview = value(key);
 		indigo_debug("preview: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), preview);
 		if (preview != nullptr) {
-			//if (preview->m_raw_data) free(preview->m_raw_data);
 			delete(preview);
 		}
 	} else {
@@ -111,13 +109,13 @@ bool blob_preview_cache::create(indigo_property *property, indigo_item *item) {
 	return false;
 }
 
-bool blob_preview_cache::recreate(QString &key) {
+bool blob_preview_cache::recreate(QString &key, indigo_item *item) {
 	pthread_mutex_lock(&preview_mutex);
 	preview_image *preview = _get(key);
 	if (preview != nullptr) {
 		indigo_debug("recreate preview: %s(%s) == %p, %d\n", __FUNCTION__, key.toUtf8().constData(), preview, preview_stretch_level);
 		int *hist = (int*)malloc(65536*sizeof(int));
-		preview_image *new_preview = create_preview(preview->m_indigo_item);
+		preview_image *new_preview = create_preview(item);
 		_remove(key);
 		free(hist);
 		insert(key, new_preview);
@@ -676,9 +674,6 @@ preview_image* create_preview(indigo_item *item) {
 				   !strcmp(item->blob.format, ".RAW")) {
 			preview = create_raw_preview((unsigned char*)item->blob.value, item->blob.size);
 		}
-	}
-	if (preview) {
-		preview->m_indigo_item = item;
 	}
 	return preview;
 }

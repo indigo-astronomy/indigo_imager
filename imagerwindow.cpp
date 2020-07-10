@@ -52,6 +52,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	m_preview = false;
 	m_focusing = false;
+	m_indigo_item = nullptr;
 
 	//  Set central widget of window
 	QWidget *central = new QWidget;
@@ -277,9 +278,15 @@ ImagerWindow::~ImagerWindow () {
 	delete mLog;
 	delete mIndigoServers;
 	delete mServiceModel;
-	delete m_viewer;
-	//indigo_usleep(2*ONE_SECOND_DELAY);
 	IndigoClient::instance().stop();
+	delete m_viewer;
+	if (m_indigo_item) {
+		if (m_indigo_item->blob.value) {
+			free(m_indigo_item->blob.value);
+		}
+		free(m_indigo_item);
+		m_indigo_item = nullptr;
+	}
 }
 
 bool ImagerWindow::show_preview_in_viewer(QString &key) {
@@ -302,21 +309,29 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 	char selected_agent[INDIGO_VALUE_SIZE];
 
 	if (!get_selected_agent(selected_agent) || strncmp(property->device, "Imager Agent",12)) {
+		free(item->blob.value);
+		item->blob.value = nullptr;
+		free(item);
 		return;
 	}
 
 	if (client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME)) {
-		preview_cache.create(property, item);
-		QString key = preview_cache.create_key(property, item);
+		if (m_indigo_item) {
+			if (m_indigo_item->blob.value) {
+				free(m_indigo_item->blob.value);
+			}
+			free(m_indigo_item);
+			m_indigo_item = nullptr;
+		}
+		m_indigo_item = item;
+		preview_cache.create(property, m_indigo_item);
+		QString key = preview_cache.create_key(property, m_indigo_item);
 		preview_image *image = preview_cache.get(m_image_key);
 		if (show_preview_in_viewer(key)) {
 			indigo_error("m_viewer = %p", m_viewer);
-			m_viewer->setText("Unsaved" + QString(item->blob.format));
+			m_viewer->setText("Unsaved" + QString(m_indigo_item->blob.format));
 		}
-		if (!m_preview && !m_focusing) save_blob_item(item);
-		//free(item->blob.value);
-		//item->blob.value = nullptr;
-		//free(item);
+		if (!m_preview && !m_focusing) save_blob_item(m_indigo_item);
 	}
 }
 
@@ -465,7 +480,7 @@ void ImagerWindow::on_use_system_locale_changed(bool status) {
 void ImagerWindow::on_no_stretch() {
 	conf.preview_stretch_level = STRETCH_NONE;
 	preview_cache.set_stretch_level(conf.preview_stretch_level);
-	preview_cache.recreate(m_image_key);
+	preview_cache.recreate(m_image_key, m_indigo_item);
 	show_preview_in_viewer(m_image_key);
 	write_conf();
 	indigo_error("%s\n", __FUNCTION__);
@@ -474,7 +489,7 @@ void ImagerWindow::on_no_stretch() {
 void ImagerWindow::on_moderate_stretch() {
 	conf.preview_stretch_level = STRETCH_MODERATE;
 	preview_cache.set_stretch_level(conf.preview_stretch_level);
-	preview_cache.recreate(m_image_key);
+	preview_cache.recreate(m_image_key, m_indigo_item);
 	show_preview_in_viewer(m_image_key);
 	write_conf();
 	indigo_error("%s\n", __FUNCTION__);
@@ -484,7 +499,7 @@ void ImagerWindow::on_moderate_stretch() {
 void ImagerWindow::on_normal_stretch() {
 	conf.preview_stretch_level = STRETCH_NORMAL;
 	preview_cache.set_stretch_level(conf.preview_stretch_level);
-	preview_cache.recreate(m_image_key);
+	preview_cache.recreate(m_image_key, m_indigo_item);
 	show_preview_in_viewer(m_image_key);
 	write_conf();
 	indigo_error("%s\n", __FUNCTION__);
@@ -494,7 +509,7 @@ void ImagerWindow::on_normal_stretch() {
 void ImagerWindow::on_hard_stretch() {
 	conf.preview_stretch_level = STRETCH_HARD;
 	preview_cache.set_stretch_level(conf.preview_stretch_level);
-	preview_cache.recreate(m_image_key);
+	preview_cache.recreate(m_image_key, m_indigo_item);
 	show_preview_in_viewer(m_image_key);
 	write_conf();
 	indigo_error("%s\n", __FUNCTION__);

@@ -167,6 +167,7 @@ private:
 	QDoubleSpinBox *m_focuser_exposure_time;
 
 	pal::ImageViewer *m_viewer;
+	indigo_item *m_indigo_item;
 	QString m_image_key;
 
 	QIndigoServers *mIndigoServers;
