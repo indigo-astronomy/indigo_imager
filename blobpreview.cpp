@@ -59,6 +59,20 @@ bool blob_preview_cache::_remove(indigo_property *property, indigo_item *item) {
 	return (bool)QHash::remove(key);
 }
 
+bool blob_preview_cache::_remove(QString &key) {
+	if (contains(key)) {
+		preview_image *preview = value(key);
+		indigo_debug("preview: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), preview);
+		if (preview != nullptr) {
+			//if (preview->m_raw_data) free(preview->m_raw_data);
+			delete(preview);
+		}
+	} else {
+		indigo_debug("preview: %s(%s) - no preview\n", __FUNCTION__, key.toUtf8().constData());
+	}
+	return (bool)QHash::remove(key);
+}
+
 
 bool blob_preview_cache::obsolete(indigo_property *property, indigo_item *item) {
 	QString key = create_key(property, item);
@@ -96,6 +110,31 @@ bool blob_preview_cache::create(indigo_property *property, indigo_item *item) {
 	return false;
 }
 
+bool blob_preview_cache::recreate(QString &key) {
+	pthread_mutex_lock(&preview_mutex);
+	preview_image *preview = _get(key);
+	indigo_debug("recreate preview: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), preview);
+	if (preview != nullptr) {
+		int *hist = nullptr;
+		preview_image *new_preview = create_preview(
+			preview->m_width,
+			preview->m_height,
+			preview->m_pix_format,
+			preview->m_raw_data,
+			hist,
+			preview_stretch_level
+		);
+		_remove(key);
+		free(hist);
+		insert(key, new_preview);
+		pthread_mutex_unlock(&preview_mutex);
+		return true;
+	}
+	pthread_mutex_unlock(&preview_mutex);
+	return false;
+}
+
+
 
 preview_image* blob_preview_cache::get(indigo_property *property, indigo_item *item) {
 	pthread_mutex_lock(&preview_mutex);
@@ -108,6 +147,29 @@ preview_image* blob_preview_cache::get(indigo_property *property, indigo_item *i
 	}
 	indigo_debug("preview: %s(%s) - no preview\n", __FUNCTION__, key.toUtf8().constData());
 	pthread_mutex_unlock(&preview_mutex);
+	return nullptr;
+}
+
+preview_image* blob_preview_cache::get(QString &key) {
+	pthread_mutex_lock(&preview_mutex);
+	if (contains(key)) {
+		preview_image *preview = value(key);
+		indigo_debug("preview: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), preview);
+		pthread_mutex_unlock(&preview_mutex);
+		return preview;
+	}
+	indigo_debug("preview: %s(%s) - no preview\n", __FUNCTION__, key.toUtf8().constData());
+	pthread_mutex_unlock(&preview_mutex);
+	return nullptr;
+}
+
+preview_image* blob_preview_cache::_get(QString &key) {
+	if (contains(key)) {
+		preview_image *preview = value(key);
+		indigo_debug("preview: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), preview);
+		return preview;
+	}
+	indigo_debug("preview: %s(%s) - no preview\n", __FUNCTION__, key.toUtf8().constData());
 	return nullptr;
 }
 

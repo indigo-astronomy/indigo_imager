@@ -166,6 +166,7 @@ private:
 	QDoubleSpinBox *m_focuser_exposure_time;
 
 	pal::ImageViewer *m_viewer;
+	QString m_image_key;
 
 	QIndigoServers *mIndigoServers;
 	QServiceModel *mServiceModel;
@@ -193,6 +194,7 @@ private:
 	void change_focuser_focus_in_property(const char *agent) const;
 	void change_focuser_focus_out_property(const char *agent) const;
 
+	bool show_preview_in_viewer(QString &key);
 	bool save_blob_item_with_prefix(indigo_item *item, const char *prefix, char *file_name);
 	void save_blob_item(indigo_item *item);
 };

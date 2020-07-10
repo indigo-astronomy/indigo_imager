@@ -260,7 +260,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	connect(m_viewer, &pal::ImageViewer::mouseRightPress, this, &ImagerWindow::on_image_right_click);
 
-	//preview_cache.set_stretch_level(conf.preview_stretch_level);
+	preview_cache.set_stretch_level(conf.preview_stretch_level);
 
 	//  Start up the client
 	IndigoClient::instance().enable_blobs(conf.blobs_enabled);
@@ -281,6 +281,16 @@ ImagerWindow::~ImagerWindow () {
 	IndigoClient::instance().stop();
 }
 
+bool ImagerWindow::show_preview_in_viewer(QString &key) {
+	preview_image *image = preview_cache.get(key);
+	if (image) {
+		m_viewer->setImage(*image);
+		m_image_key = key;
+		return true;
+	}
+	return false;
+}
+
 void ImagerWindow::on_tab_changed(int index) {
 	if (index == 1) m_viewer->showSelection();
 	else m_viewer->hideSelection();
@@ -295,13 +305,11 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 
 	if (client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME)) {
 		preview_cache.create(property, item);
-		//free(item->blob.value);
-		//item->blob.value = nullptr;
-		preview_image *image = preview_cache.get(property, item);
-		if (image) {
+		QString key = preview_cache.create_key(property, item);
+		preview_image *image = preview_cache.get(m_image_key);
+		if (show_preview_in_viewer(key)) {
 			indigo_error("m_viewer = %p", m_viewer);
 			m_viewer->setText("Unsaved" + QString(item->blob.format));
-			m_viewer->setImage(*image);
 		}
 		if (!m_preview && !m_focusing) save_blob_item(item);
 		free(item->blob.value);
@@ -473,7 +481,9 @@ void ImagerWindow::on_normal_stretch() {
 void ImagerWindow::on_hard_stretch() {
 	conf.preview_stretch_level = STRETCH_HARD;
 	preview_cache.set_stretch_level(conf.preview_stretch_level);
-	emit(rebuild_blob_previews());
+	preview_cache.recreate(m_image_key);
+	if (show_preview_in_viewer(m_image_key)) {
+	}
 	write_conf();
 	indigo_error("%s\n", __FUNCTION__);
 }

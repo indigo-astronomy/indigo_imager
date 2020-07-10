@@ -186,14 +186,18 @@ public:
 
 private:
 	pthread_mutex_t preview_mutex;
-	QString create_key(indigo_property *property, indigo_item *item);
 	bool _remove(indigo_property *property, indigo_item *item);
+	bool _remove(QString &key);
+	preview_image* _get(QString &key);
 
 public:
 	void set_stretch_level(preview_stretch level);
+	QString create_key(indigo_property *property, indigo_item *item);
 	bool create(indigo_property *property, indigo_item *item);
+	bool recreate(QString &key);
 	bool obsolete(indigo_property *property, indigo_item *item);
 	preview_image* get(indigo_property *property, indigo_item *item);
+	preview_image* get(QString &key);
 	bool remove(indigo_property *property, indigo_item *item);
 };
 
