@@ -96,6 +96,7 @@ public slots:
 	void on_exit_act();
 	void on_about_act();
 	void on_no_stretch();
+	void on_moderate_stretch();
 	void on_normal_stretch();
 	void on_hard_stretch();
 	void on_create_preview(indigo_property *property, indigo_item *item);

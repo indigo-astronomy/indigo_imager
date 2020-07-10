@@ -105,11 +105,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setChecked(conf.indigo_use_host_suffix);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_use_suffix_changed);
 
-	act = menu->addAction(tr("Use property state &icons"));
-	act->setCheckable(true);
-	act->setChecked(conf.use_state_icons);
-	connect(act, &QAction::toggled, this, &ImagerWindow::on_use_state_icons_changed);
-
 	act = menu->addAction(tr("Use locale specific &decimal separator"));
 	act->setCheckable(true);
 	act->setChecked(conf.use_system_locale);
@@ -123,6 +118,12 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setCheckable(true);
 	if (conf.preview_stretch_level == STRETCH_NONE) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_no_stretch);
+	stretch_group->addAction(act);
+
+	act = menu->addAction("Preview Levels Stretch: M&oderate");
+	act->setCheckable(true);
+	if (conf.preview_stretch_level == STRETCH_MODERATE) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_moderate_stretch);
 	stretch_group->addAction(act);
 
 	act = menu->addAction("Preview Levels Stretch: &Normal");
@@ -286,6 +287,7 @@ bool ImagerWindow::show_preview_in_viewer(QString &key) {
 	if (image) {
 		m_viewer->setImage(*image);
 		m_image_key = key;
+		indigo_debug("YYYYY PREVIEW: %s\n", key.toUtf8().constData());
 		return true;
 	}
 	return false;
@@ -463,7 +465,17 @@ void ImagerWindow::on_use_system_locale_changed(bool status) {
 void ImagerWindow::on_no_stretch() {
 	conf.preview_stretch_level = STRETCH_NONE;
 	preview_cache.set_stretch_level(conf.preview_stretch_level);
-	emit(rebuild_blob_previews());
+	preview_cache.recreate(m_image_key);
+	show_preview_in_viewer(m_image_key);
+	write_conf();
+	indigo_error("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_moderate_stretch() {
+	conf.preview_stretch_level = STRETCH_MODERATE;
+	preview_cache.set_stretch_level(conf.preview_stretch_level);
+	preview_cache.recreate(m_image_key);
+	show_preview_in_viewer(m_image_key);
 	write_conf();
 	indigo_error("%s\n", __FUNCTION__);
 }
@@ -472,7 +484,8 @@ void ImagerWindow::on_no_stretch() {
 void ImagerWindow::on_normal_stretch() {
 	conf.preview_stretch_level = STRETCH_NORMAL;
 	preview_cache.set_stretch_level(conf.preview_stretch_level);
-	emit(rebuild_blob_previews());
+	preview_cache.recreate(m_image_key);
+	show_preview_in_viewer(m_image_key);
 	write_conf();
 	indigo_error("%s\n", __FUNCTION__);
 }
@@ -482,8 +495,7 @@ void ImagerWindow::on_hard_stretch() {
 	conf.preview_stretch_level = STRETCH_HARD;
 	preview_cache.set_stretch_level(conf.preview_stretch_level);
 	preview_cache.recreate(m_image_key);
-	if (show_preview_in_viewer(m_image_key)) {
-	}
+	show_preview_in_viewer(m_image_key);
 	write_conf();
 	indigo_error("%s\n", __FUNCTION__);
 }

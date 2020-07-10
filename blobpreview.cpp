@@ -27,6 +27,7 @@ static preview_stretch preview_stretch_level = STRETCH_NORMAL;
 
 const float preview_stretch_lut[] = {
 	0.0,
+	0.002,
 	0.005,
 	0.01
 };
@@ -113,17 +114,10 @@ bool blob_preview_cache::create(indigo_property *property, indigo_item *item) {
 bool blob_preview_cache::recreate(QString &key) {
 	pthread_mutex_lock(&preview_mutex);
 	preview_image *preview = _get(key);
-	indigo_debug("recreate preview: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), preview);
 	if (preview != nullptr) {
-		int *hist = nullptr;
-		preview_image *new_preview = create_preview(
-			preview->m_width,
-			preview->m_height,
-			preview->m_pix_format,
-			preview->m_raw_data,
-			hist,
-			preview_stretch_level
-		);
+		indigo_debug("recreate preview: %s(%s) == %p, %d\n", __FUNCTION__, key.toUtf8().constData(), preview, preview_stretch_level);
+		int *hist = (int*)malloc(65536*sizeof(int));
+		preview_image *new_preview = create_preview(preview->m_indigo_item);
 		_remove(key);
 		free(hist);
 		insert(key, new_preview);
@@ -133,8 +127,6 @@ bool blob_preview_cache::recreate(QString &key) {
 	pthread_mutex_unlock(&preview_mutex);
 	return false;
 }
-
-
 
 preview_image* blob_preview_cache::get(indigo_property *property, indigo_item *item) {
 	pthread_mutex_lock(&preview_mutex);
@@ -640,8 +632,15 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 
 preview_image* create_preview(indigo_property *property, indigo_item *item) {
 	preview_image *preview = nullptr;
-	if (property->type != INDIGO_BLOB_VECTOR) return nullptr;
-	if ((property->state == INDIGO_OK_STATE) && (item->blob.value != NULL)) {
+	if (property->type == INDIGO_BLOB_VECTOR && property->state == INDIGO_OK_STATE) {
+		preview = create_preview(item);
+	}
+	return preview;
+}
+
+preview_image* create_preview(indigo_item *item) {
+	preview_image *preview = nullptr;
+	if (item->blob.value != NULL) {
 		if (!strcmp(item->blob.format, ".jpeg") ||
 			!strcmp(item->blob.format, ".jpg") ||
 			!strcmp(item->blob.format, ".JPG") ||
@@ -677,6 +676,12 @@ preview_image* create_preview(indigo_property *property, indigo_item *item) {
 				   !strcmp(item->blob.format, ".RAW")) {
 			preview = create_raw_preview((unsigned char*)item->blob.value, item->blob.size);
 		}
+	}
+	if (preview) {
+		preview->m_indigo_item = (indigo_item*)malloc(sizeof(indigo_item));
+		memcpy(preview->m_indigo_item, item, sizeof(indigo_item));
+		preview->m_indigo_item->blob.value = (char*)malloc(item->blob.size);
+		memcpy(preview->m_indigo_item->blob.value, item->blob.value, item->blob.size);
 	}
 	return preview;
 }

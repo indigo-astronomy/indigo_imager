@@ -33,14 +33,16 @@
 
 typedef enum {
 	STRETCH_NONE = 0,
-	STRETCH_NORMAL = 1,
-	STRETCH_HARD = 2,
+	STRETCH_MODERATE = 1,
+	STRETCH_NORMAL = 2,
+	STRETCH_HARD = 3,
 } preview_stretch;
 
 class preview_image: public QImage {
 public:
 	preview_image():
 		m_raw_data(nullptr),
+		m_indigo_item(nullptr),
 		m_width(0),
 		m_height(0),
 		m_pix_format(0)
@@ -58,6 +60,7 @@ public:
 	preview_image(int width, int height, QImage::Format format):
 		QImage(width, height, format),
 		m_raw_data(nullptr),
+		m_indigo_item(nullptr),
 		m_width(0),
 		m_height(0),
 		m_pix_format(0)
@@ -68,6 +71,21 @@ public:
 		m_width = image.m_width;
 		m_height = image.m_height;
 		m_pix_format = image.m_pix_format;
+
+		if (image.m_indigo_item == nullptr) {
+			m_indigo_item = nullptr;
+			m_raw_data = nullptr;
+			return;
+		}
+
+		m_indigo_item = (indigo_item*)malloc(sizeof(indigo_item));
+		memcpy(m_indigo_item, image.m_indigo_item, sizeof(indigo_item));
+		if (image.m_indigo_item->blob.value != nullptr) {
+			m_indigo_item->blob.value = (char*)malloc(image.m_indigo_item->blob.size);
+			memcpy(m_indigo_item->blob.value, image.m_indigo_item->blob.value, image.m_indigo_item->blob.size);
+		}
+
+
 		if (image.m_raw_data == nullptr) {
 			m_raw_data = nullptr;
 			return;
@@ -92,6 +110,23 @@ public:
 		m_width = image.m_width;
 		m_height = image.m_height;
 		m_pix_format = image.m_pix_format;
+
+		if (image.m_indigo_item == nullptr) {
+			if (m_raw_data) free(m_raw_data);
+			m_raw_data = nullptr;
+			if (m_indigo_item) free(m_indigo_item);
+			m_indigo_item = nullptr;
+			m_raw_data = nullptr;
+			return *this;
+		}
+
+		m_indigo_item = (indigo_item*)malloc(sizeof(indigo_item));
+		memcpy(m_indigo_item, image.m_indigo_item, sizeof(indigo_item));
+		if (image.m_indigo_item->blob.value != nullptr) {
+			m_indigo_item->blob.value = (char*)malloc(image.m_indigo_item->blob.size);
+			memcpy(m_indigo_item->blob.value, image.m_indigo_item->blob.value, image.m_indigo_item->blob.size);
+		}
+
 		if (image.m_raw_data == nullptr) {
 			if (m_raw_data) free(m_raw_data);
 			m_raw_data = nullptr;
@@ -119,6 +154,12 @@ public:
 			free(m_raw_data);
 			m_raw_data = nullptr;
 		}
+		if (m_indigo_item != nullptr) {
+			if (m_indigo_item->blob.value != nullptr) free(m_indigo_item->blob.value);
+			free(m_indigo_item);
+			m_indigo_item = nullptr;
+		}
+
 	};
 
 	int pixel_value(int x, int y, int &r, int &g, int &b) const {
@@ -156,6 +197,7 @@ public:
 	};
 
 	char *m_raw_data;
+	indigo_item *m_indigo_item;
 	int m_width;
 	int m_height;
 	int m_pix_format;
@@ -166,6 +208,7 @@ preview_image* create_fits_preview(unsigned char *fits_buffer, unsigned long fit
 preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size);
 preview_image* create_preview(int width, int height, int pixel_format, char *image_data, int *hist, double white_threshold);
 preview_image* create_preview(indigo_property *property, indigo_item *item);
+preview_image* create_preview(indigo_item *item);
 
 class blob_preview_cache: QHash<QString, preview_image*> {
 public:
