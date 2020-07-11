@@ -295,26 +295,30 @@ static void update_agent_imager_stats_property(
 	drift_label->setText(drift_str);
 
 	if (property->state == INDIGO_BUSY_STATE) {
-		exposure_progress->setMaximum(exp_time);
+		exposure_progress->setRange(0, exp_time);
 		exposure_progress->setValue(exp_elapsed);
 		exposure_progress->setFormat("Exposure: %v of %m seconds elapsed...");
-		process_progress->setMaximum(frames_total);
+		if (frames_total < 0) {
+			process_progress->setRange(0, frames_complete);
+		} else {
+			process_progress->setRange(0, frames_total);
+		}
 		indigo_debug("frames total = %d", frames_total);
-		process_progress->setValue(frames_complete);
-		process_progress->setFormat("Process: exposure %v of %m in progress...");
+		process_progress->setValue(frames_complete - 1);
+		process_progress->setFormat("Process: exposure %v of %m complete...");
 	} else if (property->state == INDIGO_OK_STATE) {
-		exposure_progress->setMaximum(100);
+		exposure_progress->setRange(0, 100);
 		exposure_progress->setValue(100);
 		exposure_progress->setFormat("Exposure: Complete");
-		process_progress->setMaximum(100);
+		process_progress->setRange(0, 100);
 		process_progress->setValue(100);
 		process_progress->setFormat("Process: Complete");
 	} else {
-		exposure_progress->setMaximum(1);
+		exposure_progress->setRange(0, 1);
 		exposure_progress->setValue(0);
 		exposure_progress->setFormat("Exposure: Failed");
-		process_progress->setValue(process_progress->value()-1);
-		process_progress->setFormat("Process: %v exposures of %m competed");
+		process_progress->setValue(frames_complete - 1);
+		process_progress->setFormat("Process: exposure %v of %m complete");
 	}
 }
 
@@ -332,23 +336,23 @@ static void update_ccd_exposure(
 				exp_elapsed = exp_time - property->items[i].number.value;
 			}
 		}
-		exposure_progress->setMaximum(exp_time);
+		exposure_progress->setRange(0, exp_time);
 		exposure_progress->setValue(exp_elapsed);
 		exposure_progress->setFormat("Preview: %v of %m seconds elapsed...");
-		process_progress->setMaximum(1);
+		process_progress->setRange(0, 1);
 		process_progress->setValue(0);
 		process_progress->setFormat("Preview in progress...");
 	} else if(property->state == INDIGO_OK_STATE) {
-		exposure_progress->setMaximum(100);
+		exposure_progress->setRange(0, 100);
 		exposure_progress->setValue(100);
-		process_progress->setMaximum(100);
+		process_progress->setRange(0,100);
 		process_progress->setValue(100);
 		exposure_progress->setFormat("Preview: Complete");
 		process_progress->setFormat("Process: Complete");
 	} else {
-		exposure_progress->setMaximum(1);
+		exposure_progress->setRange(0, 1);
 		exposure_progress->setValue(0);
-		process_progress->setMaximum(1);
+		process_progress->setRange(0, 1);
 		process_progress->setValue(0);
 		exposure_progress->setFormat("Exposure: Failed");
 		process_progress->setFormat("Process: Failed");
