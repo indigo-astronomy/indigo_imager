@@ -51,6 +51,7 @@ class QIndigoServers;
 #include <QStandardPaths>
 #include <QDir>
 #include <QDateTime>
+#include <QFileDialog>
 
 
 class ImagerWindow : public QMainWindow {
@@ -92,6 +93,7 @@ public slots:
 	void on_log_info();
 	void on_log_debug();
 	void on_log_trace();
+	void on_image_save_act();
 	void on_servers_act();
 	void on_exit_act();
 	void on_about_act();

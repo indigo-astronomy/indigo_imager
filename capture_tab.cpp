@@ -285,10 +285,11 @@ void ImagerWindow::on_abort(bool clicked) {
 	static char selected_agent[INDIGO_NAME_SIZE];
 	get_selected_agent(selected_agent);
 
-	if (m_preview && !m_focusing) {
-		change_ccd_abort_exposure_property(selected_agent);
-	} else {
+	indigo_property *p = properties.get(selected_agent, AGENT_START_PROCESS_PROPERTY_NAME);
+	if (p && p->state == INDIGO_BUSY_STATE ) {
 		change_agent_abort_process_property(selected_agent);
+	} else {
+		change_ccd_abort_exposure_property(selected_agent);
 	}
 }
 

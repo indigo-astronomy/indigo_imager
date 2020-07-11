@@ -79,6 +79,11 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu->addSeparator();
 
+	act = menu->addAction(tr("&Save Image As..."));
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_image_save_act);
+
+	menu->addSeparator();
+
 	act = menu->addAction(tr("&Exit"));
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_exit_act);
 
@@ -434,6 +439,12 @@ void ImagerWindow::on_servers_act() {
 	mIndigoServers->show();
 }
 
+
+void ImagerWindow::on_image_save_act() {
+	QString fileName = QFileDialog::getSaveFileName(this,
+		tr("Save Address Book"), "",
+		tr("FITS image (*.fits);;All Files (*)"));
+}
 
 void ImagerWindow::on_exit_act() {
 	QApplication::quit();
