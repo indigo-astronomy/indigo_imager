@@ -99,6 +99,7 @@ public slots:
 	void on_moderate_stretch();
 	void on_normal_stretch();
 	void on_hard_stretch();
+	void on_antialias_view(bool status);
 	void on_create_preview(indigo_property *property, indigo_item *item);
 	void on_obsolete_preview(indigo_property *property, indigo_item *item);
 	void on_remove_preview(indigo_property *property, indigo_item *item);
@@ -164,8 +165,8 @@ private:
 	QLabel    *m_HFD_label;
 	QLabel    *m_peak_label;
 	QLabel    *m_drift_label;
-
 	QDoubleSpinBox *m_focuser_exposure_time;
+	QProgressBar *m_focusing_progress;
 
 	pal::ImageViewer *m_viewer;
 	indigo_item *m_indigo_item;

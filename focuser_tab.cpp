@@ -209,6 +209,13 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_focus_preview);
 
 	row++;
+	m_focusing_progress = new QProgressBar();
+	focuser_frame_layout->addWidget(m_focusing_progress, row, 0, 1, 4);
+	m_focusing_progress->setMaximum(1);
+	m_focusing_progress->setValue(0);
+	m_focusing_progress->setFormat("Focusing: Idle");
+
+	row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	focuser_frame_layout->addItem(spacer, row, 0);
 	//focuser_frame_layout->setRowStretch(row, 1 );

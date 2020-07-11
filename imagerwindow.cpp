@@ -140,6 +140,13 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	stretch_group->addAction(act);
 
 	menu->addSeparator();
+
+	act = menu->addAction(tr("View &antialiasing"));
+	act->setCheckable(true);
+	act->setChecked(conf.antialiasing_enabled);
+	connect(act, &QAction::toggled, this, &ImagerWindow::on_antialias_view);
+
+	menu->addSeparator();
 	QActionGroup *log_group = new QActionGroup(this);
 	log_group->setExclusive(true);
 
@@ -263,6 +270,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(m_viewer, &pal::ImageViewer::mouseRightPress, this, &ImagerWindow::on_image_right_click);
 
 	preview_cache.set_stretch_level(conf.preview_stretch_level);
+	m_viewer->enableAntialiasing(conf.antialiasing_enabled);
 
 	//  Start up the client
 	IndigoClient::instance().enable_blobs(conf.blobs_enabled);
@@ -513,6 +521,14 @@ void ImagerWindow::on_hard_stretch() {
 	show_preview_in_viewer(m_image_key);
 	write_conf();
 	indigo_error("%s\n", __FUNCTION__);
+}
+
+
+void ImagerWindow::on_antialias_view(bool status) {
+	conf.antialiasing_enabled = status;
+	m_viewer->enableAntialiasing(status);
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
 }
 
 

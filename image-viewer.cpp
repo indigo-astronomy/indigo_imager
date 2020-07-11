@@ -208,6 +208,11 @@ bool ImageViewer::isAntialiasingEnabled() const {
 
 void ImageViewer::enableAntialiasing(bool on) {
     m_view->setRenderHint(QPainter::Antialiasing, on);
+	if (on) {
+		m_pixmap->setTransformationMode(Qt::SmoothTransformation);
+	} else {
+		m_pixmap->setTransformationMode(Qt::FastTransformation);
+	}
 }
 
 void ImageViewer::addTool(QWidget *tool) {

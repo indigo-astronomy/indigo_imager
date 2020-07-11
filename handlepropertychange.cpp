@@ -254,14 +254,32 @@ static void update_agent_imager_stats_property(
 	QLabel *peak_label,
 	QLabel *drift_label,
 	QProgressBar *exposure_progress,
-	QProgressBar *process_progress
+	QProgressBar *process_progress,
+	QProgressBar *focusing_progress
 ) {
 	double exp_elapsed, exp_time = 1;
 	double drift_x, drift_y;
 	int frames_complete, frames_total;
+	static bool exposure_running = false;
+	static bool focusing_running = false;
+	static bool preview_running = false;
 
 	indigo_item *exposure_item = properties.get_item(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME, AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME);
 	if (exposure_item) exp_time = exposure_item->number.value;
+
+
+	indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
+	if (p && p->state == INDIGO_BUSY_STATE ) {
+		for (int i = 0; i < p->count; i++) {
+			if (!strcmp(p->items[i].name, AGENT_IMAGER_START_EXPOSURE_ITEM_NAME)) {
+				exposure_running = p->items[i].sw.value;
+			} else if (!strcmp(p->items[i].name, AGENT_IMAGER_START_FOCUSING_ITEM_NAME)) {
+				focusing_running = p->items[i].sw.value;
+			} else if (!strcmp(p->items[i].name, AGENT_IMAGER_START_PREVIEW_ITEM_NAME)) {
+				preview_running = p->items[i].sw.value;
+			}
+		}
+	}
 
 	for (int i = 0; i < property->count; i++) {
 		if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_FWHM_ITEM_NAME)) {
@@ -294,32 +312,54 @@ static void update_agent_imager_stats_property(
 	char drift_str[50];
 	snprintf(drift_str, 50, "%.2f, %.2f", drift_x, drift_y);
 	drift_label->setText(drift_str);
+	if (exposure_running) {
+		if (property->state == INDIGO_BUSY_STATE) {
+			exposure_progress->setRange(0, exp_time);
+			exposure_progress->setValue(exp_elapsed);
+			exposure_progress->setFormat("Exposure: %v of %m seconds elapsed...");
+			if (frames_total < 0) {
+				process_progress->setRange(0, frames_complete);
+				process_progress->setValue(frames_complete - 1);
+				process_progress->setFormat("Process: exposure %v complete...");
+			} else {
+				process_progress->setRange(0, frames_total);
+				process_progress->setValue(frames_complete - 1);
+				process_progress->setFormat("Process: exposure %v of %m complete...");
+			}
+			indigo_debug("frames total = %d", frames_total);
 
-	if (property->state == INDIGO_BUSY_STATE) {
-		exposure_progress->setRange(0, exp_time);
-		exposure_progress->setValue(exp_elapsed);
-		exposure_progress->setFormat("Exposure: %v of %m seconds elapsed...");
-		if (frames_total < 0) {
-			process_progress->setRange(0, frames_complete);
+		} else if (property->state == INDIGO_OK_STATE) {
+			exposure_progress->setRange(0, 100);
+			exposure_progress->setValue(100);
+			exposure_progress->setFormat("Exposure: Complete");
+			process_progress->setRange(0, 100);
+			process_progress->setValue(100);
+			process_progress->setFormat("Process: Complete");
 		} else {
-			process_progress->setRange(0, frames_total);
+			exposure_progress->setRange(0, 1);
+			exposure_progress->setValue(0);
+			exposure_progress->setFormat("Exposure: Aborted");
+			process_progress->setValue(frames_complete - 1);
+			if (frames_total < 0) {
+				process_progress->setFormat("Process: exposure %v complete");
+			} else {
+				process_progress->setFormat("Process: exposure %v of %m complete");
+			}
 		}
-		indigo_debug("frames total = %d", frames_total);
-		process_progress->setValue(frames_complete - 1);
-		process_progress->setFormat("Process: exposure %v of %m complete...");
-	} else if (property->state == INDIGO_OK_STATE) {
-		exposure_progress->setRange(0, 100);
-		exposure_progress->setValue(100);
-		exposure_progress->setFormat("Exposure: Complete");
-		process_progress->setRange(0, 100);
-		process_progress->setValue(100);
-		process_progress->setFormat("Process: Complete");
-	} else {
-		exposure_progress->setRange(0, 1);
-		exposure_progress->setValue(0);
-		exposure_progress->setFormat("Exposure: Failed");
-		process_progress->setValue(frames_complete - 1);
-		process_progress->setFormat("Process: exposure %v of %m complete");
+	} else if (focusing_running || preview_running) {
+		if (property->state == INDIGO_BUSY_STATE) {
+			focusing_progress->setRange(0, exp_time);
+			focusing_progress->setValue(exp_elapsed);
+			focusing_progress->setFormat("Focusing: %v of %m seconds elapsed...");
+		} else if(property->state == INDIGO_OK_STATE) {
+			focusing_progress->setRange(0, 100);
+			focusing_progress->setValue(100);
+			focusing_progress->setFormat("Focusing: Complete");
+		} else {
+			focusing_progress->setRange(0, 1);
+			focusing_progress->setValue(0);
+			focusing_progress->setFormat("Focusing: Stopped");
+		}
 	}
 }
 
@@ -355,8 +395,8 @@ static void update_ccd_exposure(
 		exposure_progress->setValue(0);
 		process_progress->setRange(0, 1);
 		process_progress->setValue(0);
-		exposure_progress->setFormat("Exposure: Failed");
-		process_progress->setFormat("Process: Failed");
+		exposure_progress->setFormat("Exposure: Aborted");
+		process_progress->setFormat("Process: Aborted");
 	}
 }
 
@@ -528,7 +568,8 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		//update_agent_imager_batch_property(property, m_exposure_time, m_exposure_delay, m_frame_count);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME)) {
-		if (m_preview) {
+		indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
+		if (m_preview && p && p->state != INDIGO_BUSY_STATE ) {
 			update_ccd_exposure(
 				property,
 				m_exposure_time,
@@ -545,7 +586,8 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			m_peak_label,
 			m_drift_label,
 			m_exposure_progress,
-			m_process_progress
+			m_process_progress,
+			m_focusing_progress
 		);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME)) {
