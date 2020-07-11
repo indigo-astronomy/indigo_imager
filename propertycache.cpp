@@ -107,6 +107,37 @@ indigo_property* property_cache::get(char *device_name, char *property_name) {
 	return nullptr;
 }
 
+indigo_item* property_cache::get_item(char *device_name, char *property_name, char *item_name) {
+	pthread_mutex_lock(&property_mutex);
+	QString key = create_key(device_name, property_name);
+	if (contains(key)) {
+		indigo_property *p = value(key);
+		indigo_debug("property: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), p);
+		pthread_mutex_unlock(&property_mutex);
+		for (int i = 0; i< p->count; i++) {
+			if (!strcmp(p->items[i].name, item_name)) {
+				return &(p->items[i]);
+			}
+		}
+	}
+	indigo_debug("property: %s(%s) - no cache\n", __FUNCTION__, key.toUtf8().constData());
+	pthread_mutex_unlock(&property_mutex);
+	return nullptr;
+}
+
+indigo_item* property_cache::get_item(indigo_property *property, char *item_name) {
+	pthread_mutex_lock(&property_mutex);
+	pthread_mutex_unlock(&property_mutex);
+	for (int i = 0; i< property->count; i++) {
+		if (!strcmp(property->items[i].name, item_name)) {
+			return &(property->items[i]);
+		}
+	}
+	indigo_debug("property: %s - no item %s\n", __FUNCTION__, item_name);
+	pthread_mutex_unlock(&property_mutex);
+	return nullptr;
+}
+
 
 bool property_cache::remove(indigo_property *property) {
 	pthread_mutex_lock(&property_mutex);

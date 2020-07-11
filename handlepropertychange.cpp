@@ -249,7 +249,6 @@ static void update_wheel_slot_property(indigo_property *property, QComboBox *fil
 
 static void update_agent_imager_stats_property(
 	indigo_property *property,
-	QDoubleSpinBox *exposure_time,
 	QLabel *FWHM_label,
 	QLabel *HFD_label,
 	QLabel *peak_label,
@@ -257,11 +256,13 @@ static void update_agent_imager_stats_property(
 	QProgressBar *exposure_progress,
 	QProgressBar *process_progress
 ) {
-	double exp_elapsed, exp_time;
+	double exp_elapsed, exp_time = 1;
 	double drift_x, drift_y;
 	int frames_complete, frames_total;
 
-	exp_time = exposure_time->value();
+	indigo_item *exposure_item = properties.get_item(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME, AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME);
+	if (exposure_item) exp_time = exposure_item->number.value;
+
 	for (int i = 0; i < property->count; i++) {
 		if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_FWHM_ITEM_NAME)) {
 			 double FWHM = property->items[i].number.value;
@@ -537,8 +538,8 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		}
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_STATS_PROPERTY_NAME)) {
-		update_agent_imager_stats_property(property,
-			m_exposure_time,
+		update_agent_imager_stats_property(
+			property,
 			m_FWHM_label,
 			m_HFD_label,
 			m_peak_label,

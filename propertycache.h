@@ -51,6 +51,8 @@ public:
 	bool create(indigo_property *property);
 	indigo_property* get(indigo_property *property);
 	indigo_property* get(char *device_name, char *property_name);
+	indigo_item* get_item(char *device_name, char *property_name, char *item_name);
+	indigo_item* get_item(indigo_property *property, char *item_name);
 	bool remove(indigo_property *property);
 };
 
