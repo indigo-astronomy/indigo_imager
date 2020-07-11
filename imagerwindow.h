@@ -203,6 +203,7 @@ private:
 
 	bool show_preview_in_viewer(QString &key);
 	bool save_blob_item_with_prefix(indigo_item *item, const char *prefix, char *file_name);
+	bool save_blob_item(indigo_item *item, char *file_name);
 	void save_blob_item(indigo_item *item);
 };
 

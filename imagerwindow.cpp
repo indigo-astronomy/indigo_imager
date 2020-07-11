@@ -434,6 +434,23 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 	return true;
 }
 
+bool ImagerWindow::save_blob_item(indigo_item *item, char *file_name) {
+	int fd;
+
+#if defined(INDIGO_WINDOWS)
+	fd = open(file_name, O_CREAT | O_WRONLY | O_BINARY, 0);
+#else
+	fd = open(file_name, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+#endif
+	if (fd < 0) {
+		return false;
+	} else {
+		write(fd, item->blob.value, item->blob.size);
+		close_fd(fd);
+	}
+	return true;
+}
+
 
 void ImagerWindow::on_servers_act() {
 	mIndigoServers->show();
@@ -441,9 +458,26 @@ void ImagerWindow::on_servers_act() {
 
 
 void ImagerWindow::on_image_save_act() {
-	QString fileName = QFileDialog::getSaveFileName(this,
-		tr("Save Address Book"), "",
-		tr("FITS image (*.fits);;All Files (*)"));
+	if (!m_indigo_item) return;
+	char message[PATH_LEN+100];
+	QString format = m_indigo_item->blob.format;
+	QString qlocation = QDir::toNativeSeparators(QDir::homePath() + tr("/") + QStandardPaths::displayName(QStandardPaths::PicturesLocation));
+	QString file_name = QFileDialog::getSaveFileName(this,
+		tr("Save image"), qlocation,
+		QString("Image (*") + format + QString(")"));
+
+	if (file_name == "") return;
+
+	if (!file_name.endsWith(m_indigo_item->blob.format,Qt::CaseInsensitive)) file_name += m_indigo_item->blob.format;
+
+	if (save_blob_item(m_indigo_item, file_name.toUtf8().data())) {
+		m_viewer->setText(file_name);
+		snprintf(message, sizeof(message), "Image saved to '%s'", file_name.toUtf8().data());
+		on_window_log(NULL, message);
+	} else {
+		snprintf(message, sizeof(message), "Can not save '%s'", file_name.toUtf8().data());
+		on_window_log(NULL, message);
+	}
 }
 
 void ImagerWindow::on_exit_act() {
