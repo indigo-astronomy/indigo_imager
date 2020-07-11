@@ -264,7 +264,7 @@ void ImagerWindow::on_preview(bool clicked) {
 	m_preview = true;
 	m_focusing = false;
 	change_ccd_frame_property(selected_agent);
-	change_ccd_exposure_property(selected_agent);
+	change_ccd_exposure_property(selected_agent, m_exposure_time);
 }
 
 

@@ -206,7 +206,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	button->setStyleSheet("min-width: 30px");
 	button->setIcon(QIcon(":resource/play.png"));
 	toolbox->addWidget(button);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_preview);
+	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_focus_preview);
 
 	row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -277,6 +277,16 @@ void ImagerWindow::on_image_right_click(int x, int y) {
 	m_star_y->setValue(y);
 }
 
+void ImagerWindow::on_focus_preview(bool clicked) {
+	indigo_debug("CALLED: %s\n", __FUNCTION__);
+	static char selected_agent[INDIGO_NAME_SIZE];
+	get_selected_agent(selected_agent);
+
+	m_preview = true;
+	m_focusing = false;
+	change_ccd_frame_property(selected_agent);
+	change_ccd_exposure_property(selected_agent, m_focuser_exposure_time);
+}
 
 void ImagerWindow::on_focus_start(bool clicked) {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
@@ -285,7 +295,7 @@ void ImagerWindow::on_focus_start(bool clicked) {
 
 
 	change_agent_star_selection(selected_agent);
-	change_agent_batch_property(selected_agent);
+	change_agent_batch_property_for_focus(selected_agent);
 	change_agent_focus_params_property(selected_agent);
 	change_ccd_frame_property(selected_agent);
 	m_preview = true;

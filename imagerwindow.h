@@ -114,6 +114,7 @@ public slots:
 	void on_teperature_set();
 
 	void on_focus_start(bool clicked);
+	void on_focus_preview(bool clicked);
 	void on_selection_changed(int value);
 	void on_image_right_click(int x, int y);
 	void on_focus_in(bool clicked);
@@ -176,11 +177,12 @@ private:
 	void create_focuser_tab(QFrame *capture_frame);
 	void create_imager_tab(QFrame *camera_frame);
 	void change_ccd_frame_property(const char *agent) const;
-	void change_ccd_exposure_property(const char *agent) const;
+	void change_ccd_exposure_property(const char *agent, QDoubleSpinBox *exp_time) const;
 	void change_ccd_abort_exposure_property(const char *agent) const;
 	void change_ccd_mode_property(const char *agent) const;
 	void change_ccd_frame_type_property(const char *agent) const;
 	void change_agent_batch_property(const char *agent) const;
+	void change_agent_batch_property_for_focus(const char *agent) const;
 	void change_agent_start_exposure_property(const char *agent) const;
 	void change_agent_pause_process_property(const char *agent) const;
 	void change_agent_abort_process_property(const char *agent) const;

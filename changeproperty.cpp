@@ -33,12 +33,12 @@ void ImagerWindow::change_ccd_frame_property(const char *agent) const {
 	indigo_change_number_property(nullptr, agent, CCD_FRAME_PROPERTY_NAME, 4, items, values);
 }
 
-void ImagerWindow::change_ccd_exposure_property(const char *agent) const {
+void ImagerWindow::change_ccd_exposure_property(const char *agent, QDoubleSpinBox *exp_time) const {
 	static const char *items[] = {
 		CCD_EXPOSURE_ITEM_NAME,
 	};
 	static double values[1];
-	values[0] = (double)m_exposure_time->value();
+	values[0] = (double)exp_time->value();
 	indigo_change_number_property(nullptr, agent, CCD_EXPOSURE_PROPERTY_NAME, 1, items, values);
 }
 
@@ -87,6 +87,15 @@ void ImagerWindow::change_agent_batch_property(const char *agent) const {
 	values[1] = (double)m_exposure_delay->value();
 	values[2] = (double)m_frame_count->value();
 	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_BATCH_PROPERTY_NAME, 3, items, values);
+}
+
+void ImagerWindow::change_agent_batch_property_for_focus(const char *agent) const {
+	static const char *items[] = {
+		AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME
+	};
+	static double values[1];
+	values[0] = (double)m_focuser_exposure_time->value();
+	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_BATCH_PROPERTY_NAME, 1, items, values);
 }
 
 void ImagerWindow::change_agent_star_selection(const char *agent) const {

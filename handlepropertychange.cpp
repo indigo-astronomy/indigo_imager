@@ -520,7 +520,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		update_focus_setup_property(property, m_initial_step, m_final_step, m_focus_backlash, m_focus_stack);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME)) {
-		update_agent_imager_batch_property(property, m_exposure_time, m_exposure_delay, m_frame_count);
+		//update_agent_imager_batch_property(property, m_exposure_time, m_exposure_delay, m_frame_count);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME)) {
 		if (m_preview) {
