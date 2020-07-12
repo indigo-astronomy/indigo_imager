@@ -196,17 +196,17 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	toolbox->addWidget(button);
 	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
 
-	button = new QPushButton("Focus");
-	button->setStyleSheet("min-width: 30px");
-	button->setIcon(QIcon(":resource/record.png"));
-	toolbox->addWidget(button);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_focus_start);
+	m_focusing_button = new QPushButton("Focus");
+	m_focusing_button->setStyleSheet("min-width: 30px");
+	m_focusing_button->setIcon(QIcon(":resource/record.png"));
+	toolbox->addWidget(m_focusing_button);
+	connect(m_focusing_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_start_stop);
 
-	button = new QPushButton("Preview");
-	button->setStyleSheet("min-width: 30px");
-	button->setIcon(QIcon(":resource/play.png"));
-	toolbox->addWidget(button);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_focus_preview);
+	m_focusing_preview_button = new QPushButton("Preview");
+	m_focusing_preview_button->setStyleSheet("min-width: 30px");
+	m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
+	toolbox->addWidget(m_focusing_preview_button);
+	connect(m_focusing_preview_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_preview_start_stop);
 
 	row++;
 	m_focusing_progress = new QProgressBar();
@@ -284,33 +284,44 @@ void ImagerWindow::on_image_right_click(int x, int y) {
 	m_star_y->setValue(y);
 }
 
-void ImagerWindow::on_focus_preview(bool clicked) {
+void ImagerWindow::on_focus_preview_start_stop(bool clicked) {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
 	static char selected_agent[INDIGO_NAME_SIZE];
 	get_selected_agent(selected_agent);
 
-	m_preview = true;
-	m_focusing = false;
-	change_ccd_frame_property(selected_agent);
-	change_ccd_exposure_property(selected_agent, m_focuser_exposure_time);
+	indigo_property *agent_start_process = properties.get(selected_agent, AGENT_START_PROCESS_PROPERTY_NAME);
+	indigo_property *ccd_exposure = properties.get(selected_agent, CCD_EXPOSURE_PROPERTY_NAME);
+	if (agent_start_process && agent_start_process->state != INDIGO_BUSY_STATE &&
+		ccd_exposure && ccd_exposure->state == INDIGO_BUSY_STATE) {
+		change_ccd_abort_exposure_property(selected_agent);
+	} else {
+		m_preview = true;
+		m_focusing = false;
+		change_ccd_frame_property(selected_agent);
+		change_ccd_exposure_property(selected_agent, m_focuser_exposure_time);
+	}
 }
 
-void ImagerWindow::on_focus_start(bool clicked) {
+void ImagerWindow::on_focus_start_stop(bool clicked) {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
 	static char selected_agent[INDIGO_NAME_SIZE];
 	get_selected_agent(selected_agent);
 
-
-	change_agent_star_selection(selected_agent);
-	change_agent_batch_property_for_focus(selected_agent);
-	change_agent_focus_params_property(selected_agent);
-	change_ccd_frame_property(selected_agent);
-	m_preview = true;
-	m_focusing = true;
-	if(m_focus_method_select->currentIndex() == 0) {
-		change_agent_start_preview_property(selected_agent);
+	indigo_property *agent_start_process = properties.get(selected_agent, AGENT_START_PROCESS_PROPERTY_NAME);
+	if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
+		change_agent_abort_process_property(selected_agent);
 	} else {
-		change_agent_start_focusing_property(selected_agent);
+		change_agent_star_selection(selected_agent);
+		change_agent_batch_property_for_focus(selected_agent);
+		change_agent_focus_params_property(selected_agent);
+		change_ccd_frame_property(selected_agent);
+		m_preview = true;
+		m_focusing = true;
+		if(m_focus_method_select->currentIndex() == 0) {
+			change_agent_start_preview_property(selected_agent);
+		} else {
+			change_agent_start_focusing_property(selected_agent);
+		}
 	}
 }
 

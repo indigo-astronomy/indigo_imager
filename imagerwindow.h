@@ -76,7 +76,9 @@ signals:
 
 public slots:
 	void on_start(bool clicked);
+	void on_exposure_start_stop(bool clicked);
 	void on_preview(bool clicked);
+	void on_preview_start_stop(bool clicked);
 	void on_abort(bool clicked);
 	void on_pause(bool clicked);
 	void on_window_log(indigo_property* property, char *message);
@@ -116,8 +118,8 @@ public slots:
 	void on_cooler_onoff(bool state);
 	void on_teperature_set();
 
-	void on_focus_start(bool clicked);
-	void on_focus_preview(bool clicked);
+	void on_focus_start_stop(bool clicked);
+	void on_focus_preview_start_stop(bool clicked);
 	void on_selection_changed(int value);
 	void on_image_right_click(int x, int y);
 	void on_focus_in(bool clicked);
@@ -151,6 +153,8 @@ private:
 	QLineEdit *m_current_temp;
 	QLineEdit *m_cooler_pwr;
 	QCheckBox *m_cooler_onoff;
+	QPushButton *m_exposure_button;
+	QPushButton *m_preview_button;
 
 	// Focuser tabbar
 	QComboBox *m_focuser_select;
@@ -168,6 +172,8 @@ private:
 	QLabel    *m_peak_label;
 	QLabel    *m_drift_label;
 	QDoubleSpinBox *m_focuser_exposure_time;
+	QPushButton *m_focusing_button;
+	QPushButton *m_focusing_preview_button;
 	QProgressBar *m_focusing_progress;
 
 	pal::ImageViewer *m_viewer;
