@@ -43,6 +43,7 @@ typedef struct {
 	bool use_state_icons;
 	bool use_system_locale;
 	bool antialiasing_enabled;
+	int focus_mode;
 	preview_stretch preview_stretch_level;
 	char unused[1000];
 } conf_t;

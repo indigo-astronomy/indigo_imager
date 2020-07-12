@@ -20,6 +20,8 @@
 #include "propertycache.h"
 #include "conf.h"
 
+void write_conf();
+
 void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	QGridLayout *focuser_frame_layout = new QGridLayout();
 	focuser_frame_layout->setAlignment(Qt::AlignTop);
@@ -74,13 +76,14 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focuser_exposure_time->setValue(1);
 	focuser_frame_layout->addWidget(m_focuser_exposure_time, row, 1);
 
-	label = new QLabel("Method:");
+	label = new QLabel("Mode:");
 	focuser_frame_layout->addWidget(label, row, 2);
-	m_focus_method_select = new QComboBox();
-	m_focus_method_select->addItem("Manual");
-	m_focus_method_select->addItem("Auto");
-	focuser_frame_layout->addWidget(m_focus_method_select, row, 3);
-	//connect(focus_method, QOverload<int>::of(&QComboBox::activate), this, &ImagerWindow::on_focuser_selected);
+	m_focus_mode_select = new QComboBox();
+	m_focus_mode_select->addItem("Manual");
+	m_focus_mode_select->addItem("Auto");
+	focuser_frame_layout->addWidget(m_focus_mode_select, row, 3);
+	m_focus_mode_select->setCurrentIndex(conf.focus_mode);
+	connect(m_focus_mode_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focus_mode_selected);
 
 	row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -267,7 +270,6 @@ void ImagerWindow::on_focuser_selected(int index) {
 	indigo_change_switch_property(nullptr, selected_agent, FILTER_FOCUSER_LIST_PROPERTY_NAME, 1, items, values);
 }
 
-
 void ImagerWindow::on_selection_changed(int value) {
 	int x = m_star_x->value();
 	int y = m_star_y->value();
@@ -278,6 +280,11 @@ void ImagerWindow::on_selection_changed(int value) {
 	m_drift_label->setText("n/a");
 }
 
+void ImagerWindow::on_focus_mode_selected(int index) {
+	conf.focus_mode = index;
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
 
 void ImagerWindow::on_image_right_click(int x, int y) {
 	m_star_x->setValue(x);
@@ -317,7 +324,7 @@ void ImagerWindow::on_focus_start_stop(bool clicked) {
 		change_ccd_frame_property(selected_agent);
 		m_preview = true;
 		m_focusing = true;
-		if(m_focus_method_select->currentIndex() == 0) {
+		if(m_focus_mode_select->currentIndex() == 0) {
 			change_agent_start_preview_property(selected_agent);
 		} else {
 			change_agent_start_focusing_property(selected_agent);

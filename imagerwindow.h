@@ -120,6 +120,7 @@ public slots:
 
 	void on_focus_start_stop(bool clicked);
 	void on_focus_preview_start_stop(bool clicked);
+	void on_focus_mode_selected(int index);
 	void on_selection_changed(int value);
 	void on_image_right_click(int x, int y);
 	void on_focus_in(bool clicked);
@@ -158,7 +159,7 @@ private:
 
 	// Focuser tabbar
 	QComboBox *m_focuser_select;
-	QComboBox *m_focus_method_select;
+	QComboBox *m_focus_mode_select;
 	QSpinBox  *m_star_x;
 	QSpinBox  *m_star_y;
 	QSpinBox  *m_initial_step;
