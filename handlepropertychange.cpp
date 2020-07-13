@@ -64,6 +64,7 @@ static void configure_spinbox(indigo_item *item, int perm, W *widget) {
 
 
 static void change_combobox_selection(indigo_property *property, QComboBox *combobox) {
+	set_widget_state(property, combobox);
 	for (int i = 0; i < property->count; i++) {
 		if (property->items[i].sw.value) {
 			QString item = QString(property->items[i].label);
