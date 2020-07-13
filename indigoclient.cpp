@@ -23,6 +23,7 @@
 
 bool client_match_item(indigo_item *item, const char *item_name) {
 	if (item == nullptr || item_name == nullptr) return false;
+
 	return (bool)(!strncmp(item->name, item_name, INDIGO_NAME_SIZE));
 }
 

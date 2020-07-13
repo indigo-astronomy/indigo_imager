@@ -129,8 +129,7 @@ public slots:
 	void on_tab_changed(int index);
 
 private:
-	bool m_preview;
-	bool m_focusing;
+	bool m_save_blob;
 	QPlainTextEdit* mLog;
 
 	// Capture tab

@@ -302,8 +302,7 @@ void ImagerWindow::on_focus_preview_start_stop(bool clicked) {
 		ccd_exposure && ccd_exposure->state == INDIGO_BUSY_STATE) {
 		change_ccd_abort_exposure_property(selected_agent);
 	} else {
-		m_preview = true;
-		m_focusing = false;
+		m_save_blob = false;
 		change_ccd_frame_property(selected_agent);
 		change_ccd_exposure_property(selected_agent, m_focuser_exposure_time);
 	}
@@ -318,12 +317,11 @@ void ImagerWindow::on_focus_start_stop(bool clicked) {
 	if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
 		change_agent_abort_process_property(selected_agent);
 	} else {
+		m_save_blob = false;
 		change_agent_star_selection(selected_agent);
 		change_agent_batch_property_for_focus(selected_agent);
 		change_agent_focus_params_property(selected_agent);
 		change_ccd_frame_property(selected_agent);
-		m_preview = true;
-		m_focusing = true;
 		if(m_focus_mode_select->currentIndex() == 0) {
 			change_agent_start_preview_property(selected_agent);
 		} else {

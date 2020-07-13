@@ -641,7 +641,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME)) {
 		indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
-		if (m_preview && p && p->state != INDIGO_BUSY_STATE ) {
+		if (!m_save_blob && p && p->state != INDIGO_BUSY_STATE ) {
 			update_ccd_exposure(
 				property,
 				m_exposure_time,
