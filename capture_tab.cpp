@@ -228,7 +228,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	toolbox->addWidget(button);
 	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
 
-	m_exposure_button = new QPushButton("Start");
+	m_exposure_button = new QPushButton("Expose");
 	m_exposure_button->setStyleSheet("min-width: 30px");
 	m_exposure_button->setIcon(QIcon(":resource/record.png"));
 	toolbox->addWidget(m_exposure_button);

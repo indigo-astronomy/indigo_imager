@@ -24,10 +24,10 @@
 #include "indigoclient.h"
 #include "propertycache.h"
 
-#define set_alert(widget) (widget->setStyleSheet("background-color: #292222;"))
-#define set_idle(widget) (widget->setStyleSheet("background-color: #272727;"))
-#define set_busy(widget) (widget->setStyleSheet("background-color: #292920;"))
-#define set_ok(widget) (widget->setStyleSheet("background-color: #252525;"))
+#define set_alert(widget) (widget->setStyleSheet("*:enabled { background-color: #312222;} *:!enabled { background-color: #292222;}"))
+#define set_idle(widget) (widget->setStyleSheet("*:enabled {background-color: #272727;} *:!enabled {background-color: #272727;}"))
+#define set_busy(widget) (widget->setStyleSheet("*:enabled {background-color: #313120;} *:!enabled {background-color: #292920;}"))
+#define set_ok(widget) (widget->setStyleSheet("*:enabled {background-color: #272727;} QSpinBox:!enabled {background-color: #202020;}"))
 //#define set_ok(widget) (widget->setStyleSheet("background-color: #202520;"))
 
 template<typename W>
@@ -319,7 +319,7 @@ static void update_agent_imager_stats_property(
 	if (exposure_running) {
 		set_widget_state(property, exposure_button);
 		if (property->state == INDIGO_BUSY_STATE) {
-			exposure_button->setText("Stop");
+			//exposure_button->setText("Stop");
 			exposure_button->setIcon(QIcon(":resource/stop.png"));
 			preview_button->setEnabled(false);
 			focusing_button->setEnabled(false);
@@ -339,7 +339,7 @@ static void update_agent_imager_stats_property(
 			indigo_debug("frames total = %d", frames_total);
 
 		} else if (property->state == INDIGO_OK_STATE) {
-			exposure_button->setText("Start");
+			//exposure_button->setText("Start");
 			exposure_button->setIcon(QIcon(":resource/record.png"));
 			preview_button->setEnabled(true);
 			focusing_button->setEnabled(true);
@@ -351,7 +351,7 @@ static void update_agent_imager_stats_property(
 			process_progress->setValue(100);
 			process_progress->setFormat("Process: Complete");
 		} else {
-			exposure_button->setText("Start");
+			//exposure_button->setText("Start");
 			exposure_button->setIcon(QIcon(":resource/record.png"));
 			preview_button->setEnabled(true);
 			focusing_button->setEnabled(true);
@@ -369,7 +369,7 @@ static void update_agent_imager_stats_property(
 	} else if (focusing_running || preview_running) {
 		set_widget_state(property, focusing_button);
 		if (property->state == INDIGO_BUSY_STATE) {
-			focusing_button->setText("Stop");
+			//focusing_button->setText("Stop");
 			focusing_button->setIcon(QIcon(":resource/stop.png"));
 			preview_button->setEnabled(false);
 			exposure_button->setEnabled(false);
@@ -378,7 +378,7 @@ static void update_agent_imager_stats_property(
 			focusing_progress->setValue(exp_elapsed);
 			focusing_progress->setFormat("Focusing: %v of %m seconds elapsed...");
 		} else if(property->state == INDIGO_OK_STATE) {
-			focusing_button->setText("Focus");
+			//focusing_button->setText("Focus");
 			focusing_button->setIcon(QIcon(":resource/record.png"));
 			preview_button->setEnabled(true);
 			exposure_button->setEnabled(true);
@@ -387,7 +387,7 @@ static void update_agent_imager_stats_property(
 			focusing_progress->setValue(100);
 			focusing_progress->setFormat("Focusing: Complete");
 		} else {
-			focusing_button->setText("Focus");
+			//focusing_button->setText("Focus");
 			focusing_button->setIcon(QIcon(":resource/record.png"));
 			preview_button->setEnabled(true);
 			exposure_button->setEnabled(true);
@@ -419,9 +419,9 @@ static void update_ccd_exposure(
 				exp_elapsed = exp_time - property->items[i].number.value;
 			}
 		}
-		preview_button->setText("Stop");
+		//preview_button->setText("Stop");
 		preview_button->setIcon(QIcon(":resource/stop.png"));
-		focusing_preview_button->setText("Stop");
+		//focusing_preview_button->setText("Stop");
 		focusing_preview_button->setIcon(QIcon(":resource/stop.png"));
 		exposure_button->setEnabled(false);
 		focusing_button->setEnabled(false);
@@ -432,9 +432,9 @@ static void update_ccd_exposure(
 		process_progress->setValue(0);
 		process_progress->setFormat("Preview in progress...");
 	} else if(property->state == INDIGO_OK_STATE) {
-		preview_button->setText("Preview");
+		//preview_button->setText("Preview");
 		preview_button->setIcon(QIcon(":resource/play.png"));
-		focusing_preview_button->setText("Preview");
+		//focusing_preview_button->setText("Preview");
 		focusing_preview_button->setIcon(QIcon(":resource/play.png"));
 		exposure_button->setEnabled(true);
 		focusing_button->setEnabled(true);
@@ -445,9 +445,9 @@ static void update_ccd_exposure(
 		exposure_progress->setFormat("Preview: Complete");
 		process_progress->setFormat("Process: Complete");
 	} else {
-		preview_button->setText("Preview");
+		//preview_button->setText("Preview");
 		preview_button->setIcon(QIcon(":resource/play.png"));
-		focusing_preview_button->setText("Preview");
+		//focusing_preview_button->setText("Preview");
 		focusing_preview_button->setIcon(QIcon(":resource/play.png"));
 		exposure_button->setEnabled(true);
 		focusing_button->setEnabled(true);
