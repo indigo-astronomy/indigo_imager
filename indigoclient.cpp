@@ -21,11 +21,10 @@
 #include "indigoclient.h"
 
 
-static indigo_result client_attach(indigo_client *client) {
-	indigo_enumerate_properties(client, &INDIGO_ALL_PROPERTIES);
-	return INDIGO_OK;
+bool client_match_item(indigo_item *item, const char *item_name) {
+	if (item == nullptr || item_name == nullptr) return false;
+	return (bool)(!strncmp(item->name, item_name, INDIGO_NAME_SIZE));
 }
-
 
 bool client_match_device_property(indigo_property *property, const char *device_name, const char *property_name) {
 	if (property_name == nullptr && device_name == nullptr) return false;
@@ -41,10 +40,17 @@ bool client_match_device_property(indigo_property *property, const char *device_
 	return (!strncmp(property->name, property_name, INDIGO_NAME_SIZE) && !strncmp(property->device, device_name, INDIGO_NAME_SIZE));
 }
 
+
 bool client_match_device_no_property(indigo_property *property, const char *device_name) {
 	if (device_name == nullptr) return false;
 
 	return (property->name[0] == '\0' && !strncmp(property->device, device_name, INDIGO_NAME_SIZE));
+}
+
+
+static indigo_result client_attach(indigo_client *client) {
+	indigo_enumerate_properties(client, &INDIGO_ALL_PROPERTIES);
+	return INDIGO_OK;
 }
 
 

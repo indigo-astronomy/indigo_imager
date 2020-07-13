@@ -106,17 +106,19 @@ static void reset_filter_names(indigo_property *property, QComboBox *filter_sele
 }
 
 static void set_filter_selected(indigo_property *property, QComboBox *filter_select) {
-	if (property->count == 1) {
-		indigo_debug("SELECT: %s = %d\n", property->items[0].name, property->items[0].number.value);
-		filter_select->setCurrentIndex((int)property->items[0].number.value-1);
-		set_widget_state(property, filter_select);
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], WHEEL_SLOT_ITEM_NAME)) {
+			indigo_debug("SELECT: %s = %d\n", property->items[i].name, property->items[i].number.value);
+			filter_select->setCurrentIndex((int)property->items[i].number.value-1);
+			set_widget_state(property, filter_select);
+		}
 	}
 }
 
 static void update_cooler_onoff(indigo_property *property, QCheckBox *cooler_onoff) {
 	cooler_onoff->setEnabled(true);
 	for (int i = 0; i < property->count; i++) {
-		if (!strcmp(property->items[i].name, CCD_COOLER_ON_ITEM_NAME)) {
+		if (client_match_item(&property->items[i], CCD_COOLER_ON_ITEM_NAME)) {
 			cooler_onoff->setChecked(property->items[i].sw.value);
 			break;
 		}
@@ -125,48 +127,55 @@ static void update_cooler_onoff(indigo_property *property, QCheckBox *cooler_ono
 
 static void update_ccd_temperature(indigo_property *property, QLineEdit *current_temp, QDoubleSpinBox *set_temp, bool update_value = false) {
 	indigo_debug("change %s", property->name);
-	if(property->count == 1) {
-		if (update_value) {
-			configure_spinbox(&property->items[0], property->perm, set_temp);
-			set_temp->setValue(property->items[0].number.target);
-		} else {
-			configure_spinbox(nullptr, property->perm, set_temp);
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], CCD_TEMPERATURE_ITEM_NAME)) {
+			if (update_value) {
+				configure_spinbox(&property->items[i], property->perm, set_temp);
+				set_temp->setValue(property->items[i].number.target);
+			} else {
+				configure_spinbox(nullptr, property->perm, set_temp);
+			}
+			indigo_debug("change %s = %f", property->items[i].name, property->items[i].number.value);
+			char temperature[INDIGO_VALUE_SIZE];
+			snprintf(temperature, INDIGO_VALUE_SIZE, "%.1f", property->items[i].number.value);
+			current_temp->setText(temperature);
+			set_widget_state(property, current_temp);
 		}
-		indigo_debug("change %s = %f", property->items[0].name, property->items[0].number.value);
-		char temperature[INDIGO_VALUE_SIZE];
-		snprintf(temperature, INDIGO_VALUE_SIZE, "%.1f", property->items[0].number.value);
-		current_temp->setText(temperature);
-		set_widget_state(property, current_temp);
 	}
 }
 
 static void update_cooler_power(indigo_property *property, QLineEdit *cooler_pwr) {
 	indigo_debug("change %s", property->name);
-	if(property->count == 1) {
-		indigo_debug("change %s = %f", property->items[0].name, property->items[0].number.value);
-		char power[INDIGO_VALUE_SIZE];
-		snprintf(power, INDIGO_VALUE_SIZE, "%.1f%%", property->items[0].number.value);
-		cooler_pwr->setText(power);
-		set_widget_state(property, cooler_pwr);
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], CCD_COOLER_POWER_ITEM_NAME)) {
+			indigo_debug("change %s = %f", property->items[i].name, property->items[i].number.value);
+			char power[INDIGO_VALUE_SIZE];
+			snprintf(power, INDIGO_VALUE_SIZE, "%.1f%%", property->items[i].number.value);
+			cooler_pwr->setText(power);
+			set_widget_state(property, cooler_pwr);
+		}
 	}
 }
 
 static void update_focuser_poition(indigo_property *property, QSpinBox *set_position) {
 	indigo_debug("change %s", property->name);
-	if(property->count == 1) {
-		set_widget_state(property, set_position);
-		indigo_debug("change %s = %f", property->items[0].name, property->items[0].number.value);
-		configure_spinbox(&property->items[0], property->perm, set_position);
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], FOCUSER_POSITION_ITEM_NAME) ||
+		    client_match_item(&property->items[i], FOCUSER_STEPS_ITEM_NAME)) {
+			set_widget_state(property, set_position);
+			indigo_debug("change %s = %f", property->items[i].name, property->items[i].number.value);
+			configure_spinbox(&property->items[i], property->perm, set_position);
+		}
 	}
 }
 
 static void update_selection_property(indigo_property *property, QSpinBox *star_x, QSpinBox *star_y, pal::ImageViewer *viewer) {
 	int x=0, y=0;
 	for (int i = 0; i < property->count; i++) {
-		if (!strcmp(property->items[i].name, AGENT_IMAGER_SELECTION_X_ITEM_NAME)) {
+		if (client_match_item(&property->items[i], AGENT_IMAGER_SELECTION_X_ITEM_NAME)) {
 			x = (int)property->items[i].number.value;
 			configure_spinbox(&property->items[i], property->perm, star_x);
-		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_SELECTION_Y_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_SELECTION_Y_ITEM_NAME)) {
 			y = (int)property->items[i].number.value;
 			configure_spinbox(&property->items[i], property->perm, star_y);
 		}
@@ -177,13 +186,13 @@ static void update_selection_property(indigo_property *property, QSpinBox *star_
 static void update_focus_setup_property(indigo_property *property, QSpinBox *initial_step, QSpinBox *final_step, QSpinBox *focus_backlash, QSpinBox *focus_stack) {
 	indigo_debug("Set %s", property->name);
 	for (int i = 0; i < property->count; i++) {
-		if (!strcmp(property->items[i].name, AGENT_IMAGER_FOCUS_INITIAL_ITEM_NAME)) {
+		if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_INITIAL_ITEM_NAME)) {
 			configure_spinbox(&property->items[i], property->perm, initial_step);
-		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_FOCUS_FINAL_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_FINAL_ITEM_NAME)) {
 			configure_spinbox(&property->items[i], property->perm, final_step);
-		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_FOCUS_BACKLASH_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_BACKLASH_ITEM_NAME)) {
 			configure_spinbox(&property->items[i], property->perm, focus_backlash);
-		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_FOCUS_STACK_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_STACK_ITEM_NAME)) {
 			configure_spinbox(&property->items[i], property->perm, focus_stack);
 		}
 	}
@@ -194,11 +203,11 @@ static void update_agent_imager_batch_property(indigo_property *property, QDoubl
 	indigo_debug("Set %s", property->name);
 	for (int i = 0; i < property->count; i++) {
 		indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
-		if (!strcmp(property->items[i].name, AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME)) {
+		if (client_match_item(&property->items[i], AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME)) {
 			configure_spinbox(&property->items[i], property->perm, exposure_time);
-		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_BATCH_DELAY_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_BATCH_DELAY_ITEM_NAME)) {
 			configure_spinbox(&property->items[i], property->perm, exposure_delay);
-		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_BATCH_COUNT_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_BATCH_COUNT_ITEM_NAME)) {
 			configure_spinbox(&property->items[i], property->perm, frame_count);
 		}
 	}
@@ -208,13 +217,13 @@ static void update_ccd_frame_property(indigo_property *property, QSpinBox *roi_x
 	indigo_debug("Set %s", property->name);
 	for (int i = 0; i < property->count; i++) {
 		indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
-		if (!strcmp(property->items[i].name, CCD_FRAME_LEFT_ITEM_NAME)) {
+		if (client_match_item(&property->items[i], CCD_FRAME_LEFT_ITEM_NAME)) {
 			configure_spinbox(&property->items[i], property->perm, roi_x);
-		} else if (!strcmp(property->items[i].name, CCD_FRAME_TOP_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], CCD_FRAME_TOP_ITEM_NAME)) {
 			configure_spinbox(&property->items[i], property->perm, roi_y);
-		} else if (!strcmp(property->items[i].name, CCD_FRAME_WIDTH_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], CCD_FRAME_WIDTH_ITEM_NAME)) {
 			configure_spinbox(&property->items[i], property->perm, roi_w);
-		} else if (!strcmp(property->items[i].name, CCD_FRAME_HEIGHT_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], CCD_FRAME_HEIGHT_ITEM_NAME)) {
 			configure_spinbox(&property->items[i], property->perm, roi_h);
 		}
 	}
@@ -224,7 +233,7 @@ static void update_ccd_frame_property(indigo_property *property, QSpinBox *roi_x
 static void update_agent_imager_pause_process_property(indigo_property *property, QPushButton* pause_button) {
 	indigo_debug("Set %s", property->name);
 	for (int i = 0; i < property->count; i++) {
-		if (!strcmp(property->items[i].name, AGENT_PAUSE_PROCESS_ITEM_NAME)) {
+		if (client_match_item(&property->items[i], AGENT_PAUSE_PROCESS_ITEM_NAME)) {
 			if(property->state == INDIGO_BUSY_STATE) {
 				pause_button->setText("Resume");
 				set_busy(pause_button);
@@ -237,13 +246,15 @@ static void update_agent_imager_pause_process_property(indigo_property *property
 }
 
 static void update_wheel_slot_property(indigo_property *property, QComboBox *filter_select) {
-	if (property->count == 1) {
-		indigo_property *p = properties.get(property->device, WHEEL_SLOT_NAME_PROPERTY_NAME);
-		unsigned int current_filter = (unsigned int)property->items[0].number.value - 1;
-		set_widget_state(property, filter_select);
-		if (p && current_filter < p->count) {
-			filter_select->setCurrentIndex(filter_select->findText(p->items[current_filter].text.value));
-			indigo_debug("[SELECT filter] %s\n", p->items[current_filter].label);
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], WHEEL_SLOT_ITEM_NAME)) {
+			indigo_property *p = properties.get(property->device, WHEEL_SLOT_NAME_PROPERTY_NAME);
+			unsigned int current_filter = (unsigned int)property->items[i].number.value - 1;
+			set_widget_state(property, filter_select);
+			if (p && current_filter < p->count) {
+				filter_select->setCurrentIndex(filter_select->findText(p->items[current_filter].text.value));
+				indigo_debug("[SELECT filter] %s\n", p->items[current_filter].label);
+			}
 		}
 	}
 }
@@ -287,30 +298,30 @@ static void update_agent_imager_stats_property(
 	}
 
 	for (int i = 0; i < property->count; i++) {
-		if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_FWHM_ITEM_NAME)) {
+		if (client_match_item(&property->items[i], AGENT_IMAGER_STATS_FWHM_ITEM_NAME)) {
 			 double FWHM = property->items[i].number.value;
 			 char fwhm_str[50];
 			 snprintf(fwhm_str, 50, "%.2f", FWHM);
 			 FWHM_label->setText(fwhm_str);
-		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_HFD_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_STATS_HFD_ITEM_NAME)) {
 			 double HFD = property->items[i].number.value;
 			 char hfd_str[50];
 			 snprintf(hfd_str, 50, "%.2f", HFD);
 			 HFD_label->setText(hfd_str);
-		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_PEAK_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_STATS_PEAK_ITEM_NAME)) {
 			int peak = (int)property->items[i].number.value;
 			char peak_str[50];
 			snprintf(peak_str, 50, "%d", peak);
 			peak_label->setText(peak_str);
-		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_DRIFT_X_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_STATS_DRIFT_X_ITEM_NAME)) {
 			drift_x = property->items[i].number.value;
-		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_DRIFT_Y_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_STATS_DRIFT_Y_ITEM_NAME)) {
 			drift_y = property->items[i].number.value;
-		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_EXPOSURE_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_STATS_EXPOSURE_ITEM_NAME)) {
 			exp_elapsed = exp_time - property->items[i].number.value;
-		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_FRAME_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_STATS_FRAME_ITEM_NAME)) {
 			frames_complete = (int)property->items[i].number.value;
-		} else if (!strcmp(property->items[i].name, AGENT_IMAGER_STATS_FRAMES_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_STATS_FRAMES_ITEM_NAME)) {
 			frames_total = (int)property->items[i].number.value;
 		}
 	}
@@ -416,7 +427,7 @@ static void update_ccd_exposure(
 	if (property->state == INDIGO_BUSY_STATE) {
 		exp_time = exposure_time->value();
 		for (int i = 0; i < property->count; i++) {
-			if (!strcmp(property->items[i].name, CCD_EXPOSURE_ITEM_NAME)) {
+			if (client_match_item(&property->items[i], CCD_EXPOSURE_ITEM_NAME)) {
 				exp_elapsed = exp_time - property->items[i].number.value;
 			}
 		}
