@@ -161,19 +161,6 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_steps->setEnabled(false);
 	focuser_frame_layout->addWidget(m_focus_steps, row, 2, 1, 2);
 
-/*
-	QPushButton *but = new QPushButton("In");
-	but->setStyleSheet("min-width: 30px");
-	//but->setIcon(QIcon(":resource/stop.png"));
-	focuser_frame_layout->addWidget(but, row, 2);
-	connect(but, &QPushButton::clicked, this, &ImagerWindow::on_abort);
-
-	but = new QPushButton("Out");
-	but->setStyleSheet("min-width: 30px");
-	//but->setIcon(QIcon(":resource/stop.png"));
-	focuser_frame_layout->addWidget(but);
-	connect(but, &QPushButton::clicked, this, &ImagerWindow::on_abort);
-*/
 	row++;
 	QWidget *toolbar = new QWidget;
 	QHBoxLayout *toolbox = new QHBoxLayout(toolbar);
@@ -221,35 +208,43 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	focuser_frame_layout->addItem(spacer, row, 0);
-	//focuser_frame_layout->setRowStretch(row, 1 );
 
 	row++;
-	label = new QLabel("Drift (X, Y):");
-	focuser_frame_layout->addWidget(label, row, 0);
-	m_drift_label = new QLabel();
-	m_drift_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	focuser_frame_layout->addWidget(m_drift_label, row, 1, 1, 2);
+	label = new QLabel("Autofocus statistics:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	focuser_frame_layout->addWidget(label, row, 0, 1, 4);
+
+	row++;
+	m_focus_graph = new FocusGraph();
+	m_focus_graph->redraw_data(m_focus_fwhm_data);
+	m_focus_graph->setMinimumHeight(150);
+	focuser_frame_layout->addWidget(m_focus_graph, row, 0, 1, 4);
 
 	row++;
 	label = new QLabel("FWHM:");
 	focuser_frame_layout->addWidget(label, row, 0);
 	m_FWHM_label = new QLabel();
 	m_FWHM_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	focuser_frame_layout->addWidget(m_FWHM_label, row, 1, 1, 2);
+	focuser_frame_layout->addWidget(m_FWHM_label, row, 1);
 
-	row++;
 	label = new QLabel("HFD:");
-	focuser_frame_layout->addWidget(label, row, 0);
+	focuser_frame_layout->addWidget(label, row, 2);
 	m_HFD_label = new QLabel();
 	m_HFD_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	focuser_frame_layout->addWidget(m_HFD_label, row, 1, 1, 2);
+	focuser_frame_layout->addWidget(m_HFD_label, row, 3);
 
 	row++;
-	label = new QLabel("Peak:");
+	label = new QLabel("Drift (X, Y):");
 	focuser_frame_layout->addWidget(label, row, 0);
+	m_drift_label = new QLabel();
+	m_drift_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	focuser_frame_layout->addWidget(m_drift_label, row, 1);
+
+	label = new QLabel("Peak:");
+	focuser_frame_layout->addWidget(label, row, 2);
 	m_peak_label = new QLabel();
 	m_peak_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	focuser_frame_layout->addWidget(m_peak_label, row, 1, 1, 2);
+	focuser_frame_layout->addWidget(m_peak_label, row, 3);
 }
 
 void ImagerWindow::on_focuser_selected(int index) {
@@ -318,6 +313,8 @@ void ImagerWindow::on_focus_start_stop(bool clicked) {
 		change_agent_abort_process_property(selected_agent);
 	} else {
 		m_save_blob = false;
+		m_focus_fwhm_data.clear();
+		m_focus_graph->redraw_data(m_focus_fwhm_data);
 		change_agent_star_selection(selected_agent);
 		change_agent_batch_property_for_focus(selected_agent);
 		change_agent_focus_params_property(selected_agent);

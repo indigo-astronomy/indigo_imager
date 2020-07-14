@@ -1,4 +1,4 @@
-QT += core gui widgets network
+QT += core gui widgets network printsupport
 CONFIG += c++11 debug
 
 OBJECTS_DIR=object
@@ -31,6 +31,8 @@ SOURCES += \
 	image-viewer.cpp \
 	fits/fits.c \
 	debayer/debayer.c \
+	qcustomplot/qcustomplot.cpp \
+	focusgraph.cpp
 
 
 RESOURCES += \
@@ -83,6 +85,8 @@ HEADERS += \
 	fits/fits.h \
 	debayer/debayer.h \
 	debayer/pixelformat.h \
+	qcustomplot/qcustomplot.h \
+	focusgraph.h
 	conf.h
 
 

@@ -169,7 +169,7 @@ static void update_focuser_poition(indigo_property *property, QSpinBox *set_posi
 	}
 }
 
-static void update_selection_property(indigo_property *property, QSpinBox *star_x, QSpinBox *star_y, pal::ImageViewer *viewer) {
+static void update_selection_property(indigo_property *property, QSpinBox *star_x, QSpinBox *star_y, pal::ImageViewer *viewer, FocusGraph *focuser_graph) {
 	int x=0, y=0;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_IMAGER_SELECTION_X_ITEM_NAME)) {
@@ -178,6 +178,9 @@ static void update_selection_property(indigo_property *property, QSpinBox *star_
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_SELECTION_Y_ITEM_NAME)) {
 			y = (int)property->items[i].number.value;
 			configure_spinbox(&property->items[i], property->perm, star_y);
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_SELECTION_RADIUS_ITEM_NAME)) {
+			double max = property->items[i].number.value * 2 + 2;
+			focuser_graph->set_yaxis_range(0, max);
 		}
 		viewer->moveSelection(x, y);
 	}
@@ -271,7 +274,9 @@ static void update_agent_imager_stats_property(
 	QPushButton *exposure_button,
 	QPushButton *preview_button,
 	QPushButton *focusing_button,
-	QPushButton *focusing_preview_button
+	QPushButton *focusing_preview_button,
+	FocusGraph *focus_graph,
+	QVector<double> &fwhm_data
 ) {
 	double exp_elapsed, exp_time = 1;
 	double drift_x, drift_y;
@@ -279,6 +284,8 @@ static void update_agent_imager_stats_property(
 	static bool exposure_running = false;
 	static bool focusing_running = false;
 	static bool preview_running = false;
+	static int prev_frame = -1;
+	double FWHM;
 
 	indigo_item *exposure_item = properties.get_item(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME, AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME);
 	if (exposure_item) exp_time = exposure_item->number.value;
@@ -299,7 +306,7 @@ static void update_agent_imager_stats_property(
 
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_IMAGER_STATS_FWHM_ITEM_NAME)) {
-			 double FWHM = property->items[i].number.value;
+			 FWHM = property->items[i].number.value;
 			 char fwhm_str[50];
 			 snprintf(fwhm_str, 50, "%.2f", FWHM);
 			 FWHM_label->setText(fwhm_str);
@@ -379,6 +386,11 @@ static void update_agent_imager_stats_property(
 			}
 		}
 	} else if (focusing_running || preview_running) {
+		if (frames_complete != prev_frame) {
+			fwhm_data.append(FWHM);
+			focus_graph->redraw_data(fwhm_data);
+			prev_frame = frames_complete;
+		}
 		set_widget_state(property, focusing_button);
 		if (property->state == INDIGO_BUSY_STATE) {
 			//focusing_button->setText("Stop");
@@ -556,7 +568,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_focuser_poition(property, m_focus_steps);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME)) {
-		update_selection_property(property, m_star_x, m_star_y, m_viewer);
+		update_selection_property(property, m_star_x, m_star_y, m_viewer, m_focus_graph);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME)) {
 		update_focus_setup_property(property, m_initial_step, m_final_step, m_focus_backlash, m_focus_stack);
@@ -631,7 +643,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		update_wheel_slot_property(property, m_filter_select);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME)) {
-		update_selection_property(property, m_star_x, m_star_y, m_viewer);
+		update_selection_property(property, m_star_x, m_star_y, m_viewer, m_focus_graph);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME)) {
 		update_focus_setup_property(property, m_initial_step, m_final_step, m_focus_backlash, m_focus_stack);
@@ -667,7 +679,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			m_exposure_button,
 			m_preview_button,
 			m_focusing_button,
-			m_focusing_preview_button
+			m_focusing_preview_button,
+			m_focus_graph,
+			m_focus_fwhm_data
 		);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME)) {

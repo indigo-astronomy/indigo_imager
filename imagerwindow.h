@@ -52,6 +52,7 @@ class QIndigoServers;
 #include <QDir>
 #include <QDateTime>
 #include <QFileDialog>
+#include "focusgraph.h"
 
 
 class ImagerWindow : public QMainWindow {
@@ -175,6 +176,8 @@ private:
 	QPushButton *m_focusing_button;
 	QPushButton *m_focusing_preview_button;
 	QProgressBar *m_focusing_progress;
+	FocusGraph *m_focus_graph;
+	QVector<double> m_focus_fwhm_data;
 
 	pal::ImageViewer *m_viewer;
 	indigo_item *m_indigo_item;
