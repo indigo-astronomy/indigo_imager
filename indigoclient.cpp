@@ -75,7 +75,7 @@ static indigo_result client_define_property(indigo_client *client, indigo_device
 					property->items[row].blob.value = nullptr;
 					emit(IndigoClient::instance().create_preview(property, blob_item));
 				} else {
-					free(blob_item->blob.value);
+					if (blob_item->blob.value) free(blob_item->blob.value);
 					free(blob_item);
 				}
 			}
@@ -113,11 +113,15 @@ static indigo_result client_update_property(indigo_client *client, indigo_device
 				// cache item to pass it with create_preview() signal
 				indigo_item *blob_item = (indigo_item*)malloc(sizeof(indigo_item));
 				memcpy(blob_item, &property->items[row], sizeof(indigo_item));
+				blob_item->blob.value = nullptr;
 				if (*property->items[row].blob.url && indigo_populate_http_blob_item(blob_item)) {
 					property->items[row].blob.value = nullptr;
 					indigo_log("Image %s.%s URL received (%s, %ld bytes)...\n", property->device, property->name, blob_item->blob.url, blob_item->blob.size);
+					emit(IndigoClient::instance().create_preview(property, blob_item));
+				} else {
+					if (blob_item->blob.value) free(blob_item->blob.value);
+					free(blob_item);
 				}
-				emit(IndigoClient::instance().create_preview(property, blob_item));
 			}
 		} else if(property->state == INDIGO_BUSY_STATE) {
 			for (int row = 0; row < property->count; row++) {

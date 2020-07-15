@@ -256,191 +256,219 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 }
 
 void ImagerWindow::on_exposure_start_stop(bool clicked) {
-	indigo_debug("CALLED: %s\n", __FUNCTION__);
-	static char selected_agent[INDIGO_NAME_SIZE];
-	get_selected_agent(selected_agent);
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_agent(selected_agent);
 
-	indigo_property *agent_start_process = properties.get(selected_agent, AGENT_START_PROCESS_PROPERTY_NAME);
-	if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
-		change_agent_abort_process_property(selected_agent);
-	} else {
-		m_save_blob = true;
-		change_agent_batch_property(selected_agent);
-		change_ccd_frame_property(selected_agent);
-		change_agent_start_exposure_property(selected_agent);
-	}
+		indigo_property *agent_start_process = properties.get(selected_agent, AGENT_START_PROCESS_PROPERTY_NAME);
+		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
+			change_agent_abort_process_property(selected_agent);
+		} else {
+			m_save_blob = true;
+			change_agent_batch_property(selected_agent);
+			change_ccd_frame_property(selected_agent);
+			change_agent_start_exposure_property(selected_agent);
+		}
+	});
 }
 
 void ImagerWindow::on_preview_start_stop(bool clicked) {
-	indigo_debug("CALLED: %s\n", __FUNCTION__);
-	static char selected_agent[INDIGO_NAME_SIZE];
-	get_selected_agent(selected_agent);
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_agent(selected_agent);
 
-	indigo_property *agent_start_process = properties.get(selected_agent, AGENT_START_PROCESS_PROPERTY_NAME);
-	indigo_property *ccd_exposure = properties.get(selected_agent, CCD_EXPOSURE_PROPERTY_NAME);
-	if (agent_start_process && agent_start_process->state != INDIGO_BUSY_STATE &&
-	    ccd_exposure && ccd_exposure->state == INDIGO_BUSY_STATE) {
-		change_ccd_abort_exposure_property(selected_agent);
-	} else {
-		m_save_blob = false;
-		change_ccd_frame_property(selected_agent);
-		change_ccd_exposure_property(selected_agent, m_exposure_time);
-	}
+		indigo_property *agent_start_process = properties.get(selected_agent, AGENT_START_PROCESS_PROPERTY_NAME);
+		indigo_property *ccd_exposure = properties.get(selected_agent, CCD_EXPOSURE_PROPERTY_NAME);
+		if (agent_start_process && agent_start_process->state != INDIGO_BUSY_STATE &&
+		    ccd_exposure && ccd_exposure->state == INDIGO_BUSY_STATE) {
+			change_ccd_abort_exposure_property(selected_agent);
+		} else {
+			m_save_blob = false;
+			change_ccd_frame_property(selected_agent);
+			change_ccd_exposure_property(selected_agent, m_exposure_time);
+		}
+	});
 }
 
 void ImagerWindow::on_preview(bool clicked) {
-	indigo_debug("CALLED: %s\n", __FUNCTION__);
-	static char selected_agent[INDIGO_NAME_SIZE];
-	get_selected_agent(selected_agent);
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_agent(selected_agent);
 
-	m_save_blob = false;
-	change_ccd_frame_property(selected_agent);
-	change_ccd_exposure_property(selected_agent, m_exposure_time);
+		m_save_blob = false;
+		change_ccd_frame_property(selected_agent);
+		change_ccd_exposure_property(selected_agent, m_exposure_time);
+	});
 }
 
 
 void ImagerWindow::on_start(bool clicked) {
-	indigo_debug("CALLED: %s\n", __FUNCTION__);
-	static char selected_agent[INDIGO_NAME_SIZE];
-	get_selected_agent(selected_agent);
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_agent(selected_agent);
 
-	m_save_blob = true;
-	change_agent_batch_property(selected_agent);
-	change_ccd_frame_property(selected_agent);
-	change_agent_start_exposure_property(selected_agent);
+		m_save_blob = true;
+		change_agent_batch_property(selected_agent);
+		change_ccd_frame_property(selected_agent);
+		change_agent_start_exposure_property(selected_agent);
+	});
 }
 
 void ImagerWindow::on_abort(bool clicked) {
-	indigo_debug("CALLED: %s\n", __FUNCTION__);
-	static char selected_agent[INDIGO_NAME_SIZE];
-	get_selected_agent(selected_agent);
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_agent(selected_agent);
 
-	indigo_property *p = properties.get(selected_agent, AGENT_START_PROCESS_PROPERTY_NAME);
-	if (p && p->state == INDIGO_BUSY_STATE ) {
-		change_agent_abort_process_property(selected_agent);
-	} else {
-		change_ccd_abort_exposure_property(selected_agent);
-	}
+		indigo_property *p = properties.get(selected_agent, AGENT_START_PROCESS_PROPERTY_NAME);
+		if (p && p->state == INDIGO_BUSY_STATE ) {
+			change_agent_abort_process_property(selected_agent);
+		} else {
+			change_ccd_abort_exposure_property(selected_agent);
+		}
+	});
 }
 
 void ImagerWindow::on_pause(bool clicked) {
-	indigo_debug("CALLED: %s\n", __FUNCTION__);
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
 
-	//QPushButton *button = (QPushButton *)sender();
-	//button->setText("Continue");
+		//QPushButton *button = (QPushButton *)sender();
+		//button->setText("Continue");
 
-	static char selected_agent[INDIGO_NAME_SIZE];
-	get_selected_agent(selected_agent);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_agent(selected_agent);
 
-	indigo_property *p = properties.get(selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME);
-	if (p == nullptr || p->count != 1) return;
+		indigo_property *p = properties.get(selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME);
+		if (p == nullptr || p->count != 1) return;
 
-	change_agent_pause_process_property(selected_agent);
+		change_agent_pause_process_property(selected_agent);
+	});
 }
 
 void ImagerWindow::on_agent_selected(int index) {
-	// Clear controls
-	indigo_property *property = (indigo_property*)malloc(sizeof(indigo_property));
-	memset(property, 0, sizeof(indigo_property));
-	get_selected_agent(property->device);
-	property_delete(property, nullptr);
-	free(property);
+	QtConcurrent::run([=]() {
+		// Clear controls
+		indigo_property *property = (indigo_property*)malloc(sizeof(indigo_property));
+		memset(property, 0, sizeof(indigo_property));
+		get_selected_agent(property->device);
+		property_delete(property, nullptr);
+		free(property);
 
-	// populate them again with the new values
-	// use cache instead of enumeration request
-	/*
-	property_cache::iterator i = properties.begin();
-	while (i != properties.end()) {
-		indigo_property *property = i.value();
-		QString key = i.key();
-		if (property != nullptr) {
-			indigo_debug("property: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), property);
-			property_define(property, nullptr);
-		} else {
-			indigo_debug("property: %s(%s) == EMPTY\n", __FUNCTION__, key.toUtf8().constData());
-		}
-		i++;
-	} */
-	indigo_enumerate_properties(nullptr, &INDIGO_ALL_PROPERTIES);
+		// populate them again with the new values
+		// use cache instead of enumeration request
+		/*
+		property_cache::iterator i = properties.begin();
+		while (i != properties.end()) {
+			indigo_property *property = i.value();
+			QString key = i.key();
+			if (property != nullptr) {
+				indigo_debug("property: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), property);
+				property_define(property, nullptr);
+			} else {
+				indigo_debug("property: %s(%s) == EMPTY\n", __FUNCTION__, key.toUtf8().constData());
+			}
+			i++;
+		} */
+		indigo_enumerate_properties(nullptr, &INDIGO_ALL_PROPERTIES);
+	});
 }
 
 void ImagerWindow::on_camera_selected(int index) {
-	static char selected_camera[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
-	QString q_camera_str = m_camera_select->currentText();
-	int idx = q_camera_str.indexOf(" @ ");
-	if (idx >=0) q_camera_str.truncate(idx);
-	if (q_camera_str.compare("No camera") == 0) {
-		strcpy(selected_camera, "NONE");
-	} else {
-		strncpy(selected_camera, q_camera_str.toUtf8().constData(), INDIGO_NAME_SIZE);
-	}
-	get_selected_agent(selected_agent);
+	QtConcurrent::run([=]() {
+		static char selected_camera[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
+		QString q_camera_str = m_camera_select->currentText();
+		int idx = q_camera_str.indexOf(" @ ");
+		if (idx >=0) q_camera_str.truncate(idx);
+		if (q_camera_str.compare("No camera") == 0) {
+			strcpy(selected_camera, "NONE");
+		} else {
+			strncpy(selected_camera, q_camera_str.toUtf8().constData(), INDIGO_NAME_SIZE);
+		}
+		get_selected_agent(selected_agent);
 
-	indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_camera);
-	static const char * items[] = { selected_camera };
-	static bool values[] = { true };
-	indigo_change_switch_property(nullptr, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME, 1, items, values);
+		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_camera);
+		static const char * items[] = { selected_camera };
+		static bool values[] = { true };
+		indigo_change_switch_property(nullptr, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME, 1, items, values);
+	});
 }
 
 void ImagerWindow::on_wheel_selected(int index) {
-	static char selected_wheel[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
-	QString q_wheel_str = m_wheel_select->currentText();
-	int idx = q_wheel_str.indexOf(" @ ");
-	if (idx >=0) q_wheel_str.truncate(idx);
-	if (q_wheel_str.compare("No wheel") == 0) {
-		strcpy(selected_wheel, "NONE");
-	} else {
-		strncpy(selected_wheel, q_wheel_str.toUtf8().constData(), INDIGO_NAME_SIZE);
-	}
-	get_selected_agent(selected_agent);
+	QtConcurrent::run([=]() {
+		static char selected_wheel[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
+		QString q_wheel_str = m_wheel_select->currentText();
+		int idx = q_wheel_str.indexOf(" @ ");
+		if (idx >=0) q_wheel_str.truncate(idx);
+		if (q_wheel_str.compare("No wheel") == 0) {
+			strcpy(selected_wheel, "NONE");
+		} else {
+			strncpy(selected_wheel, q_wheel_str.toUtf8().constData(), INDIGO_NAME_SIZE);
+		}
+		get_selected_agent(selected_agent);
 
-	indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_wheel);
-	static const char * items[] = { selected_wheel };
+		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_wheel);
+		static const char * items[] = { selected_wheel };
 
-	static bool values[] = { true };
-	indigo_change_switch_property(nullptr, selected_agent, FILTER_WHEEL_LIST_PROPERTY_NAME, 1, items, values);
+		static bool values[] = { true };
+		indigo_change_switch_property(nullptr, selected_agent, FILTER_WHEEL_LIST_PROPERTY_NAME, 1, items, values);
+	});
 }
 
 void ImagerWindow::on_ccd_mode_selected(int index) {
-	static char selected_agent[INDIGO_NAME_SIZE];
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
 
-	get_selected_agent(selected_agent);
+		get_selected_agent(selected_agent);
 
-	indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-	change_ccd_mode_property(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_ccd_mode_property(selected_agent);
+	});
 }
 
 void ImagerWindow::on_frame_type_selected(int index) {
-	static char selected_agent[INDIGO_NAME_SIZE];
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
 
-	get_selected_agent(selected_agent);
+		get_selected_agent(selected_agent);
 
-	indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-	change_ccd_frame_type_property(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_ccd_frame_type_property(selected_agent);
+	});
 }
 
 void ImagerWindow::on_filter_selected(int index) {
-	static char selected_agent[INDIGO_NAME_SIZE];
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
 
-	get_selected_agent(selected_agent);
+		get_selected_agent(selected_agent);
 
-	indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-	change_wheel_slot_property(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_wheel_slot_property(selected_agent);
+	});
 }
 
 void ImagerWindow::on_cooler_onoff(bool state) {
-	static char selected_agent[INDIGO_NAME_SIZE];
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
 
-	get_selected_agent(selected_agent);
+		get_selected_agent(selected_agent);
 
-	indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-	change_cooler_onoff_property(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_cooler_onoff_property(selected_agent);
+	});
 }
 
 void ImagerWindow::on_teperature_set() {
-	indigo_debug("CALLED: %s\n", __FUNCTION__);
-	static char selected_agent[INDIGO_NAME_SIZE];
-	get_selected_agent(selected_agent);
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_agent(selected_agent);
 
-	change_ccd_temperature_property(selected_agent);
+		change_ccd_temperature_property(selected_agent);
+	});
 }

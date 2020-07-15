@@ -248,21 +248,23 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 }
 
 void ImagerWindow::on_focuser_selected(int index) {
-	static char selected_focuser[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
-	QString q_focuser_str = m_focuser_select->currentText();
-	int idx = q_focuser_str.indexOf(" @ ");
-	if (idx >=0) q_focuser_str.truncate(idx);
-	if (q_focuser_str.compare("No focuser") == 0) {
-		strcpy(selected_focuser, "NONE");
-	} else {
-		strncpy(selected_focuser, q_focuser_str.toUtf8().constData(), INDIGO_NAME_SIZE);
-	}
-	get_selected_agent(selected_agent);
+	QtConcurrent::run([=]() {
+		static char selected_focuser[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
+		QString q_focuser_str = m_focuser_select->currentText();
+		int idx = q_focuser_str.indexOf(" @ ");
+		if (idx >=0) q_focuser_str.truncate(idx);
+		if (q_focuser_str.compare("No focuser") == 0) {
+			strcpy(selected_focuser, "NONE");
+		} else {
+			strncpy(selected_focuser, q_focuser_str.toUtf8().constData(), INDIGO_NAME_SIZE);
+		}
+		get_selected_agent(selected_agent);
 
-	indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_focuser);
-	static const char * items[] = { selected_focuser };
-	static bool values[] = { true };
-	indigo_change_switch_property(nullptr, selected_agent, FILTER_FOCUSER_LIST_PROPERTY_NAME, 1, items, values);
+		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_focuser);
+		static const char * items[] = { selected_focuser };
+		static bool values[] = { true };
+		indigo_change_switch_property(nullptr, selected_agent, FILTER_FOCUSER_LIST_PROPERTY_NAME, 1, items, values);
+	});
 }
 
 void ImagerWindow::on_selection_changed(int value) {
@@ -287,60 +289,69 @@ void ImagerWindow::on_image_right_click(int x, int y) {
 }
 
 void ImagerWindow::on_focus_preview_start_stop(bool clicked) {
-	indigo_debug("CALLED: %s\n", __FUNCTION__);
-	static char selected_agent[INDIGO_NAME_SIZE];
-	get_selected_agent(selected_agent);
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_agent(selected_agent);
 
-	indigo_property *agent_start_process = properties.get(selected_agent, AGENT_START_PROCESS_PROPERTY_NAME);
-	indigo_property *ccd_exposure = properties.get(selected_agent, CCD_EXPOSURE_PROPERTY_NAME);
-	if (agent_start_process && agent_start_process->state != INDIGO_BUSY_STATE &&
-		ccd_exposure && ccd_exposure->state == INDIGO_BUSY_STATE) {
-		change_ccd_abort_exposure_property(selected_agent);
-	} else {
-		m_save_blob = false;
-		change_ccd_frame_property(selected_agent);
-		change_ccd_exposure_property(selected_agent, m_focuser_exposure_time);
-	}
+		indigo_property *agent_start_process = properties.get(selected_agent, AGENT_START_PROCESS_PROPERTY_NAME);
+		indigo_property *ccd_exposure = properties.get(selected_agent, CCD_EXPOSURE_PROPERTY_NAME);
+		if (agent_start_process && agent_start_process->state != INDIGO_BUSY_STATE &&
+			ccd_exposure && ccd_exposure->state == INDIGO_BUSY_STATE) {
+			change_ccd_abort_exposure_property(selected_agent);
+		} else {
+			m_save_blob = false;
+			change_ccd_frame_property(selected_agent);
+			change_ccd_exposure_property(selected_agent, m_focuser_exposure_time);
+		}
+	});
 }
 
-void ImagerWindow::on_focus_start_stop(bool clicked) {
-	indigo_debug("CALLED: %s\n", __FUNCTION__);
-	static char selected_agent[INDIGO_NAME_SIZE];
-	get_selected_agent(selected_agent);
 
-	indigo_property *agent_start_process = properties.get(selected_agent, AGENT_START_PROCESS_PROPERTY_NAME);
-	if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
-		change_agent_abort_process_property(selected_agent);
-	} else {
-		m_save_blob = false;
-		m_focus_fwhm_data.clear();
-		m_focus_graph->redraw_data(m_focus_fwhm_data);
-		change_agent_star_selection(selected_agent);
-		change_agent_batch_property_for_focus(selected_agent);
-		change_agent_focus_params_property(selected_agent);
-		change_ccd_frame_property(selected_agent);
-		if(m_focus_mode_select->currentIndex() == 0) {
-			change_agent_start_preview_property(selected_agent);
+void ImagerWindow::on_focus_start_stop(bool clicked) {
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_agent(selected_agent);
+
+		indigo_property *agent_start_process = properties.get(selected_agent, AGENT_START_PROCESS_PROPERTY_NAME);
+		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
+			change_agent_abort_process_property(selected_agent);
 		} else {
-			change_agent_start_focusing_property(selected_agent);
+			m_save_blob = false;
+			m_focus_fwhm_data.clear();
+			m_focus_graph->redraw_data(m_focus_fwhm_data);
+			change_agent_star_selection(selected_agent);
+			change_agent_batch_property_for_focus(selected_agent);
+			change_agent_focus_params_property(selected_agent);
+			change_ccd_frame_property(selected_agent);
+			if(m_focus_mode_select->currentIndex() == 0) {
+				change_agent_start_preview_property(selected_agent);
+			} else {
+				change_agent_start_focusing_property(selected_agent);
+			}
 		}
-	}
+	});
 }
 
 void ImagerWindow::on_focus_in(bool clicked) {
-	indigo_debug("CALLED: %s\n", __FUNCTION__);
-	static char selected_agent[INDIGO_NAME_SIZE];
-	get_selected_agent(selected_agent);
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_agent(selected_agent);
 
-	change_focuser_focus_in_property(selected_agent);
-	change_focuser_steps_property(selected_agent);
+		change_focuser_focus_in_property(selected_agent);
+		change_focuser_steps_property(selected_agent);
+	});
 }
 
 void ImagerWindow::on_focus_out(bool clicked) {
-	indigo_debug("CALLED: %s\n", __FUNCTION__);
-	static char selected_agent[INDIGO_NAME_SIZE];
-	get_selected_agent(selected_agent);
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_agent(selected_agent);
 
-	change_focuser_focus_out_property(selected_agent);
-	change_focuser_steps_property(selected_agent);
+		change_focuser_focus_out_property(selected_agent);
+		change_focuser_steps_property(selected_agent);
+	});
 }

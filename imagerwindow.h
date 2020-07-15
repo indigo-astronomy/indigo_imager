@@ -52,6 +52,8 @@ class QIndigoServers;
 #include <QDir>
 #include <QDateTime>
 #include <QFileDialog>
+#include <QThread>
+#include <QtConcurrentRun>
 #include "focusgraph.h"
 
 

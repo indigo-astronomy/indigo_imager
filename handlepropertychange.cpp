@@ -388,6 +388,7 @@ static void update_agent_imager_stats_property(
 	} else if (focusing_running || preview_running) {
 		if (frames_complete != prev_frame) {
 			fwhm_data.append(FWHM);
+			if (fwhm_data.size() > 100) fwhm_data.removeFirst();
 			focus_graph->redraw_data(fwhm_data);
 			prev_frame = frames_complete;
 		}

@@ -33,7 +33,7 @@
 #define CAMERA_FRAME_MIN_WIDTH 390
 #define PREVIEW_WIDTH 550
 
-#define CONFIG_FILENAME "indigo_control_panel.conf"
+#define CONFIG_FILENAME "indigo_imager.conf"
 
 typedef struct {
 	bool blobs_enabled;
