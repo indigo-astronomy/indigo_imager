@@ -31,13 +31,29 @@
 #include <QSocketNotifier>
 #include <QtEndian>
 #include <QHostAddress>
-#include <QQueue>
 #include "qzeroconf.h"
 #include <QDebug>
 
 #ifndef kDNSServiceFlagsTimeout		// earlier versions of dns_sd.h don't define this constant
 	#define	kDNSServiceFlagsTimeout	0x10000
 #endif
+
+class Resolver : public QObject
+{
+	Q_OBJECT
+public:
+	void cleanUp();
+	QZeroConfService zcs;
+	QZeroConfPrivate *ref = nullptr;
+	DNSServiceRef DNSresolverRef = nullptr;
+	DNSServiceRef DNSaddressRef = nullptr;
+	QSharedPointer <QSocketNotifier> resolverNotifier;
+	QSharedPointer <QSocketNotifier> addressNotifier;
+
+public slots:
+	void resolverReady();
+	void addressReady();
+};
 
 class QZeroConfPrivate : public QObject
 {
@@ -46,7 +62,7 @@ class QZeroConfPrivate : public QObject
 public:
 	QZeroConfPrivate(QZeroConf *parent);
 	void cleanUp(DNSServiceRef ref);
-	void resolve(void);
+	void resolve(QZeroConfService);
 
 	static void DNSSD_API registerCallback(DNSServiceRef, DNSServiceFlags, DNSServiceErrorType errorCode, const char *,
 			const char *, const char *, void *userdata);
@@ -55,22 +71,23 @@ public:
 			const char *type, const char *domain, void *userdata);
 
 	static void DNSSD_API resolverCallback(DNSServiceRef, DNSServiceFlags, quint32, DNSServiceErrorType err, const char *,
-			const char *hostName, quint16 port, quint16 txtLen,	const char * txtRecord, void *userdata);
+			const char *hostName, quint16 port, quint16 txtLen,	const unsigned char *txtRecord, void *userdata);
 
 	static void DNSSD_API addressReply(DNSServiceRef sdRef,	DNSServiceFlags flags, quint32 interfaceIndex,
 			DNSServiceErrorType err, const char *hostName, const struct sockaddr* address, quint32 ttl, void *userdata);
 
 	QZeroConf *pub;
-	DNSServiceRef dnssRef, browser, resolver;
+	DNSServiceRef dnssRef = nullptr;
+	DNSServiceRef browser = nullptr;
 	DNSServiceProtocol protocol;
-	QSocketNotifier *bs, *browserSocket, *resolverSocket, *addressSocket;
-	QQueue<QZeroConfService> work;
+	QSharedPointer<QSocketNotifier> serviceNotifier;
+	QSharedPointer<QSocketNotifier> browserNotifier;
 	QByteArray txt;
+	QHash<QString, Resolver*> resolvers;
 
 public slots:
 	void bsRead();
 	void browserRead();
-	void resolverRead();
 };
 
 #endif	// QZEROCONFPRIVATE_H_

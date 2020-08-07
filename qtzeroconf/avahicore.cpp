@@ -128,7 +128,7 @@ public:
 				break;
 			case AVAHI_BROWSER_NEW:
 				if (!ref->resolvers.contains(key))
-					ref->resolvers.insert(key, avahi_s_service_resolver_new(ref->server, interface, protocol, name, type, domain, AVAHI_PROTO_UNSPEC, AVAHI_LOOKUP_USE_MULTICAST, resolveCallback, ref));
+					ref->resolvers.insert(key, avahi_s_service_resolver_new(ref->server, interface, protocol, name, type, domain, ref->aProtocol, AVAHI_LOOKUP_USE_MULTICAST, resolveCallback, ref));
 				break;
 			case AVAHI_BROWSER_REMOVE:
 				if (!ref->resolvers.contains(key))
@@ -172,21 +172,22 @@ public:
 			if (ref->pub->services.contains(key))
 				zcs = ref->pub->services[key];
 			else {
+				zcs = QZeroConfService(new QZeroConfServiceData);
 				newRecord = 1;
-				zcs.setName(name);
-				zcs.setType(type);
-				zcs.setDomain(domain);
-				zcs.setHost(host_name);
-				zcs.setInterfaceIndex(interface);
-				zcs.setPort(port);
+				zcs->m_name = name;
+				zcs->m_type = type;
+				zcs->m_domain = domain;
+				zcs->m_host = host_name;
+				zcs->m_interfaceIndex = interface;
+				zcs->m_port = port;
 				while (txt)	// get txt records
 				{
 					QByteArray avahiText((const char *)txt->text, txt->size);
 					QList<QByteArray> pair = avahiText.split('=');
 					if (pair.size() == 2)
-						zcs.appendTxt(pair.at(0), pair.at(1));
+						zcs->m_txt[pair.at(0)] = pair.at(1);
 					else
-						zcs.appendTxt(pair.at(0));
+						zcs->m_txt[pair.at(0)] = "";
 					txt = txt->next;
 				}
 				ref->pub->services.insert(key, zcs);
@@ -195,10 +196,7 @@ public:
 			char a[AVAHI_ADDRESS_STR_MAX];
 			avahi_address_snprint(a, sizeof(a), address);
 			QHostAddress addr(a);
-			if (protocol == AVAHI_PROTO_INET6)
-				zcs.setIpv6(addr);
-			else if (protocol == AVAHI_PROTO_INET)
-				zcs.setIp(addr);
+			zcs->setIp(addr);
 
 			if (newRecord)
 				emit ref->pub->serviceAdded(zcs);
@@ -264,6 +262,7 @@ public:
 	AvahiServerConfig config;
 	AvahiSEntryGroup *group;
 	AvahiSServiceBrowser *browser;
+	AvahiProtocol aProtocol;
 	QMap <QString, AvahiSServiceResolver *> resolvers;
 	AvahiStringList *txt;
 	bool ready, registerWaiting;
@@ -346,19 +345,19 @@ void QZeroConf::clearServiceTxtRecords()
 
 void QZeroConf::startBrowser(QString type, QAbstractSocket::NetworkLayerProtocol protocol)
 {
-	AvahiProtocol	avahiProtocol;
-
 	if (pri->browser)
 		emit error(QZeroConf::browserFailed);
 
 	switch (protocol) {
-		case QAbstractSocket::IPv4Protocol: avahiProtocol = AVAHI_PROTO_INET; break;
-		case QAbstractSocket::IPv6Protocol: avahiProtocol = AVAHI_PROTO_INET6; break;
-		case QAbstractSocket::AnyIPProtocol: avahiProtocol = AVAHI_PROTO_UNSPEC; break;
-		default: avahiProtocol = AVAHI_PROTO_INET; break;
+		case QAbstractSocket::IPv4Protocol: pri->aProtocol = AVAHI_PROTO_INET; break;
+		case QAbstractSocket::IPv6Protocol: pri->aProtocol = AVAHI_PROTO_INET6; break;
+		default:
+			qDebug("QZeroConf::startBrowser() - unsupported protocol, using IPv4");
+			pri->aProtocol = AVAHI_PROTO_INET;
+			break;
 	};
 
-	pri->browser = avahi_s_service_browser_new(pri->server, AVAHI_IF_UNSPEC, avahiProtocol, type.toUtf8(), NULL, AVAHI_LOOKUP_USE_MULTICAST, QZeroConfPrivate::browseCallback, pri);
+	pri->browser = avahi_s_service_browser_new(pri->server, AVAHI_IF_UNSPEC, pri->aProtocol, type.toUtf8(), NULL, AVAHI_LOOKUP_USE_MULTICAST, QZeroConfPrivate::browseCallback, pri);
 	if (!pri->browser)
 		emit error(QZeroConf::browserFailed);
 }

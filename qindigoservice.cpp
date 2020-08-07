@@ -20,9 +20,9 @@
 #include "qindigoservice.h"
 
 QIndigoService::QIndigoService(const QZeroConfService& _service) :
-	m_name(_service.name().toUtf8().constData()),
-	m_host(_service.host().toUtf8().constData()),
-	m_port(_service.port()),
+	m_name(_service->name().toUtf8().constData()),
+	m_host(_service->host().toUtf8().constData()),
+	m_port(_service->port()),
 	m_service(_service),
 	m_server_entry(nullptr),
 	isQZeroConfService(true),

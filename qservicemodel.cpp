@@ -185,13 +185,13 @@ void QServiceModel::onServiceError(QZeroConf::error_t e) {
 
 
 void QServiceModel::onServiceAdded(QZeroConfService service) {
-	int i = findService(service.name().toUtf8());
+	int i = findService(service->name().toUtf8());
 	if (i != -1) {
-		indigo_debug("SERVICE DUPLICATE [%s]\n", service.name().toUtf8().constData());
+		indigo_debug("SERVICE DUPLICATE [%s]\n", service->name().toUtf8().constData());
 		return;
 	}
 
-	indigo_debug("SERVICE ADDED [%s] on %s:%d\n", service.name().toUtf8().constData(), service.host().toUtf8().constData(), service.port());
+	indigo_debug("SERVICE ADDED [%s] on %s:%d\n", service->name().toUtf8().constData(), service->host().toUtf8().constData(), service->port());
 
 	beginInsertRows(QModelIndex(), mServices.count(), mServices.count());
 	QIndigoService* indigo_service = new QIndigoService(service);
@@ -204,7 +204,7 @@ void QServiceModel::onServiceAdded(QZeroConfService service) {
 
 
 void QServiceModel::onServiceUpdated(QZeroConfService service) {
-	indigo_debug("SERVICE UPDATED [%s] on %s:%d\n", service.name().constData(), service.host().constData(), service.port());
+	indigo_debug("SERVICE UPDATED [%s] on %s:%d\n", service->name().constData(), service->host().constData(), service->port());
 //	int i = findService(service.name());
 //	if (i != -1) {
 //		IndigoService s(service);
@@ -215,13 +215,13 @@ void QServiceModel::onServiceUpdated(QZeroConfService service) {
 
 
 void QServiceModel::onServiceRemoved(QZeroConfService service) {
-	indigo_debug("REMOVE SERVICE [%s]\n", service.name().toUtf8().constData());
+	indigo_debug("REMOVE SERVICE [%s]\n", service->name().toUtf8().constData());
 
 	//qDebug() << "Service Removed " << service.name();
-	int i = findService(service.name().toUtf8());
+	int i = findService(service->name().toUtf8());
 	if (i != -1) {
 		QIndigoService* indigo_service = mServices.at(i);
-		indigo_debug("SERVICE REMOVED [%s]\n", service.name().toUtf8().constData());
+		indigo_debug("SERVICE REMOVED [%s]\n", service->name().toUtf8().constData());
 		beginRemoveRows(QModelIndex(), i, i);
 		mServices.removeAt(i);
 		endRemoveRows();
