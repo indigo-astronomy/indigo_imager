@@ -533,6 +533,17 @@ void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 void ImagerWindow::property_define(indigo_property* property, char *message) {
 	char selected_agent[INDIGO_VALUE_SIZE];
 
+	if (!strncmp(property->device, "Server", 6)) {
+		if (client_match_device_property(property, property->device, "DRIVERS")) {
+			if (!indigo_get_switch(property, "indigo_agent_imager")) {
+				static const char *items[] = { "DRIVER" };
+				static const char *values[] = { "indigo_agent_imager" };
+				indigo_change_text_property(NULL, property->device, "LOAD", 1, items, values);
+			}
+		}
+		return;
+	}
+
 	if(!strncmp(property->device, "Imager Agent", 12)) {
 		QString name = QString(property->device);
 		if (m_agent_select->findText(name) < 0) {

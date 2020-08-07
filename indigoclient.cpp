@@ -57,7 +57,7 @@ static indigo_result client_attach(indigo_client *client) {
 
 static indigo_result client_define_property(indigo_client *client, indigo_device *device, indigo_property *property, const char *message) {
 	Q_UNUSED(device);
-	if(strncmp(property->device, "Imager Agent",12)) return INDIGO_OK;
+	if(strncmp(property->device, "Imager Agent", 12) && strncmp(property->device, "Server", 6)) return INDIGO_OK;
 
 	if (property->type == INDIGO_BLOB_VECTOR) {
 		if (device->version < INDIGO_VERSION_2_0)
@@ -105,7 +105,7 @@ static indigo_result client_define_property(indigo_client *client, indigo_device
 static indigo_result client_update_property(indigo_client *client, indigo_device *device, indigo_property *property, const char *message) {
 	Q_UNUSED(client);
 	Q_UNUSED(device);
-	if(strncmp(property->device, "Imager Agent",12)) return INDIGO_OK;
+	if(strncmp(property->device, "Imager Agent", 12) && strncmp(property->device, "Server", 6)) return INDIGO_OK;
 
 	if (property->type == INDIGO_BLOB_VECTOR) {
 		if (property->state == INDIGO_OK_STATE) {
@@ -150,7 +150,7 @@ static indigo_result client_delete_property(indigo_client *client, indigo_device
 	Q_UNUSED(client);
 	Q_UNUSED(device);
 	indigo_debug("Deleting property [%s] on device [%s]\n", property->name, property->device);
-	if(strncmp(property->device, "Imager Agent",12)) return INDIGO_OK;
+	if(strncmp(property->device, "Imager Agent", 12) && strncmp(property->device, "Server", 6)) return INDIGO_OK;
 
 	if (property->type == INDIGO_BLOB_VECTOR) {
 		for (int row = 0; row < property->count; row++) {
