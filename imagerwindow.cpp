@@ -83,6 +83,20 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu->addSeparator();
 
+	act = menu->addAction(tr("&Load Device ACL..."));
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_acl_load_act);
+
+	act = menu->addAction(tr("&Append to Device ACL..."));
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_acl_append_act);
+
+	act = menu->addAction(tr("&Save Device ACL As..."));
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_acl_save_act);
+
+	act = menu->addAction(tr("&Clear Device ACL"));
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_acl_clear_act);
+
+	menu->addSeparator();
+
 	act = menu->addAction(tr("&Exit"));
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_exit_act);
 
@@ -605,6 +619,63 @@ void ImagerWindow::on_log_trace() {
 	write_conf();
 }
 
+void ImagerWindow::on_acl_load_act() {
+	QString filter = "INDIGO Device Access Control (*.idac);; All files (*)";
+	QString file_name = QFileDialog::getOpenFileName(this, "Load Device ACL...", QDir::currentPath(), filter);
+	if (!file_name.isNull()) {
+		char fname[PATH_MAX];
+		strcpy(fname, file_name.toStdString().c_str());
+		char message[PATH_MAX];
+		indigo_clear_device_tokens();
+		if (indigo_load_device_tokens_from_file(fname)) {
+			snprintf(message, PATH_MAX, "Current device ACL cleared, new device ACL loaded from '%s'", fname);
+		} else {
+			snprintf(message, PATH_MAX, "Current device ACL cleared but failed to load device ACL from '%s'", fname);
+		}
+		on_window_log(NULL, message);
+	}
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_acl_append_act() {
+	QString filter = "INDIGO Device Access Control (*.idac);; All files (*)";
+	QString file_name = QFileDialog::getOpenFileName(this, "Append to device ACL...", QDir::currentPath(), filter);
+	if (!file_name.isNull()) {
+		char fname[PATH_MAX];
+		strcpy(fname, file_name.toStdString().c_str());
+		char message[PATH_MAX];
+		if (indigo_load_device_tokens_from_file(fname)) {
+			snprintf(message, PATH_MAX, "Appended to device ACL from '%s'", fname);
+		} else {
+			snprintf(message, PATH_MAX, "Failed to append to device ACL form '%s'", fname);
+		}
+		on_window_log(NULL, message);
+	}
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_acl_save_act() {
+	QString filter = "INDIGO Device Access Control (*.idac);; All files (*)";
+	QString file_name = QFileDialog::getSaveFileName(this, "Save device ACL As...", QDir::currentPath(), filter);
+	if (!file_name.isNull()) {
+		char fname[PATH_MAX];
+		strcpy(fname, file_name.toStdString().c_str());
+		char message[PATH_MAX];
+		if (indigo_save_device_tokens_to_file(fname)) {
+			snprintf(message, PATH_MAX, "Device ACL saved as '%s'", fname);
+		} else {
+			snprintf(message, PATH_MAX, "Failed to save device ACL as '%s'", fname);
+		}
+		on_window_log(NULL, message);
+	}
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_acl_clear_act() {
+	indigo_clear_device_tokens();
+	on_window_log(NULL, "Device ACL cleared");
+	indigo_debug("%s\n", __FUNCTION__);
+}
 
 void ImagerWindow::on_about_act() {
 	QMessageBox msgBox(this);

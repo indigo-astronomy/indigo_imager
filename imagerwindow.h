@@ -99,6 +99,10 @@ public slots:
 	void on_log_debug();
 	void on_log_trace();
 	void on_image_save_act();
+	void on_acl_load_act();
+	void on_acl_append_act();
+	void on_acl_save_act();
+	void on_acl_clear_act();
 	void on_servers_act();
 	void on_exit_act();
 	void on_about_act();
