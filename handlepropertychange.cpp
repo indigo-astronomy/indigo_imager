@@ -536,9 +536,11 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (!strncmp(property->device, "Server", 6)) {
 		if (client_match_device_property(property, property->device, "DRIVERS")) {
 			if (!indigo_get_switch(property, "indigo_agent_imager")) {
-				static const char *items[] = { "DRIVER" };
-				static const char *values[] = { "indigo_agent_imager" };
-				indigo_change_text_property(NULL, property->device, "LOAD", 1, items, values);
+				QtConcurrent::run([=]() {
+					static const char *items[] = { "DRIVER" };
+					static const char *values[] = { "indigo_agent_imager" };
+					indigo_change_text_property(NULL, property->device, "LOAD", 1, items, values);
+				});
 			}
 		}
 		return;
