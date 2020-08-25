@@ -206,13 +206,12 @@ preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_
 	height = cinfo.output_height;
 	pixel_size = cinfo.output_components;
 	color_space = cinfo.out_color_space;
+	indigo_debug("JPEG: Image is %d x %d (BPP: %d CS: %d)", width, height, pixel_size*8, color_space);
 
 	bmp_size = width * height * pixel_size;
 	bmp_buffer = (unsigned char*)malloc(bmp_size);
-
-	indigo_debug("JPEG: Image is %d x %d (BPP: %d CS: %d)", width, height, pixel_size*8, color_space);
-
 	row_stride = width * pixel_size;
+
 	while (cinfo.output_scanline < cinfo.output_height) {
 		unsigned char *buffer_array[1];
 		buffer_array[0] = bmp_buffer + (cinfo.output_scanline) * row_stride;
@@ -232,7 +231,7 @@ preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_
 	}
 
 	for (int y = 0; y < img->height(); y++) {
-		memcpy(img->scanLine(y), bmp_buffer + y * img->bytesPerLine(), img->bytesPerLine());
+		memcpy(img->scanLine(y), bmp_buffer + y * row_stride, row_stride);
 	}
 
 	free(bmp_buffer);
