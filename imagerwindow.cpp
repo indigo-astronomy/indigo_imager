@@ -326,7 +326,7 @@ ImagerWindow::~ImagerWindow () {
 	}
 }
 
-bool ImagerWindow::show_preview_in_viewer(QString &key) {
+bool ImagerWindow::show_preview_in_imager_viewer(QString &key) {
 	preview_image *image = preview_cache.get(key);
 	if (image) {
 		m_imager_viewer->setImage(*image);
@@ -336,6 +336,18 @@ bool ImagerWindow::show_preview_in_viewer(QString &key) {
 	}
 	return false;
 }
+
+bool ImagerWindow::show_preview_in_guider_viewer(QString &key) {
+	preview_image *image = preview_cache.get(key);
+	if (image) {
+		m_guider_viewer->setImage(*image);
+		m_guider_key = key;
+		indigo_debug("GUIDER PREVIEW: %s\n", key.toUtf8().constData());
+		return true;
+	}
+	return false;
+}
+
 
 void ImagerWindow::on_tab_changed(int index) {
 	if ((index == 0) || (index == 1)) {
@@ -371,12 +383,20 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		m_indigo_item = item;
 		preview_cache.create(property, m_indigo_item);
 		QString key = preview_cache.create_key(property, m_indigo_item);
-		preview_image *image = preview_cache.get(m_image_key);
-		if (show_preview_in_viewer(key)) {
+		//preview_image *image = preview_cache.get(m_image_key);
+		if (show_preview_in_imager_viewer(key)) {
 			indigo_error("m_imager_viewer = %p", m_imager_viewer);
 			m_imager_viewer->setText("Unsaved" + QString(m_indigo_item->blob.format));
 		}
 		if (m_save_blob) save_blob_item(m_indigo_item);
+	} else if (get_selected_guider_agent(selected_agent) && client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME)){
+		preview_cache.create(property, item);
+		QString key = preview_cache.create_key(property, item);
+		preview_image *image = preview_cache.get(key);
+		if (show_preview_in_guider_viewer(key)) {
+			indigo_error("m_guider_viewer = %p", m_imager_viewer);
+			m_imager_viewer->setText("Guider: image" + QString(m_indigo_item->blob.format));
+		}
 	} else {
 		free(item->blob.value);
 		item->blob.value = nullptr;
@@ -571,7 +591,7 @@ void ImagerWindow::on_no_stretch() {
 	conf.preview_stretch_level = STRETCH_NONE;
 	preview_cache.set_stretch_level(conf.preview_stretch_level);
 	preview_cache.recreate(m_image_key, m_indigo_item);
-	show_preview_in_viewer(m_image_key);
+	show_preview_in_imager_viewer(m_image_key);
 	write_conf();
 	indigo_error("%s\n", __FUNCTION__);
 }
@@ -580,17 +600,16 @@ void ImagerWindow::on_moderate_stretch() {
 	conf.preview_stretch_level = STRETCH_MODERATE;
 	preview_cache.set_stretch_level(conf.preview_stretch_level);
 	preview_cache.recreate(m_image_key, m_indigo_item);
-	show_preview_in_viewer(m_image_key);
+	show_preview_in_imager_viewer(m_image_key);
 	write_conf();
 	indigo_error("%s\n", __FUNCTION__);
 }
-
 
 void ImagerWindow::on_normal_stretch() {
 	conf.preview_stretch_level = STRETCH_NORMAL;
 	preview_cache.set_stretch_level(conf.preview_stretch_level);
 	preview_cache.recreate(m_image_key, m_indigo_item);
-	show_preview_in_viewer(m_image_key);
+	show_preview_in_imager_viewer(m_image_key);
 	write_conf();
 	indigo_error("%s\n", __FUNCTION__);
 }
@@ -600,7 +619,7 @@ void ImagerWindow::on_hard_stretch() {
 	conf.preview_stretch_level = STRETCH_HARD;
 	preview_cache.set_stretch_level(conf.preview_stretch_level);
 	preview_cache.recreate(m_image_key, m_indigo_item);
-	show_preview_in_viewer(m_image_key);
+	show_preview_in_imager_viewer(m_image_key);
 	write_conf();
 	indigo_error("%s\n", __FUNCTION__);
 }
