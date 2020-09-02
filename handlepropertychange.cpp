@@ -534,17 +534,30 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	char selected_agent[INDIGO_VALUE_SIZE];
 
 	if (!strncmp(property->device, "Server", 6)) {
-		static bool load = true;
+		static bool load_imager = true;
+		static bool load_guider = true;
 		if (client_match_device_property(property, property->device, "DRIVERS")) {
-			if (!indigo_get_switch(property, "indigo_agent_imager") && load) {
+			// load indigo_agent_imager
+			if (!indigo_get_switch(property, "indigo_agent_imager") && load_imager) {
 				QtConcurrent::run([=]() {
 					static const char *items[] = { "DRIVER" };
 					static const char *values[] = { "indigo_agent_imager" };
 					indigo_change_text_property(NULL, property->device, "LOAD", 1, items, values);
 				});
-				load = false;
+				load_imager = false;
 			} else {
-				load = true;
+				load_imager = true;
+			}
+			// load indigo_agent_guider
+			if (!indigo_get_switch(property, "indigo_agent_guider") && load_guider) {
+				QtConcurrent::run([=]() {
+					static const char *items[] = { "DRIVER" };
+					static const char *values[] = { "indigo_agent_guider" };
+					indigo_change_text_property(NULL, property->device, "LOAD", 1, items, values);
+				});
+				load_guider = false;
+			} else {
+				load_guider = true;
 			}
 		}
 		return;
