@@ -239,6 +239,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	QFrame *guider_frame = new QFrame;
 	tools_tabbar->addTab(guider_frame, "Guide");
+	create_guider_tab(guider_frame);
+
 	connect(tools_tabbar, &QTabWidget::currentChanged, this, &ImagerWindow::on_tab_changed);
 
 	// Image viewer
@@ -358,7 +360,7 @@ void ImagerWindow::on_tab_changed(int index) {
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){
 	char selected_agent[INDIGO_VALUE_SIZE];
 
-	if (get_selected_agent(selected_agent) && client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME)) {
+	if (get_selected_imager_agent(selected_agent) && client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME)) {
 		if (m_indigo_item) {
 			if (m_indigo_item->blob.value) {
 				free(m_indigo_item->blob.value);

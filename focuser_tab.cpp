@@ -258,7 +258,7 @@ void ImagerWindow::on_focuser_selected(int index) {
 		} else {
 			strncpy(selected_focuser, q_focuser_str.toUtf8().constData(), INDIGO_NAME_SIZE);
 		}
-		get_selected_agent(selected_agent);
+		get_selected_imager_agent(selected_agent);
 
 		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_focuser);
 		static const char * items[] = { selected_focuser };
@@ -292,7 +292,7 @@ void ImagerWindow::on_focus_preview_start_stop(bool clicked) {
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
-		get_selected_agent(selected_agent);
+		get_selected_imager_agent(selected_agent);
 
 		indigo_property *agent_start_process = properties.get(selected_agent, AGENT_START_PROCESS_PROPERTY_NAME);
 		indigo_property *ccd_exposure = properties.get(selected_agent, CCD_EXPOSURE_PROPERTY_NAME);
@@ -312,7 +312,7 @@ void ImagerWindow::on_focus_start_stop(bool clicked) {
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
-		get_selected_agent(selected_agent);
+		get_selected_imager_agent(selected_agent);
 
 		indigo_property *agent_start_process = properties.get(selected_agent, AGENT_START_PROCESS_PROPERTY_NAME);
 		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
@@ -338,7 +338,7 @@ void ImagerWindow::on_focus_in(bool clicked) {
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
-		get_selected_agent(selected_agent);
+		get_selected_imager_agent(selected_agent);
 
 		change_focuser_focus_in_property(selected_agent);
 		change_focuser_steps_property(selected_agent);
@@ -349,7 +349,7 @@ void ImagerWindow::on_focus_out(bool clicked) {
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
-		get_selected_agent(selected_agent);
+		get_selected_imager_agent(selected_agent);
 
 		change_focuser_focus_out_property(selected_agent);
 		change_focuser_steps_property(selected_agent);

@@ -20,6 +20,7 @@ SOURCES += \
 	qservicemodel.cpp \
 	capture_tab.cpp \
 	focuser_tab.cpp \
+	guider_tab.cpp \
 	imagerwindow.cpp \
 	qindigoservice.cpp \
 	indigoclient.cpp \

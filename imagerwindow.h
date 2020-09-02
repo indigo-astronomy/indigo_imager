@@ -64,10 +64,17 @@ public:
 	virtual ~ImagerWindow();
 	void property_define_delete(indigo_property* property, char *message, bool action_deleted);
 
-	bool get_selected_agent(char * selected_agent) {
-		if (!selected_agent || !m_agent_select) return false;
-		strncpy(selected_agent, m_agent_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
-		indigo_debug("SELECTED AGENT = %s", selected_agent);
+	bool get_selected_imager_agent(char * selected_agent) {
+		if (!selected_agent || !m_agent_imager_select) return false;
+		strncpy(selected_agent, m_agent_imager_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+		indigo_debug("SELECTED IMAGER AGENT = %s", selected_agent);
+		return true;
+	};
+
+	bool get_selected_guider_agent(char * selected_agent) {
+		if (!selected_agent || !m_agent_guider_select) return false;
+		strncpy(selected_agent, m_agent_guider_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+		indigo_debug("SELECTED GUIDER AGENT = %s", selected_agent);
 		return true;
 	};
 
@@ -133,6 +140,10 @@ public slots:
 	void on_focus_in(bool clicked);
 	void on_focus_out(bool clicked);
 
+	void on_guider_agent_selected(int index);
+	void on_guider_camera_selected(int index);
+	void on_guider_selected(int index);
+
 	void on_tab_changed(int index);
 
 private:
@@ -140,7 +151,7 @@ private:
 	QPlainTextEdit* mLog;
 
 	// Capture tab
-	QComboBox *m_agent_select;
+	QComboBox *m_agent_imager_select;
 	QComboBox *m_camera_select;
 	QComboBox *m_wheel_select;
 	QComboBox *m_frame_type_select;
@@ -185,10 +196,17 @@ private:
 	FocusGraph *m_focus_graph;
 	QVector<double> m_focus_fwhm_data;
 
+	// Guider tab
+	QComboBox *m_agent_guider_select;
+	QComboBox *m_guider_camera_select;
+	QComboBox *m_guider_select;
+
+	// Image viewer
 	pal::ImageViewer *m_imager_viewer;
 	pal::ImageViewer *m_guider_viewer;
 	pal::ImageViewer *m_visible_viewer;
 	indigo_item *m_indigo_item;
+
 	QString m_image_key;
 
 	QIndigoServers *mIndigoServers;
@@ -196,6 +214,7 @@ private:
 
 	void create_focuser_tab(QFrame *capture_frame);
 	void create_imager_tab(QFrame *camera_frame);
+	void create_guider_tab(QFrame *camera_frame);
 	void change_ccd_frame_property(const char *agent) const;
 	void change_ccd_exposure_property(const char *agent, QDoubleSpinBox *exp_time) const;
 	void change_ccd_abort_exposure_property(const char *agent) const;

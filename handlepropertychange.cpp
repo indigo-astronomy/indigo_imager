@@ -532,6 +532,7 @@ void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 
 void ImagerWindow::property_define(indigo_property* property, char *message) {
 	char selected_agent[INDIGO_VALUE_SIZE];
+	char selected_guider_agent[INDIGO_VALUE_SIZE];
 
 	if (!strncmp(property->device, "Server", 6)) {
 		static bool load_imager = true;
@@ -565,15 +566,26 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 
 	if(!strncmp(property->device, "Imager Agent", 12)) {
 		QString name = QString(property->device);
-		if (m_agent_select->findText(name) < 0) {
-			m_agent_select->addItem(name, name);
-			indigo_debug("[ADD mode] %s\n", name.toUtf8().data());
+		if (m_agent_imager_select->findText(name) < 0) {
+			m_agent_imager_select->addItem(name, name);
+			indigo_debug("[ADD imager agent] %s\n", name.toUtf8().data());
 		} else {
-			indigo_debug("[DUPLICATE mode] %s\n", name.toUtf8().data());
+			indigo_debug("[DUPLICATE imager agent] %s\n", name.toUtf8().data());
 		}
 	}
 
-	if (!get_selected_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) {
+	if(!strncmp(property->device, "Guider Agent", 12)) {
+		QString name = QString(property->device);
+		if (m_agent_guider_select->findText(name) < 0) {
+			m_agent_guider_select->addItem(name, name);
+			indigo_debug("[ADD guider agent] %s\n", name.toUtf8().data());
+		} else {
+			indigo_debug("[DUPLICATE guider agent] %s\n", name.toUtf8().data());
+		}
+	}
+
+	if ((!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
+	    (!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12))) {
 		return;
 	}
 
@@ -630,6 +642,14 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, CCD_TEMPERATURE_PROPERTY_NAME)) {
 		update_ccd_temperature(property, m_current_temp, m_set_temp, true);
 	}
+
+	// Guider Agent
+	if (client_match_device_property(property, selected_guider_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
+		add_items_to_combobox(property, m_guider_camera_select);
+	}
+	if (client_match_device_property(property, selected_guider_agent, FILTER_GUIDER_LIST_PROPERTY_NAME)) {
+		add_items_to_combobox(property, m_guider_select);
+	}
 }
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
@@ -640,7 +660,10 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 
 void ImagerWindow::on_property_change(indigo_property* property, char *message) {
 	char selected_agent[INDIGO_VALUE_SIZE];
-	if (!get_selected_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) {
+	char selected_guider_agent[INDIGO_VALUE_SIZE];
+
+	if ((!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
+	    (!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12))) {
 		return;
 	}
 
@@ -730,13 +753,25 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_agent, CCD_TEMPERATURE_PROPERTY_NAME)) {
 		update_ccd_temperature(property, m_current_temp, m_set_temp);
 	}
+
+	// Guider Agent
+	if (client_match_device_property(property, selected_guider_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
+		change_combobox_selection(property, m_guider_camera_select);
+	}
+	if (client_match_device_property(property, selected_guider_agent, FILTER_GUIDER_LIST_PROPERTY_NAME)) {
+		change_combobox_selection(property, m_guider_select);
+	}
+
 	properties.create(property);
 }
 
 void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	char selected_agent[INDIGO_VALUE_SIZE];
+	char selected_guider_agent[INDIGO_VALUE_SIZE];
+
 	indigo_debug("[REMOVE REMOVE REMOVE REMOVE REMOVE] %s.%s\n", property->device, property->name);
-	if (!get_selected_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) {
+	if ((!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
+	    (!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12))) {
 		return;
 	}
 	indigo_debug("[REMOVE REMOVE REMOVE REMOVE] %s.%s\n", property->device, property->name);
@@ -799,11 +834,23 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		m_current_temp->setText("");
 		m_set_temp->setEnabled(false);
 	}
+
+	// Guider Agent
+	if (client_match_device_property(property, selected_guider_agent, FILTER_CCD_LIST_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		m_guider_camera_select->clear();
+	}
+	if (client_match_device_property(property, selected_guider_agent, FILTER_GUIDER_LIST_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		m_guider_select->clear();
+	}
 }
 
 void ImagerWindow::on_property_delete(indigo_property* property, char *message) {
 
-	if (strncmp(property->device, "Imager Agent", 12)) {
+	if ((strncmp(property->device, "Imager Agent", 12)) && (strncmp(property->device, "Guider Agent", 12))) {
 		free(property);
 		return;
 	}
@@ -813,17 +860,29 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 	if (client_match_device_property(property, property->device, INFO_PROPERTY_NAME) ||
 		client_match_device_no_property(property, property->device)) {
 		QString name = QString(property->device);
-		int selected_index = m_agent_select->currentIndex();
-		int index = m_agent_select->findText(name);
+		int selected_index = m_agent_imager_select->currentIndex();
+		int index = m_agent_imager_select->findText(name);
 		if (index >= 0) {
-			m_agent_select->removeItem(index);
+			m_agent_imager_select->removeItem(index);
 			if (selected_index == index) {
-				m_agent_select->setCurrentIndex(0);
+				m_agent_imager_select->setCurrentIndex(0);
 				on_agent_selected(0);
 			}
-			indigo_debug("[REMOVE agent] %s\n", name.toUtf8().data());
+			indigo_debug("[REMOVE imager agent] %s\n", name.toUtf8().data());
 		} else {
-			indigo_debug("[NOT FOUND agent] %s\n", name.toUtf8().data());
+			indigo_debug("[NOT FOUND imager agent] %s\n", name.toUtf8().data());
+		}
+		selected_index = m_agent_guider_select->currentIndex();
+		index = m_agent_guider_select->findText(name);
+		if (index >= 0) {
+			m_agent_guider_select->removeItem(index);
+			if (selected_index == index) {
+				m_agent_guider_select->setCurrentIndex(0);
+				on_guider_agent_selected(0);
+			}
+			indigo_debug("[REMOVE guider agent] %s\n", name.toUtf8().data());
+		} else {
+			indigo_debug("[NOT FOUND guider agent] %s\n", name.toUtf8().data());
 		}
 	}
 	properties.remove(property);
