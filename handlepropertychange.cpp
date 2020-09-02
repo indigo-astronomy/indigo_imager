@@ -586,7 +586,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_focuser_poition(property, m_focus_steps);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME)) {
-		update_selection_property(property, m_star_x, m_star_y, m_viewer, m_focus_graph);
+		update_selection_property(property, m_star_x, m_star_y, m_imager_viewer, m_focus_graph);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME)) {
 		update_focus_setup_property(property, m_initial_step, m_final_step, m_focus_backlash, m_focus_stack);
@@ -661,7 +661,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		update_wheel_slot_property(property, m_filter_select);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME)) {
-		update_selection_property(property, m_star_x, m_star_y, m_viewer, m_focus_graph);
+		update_selection_property(property, m_star_x, m_star_y, m_imager_viewer, m_focus_graph);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME)) {
 		update_focus_setup_property(property, m_initial_step, m_final_step, m_focus_backlash, m_focus_stack);

@@ -185,7 +185,7 @@ private:
 	FocusGraph *m_focus_graph;
 	QVector<double> m_focus_fwhm_data;
 
-	pal::ImageViewer *m_viewer;
+	pal::ImageViewer *m_imager_viewer;
 	pal::ImageViewer *m_guider_viewer;
 	pal::ImageViewer *m_visible_viewer;
 	indigo_item *m_indigo_item;

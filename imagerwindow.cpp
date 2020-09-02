@@ -33,7 +33,7 @@
 
 void write_conf();
 
-pal::ImageViewer *m_viewer;
+pal::ImageViewer *m_imager_viewer;
 
 ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	setWindowTitle(tr("Ain INDIGO Imager"));
@@ -242,12 +242,12 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(tools_tabbar, &QTabWidget::currentChanged, this, &ImagerWindow::on_tab_changed);
 
 	// Image viewer
-	m_viewer = new pal::ImageViewer(this);
-	m_viewer->setText("No Image");
-	m_viewer->setToolBarMode(pal::ImageViewer::ToolBarMode::Visible);
-	form_layout->addWidget((QWidget*)m_viewer);
-	m_viewer->setMinimumWidth(PROPERTY_AREA_MIN_WIDTH);
-	m_visible_viewer = m_viewer;
+	m_imager_viewer = new pal::ImageViewer(this);
+	m_imager_viewer->setText("No Image");
+	m_imager_viewer->setToolBarMode(pal::ImageViewer::ToolBarMode::Visible);
+	form_layout->addWidget((QWidget*)m_imager_viewer);
+	m_imager_viewer->setMinimumWidth(PROPERTY_AREA_MIN_WIDTH);
+	m_visible_viewer = m_imager_viewer;
 
 	// Image guide viewer
 	m_guider_viewer = new pal::ImageViewer(this);
@@ -292,10 +292,10 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	connect(&Logger::instance(), &Logger::do_log, this, &ImagerWindow::on_window_log);
 
-	connect(m_viewer, &pal::ImageViewer::mouseRightPress, this, &ImagerWindow::on_image_right_click);
+	connect(m_imager_viewer, &pal::ImageViewer::mouseRightPress, this, &ImagerWindow::on_image_right_click);
 
 	preview_cache.set_stretch_level(conf.preview_stretch_level);
-	m_viewer->enableAntialiasing(conf.antialiasing_enabled);
+	m_imager_viewer->enableAntialiasing(conf.antialiasing_enabled);
 
 	//  Start up the client
 	IndigoClient::instance().enable_blobs(conf.blobs_enabled);
@@ -314,7 +314,7 @@ ImagerWindow::~ImagerWindow () {
 	QtConcurrent::run([=]() {
 		IndigoClient::instance().stop();
 	});
-	delete m_viewer;
+	delete m_imager_viewer;
 	if (m_indigo_item) {
 		if (m_indigo_item->blob.value) {
 			free(m_indigo_item->blob.value);
@@ -327,7 +327,7 @@ ImagerWindow::~ImagerWindow () {
 bool ImagerWindow::show_preview_in_viewer(QString &key) {
 	preview_image *image = preview_cache.get(key);
 	if (image) {
-		m_viewer->setImage(*image);
+		m_imager_viewer->setImage(*image);
 		m_image_key = key;
 		indigo_debug("YYYYY PREVIEW: %s\n", key.toUtf8().constData());
 		return true;
@@ -337,23 +337,22 @@ bool ImagerWindow::show_preview_in_viewer(QString &key) {
 
 void ImagerWindow::on_tab_changed(int index) {
 	if ((index == 0) || (index == 1)) {
-		if (m_visible_viewer != m_viewer) {
-			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_viewer);
-			m_visible_viewer = m_viewer;
-			m_viewer->setVisible(true);
+		if (m_visible_viewer != m_imager_viewer) {
+			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_imager_viewer);
+			m_visible_viewer = m_imager_viewer;
+			m_imager_viewer->setVisible(true);
 			m_guider_viewer->setVisible(false);
-
 		}
 	} else if (index == 2) {
 		if (m_visible_viewer != m_guider_viewer) {
 			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_guider_viewer);
 			m_visible_viewer = m_guider_viewer;
 			m_guider_viewer->setVisible(true);
-			m_viewer->setVisible(false);
+			m_imager_viewer->setVisible(false);
 		}
 	}
-	if (index == 1) m_viewer->showSelection();
-	else m_viewer->hideSelection();
+	if (index == 1) m_imager_viewer->showSelection();
+	else m_imager_viewer->hideSelection();
 }
 
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){
@@ -372,8 +371,8 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		QString key = preview_cache.create_key(property, m_indigo_item);
 		preview_image *image = preview_cache.get(m_image_key);
 		if (show_preview_in_viewer(key)) {
-			indigo_error("m_viewer = %p", m_viewer);
-			m_viewer->setText("Unsaved" + QString(m_indigo_item->blob.format));
+			indigo_error("m_imager_viewer = %p", m_imager_viewer);
+			m_imager_viewer->setText("Unsaved" + QString(m_indigo_item->blob.format));
 		}
 		if (m_save_blob) save_blob_item(m_indigo_item);
 	} else {
@@ -420,7 +419,7 @@ void ImagerWindow::save_blob_item(indigo_item *item) {
 		}
 
 		if (save_blob_item_with_prefix(item, location, file_name)) {
-			m_viewer->setText(file_name);
+			m_imager_viewer->setText(file_name);
 			snprintf(message, sizeof(message), "Image saved to '%s'", file_name);
 			on_window_log(NULL, message);
 		} else {
@@ -507,7 +506,7 @@ void ImagerWindow::on_image_save_act() {
 	if (!file_name.endsWith(m_indigo_item->blob.format,Qt::CaseInsensitive)) file_name += m_indigo_item->blob.format;
 
 	if (save_blob_item(m_indigo_item, file_name.toUtf8().data())) {
-		m_viewer->setText(file_name);
+		m_imager_viewer->setText(file_name);
 		snprintf(message, sizeof(message), "Image saved to '%s'", file_name.toUtf8().data());
 		on_window_log(NULL, message);
 	} else {
@@ -607,7 +606,7 @@ void ImagerWindow::on_hard_stretch() {
 
 void ImagerWindow::on_antialias_view(bool status) {
 	conf.antialiasing_enabled = status;
-	m_viewer->enableAntialiasing(status);
+	m_imager_viewer->enableAntialiasing(status);
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }

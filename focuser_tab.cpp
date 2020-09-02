@@ -270,7 +270,7 @@ void ImagerWindow::on_focuser_selected(int index) {
 void ImagerWindow::on_selection_changed(int value) {
 	int x = m_star_x->value();
 	int y = m_star_y->value();
-	m_viewer->moveSelection(x, y);
+	m_imager_viewer->moveSelection(x, y);
 	m_HFD_label->setText("n/a");
 	m_FWHM_label->setText("n/a");
 	m_peak_label->setText("n/a");
