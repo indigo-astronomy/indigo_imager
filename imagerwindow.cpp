@@ -247,6 +247,13 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_viewer->setToolBarMode(pal::ImageViewer::ToolBarMode::Visible);
 	form_layout->addWidget((QWidget*)m_viewer);
 	m_viewer->setMinimumWidth(PROPERTY_AREA_MIN_WIDTH);
+	m_visible_viewer = m_viewer;
+
+	// Image guide viewer
+	m_guider_viewer = new pal::ImageViewer(this);
+	m_guider_viewer->setText("Guider Image");
+	m_guider_viewer->setToolBarMode(pal::ImageViewer::ToolBarMode::Visible);
+	m_guider_viewer->setVisible(false);
 
 	QSplitter* hSplitter = new QSplitter;
 	hSplitter->addWidget(tools_panel);
@@ -329,6 +336,22 @@ bool ImagerWindow::show_preview_in_viewer(QString &key) {
 }
 
 void ImagerWindow::on_tab_changed(int index) {
+	if ((index == 0) || (index == 1)) {
+		if (m_visible_viewer != m_viewer) {
+			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_viewer);
+			m_visible_viewer = m_viewer;
+			m_viewer->setVisible(true);
+			m_guider_viewer->setVisible(false);
+
+		}
+	} else if (index == 2) {
+		if (m_visible_viewer != m_guider_viewer) {
+			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_guider_viewer);
+			m_visible_viewer = m_guider_viewer;
+			m_guider_viewer->setVisible(true);
+			m_viewer->setVisible(false);
+		}
+	}
 	if (index == 1) m_viewer->showSelection();
 	else m_viewer->hideSelection();
 }
