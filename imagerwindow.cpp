@@ -395,7 +395,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		preview_image *image = preview_cache.get(key);
 		if (show_preview_in_guider_viewer(key)) {
 			indigo_error("m_guider_viewer = %p", m_guider_viewer);
-			m_imager_viewer->setText(QString("Guider: image") + QString(item->blob.format));
+			m_guider_viewer->setText(QString("Guider: image") + QString(item->blob.format));
 		}
 	} else {
 		free(item->blob.value);
