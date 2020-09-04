@@ -386,7 +386,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		//preview_image *image = preview_cache.get(m_image_key);
 		if (show_preview_in_imager_viewer(key)) {
 			indigo_error("m_imager_viewer = %p", m_imager_viewer);
-			m_imager_viewer->setText("Unsaved" + QString(m_indigo_item->blob.format));
+			m_imager_viewer->setText(QString("Unsaved") + QString(m_indigo_item->blob.format));
 		}
 		if (m_save_blob) save_blob_item(m_indigo_item);
 	} else if (get_selected_guider_agent(selected_agent) && client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME)){
@@ -394,8 +394,8 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		QString key = preview_cache.create_key(property, item);
 		preview_image *image = preview_cache.get(key);
 		if (show_preview_in_guider_viewer(key)) {
-			indigo_error("m_guider_viewer = %p", m_imager_viewer);
-			m_imager_viewer->setText("Guider: image" + QString(m_indigo_item->blob.format));
+			indigo_error("m_guider_viewer = %p", m_guider_viewer);
+			m_imager_viewer->setText(QString("Guider: image") + QString(item->blob.format));
 		}
 	} else {
 		free(item->blob.value);
