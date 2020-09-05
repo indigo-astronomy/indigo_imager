@@ -533,33 +533,30 @@ void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 void ImagerWindow::property_define(indigo_property* property, char *message) {
 	char selected_agent[INDIGO_VALUE_SIZE];
 	char selected_guider_agent[INDIGO_VALUE_SIZE];
+	static pthread_mutex_t l_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 	if (!strncmp(property->device, "Server", 6)) {
-		static bool load_imager = true;
-		static bool load_guider = true;
 		if (client_match_device_property(property, property->device, "DRIVERS")) {
-			// load indigo_agent_imager
-			if (!indigo_get_switch(property, "indigo_agent_imager") && load_imager) {
-				QtConcurrent::run([=]() {
+			// load indigo_agent_image and indigo_agent_guider
+			QtConcurrent::run([=]() {
+				pthread_mutex_lock(&l_mutex);
+				bool imager_not_loaded = !indigo_get_switch(property, "indigo_agent_imager");
+				bool guider_not_loaded = !indigo_get_switch(property, "indigo_agent_guider");
+				static char device_name[INDIGO_NAME_SIZE];
+				strncpy(device_name, property->device, INDIGO_NAME_SIZE);
+				if (imager_not_loaded) {
 					static const char *items[] = { "DRIVER" };
 					static const char *values[] = { "indigo_agent_imager" };
-					indigo_change_text_property(NULL, property->device, "LOAD", 1, items, values);
-				});
-				load_imager = false;
-			} else {
-				load_imager = true;
-			}
-			// load indigo_agent_guider
-			if (!indigo_get_switch(property, "indigo_agent_guider") && load_guider) {
-				QtConcurrent::run([=]() {
+					indigo_change_text_property(NULL, device_name, "LOAD", 1, items, values);
+				}
+				if (guider_not_loaded) {
 					static const char *items[] = { "DRIVER" };
 					static const char *values[] = { "indigo_agent_guider" };
-					indigo_change_text_property(NULL, property->device, "LOAD", 1, items, values);
-				});
-				load_guider = false;
-			} else {
-				load_guider = true;
-			}
+					indigo_change_text_property(NULL, device_name, "LOAD", 1, items, values);
+				}
+				if (imager_not_loaded || guider_not_loaded) indigo_usleep(ONE_SECOND_DELAY);
+				pthread_mutex_unlock(&l_mutex);
+			});
 		}
 		return;
 	}
