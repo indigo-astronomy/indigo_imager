@@ -143,6 +143,8 @@ public slots:
 	void on_guider_agent_selected(int index);
 	void on_guider_camera_selected(int index);
 	void on_guider_selected(int index);
+	void on_guider_selection_changed(int value);
+	void on_guider_image_right_click(int x, int y);
 
 	void on_tab_changed(int index);
 
@@ -200,6 +202,8 @@ private:
 	QComboBox *m_agent_guider_select;
 	QComboBox *m_guider_camera_select;
 	QComboBox *m_guider_select;
+	QSpinBox  *m_guide_star_x;
+	QSpinBox  *m_guide_star_y;
 
 	// Image viewer
 	pal::ImageViewer *m_imager_viewer;

@@ -295,6 +295,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(&Logger::instance(), &Logger::do_log, this, &ImagerWindow::on_window_log);
 
 	connect(m_imager_viewer, &pal::ImageViewer::mouseRightPress, this, &ImagerWindow::on_image_right_click);
+	connect(m_guider_viewer, &pal::ImageViewer::mouseRightPress, this, &ImagerWindow::on_guider_image_right_click);
 
 	preview_cache.set_stretch_level(conf.preview_stretch_level);
 	m_imager_viewer->enableAntialiasing(conf.antialiasing_enabled);
@@ -367,6 +368,8 @@ void ImagerWindow::on_tab_changed(int index) {
 	}
 	if (index == 1) m_imager_viewer->showSelection();
 	else m_imager_viewer->hideSelection();
+	if (index == 2) m_guider_viewer->showSelection();
+	else m_guider_viewer->hideSelection();
 }
 
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){
