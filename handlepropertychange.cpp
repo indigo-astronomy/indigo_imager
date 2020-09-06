@@ -531,8 +531,8 @@ void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 }
 
 void ImagerWindow::property_define(indigo_property* property, char *message) {
-	char selected_agent[INDIGO_VALUE_SIZE];
-	char selected_guider_agent[INDIGO_VALUE_SIZE];
+	char selected_agent[INDIGO_VALUE_SIZE] = {0, 0};
+	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0, 0};
 	static pthread_mutex_t l_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 	if (!strncmp(property->device, "Server", 6)) {
@@ -656,8 +656,8 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 
 
 void ImagerWindow::on_property_change(indigo_property* property, char *message) {
-	char selected_agent[INDIGO_VALUE_SIZE];
-	char selected_guider_agent[INDIGO_VALUE_SIZE];
+	char selected_agent[INDIGO_VALUE_SIZE] = {0, 0};
+	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0, 0};
 
 	if ((!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
 	    (!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12))) {
@@ -763,8 +763,8 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 }
 
 void ImagerWindow::property_delete(indigo_property* property, char *message) {
-	char selected_agent[INDIGO_VALUE_SIZE];
-	char selected_guider_agent[INDIGO_VALUE_SIZE];
+	char selected_agent[INDIGO_VALUE_SIZE] = {0, 0};
+	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0, 0};
 
 	indigo_debug("[REMOVE REMOVE REMOVE REMOVE REMOVE] %s.%s\n", property->device, property->name);
 	if ((!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
