@@ -242,6 +242,8 @@ private:
 	void change_focuser_focus_in_property(const char *agent) const;
 	void change_focuser_focus_out_property(const char *agent) const;
 
+	void change_guider_agent_star_selection(const char *agent) const;
+
 	bool show_preview_in_imager_viewer(QString &key);
 	bool show_preview_in_guider_viewer(QString &key);
 	bool save_blob_item_with_prefix(indigo_item *item, const char *prefix, char *file_name);

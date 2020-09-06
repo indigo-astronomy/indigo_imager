@@ -134,6 +134,12 @@ void ImagerWindow::on_guider_selection_changed(int value) {
 	int x = m_guide_star_x->value();
 	int y = m_guide_star_y->value();
 	m_guider_viewer->moveSelection(x, y);
+	QtConcurrent::run([=]() {
+		char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_guider_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_guider_agent_star_selection(selected_agent);
+	});
 	/*
 	m_HFD_label->setText("n/a");
 	m_FWHM_label->setText("n/a");
@@ -145,4 +151,10 @@ void ImagerWindow::on_guider_selection_changed(int value) {
 void ImagerWindow::on_guider_image_right_click(int x, int y) {
 	m_guide_star_x->setValue(x);
 	m_guide_star_y->setValue(y);
+	QtConcurrent::run([=]() {
+		char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_guider_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_guider_agent_star_selection(selected_agent);
+	});
 }
