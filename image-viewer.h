@@ -57,6 +57,7 @@ public:
 	void showSelection();
 	void hideSelection();
 	void moveSelection(int x, int y);
+	void moveResizeSelection(int x, int y, int size);
 
 public slots:
     void setText(const QString &txt);

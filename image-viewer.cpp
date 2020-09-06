@@ -146,7 +146,21 @@ void ImageViewer::showSelection() {
 
 void ImageViewer::hideSelection() {
 	m_selection_visible = false;
-    m_selection->setVisible(false);
+	m_selection->setVisible(false);
+}
+
+void ImageViewer::moveResizeSelection(int x, int y, int size) {
+	int cor_x = x - (size - 1) / 2;
+	int cor_y = y - (size - 1) / 2;
+
+	if (!m_pixmap->pixmap().isNull() && ((cor_x < 0) || (cor_y < 0) ||
+	    (cor_x > m_pixmap->pixmap().width() - size + 1) ||
+	    (cor_y > m_pixmap->pixmap().height() - size + 1))) {
+		return;
+	}
+	indigo_debug("%d -> %d, %d -> %d, %d", x, cor_x, y, cor_y, size);
+	m_selection->setRect(0, 0, size, size);
+	m_selection->setPos(cor_x, cor_y);
 }
 
 void ImageViewer::moveSelection(int x, int y) {
@@ -159,7 +173,7 @@ void ImageViewer::moveSelection(int x, int y) {
 	    (cor_y > m_pixmap->pixmap().height() - (int)br.height() + 1))) {
 		return;
 	}
-	indigo_debug("selection %d %d", (int)br.width(), (int)br.height());
+	indigo_debug("%d -> %d, %d -> %d, %d", x, cor_x, y, cor_y, (int)br.width());
 	m_selection->setPos(cor_x, cor_y);
 }
 
