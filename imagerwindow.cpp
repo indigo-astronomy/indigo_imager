@@ -400,11 +400,13 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 			indigo_error("m_guider_viewer = %p", m_guider_viewer);
 			m_guider_viewer->setText(QString("Guider: image") + QString(item->blob.format));
 		}
+		free(item->blob.value);
+		item->blob.value = nullptr;
+		free(item);
 	} else {
 		free(item->blob.value);
 		item->blob.value = nullptr;
 		free(item);
-		return;
 	}
 }
 
