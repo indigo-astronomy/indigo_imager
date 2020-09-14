@@ -373,7 +373,7 @@ void ImagerWindow::on_tab_changed(int index) {
 		m_guider_viewer->showReference();
 	} else {
 		m_guider_viewer->hideSelection();
-		m_guider_viewer->showReference();
+		m_guider_viewer->hideReference();
 	}
 }
 

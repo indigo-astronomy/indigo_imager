@@ -83,18 +83,18 @@ ImageViewer::ImageViewer(QWidget *parent)
 	QPen pen;
 	pen.setCosmetic(true);
 	pen.setWidth(1);
-	pen.setColor("orange");
+	pen.setColor(Qt::yellow);
 	m_ref_x->setPen(pen);
-	m_ref_x->setOpacity(0.5);
+	m_ref_x->setOpacity(0.4);
 	m_ref_x->setVisible(false);
 	scene->addItem(m_ref_x);
 
 	m_ref_y = new QGraphicsLineItem(0,25,50,25, m_pixmap);
 	pen.setCosmetic(true);
 	pen.setWidth(1);
-	pen.setColor("orange");
+	pen.setColor(Qt::yellow);
 	m_ref_y->setPen(pen);
-	m_ref_y->setOpacity(0.5);
+	m_ref_y->setOpacity(0.4);
 	m_ref_y->setVisible(false);
 	scene->addItem(m_ref_y);
 
@@ -106,7 +106,7 @@ ImageViewer::ImageViewer(QWidget *parent)
 	pen.setWidth(1);
 	pen.setColor(Qt::green);
 	m_selection->setPen(pen);
-	m_selection->setOpacity(0.8);
+	m_selection->setOpacity(0.6);
 	m_selection->setVisible(false);
 	m_selection_visible = false;
 	scene->addItem(m_selection);
@@ -231,8 +231,12 @@ const preview_image &ImageViewer::image() const {
 
 void ImageViewer::setImage(preview_image &im) {
 	m_pixmap->setImage(im);
-	if (!m_pixmap->pixmap().isNull() && m_selection_visible) {
-		m_selection->setVisible(true);
+	if (!m_pixmap->pixmap().isNull()) {
+		if (m_selection_visible) m_selection->setVisible(true);
+		if (m_ref_visible) {
+			m_ref_x->setVisible(true);
+			m_ref_y->setVisible(true);
+		}
 	}
 	m_view->scene()->setSceneRect(0, 0, im.width(), im.height());
 

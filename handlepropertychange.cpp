@@ -186,7 +186,6 @@ static void update_imager_selection_property(indigo_property *property, QSpinBox
 		}
 	}
 	viewer->moveResizeSelection(x, y, size);
-	viewer->moveReference(x, y);
 }
 
 static void update_guider_selection_property(indigo_property *property, QSpinBox *star_x, QSpinBox *star_y, pal::ImageViewer *viewer) {
@@ -204,7 +203,6 @@ static void update_guider_selection_property(indigo_property *property, QSpinBox
 		}
 	}
 	viewer->moveResizeSelection(x, y, size);
-	viewer->moveReference(x, y);
 }
 
 static void update_focus_setup_property(indigo_property *property, QSpinBox *initial_step, QSpinBox *final_step, QSpinBox *focus_backlash, QSpinBox *focus_stack) {
@@ -506,6 +504,19 @@ static void update_ccd_exposure(
 	}
 }
 
+static void update_guider_stats(indigo_property *property, pal::ImageViewer *viewer) {
+	double x = 0, y = 0;
+	int size = 0;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_REFERENCE_X_ITEM_NAME)) {
+			x = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_REFERENCE_Y_ITEM_NAME)) {
+			y = property->items[i].number.value;
+		}
+	}
+	viewer->moveReference(x, y);
+}
+
 
 void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 	char timestamp[16];
@@ -671,6 +682,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME)) {
 		update_guider_selection_property(property, m_guide_star_x, m_guide_star_y, m_guider_viewer);
 	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_STATS_PROPERTY_NAME)) {
+		update_guider_stats(property, m_guider_viewer);
+	}
 }
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
@@ -784,6 +798,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME)) {
 		update_guider_selection_property(property, m_guide_star_x, m_guide_star_y, m_guider_viewer);
+	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_STATS_PROPERTY_NAME)) {
+		update_guider_stats(property, m_guider_viewer);
 	}
 
 	properties.create(property);
