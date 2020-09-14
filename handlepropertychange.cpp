@@ -170,37 +170,41 @@ static void update_focuser_poition(indigo_property *property, QSpinBox *set_posi
 }
 
 static void update_imager_selection_property(indigo_property *property, QSpinBox *star_x, QSpinBox *star_y, pal::ImageViewer *viewer, FocusGraph *focuser_graph) {
-	int x=0, y=0, size = 0;
+	double x = 0, y = 0;
+	int size = 0;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_IMAGER_SELECTION_X_ITEM_NAME)) {
-			x = (int)round(property->items[i].number.value);
+			x = property->items[i].number.value;
 			configure_spinbox(&property->items[i], property->perm, star_x);
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_SELECTION_Y_ITEM_NAME)) {
-			y = (int)round(property->items[i].number.value);
+			y = property->items[i].number.value;
 			configure_spinbox(&property->items[i], property->perm, star_y);
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_SELECTION_RADIUS_ITEM_NAME)) {
 			double max = property->items[i].number.value * 2 + 2;
-			size = (int)round(property->items[i].number.value) * 2 + 1;
+			size = (int)round(property->items[i].number.value * 2 + 1);
 			focuser_graph->set_yaxis_range(0, max);
 		}
 	}
 	viewer->moveResizeSelection(x, y, size);
+	viewer->moveReference(x, y);
 }
 
 static void update_guider_selection_property(indigo_property *property, QSpinBox *star_x, QSpinBox *star_y, pal::ImageViewer *viewer) {
-	int x=0, y=0, size = 0;
+	double x = 0, y = 0;
+	int size = 0;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_GUIDER_SELECTION_X_ITEM_NAME)) {
-			x = (int)round(property->items[i].number.value);
+			x = property->items[i].number.value;
 			configure_spinbox(&property->items[i], property->perm, star_x);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SELECTION_Y_ITEM_NAME)) {
-			y = (int)round(property->items[i].number.value);
+			y = property->items[i].number.value;
 			configure_spinbox(&property->items[i], property->perm, star_y);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SELECTION_RADIUS_ITEM_NAME)) {
-			size = (int)round(property->items[i].number.value) * 2 + 1;
+			size = (int)round(property->items[i].number.value * 2 + 1);
 		}
 	}
 	viewer->moveResizeSelection(x, y, size);
+	viewer->moveReference(x, y);
 }
 
 static void update_focus_setup_property(indigo_property *property, QSpinBox *initial_step, QSpinBox *final_step, QSpinBox *focus_backlash, QSpinBox *focus_stack) {

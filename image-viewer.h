@@ -56,8 +56,12 @@ public:
 
 	void showSelection();
 	void hideSelection();
-	void moveSelection(int x, int y);
-	void moveResizeSelection(int x, int y, int size);
+	void moveSelection(double x, double y);
+	void moveResizeSelection(double x, double y, int size);
+
+	void showReference();
+	void hideReference();
+	void moveReference(double x, double y);
 
 public slots:
     void setText(const QString &txt);
@@ -92,9 +96,12 @@ private:
     GraphicsView *m_view;
     PixmapItem *m_pixmap;
 	QGraphicsRectItem *m_selection;
+	QGraphicsLineItem *m_ref_x;
+	QGraphicsLineItem *m_ref_y;
     QWidget *m_toolbar;
     bool m_fit;
 	bool m_selection_visible;
+	bool m_ref_visible;
     ToolBarMode m_bar_mode;
 };
 

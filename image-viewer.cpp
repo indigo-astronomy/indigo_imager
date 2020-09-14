@@ -79,9 +79,29 @@ ImageViewer::ImageViewer(QWidget *parent)
     connect(m_pixmap, SIGNAL(mouseMoved(int,int)), SLOT(mouseAt(int,int)));
 	connect(m_pixmap, SIGNAL(mouseRightPress(int,int)), SLOT(mouseRightPressAt(int,int)));
 
+	m_ref_x = new QGraphicsLineItem(25,0,25,50, m_pixmap);
+	QPen pen;
+	pen.setCosmetic(true);
+	pen.setWidth(1);
+	pen.setColor("orange");
+	m_ref_x->setPen(pen);
+	m_ref_x->setOpacity(0.5);
+	m_ref_x->setVisible(false);
+	scene->addItem(m_ref_x);
+
+	m_ref_y = new QGraphicsLineItem(0,25,50,25, m_pixmap);
+	pen.setCosmetic(true);
+	pen.setWidth(1);
+	pen.setColor("orange");
+	m_ref_y->setPen(pen);
+	m_ref_y->setOpacity(0.5);
+	m_ref_y->setVisible(false);
+	scene->addItem(m_ref_y);
+
+	m_ref_visible = false;
+
 	m_selection = new QGraphicsRectItem(0,0,25,25, m_pixmap);
 	m_selection->setBrush(QBrush(Qt::NoBrush));
-	QPen pen;
 	pen.setCosmetic(true);
 	pen.setWidth(1);
 	pen.setColor(Qt::green);
@@ -149,34 +169,61 @@ void ImageViewer::hideSelection() {
 	m_selection->setVisible(false);
 }
 
-void ImageViewer::moveResizeSelection(int x, int y, int size) {
-	int cor_x = x - (size - 1) / 2;
-	int cor_y = y - (size - 1) / 2;
+void ImageViewer::moveResizeSelection(double x, double y, int size) {
+	double cor_x = x - (size) / 2.0;
+	double cor_y = y - (size) / 2.0;
 
 	if (!m_pixmap->pixmap().isNull() && ((cor_x < 0) || (cor_y < 0) ||
 	    (cor_x > m_pixmap->pixmap().width() - size + 1) ||
 	    (cor_y > m_pixmap->pixmap().height() - size + 1))) {
 		return;
 	}
-	indigo_debug("%d -> %d, %d -> %d, %d", x, cor_x, y, cor_y, size);
+	indigo_debug("%.2f -> %.2f, %.2f -> %.2f, %d", x, cor_x, y, cor_y, size);
 	m_selection->setRect(0, 0, size, size);
 	m_selection->setPos(cor_x, cor_y);
 }
 
-void ImageViewer::moveSelection(int x, int y) {
+void ImageViewer::moveSelection(double x, double y) {
 	QRectF br = m_selection->boundingRect();
-	int cor_x = x - ((int)br.width() - 1) / 2;
-	int cor_y = y - ((int)br.height() - 1) / 2;
+	double cor_x = x - br.width() / 2.0;
+	double cor_y = y - br.height() / 2.0;
 
 	if (!m_pixmap->pixmap().isNull() && ((cor_x < 0) || (cor_y < 0) ||
 	    (cor_x > m_pixmap->pixmap().width() - (int)br.width() + 1) ||
 	    (cor_y > m_pixmap->pixmap().height() - (int)br.height() + 1))) {
 		return;
 	}
-	indigo_debug("%d -> %d, %d -> %d, %d", x, cor_x, y, cor_y, (int)br.width());
+	indigo_debug("%.2f -> %.2f, %.2f -> %.2f, %d", x, cor_x, y, cor_y, (int)br.width());
 	m_selection->setPos(cor_x, cor_y);
 }
 
+void ImageViewer::showReference() {
+	m_ref_visible = true;
+	if (!m_pixmap->pixmap().isNull()) {
+		m_ref_x->setVisible(true);
+		m_ref_y->setVisible(true);
+	}
+}
+
+void ImageViewer::hideReference() {
+	m_ref_visible = false;
+	m_ref_x->setVisible(false);
+	m_ref_y->setVisible(false);
+}
+
+void ImageViewer::moveReference(double x, double y) {
+	double cor_x = x;
+	double cor_y = y;
+	double x_len = m_pixmap->pixmap().width();
+	double y_len = m_pixmap->pixmap().height();
+	if (!m_pixmap->pixmap().isNull() && ((cor_x < 0) || (cor_y < 0) || (cor_x > x_len) || (cor_y > y_len))) {
+		return;
+	}
+	indigo_debug("X = %.2f, Y = %.2f, X_len = %.2f, y_len = %.2f", cor_x, cor_y, x_len, y_len);
+
+	m_ref_x->setLine(cor_x, 0, cor_x, y_len);
+	m_ref_y->setLine(0, cor_y, x_len, cor_y);
+}
 
 const preview_image &ImageViewer::image() const {
 	return m_pixmap->image();
