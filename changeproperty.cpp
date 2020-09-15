@@ -252,3 +252,23 @@ void ImagerWindow::change_ccd_temperature_property(const char *agent) const {
 	values[0] = (double)m_set_temp->value();
 	indigo_change_number_property(nullptr, agent, CCD_TEMPERATURE_PROPERTY_NAME, 1, items, values);
 }
+
+void ImagerWindow::change_agent_start_guide_property(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_START_GUIDING_ITEM_NAME
+	};
+	static bool values[] = {
+		true
+	};
+	indigo_change_switch_property(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, 1, items, values);
+}
+
+void ImagerWindow::change_agent_start_calibrate_property(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_START_CALIBRATION_ITEM_NAME
+	};
+	static bool values[] = {
+		true
+	};
+	indigo_change_switch_property(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, 1, items, values);
+}

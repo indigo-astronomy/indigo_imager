@@ -74,6 +74,59 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guide_star_y->setValue(0);
 	guider_frame_layout->addWidget(m_guide_star_y, row, 3);
 	connect(m_guide_star_y, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
+
+	row++;
+	QWidget *toolbar = new QWidget;
+	QHBoxLayout *toolbox = new QHBoxLayout(toolbar);
+	toolbar->setContentsMargins(1,1,1,1);
+	toolbox->setContentsMargins(1,1,1,1);
+	guider_frame_layout->addWidget(toolbar, row, 0, 1, 4);
+
+	m_guider_preview_button = new QPushButton("Preview");
+	m_guider_preview_button->setStyleSheet("min-width: 30px");
+	m_guider_preview_button->setIcon(QIcon(":resource/play.png"));
+	toolbox->addWidget(m_guider_preview_button);
+	connect(m_guider_preview_button, &QPushButton::clicked, this, &ImagerWindow::on_guider_preview_start_stop);
+
+	m_guider_calibrate_button = new QPushButton("Calibrate");
+	m_guider_calibrate_button->setStyleSheet("min-width: 30px");
+	m_guider_calibrate_button->setIcon(QIcon(":resource/record.png"));
+	toolbox->addWidget(m_guider_calibrate_button);
+	connect(m_guider_calibrate_button , &QPushButton::clicked, this, &ImagerWindow::on_guider_calibrate_start_stop);
+
+	m_guider_guide_button = new QPushButton("Guide");
+	m_guider_guide_button->setStyleSheet("min-width: 30px");
+	m_guider_guide_button->setIcon(QIcon(":resource/record.png"));
+	toolbox->addWidget(m_guider_guide_button);
+	connect(m_guider_guide_button, &QPushButton::clicked, this, &ImagerWindow::on_guider_guide_start_stop);
+
+	QPushButton *button = new QPushButton("Stop");
+	button->setStyleSheet("min-width: 30px");
+	button->setIcon(QIcon(":resource/stop.png"));
+	toolbox->addWidget(button);
+	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_guider_stop);
+
+	row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	guider_frame_layout->addItem(spacer, row, 0);
+
+	row++;
+	label = new QLabel("Guiding statistics:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	guider_frame_layout->addWidget(label, row, 0, 1, 4);
+
+	row++;
+	m_guider_graph = new FocusGraph();
+	//m_guider_graph->redraw_data(m_focus_fwhm_data);
+	m_guider_graph->setMinimumHeight(150);
+	guider_frame_layout->addWidget(m_guider_graph, row, 0, 1, 4);
+
+	row++;
+	label = new QLabel("Drift (X, Y):");
+	guider_frame_layout->addWidget(label, row, 0);
+	m_guider_drift_label = new QLabel();
+	m_guider_drift_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	guider_frame_layout->addWidget(m_guider_drift_label, row, 1);
 }
 
 void ImagerWindow::on_guider_agent_selected(int index) {
@@ -158,5 +211,74 @@ void ImagerWindow::on_guider_image_right_click(int x, int y) {
 		get_selected_guider_agent(selected_agent);
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_guider_agent_star_selection(selected_agent);
+	});
+}
+
+
+void ImagerWindow::on_guider_preview_start_stop(bool clicked) {
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_guider_agent(selected_agent);
+
+		indigo_property *agent_start_process = properties.get(selected_agent, AGENT_START_PROCESS_PROPERTY_NAME);
+		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
+			change_agent_abort_process_property(selected_agent);
+		} else {
+			// m_guider_graph->redraw_data(m_focus_fwhm_data);
+			// change_agent_batch_property_for_focus(selected_agent);
+			//change_agent_focus_params_property(selected_agent);
+			change_agent_start_preview_property(selected_agent);
+		}
+	});
+}
+
+void ImagerWindow::on_guider_calibrate_start_stop(bool clicked) {
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_guider_agent(selected_agent);
+
+		indigo_property *agent_start_process = properties.get(selected_agent, AGENT_START_PROCESS_PROPERTY_NAME);
+		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
+			change_agent_abort_process_property(selected_agent);
+		} else {
+			// m_guider_graph->redraw_data(m_focus_fwhm_data);
+			// change_agent_batch_property_for_focus(selected_agent);
+			//change_agent_focus_params_property(selected_agent);
+			change_agent_start_calibrate_property(selected_agent);
+		}
+	});
+}
+
+
+void ImagerWindow::on_guider_guide_start_stop(bool clicked) {
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_guider_agent(selected_agent);
+
+		indigo_property *agent_start_process = properties.get(selected_agent, AGENT_START_PROCESS_PROPERTY_NAME);
+		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
+			change_agent_abort_process_property(selected_agent);
+		} else {
+			// m_guider_graph->redraw_data(m_focus_fwhm_data);
+			// change_agent_batch_property_for_focus(selected_agent);
+			//change_agent_focus_params_property(selected_agent);
+			change_agent_start_guide_property(selected_agent);
+		}
+	});
+}
+
+void ImagerWindow::on_guider_stop(bool clicked) {
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_guider_agent(selected_agent);
+
+		indigo_property *agent_start_process = properties.get(selected_agent, AGENT_START_PROCESS_PROPERTY_NAME);
+		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
+			change_agent_abort_process_property(selected_agent);
+		}
 	});
 }

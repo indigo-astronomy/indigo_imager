@@ -145,6 +145,10 @@ public slots:
 	void on_guider_selected(int index);
 	void on_guider_selection_changed(int value);
 	void on_guider_image_right_click(int x, int y);
+	void on_guider_preview_start_stop(bool clicked);
+	void on_guider_calibrate_start_stop(bool clicked);
+	void on_guider_guide_start_stop(bool clicked);
+	void on_guider_stop(bool clicked);
 
 	void on_tab_changed(int index);
 
@@ -204,6 +208,11 @@ private:
 	QComboBox *m_guider_select;
 	QSpinBox  *m_guide_star_x;
 	QSpinBox  *m_guide_star_y;
+	FocusGraph *m_guider_graph;
+	QLabel *m_guider_drift_label;
+	QPushButton *m_guider_guide_button;
+	QPushButton *m_guider_preview_button;
+	QPushButton *m_guider_calibrate_button;
 
 	// Image viewer
 	pal::ImageViewer *m_imager_viewer;
@@ -243,6 +252,8 @@ private:
 	void change_focuser_focus_out_property(const char *agent) const;
 
 	void change_guider_agent_star_selection(const char *agent) const;
+	void change_agent_start_guide_property(const char *agent) const;
+	void change_agent_start_calibrate_property(const char *agent) const;
 
 	bool show_preview_in_imager_viewer(QString &key);
 	bool show_preview_in_guider_viewer(QString &key);
