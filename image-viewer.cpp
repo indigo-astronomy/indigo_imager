@@ -159,7 +159,7 @@ void ImageViewer::setText(const QString &txt) {
 
 void ImageViewer::showSelection() {
 	m_selection_visible = true;
-	if (!m_pixmap->pixmap().isNull()) {
+	if (!m_pixmap->pixmap().isNull() && !m_selection_p.isNull()) {
 		m_selection->setVisible(true);
 	}
 }
@@ -179,6 +179,13 @@ void ImageViewer::moveResizeSelection(double x, double y, int size) {
 		return;
 	}
 	indigo_debug("%.2f -> %.2f, %.2f -> %.2f, %d", x, cor_x, y, cor_y, size);
+	m_selection_p.setX(x);
+	m_selection_p.setY(y);
+	if (m_selection_p.isNull()) {
+		m_selection->setVisible(false);
+	} else if (m_selection_visible){
+		m_selection->setVisible(true);
+	}
 	m_selection->setRect(0, 0, size, size);
 	m_selection->setPos(cor_x, cor_y);
 }
@@ -194,12 +201,14 @@ void ImageViewer::moveSelection(double x, double y) {
 		return;
 	}
 	indigo_debug("%.2f -> %.2f, %.2f -> %.2f, %d", x, cor_x, y, cor_y, (int)br.width());
+	m_selection_p.setX(x);
+	m_selection_p.setY(y);
 	m_selection->setPos(cor_x, cor_y);
 }
 
 void ImageViewer::showReference() {
 	m_ref_visible = true;
-	if (!m_pixmap->pixmap().isNull()) {
+	if (!m_pixmap->pixmap().isNull() && !m_ref_p.isNull()) {
 		m_ref_x->setVisible(true);
 		m_ref_y->setVisible(true);
 	}
@@ -221,6 +230,15 @@ void ImageViewer::moveReference(double x, double y) {
 	}
 	indigo_debug("X = %.2f, Y = %.2f, X_len = %.2f, y_len = %.2f", cor_x, cor_y, x_len, y_len);
 
+	m_ref_p.setX(x);
+	m_ref_p.setY(y);
+	if (m_ref_p.isNull()) {
+		m_ref_x->setVisible(false);
+		m_ref_y->setVisible(false);
+	} else if (m_ref_visible){
+		m_ref_x->setVisible(true);
+		m_ref_y->setVisible(true);
+	}
 	m_ref_x->setLine(cor_x, 0, cor_x, y_len);
 	m_ref_y->setLine(0, cor_y, x_len, cor_y);
 }
@@ -232,10 +250,17 @@ const preview_image &ImageViewer::image() const {
 void ImageViewer::setImage(preview_image &im) {
 	m_pixmap->setImage(im);
 	if (!m_pixmap->pixmap().isNull()) {
-		if (m_selection_visible) m_selection->setVisible(true);
-		if (m_ref_visible) {
+		if (m_selection_visible && !m_selection_p.isNull()) {
+			m_selection->setVisible(true);
+		} else {
+			m_selection->setVisible(false);
+		}
+		if (m_ref_visible && !m_ref_p.isNull()) {
 			m_ref_x->setVisible(true);
 			m_ref_y->setVisible(true);
+		} else {
+			m_ref_x->setVisible(false);
+			m_ref_y->setVisible(false);
 		}
 	}
 	m_view->scene()->setSceneRect(0, 0, im.width(), im.height());

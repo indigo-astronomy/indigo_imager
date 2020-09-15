@@ -98,6 +98,8 @@ private:
 	QGraphicsRectItem *m_selection;
 	QGraphicsLineItem *m_ref_x;
 	QGraphicsLineItem *m_ref_y;
+	QPoint m_selection_p;
+	QPoint m_ref_p;
     QWidget *m_toolbar;
     bool m_fit;
 	bool m_selection_visible;
