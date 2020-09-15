@@ -76,8 +76,8 @@ ImageViewer::ImageViewer(QWidget *parent)
     // graphic object holding the image buffer
     m_pixmap = new PixmapItem;
     scene->addItem(m_pixmap);
-    connect(m_pixmap, SIGNAL(mouseMoved(int,int)), SLOT(mouseAt(int,int)));
-	connect(m_pixmap, SIGNAL(mouseRightPress(int,int)), SLOT(mouseRightPressAt(int,int)));
+    connect(m_pixmap, SIGNAL(mouseMoved(double,double)), SLOT(mouseAt(double,double)));
+	connect(m_pixmap, SIGNAL(mouseRightPress(double,double)), SLOT(mouseRightPressAt(double,double)));
 
 	m_ref_x = new QGraphicsLineItem(25,0,25,50, m_pixmap);
 	QPen pen;
@@ -344,7 +344,7 @@ void ImageViewer::zoomOut(int level) {
 	setMatrix();
 }
 
-void ImageViewer::mouseAt(int x, int y) {
+void ImageViewer::mouseAt(double x, double y) {
 	//indigo_log("COORDS: %d %d" ,x,y);
 	if (m_pixmap->image().valid(x,y)) {
 		int r,g,b;
@@ -353,10 +353,10 @@ void ImageViewer::mouseAt(int x, int y) {
 		QString s;
 		if (g == -1) {
 			//s = QString("%1% [%2, %3] (%4)").arg(scale).arg(x).arg(y).arg(r);
-			s.sprintf("%.2f%% [%5d, %5d] (%5d)", scale, x, y, r);
+			s.sprintf("%.2f%% [%5.1f, %5.1f] (%5d)", scale, x, y, r);
 		} else {
 			//s = QString("%1% [%2, %3] (%4, %5, %6)").arg(scale).arg(x).arg(y).arg(r).arg(g).arg(b);
-			s.sprintf("%.2f%% [%5d, %5d] (%5d, %5d, %5d)", scale, x, y, r, g, b);
+			s.sprintf("%.2f%% [%5.1f, %5.1f] (%5d, %5d, %5d)", scale, x, y, r, g, b);
 		}
 		m_pixel_value->setText(s);
 	} else {
@@ -364,8 +364,8 @@ void ImageViewer::mouseAt(int x, int y) {
 	}
 }
 
-void ImageViewer::mouseRightPressAt(int x, int y) {
-	indigo_log("RIGHT CLICK COORDS: %d %d" ,x,y);
+void ImageViewer::mouseRightPressAt(double x, double y) {
+	indigo_log("RIGHT CLICK COORDS: %f %f" ,x,y);
 	if (m_pixmap->image().valid(x,y)) {
 		moveSelection(x,y);
 		emit mouseRightPress(x,y);
@@ -429,7 +429,7 @@ void PixmapItem::setImage(preview_image im) {
 void PixmapItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
 		if(event->button() == Qt::RightButton) {
 			auto pos = event->pos();
-			emit mouseRightPress(int(pos.x()), int(pos.y()));
+			emit mouseRightPress(pos.x(), pos.y());
 		}
 	QGraphicsItem::mousePressEvent(event);
 }
@@ -440,7 +440,7 @@ void PixmapItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
 
 void PixmapItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event) {
     auto pos = event->pos();
-    emit mouseMoved(int(pos.x()), int(pos.y()));
+    emit mouseMoved(pos.x(), pos.y());
     QGraphicsItem::hoverMoveEvent(event);
 }
 

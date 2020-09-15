@@ -71,12 +71,12 @@ public slots:
     void zoomOriginal();
     void zoomIn(int level = 1);
     void zoomOut(int level = 1);
-    void mouseAt(int x, int y);
-	void mouseRightPressAt(int x, int y);
+    void mouseAt(double x, double y);
+	void mouseRightPressAt(double x, double y);
 
 signals:
     void imageChanged();
-	void mouseRightPress(int x, int y);
+	void mouseRightPress(double x, double y);
     void zoomChanged(double scale);
 
 protected:
@@ -121,8 +121,8 @@ public slots:
 signals:
     void imageChanged(const preview_image &);
     void sizeChanged(int w, int h);
-	void mouseRightPress(int x, int y);
-    void mouseMoved(int x, int y);
+	void mouseRightPress(double x, double y);
+    void mouseMoved(double x, double y);
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *) override;
