@@ -118,7 +118,8 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	row++;
 	m_guider_graph = new FocusGraph();
 	//m_guider_graph->redraw_data(m_focus_fwhm_data);
-	m_guider_graph->setMinimumHeight(150);
+	m_guider_graph->set_yaxis_range(-5, 5);
+	m_guider_graph->setMinimumHeight(250);
 	guider_frame_layout->addWidget(m_guider_graph, row, 0, 1, 4);
 
 	row++;

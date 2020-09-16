@@ -504,17 +504,36 @@ static void update_ccd_exposure(
 	}
 }
 
-static void update_guider_stats(indigo_property *property, pal::ImageViewer *viewer) {
+static void update_guider_stats(
+	indigo_property *property, pal::ImageViewer *viewer,
+	FocusGraph *drift_graph,
+	QVector<double> &drift_ra,
+	QVector<double> &drift_dec
+) {
 	double x = 0, y = 0;
+	double d_ra = 0, d_dec = 0;
 	int size = 0;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_REFERENCE_X_ITEM_NAME)) {
 			x = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_REFERENCE_Y_ITEM_NAME)) {
 			y = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_DRIFT_RA_ITEM_NAME)) {
+			d_ra = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_DRIFT_DEC_ITEM_NAME)) {
+			d_dec = property->items[i].number.value;
 		}
 	}
 	viewer->moveReference(x, y);
+
+	drift_ra.append(d_ra);
+	drift_dec.append(d_dec);
+
+	if (drift_dec.size() > 100) {
+		drift_dec.removeFirst();
+		drift_ra.removeFirst();
+	}
+	drift_graph->redraw_data2(drift_ra, drift_dec);
 }
 
 
@@ -683,7 +702,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_guider_selection_property(property, m_guide_star_x, m_guide_star_y, m_guider_viewer);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_STATS_PROPERTY_NAME)) {
-		update_guider_stats(property, m_guider_viewer);
+		update_guider_stats(property, m_guider_viewer, m_guider_graph, m_drift_data_ra, m_drift_data_dec);
 	}
 }
 
@@ -800,7 +819,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		update_guider_selection_property(property, m_guide_star_x, m_guide_star_y, m_guider_viewer);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_STATS_PROPERTY_NAME)) {
-		update_guider_stats(property, m_guider_viewer);
+		update_guider_stats(property, m_guider_viewer, m_guider_graph, m_drift_data_ra, m_drift_data_dec);
 	}
 
 	properties.create(property);

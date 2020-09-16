@@ -4,6 +4,8 @@
 FocusGraph::FocusGraph(QWidget *parent) : QCustomPlot(parent) {
     addGraph();
     graph(0)->setPen(QPen(Qt::red));
+	addGraph();
+	graph(1)->setPen(QPen(Qt::green));
 	setBackground(QBrush(QColor(0,0,0,0)));
 
     xAxis2->setVisible(true);
@@ -49,6 +51,21 @@ void FocusGraph::redraw_data(QVector<double> data) {
     }
     graph(0)->setData(x, data);
     graph(0)->rescaleKeyAxis();
+
+    replot();
+}
+
+void FocusGraph::redraw_data2(QVector<double> data1, QVector<double> data2) {
+	if (data1.size() != data2.size()) return;
+    QVector<double> x(data1.size());
+    for (int i=0; i< x.size(); ++i)
+    {
+        x[i] = i;
+    }
+    graph(0)->setData(x, data1);
+    graph(0)->rescaleKeyAxis();
+	graph(1)->setData(x, data2);
+    graph(1)->rescaleKeyAxis();
 
     replot();
 }

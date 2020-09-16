@@ -209,6 +209,8 @@ private:
 	QSpinBox  *m_guide_star_x;
 	QSpinBox  *m_guide_star_y;
 	FocusGraph *m_guider_graph;
+	QVector<double> m_drift_data_ra;
+	QVector<double> m_drift_data_dec;
 	QLabel *m_guider_drift_label;
 	QPushButton *m_guider_guide_button;
 	QPushButton *m_guider_preview_button;
