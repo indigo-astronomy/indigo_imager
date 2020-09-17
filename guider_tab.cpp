@@ -133,27 +133,42 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	settings_frame->setFrameShape(QFrame::StyledPanel);
 	settings_frame->setContentsMargins(0, 0, 0, 0);
 
+	// Drift detection
+	int settings_row = 0;
+	label = new QLabel("Drift Detection:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 2);
+	m_detection_mode_select = new QComboBox();
+	settings_frame_layout->addWidget(m_detection_mode_select, settings_row, 2, 1, 2);
+	connect(m_detection_mode_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_detection_mode_selected);
+
+	settings_row++;
+	label = new QLabel("Dec Guiding:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 2);
+	m_dec_guiding_select = new QComboBox();
+	settings_frame_layout->addWidget(m_dec_guiding_select, settings_row, 2, 1, 2);
+	connect(m_dec_guiding_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_dec_guiding_selected);
+
 	// Star Selection
-	row++;
+	settings_row++;
 	label = new QLabel("Star X:");
-	settings_frame_layout->addWidget(label, row, 0);
+	settings_frame_layout->addWidget(label, settings_row, 0);
 	m_guide_star_x = new QSpinBox();
 	m_guide_star_x->setMaximum(100000);
 	m_guide_star_x->setMinimum(0);
 	m_guide_star_x->setValue(0);
-	settings_frame_layout->addWidget(m_guide_star_x , row, 1);
+	settings_frame_layout->addWidget(m_guide_star_x , settings_row, 1);
 	connect(m_guide_star_x, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
 
 	label = new QLabel("Star Y:");
-	settings_frame_layout->addWidget(label, row, 2);
+	settings_frame_layout->addWidget(label, settings_row, 2);
 	m_guide_star_y = new QSpinBox();
 	m_guide_star_y->setMaximum(100000);
 	m_guide_star_y->setMinimum(0);
 	m_guide_star_y->setValue(0);
-	settings_frame_layout->addWidget(m_guide_star_y, row, 3);
+	settings_frame_layout->addWidget(m_guide_star_y, settings_row, 3);
 	connect(m_guide_star_y, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
-
-
 }
 
 void ImagerWindow::on_guider_agent_selected(int index) {
@@ -307,5 +322,27 @@ void ImagerWindow::on_guider_stop(bool clicked) {
 		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
 			change_agent_abort_process_property(selected_agent);
 		}
+	});
+}
+
+void ImagerWindow::on_detection_mode_selected(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_detection_mode_property(selected_agent);
+	});
+}
+
+void ImagerWindow::on_dec_guiding_selected(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_dec_guiding_property(selected_agent);
 	});
 }

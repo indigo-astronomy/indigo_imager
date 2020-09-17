@@ -120,6 +120,30 @@ void ImagerWindow::change_guider_agent_star_selection(const char *agent) const {
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME, 2, items, values);
 }
 
+void ImagerWindow::change_detection_mode_property(const char *agent) const {
+	static char selected_mode[INDIGO_NAME_SIZE];
+	strncpy(selected_mode, m_detection_mode_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	static const char * items[] = {
+		selected_mode
+	};
+	static bool values[] = {
+		true
+	};
+	indigo_change_switch_property(nullptr, agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME, 1, items, values);
+}
+
+void ImagerWindow::change_dec_guiding_property(const char *agent) const {
+	static char selected_mode[INDIGO_NAME_SIZE];
+	strncpy(selected_mode, m_dec_guiding_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	static const char * items[] = {
+		selected_mode
+	};
+	static bool values[] = {
+		true
+	};
+	indigo_change_switch_property(nullptr, agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME, 1, items, values);
+}
+
 void ImagerWindow::change_agent_focus_params_property(const char *agent) const {
 	static const char *items[] = {
 		AGENT_IMAGER_FOCUS_INITIAL_ITEM_NAME,

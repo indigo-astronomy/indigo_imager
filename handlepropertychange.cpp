@@ -709,6 +709,12 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_STATS_PROPERTY_NAME)) {
 		update_guider_stats(property, m_guider_viewer, m_guider_drift_label, m_guider_graph, m_drift_data_ra, m_drift_data_dec);
 	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME)) {
+		add_items_to_combobox(property, m_detection_mode_select);
+	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME)) {
+		add_items_to_combobox(property, m_dec_guiding_select);
+	}
 }
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
@@ -826,7 +832,12 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_STATS_PROPERTY_NAME)) {
 		update_guider_stats(property, m_guider_viewer, m_guider_drift_label, m_guider_graph, m_drift_data_ra, m_drift_data_dec);
 	}
-
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME)) {
+		change_combobox_selection(property, m_detection_mode_select);
+	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME)) {
+		change_combobox_selection(property, m_dec_guiding_select);
+	}
 	properties.create(property);
 }
 
@@ -910,6 +921,16 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_guider_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		m_guider_select->clear();
+	}
+	if (client_match_device_property(property, selected_agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		m_detection_mode_select->clear();
+	}
+	if (client_match_device_property(property, selected_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		m_dec_guiding_select->clear();
 	}
 }
 
