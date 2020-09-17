@@ -30,16 +30,16 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 
 	int row = 0;
 	m_agent_guider_select = new QComboBox();
-	guider_frame_layout->addWidget(m_agent_guider_select, row, 0, 1, 4);
+	guider_frame_layout->addWidget(m_agent_guider_select, row, 0, 1, 2);
 	connect(m_agent_guider_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_agent_selected);
 
 	// camera selection
 	row++;
-	QLabel *label = new QLabel("Guide camera:");
+	QLabel *label = new QLabel("Camera:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	guider_frame_layout->addWidget(label, row, 0);
 	m_guider_camera_select = new QComboBox();
-	guider_frame_layout->addWidget(m_guider_camera_select, row, 1, 1, 3);
+	guider_frame_layout->addWidget(m_guider_camera_select, row, 1);
 	connect(m_guider_camera_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_camera_selected);
 
 	// Filter wheel selection
@@ -48,39 +48,19 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	guider_frame_layout->addWidget(label, row, 0);
 	m_guider_select = new QComboBox();
-	guider_frame_layout->addWidget(m_guider_select, row, 1, 1, 3);
+	guider_frame_layout->addWidget(m_guider_select, row, 1);
 	connect(m_guider_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_selected);
 
 	row++;
 	QSpacerItem *spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	guider_frame_layout->addItem(spacer, row, 0);
 
-	// Star Selection
-	row++;
-	label = new QLabel("Star X:");
-	guider_frame_layout->addWidget(label, row, 0);
-	m_guide_star_x = new QSpinBox();
-	m_guide_star_x->setMaximum(100000);
-	m_guide_star_x->setMinimum(0);
-	m_guide_star_x->setValue(0);
-	guider_frame_layout->addWidget(m_guide_star_x , row, 1);
-	connect(m_guide_star_x, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
-
-	label = new QLabel("Star Y:");
-	guider_frame_layout->addWidget(label, row, 2);
-	m_guide_star_y = new QSpinBox();
-	m_guide_star_y->setMaximum(100000);
-	m_guide_star_y->setMinimum(0);
-	m_guide_star_y->setValue(0);
-	guider_frame_layout->addWidget(m_guide_star_y, row, 3);
-	connect(m_guide_star_y, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
-
 	row++;
 	QWidget *toolbar = new QWidget;
 	QHBoxLayout *toolbox = new QHBoxLayout(toolbar);
 	toolbar->setContentsMargins(1,1,1,1);
 	toolbox->setContentsMargins(1,1,1,1);
-	guider_frame_layout->addWidget(toolbar, row, 0, 1, 4);
+	guider_frame_layout->addWidget(toolbar, row, 0, 1, 2);
 
 	m_guider_preview_button = new QPushButton("Preview");
 	m_guider_preview_button->setStyleSheet("min-width: 30px");
@@ -110,24 +90,70 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	guider_frame_layout->addItem(spacer, row, 0);
 
-	row++;
-	label = new QLabel("Guiding statistics:");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	guider_frame_layout->addWidget(label, row, 0, 1, 4);
+	//row++;
+	//label = new QLabel("Guiding statistics:");
+	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	//guider_frame_layout->addWidget(label, row, 0, 1, 4);
 
 	row++;
+	// Tools tabbar
+	QTabWidget *guider_tabbar = new QTabWidget;
+	guider_frame_layout->addWidget(guider_tabbar, row, 0, 1, 2);
+
+	QFrame *stats_frame = new QFrame();
+	guider_tabbar->addTab(stats_frame, "Statistics");
+
+	QGridLayout *stats_frame_layout = new QGridLayout();
+	stats_frame_layout->setAlignment(Qt::AlignTop);
+	stats_frame->setLayout(stats_frame_layout);
+	stats_frame->setFrameShape(QFrame::StyledPanel);
+	//stats_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
+	stats_frame->setContentsMargins(0, 0, 0, 0);
+
+	int stats_row = 0;
 	m_guider_graph = new FocusGraph();
 	//m_guider_graph->redraw_data(m_focus_fwhm_data);
-	m_guider_graph->set_yaxis_range(-5, 5);
+	m_guider_graph->set_yaxis_range(-6, 6);
 	m_guider_graph->setMinimumHeight(250);
-	guider_frame_layout->addWidget(m_guider_graph, row, 0, 1, 4);
+	stats_frame_layout->addWidget(m_guider_graph, stats_row, 0, 1, 4);
 
-	row++;
-	label = new QLabel("Drift (X, Y):");
-	guider_frame_layout->addWidget(label, row, 0);
+	stats_row++;
+	label = new QLabel("Drift Ra/Dec (px):");
+	stats_frame_layout->addWidget(label, stats_row, 0);
 	m_guider_drift_label = new QLabel();
 	m_guider_drift_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	guider_frame_layout->addWidget(m_guider_drift_label, row, 1);
+	stats_frame_layout->addWidget(m_guider_drift_label, stats_row, 1);
+
+	QFrame *settings_frame = new QFrame;
+	guider_tabbar->addTab(settings_frame, "Settings");
+
+	QGridLayout *settings_frame_layout = new QGridLayout();
+	settings_frame_layout->setAlignment(Qt::AlignTop);
+	settings_frame->setLayout(settings_frame_layout);
+	settings_frame->setFrameShape(QFrame::StyledPanel);
+	settings_frame->setContentsMargins(0, 0, 0, 0);
+
+	// Star Selection
+	row++;
+	label = new QLabel("Star X:");
+	settings_frame_layout->addWidget(label, row, 0);
+	m_guide_star_x = new QSpinBox();
+	m_guide_star_x->setMaximum(100000);
+	m_guide_star_x->setMinimum(0);
+	m_guide_star_x->setValue(0);
+	settings_frame_layout->addWidget(m_guide_star_x , row, 1);
+	connect(m_guide_star_x, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
+
+	label = new QLabel("Star Y:");
+	settings_frame_layout->addWidget(label, row, 2);
+	m_guide_star_y = new QSpinBox();
+	m_guide_star_y->setMaximum(100000);
+	m_guide_star_y->setMinimum(0);
+	m_guide_star_y->setValue(0);
+	settings_frame_layout->addWidget(m_guide_star_y, row, 3);
+	connect(m_guide_star_y, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
+
+
 }
 
 void ImagerWindow::on_guider_agent_selected(int index) {

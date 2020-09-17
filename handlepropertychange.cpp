@@ -506,6 +506,7 @@ static void update_ccd_exposure(
 
 static void update_guider_stats(
 	indigo_property *property, pal::ImageViewer *viewer,
+	QLabel *ra_dec_drift_label,
 	FocusGraph *drift_graph,
 	QVector<double> &drift_ra,
 	QVector<double> &drift_dec
@@ -526,10 +527,14 @@ static void update_guider_stats(
 	}
 	viewer->moveReference(x, y);
 
+	char drift_str[50];
+	snprintf(drift_str, 50, "%.2f, %.2f", d_ra, d_dec);
+	ra_dec_drift_label->setText(drift_str);
+
 	drift_ra.append(d_ra);
 	drift_dec.append(d_dec);
 
-	if (drift_dec.size() > 100) {
+	if (drift_dec.size() > 120) {
 		drift_dec.removeFirst();
 		drift_ra.removeFirst();
 	}
@@ -702,7 +707,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_guider_selection_property(property, m_guide_star_x, m_guide_star_y, m_guider_viewer);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_STATS_PROPERTY_NAME)) {
-		update_guider_stats(property, m_guider_viewer, m_guider_graph, m_drift_data_ra, m_drift_data_dec);
+		update_guider_stats(property, m_guider_viewer, m_guider_drift_label, m_guider_graph, m_drift_data_ra, m_drift_data_dec);
 	}
 }
 
@@ -819,7 +824,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		update_guider_selection_property(property, m_guide_star_x, m_guide_star_y, m_guider_viewer);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_STATS_PROPERTY_NAME)) {
-		update_guider_stats(property, m_guider_viewer, m_guider_graph, m_drift_data_ra, m_drift_data_dec);
+		update_guider_stats(property, m_guider_viewer, m_guider_drift_label, m_guider_graph, m_drift_data_ra, m_drift_data_dec);
 	}
 
 	properties.create(property);
