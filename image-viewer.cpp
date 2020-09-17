@@ -35,9 +35,9 @@ protected:
     void wheelEvent(QWheelEvent *event) override {
         if (event->modifiers() == Qt::NoModifier) {
             if (event->delta() > 0)
-                m_viewer->zoomIn(3);
+                m_viewer->zoomIn();
             else if (event->delta() < 0)
-                m_viewer->zoomOut(3);
+                m_viewer->zoomOut();
             event->accept();
         }
         else
@@ -310,7 +310,7 @@ void ImageViewer::addTool(QWidget *tool) {
 }
 
 void ImageViewer::setMatrix() {
-    qreal scale = std::pow(2.0, m_zoom_level / 10.0);
+    qreal scale = m_zoom_level / 100.0;
 
     QMatrix matrix;
     matrix.scale(scale, scale);
@@ -321,25 +321,52 @@ void ImageViewer::setMatrix() {
 
 void ImageViewer::zoomFit() {
     m_view->fitInView(m_pixmap, Qt::KeepAspectRatio);
-    m_zoom_level = int(10.0 * std::log2(m_view->matrix().m11()));
+    m_zoom_level = 100.0 * m_view->matrix().m11();
+	indigo_debug("Zoom FIT = %d", m_zoom_level);
     m_fit = true;
     emit zoomChanged(m_view->matrix().m11());
 }
 
 void ImageViewer::zoomOriginal() {
-    m_zoom_level = 0;
+    m_zoom_level = 100;
+	indigo_debug("Zoom 1:1 = %d", m_zoom_level);
     m_fit = false;
     setMatrix();
 }
 
-void ImageViewer::zoomIn(int level) {
-    m_zoom_level += level;
+void ImageViewer::zoomIn() {
+	if (m_zoom_level >= 1000) {
+		m_zoom_level = (int)(m_zoom_level / 500) * 500 + 500;
+	} else if (m_zoom_level >= 100) {
+		m_zoom_level = (int)(m_zoom_level / 50) * 50 + 50;
+	} else if (m_zoom_level >= 10) {
+		m_zoom_level = (int)(m_zoom_level / 10) * 10 + 10;
+	} else if (m_zoom_level >= 1) {
+		m_zoom_level += 1;
+	} else {
+		m_zoom_level = 1;
+	}
+	if (m_zoom_level > 5000) {
+		m_zoom_level = 5000;
+	}
+	indigo_debug("Zoom IN = %d", m_zoom_level);
     m_fit = false;
     setMatrix();
 }
 
-void ImageViewer::zoomOut(int level) {
-    m_zoom_level -= level;
+void ImageViewer::zoomOut() {
+	if (m_zoom_level > 1000) {
+		m_zoom_level = (int)(round(m_zoom_level / 500.0)) * 500 - 500;
+	} else if (m_zoom_level > 100) {
+		m_zoom_level = (int)(round(m_zoom_level / 50.0)) * 50 - 50;
+	} else if (m_zoom_level > 10) {
+		m_zoom_level = (int)(round(m_zoom_level / 10.0)) * 10 - 10;
+	} else if (m_zoom_level > 1) {
+		m_zoom_level -= 1;
+	} else {
+		m_zoom_level = 1;
+	}
+	indigo_debug("Zoom OUT = %d", m_zoom_level);
     m_fit = false;
 	setMatrix();
 }
@@ -348,15 +375,14 @@ void ImageViewer::mouseAt(double x, double y) {
 	//indigo_log("COORDS: %d %d" ,x,y);
 	if (m_pixmap->image().valid(x,y)) {
 		int r,g,b;
-		qreal scale = std::pow(2.0, m_zoom_level / 10.0) * 100;
 		m_pixmap->image().pixel_value(x, y, r, g, b);
 		QString s;
 		if (g == -1) {
 			//s = QString("%1% [%2, %3] (%4)").arg(scale).arg(x).arg(y).arg(r);
-			s.sprintf("%.2f%% [%5.1f, %5.1f] (%5d)", scale, x, y, r);
+			s.sprintf("%d%% [%5.1f, %5.1f] (%5d)", m_zoom_level, x, y, r);
 		} else {
 			//s = QString("%1% [%2, %3] (%4, %5, %6)").arg(scale).arg(x).arg(y).arg(r).arg(g).arg(b);
-			s.sprintf("%.2f%% [%5.1f, %5.1f] (%5d, %5d, %5d)", scale, x, y, r, g, b);
+			s.sprintf("%d%% [%5.1f, %5.1f] (%5d, %5d, %5d)", m_zoom_level, x, y, r, g, b);
 		}
 		m_pixel_value->setText(s);
 	} else {

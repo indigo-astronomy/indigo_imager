@@ -69,8 +69,8 @@ public slots:
 
     void zoomFit();
     void zoomOriginal();
-    void zoomIn(int level = 1);
-    void zoomOut(int level = 1);
+    void zoomIn();
+    void zoomOut();
     void mouseAt(double x, double y);
 	void mouseRightPressAt(double x, double y);
 
