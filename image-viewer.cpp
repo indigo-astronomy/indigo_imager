@@ -10,8 +10,6 @@
 #include <QToolButton>
 #include <QLabel>
 
-namespace pal {
-
 // Graphics View with better mouse events handling
 class GraphicsView : public QGraphicsView {
 public:
@@ -469,5 +467,3 @@ void PixmapItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event) {
     emit mouseMoved(pos.x(), pos.y());
     QGraphicsItem::hoverMoveEvent(event);
 }
-
-} // namespace pal

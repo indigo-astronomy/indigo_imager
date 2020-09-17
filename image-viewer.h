@@ -9,8 +9,6 @@ QT_BEGIN_NAMESPACE
 class QLabel;
 QT_END_NAMESPACE
 
-namespace pal {
-
 class PixmapItem;
 class GraphicsView;
 
@@ -132,7 +130,5 @@ protected:
 private:
     preview_image m_image;
 };
-
-} // namespace pal
 
 #endif // IMAGEVIEWER_H

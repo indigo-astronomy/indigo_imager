@@ -169,7 +169,7 @@ static void update_focuser_poition(indigo_property *property, QSpinBox *set_posi
 	}
 }
 
-static void update_imager_selection_property(indigo_property *property, QSpinBox *star_x, QSpinBox *star_y, pal::ImageViewer *viewer, FocusGraph *focuser_graph) {
+static void update_imager_selection_property(indigo_property *property, QSpinBox *star_x, QSpinBox *star_y, ImageViewer *viewer, FocusGraph *focuser_graph) {
 	double x = 0, y = 0;
 	int size = 0;
 	for (int i = 0; i < property->count; i++) {
@@ -188,7 +188,7 @@ static void update_imager_selection_property(indigo_property *property, QSpinBox
 	viewer->moveResizeSelection(x, y, size);
 }
 
-static void update_guider_selection_property(indigo_property *property, QSpinBox *star_x, QSpinBox *star_y, pal::ImageViewer *viewer) {
+static void update_guider_selection_property(indigo_property *property, QSpinBox *star_x, QSpinBox *star_y, ImageViewer *viewer) {
 	double x = 0, y = 0;
 	int size = 0;
 	for (int i = 0; i < property->count; i++) {
@@ -505,7 +505,7 @@ static void update_ccd_exposure(
 }
 
 static void update_guider_stats(
-	indigo_property *property, pal::ImageViewer *viewer,
+	indigo_property *property, ImageViewer *viewer,
 	QLabel *ra_dec_drift_label,
 	FocusGraph *drift_graph,
 	QVector<double> &drift_ra,

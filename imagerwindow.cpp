@@ -33,7 +33,7 @@
 
 void write_conf();
 
-pal::ImageViewer *m_imager_viewer;
+ImageViewer *m_imager_viewer;
 
 ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	setWindowTitle(tr("Ain INDIGO Imager"));
@@ -244,17 +244,17 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(tools_tabbar, &QTabWidget::currentChanged, this, &ImagerWindow::on_tab_changed);
 
 	// Image viewer
-	m_imager_viewer = new pal::ImageViewer(this);
+	m_imager_viewer = new ImageViewer(this);
 	m_imager_viewer->setText("No Image");
-	m_imager_viewer->setToolBarMode(pal::ImageViewer::ToolBarMode::Visible);
+	m_imager_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
 	form_layout->addWidget((QWidget*)m_imager_viewer);
 	m_imager_viewer->setMinimumWidth(PROPERTY_AREA_MIN_WIDTH);
 	m_visible_viewer = m_imager_viewer;
 
 	// Image guide viewer
-	m_guider_viewer = new pal::ImageViewer(this);
+	m_guider_viewer = new ImageViewer(this);
 	m_guider_viewer->setText("Guider Image");
-	m_guider_viewer->setToolBarMode(pal::ImageViewer::ToolBarMode::Visible);
+	m_guider_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
 	m_guider_viewer->setVisible(false);
 
 	QSplitter* hSplitter = new QSplitter;
@@ -294,8 +294,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	connect(&Logger::instance(), &Logger::do_log, this, &ImagerWindow::on_window_log);
 
-	connect(m_imager_viewer, &pal::ImageViewer::mouseRightPress, this, &ImagerWindow::on_image_right_click);
-	connect(m_guider_viewer, &pal::ImageViewer::mouseRightPress, this, &ImagerWindow::on_guider_image_right_click);
+	connect(m_imager_viewer, &ImageViewer::mouseRightPress, this, &ImagerWindow::on_image_right_click);
+	connect(m_guider_viewer, &ImageViewer::mouseRightPress, this, &ImagerWindow::on_guider_image_right_click);
 
 	preview_cache.set_stretch_level(conf.preview_stretch_level);
 	m_imager_viewer->enableAntialiasing(conf.antialiasing_enabled);

@@ -217,9 +217,9 @@ private:
 	QPushButton *m_guider_calibrate_button;
 
 	// Image viewer
-	pal::ImageViewer *m_imager_viewer;
-	pal::ImageViewer *m_guider_viewer;
-	pal::ImageViewer *m_visible_viewer;
+	ImageViewer *m_imager_viewer;
+	ImageViewer *m_guider_viewer;
+	ImageViewer *m_visible_viewer;
 	indigo_item *m_indigo_item;
 
 	QString m_image_key;
