@@ -90,11 +90,6 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	guider_frame_layout->addItem(spacer, row, 0);
 
-	//row++;
-	//label = new QLabel("Guiding statistics:");
-	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	//guider_frame_layout->addWidget(label, row, 0, 1, 4);
-
 	row++;
 	// Tools tabbar
 	QTabWidget *guider_tabbar = new QTabWidget;
@@ -111,18 +106,44 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	stats_frame->setContentsMargins(0, 0, 0, 0);
 
 	int stats_row = 0;
+	label = new QLabel("Drift Graph RA / Dec (px):");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	stats_frame_layout->addWidget(label, stats_row, 0, 1, 2);
+
+	stats_row++;
 	m_guider_graph = new FocusGraph();
 	//m_guider_graph->redraw_data(m_focus_fwhm_data);
 	m_guider_graph->set_yaxis_range(-6, 6);
 	m_guider_graph->setMinimumHeight(250);
-	stats_frame_layout->addWidget(m_guider_graph, stats_row, 0, 1, 4);
+	stats_frame_layout->addWidget(m_guider_graph, stats_row, 0, 1, 2);
 
 	stats_row++;
-	label = new QLabel("Drift Ra/Dec (px):");
+	label = new QLabel("Drift RA / Dec (px):");
 	stats_frame_layout->addWidget(label, stats_row, 0);
-	m_guider_drift_label = new QLabel();
-	m_guider_drift_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	stats_frame_layout->addWidget(m_guider_drift_label, stats_row, 1);
+	m_guider_rd_drift_label = new QLabel();
+	m_guider_rd_drift_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	stats_frame_layout->addWidget(m_guider_rd_drift_label, stats_row, 1);
+
+	stats_row++;
+	label = new QLabel("Drift X / Y (px):");
+	stats_frame_layout->addWidget(label, stats_row, 0);
+	m_guider_xy_drift_label = new QLabel();
+	m_guider_xy_drift_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	stats_frame_layout->addWidget(m_guider_xy_drift_label, stats_row, 1);
+
+	stats_row++;
+	label = new QLabel("Correction RA / Dec (s):");
+	stats_frame_layout->addWidget(label, stats_row, 0);
+	m_guider_pulse_label = new QLabel();
+	m_guider_pulse_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	stats_frame_layout->addWidget(m_guider_pulse_label, stats_row, 1);
+
+	stats_row++;
+	label = new QLabel("RMSE RA / Dec (px):");
+	stats_frame_layout->addWidget(label, stats_row, 0);
+	m_guider_rmse_label = new QLabel();
+	m_guider_rmse_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	stats_frame_layout->addWidget(m_guider_rmse_label, stats_row, 1);
 
 	QFrame *settings_frame = new QFrame;
 	guider_tabbar->addTab(settings_frame, "Settings");

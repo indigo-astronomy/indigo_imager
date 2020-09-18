@@ -81,18 +81,18 @@ ImageViewer::ImageViewer(QWidget *parent)
 	QPen pen;
 	pen.setCosmetic(true);
 	pen.setWidth(1);
-	pen.setColor(Qt::yellow);
+	pen.setColor(QColor(230, 255, 0));
 	m_ref_x->setPen(pen);
-	m_ref_x->setOpacity(0.4);
+	m_ref_x->setOpacity(0.5);
 	m_ref_x->setVisible(false);
 	scene->addItem(m_ref_x);
 
 	m_ref_y = new QGraphicsLineItem(0,25,50,25, m_pixmap);
 	pen.setCosmetic(true);
 	pen.setWidth(1);
-	pen.setColor(Qt::yellow);
+	pen.setColor(QColor(230, 255, 0));
 	m_ref_y->setPen(pen);
-	m_ref_y->setOpacity(0.4);
+	m_ref_y->setOpacity(0.5);
 	m_ref_y->setVisible(false);
 	scene->addItem(m_ref_y);
 
@@ -104,7 +104,7 @@ ImageViewer::ImageViewer(QWidget *parent)
 	pen.setWidth(1);
 	pen.setColor(Qt::green);
 	m_selection->setPen(pen);
-	m_selection->setOpacity(0.6);
+	m_selection->setOpacity(0.7);
 	m_selection->setVisible(false);
 	m_selection_visible = false;
 	scene->addItem(m_selection);

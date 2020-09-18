@@ -5,7 +5,7 @@ FocusGraph::FocusGraph(QWidget *parent) : QCustomPlot(parent) {
     addGraph();
     graph(0)->setPen(QPen(Qt::red));
 	addGraph();
-	graph(1)->setPen(QPen(Qt::green));
+	graph(1)->setPen(QPen(QColor(3,172,240)));
 	setBackground(QBrush(QColor(0,0,0,0)));
 
     xAxis2->setVisible(true);

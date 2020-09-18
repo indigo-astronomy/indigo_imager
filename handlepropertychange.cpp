@@ -507,29 +507,57 @@ static void update_ccd_exposure(
 static void update_guider_stats(
 	indigo_property *property, ImageViewer *viewer,
 	QLabel *ra_dec_drift_label,
+	QLabel *x_y_drift_label,
+	QLabel *pulse_label,
+	QLabel *rmse_label,
 	FocusGraph *drift_graph,
 	QVector<double> &drift_ra,
 	QVector<double> &drift_dec
 ) {
-	double x = 0, y = 0;
+	double ref_x = 0, ref_y = 0;
 	double d_ra = 0, d_dec = 0;
+	double cor_ra = 0, cor_dec = 0;
+	double rmse_ra = 0, rmse_dec = 0;
+	double d_x = 0, d_y = 0;
 	int size = 0;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_REFERENCE_X_ITEM_NAME)) {
-			x = property->items[i].number.value;
+			ref_x = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_REFERENCE_Y_ITEM_NAME)) {
-			y = property->items[i].number.value;
+			ref_y = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_DRIFT_RA_ITEM_NAME)) {
 			d_ra = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_DRIFT_DEC_ITEM_NAME)) {
 			d_dec = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_DRIFT_X_ITEM_NAME)) {
+			d_x = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_DRIFT_Y_ITEM_NAME)) {
+			d_y = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_RMSE_RA_ITEM_NAME)) {
+			rmse_ra = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_RMSE_DEC_ITEM_NAME)) {
+			rmse_dec = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_CORR_RA_ITEM_NAME)) {
+			cor_ra = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_CORR_DEC_ITEM_NAME)) {
+			cor_dec = property->items[i].number.value;
 		}
-	}
-	viewer->moveReference(x, y);
 
-	char drift_str[50];
-	snprintf(drift_str, 50, "%.2f, %.2f", d_ra, d_dec);
-	ra_dec_drift_label->setText(drift_str);
+	}
+	viewer->moveReference(ref_x, ref_y);
+
+	char label_str[50];
+	snprintf(label_str, 50, "%+.2f  %+.2f", d_ra, d_dec);
+	ra_dec_drift_label->setText(label_str);
+
+	snprintf(label_str, 50, "%+.2f  %+.2f", d_x, d_y);
+	x_y_drift_label->setText(label_str);
+
+	snprintf(label_str, 50, "%+.2f  %+.2f", cor_ra, cor_dec);
+	pulse_label->setText(label_str);
+
+	snprintf(label_str, 50, "%.2f  %.2f", rmse_ra, rmse_dec);
+	rmse_label->setText(label_str);
 
 	drift_ra.append(d_ra);
 	drift_dec.append(d_dec);
@@ -707,7 +735,17 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_guider_selection_property(property, m_guide_star_x, m_guide_star_y, m_guider_viewer);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_STATS_PROPERTY_NAME)) {
-		update_guider_stats(property, m_guider_viewer, m_guider_drift_label, m_guider_graph, m_drift_data_ra, m_drift_data_dec);
+		update_guider_stats(
+			property,
+			m_guider_viewer,
+			m_guider_rd_drift_label,
+			m_guider_xy_drift_label,
+			m_guider_pulse_label,
+			m_guider_rmse_label,
+			m_guider_graph,
+			m_drift_data_ra,
+			m_drift_data_dec
+		);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME)) {
 		add_items_to_combobox(property, m_detection_mode_select);
@@ -830,7 +868,17 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		update_guider_selection_property(property, m_guide_star_x, m_guide_star_y, m_guider_viewer);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_STATS_PROPERTY_NAME)) {
-		update_guider_stats(property, m_guider_viewer, m_guider_drift_label, m_guider_graph, m_drift_data_ra, m_drift_data_dec);
+		update_guider_stats(
+			property,
+			m_guider_viewer,
+			m_guider_rd_drift_label,
+			m_guider_xy_drift_label,
+			m_guider_pulse_label,
+			m_guider_rmse_label,
+			m_guider_graph,
+			m_drift_data_ra,
+			m_drift_data_dec
+		);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME)) {
 		change_combobox_selection(property, m_detection_mode_select);

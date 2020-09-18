@@ -213,7 +213,10 @@ private:
 	FocusGraph *m_guider_graph;
 	QVector<double> m_drift_data_ra;
 	QVector<double> m_drift_data_dec;
-	QLabel *m_guider_drift_label;
+	QLabel *m_guider_rd_drift_label;
+	QLabel *m_guider_xy_drift_label;
+	QLabel *m_guider_pulse_label;
+	QLabel *m_guider_rmse_label;
 	QPushButton *m_guider_guide_button;
 	QPushButton *m_guider_preview_button;
 	QPushButton *m_guider_calibrate_button;
