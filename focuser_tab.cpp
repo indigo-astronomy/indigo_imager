@@ -320,7 +320,7 @@ void ImagerWindow::on_focus_start_stop(bool clicked) {
 		} else {
 			m_save_blob = false;
 			m_focus_fwhm_data.clear();
-			m_focus_graph->redraw_data(m_focus_fwhm_data);
+			//m_focus_graph->redraw_data(m_focus_fwhm_data);
 			change_agent_star_selection(selected_agent);
 			change_agent_batch_property_for_focus(selected_agent);
 			change_agent_focus_params_property(selected_agent);
