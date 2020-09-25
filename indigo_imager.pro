@@ -119,7 +119,8 @@ win32 {
             indigo/indigo_libs/indigo_client.c \
             indigo/indigo_libs/indigo_client_xml.c \
             indigo/indigo_libs/indigo_version.c \
-            indigo/indigo_libs/indigo_io.c \
+	    indigo/indigo_libs/indigo_io.c \
+	    indigo/indigo_libs/indigo_token.c \
             indigo/indigo_libs/indigo_xml.c
 
         HEADERS += \
@@ -131,6 +132,7 @@ win32 {
             indigo/indigo_libs/indigo/indigo_config.h \
             indigo/indigo_libs/indigo/indigo_io.h \
             indigo/indigo_libs/indigo/indigo_version.h \
-            indigo/indigo_libs/indigo/indigo_xml.h \
+	    indigo/indigo_libs/indigo/indigo_xml.h \
+	    indigo/indigo_libs/indigo/indigo_token.h \
             indigo/indigo_libs/indigo/indigo_names.h
 }
