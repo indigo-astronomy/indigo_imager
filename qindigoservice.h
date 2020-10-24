@@ -29,8 +29,10 @@ class QIndigoService {
 
 public:
 	QIndigoService(const QZeroConfService& _service);
+	QIndigoService(const QZeroConfService& _service, bool connect);
 	QIndigoService(const QIndigoService &other);
 	QIndigoService(QByteArray name, QByteArray host, int port);
+	QIndigoService(QByteArray name, QByteArray host, int port, bool connect, bool is_manual_service = true);
 
 	virtual ~QIndigoService();
 
@@ -53,8 +55,9 @@ public:
 	indigo_server_entry* m_server_entry;
 
 public:
-	bool isQZeroConfService;
-	int prevSocket;
+	bool is_auto_service;
+	bool auto_connect;
+	int prev_socket;
 };
 
 #endif // INDIGOSERVICE_H

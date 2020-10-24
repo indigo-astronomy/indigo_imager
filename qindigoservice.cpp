@@ -25,8 +25,21 @@ QIndigoService::QIndigoService(const QZeroConfService& _service) :
 	m_port(_service->port()),
 	m_service(_service),
 	m_server_entry(nullptr),
-	isQZeroConfService(true),
-	prevSocket(0) {
+	is_auto_service(true),
+	auto_connect(true),
+	prev_socket(0) {
+}
+
+
+QIndigoService::QIndigoService(const QZeroConfService& _service, bool connect) :
+	m_name(_service->name().toUtf8().constData()),
+	m_host(_service->host().toUtf8().constData()),
+	m_port(_service->port()),
+	m_service(_service),
+	m_server_entry(nullptr),
+	is_auto_service(true),
+	auto_connect(connect),
+	prev_socket(0) {
 }
 
 
@@ -39,8 +52,19 @@ QIndigoService::QIndigoService(QByteArray name, QByteArray host, int port) :
 	m_host(host),
 	m_port(port),
 	m_server_entry(nullptr),
-	isQZeroConfService(false),
-	prevSocket(0) {
+	is_auto_service(false),
+	auto_connect(true),
+	prev_socket(0) {
+}
+
+QIndigoService::QIndigoService(QByteArray name, QByteArray host, int port, bool connect, bool is_manual_service) :
+	m_name(name),
+	m_host(host),
+	m_port(port),
+	m_server_entry(nullptr),
+	is_auto_service(!is_manual_service),
+	auto_connect(connect),
+	prev_socket(0) {
 }
 
 
@@ -50,9 +74,10 @@ QIndigoService::~QIndigoService() {
 
 bool QIndigoService::connect() {
 	int i = 5; /* 0.5 seconds */
-	prevSocket = -100;
+	prev_socket = -100;
 	indigo_debug("%s(): %s %s %d\n",__FUNCTION__, m_name.constData(), m_host.constData(), m_port);
 	indigo_result res = indigo_connect_server(m_name.constData(), m_host.constData(), m_port, &m_server_entry);
+	indigo_debug("%s(): %s %s %d server_entry=%p\n",__FUNCTION__, m_name.constData(), m_host.constData(), m_port, m_server_entry);
 	if (res != INDIGO_OK) return false;
 	while (!connected() && i--) {
 		indigo_usleep(100000);
@@ -71,9 +96,13 @@ bool QIndigoService::connected() const {
 
 
 bool QIndigoService::disconnect() {
-	if (m_server_entry) {
+	indigo_debug("%s(): called m_server_entry= %p\n",__FUNCTION__, m_server_entry);
+	if (m_server_entry && m_server_entry->socket > 0) {
 		indigo_debug("%s(): %s %s %d\n",__FUNCTION__, m_name.constData(), m_host.constData(), m_port);
 		bool res = (indigo_disconnect_server(m_server_entry) == INDIGO_OK);
+		while (connected()) {
+			indigo_usleep(100000);
+		}
 		m_server_entry=nullptr;
 		return res;
 	}

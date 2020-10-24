@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 	strncpy(config_path, QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation).toUtf8().constData(), PATH_LEN);
 
 #if defined(INDIGO_WINDOWS)
-#define LOG_FILENAME "indigo_control_panel.log"
+#define LOG_FILENAME "indigo_imager.log"
 	char filename[PATH_LEN];
 	snprintf(filename, PATH_LEN, "%s/%s", QDir::homePath().toUtf8().constData(), LOG_FILENAME);
 	freopen(filename,"w", stderr);

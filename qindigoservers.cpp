@@ -95,13 +95,14 @@ void QIndigoServers::onConnectionChange(QIndigoService &indigo_service) {
 
 
 void QIndigoServers::onAddService(QIndigoService &indigo_service) {
-	QListWidgetItem* item = new QListWidgetItem(
-		indigo_service.name() +
-		tr(" @ ") +
-		indigo_service.host() +
-		tr(":") +
-		QString::number(indigo_service.port())
-	);
+	QString server_string = indigo_service.name() + tr(" @ ") + indigo_service.host() + tr(":") + QString::number(indigo_service.port());
+	QList<QListWidgetItem *> items = m_server_list->findItems(server_string, Qt::MatchExactly);
+	if (items.size() > 0) {
+		indigo_debug("SERVER IN IS IN THE MENU [%s]", server_string.toUtf8().constData());
+		return;
+	}
+
+	QListWidgetItem* item = new QListWidgetItem(server_string);
 
 	item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
 	if (indigo_service.connected())
@@ -109,11 +110,9 @@ void QIndigoServers::onAddService(QIndigoService &indigo_service) {
 	else
 		item->setCheckState(Qt::Unchecked);
 
-	if (indigo_service.isQZeroConfService) {
-		//item->setForeground(QBrush(QColor("#99FF00")));
+	if (indigo_service.is_auto_service) {
 		item->setData(Qt::DecorationRole,QIcon(":resource/bonjour_service.png"));
 	} else {
-		//item->setForeground(QBrush(QColor("#FFFFFF")));
 		item->setData(Qt::DecorationRole,QIcon(":resource/manual_service.png"));
 	}
 	m_server_list->addItem(item);

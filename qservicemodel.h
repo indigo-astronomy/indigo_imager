@@ -37,11 +37,13 @@ class QServiceModel : public QAbstractListModel
 
 public:
 	QServiceModel(const QByteArray &type);
+	~QServiceModel();
 
 	void saveManualServices();
 	void loadManualServices();
 	virtual int rowCount(const QModelIndex &parent) const;
-	bool addService(QByteArray name, QByteArray host,  int port);
+	bool addService(QByteArray name, QByteArray host, int port);
+	bool addService(QByteArray name, QByteArray host, int port, bool auto_connect, bool is_manual_service);
 	bool connectService(QByteArray name);
 	bool disconnectService(QByteArray name);
 	bool removeService(QByteArray name);
@@ -72,8 +74,8 @@ private:
 
 	Logger* m_logger;
 	bool m_auto_connect;
-    QList<QIndigoService*> mServices;
-    QZeroConf m_zeroConf;
+    QList<QIndigoService*> m_services;
+    QZeroConf m_zero_conf;
 };
 
 #endif // SERVICEMODEL_H
