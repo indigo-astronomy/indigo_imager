@@ -173,6 +173,22 @@ bool blob_preview_cache::remove(indigo_property *property, indigo_item *item) {
 
 // Related Functions
 
+preview_image* create_tiff_preview(unsigned char *tiff_image_buffer, unsigned long tiff_size) {
+	indigo_error("PREVIEW: %s(): not implemented!", __FUNCTION__);
+	preview_image* img = new preview_image();
+	/* not supported yet */
+	return img;
+}
+
+
+preview_image* create_qtsupported_preview(unsigned char *image_buffer, unsigned long size) {
+	indigo_debug("PREVIEW: %s(): called", __FUNCTION__);
+	preview_image* img = new preview_image();
+	img->loadFromData((const uchar*)image_buffer, size);
+	return img;
+}
+
+
 preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_size) {
 #if !defined(USE_LIBJPEG)
 
@@ -639,39 +655,49 @@ preview_image* create_preview(indigo_item *item) {
 	preview_image *preview = nullptr;
 	if (item->blob.value != NULL) {
 		if (!strcmp(item->blob.format, ".jpeg") ||
-			!strcmp(item->blob.format, ".jpg") ||
-			!strcmp(item->blob.format, ".JPG") ||
-			!strcmp(item->blob.format, ".JPEG")) {
+			!strcmp(item->blob.format, ".jpg")  ||
+			!strcmp(item->blob.format, ".JPG")  ||
+			!strcmp(item->blob.format, ".JPEG")
+		) {
 			preview = create_jpeg_preview((unsigned char*)item->blob.value, item->blob.size);
-		} else if (!strcmp(item->blob.format, ".fits") ||
-				   !strcmp(item->blob.format, ".fit") ||
-				   !strcmp(item->blob.format, ".fts") ||
-				   !strcmp(item->blob.format, ".FITS") ||
-				   !strcmp(item->blob.format, ".FIT") ||
-				   !strcmp(item->blob.format, ".FTS")) {
+		} else if (
+			!strcmp(item->blob.format, ".fits") ||
+			!strcmp(item->blob.format, ".fit")  ||
+			!strcmp(item->blob.format, ".fts")  ||
+			!strcmp(item->blob.format, ".FITS") ||
+			!strcmp(item->blob.format, ".FIT")  ||
+			!strcmp(item->blob.format, ".FTS")
+		) {
 			preview = create_fits_preview((unsigned char*)item->blob.value, item->blob.size);
-					/* DUMMY TEST CODE */
-					/*
-					  FILE *file;
-					  char *buffer;
-					  unsigned long fileLen;
-					  char name[100] = "fits/m16.fits";
-
-					  file = fopen(name, "rb");
-					  fseek(file, 0, SEEK_END);
-					  fileLen=ftell(file);
-					  fseek(file, 0, SEEK_SET);
-
-					  buffer=(char *)malloc(fileLen+1);
-
-					  fread(buffer, fileLen, 1, file);
-					  fclose(file);
-
-					  preview = create_fits_preview((unsigned char*)buffer, fileLen+1);
-					*/
-		} else if (!strcmp(item->blob.format, ".raw") ||
-				   !strcmp(item->blob.format, ".RAW")) {
+		} else if (
+			!strcmp(item->blob.format, ".raw") ||
+			!strcmp(item->blob.format, ".RAW")
+		) {
 			preview = create_raw_preview((unsigned char*)item->blob.value, item->blob.size);
+		} else if (
+			!strcmp(item->blob.format, ".tif")  ||
+			!strcmp(item->blob.format, ".tiff") ||
+			!strcmp(item->blob.format, ".TIF")  ||
+			!strcmp(item->blob.format, ".TIFF")
+		) {
+			preview = create_tiff_preview((unsigned char*)item->blob.value, item->blob.size);
+		} else {
+			/* DUMMY TEST CODE */
+			/*
+			FILE *file;
+			char *buffer;
+			unsigned long fileLen;
+			char name[100] = "/home/rumen/test.png";
+			file = fopen(name, "rb");
+			fseek(file, 0, SEEK_END);
+			fileLen=ftell(file);
+			fseek(file, 0, SEEK_SET);
+			buffer=(char *)malloc(fileLen+1);
+			fread(buffer, fileLen, 1, file);
+			fclose(file);
+			preview = create_qt_preview((unsigned char*)buffer, fileLen);
+			*/
+			preview = create_qtsupported_preview((unsigned char*)item->blob.value, item->blob.size);
 		}
 	}
 	return preview;
