@@ -68,6 +68,7 @@ public Q_SLOTS:
 	void onRequestAddManualService(QIndigoService &indigo_service);
 	void onRequestRemoveManualService(const QString &service);
 	void onRequestDisconnect(const QString &service);
+	void onRequestSaveServices();
 
 private:
     int findService(const QByteArray &name);

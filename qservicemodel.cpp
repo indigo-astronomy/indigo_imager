@@ -265,14 +265,19 @@ void QServiceModel::onRequestDisconnect(const QString &service) {
 	disconnectService(service.toUtf8());
 }
 
+
 void QServiceModel::onRequestAddManualService(QIndigoService &indigo_service) {
-	if (addService(indigo_service.name(), indigo_service.host(), indigo_service.port()))
-		saveManualServices();
+	if (addService(indigo_service.name(), indigo_service.host(), indigo_service.port())) saveManualServices();
 }
 
 
 void QServiceModel::onRequestRemoveManualService(const QString &service) {
 	if (removeService(service.toUtf8())) saveManualServices();
+}
+
+
+void QServiceModel::onRequestSaveServices() {
+	saveManualServices();
 }
 
 

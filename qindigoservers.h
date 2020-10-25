@@ -46,8 +46,10 @@ signals:
 	void requestDisconnect(const QString &service);
 	void requestAddManualService(QIndigoService &indigo_service);
 	void requestRemoveManualService(const QString &service);
+	void requestSaveServices();
 
 public slots:
+	void onClose();
 	void onAddService(QIndigoService &indigo_service);
 	void onRemoveService(QIndigoService &indigo_service);
 	void highlightChecked(QListWidgetItem* item);

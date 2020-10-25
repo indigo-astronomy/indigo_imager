@@ -72,9 +72,14 @@ QIndigoServers::QIndigoServers(QWidget *parent): QDialog(parent)
 	QObject::connect(m_server_list, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(highlightChecked(QListWidgetItem*)));
 	QObject::connect(m_add_button, SIGNAL(clicked()), this, SLOT(onAddManualService()));
 	QObject::connect(m_remove_button, SIGNAL(clicked()), this, SLOT(onRemoveManualService()));
-	QObject::connect(m_close_button, SIGNAL(clicked()), this, SLOT(close()));
+	QObject::connect(m_close_button, SIGNAL(clicked()), this, SLOT(onClose()));
 }
 
+
+void QIndigoServers::onClose() {
+	emit(requestSaveServices());
+	close();
+}
 
 void QIndigoServers::onConnectionChange(QIndigoService &indigo_service) {
 	QString service_name = indigo_service.name();

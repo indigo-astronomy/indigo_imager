@@ -277,6 +277,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(mIndigoServers, &QIndigoServers::requestDisconnect, mServiceModel, &QServiceModel::onRequestDisconnect);
 	connect(mIndigoServers, &QIndigoServers::requestAddManualService, mServiceModel, &QServiceModel::onRequestAddManualService);
 	connect(mIndigoServers, &QIndigoServers::requestRemoveManualService, mServiceModel, &QServiceModel::onRequestRemoveManualService);
+	connect(mIndigoServers, &QIndigoServers::requestSaveServices, mServiceModel, &QServiceModel::onRequestSaveServices);
 
 	// NOTE: logging should be before update and delete of properties as they release the copy!!!
 	connect(&IndigoClient::instance(), &IndigoClient::property_defined, this, &ImagerWindow::on_message_sent);
