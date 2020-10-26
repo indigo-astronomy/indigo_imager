@@ -638,7 +638,8 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		img->m_width = width;
 	} else {
 		indigo_error("PREVIEW: Unsupported pixel format (%d)", pix_format);
-		return nullptr;
+		delete img;
+		img = nullptr;
 	}
 	return img;
 }
