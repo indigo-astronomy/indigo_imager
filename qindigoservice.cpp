@@ -82,6 +82,7 @@ bool QIndigoService::connect() {
 	while (!connected() && i--) {
 		indigo_usleep(100000);
 	}
+	indigo_debug("%s(): %s %s %d -> m_server_entry=%p\n",__FUNCTION__, m_name.constData(), m_host.constData(), m_port, m_server_entry);
 	return connected();
 }
 

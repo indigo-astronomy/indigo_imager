@@ -56,7 +56,7 @@ void QServiceModel::saveManualServices() {
 			} else {
 				service_type = 'M';
 			}
-			indigo_debug("Saved: %s@%s:%d, %c, %d\n", (*i)->name().constData(), (*i)->host().constData(), (*i)->port(), service_type, (*i)->auto_connect);
+			indigo_debug("Saved service: %s@%s:%d, %c, %d\n", (*i)->name().constData(), (*i)->host().constData(), (*i)->port(), service_type, (*i)->auto_connect);
 			fprintf(file, "%s@%s:%d, %c, %d\n", (*i)->name().constData(), (*i)->host().constData(), (*i)->port(), service_type, (*i)->auto_connect);
 		}
 		fclose(file);
@@ -120,7 +120,7 @@ bool QServiceModel::addService(QByteArray name, QByteArray host, int port, bool 
 	m_services.append(indigo_service);
 	endInsertRows();
 
-	if (m_auto_connect && indigo_service->auto_connect) indigo_service->connect();
+	if (m_auto_connect && indigo_service->auto_connect && !indigo_service->is_auto_service) indigo_service->connect();
 	if (!indigo_service->is_auto_service) emit(serviceAdded(*indigo_service));
 	return true;
 }
@@ -205,29 +205,30 @@ void QServiceModel::onServiceError(QZeroConf::error_t e) {
 
 void QServiceModel::onServiceAdded(QZeroConfService service) {
 	QIndigoService* indigo_service = new QIndigoService(service);
+	QIndigoService* stored_service = nullptr;
 	int i = findService(service->name().toUtf8());
 	if (i == -1) {
 		indigo_debug("SERVICE ADDED [%s] on %s:%d\n", service->name().toUtf8().constData(), service->host().toUtf8().constData(), service->port());
 		beginInsertRows(QModelIndex(), m_services.count(), m_services.count());
 		m_services.append(indigo_service);
 		endInsertRows();
+		stored_service = indigo_service;
 	} else {
-		QIndigoService* stored_service = m_services.at(i);
+		stored_service = m_services.at(i);
 		if (
 			stored_service->name() == indigo_service->name() &&
 			stored_service->host() == indigo_service->host() &&
 			stored_service->port() == indigo_service->port()
 		) {
-			indigo_service->auto_connect = stored_service->auto_connect;
-			indigo_debug("SERVICE HAS RECORD [%s] connect = %d\n", service->name().toUtf8().constData(), indigo_service->auto_connect);
+			indigo_debug("SERVICE HAS RECORD [%s] connect = %d\n", service->name().toUtf8().constData(), stored_service->auto_connect);
 		} else {
 			indigo_debug("DUPLICATE SERVICE [%s]\n", service->name().toUtf8().constData());
 			return;
 		}
 	}
 
-	if (m_auto_connect && indigo_service->auto_connect) indigo_service->connect();
-	emit(serviceAdded(*indigo_service));
+	if (m_auto_connect && stored_service->auto_connect) stored_service->connect();
+	emit(serviceAdded(*stored_service));
 }
 
 
