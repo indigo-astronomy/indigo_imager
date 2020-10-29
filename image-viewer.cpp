@@ -168,15 +168,15 @@ void ImageViewer::hideSelection() {
 }
 
 void ImageViewer::moveResizeSelection(double x, double y, int size) {
-	double cor_x = x - (size) / 2.0;
-	double cor_y = y - (size) / 2.0;
+	double cor_x = x - (double)size / 2.0;
+	double cor_y = y - (double)size / 2.0;
 
 	if (!m_pixmap->pixmap().isNull() && ((cor_x < 0) || (cor_y < 0) ||
 	    (cor_x > m_pixmap->pixmap().width() - size + 1) ||
 	    (cor_y > m_pixmap->pixmap().height() - size + 1))) {
 		return;
 	}
-	indigo_debug("%.2f -> %.2f, %.2f -> %.2f, %d", x, cor_x, y, cor_y, size);
+	indigo_debug("%s(): %.2f -> %.2f, %.2f -> %.2f, %d", __FUNCTION__, x, cor_x, y, cor_y, size);
 	m_selection_p.setX(x);
 	m_selection_p.setY(y);
 	if (m_selection_p.isNull()) {
@@ -190,15 +190,15 @@ void ImageViewer::moveResizeSelection(double x, double y, int size) {
 
 void ImageViewer::moveSelection(double x, double y) {
 	QRectF br = m_selection->boundingRect();
-	double cor_x = x - br.width() / 2.0;
-	double cor_y = y - br.height() / 2.0;
+	double cor_x = x - (br.width() - 1) / 2.0;
+	double cor_y = y - (br.height() - 1) / 2.0;
 
 	if (!m_pixmap->pixmap().isNull() && ((cor_x < 0) || (cor_y < 0) ||
 	    (cor_x > m_pixmap->pixmap().width() - (int)br.width() + 1) ||
 	    (cor_y > m_pixmap->pixmap().height() - (int)br.height() + 1))) {
 		return;
 	}
-	indigo_debug("%.2f -> %.2f, %.2f -> %.2f, %d", x, cor_x, y, cor_y, (int)br.width());
+	indigo_debug("%s(): %.2f -> %.2f, %.2f -> %.2f, %d", __FUNCTION__, x, cor_x, y, cor_y, (int)br.width()-1);
 	m_selection_p.setX(x);
 	m_selection_p.setY(y);
 	m_selection->setPos(cor_x, cor_y);
