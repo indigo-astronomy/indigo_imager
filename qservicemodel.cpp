@@ -120,7 +120,7 @@ bool QServiceModel::addService(QByteArray name, QByteArray host, int port, bool 
 	m_services.append(indigo_service);
 	endInsertRows();
 
-	if (m_auto_connect && indigo_service->auto_connect && !indigo_service->is_auto_service) indigo_service->connect();
+	if (indigo_service->auto_connect && !indigo_service->is_auto_service) indigo_service->connect();
 	if (!indigo_service->is_auto_service) emit(serviceAdded(*indigo_service));
 	return true;
 }
@@ -204,7 +204,7 @@ void QServiceModel::onServiceError(QZeroConf::error_t e) {
 
 
 void QServiceModel::onServiceAdded(QZeroConfService service) {
-	QIndigoService* indigo_service = new QIndigoService(service);
+	QIndigoService* indigo_service = new QIndigoService(service, m_auto_connect);
 	QIndigoService* stored_service = nullptr;
 	int i = findService(service->name().toUtf8());
 	if (i == -1) {
@@ -227,7 +227,7 @@ void QServiceModel::onServiceAdded(QZeroConfService service) {
 		}
 	}
 
-	if (m_auto_connect && stored_service->auto_connect) stored_service->connect();
+	if (stored_service->auto_connect) stored_service->connect();
 	emit(serviceAdded(*stored_service));
 }
 

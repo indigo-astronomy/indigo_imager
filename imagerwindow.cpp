@@ -114,7 +114,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setChecked(conf.blobs_enabled);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_blobs_changed);
 
-	act = menu->addAction(tr("Enable auto &connect"));
+	act = menu->addAction(tr("Auto &connect new services"));
 	act->setCheckable(true);
 	act->setChecked(conf.auto_connect);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_bonjour_changed);
