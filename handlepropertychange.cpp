@@ -51,7 +51,8 @@ static void set_widget_state(indigo_property *property, W *widget) {
 template<typename W>
 static void configure_spinbox(indigo_item *item, int perm, W *widget) {
 	if (item != nullptr) {
-		if(abs(widget->value() - item->number.value) > 1e-15) { /* Avoid roudoff error updates */
+		/* update only if value has changed, while avoiding roudoff error updates */
+		if(abs(widget->value() - item->number.value) > 1e-15) {
 			widget->setRange(item->number.min, item->number.max);
 			widget->setSingleStep(item->number.step);
 			widget->blockSignals(true);
@@ -196,7 +197,13 @@ static void update_imager_selection_property(indigo_property *property, QSpinBox
 	//star_y->blockSignals(false);
 }
 
-static void update_guider_selection_property(indigo_property *property, QSpinBox *star_x, QSpinBox *star_y, ImageViewer *viewer) {
+static void update_guider_selection_property(
+	indigo_property *property,
+	QSpinBox *star_x,
+	QSpinBox *star_y,
+	QSpinBox *star_radius,
+	ImageViewer *viewer
+) {
 	double x = 0, y = 0;
 	int size = 0;
 	for (int i = 0; i < property->count; i++) {
@@ -208,15 +215,10 @@ static void update_guider_selection_property(indigo_property *property, QSpinBox
 			configure_spinbox(&property->items[i], property->perm, star_y);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SELECTION_RADIUS_ITEM_NAME)) {
 			size = (int)round(property->items[i].number.value * 2 + 1);
+			configure_spinbox(&property->items[i], property->perm, star_radius);
 		}
 	}
 	viewer->moveResizeSelection(x, y, size);
-	//star_x->blockSignals(true);
-	//star_x->setValue(x);
-	//star_x->blockSignals(false);
-	//star_y->blockSignals(true);
-	//star_y->setValue(y);
-	//star_y->blockSignals(false);
 }
 
 static void update_focus_setup_property(indigo_property *property, QSpinBox *initial_step, QSpinBox *final_step, QSpinBox *focus_backlash, QSpinBox *focus_stack) {
@@ -788,7 +790,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		add_items_to_combobox(property, m_guider_select);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME)) {
-		update_guider_selection_property(property, m_guide_star_x, m_guide_star_y, m_guider_viewer);
+		update_guider_selection_property(property, m_guide_star_x, m_guide_star_y, m_guide_star_radius, m_guider_viewer);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_STATS_PROPERTY_NAME)) {
 		update_guider_stats(
@@ -934,7 +936,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		change_combobox_selection(property, m_guider_select);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME)) {
-		update_guider_selection_property(property, m_guide_star_x, m_guide_star_y, m_guider_viewer);
+		update_guider_selection_property(property, m_guide_star_x, m_guide_star_y, m_guide_star_radius, m_guider_viewer);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_STATS_PROPERTY_NAME)) {
 		update_guider_stats(
