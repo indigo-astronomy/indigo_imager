@@ -620,14 +620,20 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	static pthread_mutex_t l_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 	if (!strncmp(property->device, "Server", 6)) {
-		if (client_match_device_property(property, property->device, "DRIVERS")) {
-			// load indigo_agent_image and indigo_agent_guider
+		if (client_match_device_property(property, property->device, "LOAD")) {
+			if (properties.get(property->device, property->name)) return;
+
+			bool imager_not_loaded = true;
+			bool guider_not_loaded = true;
+			indigo_property *p = properties.get(property->device, "DRIVERS");
+			if (p) {
+				imager_not_loaded = !indigo_get_switch(p, "indigo_agent_imager");
+				guider_not_loaded = !indigo_get_switch(p, "indigo_agent_guider");
+			}
+			char *device_name = (char*)malloc(INDIGO_NAME_SIZE);
+			strncpy(device_name, property->device, INDIGO_NAME_SIZE);
 			QtConcurrent::run([=]() {
 				pthread_mutex_lock(&l_mutex);
-				bool imager_not_loaded = !indigo_get_switch(property, "indigo_agent_imager");
-				bool guider_not_loaded = !indigo_get_switch(property, "indigo_agent_guider");
-				static char device_name[INDIGO_NAME_SIZE];
-				strncpy(device_name, property->device, INDIGO_NAME_SIZE);
 				if (imager_not_loaded) {
 					static const char *items[] = { "DRIVER" };
 					static const char *values[] = { "indigo_agent_imager" };
@@ -638,8 +644,8 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 					static const char *values[] = { "indigo_agent_guider" };
 					indigo_change_text_property(NULL, device_name, "LOAD", 1, items, values);
 				}
-				if (imager_not_loaded || guider_not_loaded) indigo_usleep(ONE_SECOND_DELAY);
 				pthread_mutex_unlock(&l_mutex);
+				free(device_name);
 			});
 		}
 		return;
@@ -985,6 +991,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 void ImagerWindow::on_property_delete(indigo_property* property, char *message) {
 
 	if ((strncmp(property->device, "Imager Agent", 12)) && (strncmp(property->device, "Guider Agent", 12))) {
+		properties.remove(property);
 		free(property);
 		return;
 	}
