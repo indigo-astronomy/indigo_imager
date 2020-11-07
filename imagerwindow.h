@@ -152,6 +152,12 @@ public slots:
 	void on_detection_mode_selected(int index);
 	void on_dec_guiding_selected(int index);
 
+	void on_guider_agent_exposure_changed(double value);
+	void on_guider_agent_pulse_changed(double value);
+	void on_guider_agent_aggressivity_changed(int value);
+	void on_change_guider_agent_pw_changed(double value);
+	void on_change_guider_agent_is_changed(int value);
+
 	void on_tab_changed(int index);
 
 private:
@@ -274,6 +280,10 @@ private:
 	void change_agent_start_calibrate_property(const char *agent) const;
 	void change_detection_mode_property(const char *agent) const;
 	void change_dec_guiding_property(const char *agent) const;
+	void change_guider_agent_exposure(const char *agent) const;
+	void change_guider_agent_pulse_min_max(const char *agent) const;
+	void change_guider_agent_aggressivity(const char *agent) const;
+	void change_guider_agent_pi(const char *agent) const;
 
 	bool show_preview_in_imager_viewer(QString &key);
 	bool show_preview_in_guider_viewer(QString &key);

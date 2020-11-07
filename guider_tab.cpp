@@ -164,7 +164,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guider_exposure->setMinimum(0);
 	m_guider_exposure->setValue(0);
 	settings_frame_layout->addWidget(m_guider_exposure, settings_row, 2, 1, 2);
-	//connect(m_guide_star_x, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
+	connect(m_guider_exposure, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_exposure_changed);
 
 	// Drift detection
 	settings_row++;
@@ -221,7 +221,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guide_min_pulse->setMinimum(0);
 	m_guide_min_pulse->setValue(0);
 	settings_frame_layout->addWidget(m_guide_min_pulse, settings_row, 1);
-	//connect(m_guide_star_x, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
+	connect(m_guide_min_pulse, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_pulse_changed);
 
 	label = new QLabel("Max (s):");
 	settings_frame_layout->addWidget(label, settings_row, 2);
@@ -230,56 +230,56 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guide_max_pulse->setMinimum(0);
 	m_guide_max_pulse->setValue(0);
 	settings_frame_layout->addWidget(m_guide_max_pulse, settings_row, 3);
-	//connect(m_guide_star_y, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
+	connect(m_guide_max_pulse, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_pulse_changed);
 
 	settings_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	settings_frame_layout->addItem(spacer, settings_row, 0);
 
 	settings_row++;
-	label = new QLabel("Proportional / Integral Controller:");
+	label = new QLabel("Proportional-Integral Controller:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
 
 	settings_row++;
-	label = new QLabel("RA aggressivity (%):");
+	label = new QLabel("RA Aggressivity (%):");
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
 	m_guide_ra_aggr = new QSpinBox();
 	m_guide_ra_aggr->setMaximum(100);
 	m_guide_ra_aggr->setMinimum(0);
 	m_guide_ra_aggr->setValue(0);
 	settings_frame_layout->addWidget(m_guide_ra_aggr, settings_row, 3);
-	//connect(m_guide_star_x, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
+	connect(m_guide_ra_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_aggressivity_changed);
 
 	settings_row++;
-	label = new QLabel("Dec aggressivity (%):");
+	label = new QLabel("Dec Aggressivity (%):");
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
 	m_guide_dec_aggr = new QSpinBox();
 	m_guide_dec_aggr->setMaximum(100);
 	m_guide_dec_aggr->setMinimum(0);
 	m_guide_dec_aggr->setValue(0);
 	settings_frame_layout->addWidget(m_guide_dec_aggr, settings_row, 3);
-	//connect(m_guide_star_y, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
+	connect(m_guide_dec_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_aggressivity_changed);
 
 	settings_row++;
-	label = new QLabel("RA proportional weight:");
+	label = new QLabel("RA Proportional weight:");
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
 	m_guide_ra_pw = new QDoubleSpinBox();
 	m_guide_ra_pw->setMaximum(1);
 	m_guide_ra_pw->setMinimum(0);
 	m_guide_ra_pw->setValue(0);
 	settings_frame_layout->addWidget(m_guide_ra_pw, settings_row, 3);
-	//connect(m_guide_star_x, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
+	connect(m_guide_ra_pw, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_change_guider_agent_pw_changed);
 
 	settings_row++;
-	label = new QLabel("Dec proportional weight:");
+	label = new QLabel("Dec Proportional weight:");
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
 	m_guide_dec_pw = new QDoubleSpinBox();
 	m_guide_dec_pw->setMaximum(1);
 	m_guide_dec_pw->setMinimum(0);
 	m_guide_dec_pw->setValue(0);
 	settings_frame_layout->addWidget(m_guide_dec_pw, settings_row, 3);
-	//connect(m_guide_star_y, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
+	connect(m_guide_dec_pw, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_change_guider_agent_pw_changed);
 
 	settings_row++;
 	label = new QLabel("Integral stack (frames):");
@@ -289,7 +289,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guide_is->setMinimum(0);
 	m_guide_is->setValue(0);
 	settings_frame_layout->addWidget(m_guide_is, settings_row, 3);
-	//connect(m_guide_star_y, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
+	connect(m_guide_is, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_change_guider_agent_is_changed);
 }
 
 void ImagerWindow::on_guider_agent_selected(int index) {
@@ -471,4 +471,53 @@ void ImagerWindow::on_dec_guiding_selected(int index) {
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_dec_guiding_property(selected_agent);
 	});
+}
+
+void ImagerWindow::on_guider_agent_exposure_changed(double value) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_guider_agent_exposure(selected_agent);
+	});
+}
+
+
+void ImagerWindow::on_guider_agent_pulse_changed(double value) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_guider_agent_pulse_min_max(selected_agent);
+	});
+}
+
+void ImagerWindow::on_guider_agent_aggressivity_changed(int value) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_guider_agent_aggressivity(selected_agent);
+	});
+}
+
+void ImagerWindow::on_change_guider_agent_pw_changed(double value) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_guider_agent_pi(selected_agent);
+	});
+}
+
+void ImagerWindow::on_change_guider_agent_is_changed(int value) {
+	on_change_guider_agent_pw_changed((double)value);
 }

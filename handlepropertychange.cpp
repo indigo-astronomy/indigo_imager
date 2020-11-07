@@ -51,11 +51,13 @@ static void set_widget_state(indigo_property *property, W *widget) {
 template<typename W>
 static void configure_spinbox(indigo_item *item, int perm, W *widget) {
 	if (item != nullptr) {
-		widget->setRange(item->number.min, item->number.max);
-		widget->setSingleStep(item->number.step);
-		widget->blockSignals(true);
-		widget->setValue(item->number.value);
-		widget->blockSignals(false);
+		if(abs(widget->value() - item->number.value) > 1e-15) { /* Avoid roudoff error updates */
+			widget->setRange(item->number.min, item->number.max);
+			widget->setSingleStep(item->number.step);
+			widget->blockSignals(true);
+			widget->setValue(item->number.value);
+			widget->blockSignals(false);
+		}
 	}
 	if (perm == INDIGO_RO_PERM) {
 		widget->setEnabled(false);
@@ -63,7 +65,6 @@ static void configure_spinbox(indigo_item *item, int perm, W *widget) {
 		widget->setEnabled(true);
 	}
 }
-
 
 static void change_combobox_selection(indigo_property *property, QComboBox *combobox) {
 	set_widget_state(property, combobox);
@@ -76,7 +77,6 @@ static void change_combobox_selection(indigo_property *property, QComboBox *comb
 		}
 	}
 }
-
 
 static void add_items_to_combobox(indigo_property *property, QComboBox *items_combobox) {
 	items_combobox->clear();
@@ -584,6 +584,41 @@ static void update_guider_stats(
 }
 
 
+static void update_guider_settings(
+	indigo_property *property,
+	QDoubleSpinBox *exposure,
+	QDoubleSpinBox *min_pulse,
+	QDoubleSpinBox *max_pulse,
+	QSpinBox *ra_aggr,
+	QSpinBox *dec_aggr,
+	QDoubleSpinBox *ra_pw,
+	QDoubleSpinBox *dec_pw,
+	QSpinBox *istack
+) {
+	indigo_debug("Set %s", property->name);
+	for (int i = 0; i < property->count; i++) {
+		indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
+		if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_EXPOSURE_ITEM_NAME)) {
+			configure_spinbox(&property->items[i], property->perm, exposure);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_MIN_PULSE_ITEM_NAME)) {
+			configure_spinbox(&property->items[i], property->perm, min_pulse);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_MAX_PULSE_ITEM_NAME)) {
+			configure_spinbox(&property->items[i], property->perm, max_pulse);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_AGG_RA_ITEM_NAME)) {
+			configure_spinbox(&property->items[i], property->perm, ra_aggr);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_AGG_DEC_ITEM_NAME)) {
+			configure_spinbox(&property->items[i], property->perm, dec_aggr);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_PW_RA_ITEM_NAME)) {
+			configure_spinbox(&property->items[i], property->perm, ra_pw);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_PW_DEC_ITEM_NAME)) {
+			configure_spinbox(&property->items[i], property->perm, dec_pw);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_STACK_ITEM_NAME)) {
+			configure_spinbox(&property->items[i], property->perm, istack);
+		}
+	}
+}
+
+
 void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 	char timestamp[16];
 	char log_line[512];
@@ -774,6 +809,19 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME)) {
 		add_items_to_combobox(property, m_dec_guiding_select);
 	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME)) {
+		update_guider_settings(
+			property,
+			m_guider_exposure,
+			m_guide_min_pulse,
+			m_guide_max_pulse,
+			m_guide_ra_aggr,
+			m_guide_dec_aggr,
+			m_guide_ra_pw,
+			m_guide_dec_pw,
+			m_guide_is
+		);
+	}
 }
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
@@ -907,6 +955,19 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME)) {
 		change_combobox_selection(property, m_dec_guiding_select);
 	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME)) {
+		update_guider_settings(
+			property,
+			m_guider_exposure,
+			m_guide_min_pulse,
+			m_guide_max_pulse,
+			m_guide_ra_aggr,
+			m_guide_dec_aggr,
+			m_guide_ra_pw,
+			m_guide_dec_pw,
+			m_guide_is
+		);
+	}
 	properties.create(property);
 }
 
@@ -991,15 +1052,33 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		m_guider_select->clear();
 	}
-	if (client_match_device_property(property, selected_agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME) ||
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		m_detection_mode_select->clear();
 	}
-	if (client_match_device_property(property, selected_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME) ||
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		m_dec_guiding_select->clear();
+	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME)) {
+		m_guider_exposure->setValue(0);
+		m_guider_exposure->setEnabled(false);
+		m_guide_min_pulse->setValue(0);
+		m_guide_min_pulse->setEnabled(false);
+		m_guide_max_pulse->setValue(0);
+		m_guide_max_pulse->setEnabled(false);
+		m_guide_ra_aggr->setValue(0);
+		m_guide_ra_aggr->setEnabled(false);
+		m_guide_dec_aggr->setValue(0);
+		m_guide_dec_aggr->setEnabled(false);
+		m_guide_ra_pw->setValue(0);
+		m_guide_ra_pw->setEnabled(false);
+		m_guide_dec_pw->setValue(0);
+		m_guide_dec_pw->setEnabled(false);
+		m_guide_is->setValue(0);
+		m_guide_is->setEnabled(false);
 	}
 }
 

@@ -296,3 +296,47 @@ void ImagerWindow::change_agent_start_calibrate_property(const char *agent) cons
 	};
 	indigo_change_switch_property(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, 1, items, values);
 }
+
+void ImagerWindow::change_guider_agent_exposure(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_SETTINGS_EXPOSURE_ITEM_NAME
+	};
+	static double values[1];
+	values[0] = (double)m_guider_exposure->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 1, items, values);
+}
+
+void ImagerWindow::change_guider_agent_pulse_min_max(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_SETTINGS_MIN_PULSE_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_MAX_PULSE_ITEM_NAME
+	};
+	static double values[2];
+	values[0] = (double)m_guide_min_pulse->value();
+	values[1] = (double)m_guide_max_pulse->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 2, items, values);
+}
+
+void ImagerWindow::change_guider_agent_aggressivity(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_SETTINGS_AGG_RA_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_AGG_DEC_ITEM_NAME
+	};
+	static double values[2];
+	values[0] = (double)m_guide_ra_aggr->value();
+	values[1] = (double)m_guide_dec_aggr->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 2, items, values);
+}
+
+void ImagerWindow::change_guider_agent_pi(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_SETTINGS_PW_RA_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_PW_DEC_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_STACK_ITEM_NAME
+	};
+	static double values[3];
+	values[0] = (double)m_guide_ra_pw->value();
+	values[1] = (double)m_guide_dec_pw->value();
+	values[2] = (double)m_guide_is->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 3, items, values);
+}
