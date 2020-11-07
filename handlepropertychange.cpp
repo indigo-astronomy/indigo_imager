@@ -53,7 +53,9 @@ static void configure_spinbox(indigo_item *item, int perm, W *widget) {
 	if (item != nullptr) {
 		widget->setRange(item->number.min, item->number.max);
 		widget->setSingleStep(item->number.step);
+		widget->blockSignals(true);
 		widget->setValue(item->number.value);
+		widget->blockSignals(false);
 	}
 	if (perm == INDIGO_RO_PERM) {
 		widget->setEnabled(false);
@@ -186,6 +188,12 @@ static void update_imager_selection_property(indigo_property *property, QSpinBox
 		}
 	}
 	viewer->moveResizeSelection(x, y, size);
+	star_x->blockSignals(true);
+	star_x->setValue(x);
+	star_x->blockSignals(false);
+	star_y->blockSignals(true);
+	star_y->setValue(y);
+	star_y->blockSignals(false);
 }
 
 static void update_guider_selection_property(indigo_property *property, QSpinBox *star_x, QSpinBox *star_y, ImageViewer *viewer) {
@@ -203,6 +211,12 @@ static void update_guider_selection_property(indigo_property *property, QSpinBox
 		}
 	}
 	viewer->moveResizeSelection(x, y, size);
+	star_x->blockSignals(true);
+	star_x->setValue(x);
+	star_x->blockSignals(false);
+	star_y->blockSignals(true);
+	star_y->setValue(y);
+	star_y->blockSignals(false);
 }
 
 static void update_focus_setup_property(indigo_property *property, QSpinBox *initial_step, QSpinBox *final_step, QSpinBox *focus_backlash, QSpinBox *focus_stack) {
@@ -623,6 +637,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		if (client_match_device_property(property, property->device, "LOAD")) {
 			if (properties.get(property->device, property->name)) return;
 
+			// load indigo_agent_image and indigo_agent_guider
 			bool imager_not_loaded = true;
 			bool guider_not_loaded = true;
 			indigo_property *p = properties.get(property->device, "DRIVERS");

@@ -207,9 +207,17 @@ private:
 	// Guider tab
 	QComboBox *m_agent_guider_select;
 	QComboBox *m_guider_camera_select;
+	QDoubleSpinBox  *m_guider_exposure;
 	QComboBox *m_guider_select;
 	QSpinBox  *m_guide_star_x;
 	QSpinBox  *m_guide_star_y;
+	QDoubleSpinBox  *m_guide_min_pulse;
+	QDoubleSpinBox  *m_guide_max_pulse;
+	QSpinBox  *m_guide_ra_aggr;
+	QSpinBox  *m_guide_dec_aggr;
+	QDoubleSpinBox  *m_guide_ra_pw;
+	QDoubleSpinBox  *m_guide_dec_pw;
+	QSpinBox  *m_guide_is;
 	FocusGraph *m_guider_graph;
 	QVector<double> m_drift_data_ra;
 	QVector<double> m_drift_data_dec;
