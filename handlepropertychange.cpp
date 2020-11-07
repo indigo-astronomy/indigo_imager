@@ -188,12 +188,12 @@ static void update_imager_selection_property(indigo_property *property, QSpinBox
 		}
 	}
 	viewer->moveResizeSelection(x, y, size);
-	star_x->blockSignals(true);
-	star_x->setValue(x);
-	star_x->blockSignals(false);
-	star_y->blockSignals(true);
-	star_y->setValue(y);
-	star_y->blockSignals(false);
+	//star_x->blockSignals(true);
+	//star_x->setValue(x);
+	//star_x->blockSignals(false);
+	//star_y->blockSignals(true);
+	//star_y->setValue(y);
+	//star_y->blockSignals(false);
 }
 
 static void update_guider_selection_property(indigo_property *property, QSpinBox *star_x, QSpinBox *star_y, ImageViewer *viewer) {
@@ -211,12 +211,12 @@ static void update_guider_selection_property(indigo_property *property, QSpinBox
 		}
 	}
 	viewer->moveResizeSelection(x, y, size);
-	star_x->blockSignals(true);
-	star_x->setValue(x);
-	star_x->blockSignals(false);
-	star_y->blockSignals(true);
-	star_y->setValue(y);
-	star_y->blockSignals(false);
+	//star_x->blockSignals(true);
+	//star_x->setValue(x);
+	//star_x->blockSignals(false);
+	//star_y->blockSignals(true);
+	//star_y->setValue(y);
+	//star_y->blockSignals(false);
 }
 
 static void update_focus_setup_property(indigo_property *property, QSpinBox *initial_step, QSpinBox *final_step, QSpinBox *focus_backlash, QSpinBox *focus_stack) {
