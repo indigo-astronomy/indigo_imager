@@ -349,6 +349,62 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guide_is->setValue(0);
 	advanced_frame_layout->addWidget(m_guide_is, advanced_row, 3);
 	connect(m_guide_is, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_change_guider_agent_is_changed);
+
+	advanced_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	advanced_frame_layout->addItem(spacer, advanced_row, 0);
+
+	advanced_row++;
+	label = new QLabel("Callibration:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 4);
+
+	advanced_row++;
+	label = new QLabel("Callibration step (s):");
+	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
+	m_guide_cal_step = new QDoubleSpinBox();
+	m_guide_cal_step->setMaximum(100);
+	m_guide_cal_step->setMinimum(0);
+	m_guide_cal_step->setValue(0);
+	advanced_frame_layout->addWidget(m_guide_cal_step, advanced_row, 3);
+	//connect(m_guide_cal_step, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_calibrate_params_changed);
+
+	advanced_row++;
+	label = new QLabel("Dec Backlash (px):");
+	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
+	m_guide_dec_backlash = new QDoubleSpinBox();
+	m_guide_dec_backlash->setMaximum(20);
+	m_guide_dec_backlash->setMinimum(0);
+	m_guide_dec_backlash->setValue(0);
+	advanced_frame_layout->addWidget(m_guide_dec_backlash, advanced_row, 3);
+	//connect(m_guide_dec_backlash, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_change_guider_agent_is_changed);
+
+	advanced_row++;
+	label = new QLabel("Axis rotation angle (0):");
+	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
+	m_guide_rotation = new QDoubleSpinBox();
+	m_guide_rotation->setMaximum(100);
+	m_guide_rotation->setMinimum(0);
+	m_guide_rotation->setValue(0);
+	advanced_frame_layout->addWidget(m_guide_rotation, advanced_row, 3);
+	//connect(m_guide_rotation, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_calibrate_params_chnaged);
+
+	advanced_row++;
+	label = new QLabel("RA / Dec guide speed (px/s):");
+	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 2);
+	m_guide_ra_speed = new QDoubleSpinBox();
+	m_guide_ra_speed->setMaximum(1);
+	m_guide_ra_speed->setMinimum(0);
+	m_guide_ra_speed->setValue(0);
+	advanced_frame_layout->addWidget(m_guide_ra_speed, advanced_row, 2);
+	//connect(m_guide_ra_speed, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_change_guider_agent_pw_changed);
+
+	m_guide_dec_speed = new QDoubleSpinBox();
+	m_guide_dec_speed->setMaximum(1);
+	m_guide_dec_speed->setMinimum(0);
+	m_guide_dec_speed->setValue(0);
+	advanced_frame_layout->addWidget(m_guide_dec_speed, advanced_row, 3);
+	//connect(m_guide_dec_speed, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_change_guider_agent_pw_changed);
 }
 
 void ImagerWindow::on_guider_agent_selected(int index) {
