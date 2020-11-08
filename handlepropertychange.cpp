@@ -52,9 +52,16 @@ template<typename W>
 static void configure_spinbox(indigo_item *item, int perm, W *widget) {
 	if (item != nullptr) {
 		/* update only if value has changed, while avoiding roudoff error updates */
-		if(abs(widget->value() - item->number.value) > 1e-15) {
-			widget->setRange(item->number.min, item->number.max);
+		if(abs(widget->minimum() - item->number.min) > 1e-15) {
+			widget->setMinimum(item->number.min);
+		}
+		if(abs(widget->maximum() - item->number.max) > 1e-15) {
+			widget->setMaximum(item->number.max);
+		}
+		if(abs(widget->singleStep() - item->number.step) > 1e-15) {
 			widget->setSingleStep(item->number.step);
+		}
+		if(abs(widget->value() - item->number.value) > 1e-15) {
 			widget->blockSignals(true);
 			widget->setValue(item->number.value);
 			widget->blockSignals(false);
@@ -1069,7 +1076,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		m_dec_guiding_select->clear();
 	}
-	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME)) {
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
 		m_guider_exposure->setValue(0);
 		m_guider_exposure->setEnabled(false);
 		m_guide_min_error->setValue(0);
