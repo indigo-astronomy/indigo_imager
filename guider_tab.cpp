@@ -155,9 +155,14 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	settings_frame->setContentsMargins(0, 0, 0, 0);
 
 	int settings_row = -1;
+
+	settings_row++;
+	label = new QLabel("Exposure:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
 	// exposure time
 	settings_row++;
-	label = new QLabel("Exposure (s):");
+	label = new QLabel("Exposure time (s):");
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
 	m_guider_exposure = new QDoubleSpinBox();
 	m_guider_exposure->setMaximum(100000);
