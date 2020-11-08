@@ -214,6 +214,7 @@ private:
 	QComboBox *m_agent_guider_select;
 	QComboBox *m_guider_camera_select;
 	QDoubleSpinBox  *m_guider_exposure;
+	QDoubleSpinBox  *m_guider_delay;
 	QComboBox *m_guider_select;
 	QSpinBox  *m_guide_star_x;
 	QSpinBox  *m_guide_star_y;

@@ -301,11 +301,13 @@ void ImagerWindow::change_agent_start_calibrate_property(const char *agent) cons
 
 void ImagerWindow::change_guider_agent_exposure(const char *agent) const {
 	static const char *items[] = {
-		AGENT_GUIDER_SETTINGS_EXPOSURE_ITEM_NAME
+		AGENT_GUIDER_SETTINGS_EXPOSURE_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_DELAY_ITEM_NAME
 	};
-	static double values[1];
+	static double values[2];
 	values[0] = (double)m_guider_exposure->value();
-	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 1, items, values);
+	values[1] = (double)m_guider_delay->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 2, items, values);
 }
 
 void ImagerWindow::change_guider_agent_pulse_min_max(const char *agent) const {

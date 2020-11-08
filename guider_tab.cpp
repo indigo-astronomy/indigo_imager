@@ -166,6 +166,18 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	settings_frame_layout->addWidget(m_guider_exposure, settings_row, 3);
 	connect(m_guider_exposure, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_exposure_changed);
 
+	// exposure delay
+	settings_row++;
+	label = new QLabel("Exposure delay (s):");
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
+	m_guider_delay = new QDoubleSpinBox();
+	m_guider_delay->setMaximum(100000);
+	m_guider_delay->setMinimum(0);
+	m_guider_delay->setValue(0);
+	settings_frame_layout->addWidget(m_guider_delay, settings_row, 3);
+	connect(m_guider_delay, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_exposure_changed);
+
+
 	settings_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	settings_frame_layout->addItem(spacer, settings_row, 0);
@@ -203,18 +215,18 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 
 	// Star Selection
 	settings_row++;
-	label = new QLabel("Star selection X:");
-	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
+	label = new QLabel("Star selection X / Y:");
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 2);
 	m_guide_star_x = new QSpinBox();
 	m_guide_star_x->setMaximum(100000);
 	m_guide_star_x->setMinimum(0);
 	m_guide_star_x->setValue(0);
-	settings_frame_layout->addWidget(m_guide_star_x , settings_row, 3);
+	settings_frame_layout->addWidget(m_guide_star_x , settings_row, 2);
 	connect(m_guide_star_x, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
 
-	settings_row++;
-	label = new QLabel("Star selection Y:");
-	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
+	//settings_row++;
+	//label = new QLabel("Star selection Y:");
+	//settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
 	m_guide_star_y = new QSpinBox();
 	m_guide_star_y->setMaximum(100000);
 	m_guide_star_y->setMinimum(0);
@@ -260,18 +272,18 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 
 
 	advanced_row++;
-	label = new QLabel("Min guide pulse (s):");
-	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
+	label = new QLabel("Min / Max guide pulse (s):");
+	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 2);
 	m_guide_min_pulse = new QDoubleSpinBox();
 	m_guide_min_pulse->setMaximum(100000);
 	m_guide_min_pulse->setMinimum(0);
 	m_guide_min_pulse->setValue(0);
-	advanced_frame_layout->addWidget(m_guide_min_pulse, advanced_row, 3);
+	advanced_frame_layout->addWidget(m_guide_min_pulse, advanced_row, 2);
 	connect(m_guide_min_pulse, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_pulse_changed);
 
-	advanced_row++;
-	label = new QLabel("Max guide pulse (s):");
-	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
+	//advanced_row++;
+	//label = new QLabel("Max guide pulse (s):");
+	//advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
 	m_guide_max_pulse = new QDoubleSpinBox();
 	m_guide_max_pulse->setMaximum(100000);
 	m_guide_max_pulse->setMinimum(0);
@@ -289,18 +301,18 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 4);
 
 	advanced_row++;
-	label = new QLabel("RA Aggressivity (%):");
-	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
+	label = new QLabel("RA / Dec Aggressivity (%):");
+	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 2);
 	m_guide_ra_aggr = new QSpinBox();
 	m_guide_ra_aggr->setMaximum(100);
 	m_guide_ra_aggr->setMinimum(0);
 	m_guide_ra_aggr->setValue(0);
-	advanced_frame_layout->addWidget(m_guide_ra_aggr, advanced_row, 3);
+	advanced_frame_layout->addWidget(m_guide_ra_aggr, advanced_row, 2);
 	connect(m_guide_ra_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_aggressivity_changed);
 
-	advanced_row++;
-	label = new QLabel("Dec Aggressivity (%):");
-	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
+	//advanced_row++;
+	//label = new QLabel("Dec Aggressivity (%):");
+	//advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
 	m_guide_dec_aggr = new QSpinBox();
 	m_guide_dec_aggr->setMaximum(100);
 	m_guide_dec_aggr->setMinimum(0);
@@ -309,18 +321,18 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	connect(m_guide_dec_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_aggressivity_changed);
 
 	advanced_row++;
-	label = new QLabel("RA Proportional weight:");
-	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
+	label = new QLabel("RA / Dec Proportional weight:");
+	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 2);
 	m_guide_ra_pw = new QDoubleSpinBox();
 	m_guide_ra_pw->setMaximum(1);
 	m_guide_ra_pw->setMinimum(0);
 	m_guide_ra_pw->setValue(0);
-	advanced_frame_layout->addWidget(m_guide_ra_pw, advanced_row, 3);
+	advanced_frame_layout->addWidget(m_guide_ra_pw, advanced_row, 2);
 	connect(m_guide_ra_pw, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_change_guider_agent_pw_changed);
 
-	advanced_row++;
-	label = new QLabel("Dec Proportional weight:");
-	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
+	//advanced_row++;
+	//label = new QLabel("Dec Proportional weight:");
+	//advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
 	m_guide_dec_pw = new QDoubleSpinBox();
 	m_guide_dec_pw->setMaximum(1);
 	m_guide_dec_pw->setMinimum(0);
