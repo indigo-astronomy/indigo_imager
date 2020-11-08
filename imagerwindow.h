@@ -153,6 +153,7 @@ public slots:
 	void on_dec_guiding_selected(int index);
 
 	void on_guider_agent_exposure_changed(double value);
+	void on_guider_agent_callibration_changed(double value);
 	void on_guider_agent_pulse_changed(double value);
 	void on_guider_agent_aggressivity_changed(int value);
 	void on_change_guider_agent_pw_changed(double value);
@@ -290,6 +291,7 @@ private:
 	void change_detection_mode_property(const char *agent) const;
 	void change_dec_guiding_property(const char *agent) const;
 	void change_guider_agent_exposure(const char *agent) const;
+	void change_guider_agent_callibration(const char *agent) const;
 	void change_guider_agent_pulse_min_max(const char *agent) const;
 	void change_guider_agent_aggressivity(const char *agent) const;
 	void change_guider_agent_pi(const char *agent) const;

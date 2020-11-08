@@ -310,6 +310,23 @@ void ImagerWindow::change_guider_agent_exposure(const char *agent) const {
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 2, items, values);
 }
 
+void ImagerWindow::change_guider_agent_callibration(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_SETTINGS_STEP_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_BACKLASH_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_ANGLE_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_SPEED_RA_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_SPEED_DEC_ITEM_NAME
+	};
+	static double values[5];
+	values[0] = (double)m_guide_cal_step->value();
+	values[1] = (double)m_guide_dec_backlash->value();
+	values[2] = (double)m_guide_rotation->value();
+	values[3] = (double)m_guide_ra_speed->value();
+	values[4] = (double)m_guide_dec_speed->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 5, items, values);
+}
+
 void ImagerWindow::change_guider_agent_pulse_min_max(const char *agent) const {
 	static const char *items[] = {
 		AGENT_GUIDER_SETTINGS_MIN_ERR_ITEM_NAME,

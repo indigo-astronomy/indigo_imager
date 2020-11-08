@@ -52,6 +52,7 @@ template<typename W>
 static void configure_spinbox(indigo_item *item, int perm, W *widget) {
 	if (item != nullptr) {
 		/* update only if value has changed, while avoiding roudoff error updates */
+		widget->blockSignals(true);
 		if(abs(widget->minimum() - item->number.min) > 1e-15) {
 			widget->setMinimum(item->number.min);
 		}
@@ -62,10 +63,9 @@ static void configure_spinbox(indigo_item *item, int perm, W *widget) {
 			widget->setSingleStep(item->number.step);
 		}
 		if(abs(widget->value() - item->number.value) > 1e-15) {
-			widget->blockSignals(true);
 			widget->setValue(item->number.value);
-			widget->blockSignals(false);
 		}
+		widget->blockSignals(false);
 	}
 	if (perm == INDIGO_RO_PERM) {
 		widget->setEnabled(false);
@@ -597,6 +597,11 @@ static void update_guider_settings(
 	indigo_property *property,
 	QDoubleSpinBox *exposure,
 	QDoubleSpinBox *delay,
+	QDoubleSpinBox *cal_step,
+	QDoubleSpinBox *cal_dec_backlash,
+	QDoubleSpinBox *cal_rotation,
+	QDoubleSpinBox *cal_ra_speed,
+	QDoubleSpinBox *cal_dec_speed,
 	QDoubleSpinBox *min_error,
 	QDoubleSpinBox *min_pulse,
 	QDoubleSpinBox *max_pulse,
@@ -613,6 +618,16 @@ static void update_guider_settings(
 			configure_spinbox(&property->items[i], property->perm, exposure);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_DELAY_ITEM_NAME)) {
 			configure_spinbox(&property->items[i], property->perm, delay);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_STEP_ITEM_NAME)) {
+			configure_spinbox(&property->items[i], property->perm, cal_step);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_BACKLASH_ITEM_NAME)) {
+			configure_spinbox(&property->items[i], property->perm, cal_dec_backlash);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_ANGLE_ITEM_NAME)) {
+			configure_spinbox(&property->items[i], property->perm, cal_rotation);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_SPEED_RA_ITEM_NAME)) {
+			configure_spinbox(&property->items[i], property->perm, cal_ra_speed);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_SPEED_DEC_ITEM_NAME)) {
+			configure_spinbox(&property->items[i], property->perm, cal_dec_speed);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_MIN_ERR_ITEM_NAME)) {
 			configure_spinbox(&property->items[i], property->perm, min_error);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_MIN_PULSE_ITEM_NAME)) {
@@ -829,6 +844,11 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			property,
 			m_guider_exposure,
 			m_guider_delay,
+			m_guide_cal_step,
+			m_guide_dec_backlash,
+			m_guide_rotation,
+			m_guide_ra_speed,
+			m_guide_dec_speed,
 			m_guide_min_error,
 			m_guide_min_pulse,
 			m_guide_max_pulse,
@@ -977,6 +997,11 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			property,
 			m_guider_exposure,
 			m_guider_delay,
+			m_guide_cal_step,
+			m_guide_dec_backlash,
+			m_guide_rotation,
+			m_guide_ra_speed,
+			m_guide_dec_speed,
 			m_guide_min_error,
 			m_guide_min_pulse,
 			m_guide_max_pulse,
@@ -1087,6 +1112,16 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		m_guider_exposure->setEnabled(false);
 		m_guider_delay->setValue(0);
 		m_guider_delay->setEnabled(false);
+		m_guide_cal_step->setValue(0);
+		m_guide_cal_step->setEnabled(false);
+		m_guide_dec_backlash->setValue(0);
+		m_guide_dec_backlash->setEnabled(false);
+		m_guide_rotation->setValue(0);
+		m_guide_rotation->setEnabled(false);
+		m_guide_ra_speed->setValue(0);
+		m_guide_ra_speed->setEnabled(false);
+		m_guide_dec_speed->setValue(0);
+		m_guide_dec_speed->setEnabled(false);
 		m_guide_min_error->setValue(0);
 		m_guide_min_error->setEnabled(false);
 		m_guide_min_pulse->setValue(0);
