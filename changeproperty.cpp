@@ -310,13 +310,15 @@ void ImagerWindow::change_guider_agent_exposure(const char *agent) const {
 
 void ImagerWindow::change_guider_agent_pulse_min_max(const char *agent) const {
 	static const char *items[] = {
+		AGENT_GUIDER_SETTINGS_MIN_ERR_ITEM_NAME,
 		AGENT_GUIDER_SETTINGS_MIN_PULSE_ITEM_NAME,
 		AGENT_GUIDER_SETTINGS_MAX_PULSE_ITEM_NAME
 	};
-	static double values[2];
-	values[0] = (double)m_guide_min_pulse->value();
-	values[1] = (double)m_guide_max_pulse->value();
-	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 2, items, values);
+	static double values[3];
+	values[0] = (double)m_guide_min_error->value();
+	values[1] = (double)m_guide_min_pulse->value();
+	values[2] = (double)m_guide_max_pulse->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 3, items, values);
 }
 
 void ImagerWindow::change_guider_agent_aggressivity(const char *agent) const {

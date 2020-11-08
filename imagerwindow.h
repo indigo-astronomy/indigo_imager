@@ -218,6 +218,7 @@ private:
 	QSpinBox  *m_guide_star_x;
 	QSpinBox  *m_guide_star_y;
 	QSpinBox  *m_guide_star_radius;
+	QDoubleSpinBox  *m_guide_min_error;
 	QDoubleSpinBox  *m_guide_min_pulse;
 	QDoubleSpinBox  *m_guide_max_pulse;
 	QSpinBox  *m_guide_ra_aggr;

@@ -589,6 +589,7 @@ static void update_guider_stats(
 static void update_guider_settings(
 	indigo_property *property,
 	QDoubleSpinBox *exposure,
+	QDoubleSpinBox *min_error,
 	QDoubleSpinBox *min_pulse,
 	QDoubleSpinBox *max_pulse,
 	QSpinBox *ra_aggr,
@@ -602,6 +603,8 @@ static void update_guider_settings(
 		indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
 		if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_EXPOSURE_ITEM_NAME)) {
 			configure_spinbox(&property->items[i], property->perm, exposure);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_MIN_ERR_ITEM_NAME)) {
+			configure_spinbox(&property->items[i], property->perm, min_error);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_MIN_PULSE_ITEM_NAME)) {
 			configure_spinbox(&property->items[i], property->perm, min_pulse);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_MAX_PULSE_ITEM_NAME)) {
@@ -815,6 +818,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_guider_settings(
 			property,
 			m_guider_exposure,
+			m_guide_min_error,
 			m_guide_min_pulse,
 			m_guide_max_pulse,
 			m_guide_ra_aggr,
@@ -961,6 +965,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		update_guider_settings(
 			property,
 			m_guider_exposure,
+			m_guide_min_error,
 			m_guide_min_pulse,
 			m_guide_max_pulse,
 			m_guide_ra_aggr,
@@ -1067,6 +1072,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME)) {
 		m_guider_exposure->setValue(0);
 		m_guider_exposure->setEnabled(false);
+		m_guide_min_error->setValue(0);
+		m_guide_min_error->setEnabled(false);
 		m_guide_min_pulse->setValue(0);
 		m_guide_min_pulse->setEnabled(false);
 		m_guide_max_pulse->setValue(0);

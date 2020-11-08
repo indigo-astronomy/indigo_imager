@@ -158,18 +158,27 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	// exposure time
 	settings_row++;
 	label = new QLabel("Exposure (s):");
-	settings_frame_layout->addWidget(label, settings_row, 0, 1, 2);
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
 	m_guider_exposure = new QDoubleSpinBox();
 	m_guider_exposure->setMaximum(100000);
 	m_guider_exposure->setMinimum(0);
 	m_guider_exposure->setValue(0);
-	settings_frame_layout->addWidget(m_guider_exposure, settings_row, 2, 1, 2);
+	settings_frame_layout->addWidget(m_guider_exposure, settings_row, 3);
 	connect(m_guider_exposure, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_exposure_changed);
+
+	settings_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	settings_frame_layout->addItem(spacer, settings_row, 0);
+
+	settings_row++;
+	label = new QLabel("Guiding Algorythm:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
 
 	// Drift detection
 	settings_row++;
 	label = new QLabel("Drift Detection:");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 2);
 	m_detection_mode_select = new QComboBox();
 	settings_frame_layout->addWidget(m_detection_mode_select, settings_row, 2, 1, 2);
@@ -177,7 +186,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 
 	settings_row++;
 	label = new QLabel("Dec Guiding:");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 2);
 	m_dec_guiding_select = new QComboBox();
 	settings_frame_layout->addWidget(m_dec_guiding_select, settings_row, 2, 1, 2);
@@ -188,23 +197,24 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	settings_frame_layout->addItem(spacer, settings_row, 0);
 
 	settings_row++;
-	label = new QLabel("Star selection:");
+	label = new QLabel("Selection:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
 
 	// Star Selection
 	settings_row++;
-	label = new QLabel("Star X:");
-	settings_frame_layout->addWidget(label, settings_row, 0);
+	label = new QLabel("Star selection X:");
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
 	m_guide_star_x = new QSpinBox();
 	m_guide_star_x->setMaximum(100000);
 	m_guide_star_x->setMinimum(0);
 	m_guide_star_x->setValue(0);
-	settings_frame_layout->addWidget(m_guide_star_x , settings_row, 1);
+	settings_frame_layout->addWidget(m_guide_star_x , settings_row, 3);
 	connect(m_guide_star_x, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
 
-	label = new QLabel("Star Y:");
-	settings_frame_layout->addWidget(label, settings_row, 2);
+	settings_row++;
+	label = new QLabel("Star selection Y:");
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
 	m_guide_star_y = new QSpinBox();
 	m_guide_star_y->setMaximum(100000);
 	m_guide_star_y->setMinimum(0);
@@ -213,13 +223,13 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	connect(m_guide_star_y, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
 
 	settings_row++;
-	label = new QLabel("Selection radius:");
-	settings_frame_layout->addWidget(label, settings_row, 0, 1, 2);
+	label = new QLabel("Selection radius (px):");
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
 	m_guide_star_radius = new QSpinBox();
 	m_guide_star_radius->setMaximum(100000);
 	m_guide_star_radius->setMinimum(0);
 	m_guide_star_radius->setValue(0);
-	settings_frame_layout->addWidget(m_guide_star_radius, settings_row, 2, 1, 2);
+	settings_frame_layout->addWidget(m_guide_star_radius, settings_row, 3);
 	connect(m_guide_star_radius, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
 
 	QFrame *advanced_frame = new QFrame;
@@ -234,22 +244,34 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 
 	// Guiding pulse
 	int advanced_row=0;
-	label = new QLabel("Guiding pulses:");
+	label = new QLabel("Correction limits:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 4);
 
 	advanced_row++;
-	label = new QLabel("Min (s):");
-	advanced_frame_layout->addWidget(label, advanced_row, 0);
+	label = new QLabel("Min correction error (px):");
+	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
+	m_guide_min_error = new QDoubleSpinBox();
+	m_guide_min_error->setMaximum(100000);
+	m_guide_min_error->setMinimum(0);
+	m_guide_min_error->setValue(0);
+	advanced_frame_layout->addWidget(m_guide_min_error, advanced_row, 3);
+	connect(m_guide_min_error, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_pulse_changed);
+
+
+	advanced_row++;
+	label = new QLabel("Min guide pulse (s):");
+	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
 	m_guide_min_pulse = new QDoubleSpinBox();
 	m_guide_min_pulse->setMaximum(100000);
 	m_guide_min_pulse->setMinimum(0);
 	m_guide_min_pulse->setValue(0);
-	advanced_frame_layout->addWidget(m_guide_min_pulse, advanced_row, 1);
+	advanced_frame_layout->addWidget(m_guide_min_pulse, advanced_row, 3);
 	connect(m_guide_min_pulse, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_pulse_changed);
 
-	label = new QLabel("Max (s):");
-	advanced_frame_layout->addWidget(label, advanced_row, 2);
+	advanced_row++;
+	label = new QLabel("Max guide pulse (s):");
+	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
 	m_guide_max_pulse = new QDoubleSpinBox();
 	m_guide_max_pulse->setMaximum(100000);
 	m_guide_max_pulse->setMinimum(0);
@@ -382,12 +404,6 @@ void ImagerWindow::on_guider_selection_changed(int value) {
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_guider_agent_star_selection(selected_agent);
 	});
-	/*
-	m_HFD_label->setText("n/a");
-	m_FWHM_label->setText("n/a");
-	m_peak_label->setText("n/a");
-	m_drift_label->setText("n/a");
-	*/
 }
 
 void ImagerWindow::on_guider_image_right_click(int x, int y) {
