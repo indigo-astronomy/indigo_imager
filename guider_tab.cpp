@@ -385,7 +385,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	connect(m_guide_dec_backlash, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_callibration_changed);
 
 	advanced_row++;
-	label = new QLabel("Axis rotation angle (0):");
+	label = new QLabel("Axis rotation angle (°):");
 	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
 	m_guide_rotation = new QDoubleSpinBox();
 	m_guide_rotation->setMaximum(1);

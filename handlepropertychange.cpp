@@ -53,17 +53,53 @@ static void configure_spinbox(indigo_item *item, int perm, W *widget) {
 	if (item != nullptr) {
 		/* update only if value has changed, while avoiding roudoff error updates */
 		widget->blockSignals(true);
+		bool update_tooltip = false;
 		if(abs(widget->minimum() - item->number.min) > 1e-15) {
 			widget->setMinimum(item->number.min);
+			update_tooltip = true;
 		}
 		if(abs(widget->maximum() - item->number.max) > 1e-15) {
 			widget->setMaximum(item->number.max);
+			update_tooltip = true;
 		}
 		if(abs(widget->singleStep() - item->number.step) > 1e-15) {
 			widget->setSingleStep(item->number.step);
+			update_tooltip = true;
 		}
 		if(abs(widget->value() - item->number.value) > 1e-15) {
 			widget->setValue(item->number.value);
+		}
+		if (update_tooltip) {
+			char tooltip[INDIGO_VALUE_SIZE];
+			if (item->number.format[strlen(item->number.format) - 1] == 'm') {
+				snprintf (
+					tooltip,
+					sizeof(tooltip),
+					"%s, range: [%s, %s] step: %s",
+					item->label, indigo_dtos(item->number.min, NULL),
+					indigo_dtos(item->number.max, NULL),
+					indigo_dtos(item->number.step, NULL)
+				);
+			} else {
+				char format[1600];
+				snprintf (
+					format,
+					sizeof(format),
+					"%s, range: [%s, %s] step: %s",
+					item->label, item->number.format,
+					item->number.format,
+					item->number.format
+				);
+				snprintf (
+					tooltip,
+					sizeof(tooltip),
+					format,
+					item->number.min,
+					item->number.max,
+					item->number.step
+				);
+			}
+			widget->setToolTip(tooltip);
 		}
 		widget->blockSignals(false);
 	}
