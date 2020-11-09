@@ -277,7 +277,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 
 
 	advanced_row++;
-	label = new QLabel("Min / Max guide pulse (s):");
+	label = new QLabel("Min/Max pulse (s):");
 	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 2);
 	m_guide_min_pulse = new QDoubleSpinBox();
 	m_guide_min_pulse->setMaximum(100000);
@@ -306,7 +306,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 4);
 
 	advanced_row++;
-	label = new QLabel("RA / Dec Aggressivity (%):");
+	label = new QLabel("RA/Dec Aggressivity (%):");
 	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 2);
 	m_guide_ra_aggr = new QSpinBox();
 	m_guide_ra_aggr->setMaximum(100);
@@ -326,7 +326,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	connect(m_guide_dec_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_aggressivity_changed);
 
 	advanced_row++;
-	label = new QLabel("RA / Dec Proportional weight:");
+	label = new QLabel("RA/Dec P weight:");
 	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 2);
 	m_guide_ra_pw = new QDoubleSpinBox();
 	m_guide_ra_pw->setMaximum(1);
@@ -346,7 +346,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	connect(m_guide_dec_pw, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_change_guider_agent_pw_changed);
 
 	advanced_row++;
-	label = new QLabel("Integral stack (frames):");
+	label = new QLabel("I stack (frames):");
 	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
 	m_guide_is = new QSpinBox();
 	m_guide_is->setMaximum(20);
@@ -395,7 +395,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	connect(m_guide_rotation, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_callibration_changed);
 
 	advanced_row++;
-	label = new QLabel("RA / Dec guide speed (px/s):");
+	label = new QLabel("RA/Dec speed (px/s):");
 	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 2);
 	m_guide_ra_speed = new QDoubleSpinBox();
 	m_guide_ra_speed->setMaximum(1);
