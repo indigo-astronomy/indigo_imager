@@ -865,7 +865,7 @@ QProgressBar {
     color: #F0F0F0;
 	padding: 0px;
 	height: 2px;
-    border-radius: 8px;
+    border-radius: 3px;
     text-align: center;
 }
 
@@ -873,20 +873,20 @@ QProgressBar:disabled {
     background-color: #202020;
     border: 1px solid #353535;
     color: #787878;
-    border-radius: 8px;
+    border-radius: 3px;
     text-align: center;
 }
 
 QProgressBar::chunk {
     background-color: #515151;
     color: #202020;
-    border-radius: 8px;
+    border-radius: 3px;
 }
 
 QProgressBar::chunk:disabled {
     background-color: #14506E;
     color: #787878;
-    border-radius: 8px;
+    border-radius: 3px;
 }
 
 
