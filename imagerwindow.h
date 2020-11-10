@@ -136,7 +136,7 @@ public slots:
 	void on_focus_preview_start_stop(bool clicked);
 	void on_focus_mode_selected(int index);
 	void on_selection_changed(int value);
-	void on_image_right_click(int x, int y);
+	void on_image_right_click(double x, double y);
 	void on_focus_in(bool clicked);
 	void on_focus_out(bool clicked);
 
@@ -144,7 +144,7 @@ public slots:
 	void on_guider_camera_selected(int index);
 	void on_guider_selected(int index);
 	void on_guider_selection_changed(int value);
-	void on_guider_image_right_click(int x, int y);
+	void on_guider_image_right_click(double x, double y);
 	void on_guider_preview_start_stop(bool clicked);
 	void on_guider_calibrate_start_stop(bool clicked);
 	void on_guider_guide_start_stop(bool clicked);

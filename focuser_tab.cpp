@@ -283,9 +283,20 @@ void ImagerWindow::on_focus_mode_selected(int index) {
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
-void ImagerWindow::on_image_right_click(int x, int y) {
+void ImagerWindow::on_image_right_click(double x, double y) {
+	m_star_x->blockSignals(true);
 	m_star_x->setValue(x);
+	m_star_x->blockSignals(false);
+	m_star_y->blockSignals(true);
 	m_star_y->setValue(y);
+	m_star_y->blockSignals(false);
+
+	QtConcurrent::run([=]() {
+		char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_agent_star_selection(selected_agent);
+	});
 }
 
 void ImagerWindow::on_focus_preview_start_stop(bool clicked) {

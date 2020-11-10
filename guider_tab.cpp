@@ -479,7 +479,7 @@ void ImagerWindow::on_guider_selection_changed(int value) {
 	});
 }
 
-void ImagerWindow::on_guider_image_right_click(int x, int y) {
+void ImagerWindow::on_guider_image_right_click(double x, double y) {
 	m_guide_star_x->blockSignals(true);
 	m_guide_star_x->setValue(x);
 	m_guide_star_x->blockSignals(false);
@@ -493,7 +493,6 @@ void ImagerWindow::on_guider_image_right_click(int x, int y) {
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_guider_agent_star_selection(selected_agent);
 	});
-
 }
 
 
