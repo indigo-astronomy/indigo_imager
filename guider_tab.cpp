@@ -222,22 +222,22 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	settings_row++;
 	label = new QLabel("Star selection X / Y:");
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 2);
-	m_guide_star_x = new QSpinBox();
+	m_guide_star_x = new QDoubleSpinBox();
 	m_guide_star_x->setMaximum(100000);
 	m_guide_star_x->setMinimum(0);
 	m_guide_star_x->setValue(0);
 	settings_frame_layout->addWidget(m_guide_star_x , settings_row, 2);
-	connect(m_guide_star_x, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
+	connect(m_guide_star_x, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
 
 	//settings_row++;
 	//label = new QLabel("Star selection Y:");
 	//settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
-	m_guide_star_y = new QSpinBox();
+	m_guide_star_y = new QDoubleSpinBox();
 	m_guide_star_y->setMaximum(100000);
 	m_guide_star_y->setMinimum(0);
 	m_guide_star_y->setValue(0);
 	settings_frame_layout->addWidget(m_guide_star_y, settings_row, 3);
-	connect(m_guide_star_y, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
+	connect(m_guide_star_y, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
 
 	settings_row++;
 	label = new QLabel("Selection radius (px):");
@@ -247,7 +247,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guide_star_radius->setMinimum(0);
 	m_guide_star_radius->setValue(0);
 	settings_frame_layout->addWidget(m_guide_star_radius, settings_row, 3);
-	connect(m_guide_star_radius, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
+	connect(m_guide_star_radius, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_radius_changed);
 
 	QFrame *advanced_frame = new QFrame;
 	guider_tabbar->addTab(advanced_frame, "Advanced");
@@ -466,7 +466,7 @@ void ImagerWindow::on_guider_selected(int index) {
 	});
 }
 
-void ImagerWindow::on_guider_selection_changed(int value) {
+void ImagerWindow::on_guider_selection_changed(double value) {
 	int x = m_guide_star_x->value();
 	int y = m_guide_star_y->value();
 
@@ -477,6 +477,10 @@ void ImagerWindow::on_guider_selection_changed(int value) {
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_guider_agent_star_selection(selected_agent);
 	});
+}
+
+void ImagerWindow::on_guider_selection_radius_changed(int value) {
+	on_guider_selection_changed((double)value);
 }
 
 void ImagerWindow::on_guider_image_right_click(double x, double y) {

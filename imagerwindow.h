@@ -135,7 +135,7 @@ public slots:
 	void on_focus_start_stop(bool clicked);
 	void on_focus_preview_start_stop(bool clicked);
 	void on_focus_mode_selected(int index);
-	void on_selection_changed(int value);
+	void on_selection_changed(double value);
 	void on_image_right_click(double x, double y);
 	void on_focus_in(bool clicked);
 	void on_focus_out(bool clicked);
@@ -143,7 +143,8 @@ public slots:
 	void on_guider_agent_selected(int index);
 	void on_guider_camera_selected(int index);
 	void on_guider_selected(int index);
-	void on_guider_selection_changed(int value);
+	void on_guider_selection_changed(double value);
+	void on_guider_selection_radius_changed(int value);
 	void on_guider_image_right_click(double x, double y);
 	void on_guider_preview_start_stop(bool clicked);
 	void on_guider_calibrate_start_stop(bool clicked);
@@ -192,8 +193,8 @@ private:
 	// Focuser tabbar
 	QComboBox *m_focuser_select;
 	QComboBox *m_focus_mode_select;
-	QSpinBox  *m_star_x;
-	QSpinBox  *m_star_y;
+	QDoubleSpinBox  *m_star_x;
+	QDoubleSpinBox  *m_star_y;
 	QSpinBox  *m_initial_step;
 	QSpinBox  *m_final_step;
 	QSpinBox  *m_focus_backlash;
@@ -217,8 +218,8 @@ private:
 	QDoubleSpinBox  *m_guider_exposure;
 	QDoubleSpinBox  *m_guider_delay;
 	QComboBox *m_guider_select;
-	QSpinBox  *m_guide_star_x;
-	QSpinBox  *m_guide_star_y;
+	QDoubleSpinBox  *m_guide_star_x;
+	QDoubleSpinBox  *m_guide_star_y;
 	QSpinBox  *m_guide_star_radius;
 
 	QDoubleSpinBox  *m_guide_cal_step;

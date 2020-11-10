@@ -215,7 +215,7 @@ static void update_focuser_poition(indigo_property *property, QSpinBox *set_posi
 	}
 }
 
-static void update_imager_selection_property(indigo_property *property, QSpinBox *star_x, QSpinBox *star_y, ImageViewer *viewer, FocusGraph *focuser_graph) {
+static void update_imager_selection_property(indigo_property *property, QDoubleSpinBox *star_x, QDoubleSpinBox *star_y, ImageViewer *viewer, FocusGraph *focuser_graph) {
 	double x = 0, y = 0;
 	int size = 0;
 	for (int i = 0; i < property->count; i++) {
@@ -242,8 +242,8 @@ static void update_imager_selection_property(indigo_property *property, QSpinBox
 
 static void update_guider_selection_property(
 	indigo_property *property,
-	QSpinBox *star_x,
-	QSpinBox *star_y,
+	QDoubleSpinBox *star_x,
+	QDoubleSpinBox *star_y,
 	QSpinBox *star_radius,
 	ImageViewer *viewer
 ) {

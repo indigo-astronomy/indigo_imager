@@ -48,23 +48,23 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	row++;
 	label = new QLabel("Star X:");
 	focuser_frame_layout->addWidget(label, row, 0);
-	m_star_x = new QSpinBox();
+	m_star_x = new QDoubleSpinBox();
 	m_star_x->setMaximum(100000);
 	m_star_x->setMinimum(0);
 	m_star_x->setValue(0);
 	//m_star_x->setEnabled(false);
 	focuser_frame_layout->addWidget(m_star_x , row, 1);
-	connect(m_star_x, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_selection_changed);
+	connect(m_star_x, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_selection_changed);
 
 	label = new QLabel("Star Y:");
 	focuser_frame_layout->addWidget(label, row, 2);
-	m_star_y = new QSpinBox();
+	m_star_y = new QDoubleSpinBox();
 	m_star_y->setMaximum(100000);
 	m_star_y->setMinimum(0);
 	m_star_y->setValue(0);
 	//m_star_y->setEnabled(false);
 	focuser_frame_layout->addWidget(m_star_y, row, 3);
-	connect(m_star_y, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_selection_changed);
+	connect(m_star_y, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_selection_changed);
 
 	// Exposure time
 	row++;
@@ -267,7 +267,7 @@ void ImagerWindow::on_focuser_selected(int index) {
 	});
 }
 
-void ImagerWindow::on_selection_changed(int value) {
+void ImagerWindow::on_selection_changed(double value) {
 	int x = m_star_x->value();
 	int y = m_star_y->value();
 	m_imager_viewer->moveSelection(x, y);
