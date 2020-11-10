@@ -20,6 +20,6 @@
 #ifndef VERSION_H
 #define VERSION_H
 
-#define PANEL_VERSION "0.1-devel"
+#define AIN_VERSION "0.1-devel"
 
 #endif // VERSION_H

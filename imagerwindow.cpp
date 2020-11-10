@@ -742,7 +742,7 @@ void ImagerWindow::on_about_act() {
 	msgBox.setText(
 		"<b>Ain INDIGO Imager</b><br>"
 		"Version "
-		PANEL_VERSION
+		AIN_VERSION
 		"</b><br><br>"
 		"Author:<br>"
 		"Rumen G.Bogdanovski<br>"

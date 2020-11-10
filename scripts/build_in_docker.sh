@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2019 Rumen G.Bogdanovski
+# Copyright (c) 2020 Rumen G.Bogdanovski
 # All rights reserved.
 #
 # You can use this software under the terms of 'INDIGO Astronomy
@@ -26,14 +26,14 @@ RUN apt-get -y update && apt-get -y install wget unzip build-essential autoconf 
 RUN echo 'deb [trusted=yes] http://indigo-astronomy.org indigo main' >>/etc/apt/sources.list
 RUN apt-get update
 RUN apt-get install indigo
-RUN git clone https://github.com/indigo-astronomy/indigo_control_panel.git
-WORKDIR indigo_control_panel
+RUN git clone https://github.com/indigo-astronomy/indigo_imager.git
+WORKDIR indigo_imager
 RUN qmake
 RUN scripts/builddeb.sh $2
 EOF
-docker build -t icp .
-docker create --name icp icp
-docker cp icp:/indigo-control-panel_$2_$3.deb .
-docker container rm icp
-docker image rm icp
+docker build -t ain .
+docker create --name ain ain
+docker cp ain:/indigo-imager_$2_$3.deb .
+docker container rm ain
+docker image rm ain
 rm Dockerfile

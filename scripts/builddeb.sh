@@ -39,10 +39,10 @@ git checkout ${GIT_VERSION} >/dev/null 2>&1
 ./build_libs.sh
 
 # Create entry in debian/changelog.
-dch --create --package "indigo-control-panel" --newversion ${GIT_VERSION} --distribution unstable --nomultimaint -t "Build from official upstream."
+dch --create --package "indigo-imager" --newversion ${GIT_VERSION} --distribution unstable --nomultimaint -t "Build from official upstream."
 
 # Update version.h.
-sed -i "s/\(PANEL_VERSION \).*/\1\"${GIT_VERSION}\"/g" version.h
+sed -i "s/\(AIN_VERSION \).*/\1\"${GIT_VERSION}\"/g" version.h
 
 # Finally build the package.
 dpkg-buildpackage \-us \-uc \-I.git \-I\*.out[0-9]\* \-I\*.swp
