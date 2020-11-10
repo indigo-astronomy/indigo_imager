@@ -698,19 +698,25 @@ static void agent_guider_start_process_change(
 				set_widget_state(property, calibrate_button);
 				set_ok(guide_button);
 				set_ok(preview_button);
+				calibrate_button->setEnabled(true);
+				guide_button->setEnabled(false);
+				preview_button->setEnabled(false);
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_START_GUIDING_ITEM_NAME) && property->items[i].sw.value) {
 				set_ok(calibrate_button);
 				set_widget_state(property, guide_button);
 				set_ok(preview_button);
+				calibrate_button->setEnabled(false);
+				guide_button->setEnabled(true);
+				preview_button->setEnabled(false);
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_START_PREVIEW_ITEM_NAME) && property->items[i].sw.value) {
 				set_ok(calibrate_button);
 				set_ok(guide_button);
 				set_widget_state(property, preview_button);
+				calibrate_button->setEnabled(false);
+				guide_button->setEnabled(false);
+				preview_button->setEnabled(true);
 			}
 		}
-		preview_button->setEnabled(false);
-		calibrate_button->setEnabled(false);
-		guide_button->setEnabled(false);
 	} else {
 		set_widget_state(property, preview_button);
 		set_widget_state(property, calibrate_button);
