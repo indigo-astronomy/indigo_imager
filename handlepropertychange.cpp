@@ -685,6 +685,43 @@ static void update_guider_settings(
 }
 
 
+static void agent_guider_start_process_change(
+	indigo_property *property,
+	QPushButton *preview_button,
+	QPushButton *calibrate_button,
+	QPushButton *guide_button
+) {
+	if (property->state==INDIGO_BUSY_STATE) {
+		for (int i = 0; i < property->count; i++) {
+			indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
+			if (client_match_item(&property->items[i], AGENT_GUIDER_START_CALIBRATION_ITEM_NAME) && property->items[i].sw.value) {
+				set_widget_state(property, calibrate_button);
+				set_ok(guide_button);
+				set_ok(preview_button);
+			} else if (client_match_item(&property->items[i], AGENT_GUIDER_START_GUIDING_ITEM_NAME) && property->items[i].sw.value) {
+				set_ok(calibrate_button);
+				set_widget_state(property, guide_button);
+				set_ok(preview_button);
+			} else if (client_match_item(&property->items[i], AGENT_GUIDER_START_PREVIEW_ITEM_NAME) && property->items[i].sw.value) {
+				set_ok(calibrate_button);
+				set_ok(guide_button);
+				set_widget_state(property, preview_button);
+			}
+		}
+		preview_button->setEnabled(false);
+		calibrate_button->setEnabled(false);
+		guide_button->setEnabled(false);
+	} else {
+		set_widget_state(property, preview_button);
+		set_widget_state(property, calibrate_button);
+		set_widget_state(property, guide_button);
+		preview_button->setEnabled(true);
+		calibrate_button->setEnabled(true);
+		guide_button->setEnabled(true);
+	}
+}
+
+
 void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 	char timestamp[16];
 	char log_line[512];
@@ -895,6 +932,14 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			m_guide_is
 		);
 	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_START_PROCESS_PROPERTY_NAME)) {
+		agent_guider_start_process_change(
+			property,
+			m_guider_preview_button,
+			m_guider_calibrate_button,
+			m_guider_guide_button
+		);
+	}
 }
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
@@ -1046,6 +1091,14 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			m_guide_ra_pw,
 			m_guide_dec_pw,
 			m_guide_is
+		);
+	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_START_PROCESS_PROPERTY_NAME)) {
+		agent_guider_start_process_change(
+			property,
+			m_guider_preview_button,
+			m_guider_calibrate_button,
+			m_guider_guide_button
 		);
 	}
 	properties.create(property);
