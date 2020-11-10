@@ -360,12 +360,12 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	advanced_frame_layout->addItem(spacer, advanced_row, 0);
 
 	advanced_row++;
-	label = new QLabel("Callibration:");
+	label = new QLabel("Calibration:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 4);
 
 	advanced_row++;
-	label = new QLabel("Callibration step (s):");
+	label = new QLabel("Calibration step (s):");
 	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
 	m_guide_cal_step = new QDoubleSpinBox();
 	m_guide_cal_step->setMaximum(1);
