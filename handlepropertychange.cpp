@@ -368,46 +368,58 @@ static void update_agent_imager_stats_property(
 	indigo_item *exposure_item = properties.get_item(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME, AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME);
 	if (exposure_item) exp_time = exposure_item->number.value;
 
+	indigo_property *stats_p;
+	indigo_property *start_p;
+	if (!strcmp(property->name, AGENT_IMAGER_STATS_PROPERTY_NAME)) {
+		stats_p = property;
+		start_p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
+	} else {
+		stats_p = properties.get(property->device, AGENT_IMAGER_STATS_PROPERTY_NAME);
+		start_p = property;
+	}
 
-	indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
-	if (p && p->state == INDIGO_BUSY_STATE ) {
-		for (int i = 0; i < p->count; i++) {
-			if (!strcmp(p->items[i].name, AGENT_IMAGER_START_EXPOSURE_ITEM_NAME)) {
-				exposure_running = p->items[i].sw.value;
-			} else if (!strcmp(p->items[i].name, AGENT_IMAGER_START_FOCUSING_ITEM_NAME)) {
-				focusing_running = p->items[i].sw.value;
-			} else if (!strcmp(p->items[i].name, AGENT_IMAGER_START_PREVIEW_ITEM_NAME)) {
-				preview_running = p->items[i].sw.value;
+	if (stats_p == nullptr || start_p == nullptr) return;
+
+	if (start_p && start_p->state == INDIGO_BUSY_STATE ) {
+		for (int i = 0; i < start_p->count; i++) {
+			if (!strcmp(start_p->items[i].name, AGENT_IMAGER_START_EXPOSURE_ITEM_NAME)) {
+				exposure_running = start_p->items[i].sw.value;
+			} else if (!strcmp(start_p->items[i].name, AGENT_IMAGER_START_FOCUSING_ITEM_NAME)) {
+				focusing_running = start_p->items[i].sw.value;
+			} else if (!strcmp(start_p->items[i].name, AGENT_IMAGER_START_PREVIEW_ITEM_NAME)) {
+				preview_running = start_p->items[i].sw.value;
 			}
 		}
 	}
 
-	for (int i = 0; i < property->count; i++) {
-		if (client_match_item(&property->items[i], AGENT_IMAGER_STATS_FWHM_ITEM_NAME)) {
-			 FWHM = property->items[i].number.value;
+	//indigo_error("exposure = %d, focusing = %d, preview = %d, stats_p->state = %d, start_p->state = %d", exposure_running, focusing_running, preview_running, stats_p->state, start_p->state);
+
+	for (int i = 0; i < stats_p->count; i++) {
+		if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_FWHM_ITEM_NAME)) {
+			 FWHM = stats_p->items[i].number.value;
 			 char fwhm_str[50];
 			 snprintf(fwhm_str, 50, "%.2f", FWHM);
 			 FWHM_label->setText(fwhm_str);
-		} else if (client_match_item(&property->items[i], AGENT_IMAGER_STATS_HFD_ITEM_NAME)) {
-			 double HFD = property->items[i].number.value;
+		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_HFD_ITEM_NAME)) {
+			 double HFD = stats_p->items[i].number.value;
 			 char hfd_str[50];
 			 snprintf(hfd_str, 50, "%.2f", HFD);
 			 HFD_label->setText(hfd_str);
-		} else if (client_match_item(&property->items[i], AGENT_IMAGER_STATS_PEAK_ITEM_NAME)) {
-			int peak = (int)property->items[i].number.value;
+		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_PEAK_ITEM_NAME)) {
+			int peak = (int)stats_p->items[i].number.value;
 			char peak_str[50];
 			snprintf(peak_str, 50, "%d", peak);
 			peak_label->setText(peak_str);
-		} else if (client_match_item(&property->items[i], AGENT_IMAGER_STATS_DRIFT_X_ITEM_NAME)) {
-			drift_x = property->items[i].number.value;
-		} else if (client_match_item(&property->items[i], AGENT_IMAGER_STATS_DRIFT_Y_ITEM_NAME)) {
-			drift_y = property->items[i].number.value;
-		} else if (client_match_item(&property->items[i], AGENT_IMAGER_STATS_EXPOSURE_ITEM_NAME)) {
-			exp_elapsed = exp_time - property->items[i].number.value;
-		} else if (client_match_item(&property->items[i], AGENT_IMAGER_STATS_FRAME_ITEM_NAME)) {
-			frames_complete = (int)property->items[i].number.value;
-		} else if (client_match_item(&property->items[i], AGENT_IMAGER_STATS_FRAMES_ITEM_NAME)) {
-			frames_total = (int)property->items[i].number.value;
+		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_DRIFT_X_ITEM_NAME)) {
+			drift_x = stats_p->items[i].number.value;
+		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_DRIFT_Y_ITEM_NAME)) {
+			drift_y = stats_p->items[i].number.value;
+		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_EXPOSURE_ITEM_NAME)) {
+			exp_elapsed = exp_time - stats_p->items[i].number.value;
+		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_FRAME_ITEM_NAME)) {
+			frames_complete = (int)stats_p->items[i].number.value;
+		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_FRAMES_ITEM_NAME)) {
+			frames_total = (int)stats_p->items[i].number.value;
 		}
 	}
 	char drift_str[50];
@@ -415,9 +427,13 @@ static void update_agent_imager_stats_property(
 	drift_label->setText(drift_str);
 	if (exposure_running) {
 		set_widget_state(property, exposure_button);
-		if (property->state == INDIGO_BUSY_STATE) {
+		set_ok(preview_button);
+		set_ok(focusing_button);
+		set_ok(focusing_preview_button);
+		if (start_p->state == INDIGO_BUSY_STATE) {
 			//exposure_button->setText("Stop");
 			exposure_button->setIcon(QIcon(":resource/stop.png"));
+			exposure_button->setEnabled(true);
 			preview_button->setEnabled(false);
 			focusing_button->setEnabled(false);
 			focusing_preview_button->setEnabled(false);
@@ -435,9 +451,10 @@ static void update_agent_imager_stats_property(
 			}
 			indigo_debug("frames total = %d", frames_total);
 
-		} else if (property->state == INDIGO_OK_STATE) {
+		} else if (start_p->state == INDIGO_OK_STATE) {
 			//exposure_button->setText("Start");
 			exposure_button->setIcon(QIcon(":resource/record.png"));
+			exposure_button->setEnabled(true);
 			preview_button->setEnabled(true);
 			focusing_button->setEnabled(true);
 			focusing_preview_button->setEnabled(true);
@@ -450,6 +467,7 @@ static void update_agent_imager_stats_property(
 		} else {
 			//exposure_button->setText("Start");
 			exposure_button->setIcon(QIcon(":resource/record.png"));
+			exposure_button->setEnabled(true);
 			preview_button->setEnabled(true);
 			focusing_button->setEnabled(true);
 			focusing_preview_button->setEnabled(true);
@@ -471,20 +489,25 @@ static void update_agent_imager_stats_property(
 			prev_frame = frames_complete;
 		}
 		set_widget_state(property, focusing_button);
-		if (property->state == INDIGO_BUSY_STATE) {
+		set_ok(preview_button);
+		set_ok(exposure_button);
+		set_ok(focusing_preview_button);
+		if (start_p->state == INDIGO_BUSY_STATE) {
 			//focusing_button->setText("Stop");
 			focusing_button->setIcon(QIcon(":resource/stop.png"));
 			preview_button->setEnabled(false);
 			exposure_button->setEnabled(false);
+			focusing_button->setEnabled(true);
 			focusing_preview_button->setEnabled(false);
 			focusing_progress->setRange(0, exp_time);
 			focusing_progress->setValue(exp_elapsed);
 			focusing_progress->setFormat("Focusing: %v of %m seconds elapsed...");
-		} else if(property->state == INDIGO_OK_STATE) {
+		} else if(start_p->state == INDIGO_OK_STATE) {
 			//focusing_button->setText("Focus");
 			focusing_button->setIcon(QIcon(":resource/record.png"));
 			preview_button->setEnabled(true);
 			exposure_button->setEnabled(true);
+			focusing_button->setEnabled(true);
 			focusing_preview_button->setEnabled(true);
 			focusing_progress->setRange(0, 100);
 			focusing_progress->setValue(100);
@@ -494,11 +517,19 @@ static void update_agent_imager_stats_property(
 			focusing_button->setIcon(QIcon(":resource/record.png"));
 			preview_button->setEnabled(true);
 			exposure_button->setEnabled(true);
+			focusing_button->setEnabled(true);
 			focusing_preview_button->setEnabled(true);
 			focusing_progress->setRange(0, 1);
 			focusing_progress->setValue(0);
 			focusing_progress->setFormat("Focusing: Stopped");
 		}
+	} else {
+		focusing_button->setIcon(QIcon(":resource/record.png"));
+		exposure_button->setIcon(QIcon(":resource/record.png"));
+		preview_button->setEnabled(true);
+		exposure_button->setEnabled(true);
+		focusing_button->setEnabled(true);
+		focusing_preview_button->setEnabled(true);
 	}
 }
 
@@ -1016,7 +1047,8 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			);
 		}
 	}
-	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_STATS_PROPERTY_NAME)) {
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_STATS_PROPERTY_NAME) ||
+	    client_match_device_property(property, selected_agent, AGENT_START_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_stats_property(
 			property,
 			m_FWHM_label,
