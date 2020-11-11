@@ -49,6 +49,13 @@ static void set_widget_state(indigo_property *property, W *widget) {
 }
 
 template<typename W>
+static void set_spinbox_value(W *widget, double value) {
+	widget->blockSignals(true);
+	widget->setValue(value);
+	widget->blockSignals(false);
+}
+
+template<typename W>
 static void configure_spinbox(indigo_item *item, int perm, W *widget) {
 	if (item != nullptr) {
 		/* update only if value has changed, while avoiding roudoff error updates */
@@ -1235,35 +1242,49 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
-		m_guider_exposure->setValue(0);
+		set_spinbox_value(m_guider_exposure, 0);
 		m_guider_exposure->setEnabled(false);
-		m_guider_delay->setValue(0);
+
+		set_spinbox_value(m_guider_delay, 0);
 		m_guider_delay->setEnabled(false);
-		m_guide_cal_step->setValue(0);
+
+		set_spinbox_value(m_guide_cal_step, 0);
 		m_guide_cal_step->setEnabled(false);
-		m_guide_dec_backlash->setValue(0);
+
+		set_spinbox_value(m_guide_dec_backlash, 0);
 		m_guide_dec_backlash->setEnabled(false);
-		m_guide_rotation->setValue(0);
+
+		set_spinbox_value(m_guide_rotation, 0);
 		m_guide_rotation->setEnabled(false);
-		m_guide_ra_speed->setValue(0);
+
+		set_spinbox_value(m_guide_ra_speed, 0);
 		m_guide_ra_speed->setEnabled(false);
-		m_guide_dec_speed->setValue(0);
+
+		set_spinbox_value(m_guide_dec_speed, 0);
 		m_guide_dec_speed->setEnabled(false);
-		m_guide_min_error->setValue(0);
+
+		set_spinbox_value(m_guide_min_error, 0);
 		m_guide_min_error->setEnabled(false);
-		m_guide_min_pulse->setValue(0);
+
+		set_spinbox_value(m_guide_min_pulse, 0);
 		m_guide_min_pulse->setEnabled(false);
-		m_guide_max_pulse->setValue(0);
+
+		set_spinbox_value(m_guide_max_pulse, 0);
 		m_guide_max_pulse->setEnabled(false);
-		m_guide_ra_aggr->setValue(0);
+
+		set_spinbox_value(m_guide_ra_aggr, 0);
 		m_guide_ra_aggr->setEnabled(false);
-		m_guide_dec_aggr->setValue(0);
+
+		set_spinbox_value(m_guide_dec_aggr, 0);
 		m_guide_dec_aggr->setEnabled(false);
-		m_guide_ra_pw->setValue(0);
+
+		set_spinbox_value(m_guide_ra_pw, 0);
 		m_guide_ra_pw->setEnabled(false);
-		m_guide_dec_pw->setValue(0);
+
+		set_spinbox_value(m_guide_dec_pw, 0);
 		m_guide_dec_pw->setEnabled(false);
-		m_guide_is->setValue(0);
+
+		set_spinbox_value(m_guide_is, 0);
 		m_guide_is->setEnabled(false);
 	}
 }

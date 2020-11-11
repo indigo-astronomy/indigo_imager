@@ -10,6 +10,6 @@ VERSION=$1
 echo "Building version $VERSION"
 sh scripts/build_in_docker.sh "i386/debian:stretch-slim" $VERSION "i386"
 sh scripts/build_in_docker.sh "amd64/debian:stretch-slim" $VERSION "amd64"
-sh scripts/build_in_docker.sh "arm32v7/debian:stretch-slim" $VERSION "armhf"
+sh scripts/build_in_docker.sh "arm32v7/debian:buster-slim" $VERSION "armhf"
 sh scripts/build_in_docker.sh "arm64v8/debian:stretch-slim" $VERSION "arm64"
 
