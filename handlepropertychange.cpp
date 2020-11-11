@@ -54,19 +54,19 @@ static void configure_spinbox(indigo_item *item, int perm, W *widget) {
 		/* update only if value has changed, while avoiding roudoff error updates */
 		widget->blockSignals(true);
 		bool update_tooltip = false;
-		if(abs(widget->minimum() - item->number.min) > 1e-15) {
+		if(fabs(widget->minimum() - item->number.min) > 1e-15) {
 			widget->setMinimum(item->number.min);
 			update_tooltip = true;
 		}
-		if(abs(widget->maximum() - item->number.max) > 1e-15) {
+		if(fabs(widget->maximum() - item->number.max) > 1e-15) {
 			widget->setMaximum(item->number.max);
 			update_tooltip = true;
 		}
-		if(abs(widget->singleStep() - item->number.step) > 1e-15) {
+		if(fabs(widget->singleStep() - item->number.step) > 1e-15) {
 			widget->setSingleStep(item->number.step);
 			update_tooltip = true;
 		}
-		if(abs(widget->value() - item->number.value) > 1e-15) {
+		if(fabs(widget->value() - item->number.value) > 1e-15) {
 			widget->setValue(item->number.value);
 		}
 		if (update_tooltip) {

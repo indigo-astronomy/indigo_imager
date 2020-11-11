@@ -22,8 +22,8 @@
 echo FROM $1 >Dockerfile
 cat >>Dockerfile <<EOF
 LABEL maintainer="rumen@skyarchive.org"
-RUN apt-get -y update && apt-get -y install wget unzip build-essential autoconf autotools-dev libtool cmake libudev-dev libavahi-compat-libdnssd-dev libusb-1.0-0-dev fxload libcurl4-gnutls-dev libgphoto2-dev libz-dev git curl bsdmainutils qt5-default devscripts cdbs
-RUN echo 'deb [trusted=yes] http://indigo-astronomy.org indigo main' >>/etc/apt/sources.list
+RUN apt-get -y update && apt-get -y install wget unzip build-essential autoconf autotools-dev libtool cmake libudev-dev libavahi-compat-libdnssd-dev libusb-1.0-0-dev fxload libcurl4-gnutls-dev libgphoto2-dev libz-dev git curl bsdmainutils qt5-default devscripts cdbs apt-transport-https
+RUN echo 'deb [trusted=yes] https://indigo-astronomy.github.io/indigo_ppa/ppa indigo main' >>/etc/apt/sources.list
 RUN apt-get update
 RUN apt-get install indigo
 RUN git clone https://github.com/indigo-astronomy/indigo_imager.git
