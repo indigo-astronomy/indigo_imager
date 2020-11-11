@@ -33,7 +33,7 @@ RUN scripts/builddeb.sh $2
 EOF
 docker build -t ain .
 docker create --name ain ain
-docker cp ain:/indigo-imager_$2_$3.deb .
+docker cp ain:/ain-imager_$2_$3.deb .
 docker container rm ain
 docker image rm ain
 rm Dockerfile

@@ -39,7 +39,7 @@ git checkout ${GIT_VERSION} >/dev/null 2>&1
 ./build_libs.sh
 
 # Create entry in debian/changelog.
-dch --create --package "indigo-imager" --newversion ${GIT_VERSION} --distribution unstable --nomultimaint -t "Build from official upstream."
+dch --create --package "ain-imager" --newversion ${GIT_VERSION} --distribution unstable --nomultimaint -t "Build from official upstream."
 
 # Update version.h.
 sed -i "s/\(AIN_VERSION \).*/\1\"${GIT_VERSION}\"/g" version.h

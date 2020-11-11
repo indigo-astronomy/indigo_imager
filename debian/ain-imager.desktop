@@ -1,10 +1,10 @@
 [Desktop Entry]
 Version=1.0
 Encoding=UTF-8
-Name=INDIGO Imager
-Comment=INDIGO Imager
-Exec=indigo_imager
-Icon=indigo-imager.png
+Name=Ain Imager
+Comment=Ain Imager
+Exec=ain_imager
+Icon=ain-imager.png
 Terminal=false
 Type=Application
 Categories=Education;Science;Astronomy;

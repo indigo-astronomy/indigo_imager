@@ -1,4 +1,4 @@
-Source: indigo-imager
+Source: ain-imager
 Section: science
 Priority: optional
 Maintainer: Rumen Bogdanovski <rumen@skyarchive.org>
@@ -7,7 +7,7 @@ Standards-Version: 3.9.5
 Homepage: https://www.indigo-astronomy.org
 Vcs-Git: git://github.com/indigo-astronomy/control-panel.git
 
-Package: indigo-imager
+Package: ain-imager
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, qt5-image-formats-plugins, indigo (>= 2.0-128)
 Description: Ain INDIGO Imager
