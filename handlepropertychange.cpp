@@ -926,6 +926,25 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, CCD_TEMPERATURE_PROPERTY_NAME)) {
 		update_ccd_temperature(property, m_current_temp, m_set_temp, true);
 	}
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_STATS_PROPERTY_NAME) ||
+	    client_match_device_property(property, selected_agent, AGENT_START_PROCESS_PROPERTY_NAME)) {
+		update_agent_imager_stats_property(
+			property,
+			m_FWHM_label,
+			m_HFD_label,
+			m_peak_label,
+			m_drift_label,
+			m_exposure_progress,
+			m_process_progress,
+			m_focusing_progress,
+			m_exposure_button,
+			m_preview_button,
+			m_focusing_button,
+			m_focusing_preview_button,
+			m_focus_graph,
+			m_focus_fwhm_data
+		);
+	}
 
 	// Guider Agent
 	if (client_match_device_property(property, selected_guider_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
