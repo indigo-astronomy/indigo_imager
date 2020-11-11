@@ -56,7 +56,10 @@ RESOURCES += \
 	resource/stop.png \
 	resource/play.png \
 	resource/pause.png \
-	resource/record.png
+	resource/record.png \
+	resource/focus.png \
+	resource/calibrate.png \
+	resource/guide.png
 
 
 # Additional import path used to resolve QML modules in Qt Creator\'s code model

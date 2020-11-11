@@ -501,7 +501,7 @@ static void update_agent_imager_stats_property(
 		set_ok(focusing_preview_button);
 		if (start_p->state == INDIGO_BUSY_STATE) {
 			//focusing_button->setText("Stop");
-			focusing_button->setIcon(QIcon(":resource/stop.png"));
+			//focusing_button->setIcon(QIcon(":resource/stop.png"));
 			preview_button->setEnabled(false);
 			exposure_button->setEnabled(false);
 			focusing_button->setEnabled(true);
@@ -511,7 +511,7 @@ static void update_agent_imager_stats_property(
 			focusing_progress->setFormat("Focusing: %v of %m seconds elapsed...");
 		} else if(start_p->state == INDIGO_OK_STATE) {
 			//focusing_button->setText("Focus");
-			focusing_button->setIcon(QIcon(":resource/record.png"));
+			//focusing_button->setIcon(QIcon(":resource/record.png"));
 			preview_button->setEnabled(true);
 			exposure_button->setEnabled(true);
 			focusing_button->setEnabled(true);
@@ -521,7 +521,7 @@ static void update_agent_imager_stats_property(
 			focusing_progress->setFormat("Focusing: Complete");
 		} else {
 			//focusing_button->setText("Focus");
-			focusing_button->setIcon(QIcon(":resource/record.png"));
+			//focusing_button->setIcon(QIcon(":resource/record.png"));
 			preview_button->setEnabled(true);
 			exposure_button->setEnabled(true);
 			focusing_button->setEnabled(true);
@@ -531,7 +531,7 @@ static void update_agent_imager_stats_property(
 			focusing_progress->setFormat("Focusing: Stopped");
 		}
 	} else {
-		focusing_button->setIcon(QIcon(":resource/record.png"));
+		//focusing_button->setIcon(QIcon(":resource/record.png"));
 		exposure_button->setIcon(QIcon(":resource/record.png"));
 		preview_button->setEnabled(true);
 		exposure_button->setEnabled(true);

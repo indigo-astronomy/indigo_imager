@@ -70,13 +70,13 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 
 	m_guider_calibrate_button = new QPushButton("Calibrate");
 	m_guider_calibrate_button->setStyleSheet("min-width: 30px");
-	m_guider_calibrate_button->setIcon(QIcon(":resource/record.png"));
+	m_guider_calibrate_button->setIcon(QIcon(":resource/calibrate.png"));
 	toolbox->addWidget(m_guider_calibrate_button);
 	connect(m_guider_calibrate_button , &QPushButton::clicked, this, &ImagerWindow::on_guider_calibrate_start_stop);
 
 	m_guider_guide_button = new QPushButton("Guide");
 	m_guider_guide_button->setStyleSheet("min-width: 30px");
-	m_guider_guide_button->setIcon(QIcon(":resource/record.png"));
+	m_guider_guide_button->setIcon(QIcon(":resource/guide.png"));
 	toolbox->addWidget(m_guider_guide_button);
 	connect(m_guider_guide_button, &QPushButton::clicked, this, &ImagerWindow::on_guider_guide_start_stop);
 

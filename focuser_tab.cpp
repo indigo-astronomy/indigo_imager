@@ -168,6 +168,24 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	toolbox->setContentsMargins(1,1,1,1);
 	focuser_frame_layout->addWidget(toolbar, row, 0, 1, 4);
 
+	m_focusing_preview_button = new QPushButton("Preview");
+	m_focusing_preview_button->setStyleSheet("min-width: 30px");
+	m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
+	toolbox->addWidget(m_focusing_preview_button);
+	connect(m_focusing_preview_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_preview_start_stop);
+
+	m_focusing_button = new QPushButton("Focus");
+	m_focusing_button->setStyleSheet("min-width: 30px");
+	m_focusing_button->setIcon(QIcon(":resource/focus.png"));
+	toolbox->addWidget(m_focusing_button);
+	connect(m_focusing_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_start_stop);
+
+	QPushButton *button = new QPushButton("Abort");
+	button->setStyleSheet("min-width: 30px");
+	button->setIcon(QIcon(":resource/stop.png"));
+	toolbox->addWidget(button);
+	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
+
 	QPushButton *but = new QPushButton("In");
 	but->setStyleSheet("min-width: 15px");
 	//but->setIcon(QIcon(":resource/stop.png"));
@@ -179,24 +197,6 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	//but->setIcon(QIcon(":resource/stop.png"));
 	toolbox->addWidget(but);
 	connect(but, &QPushButton::clicked, this, &ImagerWindow::on_focus_out);
-
-	QPushButton *button = new QPushButton("Abort");
-	button->setStyleSheet("min-width: 30px");
-	button->setIcon(QIcon(":resource/stop.png"));
-	toolbox->addWidget(button);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
-
-	m_focusing_button = new QPushButton("Focus");
-	m_focusing_button->setStyleSheet("min-width: 30px");
-	m_focusing_button->setIcon(QIcon(":resource/record.png"));
-	toolbox->addWidget(m_focusing_button);
-	connect(m_focusing_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_start_stop);
-
-	m_focusing_preview_button = new QPushButton("Preview");
-	m_focusing_preview_button->setStyleSheet("min-width: 30px");
-	m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
-	toolbox->addWidget(m_focusing_preview_button);
-	connect(m_focusing_preview_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_preview_start_stop);
 
 	row++;
 	m_focusing_progress = new QProgressBar();

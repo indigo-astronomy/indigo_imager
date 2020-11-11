@@ -215,6 +215,17 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	toolbox->setContentsMargins(1,1,1,1);
 	capture_frame_layout->addWidget(toolbar, row, 0, 1, 4);
 
+	m_preview_button = new QPushButton("Preview");
+	m_preview_button->setStyleSheet("min-width: 30px");
+	m_preview_button->setIcon(QIcon(":resource/play.png"));
+	toolbox->addWidget(m_preview_button);
+	connect(m_preview_button, &QPushButton::clicked, this, &ImagerWindow::on_preview_start_stop);
+
+	m_exposure_button = new QPushButton("Expose");
+	m_exposure_button->setStyleSheet("min-width: 30px");
+	m_exposure_button->setIcon(QIcon(":resource/record.png"));
+	toolbox->addWidget(m_exposure_button);
+	connect(m_exposure_button, &QPushButton::clicked, this, &ImagerWindow::on_exposure_start_stop);
 
 	m_pause_button = new QPushButton("Pause");
 	toolbox->addWidget(m_pause_button);
@@ -227,18 +238,6 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	button->setIcon(QIcon(":resource/stop.png"));
 	toolbox->addWidget(button);
 	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
-
-	m_exposure_button = new QPushButton("Expose");
-	m_exposure_button->setStyleSheet("min-width: 30px");
-	m_exposure_button->setIcon(QIcon(":resource/record.png"));
-	toolbox->addWidget(m_exposure_button);
-	connect(m_exposure_button, &QPushButton::clicked, this, &ImagerWindow::on_exposure_start_stop);
-
-	m_preview_button = new QPushButton("Preview");
-	m_preview_button->setStyleSheet("min-width: 30px");
-	m_preview_button->setIcon(QIcon(":resource/play.png"));
-	toolbox->addWidget(m_preview_button);
-	connect(m_preview_button, &QPushButton::clicked, this, &ImagerWindow::on_preview_start_stop);
 
 	row++;
 	m_exposure_progress = new QProgressBar();
