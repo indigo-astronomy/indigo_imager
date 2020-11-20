@@ -130,7 +130,7 @@ public slots:
 	void on_frame_type_selected(int index);
 	void on_filter_selected(int index);
 	void on_cooler_onoff(bool state);
-	void on_teperature_set();
+	void on_temperature_set(double value);
 
 	void on_focus_start_stop(bool clicked);
 	void on_focus_preview_start_stop(bool clicked);

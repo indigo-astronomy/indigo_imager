@@ -199,7 +199,9 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_set_temp->setMinimum(-120);
 	m_set_temp->setValue(0);
 	m_set_temp->setEnabled(false);
-	connect(m_set_temp, &QDoubleSpinBox::editingFinished, this, &ImagerWindow::on_teperature_set);
+	m_set_temp->setKeyboardTracking(false);
+	connect(m_set_temp, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_temperature_set);
+
 	//m_exposure_delay->setEnabled(false);
 	cooler_box->addWidget(m_set_temp);
 
@@ -462,7 +464,7 @@ void ImagerWindow::on_cooler_onoff(bool state) {
 	});
 }
 
-void ImagerWindow::on_teperature_set() {
+void ImagerWindow::on_temperature_set(double value) {
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
