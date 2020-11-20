@@ -149,7 +149,10 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_position->setMinimum(-1000000);
 	m_focus_position->setValue(0);
 	m_focus_position->setEnabled(false);
+	m_focus_position->setKeyboardTracking(false);
 	focuser_frame_layout->addWidget(m_focus_position, row, 2, 1, 2);
+	connect(m_focus_position, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_focuser_position_changed);
+	//connect(m_focus_position, &QSpinBox::editingFinished, this, &ImagerWindow::on_focuser_position_changed);
 
 	row++;
 	label = new QLabel("Move:");
@@ -298,6 +301,17 @@ void ImagerWindow::on_image_right_click(double x, double y) {
 		change_agent_star_selection(selected_agent);
 	});
 }
+
+
+void ImagerWindow::on_focuser_position_changed(int value) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		indigo_log("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_focuser_position_property(selected_agent);
+	});
+}
+
 
 void ImagerWindow::on_focus_preview_start_stop(bool clicked) {
 	QtConcurrent::run([=]() {

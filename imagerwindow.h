@@ -136,6 +136,7 @@ public slots:
 	void on_focus_preview_start_stop(bool clicked);
 	void on_focus_mode_selected(int index);
 	void on_selection_changed(double value);
+	void on_focuser_position_changed(int value);
 	void on_image_right_click(double x, double y);
 	void on_focus_in(bool clicked);
 	void on_focus_out(bool clicked);
@@ -283,6 +284,7 @@ private:
 	void change_agent_star_selection(const char *agent) const;
 	void change_agent_focus_params_property(const char *agent) const;
 	void change_focuser_steps_property(const char *agent) const;
+	void change_focuser_position_property(const char *agent) const;
 	void change_focuser_focus_in_property(const char *agent) const;
 	void change_focuser_focus_out_property(const char *agent) const;
 

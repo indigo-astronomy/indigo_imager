@@ -192,6 +192,16 @@ void ImagerWindow::change_agent_start_preview_property(const char *agent) const 
 }
 
 
+void ImagerWindow::change_focuser_position_property(const char *agent) const {
+	static const char *items[] = {
+		FOCUSER_POSITION_ITEM_NAME
+	};
+	static double values[1];
+	values[0] = (double)m_focus_position->value();
+	indigo_change_number_property(nullptr, agent, FOCUSER_POSITION_PROPERTY_NAME, 1, items, values);
+}
+
+
 void ImagerWindow::change_focuser_steps_property(const char *agent) const {
 	static const char *items[] = {
 		FOCUSER_STEPS_ITEM_NAME
@@ -200,6 +210,7 @@ void ImagerWindow::change_focuser_steps_property(const char *agent) const {
 	values[0] = (double)m_focus_steps->value();
 	indigo_change_number_property(nullptr, agent, FOCUSER_STEPS_PROPERTY_NAME, 1, items, values);
 }
+
 
 void ImagerWindow::change_focuser_focus_in_property(const char *agent) const {
 	static const char *items[] = {
