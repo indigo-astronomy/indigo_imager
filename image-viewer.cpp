@@ -373,14 +373,19 @@ void ImageViewer::mouseAt(double x, double y) {
 	//indigo_log("COORDS: %d %d" ,x,y);
 	if (m_pixmap->image().valid(x,y)) {
 		int r,g,b;
-		m_pixmap->image().pixel_value(x, y, r, g, b);
+		int pix_format = m_pixmap->image().pixel_value(x, y, r, g, b);
+
 		QString s;
-		if (g == -1) {
-			//s = QString("%1% [%2, %3] (%4)").arg(scale).arg(x).arg(y).arg(r);
-			s.sprintf("%d%% [%5.1f, %5.1f] (%5d)", m_zoom_level, x, y, r);
+		if (pix_format == PIX_FMT_INDEX) {
+			s.sprintf("%d%% [%5.1f, %5.1f]", m_zoom_level, x, y);
 		} else {
-			//s = QString("%1% [%2, %3] (%4, %5, %6)").arg(scale).arg(x).arg(y).arg(r).arg(g).arg(b);
-			s.sprintf("%d%% [%5.1f, %5.1f] (%5d, %5d, %5d)", m_zoom_level, x, y, r, g, b);
+			if (g == -1) {
+				//s = QString("%1% [%2, %3] (%4)").arg(scale).arg(x).arg(y).arg(r);
+				s.sprintf("%d%% [%5.1f, %5.1f] (%5d)", m_zoom_level, x, y, r);
+			} else {
+				//s = QString("%1% [%2, %3] (%4, %5, %6)").arg(scale).arg(x).arg(y).arg(r).arg(g).arg(b);
+				s.sprintf("%d%% [%5.1f, %5.1f] (%5d, %5d, %5d)", m_zoom_level, x, y, r, g, b);
+			}
 		}
 		m_pixel_value->setText(s);
 	} else {

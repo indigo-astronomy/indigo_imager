@@ -23,7 +23,9 @@
 #define pack(a, b, c, d)\
         ((uint32_t)(a) | ((uint32_t)(b) << 8) | ((uint32_t)(c) << 16) | ((uint32_t)(d) << 24))
 
-#define PIX_FMT_PJPG    pack('P', 'J', 'P', 'G')
+#define PIX_FMT_INDEX   pack('I','N','D',' ')
+
+#define PIX_FMT_PJPG    pack('P','J','P','G')
 
 #define PIX_FMT_Y8      pack('Y','0','1',' ')
 #define PIX_FMT_Y16     pack('Y','0','2',' ')

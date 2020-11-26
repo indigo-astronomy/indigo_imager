@@ -125,6 +125,10 @@ public:
 
 	int pixel_value(int x, int y, int &r, int &g, int &b) const {
 		if (m_raw_data == nullptr) {
+			if (pixelFormat().colorModel() == 2) {
+				r = g = b = -1;
+				return PIX_FMT_INDEX;
+			}
 			QRgb rgb = pixel(x,y);
 			r = qRed(rgb);
 			g = qGreen(rgb);
