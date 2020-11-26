@@ -1264,6 +1264,15 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_spinbox_value(m_guider_exposure, 0);
 		m_guider_exposure->setEnabled(false);
 
+		set_spinbox_value(m_guide_star_x, 0);
+		m_guide_star_x->setEnabled(false);
+
+		set_spinbox_value(m_guide_star_y, 0);
+		m_guide_star_y->setEnabled(false);
+
+		set_spinbox_value(m_guide_star_radius, 0);
+		m_guide_star_radius->setEnabled(false);
+
 		set_spinbox_value(m_guider_delay, 0);
 		m_guider_delay->setEnabled(false);
 
