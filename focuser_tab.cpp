@@ -307,7 +307,7 @@ void ImagerWindow::on_focuser_position_changed(int value) {
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
-		indigo_log("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_focuser_position_property(selected_agent);
 	});
 }

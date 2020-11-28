@@ -266,18 +266,19 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guider_save_bw_select = new QComboBox();
 	m_guider_save_bw_select->addItem("Off");
 	m_guider_save_bw_select->addItem("Fine");
+	m_guider_save_bw_select->addItem("Normal");
 	m_guider_save_bw_select->addItem("Coarse");
 	settings_frame_layout->addWidget(m_guider_save_bw_select, settings_row, 2, 1, 2);
 	m_guider_save_bw_select->setCurrentIndex(conf.guider_save_bandwidth);
 	connect(m_guider_save_bw_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_bw_save_changed);
 
 	settings_row++;
-	label = new QLabel("Use Subframe:");
+	label = new QLabel("Use subframe:");
 	settings_frame_layout->addWidget(label, settings_row, 0, 1 ,2);
 	m_guider_subframe_select = new QComboBox();
 	m_guider_subframe_select->addItem("Off");
-	m_guider_subframe_select->addItem("10x radius");
-	m_guider_subframe_select->addItem("20x radious");
+	m_guider_subframe_select->addItem("10 radii");
+	m_guider_subframe_select->addItem("20 radii");
 	settings_frame_layout->addWidget(m_guider_subframe_select, settings_row, 2, 1, 2);
 	m_guider_subframe_select->setCurrentIndex(conf.guider_subframe);
 	connect(m_guider_subframe_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_subframe_changed);
@@ -450,10 +451,13 @@ void ImagerWindow::setup_preview(const char *agent) {
 	case 0:
 		break;
 	case 1:
-		change_jpeg_settings_property(agent, 90, 0.01, 0.05);
+		change_jpeg_settings_property(agent, 93, 0.01, 0.02);
 		break;
 	case 2:
-		change_jpeg_settings_property(agent, 50, 0.01, 0.05);
+		change_jpeg_settings_property(agent, 89, 0.01, 0.02);
+		break;
+	case 3:
+		change_jpeg_settings_property(agent, 50, 0.01, 0.02);
 		break;
 	default:
 		break;

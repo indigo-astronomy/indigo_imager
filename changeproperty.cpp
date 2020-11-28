@@ -131,7 +131,6 @@ void ImagerWindow::change_guider_agent_subframe(const char *agent) const {
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME, 1, items, values);
 }
 
-
 void ImagerWindow::change_jpeg_settings_property(const char *agent, const int jpeg_quality, const double black_threshold, const double white_threshold) {
 	static const char *items[] = {
 		CCD_JPEG_SETTINGS_QUALITY_ITEM_NAME,

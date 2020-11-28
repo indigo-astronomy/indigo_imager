@@ -370,7 +370,6 @@ void ImageViewer::zoomOut() {
 }
 
 void ImageViewer::mouseAt(double x, double y) {
-	//indigo_log("COORDS: %d %d" ,x,y);
 	if (m_pixmap->image().valid(x,y)) {
 		int r,g,b;
 		int pix_format = m_pixmap->image().pixel_value(x, y, r, g, b);
@@ -394,7 +393,7 @@ void ImageViewer::mouseAt(double x, double y) {
 }
 
 void ImageViewer::mouseRightPressAt(double x, double y) {
-	indigo_log("RIGHT CLICK COORDS: %f %f" ,x,y);
+	indigo_debug("RIGHT CLICK COORDS: %f %f" ,x,y);
 	if (m_pixmap->image().valid(x,y)) {
 		moveSelection(x,y);
 		emit mouseRightPress(x,y);

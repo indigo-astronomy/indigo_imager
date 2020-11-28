@@ -73,7 +73,7 @@ static void handle_blob_property(indigo_property *property) {
 			blob_item->blob.value = nullptr;
 			if (*property->items[row].blob.url && indigo_populate_http_blob_item(blob_item)) {
 				property->items[row].blob.value = nullptr;
-				indigo_log("Image %s.%s URL received (%s, %ld bytes)...\n", property->device, property->name, blob_item->blob.url, blob_item->blob.size);
+				indigo_debug("Image %s.%s URL received (%s, %ld bytes)...\n", property->device, property->name, blob_item->blob.url, blob_item->blob.size);
 				emit(IndigoClient::instance().create_preview(property, blob_item));
 			} else {
 				if (blob_item->blob.value) free(blob_item->blob.value);
