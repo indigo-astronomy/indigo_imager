@@ -394,7 +394,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		QString key = preview_cache.create_key(property, m_indigo_item);
 		//preview_image *image = preview_cache.get(m_image_key);
 		if (show_preview_in_imager_viewer(key)) {
-			indigo_error("m_imager_viewer = %p", m_imager_viewer);
+			indigo_debug("m_imager_viewer = %p", m_imager_viewer);
 			m_imager_viewer->setText(QString("Unsaved") + QString(m_indigo_item->blob.format));
 		}
 		if (m_save_blob) save_blob_item(m_indigo_item);
@@ -405,7 +405,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 			QString key = preview_cache.create_key(property, item);
 			preview_image *image = preview_cache.get(key);
 			if (show_preview_in_guider_viewer(key)) {
-				indigo_error("m_guider_viewer = %p", m_guider_viewer);
+				indigo_debug("m_guider_viewer = %p", m_guider_viewer);
 				m_guider_viewer->setText(QString("Guider: image") + QString(item->blob.format));
 			}
 		} else {
@@ -609,7 +609,7 @@ void ImagerWindow::on_no_stretch() {
 	preview_cache.recreate(m_image_key, m_indigo_item);
 	show_preview_in_imager_viewer(m_image_key);
 	write_conf();
-	indigo_error("%s\n", __FUNCTION__);
+	indigo_debug("%s\n", __FUNCTION__);
 }
 
 void ImagerWindow::on_moderate_stretch() {
@@ -618,7 +618,7 @@ void ImagerWindow::on_moderate_stretch() {
 	preview_cache.recreate(m_image_key, m_indigo_item);
 	show_preview_in_imager_viewer(m_image_key);
 	write_conf();
-	indigo_error("%s\n", __FUNCTION__);
+	indigo_debug("%s\n", __FUNCTION__);
 }
 
 void ImagerWindow::on_normal_stretch() {
@@ -627,7 +627,7 @@ void ImagerWindow::on_normal_stretch() {
 	preview_cache.recreate(m_image_key, m_indigo_item);
 	show_preview_in_imager_viewer(m_image_key);
 	write_conf();
-	indigo_error("%s\n", __FUNCTION__);
+	indigo_debug("%s\n", __FUNCTION__);
 }
 
 
@@ -637,7 +637,7 @@ void ImagerWindow::on_hard_stretch() {
 	preview_cache.recreate(m_image_key, m_indigo_item);
 	show_preview_in_imager_viewer(m_image_key);
 	write_conf();
-	indigo_error("%s\n", __FUNCTION__);
+	indigo_debug("%s\n", __FUNCTION__);
 }
 
 
@@ -653,7 +653,7 @@ void ImagerWindow::on_log_error() {
 	conf.indigo_log_level = INDIGO_LOG_ERROR;
 	indigo_set_log_level(conf.indigo_log_level);
 	write_conf();
-	indigo_error("%s\n", __FUNCTION__);
+	indigo_debug("%s\n", __FUNCTION__);
 }
 
 
