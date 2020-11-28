@@ -160,6 +160,7 @@ public slots:
 	void on_guider_agent_aggressivity_changed(int value);
 	void on_change_guider_agent_pw_changed(double value);
 	void on_change_guider_agent_is_changed(int value);
+	void on_guider_bw_save_changed(int index);
 
 	void on_tab_changed(int index);
 
@@ -222,6 +223,7 @@ private:
 	QDoubleSpinBox  *m_guide_star_x;
 	QDoubleSpinBox  *m_guide_star_y;
 	QSpinBox  *m_guide_star_radius;
+	QComboBox *m_guider_save_bw_select;
 
 	QDoubleSpinBox  *m_guide_cal_step;
 	QDoubleSpinBox  *m_guide_rotation;

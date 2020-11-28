@@ -20,6 +20,8 @@
 #include "propertycache.h"
 #include "conf.h"
 
+void write_conf();
+
 void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	QGridLayout *guider_frame_layout = new QGridLayout();
 	guider_frame_layout->setAlignment(Qt::AlignTop);
@@ -248,6 +250,17 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guide_star_radius->setValue(0);
 	settings_frame_layout->addWidget(m_guide_star_radius, settings_row, 3);
 	connect(m_guide_star_radius, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_radius_changed);
+
+	settings_row++;
+	label = new QLabel("Save bandwidth:");
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
+	m_guider_save_bw_select = new QComboBox();
+	m_guider_save_bw_select->addItem("Off");
+	m_guider_save_bw_select->addItem("Normal");
+	m_guider_save_bw_select->addItem("Hard");
+	settings_frame_layout->addWidget(m_guider_save_bw_select, settings_row, 3);
+	m_guider_save_bw_select->setCurrentIndex(conf.guider_save_bandwidth);
+	connect(m_guider_save_bw_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_bw_save_changed);
 
 	QFrame *advanced_frame = new QFrame;
 	guider_tabbar->addTab(advanced_frame, "Advanced");
@@ -648,4 +661,10 @@ void ImagerWindow::on_guider_agent_callibration_changed(double value) {
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_guider_agent_callibration(selected_agent);
 	});
+}
+
+void ImagerWindow::on_guider_bw_save_changed(int index) {
+	conf.guider_save_bandwidth = index;
+	write_conf();
+	indigo_log("%s %d\n", __FUNCTION__, index);
 }

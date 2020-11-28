@@ -45,7 +45,8 @@ typedef struct {
 	bool antialiasing_enabled;
 	int focus_mode;
 	preview_stretch preview_stretch_level;
-	char unused[1000];
+	int guider_save_bandwidth;
+	char unused[100];
 } conf_t;
 
 extern conf_t conf;

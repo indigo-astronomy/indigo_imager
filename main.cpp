@@ -72,6 +72,8 @@ int main(int argc, char *argv[]) {
 	conf.use_system_locale = false;
 	conf.indigo_log_level = INDIGO_LOG_INFO;
 	conf.preview_stretch_level = STRETCH_NORMAL;
+	conf.focus_mode = 0;
+	conf.guider_save_bandwidth = 1;
 	read_conf();
 
 	if (!conf.use_system_locale) qunsetenv("LC_NUMERIC");
