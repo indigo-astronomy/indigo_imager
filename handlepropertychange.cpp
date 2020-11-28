@@ -23,6 +23,7 @@
 #include "imagerwindow.h"
 #include "indigoclient.h"
 #include "propertycache.h"
+#include "conf.h"
 
 #define set_alert(widget) (widget->setStyleSheet("*:enabled { background-color: #312222;} *:!enabled { background-color: #292222;}"))
 #define set_idle(widget) (widget->setStyleSheet("*:enabled {background-color: #272727;} *:!enabled {background-color: #272727;}"))
@@ -947,6 +948,13 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 
 	// Guider Agent
+	if (client_match_device_property(property, selected_guider_agent, CCD_PREVIEW_PROPERTY_NAME)) {
+		QtConcurrent::run([=]() {
+			static const char *items[] = { CCD_PREVIEW_ENABLED_ITEM_NAME };
+			static const bool values[] = { true };
+			indigo_change_switch_property(NULL, selected_guider_agent, CCD_PREVIEW_PROPERTY_NAME, 1, items, values);
+		});
+	}
 	if (client_match_device_property(property, selected_guider_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(property, m_guider_camera_select);
 	}

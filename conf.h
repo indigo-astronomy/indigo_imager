@@ -46,6 +46,7 @@ typedef struct {
 	int focus_mode;
 	preview_stretch preview_stretch_level;
 	int guider_save_bandwidth;
+	int guider_subframe;
 	char unused[100];
 } conf_t;
 

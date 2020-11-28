@@ -401,7 +401,6 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 	} else if (get_selected_guider_agent(selected_agent)) {
 		if ((client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME) && conf.guider_save_bandwidth == 0) ||
 			(client_match_device_property(property, selected_agent, CCD_PREVIEW_IMAGE_PROPERTY_NAME) && conf.guider_save_bandwidth > 0)) {
-			indigo_error("IN HERE");
 			preview_cache.create(property, item);
 			QString key = preview_cache.create_key(property, item);
 			preview_image *image = preview_cache.get(key);
@@ -409,6 +408,8 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 				indigo_error("m_guider_viewer = %p", m_guider_viewer);
 				m_guider_viewer->setText(QString("Guider: image") + QString(item->blob.format));
 			}
+		} else {
+			preview_cache.remove(property, item);
 		}
 		free(item->blob.value);
 		item->blob.value = nullptr;

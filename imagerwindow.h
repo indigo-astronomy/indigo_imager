@@ -145,6 +145,7 @@ public slots:
 	void on_guider_camera_selected(int index);
 	void on_guider_selected(int index);
 	void on_guider_selection_changed(double value);
+	void on_guider_subframe_changed(int index);
 	void on_guider_selection_radius_changed(int value);
 	void on_guider_image_right_click(double x, double y);
 	void on_guider_preview_start_stop(bool clicked);
@@ -224,6 +225,7 @@ private:
 	QDoubleSpinBox  *m_guide_star_y;
 	QSpinBox  *m_guide_star_radius;
 	QComboBox *m_guider_save_bw_select;
+	QComboBox *m_guider_subframe_select;
 
 	QDoubleSpinBox  *m_guide_cal_step;
 	QDoubleSpinBox  *m_guide_rotation;
@@ -264,6 +266,13 @@ private:
 	QIndigoServers *mIndigoServers;
 	QServiceModel *mServiceModel;
 
+	void change_jpeg_settings_property(
+		const char *agent,
+		const int jpeg_quality,
+		const double black_threshold,
+		const double white_threshold
+	);
+
 	void create_focuser_tab(QFrame *capture_frame);
 	void create_imager_tab(QFrame *camera_frame);
 	void create_guider_tab(QFrame *camera_frame);
@@ -291,6 +300,7 @@ private:
 	void change_focuser_focus_out_property(const char *agent) const;
 
 	void change_guider_agent_star_selection(const char *agent) const;
+	void change_guider_agent_subframe(const char *agent) const;
 	void change_agent_start_guide_property(const char *agent) const;
 	void change_agent_start_calibrate_property(const char *agent) const;
 	void change_detection_mode_property(const char *agent) const;
@@ -300,6 +310,8 @@ private:
 	void change_guider_agent_pulse_min_max(const char *agent) const;
 	void change_guider_agent_aggressivity(const char *agent) const;
 	void change_guider_agent_pi(const char *agent) const;
+
+	void setup_preview(const char *agent);
 
 	bool show_preview_in_imager_viewer(QString &key);
 	bool show_preview_in_guider_viewer(QString &key);

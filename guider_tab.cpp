@@ -252,15 +252,35 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	connect(m_guide_star_radius, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_radius_changed);
 
 	settings_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	settings_frame_layout->addItem(spacer, settings_row, 0);
+
+	settings_row++;
 	label = new QLabel("Save bandwidth:");
-	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
+
+	settings_row++;
+	label = new QLabel("Use JPEG:");
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 2);
 	m_guider_save_bw_select = new QComboBox();
 	m_guider_save_bw_select->addItem("Off");
-	m_guider_save_bw_select->addItem("Normal");
-	m_guider_save_bw_select->addItem("Hard");
-	settings_frame_layout->addWidget(m_guider_save_bw_select, settings_row, 3);
+	m_guider_save_bw_select->addItem("Fine");
+	m_guider_save_bw_select->addItem("Coarse");
+	settings_frame_layout->addWidget(m_guider_save_bw_select, settings_row, 2, 1, 2);
 	m_guider_save_bw_select->setCurrentIndex(conf.guider_save_bandwidth);
 	connect(m_guider_save_bw_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_bw_save_changed);
+
+	settings_row++;
+	label = new QLabel("Use Subframe:");
+	settings_frame_layout->addWidget(label, settings_row, 0, 1 ,2);
+	m_guider_subframe_select = new QComboBox();
+	m_guider_subframe_select->addItem("Off");
+	m_guider_subframe_select->addItem("10x radius");
+	m_guider_subframe_select->addItem("20x radious");
+	settings_frame_layout->addWidget(m_guider_subframe_select, settings_row, 2, 1, 2);
+	m_guider_subframe_select->setCurrentIndex(conf.guider_subframe);
+	connect(m_guider_subframe_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_subframe_changed);
 
 	QFrame *advanced_frame = new QFrame;
 	guider_tabbar->addTab(advanced_frame, "Advanced");
@@ -425,6 +445,21 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	connect(m_guide_dec_speed, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_callibration_changed);
 }
 
+void ImagerWindow::setup_preview(const char *agent) {
+	switch (conf.guider_save_bandwidth) {
+	case 0:
+		break;
+	case 1:
+		change_jpeg_settings_property(agent, 90, 0.01, 0.05);
+		break;
+	case 2:
+		change_jpeg_settings_property(agent, 50, 0.01, 0.05);
+		break;
+	default:
+		break;
+	}
+}
+
 void ImagerWindow::on_guider_agent_selected(int index) {
 	QtConcurrent::run([=]() {
 		// Clear controls
@@ -526,6 +561,7 @@ void ImagerWindow::on_guider_preview_start_stop(bool clicked) {
 			// m_guider_graph->redraw_data(m_focus_fwhm_data);
 			// change_agent_batch_property_for_focus(selected_agent);
 			//change_agent_focus_params_property(selected_agent);
+			setup_preview(selected_agent);
 			change_agent_start_preview_property(selected_agent);
 		}
 	});
@@ -544,6 +580,7 @@ void ImagerWindow::on_guider_calibrate_start_stop(bool clicked) {
 			// m_guider_graph->redraw_data(m_focus_fwhm_data);
 			// change_agent_batch_property_for_focus(selected_agent);
 			//change_agent_focus_params_property(selected_agent);
+			setup_preview(selected_agent);
 			change_agent_start_calibrate_property(selected_agent);
 		}
 	});
@@ -563,6 +600,7 @@ void ImagerWindow::on_guider_guide_start_stop(bool clicked) {
 			// m_guider_graph->redraw_data(m_focus_fwhm_data);
 			// change_agent_batch_property_for_focus(selected_agent);
 			//change_agent_focus_params_property(selected_agent);
+			setup_preview(selected_agent);
 			change_agent_start_guide_property(selected_agent);
 		}
 	});
@@ -666,5 +704,25 @@ void ImagerWindow::on_guider_agent_callibration_changed(double value) {
 void ImagerWindow::on_guider_bw_save_changed(int index) {
 	conf.guider_save_bandwidth = index;
 	write_conf();
-	indigo_log("%s %d\n", __FUNCTION__, index);
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		setup_preview(selected_agent);
+	});
+}
+
+void ImagerWindow::on_guider_subframe_changed(int index) {
+	conf.guider_subframe = index;
+	write_conf();
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_guider_agent_subframe(selected_agent);
+	});
 }
