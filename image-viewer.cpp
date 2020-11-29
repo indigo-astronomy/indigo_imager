@@ -444,7 +444,7 @@ void PixmapItem::setImage(preview_image im) {
 
 	auto image_size = m_image.size();
 	m_image = im;
-	indigo_error("%s MIMAGE m_raw_data = %p",__FUNCTION__, m_image.m_raw_data);
+	indigo_debug("%s MIMAGE m_raw_data = %p",__FUNCTION__, m_image.m_raw_data);
 
 	setPixmap(QPixmap::fromImage(m_image));
 
