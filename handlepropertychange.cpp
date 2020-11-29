@@ -955,6 +955,11 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			indigo_change_switch_property(NULL, selected_guider_agent, CCD_PREVIEW_PROPERTY_NAME, 1, items, values);
 		});
 	}
+
+	if (client_match_device_property(property, selected_guider_agent, CCD_JPEG_SETTINGS_PROPERTY_NAME)) {
+		m_guider_save_bw_select->setEnabled(true);
+	}
+
 	if (client_match_device_property(property, selected_guider_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(property, m_guider_camera_select);
 	}
@@ -963,6 +968,10 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME)) {
 		update_guider_selection_property(property, m_guide_star_x, m_guide_star_y, m_guide_star_radius, m_guider_viewer);
+		m_guider_subframe_select->setEnabled(true);
+		QtConcurrent::run([=]() {
+			change_guider_agent_subframe(selected_guider_agent);
+		});
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_STATS_PROPERTY_NAME)) {
 		update_guider_stats(
@@ -1272,15 +1281,6 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_spinbox_value(m_guider_exposure, 0);
 		m_guider_exposure->setEnabled(false);
 
-		set_spinbox_value(m_guide_star_x, 0);
-		m_guide_star_x->setEnabled(false);
-
-		set_spinbox_value(m_guide_star_y, 0);
-		m_guide_star_y->setEnabled(false);
-
-		set_spinbox_value(m_guide_star_radius, 0);
-		m_guide_star_radius->setEnabled(false);
-
 		set_spinbox_value(m_guider_delay, 0);
 		m_guider_delay->setEnabled(false);
 
@@ -1323,6 +1323,28 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_spinbox_value(m_guide_is, 0);
 		m_guide_is->setEnabled(false);
 	}
+
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
+
+		set_spinbox_value(m_guide_star_x, 0);
+		m_guide_star_x->setEnabled(false);
+
+		set_spinbox_value(m_guide_star_y, 0);
+		m_guide_star_y->setEnabled(false);
+
+		set_spinbox_value(m_guide_star_radius, 0);
+		m_guide_star_radius->setEnabled(false);
+
+		m_guider_subframe_select->setEnabled(false);
+	}
+
+	if (client_match_device_property(property, selected_guider_agent, CCD_JPEG_SETTINGS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
+
+		m_guider_save_bw_select->setEnabled(false);
+	}
+
 }
 
 void ImagerWindow::on_property_delete(indigo_property* property, char *message) {
