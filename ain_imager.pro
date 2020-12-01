@@ -59,11 +59,7 @@ RESOURCES += \
 	resource/record.png \
 	resource/focus.png \
 	resource/calibrate.png \
-	resource/guide.png \
-	resource/fonts/Ubuntu-Regular.ttf \
-	resource/fonts/Ubuntu-Bold.ttf \
-	resource/fonts/Ubuntu-Italic.ttf \
-	resource/fonts/Ubuntu-BoldItalic.ttf
+	resource/guide.png
 
 
 # Additional import path used to resolve QML modules in Qt Creator\'s code model
