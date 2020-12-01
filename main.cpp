@@ -96,11 +96,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-	QFontDatabase::addApplicationFont(":resource/fonts/Ubuntu-Regular.ttf");
-	QFontDatabase::addApplicationFont(":resource/fonts/Ubuntu-Bold.ttf");
-	QFontDatabase::addApplicationFont(":resource/fonts/Ubuntu-Italic.ttf");
-	QFontDatabase::addApplicationFont(":resource/fonts/Ubuntu-BildItalic.ttf");
 	QFont font("Ubuntu Regular", 10, 1);
+	font.setStyleHint(QFont::SansSerif);
 	QApplication::setFont(font);
 	QApplication app(argc, argv);
 
