@@ -74,6 +74,8 @@ int main(int argc, char *argv[]) {
 	conf.preview_stretch_level = STRETCH_NORMAL;
 	conf.focus_mode = 0;
 	conf.guider_save_bandwidth = 1;
+	conf.guider_subframe = 0;
+	conf.focuser_subframe = 0;
 	read_conf();
 
 	if (!conf.use_system_locale) qunsetenv("LC_NUMERIC");

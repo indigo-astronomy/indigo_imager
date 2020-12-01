@@ -223,7 +223,14 @@ static void update_focuser_poition(indigo_property *property, QSpinBox *set_posi
 	}
 }
 
-static void update_imager_selection_property(indigo_property *property, QDoubleSpinBox *star_x, QDoubleSpinBox *star_y, ImageViewer *viewer, FocusGraph *focuser_graph) {
+static void update_imager_selection_property(
+	indigo_property *property,
+	QDoubleSpinBox *star_x,
+	QDoubleSpinBox *star_y,
+	QSpinBox *star_radius,
+	ImageViewer *viewer,
+	FocusGraph *focuser_graph
+) {
 	double x = 0, y = 0;
 	int size = 0;
 	for (int i = 0; i < property->count; i++) {
@@ -237,6 +244,7 @@ static void update_imager_selection_property(indigo_property *property, QDoubleS
 			double max = property->items[i].number.value * 2 + 2;
 			size = (int)round(property->items[i].number.value * 2 + 1);
 			focuser_graph->set_yaxis_range(0, max);
+			configure_spinbox(&property->items[i], property->perm, star_radius);
 		}
 	}
 	viewer->moveResizeSelection(x, y, size);
@@ -896,7 +904,11 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_focuser_poition(property, m_focus_steps);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME)) {
-		update_imager_selection_property(property, m_star_x, m_star_y, m_imager_viewer, m_focus_graph);
+		update_imager_selection_property(property, m_star_x, m_star_y, m_focus_star_radius, m_imager_viewer, m_focus_graph);
+		m_focuser_subframe_select->setEnabled(true);
+		QtConcurrent::run([=]() {
+			change_focuser_subframe(selected_agent);
+		});
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME)) {
 		update_focus_setup_property(property, m_initial_step, m_final_step, m_focus_backlash, m_focus_stack);
@@ -1067,7 +1079,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		update_wheel_slot_property(property, m_filter_select);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME)) {
-		update_imager_selection_property(property, m_star_x, m_star_y, m_imager_viewer, m_focus_graph);
+		update_imager_selection_property(property, m_star_x, m_star_y, m_focus_star_radius, m_imager_viewer, m_focus_graph);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME)) {
 		update_focus_setup_property(property, m_initial_step, m_final_step, m_focus_backlash, m_focus_stack);
@@ -1253,6 +1265,20 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("REMOVE %s", property->name);
 		m_current_temp->setText("");
 		m_set_temp->setEnabled(false);
+	}
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+
+		set_spinbox_value(m_star_x, 0);
+		m_star_x->setEnabled(false);
+
+		set_spinbox_value(m_star_y, 0);
+		m_star_y->setEnabled(false);
+
+		set_spinbox_value(m_focus_star_radius, 0);
+		m_focus_star_radius->setEnabled(false);
+
+		m_focuser_subframe_select->setEnabled(false);
 	}
 
 	// Guider Agent

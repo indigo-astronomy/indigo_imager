@@ -23,6 +23,8 @@
 void write_conf();
 
 void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
+	QSpacerItem *spacer;
+
 	QGridLayout *focuser_frame_layout = new QGridLayout();
 	focuser_frame_layout->setAlignment(Qt::AlignTop);
 	focuser_frame->setLayout(focuser_frame_layout);
@@ -56,7 +58,6 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_position->setKeyboardTracking(false);
 	focuser_frame_layout->addWidget(m_focus_position, row, 2, 1, 2);
 	connect(m_focus_position, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_focuser_position_changed);
-	//connect(m_focus_position, &QSpinBox::editingFinished, this, &ImagerWindow::on_focuser_position_changed);
 
 	row++;
 	label = new QLabel("Move:");
@@ -67,11 +68,6 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_steps->setValue(0);
 	m_focus_steps->setEnabled(false);
 	focuser_frame_layout->addWidget(m_focus_steps, row, 2, 1, 2);
-
-	QSpacerItem *spacer;
-	//row++;
-	//QSpacerItem *spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
-	//focuser_frame_layout->addItem(spacer, row, 0);
 
 	row++;
 	QWidget *toolbar = new QWidget;
@@ -137,7 +133,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	stats_frame->setContentsMargins(0, 0, 0, 0);
 
 	int stats_row = 0;
-	label = new QLabel("Autofocus statistics:");
+	label = new QLabel("Focus statistics:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	stats_frame_layout->addWidget(label, stats_row, 0, 1, 4);
 
@@ -173,6 +169,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_peak_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	stats_frame_layout->addWidget(m_peak_label, stats_row, 3);
 
+	// Settings tab
 	QFrame *settings_frame = new QFrame;
 	focuser_tabbar->addTab(settings_frame, "Settings");
 
@@ -183,6 +180,36 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	settings_frame->setContentsMargins(0, 0, 0, 0);
 
 	int settings_row = -1;
+
+	// Exposure time
+	settings_row++;
+	label = new QLabel("Exposure time (s):");
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 2);
+	m_focuser_exposure_time = new QDoubleSpinBox();
+	m_focuser_exposure_time->setMaximum(10000);
+	m_focuser_exposure_time->setMinimum(0);
+	m_focuser_exposure_time->setValue(1);
+	settings_frame_layout->addWidget(m_focuser_exposure_time, settings_row, 2, 1, 2);
+
+	settings_row++;
+	label = new QLabel("Focus mode:");
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 2);
+	m_focus_mode_select = new QComboBox();
+	m_focus_mode_select->addItem("Manual");
+	m_focus_mode_select->addItem("Auto");
+	settings_frame_layout->addWidget(m_focus_mode_select, settings_row, 2, 1, 2);
+	m_focus_mode_select->setCurrentIndex(conf.focus_mode);
+	connect(m_focus_mode_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focus_mode_selected);
+
+	settings_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	settings_frame_layout->addItem(spacer, settings_row, 0);
+
+	settings_row++;
+	label = new QLabel("Star selection:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
+
 	// Star Selection
 	settings_row++;
 	label = new QLabel("Star X:");
@@ -205,31 +232,22 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	settings_frame_layout->addWidget(m_star_y, settings_row, 3);
 	connect(m_star_y, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_selection_changed);
 
-	// Exposure time
 	settings_row++;
-	label = new QLabel("Exposure (s):");
-	settings_frame_layout->addWidget(label, settings_row, 0);
-	m_focuser_exposure_time = new QDoubleSpinBox();
-	m_focuser_exposure_time->setMaximum(10000);
-	m_focuser_exposure_time->setMinimum(0);
-	m_focuser_exposure_time->setValue(1);
-	settings_frame_layout->addWidget(m_focuser_exposure_time, settings_row, 1);
-
-	label = new QLabel("Mode:");
-	settings_frame_layout->addWidget(label, settings_row, 2);
-	m_focus_mode_select = new QComboBox();
-	m_focus_mode_select->addItem("Manual");
-	m_focus_mode_select->addItem("Auto");
-	settings_frame_layout->addWidget(m_focus_mode_select, settings_row, 3);
-	m_focus_mode_select->setCurrentIndex(conf.focus_mode);
-	connect(m_focus_mode_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focus_mode_selected);
+	label = new QLabel("Selection radius (px):");
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
+	m_focus_star_radius = new QSpinBox();
+	m_focus_star_radius->setMaximum(100000);
+	m_focus_star_radius->setMinimum(0);
+	m_focus_star_radius->setValue(0);
+	settings_frame_layout->addWidget(m_focus_star_radius, settings_row, 3);
+	connect(m_focus_star_radius, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_focuser_selection_radius_changed);
 
 	settings_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	settings_frame_layout->addItem(spacer, settings_row, 0);
 
 	settings_row++;
-	label = new QLabel("Autofocus setings:");
+	label = new QLabel("Autofocus settings:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
 
@@ -270,6 +288,26 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_stack->setValue(0);
 	//m_focus_stack->setEnabled(false);
 	settings_frame_layout->addWidget(m_focus_stack, settings_row, 3);
+
+	settings_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	settings_frame_layout->addItem(spacer, settings_row, 0);
+
+	settings_row++;
+	label = new QLabel("Misc settings:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
+
+	settings_row++;
+	label = new QLabel("Use subframe:");
+	settings_frame_layout->addWidget(label, settings_row, 0, 1 ,2);
+	m_focuser_subframe_select = new QComboBox();
+	m_focuser_subframe_select->addItem("Off");
+	m_focuser_subframe_select->addItem("10 radii");
+	m_focuser_subframe_select->addItem("20 radii");
+	settings_frame_layout->addWidget(m_focuser_subframe_select, settings_row, 2, 1, 2);
+	m_focuser_subframe_select->setCurrentIndex(conf.focuser_subframe);
+	connect(m_focuser_subframe_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focuser_subframe_changed);
 }
 
 void ImagerWindow::on_focuser_selected(int index) {
@@ -300,6 +338,15 @@ void ImagerWindow::on_selection_changed(double value) {
 	m_FWHM_label->setText("n/a");
 	m_peak_label->setText("n/a");
 	m_drift_label->setText("n/a");
+}
+
+void ImagerWindow::on_focuser_selection_radius_changed(int value) {
+	QtConcurrent::run([=]() {
+		char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_agent_star_selection(selected_agent);
+	});
 }
 
 void ImagerWindow::on_focus_mode_selected(int index) {
@@ -400,5 +447,19 @@ void ImagerWindow::on_focus_out(bool clicked) {
 
 		change_focuser_focus_out_property(selected_agent);
 		change_focuser_steps_property(selected_agent);
+	});
+}
+
+
+void ImagerWindow::on_focuser_subframe_changed(int index) {
+	conf.focuser_subframe = index;
+	write_conf();
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_imager_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_focuser_subframe(selected_agent);
 	});
 }

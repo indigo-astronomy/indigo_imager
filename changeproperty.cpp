@@ -101,12 +101,14 @@ void ImagerWindow::change_agent_batch_property_for_focus(const char *agent) cons
 void ImagerWindow::change_agent_star_selection(const char *agent) const {
 	static const char *items[] = {
 		AGENT_IMAGER_SELECTION_X_ITEM_NAME,
-		AGENT_IMAGER_SELECTION_Y_ITEM_NAME
+		AGENT_IMAGER_SELECTION_Y_ITEM_NAME,
+		AGENT_IMAGER_SELECTION_RADIUS_ITEM_NAME
 	};
-	static double values[2];
+	static double values[3];
 	values[0] = (double)m_star_x->value();
 	values[1] = (double)m_star_y->value();
-	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME, 2, items, values);
+	values[2] = (double)m_focus_star_radius->value();
+	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME, 3, items, values);
 }
 
 void ImagerWindow::change_guider_agent_star_selection(const char *agent) const {
@@ -129,6 +131,15 @@ void ImagerWindow::change_guider_agent_subframe(const char *agent) const {
 	static double values[1];
 	values[0] = (double)m_guider_subframe_select->currentIndex() * 5; /* 0, 5, 10 slection radii */
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME, 1, items, values);
+}
+
+void ImagerWindow::change_focuser_subframe(const char *agent) const {
+	static const char *items[] = {
+		AGENT_IMAGER_SELECTION_SUBFRAME_ITEM_NAME
+	};
+	static double values[1];
+	values[0] = (double)m_focuser_subframe_select->currentIndex() * 5; /* 0, 5, 10 slection radii */
+	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME, 1, items, values);
 }
 
 void ImagerWindow::change_jpeg_settings_property(const char *agent, const int jpeg_quality, const double black_threshold, const double white_threshold) {

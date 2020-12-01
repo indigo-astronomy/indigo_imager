@@ -136,10 +136,12 @@ public slots:
 	void on_focus_preview_start_stop(bool clicked);
 	void on_focus_mode_selected(int index);
 	void on_selection_changed(double value);
+	void on_focuser_selection_radius_changed(int value);
 	void on_focuser_position_changed(int value);
 	void on_image_right_click(double x, double y);
 	void on_focus_in(bool clicked);
 	void on_focus_out(bool clicked);
+	void on_focuser_subframe_changed(int index);
 
 	void on_guider_agent_selected(int index);
 	void on_guider_camera_selected(int index);
@@ -198,6 +200,8 @@ private:
 	QComboBox *m_focus_mode_select;
 	QDoubleSpinBox  *m_star_x;
 	QDoubleSpinBox  *m_star_y;
+	QSpinBox  *m_focus_star_radius;
+	QComboBox *m_focuser_subframe_select;
 	QSpinBox  *m_initial_step;
 	QSpinBox  *m_final_step;
 	QSpinBox  *m_focus_backlash;
@@ -298,6 +302,7 @@ private:
 	void change_focuser_position_property(const char *agent) const;
 	void change_focuser_focus_in_property(const char *agent) const;
 	void change_focuser_focus_out_property(const char *agent) const;
+	void change_focuser_subframe(const char *agent) const;
 
 	void change_guider_agent_star_selection(const char *agent) const;
 	void change_guider_agent_subframe(const char *agent) const;
