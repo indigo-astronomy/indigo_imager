@@ -185,7 +185,9 @@ static void update_ccd_temperature(indigo_property *property, QLineEdit *current
 		if (client_match_item(&property->items[i], CCD_TEMPERATURE_ITEM_NAME)) {
 			if (update_value) {
 				configure_spinbox(&property->items[i], property->perm, set_temp);
+				set_temp->blockSignals(true);
 				set_temp->setValue(property->items[i].number.target);
+				set_temp->blockSignals(false);
 			} else {
 				configure_spinbox(nullptr, property->perm, set_temp);
 			}
