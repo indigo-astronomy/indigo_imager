@@ -84,6 +84,8 @@ signals:
 	void enable_blobs(bool on);
 	void rebuild_blob_previews();
 
+	void set_enabled(QWidget *widget, bool enabled);
+
 public slots:
 	void on_start(bool clicked);
 	void on_exposure_start_stop(bool clicked);
@@ -167,6 +169,9 @@ public slots:
 
 	void on_tab_changed(int index);
 
+	void on_set_enabled(QWidget *widget, bool enabled) {
+		widget->setEnabled(enabled);
+	};
 private:
 	bool m_save_blob;
 	QPlainTextEdit* mLog;

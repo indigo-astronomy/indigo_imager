@@ -1239,13 +1239,13 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		m_roi_x->setValue(0);
-		m_roi_x->setEnabled(false);
+		set_enabled(m_roi_x, false);
 		m_roi_y->setValue(0);
-		m_roi_y->setEnabled(false);
+		set_enabled(m_roi_y, false);
 		m_roi_w->setValue(0);
-		m_roi_w->setEnabled(false);
+		set_enabled(m_roi_w, false);
 		m_roi_h->setValue(0);
-		m_roi_h->setEnabled(false);
+		set_enabled(m_roi_h, false);
 	}
 	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
@@ -1254,7 +1254,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_agent, CCD_COOLER_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
-		m_cooler_onoff->setEnabled(false);
+		set_enabled(m_cooler_onoff, false);
 		m_cooler_onoff->setChecked(false);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_COOLER_POWER_PROPERTY_NAME) ||
@@ -1266,21 +1266,21 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("REMOVE %s", property->name);
 		m_current_temp->setText("");
-		m_set_temp->setEnabled(false);
+		set_enabled(m_set_temp, false);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 
 		set_spinbox_value(m_star_x, 0);
-		m_star_x->setEnabled(false);
+		set_enabled(m_star_x, false);
 
 		set_spinbox_value(m_star_y, 0);
-		m_star_y->setEnabled(false);
+		set_enabled(m_star_y, false);
 
 		set_spinbox_value(m_focus_star_radius, 0);
-		m_focus_star_radius->setEnabled(false);
+		set_enabled(m_focus_star_radius, false);
 
-		m_focuser_subframe_select->setEnabled(false);
+		set_enabled(m_focuser_subframe_select, false);
 	}
 
 	// Guider Agent
@@ -1307,70 +1307,70 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
 		set_spinbox_value(m_guider_exposure, 0);
-		m_guider_exposure->setEnabled(false);
+		set_enabled(m_guider_exposure, false);
 
 		set_spinbox_value(m_guider_delay, 0);
-		m_guider_delay->setEnabled(false);
+		set_enabled(m_guider_delay, false);
 
 		set_spinbox_value(m_guide_cal_step, 0);
-		m_guide_cal_step->setEnabled(false);
+		set_enabled(m_guide_cal_step, false);
 
 		set_spinbox_value(m_guide_dec_backlash, 0);
-		m_guide_dec_backlash->setEnabled(false);
+		set_enabled(m_guide_dec_backlash, false);
 
 		set_spinbox_value(m_guide_rotation, 0);
-		m_guide_rotation->setEnabled(false);
+		set_enabled(m_guide_rotation, false);
 
 		set_spinbox_value(m_guide_ra_speed, 0);
-		m_guide_ra_speed->setEnabled(false);
+		set_enabled(m_guide_ra_speed, false);
 
 		set_spinbox_value(m_guide_dec_speed, 0);
-		m_guide_dec_speed->setEnabled(false);
+		set_enabled(m_guide_dec_speed, false);
 
 		set_spinbox_value(m_guide_min_error, 0);
-		m_guide_min_error->setEnabled(false);
+		set_enabled(m_guide_min_error, false);
 
 		set_spinbox_value(m_guide_min_pulse, 0);
-		m_guide_min_pulse->setEnabled(false);
+		set_enabled(m_guide_min_pulse, false);
 
 		set_spinbox_value(m_guide_max_pulse, 0);
-		m_guide_max_pulse->setEnabled(false);
+		set_enabled(m_guide_max_pulse, false);
 
 		set_spinbox_value(m_guide_ra_aggr, 0);
-		m_guide_ra_aggr->setEnabled(false);
+		set_enabled(m_guide_ra_aggr, false);
 
 		set_spinbox_value(m_guide_dec_aggr, 0);
-		m_guide_dec_aggr->setEnabled(false);
+		set_enabled(m_guide_dec_aggr, false);
 
 		set_spinbox_value(m_guide_ra_pw, 0);
-		m_guide_ra_pw->setEnabled(false);
+		set_enabled(m_guide_ra_pw, false);
 
 		set_spinbox_value(m_guide_dec_pw, 0);
-		m_guide_dec_pw->setEnabled(false);
+		set_enabled(m_guide_dec_pw, false);
 
 		set_spinbox_value(m_guide_is, 0);
-		m_guide_is->setEnabled(false);
+		set_enabled(m_guide_is, false);
 	}
 
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
 
 		set_spinbox_value(m_guide_star_x, 0);
-		m_guide_star_x->setEnabled(false);
+		set_enabled(m_guide_star_x, false);
 
 		set_spinbox_value(m_guide_star_y, 0);
-		m_guide_star_y->setEnabled(false);
+		set_enabled(m_guide_star_y, false);
 
 		set_spinbox_value(m_guide_star_radius, 0);
-		m_guide_star_radius->setEnabled(false);
+		set_enabled(m_guide_star_radius, false);
 
-		m_guider_subframe_select->setEnabled(false);
+		set_enabled(m_guider_subframe_select, false);
 	}
 
 	if (client_match_device_property(property, selected_guider_agent, CCD_JPEG_SETTINGS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
 
-		m_guider_save_bw_select->setEnabled(false);
+		set_enabled(m_guider_save_bw_select, false);
 	}
 
 }

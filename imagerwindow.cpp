@@ -269,6 +269,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	mServiceModel = new QServiceModel("_indigo._tcp");
 	mServiceModel->enable_auto_connect(conf.auto_connect);
 
+	connect(this, &ImagerWindow::set_enabled, this, &ImagerWindow::on_set_enabled);
+
 	connect(mServiceModel, &QServiceModel::serviceAdded, mIndigoServers, &QIndigoServers::onAddService);
 	connect(mServiceModel, &QServiceModel::serviceRemoved, mIndigoServers, &QIndigoServers::onRemoveService);
 	connect(mServiceModel, &QServiceModel::serviceConnectionChange, mIndigoServers, &QIndigoServers::onConnectionChange);
