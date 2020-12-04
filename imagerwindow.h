@@ -80,6 +80,14 @@ public:
 
 	void property_delete(indigo_property* property, char *message);
 	void property_define(indigo_property* property, char *message);
+
+	friend void set_filter_selected(ImagerWindow *w, indigo_property *property);
+	friend void update_cooler_onoff(ImagerWindow *w, indigo_property *property);
+	friend void update_cooler_power(ImagerWindow *w, indigo_property *property);
+	friend void update_imager_selection_property(ImagerWindow *w, indigo_property *property);
+	friend void update_guider_selection_property(ImagerWindow *w, indigo_property *property);
+	friend void update_focus_setup_property(ImagerWindow *w, indigo_property *property);
+	friend void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *property);
 signals:
 	void enable_blobs(bool on);
 	void rebuild_blob_previews();
