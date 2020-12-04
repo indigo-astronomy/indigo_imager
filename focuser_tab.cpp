@@ -206,24 +206,22 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	settings_frame_layout->addItem(spacer, settings_row, 0);
 
 	settings_row++;
-	label = new QLabel("Star selection:");
+	label = new QLabel("Selection:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
 
 	// Star Selection
 	settings_row++;
-	label = new QLabel("Star X:");
-	settings_frame_layout->addWidget(label, settings_row, 0);
+	label = new QLabel("Star selection X / Y:");
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 2);
 	m_star_x = new QDoubleSpinBox();
 	m_star_x->setMaximum(100000);
 	m_star_x->setMinimum(0);
 	m_star_x->setValue(0);
 	//m_star_x->setEnabled(false);
-	settings_frame_layout->addWidget(m_star_x , settings_row, 1);
+	settings_frame_layout->addWidget(m_star_x , settings_row, 2);
 	connect(m_star_x, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_selection_changed);
 
-	label = new QLabel("Star Y:");
-	settings_frame_layout->addWidget(label, settings_row, 2);
 	m_star_y = new QDoubleSpinBox();
 	m_star_y->setMaximum(100000);
 	m_star_y->setMinimum(0);
