@@ -297,18 +297,18 @@ void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *proper
 	}
 }
 
-static void update_ccd_frame_property(ImagerWindow *w, indigo_property *property, QSpinBox *roi_x, QSpinBox *roi_y, QSpinBox *roi_w, QSpinBox *roi_h) {
+void update_ccd_frame_property(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("Set %s", property->name);
 	for (int i = 0; i < property->count; i++) {
 		indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
 		if (client_match_item(&property->items[i], CCD_FRAME_LEFT_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, roi_x);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_roi_x);
 		} else if (client_match_item(&property->items[i], CCD_FRAME_TOP_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, roi_y);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_roi_y);
 		} else if (client_match_item(&property->items[i], CCD_FRAME_WIDTH_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, roi_w);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_roi_w);
 		} else if (client_match_item(&property->items[i], CCD_FRAME_HEIGHT_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, roi_h);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_roi_h);
 		}
 	}
 }
@@ -329,36 +329,21 @@ static void update_agent_imager_pause_process_property(indigo_property *property
 	}
 }
 
-static void update_wheel_slot_property(indigo_property *property, QComboBox *filter_select) {
+void update_wheel_slot_property(ImagerWindow *w, indigo_property *property) {
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], WHEEL_SLOT_ITEM_NAME)) {
 			indigo_property *p = properties.get(property->device, WHEEL_SLOT_NAME_PROPERTY_NAME);
 			unsigned int current_filter = (unsigned int)property->items[i].number.value - 1;
-			set_widget_state(property, filter_select);
+			set_widget_state(property, w->m_filter_select);
 			if (p && current_filter < p->count) {
-				filter_select->setCurrentIndex(filter_select->findText(p->items[current_filter].text.value));
+				w->m_filter_select->setCurrentIndex(w->m_filter_select->findText(p->items[current_filter].text.value));
 				indigo_debug("[SELECT filter] %s\n", p->items[current_filter].label);
 			}
 		}
 	}
 }
 
-static void update_agent_imager_stats_property(
-	indigo_property *property,
-	QLabel *FWHM_label,
-	QLabel *HFD_label,
-	QLabel *peak_label,
-	QLabel *drift_label,
-	QProgressBar *exposure_progress,
-	QProgressBar *process_progress,
-	QProgressBar *focusing_progress,
-	QPushButton *exposure_button,
-	QPushButton *preview_button,
-	QPushButton *focusing_button,
-	QPushButton *focusing_preview_button,
-	FocusGraph *focus_graph,
-	QVector<double> &fwhm_data
-) {
+void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *property) {
 	double exp_elapsed, exp_time = 1;
 	double drift_x, drift_y;
 	int frames_complete, frames_total;
@@ -402,17 +387,17 @@ static void update_agent_imager_stats_property(
 			 FWHM = stats_p->items[i].number.value;
 			 char fwhm_str[50];
 			 snprintf(fwhm_str, 50, "%.2f", FWHM);
-			 FWHM_label->setText(fwhm_str);
+			 w->m_FWHM_label->setText(fwhm_str);
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_HFD_ITEM_NAME)) {
 			 double HFD = stats_p->items[i].number.value;
 			 char hfd_str[50];
 			 snprintf(hfd_str, 50, "%.2f", HFD);
-			 HFD_label->setText(hfd_str);
+			 w->m_HFD_label->setText(hfd_str);
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_PEAK_ITEM_NAME)) {
 			int peak = (int)stats_p->items[i].number.value;
 			char peak_str[50];
 			snprintf(peak_str, 50, "%d", peak);
-			peak_label->setText(peak_str);
+			w->m_peak_label->setText(peak_str);
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_DRIFT_X_ITEM_NAME)) {
 			drift_x = stats_p->items[i].number.value;
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_DRIFT_Y_ITEM_NAME)) {
@@ -427,173 +412,164 @@ static void update_agent_imager_stats_property(
 	}
 	char drift_str[50];
 	snprintf(drift_str, 50, "%.2f, %.2f", drift_x, drift_y);
-	drift_label->setText(drift_str);
+	w->m_drift_label->setText(drift_str);
 	if (exposure_running) {
-		set_widget_state(property, exposure_button);
-		set_ok(preview_button);
-		set_ok(focusing_button);
-		set_ok(focusing_preview_button);
+		set_widget_state(property, w->m_exposure_button);
+		set_ok(w->m_preview_button);
+		set_ok(w->m_focusing_button);
+		set_ok(w->m_focusing_preview_button);
 		if (start_p->state == INDIGO_BUSY_STATE) {
-			//exposure_button->setText("Stop");
-			exposure_button->setIcon(QIcon(":resource/stop.png"));
-			exposure_button->setEnabled(true);
-			preview_button->setEnabled(false);
-			focusing_button->setEnabled(false);
-			focusing_preview_button->setEnabled(false);
-			exposure_progress->setRange(0, exp_time);
-			exposure_progress->setValue(exp_elapsed);
-			exposure_progress->setFormat("Exposure: %v of %m seconds elapsed...");
+			//w->m_exposure_button->setText("Stop");
+			w->m_exposure_button->setIcon(QIcon(":resource/stop.png"));
+			w->m_exposure_button->setEnabled(true);
+			w->m_preview_button->setEnabled(false);
+			w->m_focusing_button->setEnabled(false);
+			w->m_focusing_preview_button->setEnabled(false);
+			w->m_exposure_progress->setRange(0, exp_time);
+			w->m_exposure_progress->setValue(exp_elapsed);
+			w->m_exposure_progress->setFormat("Exposure: %v of %m seconds elapsed...");
 			if (frames_total < 0) {
-				process_progress->setRange(0, frames_complete);
-				process_progress->setValue(frames_complete - 1);
-				process_progress->setFormat("Process: exposure %v complete...");
+				w->m_process_progress->setRange(0, frames_complete);
+				w->m_process_progress->setValue(frames_complete - 1);
+				w->m_process_progress->setFormat("Process: exposure %v complete...");
 			} else {
-				process_progress->setRange(0, frames_total);
-				process_progress->setValue(frames_complete - 1);
-				process_progress->setFormat("Process: exposure %v of %m complete...");
+				w->m_process_progress->setRange(0, frames_total);
+				w->m_process_progress->setValue(frames_complete - 1);
+				w->m_process_progress->setFormat("Process: exposure %v of %m complete...");
 			}
 			indigo_debug("frames total = %d", frames_total);
 
 		} else if (start_p->state == INDIGO_OK_STATE) {
-			//exposure_button->setText("Start");
-			exposure_button->setIcon(QIcon(":resource/record.png"));
-			exposure_button->setEnabled(true);
-			preview_button->setEnabled(true);
-			focusing_button->setEnabled(true);
-			focusing_preview_button->setEnabled(true);
-			exposure_progress->setRange(0, 100);
-			exposure_progress->setValue(100);
-			exposure_progress->setFormat("Exposure: Complete");
-			process_progress->setRange(0, 100);
-			process_progress->setValue(100);
-			process_progress->setFormat("Process: Complete");
+			//w->m_exposure_button->setText("Start");
+			w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
+			w->m_exposure_button->setEnabled(true);
+			w->m_preview_button->setEnabled(true);
+			w->m_focusing_button->setEnabled(true);
+			w->m_focusing_preview_button->setEnabled(true);
+			w->m_exposure_progress->setRange(0, 100);
+			w->m_exposure_progress->setValue(100);
+			w->m_exposure_progress->setFormat("Exposure: Complete");
+			w->m_process_progress->setRange(0, 100);
+			w->m_process_progress->setValue(100);
+			w->m_process_progress->setFormat("Process: Complete");
 		} else {
-			//exposure_button->setText("Start");
-			exposure_button->setIcon(QIcon(":resource/record.png"));
-			exposure_button->setEnabled(true);
-			preview_button->setEnabled(true);
-			focusing_button->setEnabled(true);
-			focusing_preview_button->setEnabled(true);
-			exposure_progress->setRange(0, 1);
-			exposure_progress->setValue(0);
-			exposure_progress->setFormat("Exposure: Aborted");
-			process_progress->setValue(frames_complete - 1);
+			//w->m_exposure_button->setText("Start");
+			w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
+			w->m_exposure_button->setEnabled(true);
+			w->m_preview_button->setEnabled(true);
+			w->m_focusing_button->setEnabled(true);
+			w->m_focusing_preview_button->setEnabled(true);
+			w->m_exposure_progress->setRange(0, 1);
+			w->m_exposure_progress->setValue(0);
+			w->m_exposure_progress->setFormat("Exposure: Aborted");
+			w->m_process_progress->setValue(frames_complete - 1);
 			if (frames_total < 0) {
-				process_progress->setFormat("Process: exposure %v complete");
+				w->m_process_progress->setFormat("Process: exposure %v complete");
 			} else {
-				process_progress->setFormat("Process: exposure %v of %m complete");
+				w->m_process_progress->setFormat("Process: exposure %v of %m complete");
 			}
 		}
 	} else if (focusing_running || preview_running) {
 		if (frames_complete != prev_frame) {
-			fwhm_data.append(FWHM);
-			if (fwhm_data.size() > 100) fwhm_data.removeFirst();
-			focus_graph->redraw_data(fwhm_data);
+			w->m_focus_fwhm_data.append(FWHM);
+			if (w->m_focus_fwhm_data.size() > 100) w->m_focus_fwhm_data.removeFirst();
+			w->m_focus_graph->redraw_data(w->m_focus_fwhm_data);
 			prev_frame = frames_complete;
 		}
-		set_widget_state(property, focusing_button);
-		set_ok(preview_button);
-		set_ok(exposure_button);
-		set_ok(focusing_preview_button);
+		set_widget_state(property, w->m_focusing_button);
+		set_ok(w->m_preview_button);
+		set_ok(w->m_exposure_button);
+		set_ok(w->m_focusing_preview_button);
 		if (start_p->state == INDIGO_BUSY_STATE) {
-			//focusing_button->setText("Stop");
-			//focusing_button->setIcon(QIcon(":resource/stop.png"));
-			preview_button->setEnabled(false);
-			exposure_button->setEnabled(false);
-			focusing_button->setEnabled(true);
-			focusing_preview_button->setEnabled(false);
-			focusing_progress->setRange(0, exp_time);
-			focusing_progress->setValue(exp_elapsed);
-			focusing_progress->setFormat("Focusing: %v of %m seconds elapsed...");
+			//w->m_focusing_button->setText("Stop");
+			//w->m_focusing_button->setIcon(QIcon(":resource/stop.png"));
+			w->m_preview_button->setEnabled(false);
+			w->m_exposure_button->setEnabled(false);
+			w->m_focusing_button->setEnabled(true);
+			w->m_focusing_preview_button->setEnabled(false);
+			w->m_focusing_progress->setRange(0, exp_time);
+			w->m_focusing_progress->setValue(exp_elapsed);
+			w->m_focusing_progress->setFormat("Focusing: %v of %m seconds elapsed...");
 		} else if(start_p->state == INDIGO_OK_STATE) {
-			//focusing_button->setText("Focus");
-			//focusing_button->setIcon(QIcon(":resource/record.png"));
-			preview_button->setEnabled(true);
-			exposure_button->setEnabled(true);
-			focusing_button->setEnabled(true);
-			focusing_preview_button->setEnabled(true);
-			focusing_progress->setRange(0, 100);
-			focusing_progress->setValue(100);
-			focusing_progress->setFormat("Focusing: Complete");
+			//w->m_focusing_button->setText("Focus");
+			//w->m_focusing_button->setIcon(QIcon(":resource/record.png"));
+			w->m_preview_button->setEnabled(true);
+			w->m_exposure_button->setEnabled(true);
+			w->m_focusing_button->setEnabled(true);
+			w->m_focusing_preview_button->setEnabled(true);
+			w->m_focusing_progress->setRange(0, 100);
+			w->m_focusing_progress->setValue(100);
+			w->m_focusing_progress->setFormat("Focusing: Complete");
 		} else {
-			//focusing_button->setText("Focus");
-			//focusing_button->setIcon(QIcon(":resource/record.png"));
-			preview_button->setEnabled(true);
-			exposure_button->setEnabled(true);
-			focusing_button->setEnabled(true);
-			focusing_preview_button->setEnabled(true);
-			focusing_progress->setRange(0, 1);
-			focusing_progress->setValue(0);
-			focusing_progress->setFormat("Focusing: Stopped");
+			//w->m_focusing_button->setText("Focus");
+			//w->m_focusing_button->setIcon(QIcon(":resource/record.png"));
+			w->m_preview_button->setEnabled(true);
+			w->m_exposure_button->setEnabled(true);
+			w->m_focusing_button->setEnabled(true);
+			w->m_focusing_preview_button->setEnabled(true);
+			w->m_focusing_progress->setRange(0, 1);
+			w->m_focusing_progress->setValue(0);
+			w->m_focusing_progress->setFormat("Focusing: Stopped");
 		}
 	} else {
-		//focusing_button->setIcon(QIcon(":resource/record.png"));
-		exposure_button->setIcon(QIcon(":resource/record.png"));
-		preview_button->setEnabled(true);
-		exposure_button->setEnabled(true);
-		focusing_button->setEnabled(true);
-		focusing_preview_button->setEnabled(true);
+		//w->m_focusing_button->setIcon(QIcon(":resource/record.png"));
+		w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
+		w->m_preview_button->setEnabled(true);
+		w->m_exposure_button->setEnabled(true);
+		w->m_focusing_button->setEnabled(true);
+		w->m_focusing_preview_button->setEnabled(true);
 	}
 }
 
-static void update_ccd_exposure(
-	indigo_property *property,
-	QDoubleSpinBox *exposure_time,
-	QProgressBar *exposure_progress,
-	QProgressBar *process_progress,
-	QPushButton *exposure_button,
-	QPushButton *preview_button,
-	QPushButton *focusing_button,
-	QPushButton *focusing_preview_button
-) {
+void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 	double exp_elapsed, exp_time;
-	set_widget_state(property, focusing_preview_button);
-	set_widget_state(property, preview_button);
+	set_widget_state(property, w->m_focusing_preview_button);
+	set_widget_state(property, w->m_preview_button);
 	if (property->state == INDIGO_BUSY_STATE) {
-		exp_time = exposure_time->value();
+		exp_time = w->m_exposure_time->value();
 		for (int i = 0; i < property->count; i++) {
 			if (client_match_item(&property->items[i], CCD_EXPOSURE_ITEM_NAME)) {
 				exp_elapsed = exp_time - property->items[i].number.value;
 			}
 		}
-		//preview_button->setText("Stop");
-		preview_button->setIcon(QIcon(":resource/stop.png"));
-		//focusing_preview_button->setText("Stop");
-		focusing_preview_button->setIcon(QIcon(":resource/stop.png"));
-		exposure_button->setEnabled(false);
-		focusing_button->setEnabled(false);
-		exposure_progress->setRange(0, exp_time);
-		exposure_progress->setValue(exp_elapsed);
-		exposure_progress->setFormat("Preview: %v of %m seconds elapsed...");
-		process_progress->setRange(0, 1);
-		process_progress->setValue(0);
-		process_progress->setFormat("Preview in progress...");
+		//w->m_preview_button->setText("Stop");
+		w->m_preview_button->setIcon(QIcon(":resource/stop.png"));
+		//w->m_focusing_preview_button->setText("Stop");
+		w->m_focusing_preview_button->setIcon(QIcon(":resource/stop.png"));
+		w->m_exposure_button->setEnabled(false);
+		w->m_focusing_button->setEnabled(false);
+		w->m_exposure_progress->setRange(0, exp_time);
+		w->m_exposure_progress->setValue(exp_elapsed);
+		w->m_exposure_progress->setFormat("Preview: %v of %m seconds elapsed...");
+		w->m_process_progress->setRange(0, 1);
+		w->m_process_progress->setValue(0);
+		w->m_process_progress->setFormat("Preview in progress...");
 	} else if(property->state == INDIGO_OK_STATE) {
-		//preview_button->setText("Preview");
-		preview_button->setIcon(QIcon(":resource/play.png"));
-		//focusing_preview_button->setText("Preview");
-		focusing_preview_button->setIcon(QIcon(":resource/play.png"));
-		exposure_button->setEnabled(true);
-		focusing_button->setEnabled(true);
-		exposure_progress->setRange(0, 100);
-		exposure_progress->setValue(100);
-		process_progress->setRange(0,100);
-		process_progress->setValue(100);
-		exposure_progress->setFormat("Preview: Complete");
-		process_progress->setFormat("Process: Complete");
+		//w->m_preview_button->setText("Preview");
+		w->m_preview_button->setIcon(QIcon(":resource/play.png"));
+		//w->m_focusing_preview_button->setText("Preview");
+		w->m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
+		w->m_exposure_button->setEnabled(true);
+		w->m_focusing_button->setEnabled(true);
+		w->m_exposure_progress->setRange(0, 100);
+		w->m_exposure_progress->setValue(100);
+		w->m_process_progress->setRange(0,100);
+		w->m_process_progress->setValue(100);
+		w->m_exposure_progress->setFormat("Preview: Complete");
+		w->m_process_progress->setFormat("Process: Complete");
 	} else {
-		//preview_button->setText("Preview");
-		preview_button->setIcon(QIcon(":resource/play.png"));
-		//focusing_preview_button->setText("Preview");
-		focusing_preview_button->setIcon(QIcon(":resource/play.png"));
-		exposure_button->setEnabled(true);
-		focusing_button->setEnabled(true);
-		exposure_progress->setRange(0, 1);
-		exposure_progress->setValue(0);
-		process_progress->setRange(0, 1);
-		process_progress->setValue(0);
-		exposure_progress->setFormat("Exposure: Aborted");
-		process_progress->setFormat("Process: Aborted");
+		//w->m_preview_button->setText("Preview");
+		w->m_preview_button->setIcon(QIcon(":resource/play.png"));
+		//w->m_focusing_preview_button->setText("Preview");
+		w->m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
+		w->m_exposure_button->setEnabled(true);
+		w->m_focusing_button->setEnabled(true);
+		w->m_exposure_progress->setRange(0, 1);
+		w->m_exposure_progress->setValue(0);
+		w->m_process_progress->setRange(0, 1);
+		w->m_process_progress->setValue(0);
+		w->m_exposure_progress->setFormat("Exposure: Aborted");
+		w->m_process_progress->setFormat("Process: Aborted");
 	}
 }
 
@@ -905,7 +881,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_agent_imager_batch_property(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME)) {
-		update_ccd_frame_property(this, property, m_roi_x, m_roi_y, m_roi_w, m_roi_h);
+		update_ccd_frame_property(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME)) {
 		reset_filter_names(property, m_filter_select);
@@ -929,22 +905,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_STATS_PROPERTY_NAME) ||
 	    client_match_device_property(property, selected_agent, AGENT_START_PROCESS_PROPERTY_NAME)) {
-		update_agent_imager_stats_property(
-			property,
-			m_FWHM_label,
-			m_HFD_label,
-			m_peak_label,
-			m_drift_label,
-			m_exposure_progress,
-			m_process_progress,
-			m_focusing_progress,
-			m_exposure_button,
-			m_preview_button,
-			m_focusing_button,
-			m_focusing_preview_button,
-			m_focus_graph,
-			m_focus_fwhm_data
-		);
+		update_agent_imager_stats_property(this, property);
 	}
 
 	// Guider Agent
@@ -1065,7 +1026,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		if (p) set_filter_selected(this, p);
 	}
 	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_PROPERTY_NAME)) {
-		update_wheel_slot_property(property, m_filter_select);
+		update_wheel_slot_property(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME)) {
 		update_imager_selection_property(this, property);
@@ -1074,44 +1035,20 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		update_focus_setup_property(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME)) {
-		//update_agent_imager_batch_property(property, m_exposure_time, m_exposure_delay, m_frame_count);
+		//update_agent_imager_batch_property(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME)) {
 		indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
 		if (!m_save_blob && p && p->state != INDIGO_BUSY_STATE ) {
-			update_ccd_exposure(
-				property,
-				m_exposure_time,
-				m_exposure_progress,
-				m_process_progress,
-				m_exposure_button,
-				m_preview_button,
-				m_focusing_button,
-				m_focusing_preview_button
-			);
+			update_ccd_exposure(this, property);
 		}
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_STATS_PROPERTY_NAME) ||
 	    client_match_device_property(property, selected_agent, AGENT_START_PROCESS_PROPERTY_NAME)) {
-		update_agent_imager_stats_property(
-			property,
-			m_FWHM_label,
-			m_HFD_label,
-			m_peak_label,
-			m_drift_label,
-			m_exposure_progress,
-			m_process_progress,
-			m_focusing_progress,
-			m_exposure_button,
-			m_preview_button,
-			m_focusing_button,
-			m_focusing_preview_button,
-			m_focus_graph,
-			m_focus_fwhm_data
-		);
+		update_agent_imager_stats_property(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME)) {
-		update_ccd_frame_property(this, property, m_roi_x, m_roi_y, m_roi_w, m_roi_h);
+		update_ccd_frame_property(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_pause_process_property(property, m_pause_button);

@@ -88,6 +88,11 @@ public:
 	friend void update_guider_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_focus_setup_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *property);
+	friend void update_ccd_frame_property(ImagerWindow *w, indigo_property *property);
+	friend void update_wheel_slot_property(ImagerWindow *w, indigo_property *property);
+	friend void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *property);
+	friend void update_ccd_exposure(ImagerWindow *w, indigo_property *property);
+
 signals:
 	void enable_blobs(bool on);
 	void rebuild_blob_previews();
