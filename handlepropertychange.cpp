@@ -573,16 +573,7 @@ void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 	}
 }
 
-static void update_guider_stats(
-	indigo_property *property, ImageViewer *viewer,
-	QLabel *ra_dec_drift_label,
-	QLabel *x_y_drift_label,
-	QLabel *pulse_label,
-	QLabel *rmse_label,
-	FocusGraph *drift_graph,
-	QVector<double> &drift_ra,
-	QVector<double> &drift_dec
-) {
+void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	double ref_x = 0, ref_y = 0;
 	double d_ra = 0, d_dec = 0;
 	double cor_ra = 0, cor_dec = 0;
@@ -613,128 +604,103 @@ static void update_guider_stats(
 		}
 
 	}
-	viewer->moveReference(ref_x, ref_y);
+	w->m_guider_viewer->moveReference(ref_x, ref_y);
 
 	char label_str[50];
 	snprintf(label_str, 50, "%+.2f  %+.2f", d_ra, d_dec);
-	ra_dec_drift_label->setText(label_str);
+	w->m_guider_rd_drift_label->setText(label_str);
 
 	snprintf(label_str, 50, "%+.2f  %+.2f", d_x, d_y);
-	x_y_drift_label->setText(label_str);
+	w->m_guider_xy_drift_label->setText(label_str);
 
 	snprintf(label_str, 50, "%+.2f  %+.2f", cor_ra, cor_dec);
-	pulse_label->setText(label_str);
+	w->m_guider_pulse_label->setText(label_str);
 
 	snprintf(label_str, 50, "%.2f  %.2f", rmse_ra, rmse_dec);
-	rmse_label->setText(label_str);
+	w->m_guider_rmse_label->setText(label_str);
 
-	drift_ra.append(d_ra);
-	drift_dec.append(d_dec);
+	w->m_drift_data_ra.append(d_ra);
+	w->m_drift_data_dec.append(d_dec);
 
-	if (drift_dec.size() > 120) {
-		drift_dec.removeFirst();
-		drift_ra.removeFirst();
+	if (w->m_drift_data_dec.size() > 120) {
+		w->m_drift_data_dec.removeFirst();
+		w->m_drift_data_ra.removeFirst();
 	}
-	drift_graph->redraw_data2(drift_ra, drift_dec);
+	w->m_guider_graph->redraw_data2(w->m_drift_data_ra, w->m_drift_data_dec);
 }
 
-
-static void update_guider_settings(
-	ImagerWindow *w,
-	indigo_property *property,
-	QDoubleSpinBox *exposure,
-	QDoubleSpinBox *delay,
-	QDoubleSpinBox *cal_step,
-	QDoubleSpinBox *cal_dec_backlash,
-	QDoubleSpinBox *cal_rotation,
-	QDoubleSpinBox *cal_ra_speed,
-	QDoubleSpinBox *cal_dec_speed,
-	QDoubleSpinBox *min_error,
-	QDoubleSpinBox *min_pulse,
-	QDoubleSpinBox *max_pulse,
-	QSpinBox *ra_aggr,
-	QSpinBox *dec_aggr,
-	QDoubleSpinBox *ra_pw,
-	QDoubleSpinBox *dec_pw,
-	QSpinBox *istack
-) {
+void update_guider_settings(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("Set %s", property->name);
 	for (int i = 0; i < property->count; i++) {
 		indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
 		if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_EXPOSURE_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, exposure);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guider_exposure);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_DELAY_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, delay);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guider_delay);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_STEP_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, cal_step);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_cal_step);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_BACKLASH_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, cal_dec_backlash);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_dec_backlash);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_ANGLE_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, cal_rotation);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_rotation);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_SPEED_RA_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, cal_ra_speed);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_ra_speed);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_SPEED_DEC_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, cal_dec_speed);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_dec_speed);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_MIN_ERR_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, min_error);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_min_error);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_MIN_PULSE_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, min_pulse);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_min_pulse);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_MAX_PULSE_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, max_pulse);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_max_pulse);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_AGG_RA_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, ra_aggr);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_ra_aggr);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_AGG_DEC_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, dec_aggr);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_dec_aggr);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_PW_RA_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, ra_pw);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_ra_pw);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_PW_DEC_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, dec_pw);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_dec_pw);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_STACK_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, istack);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_is);
 		}
 	}
 }
 
-
-static void agent_guider_start_process_change(
-	indigo_property *property,
-	QPushButton *preview_button,
-	QPushButton *calibrate_button,
-	QPushButton *guide_button
-) {
+void agent_guider_start_process_change(ImagerWindow *w, indigo_property *property) {
 	if (property->state==INDIGO_BUSY_STATE) {
 		for (int i = 0; i < property->count; i++) {
 			indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
 			if (client_match_item(&property->items[i], AGENT_GUIDER_START_CALIBRATION_ITEM_NAME) && property->items[i].sw.value) {
-				set_widget_state(property, calibrate_button);
-				set_ok(guide_button);
-				set_ok(preview_button);
-				calibrate_button->setEnabled(true);
-				guide_button->setEnabled(false);
-				preview_button->setEnabled(false);
+				set_widget_state(property, w->m_guider_calibrate_button);
+				set_ok(w->m_guider_guide_button);
+				set_ok(w->m_guider_preview_button);
+				w->m_guider_calibrate_button->setEnabled(true);
+				w->m_guider_guide_button->setEnabled(false);
+				w->m_guider_preview_button->setEnabled(false);
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_START_GUIDING_ITEM_NAME) && property->items[i].sw.value) {
-				set_ok(calibrate_button);
-				set_widget_state(property, guide_button);
-				set_ok(preview_button);
-				calibrate_button->setEnabled(false);
-				guide_button->setEnabled(true);
-				preview_button->setEnabled(false);
+				set_ok(w->m_guider_calibrate_button);
+				set_widget_state(property, w->m_guider_guide_button);
+				set_ok(w->m_guider_preview_button);
+				w->m_guider_calibrate_button->setEnabled(false);
+				w->m_guider_guide_button->setEnabled(true);
+				w->m_guider_preview_button->setEnabled(false);
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_START_PREVIEW_ITEM_NAME) && property->items[i].sw.value) {
-				set_ok(calibrate_button);
-				set_ok(guide_button);
-				set_widget_state(property, preview_button);
-				calibrate_button->setEnabled(false);
-				guide_button->setEnabled(false);
-				preview_button->setEnabled(true);
+				set_ok(w->m_guider_calibrate_button);
+				set_ok(w->m_guider_guide_button);
+				set_widget_state(property, w->m_guider_preview_button);
+				w->m_guider_calibrate_button->setEnabled(false);
+				w->m_guider_guide_button->setEnabled(false);
+				w->m_guider_preview_button->setEnabled(true);
 			}
 		}
 	} else {
-		set_widget_state(property, preview_button);
-		set_widget_state(property, calibrate_button);
-		set_widget_state(property, guide_button);
-		preview_button->setEnabled(true);
-		calibrate_button->setEnabled(true);
-		guide_button->setEnabled(true);
+		set_widget_state(property, w->m_guider_preview_button);
+		set_widget_state(property, w->m_guider_calibrate_button);
+		set_widget_state(property, w->m_guider_guide_button);
+		w->m_guider_preview_button->setEnabled(true);
+		w->m_guider_calibrate_button->setEnabled(true);
+		w->m_guider_guide_button->setEnabled(true);
 	}
 }
 
@@ -935,17 +901,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		});
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_STATS_PROPERTY_NAME)) {
-		update_guider_stats(
-			property,
-			m_guider_viewer,
-			m_guider_rd_drift_label,
-			m_guider_xy_drift_label,
-			m_guider_pulse_label,
-			m_guider_rmse_label,
-			m_guider_graph,
-			m_drift_data_ra,
-			m_drift_data_dec
-		);
+		update_guider_stats(this, property);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME)) {
 		add_items_to_combobox(property, m_detection_mode_select);
@@ -954,33 +910,10 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		add_items_to_combobox(property, m_dec_guiding_select);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME)) {
-		update_guider_settings(
-			this,
-			property,
-			m_guider_exposure,
-			m_guider_delay,
-			m_guide_cal_step,
-			m_guide_dec_backlash,
-			m_guide_rotation,
-			m_guide_ra_speed,
-			m_guide_dec_speed,
-			m_guide_min_error,
-			m_guide_min_pulse,
-			m_guide_max_pulse,
-			m_guide_ra_aggr,
-			m_guide_dec_aggr,
-			m_guide_ra_pw,
-			m_guide_dec_pw,
-			m_guide_is
-		);
+		update_guider_settings(this, property);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_START_PROCESS_PROPERTY_NAME)) {
-		agent_guider_start_process_change(
-			property,
-			m_guider_preview_button,
-			m_guider_calibrate_button,
-			m_guider_guide_button
-		);
+		agent_guider_start_process_change(this, property);
 	}
 }
 
@@ -1074,17 +1007,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		update_guider_selection_property(this, property);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_STATS_PROPERTY_NAME)) {
-		update_guider_stats(
-			property,
-			m_guider_viewer,
-			m_guider_rd_drift_label,
-			m_guider_xy_drift_label,
-			m_guider_pulse_label,
-			m_guider_rmse_label,
-			m_guider_graph,
-			m_drift_data_ra,
-			m_drift_data_dec
-		);
+		update_guider_stats(this, property);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME)) {
 		change_combobox_selection(property, m_detection_mode_select);
@@ -1093,33 +1016,10 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		change_combobox_selection(property, m_dec_guiding_select);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME)) {
-		update_guider_settings(
-			this,
-			property,
-			m_guider_exposure,
-			m_guider_delay,
-			m_guide_cal_step,
-			m_guide_dec_backlash,
-			m_guide_rotation,
-			m_guide_ra_speed,
-			m_guide_dec_speed,
-			m_guide_min_error,
-			m_guide_min_pulse,
-			m_guide_max_pulse,
-			m_guide_ra_aggr,
-			m_guide_dec_aggr,
-			m_guide_ra_pw,
-			m_guide_dec_pw,
-			m_guide_is
-		);
+		update_guider_settings(this, property);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_START_PROCESS_PROPERTY_NAME)) {
-		agent_guider_start_process_change(
-			property,
-			m_guider_preview_button,
-			m_guider_calibrate_button,
-			m_guider_guide_button
-		);
+		agent_guider_start_process_change(this, property);
 	}
 	properties.create(property);
 }
