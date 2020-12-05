@@ -145,6 +145,7 @@ public slots:
 	void on_focuser_selected(int index);
 	void on_camera_selected(int index);
 	void on_ccd_mode_selected(int index);
+	void on_ccd_image_format_selected(int index);
 	void on_frame_type_selected(int index);
 	void on_filter_selected(int index);
 	void on_cooler_onoff(bool state);
@@ -197,6 +198,7 @@ private:
 	QComboBox *m_camera_select;
 	QComboBox *m_wheel_select;
 	QComboBox *m_frame_type_select;
+	QComboBox *m_frame_format_select;
 	QComboBox *m_frame_size_select;
 	QSpinBox  *m_roi_x, *m_roi_w;
 	QSpinBox  *m_roi_y, *m_roi_h;
@@ -305,6 +307,7 @@ private:
 	void change_ccd_exposure_property(const char *agent, QDoubleSpinBox *exp_time) const;
 	void change_ccd_abort_exposure_property(const char *agent) const;
 	void change_ccd_mode_property(const char *agent) const;
+	void change_ccd_image_format_property(const char *agent) const;
 	void change_ccd_frame_type_property(const char *agent) const;
 	void change_agent_batch_property(const char *agent) const;
 	void change_agent_batch_property_for_focus(const char *agent) const;

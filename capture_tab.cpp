@@ -54,11 +54,6 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	row++;
 	QSpacerItem *spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	capture_frame_layout->addItem(spacer, row, 0);
-	//row++;
-	//QFrame* line = new QFrame();
-	//line->setFrameShape(QFrame::HLine);
-	//line->setFrameShadow(QFrame::Plain);
-	//capture_frame_layout->addWidget(line, row, 0, 1, 4);
 
 	// frame type
 	row++;
@@ -67,9 +62,17 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_frame_size_select = new QComboBox();
 	capture_frame_layout->addWidget(m_frame_size_select, row, 1, 1, 2);
 	connect(m_frame_size_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_ccd_mode_selected);
+
 	m_frame_type_select = new QComboBox();
 	capture_frame_layout->addWidget(m_frame_type_select, row, 3);
 	connect(m_frame_type_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_frame_type_selected);
+
+	row++;
+	label = new QLabel("Format:");
+	capture_frame_layout->addWidget(label, row, 0);
+	m_frame_format_select = new QComboBox();
+	capture_frame_layout->addWidget(m_frame_format_select, row, 1, 1, 2);
+	connect(m_frame_format_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_ccd_image_format_selected);
 
 	// ROI
 	row++;
@@ -430,6 +433,19 @@ void ImagerWindow::on_ccd_mode_selected(int index) {
 		change_ccd_mode_property(selected_agent);
 	});
 }
+
+
+void ImagerWindow::on_ccd_image_format_selected(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_imager_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_ccd_image_format_property(selected_agent);
+	});
+}
+
 
 void ImagerWindow::on_frame_type_selected(int index) {
 	QtConcurrent::run([=]() {

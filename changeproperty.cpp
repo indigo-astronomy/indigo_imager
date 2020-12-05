@@ -64,6 +64,18 @@ void ImagerWindow::change_ccd_mode_property(const char *agent) const {
 	indigo_change_switch_property(nullptr, agent, CCD_MODE_PROPERTY_NAME, 1, items, values);
 }
 
+void ImagerWindow::change_ccd_image_format_property(const char *agent) const {
+	static char selected_format[INDIGO_NAME_SIZE];
+	strncpy(selected_format, m_frame_format_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	static const char * items[] = {
+		selected_format
+	};
+	static bool values[] = {
+		true
+	};
+	indigo_change_switch_property(nullptr, agent, CCD_IMAGE_FORMAT_PROPERTY_NAME, 1, items, values);
+}
+
 void ImagerWindow::change_ccd_frame_type_property(const char *agent) const {
 	static char selected_type[INDIGO_NAME_SIZE];
 	strncpy(selected_type, m_frame_type_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
