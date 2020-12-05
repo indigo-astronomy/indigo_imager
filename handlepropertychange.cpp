@@ -784,6 +784,20 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 				free(device_name);
 			});
 		}
+		if (client_match_device_property(property, property->device, SERVER_INFO_PROPERTY_NAME)) {
+			indigo_item *item = indigo_get_item(property, SERVER_INFO_VERSION_ITEM_NAME);
+			if (item) {
+				int version_major;
+				int version_minor;
+				int build;
+				char message[255];
+				sscanf(item->text.value, "%d.%d-%d", &version_major, &version_minor, &build);
+				if (build < 135) {
+					sprintf(message, "WARNING: Some features may not be available on '%s' ver. %s as Ain requires ver. 2.0-135 or newer", property->device, item->text.value);
+					on_window_log(nullptr, message);
+				}
+			}
+		}
 		return;
 	}
 
