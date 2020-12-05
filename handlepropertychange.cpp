@@ -793,7 +793,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 				char message[255];
 				sscanf(item->text.value, "%d.%d-%d", &version_major, &version_minor, &build);
 				if (build < 135) {
-					sprintf(message, "WARNING: Some features may not be available on '%s' ver. %s as Ain requires ver. 2.0-135 or newer", property->device, item->text.value);
+					sprintf(message, "WARNING: Some features will not work on '%s' running Indigo %s as Ain requires 2.0-135 or newer!", property->device, item->text.value);
 					on_window_log(nullptr, message);
 				}
 			}
