@@ -231,11 +231,15 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 
 	int image_row = 0;
 
-	label = new QLabel("Image format:");
-	image_frame_layout->addWidget(label, image_row, 0, 1, 2);
+	label = new QLabel("Format:");
+	image_frame_layout->addWidget(label, image_row, 0);
 	m_frame_format_select = new QComboBox();
-	image_frame_layout->addWidget(m_frame_format_select, image_row, 2, 1, 2);
+	image_frame_layout->addWidget(m_frame_format_select, image_row, 1, 1, 3);
 	connect(m_frame_format_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_ccd_image_format_selected);
+
+	image_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	image_frame_layout->addItem(spacer, image_row, 0);
 
 	// ROI
 	image_row++;
@@ -248,7 +252,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_roi_x->setEnabled(false);
 	image_frame_layout->addWidget(m_roi_x , image_row, 1);
 
-	label = new QLabel("W:");
+	label = new QLabel("Width:");
 	image_frame_layout->addWidget(label, image_row, 2);
 	m_roi_w = new QSpinBox();
 	m_roi_w->setMaximum(100000);
@@ -268,7 +272,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_roi_y->setEnabled(false);
 	image_frame_layout->addWidget(m_roi_y , image_row, 1);
 
-	label = new QLabel("H:");
+	label = new QLabel("Height:");
 	image_frame_layout->addWidget(label, image_row, 2);
 	m_roi_h = new QSpinBox();
 	m_roi_h->setMaximum(100000);
