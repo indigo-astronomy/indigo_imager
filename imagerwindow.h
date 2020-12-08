@@ -95,6 +95,7 @@ public:
 	friend void update_guider_stats(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_settings(ImagerWindow *w, indigo_property *property);
 	friend void agent_guider_start_process_change(ImagerWindow *w, indigo_property *property);
+	friend void update_agent_imager_dithering_property(ImagerWindow *w, indigo_property *property);
 
 signals:
 	void enable_blobs(bool on);
@@ -148,6 +149,7 @@ public slots:
 	void on_ccd_image_format_selected(int index);
 	void on_frame_type_selected(int index);
 	void on_dither_agent_selected(int index);
+	void on_agent_imager_dithering_changed(int index);
 	void on_filter_selected(int index);
 	void on_cooler_onoff(bool state);
 	void on_temperature_set(double value);
@@ -323,6 +325,7 @@ private:
 	void change_ccd_temperature_property(const char *agent) const;
 	void change_ccd_upload_property(const char *agent, const char *item_name) const;
 	void change_related_dither_agent(const char *agent, const char *old_agent, const char *new_agent) const;
+	void change_agent_imager_dithering_property(const char *agent) const;
 
 	void change_agent_start_preview_property(const char *agent) const;
 	void change_agent_start_focusing_property(const char *agent) const;

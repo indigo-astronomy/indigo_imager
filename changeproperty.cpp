@@ -107,6 +107,17 @@ void ImagerWindow::change_related_dither_agent(const char *agent, const char *ol
 	}
 }
 
+void ImagerWindow::change_agent_imager_dithering_property(const char *agent) const {
+	static const char *items[] = {
+		AGENT_IMAGER_DITHERING_AGGRESSIVITY_ITEM_NAME,
+		AGENT_IMAGER_DITHERING_TIME_LIMIT_ITEM_NAME
+	};
+	static double values[2];
+	values[0] = (double)m_dither_aggr->value();
+	values[1] = (double)m_dither_to->value();
+	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_DITHERING_PROPERTY_NAME, 2, items, values);
+}
+
 void ImagerWindow::change_ccd_frame_type_property(const char *agent) const {
 	static char selected_type[INDIGO_NAME_SIZE];
 	strncpy(selected_type, m_frame_type_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);

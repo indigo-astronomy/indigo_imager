@@ -303,6 +303,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_dither_aggr->setValue(0);
 	m_dither_aggr->setEnabled(false);
 	dither_frame_layout->addWidget(m_dither_aggr , dither_row, 3);
+	connect(m_dither_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_imager_dithering_changed);
 
 	dither_row++;
 	label = new QLabel("Settle timeout (s):");
@@ -313,6 +314,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_dither_to->setValue(0);
 	m_dither_to->setEnabled(false);
 	dither_frame_layout->addWidget(m_dither_to, dither_row, 3);
+	connect(m_dither_to, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_imager_dithering_changed);
 }
 
 void ImagerWindow::on_exposure_start_stop(bool clicked) {
@@ -519,7 +521,6 @@ void ImagerWindow::on_frame_type_selected(int index) {
 
 
 void ImagerWindow::on_dither_agent_selected(int index) {
-
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE] = {0};
 		static char old_agent[INDIGO_NAME_SIZE] = {0};
@@ -543,6 +544,16 @@ void ImagerWindow::on_dither_agent_selected(int index) {
 	});
 }
 
+void ImagerWindow::on_agent_imager_dithering_changed(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_imager_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_agent_imager_dithering_property(selected_agent);
+	});
+}
 
 void ImagerWindow::on_filter_selected(int index) {
 	QtConcurrent::run([=]() {

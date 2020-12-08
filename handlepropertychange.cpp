@@ -256,6 +256,18 @@ void update_cooler_power(ImagerWindow *w, indigo_property *property) {
 	}
 }
 
+
+void update_agent_imager_dithering_property(ImagerWindow *w, indigo_property *property) {
+	double aggressivity = 0, y = 0;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], AGENT_IMAGER_DITHERING_AGGRESSIVITY_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_dither_aggr);
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_DITHERING_TIME_LIMIT_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_dither_to);
+		}
+	}
+}
+
 static void update_focuser_poition(ImagerWindow *w, indigo_property *property, QSpinBox *set_position) {
 	indigo_debug("change %s", property->name);
 	for (int i = 0; i < property->count; i++) {
@@ -886,6 +898,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox_filtered(property, "Guider Agent", m_dither_agent_select);
 	}
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_DITHERING_PROPERTY_NAME)) {
+		update_agent_imager_dithering_property(this, property);
+	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_POSITION_PROPERTY_NAME)) {
 		update_focuser_poition(this, property, m_focus_position);
 	}
@@ -1018,6 +1033,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
 		change_combobox_selection_filtered(property, m_dither_agent_select);
 	}
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_DITHERING_PROPERTY_NAME)) {
+		update_agent_imager_dithering_property(this, property);
+	}
 	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME)) {
 		reset_filter_names(property, m_filter_select);
 		indigo_property *p = properties.get(property->device, WHEEL_SLOT_PROPERTY_NAME);
@@ -1134,6 +1152,14 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		m_dither_agent_select->clear();
+	}
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_DITHERING_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		m_dither_aggr->setValue(0);
+		set_enabled(m_dither_aggr, false);
+		m_dither_to->setValue(0);
+		set_enabled(m_dither_to, false);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
