@@ -231,10 +231,10 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 
 	int image_row = 0;
 
-	label = new QLabel("Format:");
-	image_frame_layout->addWidget(label, image_row, 0);
+	label = new QLabel("Image format:");
+	image_frame_layout->addWidget(label, image_row, 0, 1, 2);
 	m_frame_format_select = new QComboBox();
-	image_frame_layout->addWidget(m_frame_format_select, image_row, 1, 1, 2);
+	image_frame_layout->addWidget(m_frame_format_select, image_row, 2, 1, 2);
 	connect(m_frame_format_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_ccd_image_format_selected);
 
 	// ROI
@@ -278,19 +278,41 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	image_frame_layout->addWidget(m_roi_h, image_row, 3);
 
 	// settings
-	QFrame *settings_frame = new QFrame();
-	capture_tabbar->addTab(settings_frame, "Settings");
+	QFrame *dither_frame = new QFrame();
+	capture_tabbar->addTab(dither_frame, "Dithering");
 
-	QGridLayout *settings_frame_layout = new QGridLayout();
-	settings_frame_layout->setAlignment(Qt::AlignTop);
-	settings_frame->setLayout(settings_frame_layout);
-	settings_frame->setFrameShape(QFrame::StyledPanel);
-	settings_frame->setContentsMargins(0, 0, 0, 0);
+	QGridLayout *dither_frame_layout = new QGridLayout();
+	dither_frame_layout->setAlignment(Qt::AlignTop);
+	dither_frame->setLayout(dither_frame_layout);
+	dither_frame->setFrameShape(QFrame::StyledPanel);
+	dither_frame->setContentsMargins(0, 0, 0, 0);
 
-	int settings_row = 0;
-	label = new QLabel("Capture statistics:");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
+	int dither_row = 0;
+	label = new QLabel("Target:");
+	dither_frame_layout->addWidget(label, dither_row, 0);
+	m_dither_agent_select = new QComboBox();
+	dither_frame_layout->addWidget(m_dither_agent_select, dither_row, 1, 1, 3);
+	connect(m_dither_agent_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_dither_agent_selected);
+
+	dither_row++;
+	label = new QLabel("Aggressivity (px):");
+	dither_frame_layout->addWidget(label, dither_row, 0, 1, 3);
+	m_dither_aggr = new QSpinBox();
+	m_dither_aggr->setMaximum(100);
+	m_dither_aggr->setMinimum(0);
+	m_dither_aggr->setValue(0);
+	m_dither_aggr->setEnabled(false);
+	dither_frame_layout->addWidget(m_dither_aggr , dither_row, 3);
+
+	dither_row++;
+	label = new QLabel("Settle timeout (s):");
+	dither_frame_layout->addWidget(label, dither_row, 0, 1, 3);
+	m_dither_to = new QSpinBox();
+	m_dither_to->setMaximum(100);
+	m_dither_to->setMinimum(0);
+	m_dither_to->setValue(0);
+	m_dither_to->setEnabled(false);
+	dither_frame_layout->addWidget(m_dither_to, dither_row, 3);
 }
 
 void ImagerWindow::on_exposure_start_stop(bool clicked) {
@@ -306,6 +328,7 @@ void ImagerWindow::on_exposure_start_stop(bool clicked) {
 			m_save_blob = true;
 			change_agent_batch_property(selected_agent);
 			change_ccd_frame_property(selected_agent);
+			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			change_agent_start_exposure_property(selected_agent);
 		}
 	});
@@ -325,6 +348,7 @@ void ImagerWindow::on_preview_start_stop(bool clicked) {
 		} else {
 			m_save_blob = false;
 			change_ccd_frame_property(selected_agent);
+			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			change_ccd_exposure_property(selected_agent, m_exposure_time);
 		}
 	});
@@ -335,7 +359,7 @@ void ImagerWindow::on_preview(bool clicked) {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
-
+		change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 		m_save_blob = false;
 		change_ccd_frame_property(selected_agent);
 		change_ccd_exposure_property(selected_agent, m_exposure_time);
@@ -352,6 +376,7 @@ void ImagerWindow::on_start(bool clicked) {
 		m_save_blob = true;
 		change_agent_batch_property(selected_agent);
 		change_ccd_frame_property(selected_agent);
+		change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 		change_agent_start_exposure_property(selected_agent);
 	});
 }
@@ -491,6 +516,33 @@ void ImagerWindow::on_frame_type_selected(int index) {
 		change_ccd_frame_type_property(selected_agent);
 	});
 }
+
+
+void ImagerWindow::on_dither_agent_selected(int index) {
+
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE] = {0};
+		static char old_agent[INDIGO_NAME_SIZE] = {0};
+		static char new_agent[INDIGO_NAME_SIZE] = {0};
+
+		get_selected_imager_agent(selected_agent);
+
+		indigo_property *p = properties.get(selected_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
+		if (!p) return;
+
+		for (int i = 0; i < p->count; i++) {
+			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Guider Agent", strlen("Guider Agent"))) {
+				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
+				break;
+			}
+		}
+		strncpy(new_agent, m_dither_agent_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+
+		indigo_debug("[SELECTED] %s '%s' %s -> %s\n", __FUNCTION__, selected_agent, old_agent, new_agent);
+		change_related_dither_agent(selected_agent, old_agent, new_agent);
+	});
+}
+
 
 void ImagerWindow::on_filter_selected(int index) {
 	QtConcurrent::run([=]() {

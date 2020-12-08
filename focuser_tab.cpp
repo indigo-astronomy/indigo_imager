@@ -394,6 +394,7 @@ void ImagerWindow::on_focus_preview_start_stop(bool clicked) {
 		} else {
 			m_save_blob = false;
 			change_ccd_frame_property(selected_agent);
+			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			change_ccd_exposure_property(selected_agent, m_focuser_exposure_time);
 		}
 	});
@@ -414,6 +415,7 @@ void ImagerWindow::on_focus_start_stop(bool clicked) {
 			m_focus_fwhm_data.clear();
 			//m_focus_graph->redraw_data(m_focus_fwhm_data);
 			change_agent_star_selection(selected_agent);
+			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			change_agent_batch_property_for_focus(selected_agent);
 			change_agent_focus_params_property(selected_agent);
 			change_ccd_frame_property(selected_agent);

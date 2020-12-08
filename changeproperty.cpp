@@ -76,6 +76,37 @@ void ImagerWindow::change_ccd_image_format_property(const char *agent) const {
 	indigo_change_switch_property(nullptr, agent, CCD_IMAGE_FORMAT_PROPERTY_NAME, 1, items, values);
 }
 
+void ImagerWindow::change_ccd_upload_property(const char *agent, const char *item_name) const {
+	static const char * items[] = {
+		item_name
+	};
+	static bool values[] = {
+		true
+	};
+	indigo_change_switch_property(nullptr, agent, CCD_UPLOAD_MODE_PROPERTY_NAME, 1, items, values);
+}
+
+void ImagerWindow::change_related_dither_agent(const char *agent, const char *old_agent, const char *new_agent) const {
+	if (old_agent[0] != '\0') {
+		static const char * items[] = {
+			old_agent
+		};
+		static bool values[] = {
+			false
+		};
+		indigo_change_switch_property(nullptr, agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME, 1, items, values);
+	}
+	if (new_agent[0] != '\0') {
+		static const char * items[] = {
+			new_agent
+		};
+		static bool values[] = {
+			true
+		};
+		indigo_change_switch_property(nullptr, agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME, 1, items, values);
+	}
+}
+
 void ImagerWindow::change_ccd_frame_type_property(const char *agent) const {
 	static char selected_type[INDIGO_NAME_SIZE];
 	strncpy(selected_type, m_frame_type_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);

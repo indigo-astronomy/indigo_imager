@@ -150,6 +150,45 @@ static void add_items_to_combobox(indigo_property *property, QComboBox *items_co
 	}
 }
 
+static void add_items_to_combobox_filtered(indigo_property *property, const char *begins_with, QComboBox *items_combobox) {
+	items_combobox->clear();
+	items_combobox->addItem(QString("None"));
+	for (int i = 0; i < property->count; i++) {
+		if (strncmp("Guider Agent", begins_with, strlen(begins_with))) {
+			indigo_debug("[DOES NOT MATCH mode] '%s' skipped\n", begins_with);
+			continue;
+		}
+		QString item = QString(property->items[i].label);
+		if (items_combobox->findText(item) < 0) {
+			items_combobox->addItem(item, QString(property->items[i].name));
+			indigo_debug("[ADD mode] %s\n", item.toUtf8().data());
+			if (property->items[i].sw.value) {
+				items_combobox->setCurrentIndex(items_combobox->findText(item));
+			}
+		} else {
+			indigo_debug("[DUPLICATE mode] %s\n", item.toUtf8().data());
+		}
+	}
+}
+
+static void change_combobox_selection_filtered(indigo_property *property, QComboBox *combobox) {
+	set_widget_state(property, combobox);
+	bool selected = false;
+	for (int i = 0; i < property->count; i++) {
+		if (property->items[i].sw.value) {
+			QString item = QString(property->items[i].label);
+			combobox->setCurrentIndex(combobox->findText(item));
+			indigo_debug("[SELECT] %s\n", item.toUtf8().data());
+			selected = true;
+			break;
+		}
+	}
+	if (!selected) {
+		combobox->setCurrentIndex(0);
+		indigo_debug("[SELECT None]");
+	}
+}
+
 static void reset_filter_names(indigo_property *property, QComboBox *filter_select) {
 	filter_select->clear();
 	for (int i = 0; i < property->count; i++) {
@@ -844,6 +883,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_TYPE_PROPERTY_NAME)) {
 		add_items_to_combobox(property, m_frame_type_select);
 	}
+	if (client_match_device_property(property, selected_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
+		add_items_to_combobox_filtered(property, "Guider Agent", m_dither_agent_select);
+	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_POSITION_PROPERTY_NAME)) {
 		update_focuser_poition(this, property, m_focus_position);
 	}
@@ -973,6 +1015,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_TYPE_PROPERTY_NAME)) {
 		change_combobox_selection(property, m_frame_type_select);
 	}
+	if (client_match_device_property(property, selected_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
+		change_combobox_selection_filtered(property, m_dither_agent_select);
+	}
 	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME)) {
 		reset_filter_names(property, m_filter_select);
 		indigo_property *p = properties.get(property->device, WHEEL_SLOT_PROPERTY_NAME);
@@ -1084,6 +1129,11 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		m_frame_type_select->clear();
+	}
+	if (client_match_device_property(property, selected_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		m_dither_agent_select->clear();
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {

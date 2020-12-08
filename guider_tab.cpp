@@ -566,6 +566,7 @@ void ImagerWindow::on_guider_preview_start_stop(bool clicked) {
 			// change_agent_batch_property_for_focus(selected_agent);
 			//change_agent_focus_params_property(selected_agent);
 			setup_preview(selected_agent);
+			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			change_agent_start_preview_property(selected_agent);
 		}
 	});
@@ -585,6 +586,7 @@ void ImagerWindow::on_guider_calibrate_start_stop(bool clicked) {
 			// change_agent_batch_property_for_focus(selected_agent);
 			//change_agent_focus_params_property(selected_agent);
 			setup_preview(selected_agent);
+			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			change_agent_start_calibrate_property(selected_agent);
 		}
 	});
@@ -605,6 +607,7 @@ void ImagerWindow::on_guider_guide_start_stop(bool clicked) {
 			// change_agent_batch_property_for_focus(selected_agent);
 			//change_agent_focus_params_property(selected_agent);
 			setup_preview(selected_agent);
+			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			change_agent_start_guide_property(selected_agent);
 		}
 	});

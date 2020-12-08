@@ -147,6 +147,7 @@ public slots:
 	void on_ccd_mode_selected(int index);
 	void on_ccd_image_format_selected(int index);
 	void on_frame_type_selected(int index);
+	void on_dither_agent_selected(int index);
 	void on_filter_selected(int index);
 	void on_cooler_onoff(bool state);
 	void on_temperature_set(double value);
@@ -200,8 +201,11 @@ private:
 	QComboBox *m_frame_type_select;
 	QComboBox *m_frame_format_select;
 	QComboBox *m_frame_size_select;
+	QComboBox *m_dither_agent_select;
 	QSpinBox  *m_roi_x, *m_roi_w;
 	QSpinBox  *m_roi_y, *m_roi_h;
+	QSpinBox  *m_dither_aggr;
+	QSpinBox  *m_dither_to;
 	QDoubleSpinBox *m_exposure_time;
 	QDoubleSpinBox *m_exposure_delay;
 	QSpinBox *m_frame_count;
@@ -317,6 +321,8 @@ private:
 	void change_wheel_slot_property(const char *agent) const;
 	void change_cooler_onoff_property(const char *agent) const;
 	void change_ccd_temperature_property(const char *agent) const;
+	void change_ccd_upload_property(const char *agent, const char *item_name) const;
+	void change_related_dither_agent(const char *agent, const char *old_agent, const char *new_agent) const;
 
 	void change_agent_start_preview_property(const char *agent) const;
 	void change_agent_start_focusing_property(const char *agent) const;
