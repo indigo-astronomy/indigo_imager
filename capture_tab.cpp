@@ -67,53 +67,6 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	capture_frame_layout->addWidget(m_frame_type_select, row, 3);
 	connect(m_frame_type_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_frame_type_selected);
 
-	row++;
-	label = new QLabel("Format:");
-	capture_frame_layout->addWidget(label, row, 0);
-	m_frame_format_select = new QComboBox();
-	capture_frame_layout->addWidget(m_frame_format_select, row, 1, 1, 2);
-	connect(m_frame_format_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_ccd_image_format_selected);
-
-	// ROI
-	row++;
-	label = new QLabel("ROI X:");
-	capture_frame_layout->addWidget(label, row, 0);
-	m_roi_x = new QSpinBox();
-	m_roi_x->setMaximum(100000);
-	m_roi_x->setMinimum(0);
-	m_roi_x->setValue(0);
-	m_roi_x->setEnabled(false);
-	capture_frame_layout->addWidget(m_roi_x , row, 1);
-
-	label = new QLabel("W:");
-	capture_frame_layout->addWidget(label, row, 2);
-	m_roi_w = new QSpinBox();
-	m_roi_w->setMaximum(100000);
-	m_roi_w->setMinimum(0);
-	m_roi_w->setValue(0);
-	m_roi_w->setEnabled(false);
-	capture_frame_layout->addWidget(m_roi_w, row, 3);
-
-	// ROI
-	row++;
-	label = new QLabel("ROI Y:");
-	capture_frame_layout->addWidget(label, row, 0);
-	m_roi_y = new QSpinBox();
-	m_roi_y->setMaximum(100000);
-	m_roi_y->setMinimum(0);
-	m_roi_y->setValue(0);
-	m_roi_y->setEnabled(false);
-	capture_frame_layout->addWidget(m_roi_y , row, 1);
-
-	label = new QLabel("H:");
-	capture_frame_layout->addWidget(label, row, 2);
-	m_roi_h = new QSpinBox();
-	m_roi_h->setMaximum(100000);
-	m_roi_h->setMinimum(0);
-	m_roi_h->setValue(0);
-	m_roi_h->setEnabled(false);
-	capture_frame_layout->addWidget(m_roi_h, row, 3);
-
 	// Exposure time
 	row++;
 	label = new QLabel("Exposure (s):");
@@ -157,56 +110,9 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_object_name = new QLineEdit();
 	capture_frame_layout->addWidget(m_object_name, row, 1, 1, 3);
 
-	// Cooler
 	row++;
-	QFrame *line = new QFrame();
-	line->setFrameShape(QFrame::HLine);
-	line->setFrameShadow(QFrame::Plain);
-	capture_frame_layout->addWidget(line, row, 0, 1, 4);
-
-	row++;
-	QWidget *cooler_bar = new QWidget();
-	cooler_bar->setContentsMargins(0,0,0,0);
-
-	QHBoxLayout *cooler_box = new QHBoxLayout(cooler_bar);
-	cooler_box->setContentsMargins(0,0,0,0);
-
-	capture_frame_layout->addWidget(cooler_bar, row, 0, 1, 4);
-	cooler_bar->setContentsMargins(0,0,0,6);
-
-	label = new QLabel("Cooler (C):");
-	cooler_box->addWidget(label);
-
-	m_current_temp = new QLineEdit();
-	cooler_box->addWidget(m_current_temp);
-	m_current_temp->setStyleSheet("width: 30px");
-	m_current_temp->setText("");
-	m_current_temp->setEnabled(false);
-
-	label = new QLabel("P:");
-	cooler_box->addWidget(label);
-
-	m_cooler_pwr = new QLineEdit();
-	cooler_box->addWidget(m_cooler_pwr);
-	m_cooler_pwr->setStyleSheet("width: 30px");
-	m_cooler_pwr->setText("");
-	m_cooler_pwr->setEnabled(false);
-
-	m_cooler_onoff = new QCheckBox();
-	cooler_box->addWidget(m_cooler_onoff);
-	m_cooler_onoff->setEnabled(false);
-	connect(m_cooler_onoff, &QCheckBox::toggled, this, &ImagerWindow::on_cooler_onoff);
-
-	m_set_temp = new QDoubleSpinBox();
-	m_set_temp->setMaximum(60);
-	m_set_temp->setMinimum(-120);
-	m_set_temp->setValue(0);
-	m_set_temp->setEnabled(false);
-	m_set_temp->setKeyboardTracking(false);
-	connect(m_set_temp, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_temperature_set);
-
-	//m_exposure_delay->setEnabled(false);
-	cooler_box->addWidget(m_set_temp);
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	capture_frame_layout->addItem(spacer, row, 0);
 
 	//button = new QPushButton("Set");
 	//button->setStyleSheet("min-width: 60px");
@@ -257,6 +163,134 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_process_progress->setMaximum(1);
 	m_process_progress->setValue(0);
 	m_process_progress->setFormat("Process: Idle");
+
+
+	row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	capture_frame_layout->addItem(spacer, row, 0);
+
+	row++;
+	QWidget *cooler_bar = new QWidget();
+	cooler_bar->setContentsMargins(0,0,0,0);
+
+	QHBoxLayout *cooler_box = new QHBoxLayout(cooler_bar);
+	cooler_box->setContentsMargins(0,0,0,0);
+
+	capture_frame_layout->addWidget(cooler_bar, row, 0, 1, 4);
+	cooler_bar->setContentsMargins(0,0,0,6);
+
+	label = new QLabel("Cooler (C):");
+	cooler_box->addWidget(label);
+
+	m_current_temp = new QLineEdit();
+	cooler_box->addWidget(m_current_temp);
+	m_current_temp->setStyleSheet("width: 30px");
+	m_current_temp->setText("");
+	m_current_temp->setEnabled(false);
+
+	label = new QLabel("P:");
+	cooler_box->addWidget(label);
+
+	m_cooler_pwr = new QLineEdit();
+	cooler_box->addWidget(m_cooler_pwr);
+	m_cooler_pwr->setStyleSheet("width: 30px");
+	m_cooler_pwr->setText("");
+	m_cooler_pwr->setEnabled(false);
+
+	m_cooler_onoff = new QCheckBox();
+	cooler_box->addWidget(m_cooler_onoff);
+	m_cooler_onoff->setEnabled(false);
+	connect(m_cooler_onoff, &QCheckBox::toggled, this, &ImagerWindow::on_cooler_onoff);
+
+	m_set_temp = new QDoubleSpinBox();
+	m_set_temp->setMaximum(60);
+	m_set_temp->setMinimum(-120);
+	m_set_temp->setValue(0);
+	m_set_temp->setEnabled(false);
+	m_set_temp->setKeyboardTracking(false);
+	connect(m_set_temp, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_temperature_set);
+
+	//m_exposure_delay->setEnabled(false);
+	cooler_box->addWidget(m_set_temp);
+
+
+	row++;
+	// Tools tabbar
+	QTabWidget *capture_tabbar = new QTabWidget;
+	capture_frame_layout->addWidget(capture_tabbar, row, 0, 1, 4);
+
+	// image frame
+	QFrame *image_frame = new QFrame();
+	capture_tabbar->addTab(image_frame, "Image");
+
+	QGridLayout *image_frame_layout = new QGridLayout();
+	image_frame_layout->setAlignment(Qt::AlignTop);
+	image_frame->setLayout(image_frame_layout);
+	image_frame->setFrameShape(QFrame::StyledPanel);
+	image_frame->setContentsMargins(0, 0, 0, 0);
+
+	int image_row = 0;
+
+	label = new QLabel("Format:");
+	image_frame_layout->addWidget(label, image_row, 0);
+	m_frame_format_select = new QComboBox();
+	image_frame_layout->addWidget(m_frame_format_select, image_row, 1, 1, 2);
+	connect(m_frame_format_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_ccd_image_format_selected);
+
+	// ROI
+	image_row++;
+	label = new QLabel("ROI X:");
+	image_frame_layout->addWidget(label, image_row, 0);
+	m_roi_x = new QSpinBox();
+	m_roi_x->setMaximum(100000);
+	m_roi_x->setMinimum(0);
+	m_roi_x->setValue(0);
+	m_roi_x->setEnabled(false);
+	image_frame_layout->addWidget(m_roi_x , image_row, 1);
+
+	label = new QLabel("W:");
+	image_frame_layout->addWidget(label, image_row, 2);
+	m_roi_w = new QSpinBox();
+	m_roi_w->setMaximum(100000);
+	m_roi_w->setMinimum(0);
+	m_roi_w->setValue(0);
+	m_roi_w->setEnabled(false);
+	image_frame_layout->addWidget(m_roi_w, image_row, 3);
+
+	// ROI
+	image_row++;
+	label = new QLabel("ROI Y:");
+	image_frame_layout->addWidget(label, image_row, 0);
+	m_roi_y = new QSpinBox();
+	m_roi_y->setMaximum(100000);
+	m_roi_y->setMinimum(0);
+	m_roi_y->setValue(0);
+	m_roi_y->setEnabled(false);
+	image_frame_layout->addWidget(m_roi_y , image_row, 1);
+
+	label = new QLabel("H:");
+	image_frame_layout->addWidget(label, image_row, 2);
+	m_roi_h = new QSpinBox();
+	m_roi_h->setMaximum(100000);
+	m_roi_h->setMinimum(0);
+	m_roi_h->setValue(0);
+	m_roi_h->setEnabled(false);
+	image_frame_layout->addWidget(m_roi_h, image_row, 3);
+
+	// settings
+	QFrame *settings_frame = new QFrame();
+	capture_tabbar->addTab(settings_frame, "Settings");
+
+	QGridLayout *settings_frame_layout = new QGridLayout();
+	settings_frame_layout->setAlignment(Qt::AlignTop);
+	settings_frame->setLayout(settings_frame_layout);
+	settings_frame->setFrameShape(QFrame::StyledPanel);
+	settings_frame->setContentsMargins(0, 0, 0, 0);
+
+	int settings_row = 0;
+	label = new QLabel("Capture statistics:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
 }
 
 void ImagerWindow::on_exposure_start_stop(bool clicked) {
