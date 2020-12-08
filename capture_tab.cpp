@@ -231,15 +231,15 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 
 	int image_row = 0;
 
-	label = new QLabel("Format:");
-	image_frame_layout->addWidget(label, image_row, 0);
+	label = new QLabel("Image format:");
+	image_frame_layout->addWidget(label, image_row, 0, 1, 2);
 	m_frame_format_select = new QComboBox();
-	image_frame_layout->addWidget(m_frame_format_select, image_row, 1, 1, 3);
+	image_frame_layout->addWidget(m_frame_format_select, image_row, 2, 1, 2);
 	connect(m_frame_format_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_ccd_image_format_selected);
 
 	image_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
-	image_frame_layout->addItem(spacer, image_row, 0);
+	image_frame_layout->addItem(spacer, image_row, 0, 1, 4);
 
 	// ROI
 	image_row++;
