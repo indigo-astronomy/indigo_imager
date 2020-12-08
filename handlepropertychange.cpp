@@ -228,9 +228,7 @@ static void update_ccd_temperature(ImagerWindow *w, indigo_property *property, Q
 		if (client_match_item(&property->items[i], CCD_TEMPERATURE_ITEM_NAME)) {
 			if (update_value) {
 				configure_spinbox(w, &property->items[i], property->perm, set_temp);
-				set_temp->blockSignals(true);
-				set_temp->setValue(property->items[i].number.target);
-				set_temp->blockSignals(false);
+				set_spinbox_value(set_temp, property->items[i].number.target);
 			} else {
 				configure_spinbox(w, nullptr, property->perm, set_temp);
 			}
@@ -258,7 +256,6 @@ void update_cooler_power(ImagerWindow *w, indigo_property *property) {
 
 
 void update_agent_imager_dithering_property(ImagerWindow *w, indigo_property *property) {
-	double aggressivity = 0, y = 0;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_IMAGER_DITHERING_AGGRESSIVITY_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_dither_aggr);
@@ -1156,21 +1153,21 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_DITHERING_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
-		m_dither_aggr->setValue(0);
+		set_spinbox_value(m_dither_aggr, 0);
 		set_enabled(m_dither_aggr, false);
-		m_dither_to->setValue(0);
+		set_spinbox_value(m_dither_to, 0);
 		set_enabled(m_dither_to, false);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
-		m_roi_x->setValue(0);
+		set_spinbox_value(m_roi_x, 0);
 		set_enabled(m_roi_x, false);
-		m_roi_y->setValue(0);
+		set_spinbox_value(m_roi_y, 0);
 		set_enabled(m_roi_y, false);
-		m_roi_w->setValue(0);
+		set_spinbox_value(m_roi_w, 0);
 		set_enabled(m_roi_w, false);
-		m_roi_h->setValue(0);
+		set_spinbox_value(m_roi_h, 0);
 		set_enabled(m_roi_h, false);
 	}
 	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME) ||

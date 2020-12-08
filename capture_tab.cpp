@@ -31,7 +31,8 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	int row = 0;
 	m_agent_imager_select = new QComboBox();
 	capture_frame_layout->addWidget(m_agent_imager_select, row, 0, 1, 4);
-	connect(m_agent_imager_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_agent_selected);
+	//connect(m_agent_imager_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_agent_selected);
+	connect(m_agent_imager_select, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ImagerWindow::on_agent_selected);
 
 	// camera selection
 	row++;

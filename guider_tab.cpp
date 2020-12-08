@@ -33,7 +33,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	int row = 0;
 	m_agent_guider_select = new QComboBox();
 	guider_frame_layout->addWidget(m_agent_guider_select, row, 0, 1, 2);
-	connect(m_agent_guider_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_agent_selected);
+	connect(m_agent_guider_select, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ImagerWindow::on_guider_agent_selected);
 
 	// camera selection
 	row++;
