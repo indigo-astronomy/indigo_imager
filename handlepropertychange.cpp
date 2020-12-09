@@ -154,7 +154,7 @@ static void add_items_to_combobox_filtered(indigo_property *property, const char
 	items_combobox->clear();
 	items_combobox->addItem(QString("None"));
 	for (int i = 0; i < property->count; i++) {
-		if (strncmp("Guider Agent", begins_with, strlen(begins_with))) {
+		if (strncmp(property->items[i].name, begins_with, strlen(begins_with))) {
 			indigo_debug("[DOES NOT MATCH mode] '%s' skipped\n", begins_with);
 			continue;
 		}
@@ -171,11 +171,11 @@ static void add_items_to_combobox_filtered(indigo_property *property, const char
 	}
 }
 
-static void change_combobox_selection_filtered(indigo_property *property, QComboBox *combobox) {
+static void change_combobox_selection_filtered(indigo_property *property, const char *begins_with, QComboBox *combobox) {
 	set_widget_state(property, combobox);
 	bool selected = false;
 	for (int i = 0; i < property->count; i++) {
-		if (property->items[i].sw.value) {
+		if (property->items[i].sw.value && !strncmp(property->items[i].name, begins_with, strlen(begins_with))) {
 			QString item = QString(property->items[i].label);
 			combobox->setCurrentIndex(combobox->findText(item));
 			indigo_debug("[SELECT] %s\n", item.toUtf8().data());
@@ -1028,7 +1028,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		change_combobox_selection(property, m_frame_type_select);
 	}
 	if (client_match_device_property(property, selected_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
-		change_combobox_selection_filtered(property, m_dither_agent_select);
+		change_combobox_selection_filtered(property, "Guider Agent", m_dither_agent_select);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_DITHERING_PROPERTY_NAME)) {
 		update_agent_imager_dithering_property(this, property);
