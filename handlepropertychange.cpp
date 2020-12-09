@@ -395,9 +395,9 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	double exp_elapsed, exp_time = 1;
 	double drift_x, drift_y;
 	int frames_complete, frames_total;
-	static bool exposure_running = false;
-	static bool focusing_running = false;
-	static bool preview_running = false;
+	bool exposure_running = false;
+	bool focusing_running = false;
+	bool preview_running = false;
 	static int prev_frame = -1;
 	double FWHM;
 
