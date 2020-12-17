@@ -96,13 +96,13 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 
 	QPushButton *but = new QPushButton("In");
 	but->setStyleSheet("min-width: 15px");
-	//but->setIcon(QIcon(":resource/stop.png"));
+	but->setIcon(QIcon(":resource/focus_in.png"));
 	toolbox->addWidget(but);
 	connect(but, &QPushButton::clicked, this, &ImagerWindow::on_focus_in);
 
 	but = new QPushButton("Out");
 	but->setStyleSheet("min-width: 15px");
-	//but->setIcon(QIcon(":resource/stop.png"));
+	but->setIcon(QIcon(":resource/focus_out.png"));
 	toolbox->addWidget(but);
 	connect(but, &QPushButton::clicked, this, &ImagerWindow::on_focus_out);
 

@@ -59,7 +59,9 @@ RESOURCES += \
 	resource/record.png \
 	resource/focus.png \
 	resource/calibrate.png \
-	resource/guide.png
+	resource/guide.png \
+	resource/focus_in.png \
+	resource/focus_out.png
 
 
 # Additional import path used to resolve QML modules in Qt Creator\'s code model
