@@ -451,13 +451,13 @@ void ImagerWindow::setup_preview(const char *agent) {
 	case 0:
 		break;
 	case 1:
-		change_jpeg_settings_property(agent, 93, 0.01, 0.02);
+		change_jpeg_settings_property(agent, 93, 0.05, 0.2);
 		break;
 	case 2:
-		change_jpeg_settings_property(agent, 89, 0.01, 0.02);
+		change_jpeg_settings_property(agent, 89, 0.05, 0.2);
 		break;
 	case 3:
-		change_jpeg_settings_property(agent, 50, 0.01, 0.02);
+		change_jpeg_settings_property(agent, 50, 0.05, 0.2);
 		break;
 	default:
 		break;
