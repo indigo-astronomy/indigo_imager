@@ -92,8 +92,10 @@ HEADERS += \
 	debayer/debayer.h \
 	debayer/pixelformat.h \
 	qcustomplot/qcustomplot.h \
-	focusgraph.h
-	conf.h
+	focusgraph.h \
+	conf.h \
+	widget_state.h
+
 
 
 include(qtzeroconf/qtzeroconf.pri)
