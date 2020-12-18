@@ -27,7 +27,7 @@ static preview_stretch preview_stretch_level = STRETCH_NORMAL;
 
 const float preview_stretch_lut[] = {
 	0.0,
-	0.001,
+	0.0005,
 	0.005,
 	0.01
 };
