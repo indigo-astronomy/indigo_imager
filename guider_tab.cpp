@@ -20,6 +20,8 @@
 #include "propertycache.h"
 #include "conf.h"
 
+#include <image_preview_lut.h>
+
 void write_conf();
 
 void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
@@ -451,13 +453,13 @@ void ImagerWindow::setup_preview(const char *agent) {
 	case 0:
 		break;
 	case 1:
-		change_jpeg_settings_property(agent, 93, 0.05, 0.05);
+		change_jpeg_settings_property(agent, 93, 0.05, preview_stretch_lut[conf.guider_stretch_level]);
 		break;
 	case 2:
-		change_jpeg_settings_property(agent, 89, 0.05, 0.05);
+		change_jpeg_settings_property(agent, 89, 0.05, preview_stretch_lut[conf.guider_stretch_level]);
 		break;
 	case 3:
-		change_jpeg_settings_property(agent, 50, 0.05, 0.05);
+		change_jpeg_settings_property(agent, 50, 0.05, preview_stretch_lut[conf.guider_stretch_level]);
 		break;
 	default:
 		break;

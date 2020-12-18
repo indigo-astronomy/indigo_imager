@@ -72,6 +72,9 @@ int main(int argc, char *argv[]) {
 	conf.use_system_locale = false;
 	conf.indigo_log_level = INDIGO_LOG_INFO;
 	conf.preview_stretch_level = STRETCH_NORMAL;
+	conf.guider_stretch_level = STRETCH_MODERATE;
+	conf.antialiasing_enabled = false;
+	conf.guider_antialiasing_enabled = false;
 	conf.focus_mode = 0;
 	conf.guider_save_bandwidth = 1;
 	conf.guider_subframe = 0;

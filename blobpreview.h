@@ -24,19 +24,14 @@
 #include <indigo/indigo_client.h>
 #include <debayer/pixelformat.h>
 
+#include <image_preview_lut.h>
+
 #if !defined(INDIGO_WINDOWS)
 #define USE_LIBJPEG
 #endif
 #if defined(USE_LIBJPEG)
 #include <jpeglib.h>
 #endif
-
-typedef enum {
-	STRETCH_NONE = 0,
-	STRETCH_MODERATE = 1,
-	STRETCH_NORMAL = 2,
-	STRETCH_HARD = 3,
-} preview_stretch;
 
 class preview_image: public QImage {
 public:
@@ -168,11 +163,11 @@ public:
 };
 
 preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_size);
-preview_image* create_fits_preview(unsigned char *fits_buffer, unsigned long fits_size);
-preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size);
+preview_image* create_fits_preview(unsigned char *fits_buffer, unsigned long fits_size, const double white_threshold);
+preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size, const double white_threshold);
 preview_image* create_preview(int width, int height, int pixel_format, char *image_data, int *hist, double white_threshold);
-preview_image* create_preview(indigo_property *property, indigo_item *item);
-preview_image* create_preview(indigo_item *item);
+preview_image* create_preview(indigo_property *property, indigo_item *item, const double white_threshold);
+preview_image* create_preview(indigo_item *item, const double white_threshold);
 
 class blob_preview_cache: QHash<QString, preview_image*> {
 public:
@@ -198,10 +193,9 @@ private:
 	preview_image* _get(QString &key);
 
 public:
-	void set_stretch_level(preview_stretch level);
 	QString create_key(indigo_property *property, indigo_item *item);
-	bool create(indigo_property *property, indigo_item *item);
-	bool recreate(QString &key, indigo_item *item);
+	bool create(indigo_property *property, indigo_item *item, const double white_threshold);
+	bool recreate(QString &key, indigo_item *item, const double white_threshold);
 	bool obsolete(indigo_property *property, indigo_item *item);
 	preview_image* get(indigo_property *property, indigo_item *item);
 	preview_image* get(QString &key);

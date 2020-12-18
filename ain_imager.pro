@@ -94,7 +94,8 @@ HEADERS += \
 	qcustomplot/qcustomplot.h \
 	focusgraph.h \
 	conf.h \
-	widget_state.h
+	widget_state.h \
+	image_preview_lut.h
 
 
 

@@ -19,18 +19,10 @@
 #include <fits/fits.h>
 #include <debayer/debayer.h>
 #include <debayer/pixelformat.h>
-#include "blobpreview.h"
+#include <blobpreview.h>
 #include <QPainter>
 
 blob_preview_cache preview_cache;
-static preview_stretch preview_stretch_level = STRETCH_NORMAL;
-
-const float preview_stretch_lut[] = {
-	0.0,
-	0.0005,
-	0.005,
-	0.01
-};
 
 QString blob_preview_cache::create_key(indigo_property *property, indigo_item *item) {
 	QString key(property->device);
@@ -39,10 +31,6 @@ QString blob_preview_cache::create_key(indigo_property *property, indigo_item *i
 	key.append(".");
 	key.append(item->name);
 	return key;
-}
-
-void blob_preview_cache::set_stretch_level(preview_stretch level) {
-	preview_stretch_level = level;
 }
 
 bool blob_preview_cache::_remove(indigo_property *property, indigo_item *item) {
@@ -94,12 +82,12 @@ bool blob_preview_cache::obsolete(indigo_property *property, indigo_item *item) 
 }
 
 
-bool blob_preview_cache::create(indigo_property *property, indigo_item *item) {
+bool blob_preview_cache::create(indigo_property *property, indigo_item *item, const double white_threshold) {
 	pthread_mutex_lock(&preview_mutex);
 	QString key = create_key(property, item);
 	_remove(property, item);
-	preview_image *preview = create_preview(property, item);
-	indigo_debug("preview: %s(%s) == %p\n", __FUNCTION__, key.toUtf8().constData(), preview);
+	preview_image *preview = create_preview(property, item, white_threshold);
+	indigo_debug("preview: %s(%s) == %p, %.5f\n", __FUNCTION__, key.toUtf8().constData(), preview, white_threshold);
 	if (preview != nullptr) {
 		insert(key, preview);
 		pthread_mutex_unlock(&preview_mutex);
@@ -109,13 +97,13 @@ bool blob_preview_cache::create(indigo_property *property, indigo_item *item) {
 	return false;
 }
 
-bool blob_preview_cache::recreate(QString &key, indigo_item *item) {
+bool blob_preview_cache::recreate(QString &key, indigo_item *item, const double white_threshold) {
 	pthread_mutex_lock(&preview_mutex);
 	preview_image *preview = _get(key);
 	if (preview != nullptr) {
-		indigo_debug("recreate preview: %s(%s) == %p, %d\n", __FUNCTION__, key.toUtf8().constData(), preview, preview_stretch_level);
+		indigo_debug("recreate preview: %s(%s) == %p, %.5f\n", __FUNCTION__, key.toUtf8().constData(), preview, white_threshold);
 		int *hist = (int*)malloc(65536*sizeof(int));
-		preview_image *new_preview = create_preview(item);
+		preview_image *new_preview = create_preview(item, white_threshold);
 		_remove(key);
 		free(hist);
 		insert(key, new_preview);
@@ -256,7 +244,7 @@ preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_
 }
 
 
-preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long fits_size) {
+preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long fits_size, const double white_threshold) {
 	fits_header header;
 	int *hist;
 	unsigned int pix_format = 0;
@@ -313,7 +301,7 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 	}
 
 	preview_image *img = create_preview(header.naxisn[0], header.naxisn[1],
-	        pix_format, fits_data, hist, preview_stretch_lut[preview_stretch_level]);
+	        pix_format, fits_data, hist, white_threshold);
 
 	free(hist);
 	free(fits_data);
@@ -321,7 +309,7 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 }
 
 
-preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size) {
+preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size, const double white_threshold) {
 	int *hist;
 	unsigned int pix_format;
 	int bitpix;
@@ -385,7 +373,7 @@ preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long
 	}
 
 	preview_image *img = create_preview(header->width, header->height,
-	        pix_format, raw_data, hist, preview_stretch_lut[preview_stretch_level]);
+	        pix_format, raw_data, hist, white_threshold);
 
 	free(hist);
 	return img;
@@ -395,7 +383,7 @@ preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long
 preview_image* create_preview(int width, int height, int pix_format, char *image_data, int *hist, double white_threshold) {
 	int range, max, min = 0, sum;
 	int pix_cnt = width * height;
-	int thresh = white_threshold * pix_cnt;
+	int thresh = white_threshold / 100 * pix_cnt; // white thresh is in percentiles
 
 	switch (pix_format) {
 	case PIX_FMT_Y8:
@@ -644,15 +632,15 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 	return img;
 }
 
-preview_image* create_preview(indigo_property *property, indigo_item *item) {
+preview_image* create_preview(indigo_property *property, indigo_item *item, const double white_threshold) {
 	preview_image *preview = nullptr;
 	if (property->type == INDIGO_BLOB_VECTOR && property->state == INDIGO_OK_STATE) {
-		preview = create_preview(item);
+		preview = create_preview(item, white_threshold);
 	}
 	return preview;
 }
 
-preview_image* create_preview(indigo_item *item) {
+preview_image* create_preview(indigo_item *item, const double white_threshold) {
 	preview_image *preview = nullptr;
 	if (item->blob.value != NULL) {
 		if (!strcmp(item->blob.format, ".jpeg") ||
@@ -669,12 +657,12 @@ preview_image* create_preview(indigo_item *item) {
 			!strcmp(item->blob.format, ".FIT")  ||
 			!strcmp(item->blob.format, ".FTS")
 		) {
-			preview = create_fits_preview((unsigned char*)item->blob.value, item->blob.size);
+			preview = create_fits_preview((unsigned char*)item->blob.value, item->blob.size, white_threshold);
 		} else if (
 			!strcmp(item->blob.format, ".raw") ||
 			!strcmp(item->blob.format, ".RAW")
 		) {
-			preview = create_raw_preview((unsigned char*)item->blob.value, item->blob.size);
+			preview = create_raw_preview((unsigned char*)item->blob.value, item->blob.size, white_threshold);
 		} else if (
 			!strcmp(item->blob.format, ".tif")  ||
 			!strcmp(item->blob.format, ".tiff") ||

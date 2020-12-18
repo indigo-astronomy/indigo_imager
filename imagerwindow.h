@@ -132,11 +132,21 @@ public slots:
 	void on_servers_act();
 	void on_exit_act();
 	void on_about_act();
+
 	void on_no_stretch();
+	void on_slight_stretch();
 	void on_moderate_stretch();
 	void on_normal_stretch();
 	void on_hard_stretch();
+
+	void on_no_guide_stretch();
+	void on_slight_guide_stretch();
+	void on_moderate_guide_stretch();
+	void on_normal_guide_stretch();
+	void on_hard_guide_stretch();
+
 	void on_antialias_view(bool status);
+	void on_antialias_guide_view(bool status);
 	void on_create_preview(indigo_property *property, indigo_item *item);
 	void on_obsolete_preview(indigo_property *property, indigo_item *item);
 	void on_remove_preview(indigo_property *property, indigo_item *item);

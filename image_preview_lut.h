@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Rumen G.Bogdanovski
+// Copyright (c) 2020 Rumen G.Bogdanovski
 // All rights reserved.
 //
 // You can use this software under the terms of 'INDIGO Astronomy
@@ -16,44 +16,23 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifndef _IMAGE_PREVIEW_LUT_H
+#define _IMAGE_PREVIEW_LUT_H
 
-#ifndef CONF_H
-#define CONF_H
+typedef enum {
+	STRETCH_NONE = 0,
+	STRETCH_SLIGHT = 1,
+	STRETCH_MODERATE = 2,
+	STRETCH_NORMAL = 3,
+	STRETCH_HARD = 4,
+} preview_stretch;
 
-#include <indigo/indigo_bus.h>
-#include "blobpreview.h"
+const float preview_stretch_lut[] = {
+	0.0,
+	0.05,
+	0.1,
+	0.5,
+	1.0
+};
 
-#if defined(INDIGO_WINDOWS)
-#define PATH_LEN 4096
-#else
-#define PATH_LEN PATH_MAX
-#endif
-
-#define PROPERTY_AREA_MIN_WIDTH 500
-#define CAMERA_FRAME_MIN_WIDTH 390
-#define PREVIEW_WIDTH 550
-
-#define CONFIG_FILENAME "indigo_imager.conf"
-
-typedef struct {
-	bool blobs_enabled;
-	bool auto_connect;
-	bool indigo_use_host_suffix;
-	indigo_log_levels indigo_log_level;
-	bool use_state_icons;
-	bool use_system_locale;
-	bool antialiasing_enabled;
-	int focus_mode;
-	preview_stretch preview_stretch_level;
-	int guider_save_bandwidth;
-	int guider_subframe;
-	int focuser_subframe;
-	preview_stretch guider_stretch_level;
-	bool guider_antialiasing_enabled;
-	char unused[100];
-} conf_t;
-
-extern conf_t conf;
-extern char config_path[PATH_LEN];
-
-#endif // CONF_H
+#endif /* _IMAGE_PREVIEW_LUT_H */
