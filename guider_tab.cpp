@@ -27,6 +27,9 @@ void write_conf();
 void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	QGridLayout *guider_frame_layout = new QGridLayout();
 	guider_frame_layout->setAlignment(Qt::AlignTop);
+	guider_frame_layout->setColumnStretch(0, 1);
+	guider_frame_layout->setColumnStretch(1, 3);
+
 	guider_frame->setLayout(guider_frame_layout);
 	guider_frame->setFrameShape(QFrame::StyledPanel);
 	guider_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
