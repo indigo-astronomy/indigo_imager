@@ -28,6 +28,11 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 
 	QGridLayout *focuser_frame_layout = new QGridLayout();
 	focuser_frame_layout->setAlignment(Qt::AlignTop);
+	focuser_frame_layout->setColumnStretch(0, 1);
+	focuser_frame_layout->setColumnStretch(1, 1);
+	focuser_frame_layout->setColumnStretch(2, 1);
+	focuser_frame_layout->setColumnStretch(3, 1);
+
 	focuser_frame->setLayout(focuser_frame_layout);
 	focuser_frame->setFrameShape(QFrame::StyledPanel);
 	focuser_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
@@ -57,7 +62,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_position->setValue(0);
 	m_focus_position->setEnabled(false);
 	m_focus_position->setKeyboardTracking(false);
-	focuser_frame_layout->addWidget(m_focus_position, row, 2, 1, 2);
+	focuser_frame_layout->addWidget(m_focus_position, row, 3);
 	connect(m_focus_position, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_focuser_position_changed);
 
 	row++;
@@ -68,7 +73,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_steps->setMinimum(0);
 	m_focus_steps->setValue(0);
 	m_focus_steps->setEnabled(false);
-	focuser_frame_layout->addWidget(m_focus_steps, row, 2, 1, 2);
+	focuser_frame_layout->addWidget(m_focus_steps, row, 3);
 
 	row++;
 	QWidget *toolbar = new QWidget;
