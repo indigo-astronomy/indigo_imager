@@ -187,31 +187,31 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	act = sub_menu->addAction("Stretch: N&one");
 	act->setCheckable(true);
-	if (conf.preview_stretch_level == STRETCH_NONE) act->setChecked(true);
+	if (conf.guider_stretch_level == STRETCH_NONE) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_no_guide_stretch);
 	stretch_group->addAction(act);
 
 	act = sub_menu->addAction("Stretch: Sl&ight");
 	act->setCheckable(true);
-	if (conf.preview_stretch_level == STRETCH_SLIGHT) act->setChecked(true);
+	if (conf.guider_stretch_level == STRETCH_SLIGHT) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_slight_guide_stretch);
 	stretch_group->addAction(act);
 
 	act = sub_menu->addAction("Stretch: Mo&derate");
 	act->setCheckable(true);
-	if (conf.preview_stretch_level == STRETCH_MODERATE) act->setChecked(true);
+	if (conf.guider_stretch_level == STRETCH_MODERATE) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_moderate_guide_stretch);
 	stretch_group->addAction(act);
 
 	act = sub_menu->addAction("Stretch: &Normal");
 	act->setCheckable(true);
-	if (conf.preview_stretch_level == STRETCH_NORMAL) act->setChecked(true);
+	if (conf.guider_stretch_level == STRETCH_NORMAL) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_normal_guide_stretch);
 	stretch_group->addAction(act);
 
 	act = sub_menu->addAction("Stretch: &Hard");
 	act->setCheckable(true);
-	if (conf.preview_stretch_level == STRETCH_HARD) act->setChecked(true);
+	if (conf.guider_stretch_level == STRETCH_HARD) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_hard_guide_stretch);
 	stretch_group->addAction(act);
 
