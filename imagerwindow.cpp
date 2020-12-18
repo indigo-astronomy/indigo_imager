@@ -110,12 +110,12 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu = new QMenu("&Settings");
 
-	act = menu->addAction(tr("Ebable &BLOBs"));
+	act = menu->addAction(tr("Enable &BLOBs"));
 	act->setCheckable(true);
 	act->setChecked(conf.blobs_enabled);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_blobs_changed);
 
-	act = menu->addAction(tr("Auto &connect new services"));
+	act = menu->addAction(tr("&Auto connect new services"));
 	act->setCheckable(true);
 	act->setChecked(conf.auto_connect);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_bonjour_changed);
@@ -125,15 +125,15 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setChecked(conf.indigo_use_host_suffix);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_use_suffix_changed);
 
-	act = menu->addAction(tr("Use locale specific &decimal separator"));
+	act = menu->addAction(tr("Use &locale specific decimal separator"));
 	act->setCheckable(true);
 	act->setChecked(conf.use_system_locale);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_use_system_locale_changed);
 
 	menu->addSeparator();
-	sub_menu = menu->addMenu("Capture Image Preview");
+	sub_menu = menu->addMenu("&Capture Image Preview");
 
-	act = sub_menu->addAction(tr("View &antialiasing"));
+	act = sub_menu->addAction(tr("Enable &antialiasing"));
 	act->setCheckable(true);
 	act->setChecked(conf.antialiasing_enabled);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_antialias_view);
@@ -149,13 +149,13 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_no_stretch);
 	stretch_group->addAction(act);
 
-	act = sub_menu->addAction("Stretch: Sl&ight");
+	act = sub_menu->addAction("Stretch: &Slight");
 	act->setCheckable(true);
 	if (conf.preview_stretch_level == STRETCH_SLIGHT) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_slight_stretch);
 	stretch_group->addAction(act);
 
-	act = sub_menu->addAction("Stretch: Mo&derate");
+	act = sub_menu->addAction("Stretch: &Moderate");
 	act->setCheckable(true);
 	if (conf.preview_stretch_level == STRETCH_MODERATE) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_moderate_stretch);
@@ -173,7 +173,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_hard_stretch);
 	stretch_group->addAction(act);
 
-	sub_menu = menu->addMenu("Guider Image Preview");
+	sub_menu = menu->addMenu("&Guider Image Preview");
 
 	act = sub_menu->addAction(tr("Enable &antialiasing"));
 	act->setCheckable(true);
@@ -191,13 +191,13 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_no_guide_stretch);
 	stretch_group->addAction(act);
 
-	act = sub_menu->addAction("Stretch: Sl&ight");
+	act = sub_menu->addAction("Stretch: &Slight");
 	act->setCheckable(true);
 	if (conf.guider_stretch_level == STRETCH_SLIGHT) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_slight_guide_stretch);
 	stretch_group->addAction(act);
 
-	act = sub_menu->addAction("Stretch: Mo&derate");
+	act = sub_menu->addAction("Stretch: &Moderate");
 	act->setCheckable(true);
 	if (conf.guider_stretch_level == STRETCH_MODERATE) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_moderate_guide_stretch);
@@ -281,16 +281,16 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	tools_panel_layout->addWidget(tools_tabbar);
 
 	QFrame *capture_frame = new QFrame();
-	tools_tabbar->addTab(capture_frame, "Capture");
+	tools_tabbar->addTab(capture_frame, "&Capture");
 	create_imager_tab(capture_frame);
 
 	QFrame *focuser_frame = new QFrame;
-	tools_tabbar->addTab(focuser_frame, "Focus");
+	tools_tabbar->addTab(focuser_frame, "F&ocus");
 	create_focuser_tab(focuser_frame);
 	//tools_tabbar->setTabEnabled(1, false);
 
 	QFrame *guider_frame = new QFrame;
-	tools_tabbar->addTab(guider_frame, "Guide");
+	tools_tabbar->addTab(guider_frame, "&Guide");
 	create_guider_tab(guider_frame);
 
 	connect(tools_tabbar, &QTabWidget::currentChanged, this, &ImagerWindow::on_tab_changed);
