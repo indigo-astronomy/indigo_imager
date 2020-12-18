@@ -383,7 +383,7 @@ preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long
 preview_image* create_preview(int width, int height, int pix_format, char *image_data, int *hist, double white_threshold) {
 	int range, max, min = 0, sum;
 	int pix_cnt = width * height;
-	int thresh = white_threshold / 100 * pix_cnt; // white thresh is in percentiles
+	int thresh = (int)(white_threshold / 100.0 * pix_cnt); // white thresh is in percentiles
 
 	switch (pix_format) {
 	case PIX_FMT_Y8:
@@ -409,16 +409,18 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		return nullptr;
 	}
 
-	sum = hist[max];
-	while (sum < thresh) {
-		sum += hist[--max];
-	}
 	min = 0;
-	while (hist[min] == 0) {
+	while (hist[min] == 0 && min < max) {
 		min++;
 	};
+	sum = hist[max];
+
+	while (sum < thresh && max > min) {
+		sum += hist[--max];
+	}
 
 	range = max - min;
+	if (range < 2) range = 2;
 	double scale = 256.0 / range;
 
 	indigo_debug("PREVIEW: pix_format = %d sum = %d thresh = %d max = %d min = %d", pix_format, sum, thresh, max, min);
