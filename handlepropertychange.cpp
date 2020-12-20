@@ -457,7 +457,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	snprintf(drift_str, 50, "%.2f, %.2f", drift_x, drift_y);
 	w->m_drift_label->setText(drift_str);
 	if (exposure_running) {
-		set_widget_state(property, w->m_exposure_button);
+		set_widget_state(start_p, w->m_exposure_button);
 		set_ok(w->m_preview_button);
 		set_ok(w->m_focusing_button);
 		set_ok(w->m_focusing_preview_button);
@@ -520,7 +520,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			w->m_focus_graph->redraw_data(w->m_focus_fwhm_data);
 			prev_frame = frames_complete;
 		}
-		set_widget_state(property, w->m_focusing_button);
+		set_widget_state(start_p, w->m_focusing_button);
 		set_ok(w->m_preview_button);
 		set_ok(w->m_exposure_button);
 		set_ok(w->m_focusing_preview_button);
@@ -653,7 +653,6 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_CORR_DEC_ITEM_NAME)) {
 			cor_dec = property->items[i].number.value;
 		}
-
 	}
 	w->m_guider_viewer->moveReference(ref_x, ref_y);
 
