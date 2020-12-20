@@ -312,8 +312,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	QSplitter* hSplitter = new QSplitter;
 	hSplitter->addWidget(tools_panel);
 	hSplitter->addWidget(form_panel);
-	hSplitter->setStretchFactor(0, 25);
-	hSplitter->setStretchFactor(1, 55);
+	hSplitter->setStretchFactor(0, 10);
+	hSplitter->setStretchFactor(1, 90);
 
 	propertyLayout->addWidget(hSplitter, 85);
 	propertyLayout->addWidget(mLog, 15);
