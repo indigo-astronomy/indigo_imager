@@ -168,6 +168,10 @@ void ImageViewer::setText(const QString &txt) {
     m_text_label->setText(txt);
 }
 
+void ImageViewer::setToolTip(const QString &txt) {
+    m_text_label->setToolTip(txt);
+}
+
 void ImageViewer::showSelection() {
 	m_selection_visible = true;
 	if (!m_pixmap->pixmap().isNull() && !m_selection_p.isNull()) {

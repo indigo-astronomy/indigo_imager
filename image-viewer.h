@@ -63,6 +63,7 @@ public:
 
 public slots:
     void setText(const QString &txt);
+    void setToolTip(const QString &txt);
     void setImage(preview_image &im);
 
     void zoomFit();

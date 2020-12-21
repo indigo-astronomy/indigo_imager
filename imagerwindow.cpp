@@ -19,6 +19,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <libgen.h>
 
 #include "imagerwindow.h"
 #include "qservicemodel.h"
@@ -298,6 +299,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	// Image viewer
 	m_imager_viewer = new ImageViewer(this);
 	m_imager_viewer->setText("No Image");
+	m_imager_viewer->setToolTip("No Image");
 	m_imager_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
 	form_layout->addWidget((QWidget*)m_imager_viewer);
 	m_imager_viewer->setMinimumWidth(PROPERTY_AREA_MIN_WIDTH);
@@ -450,6 +452,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		if (show_preview_in_imager_viewer(key)) {
 			indigo_debug("m_imager_viewer = %p", m_imager_viewer);
 			m_imager_viewer->setText(QString("Unsaved") + QString(m_indigo_item->blob.format));
+			m_imager_viewer->setToolTip(QString("Unsaved") + QString(m_indigo_item->blob.format));
 		}
 		if (m_save_blob) save_blob_item(m_indigo_item);
 	} else if (get_selected_guider_agent(selected_agent)) {
@@ -511,7 +514,8 @@ void ImagerWindow::save_blob_item(indigo_item *item) {
 		}
 
 		if (save_blob_item_with_prefix(item, location, file_name)) {
-			m_imager_viewer->setText(file_name);
+			m_imager_viewer->setText(basename(file_name));
+			m_imager_viewer->setToolTip(file_name);
 			snprintf(message, sizeof(message), "Image saved to '%s'", file_name);
 			on_window_log(NULL, message);
 		} else {
@@ -598,7 +602,8 @@ void ImagerWindow::on_image_save_act() {
 	if (!file_name.endsWith(m_indigo_item->blob.format,Qt::CaseInsensitive)) file_name += m_indigo_item->blob.format;
 
 	if (save_blob_item(m_indigo_item, file_name.toUtf8().data())) {
-		m_imager_viewer->setText(file_name);
+		m_imager_viewer->setText(basename(file_name.toUtf8().data()));
+		m_imager_viewer->setToolTip(file_name);
 		snprintf(message, sizeof(message), "Image saved to '%s'", file_name.toUtf8().data());
 		on_window_log(NULL, message);
 	} else {
