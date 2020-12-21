@@ -18,7 +18,7 @@
 
 #include "imagerwindow.h"
 #include "propertycache.h"
-#include "conf.h"
+#include <conf.h>
 
 void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	QGridLayout *capture_frame_layout = new QGridLayout();

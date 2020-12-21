@@ -393,6 +393,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	static bool exposure_running = false;
 	static bool focusing_running = false;
 	static bool preview_running = false;
+	static int prev_start_state = INDIGO_OK_STATE;
 	static int prev_frame = -1;
 	double FWHM;
 
@@ -457,12 +458,10 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	snprintf(drift_str, 50, "%.2f, %.2f", drift_x, drift_y);
 	w->m_drift_label->setText(drift_str);
 	if (exposure_running) {
-		set_widget_state(start_p, w->m_exposure_button);
 		set_ok(w->m_preview_button);
 		set_ok(w->m_focusing_button);
 		set_ok(w->m_focusing_preview_button);
 		if (start_p->state == INDIGO_BUSY_STATE) {
-			//w->m_exposure_button->setText("Stop");
 			w->m_exposure_button->setIcon(QIcon(":resource/stop.png"));
 			w->set_enabled(w->m_exposure_button, true);
 			w->set_enabled(w->m_preview_button, false);
@@ -482,7 +481,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			}
 			indigo_debug("frames total = %d", frames_total);
 		} else if (start_p->state == INDIGO_OK_STATE) {
-			//w->m_exposure_button->setText("Start");
 			w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
 			w->set_enabled(w->m_exposure_button, true);
 			w->set_enabled(w->m_preview_button, true);
@@ -496,7 +494,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			w->m_process_progress->setFormat("Process: Complete");
 			exposure_running = false;
 		} else {
-			//w->m_exposure_button->setText("Start");
 			w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
 			w->set_enabled(w->m_exposure_button, true);
 			w->set_enabled(w->m_preview_button, true);
@@ -505,6 +502,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			w->m_exposure_progress->setRange(0, 1);
 			w->m_exposure_progress->setValue(0);
 			w->m_exposure_progress->setFormat("Exposure: Aborted");
+			w->m_process_progress->setRange(0, frames_total);
 			w->m_process_progress->setValue(frames_complete - 1);
 			if (frames_total < 0) {
 				w->m_process_progress->setFormat("Process: exposure %v complete");
@@ -520,13 +518,10 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			w->m_focus_graph->redraw_data(w->m_focus_fwhm_data);
 			prev_frame = frames_complete;
 		}
-		set_widget_state(start_p, w->m_focusing_button);
 		set_ok(w->m_preview_button);
 		set_ok(w->m_exposure_button);
 		set_ok(w->m_focusing_preview_button);
 		if (start_p->state == INDIGO_BUSY_STATE) {
-			//w->m_focusing_button->setText("Stop");
-			//w->m_focusing_button->setIcon(QIcon(":resource/stop.png"));
 			w->set_enabled(w->m_preview_button, false);
 			w->set_enabled(w->m_exposure_button, false);
 			w->set_enabled(w->m_focusing_button, true);
@@ -535,8 +530,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			w->m_focusing_progress->setValue(exp_elapsed);
 			w->m_focusing_progress->setFormat("Focusing: %v of %m seconds elapsed...");
 		} else if(start_p->state == INDIGO_OK_STATE) {
-			//w->m_focusing_button->setText("Focus");
-			//w->m_focusing_button->setIcon(QIcon(":resource/record.png"));
 			w->set_enabled(w->m_preview_button, true);
 			w->set_enabled(w->m_exposure_button, true);
 			w->set_enabled(w->m_focusing_button, true);
@@ -547,8 +540,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			focusing_running = false;
 			preview_running = false;
 		} else {
-			//w->m_focusing_button->setText("Focus");
-			//w->m_focusing_button->setIcon(QIcon(":resource/record.png"));
 			w->set_enabled(w->m_preview_button, true);
 			w->set_enabled(w->m_exposure_button, true);
 			w->set_enabled(w->m_focusing_button, true);
@@ -560,7 +551,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			preview_running = false;
 		}
 	} else {
-		//w->m_focusing_button->setIcon(QIcon(":resource/record.png"));
 		w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
 		w->set_enabled(w->m_preview_button, true);
 		w->set_enabled(w->m_exposure_button, true);
@@ -570,12 +560,24 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		preview_running = false;
 		exposure_running = false;
 	}
+
+	if (prev_start_state != start_p->state) {
+		set_widget_state(start_p, w->m_exposure_button);
+		set_widget_state(start_p, w->m_focusing_button);
+		prev_start_state = start_p->state;
+	}
 }
 
 void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 	double exp_elapsed, exp_time;
-	set_widget_state(property, w->m_focusing_preview_button);
-	set_widget_state(property, w->m_preview_button);
+	static int prev_property_state = INDIGO_OK_STATE;
+
+	if (prev_property_state != property->state) {
+		set_widget_state(property, w->m_focusing_preview_button);
+		set_widget_state(property, w->m_preview_button);
+		prev_property_state = property->state;
+	}
+
 	if (property->state == INDIGO_BUSY_STATE) {
 		exp_time = w->m_exposure_time->value();
 		for (int i = 0; i < property->count; i++) {
@@ -583,9 +585,7 @@ void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 				exp_elapsed = exp_time - property->items[i].number.value;
 			}
 		}
-		//w->m_preview_button->setText("Stop");
 		w->m_preview_button->setIcon(QIcon(":resource/stop.png"));
-		//w->m_focusing_preview_button->setText("Stop");
 		w->m_focusing_preview_button->setIcon(QIcon(":resource/stop.png"));
 		w->set_enabled(w->m_exposure_button, false);
 		w->set_enabled(w->m_focusing_button, false);
@@ -596,9 +596,7 @@ void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 		w->m_process_progress->setValue(0);
 		w->m_process_progress->setFormat("Preview in progress...");
 	} else if(property->state == INDIGO_OK_STATE) {
-		//w->m_preview_button->setText("Preview");
 		w->m_preview_button->setIcon(QIcon(":resource/play.png"));
-		//w->m_focusing_preview_button->setText("Preview");
 		w->m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
 		w->set_enabled(w->m_exposure_button, true);
 		w->set_enabled(w->m_focusing_button, true);
@@ -609,9 +607,7 @@ void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 		w->m_exposure_progress->setFormat("Preview: Complete");
 		w->m_process_progress->setFormat("Process: Complete");
 	} else {
-		//w->m_preview_button->setText("Preview");
 		w->m_preview_button->setIcon(QIcon(":resource/play.png"));
-		//w->m_focusing_preview_button->setText("Preview");
 		w->m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
 		w->set_enabled(w->m_exposure_button, true);
 		w->set_enabled(w->m_focusing_button, true);
@@ -945,6 +941,12 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_STATS_PROPERTY_NAME) ||
 	    client_match_device_property(property, selected_agent, AGENT_START_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_stats_property(this, property);
+	}
+	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME)) {
+		indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
+		if (!m_save_blob && p && p->state != INDIGO_BUSY_STATE ) {
+			update_ccd_exposure(this, property);
+		}
 	}
 
 	// Guider Agent
