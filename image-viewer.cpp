@@ -132,9 +132,19 @@ void ImageViewer::makeToolbar() {
     connect(fit, SIGNAL(clicked()), SLOT(zoomFit()));
 
     auto orig = new QToolButton(this);
-    orig->setToolTip(tr("Resize image to its original size"));
+    orig->setToolTip(tr("Zoom 1:1"));
     orig->setIcon(QIcon(":resource/zoom-original.png"));
     connect(orig, SIGNAL(clicked()), SLOT(zoomOriginal()));
+
+    auto zoomin = new QToolButton(this);
+    zoomin->setToolTip(tr("Zoom In"));
+    zoomin->setIcon(QIcon(":resource/zoom-in.png"));
+    connect(zoomin, SIGNAL(clicked()), SLOT(zoomIn()));
+
+    auto zoomout = new QToolButton(this);
+    zoomout->setToolTip(tr("Zoom Out"));
+    zoomout->setIcon(QIcon(":resource/zoom-out.png"));
+    connect(zoomout, SIGNAL(clicked()), SLOT(zoomOut()));
 
     m_toolbar = new QWidget;
     auto box = new QHBoxLayout(m_toolbar);
@@ -143,6 +153,9 @@ void ImageViewer::makeToolbar() {
     box->addWidget(m_text_label);
     box->addStretch(1);
     box->addWidget(m_pixel_value);
+
+    box->addWidget(zoomout);
+    box->addWidget(zoomin);
     box->addWidget(fit);
     box->addWidget(orig);
 }
