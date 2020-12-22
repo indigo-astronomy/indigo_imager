@@ -325,8 +325,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	connect(this, &ImagerWindow::set_enabled, this, &ImagerWindow::on_set_enabled);
 	connect(this, &ImagerWindow::set_widget_state, this, &ImagerWindow::on_set_widget_state);
-	connect(this, SIGNAL(set_spinbox_value(*QDoubleSpinBox, double)), this, SLOT(on_set_spinbox_value));
-	connect(this, SIGNAL(set_spinbox_value(*QSpinBox, double)), this, SLOT(on_set_spinbox_value));
+	connect(this, QOverload<QDoubleSpinBox*, double>::of(&ImagerWindow::set_spinbox_value), this, QOverload<QDoubleSpinBox*, double>::of(&ImagerWindow::on_set_spinbox_value));
+	connect(this, QOverload<QSpinBox*, double>::of(&ImagerWindow::set_spinbox_value), this, QOverload<QSpinBox*, double>::of(&ImagerWindow::on_set_spinbox_value));
 
 	connect(mServiceModel, &QServiceModel::serviceAdded, mIndigoServers, &QIndigoServers::onAddService);
 	connect(mServiceModel, &QServiceModel::serviceRemoved, mIndigoServers, &QIndigoServers::onRemoveService);
