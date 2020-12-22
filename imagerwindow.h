@@ -25,6 +25,7 @@
 #include <QComboBox>
 #include <indigo/indigo_bus.h>
 #include "image-viewer.h"
+#include <widget_state.h>
 
 class QServiceModel;
 class QIndigoServers;
@@ -102,6 +103,7 @@ signals:
 	void rebuild_blob_previews();
 
 	void set_enabled(QWidget *widget, bool enabled);
+	void set_widget_state(QWidget *widget, indigo_property_state state);
 
 public slots:
 	void on_start(bool clicked);
@@ -202,6 +204,23 @@ public slots:
 	void on_set_enabled(QWidget *widget, bool enabled) {
 		widget->setEnabled(enabled);
 	};
+
+	void on_set_widget_state(QWidget *widget, indigo_property_state state) {
+		switch (state) {
+			case INDIGO_IDLE_STATE:
+				set_idle(widget);
+				break;
+			case INDIGO_OK_STATE:
+				set_ok(widget);
+				break;
+			case INDIGO_BUSY_STATE:
+				set_busy(widget);
+				break;
+			case INDIGO_ALERT_STATE:
+				set_alert(widget);
+				break;
+		}
+	}
 private:
 	bool m_save_blob;
 	QPlainTextEdit* mLog;
