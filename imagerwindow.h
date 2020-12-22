@@ -106,6 +106,8 @@ signals:
 	void set_widget_state(QWidget *widget, indigo_property_state state);
 	void set_spinbox_value(QSpinBox *widget, double value);
 	void set_spinbox_value(QDoubleSpinBox *widget, double value);
+	void configure_spinbox(QSpinBox *widget, indigo_item *item, int perm);
+	void configure_spinbox(QDoubleSpinBox *widget, indigo_item *item, int perm);
 
 public slots:
 	void on_start(bool clicked);
@@ -235,6 +237,14 @@ public slots:
 				break;
 		}
 	};
+
+	void on_configure_spinbox(QSpinBox *widget, indigo_item *item, int perm) {
+		configure_spinbox_int(widget, item, perm);
+	};
+
+	void on_configure_spinbox(QDoubleSpinBox *widget, indigo_item *item, int perm) {
+		configure_spinbox_double(widget, item, perm);
+	};
 private:
 	bool m_save_blob;
 	QPlainTextEdit* mLog;
@@ -348,6 +358,9 @@ private:
 		const double black_threshold,
 		const double white_threshold
 	);
+
+	void configure_spinbox_int(QSpinBox *widget, indigo_item *item, int perm);
+	void configure_spinbox_double(QDoubleSpinBox *widget, indigo_item *item, int perm);
 
 	void create_focuser_tab(QFrame *capture_frame);
 	void create_imager_tab(QFrame *camera_frame);

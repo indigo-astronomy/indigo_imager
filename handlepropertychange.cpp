@@ -28,6 +28,16 @@
 
 template<typename W>
 static void configure_spinbox(ImagerWindow *w, indigo_item *item, int perm, W *widget) {
+	indigo_item *item_copy = nullptr;
+	if (item != nullptr) {
+		item_copy = (indigo_item *)malloc(sizeof(indigo_item));
+		memcpy(item_copy, item, sizeof(indigo_item));
+	}
+	w->configure_spinbox(widget, item_copy, perm);
+}
+
+template<typename W>
+void configure_spinbox_template(W *widget, indigo_item *item, int perm) {
 	if (item != nullptr) {
 		double max = (item->number.max < item->number.value) ? item->number.value : item->number.max;
 		double min = (item->number.min > item->number.value) ? item->number.value : item->number.min;
@@ -86,10 +96,21 @@ static void configure_spinbox(ImagerWindow *w, indigo_item *item, int perm, W *w
 		widget->blockSignals(false);
 	}
 	if (perm == INDIGO_RO_PERM) {
-		w->set_enabled(widget, false);
+		widget->setEnabled(false);
 	} else {
-		w->set_enabled(widget, true);
+		widget->setEnabled(true);
 	}
+	if (item != nullptr) {
+		free(item);
+	}
+}
+
+void ImagerWindow::configure_spinbox_int(QSpinBox *widget, indigo_item *item, int perm) {
+	configure_spinbox_template(widget, item, perm);
+}
+
+void ImagerWindow::configure_spinbox_double(QDoubleSpinBox *widget, indigo_item *item, int perm) {
+	configure_spinbox_template(widget, item, perm);
 }
 
 static void change_combobox_selection(ImagerWindow *w, indigo_property *property, QComboBox *combobox) {
