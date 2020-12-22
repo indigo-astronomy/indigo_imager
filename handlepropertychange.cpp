@@ -26,18 +26,6 @@
 #include "conf.h"
 #include "widget_state.h"
 
-//template<typename W>
-static void set_widget_state(ImagerWindow *w, indigo_property *property, QWidget *widget) {
-	w->set_widget_state(widget, property->state);
-}
-
-template<typename W>
-static void set_spinbox_value(W *widget, double value) {
-	widget->blockSignals(true);
-	widget->setValue(value);
-	widget->blockSignals(false);
-}
-
 template<typename W>
 static void configure_spinbox(ImagerWindow *w, indigo_item *item, int perm, W *widget) {
 	if (item != nullptr) {
@@ -105,7 +93,7 @@ static void configure_spinbox(ImagerWindow *w, indigo_item *item, int perm, W *w
 }
 
 static void change_combobox_selection(ImagerWindow *w, indigo_property *property, QComboBox *combobox) {
-	set_widget_state(w, property, combobox);
+	w->set_widget_state(combobox, property->state);
 	for (int i = 0; i < property->count; i++) {
 		if (property->items[i].sw.value) {
 			QString item = QString(property->items[i].label);
@@ -154,7 +142,7 @@ static void add_items_to_combobox_filtered(indigo_property *property, const char
 }
 
 static void change_combobox_selection_filtered(ImagerWindow *w, indigo_property *property, const char *begins_with, QComboBox *combobox) {
-	set_widget_state(w, property, combobox);
+	w->set_widget_state(combobox, property->state);
 	bool selected = false;
 	for (int i = 0; i < property->count; i++) {
 		if (property->items[i].sw.value && !strncmp(property->items[i].name, begins_with, strlen(begins_with))) {
@@ -189,7 +177,7 @@ void set_filter_selected(ImagerWindow *w, indigo_property *property) {
 		if (client_match_item(&property->items[i], WHEEL_SLOT_ITEM_NAME)) {
 			indigo_debug("SELECT: %s = %d\n", property->items[i].name, property->items[i].number.value);
 			w->m_filter_select->setCurrentIndex((int)property->items[i].number.value-1);
-			set_widget_state(w, property, w->m_filter_select);
+			w->set_widget_state(w->m_filter_select, property->state);
 		}
 	}
 }
@@ -210,7 +198,7 @@ static void update_ccd_temperature(ImagerWindow *w, indigo_property *property, Q
 		if (client_match_item(&property->items[i], CCD_TEMPERATURE_ITEM_NAME)) {
 			if (update_value) {
 				configure_spinbox(w, &property->items[i], property->perm, set_temp);
-				set_spinbox_value(set_temp, property->items[i].number.target);
+				w->set_spinbox_value(set_temp, property->items[i].number.target);
 			} else {
 				configure_spinbox(w, nullptr, property->perm, set_temp);
 			}
@@ -218,7 +206,7 @@ static void update_ccd_temperature(ImagerWindow *w, indigo_property *property, Q
 			char temperature[INDIGO_VALUE_SIZE];
 			snprintf(temperature, INDIGO_VALUE_SIZE, "%.1f", property->items[i].number.value);
 			current_temp->setText(temperature);
-			set_widget_state(w, property, current_temp);
+			w->set_widget_state(current_temp, property->state);
 		}
 	}
 }
@@ -231,7 +219,7 @@ void update_cooler_power(ImagerWindow *w, indigo_property *property) {
 			char power[INDIGO_VALUE_SIZE];
 			snprintf(power, INDIGO_VALUE_SIZE, "%.1f%%", property->items[i].number.value);
 			w->m_cooler_pwr->setText(power);
-			set_widget_state(w, property, w->m_cooler_pwr);
+			w->set_widget_state(w->m_cooler_pwr, property->state);
 		}
 	}
 }
@@ -252,7 +240,7 @@ static void update_focuser_poition(ImagerWindow *w, indigo_property *property, Q
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], FOCUSER_POSITION_ITEM_NAME) ||
 		    client_match_item(&property->items[i], FOCUSER_STEPS_ITEM_NAME)) {
-			set_widget_state(w, property, set_position);
+			w->set_widget_state(set_position, property->state);
 			indigo_debug("change %s = %f", property->items[i].name, property->items[i].number.value);
 			configure_spinbox(w, &property->items[i], property->perm, set_position);
 		}
@@ -364,7 +352,7 @@ void update_wheel_slot_property(ImagerWindow *w, indigo_property *property) {
 		if (client_match_item(&property->items[i], WHEEL_SLOT_ITEM_NAME)) {
 			indigo_property *p = properties.get(property->device, WHEEL_SLOT_NAME_PROPERTY_NAME);
 			unsigned int current_filter = (unsigned int)property->items[i].number.value - 1;
-			set_widget_state(w, property, w->m_filter_select);
+			w->set_widget_state(w->m_filter_select, property->state);
 			if (p && current_filter < p->count) {
 				w->m_filter_select->setCurrentIndex(w->m_filter_select->findText(p->items[current_filter].text.value));
 				indigo_debug("[SELECT filter] %s\n", p->items[current_filter].label);
@@ -549,8 +537,8 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	}
 
 	if (prev_start_state != start_p->state) {
-		set_widget_state(w, start_p, w->m_exposure_button);
-		set_widget_state(w, start_p, w->m_focusing_button);
+		w->set_widget_state(w->m_exposure_button, start_p->state);
+		w->set_widget_state(w->m_focusing_button, start_p->state);
 		prev_start_state = start_p->state;
 	}
 }
@@ -560,8 +548,8 @@ void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 	static int prev_property_state = INDIGO_OK_STATE;
 
 	if (prev_property_state != property->state) {
-		set_widget_state(w, property, w->m_focusing_preview_button);
-		set_widget_state(w, property, w->m_preview_button);
+		w->set_widget_state(w->m_focusing_preview_button, property->state);
+		w->set_widget_state(w->m_preview_button, property->state);
 		prev_property_state = property->state;
 	}
 
@@ -705,7 +693,7 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 		for (int i = 0; i < property->count; i++) {
 			indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
 			if (client_match_item(&property->items[i], AGENT_GUIDER_START_CALIBRATION_ITEM_NAME) && property->items[i].sw.value) {
-				set_widget_state(w, property, w->m_guider_calibrate_button);
+				w->set_widget_state(w->m_guider_calibrate_button, property->state);
 				set_ok(w->m_guider_guide_button);
 				set_ok(w->m_guider_preview_button);
 				w->set_enabled(w->m_guider_calibrate_button, true);
@@ -713,7 +701,7 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 				w->set_enabled(w->m_guider_preview_button, false);
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_START_GUIDING_ITEM_NAME) && property->items[i].sw.value) {
 				set_ok(w->m_guider_calibrate_button);
-				set_widget_state(w, property, w->m_guider_guide_button);
+				w->set_widget_state(w->m_guider_guide_button, property->state);
 				set_ok(w->m_guider_preview_button);
 				w->set_enabled(w->m_guider_calibrate_button, false);
 				w->set_enabled(w->m_guider_guide_button, true);
@@ -721,16 +709,16 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_START_PREVIEW_ITEM_NAME) && property->items[i].sw.value) {
 				set_ok(w->m_guider_calibrate_button);
 				set_ok(w->m_guider_guide_button);
-				set_widget_state(w, property, w->m_guider_preview_button);
+				w->set_widget_state(w->m_guider_preview_button, property->state);
 				w->set_enabled(w->m_guider_calibrate_button, false);
 				w->set_enabled(w->m_guider_guide_button, false);
 				w->set_enabled(w->m_guider_preview_button, true);
 			}
 		}
 	} else {
-		set_widget_state(w, property, w->m_guider_preview_button);
-		set_widget_state(w, property, w->m_guider_calibrate_button);
-		set_widget_state(w, property, w->m_guider_guide_button);
+		w->set_widget_state(w->m_guider_preview_button, property->state);
+		w->set_widget_state(w->m_guider_calibrate_button, property->state);
+		w->set_widget_state(w->m_guider_guide_button, property->state);
 		w->set_enabled(w->m_guider_preview_button, true);
 		w->set_enabled(w->m_guider_calibrate_button, true);
 		w->set_enabled(w->m_guider_guide_button, true);

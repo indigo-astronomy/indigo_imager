@@ -104,6 +104,8 @@ signals:
 
 	void set_enabled(QWidget *widget, bool enabled);
 	void set_widget_state(QWidget *widget, indigo_property_state state);
+	void set_spinbox_value(QSpinBox *widget, double value);
+	void set_spinbox_value(QDoubleSpinBox *widget, double value);
 
 public slots:
 	void on_start(bool clicked);
@@ -205,6 +207,18 @@ public slots:
 		widget->setEnabled(enabled);
 	};
 
+	void on_set_spinbox_value(QSpinBox *widget, double value) {
+		widget->blockSignals(true);
+		widget->setValue(value);
+		widget->blockSignals(false);
+	};
+
+	void on_set_spinbox_value(QDoubleSpinBox *widget, double value) {
+		widget->blockSignals(true);
+		widget->setValue(value);
+		widget->blockSignals(false);
+	};
+
 	void on_set_widget_state(QWidget *widget, indigo_property_state state) {
 		switch (state) {
 			case INDIGO_IDLE_STATE:
@@ -220,7 +234,7 @@ public slots:
 				set_alert(widget);
 				break;
 		}
-	}
+	};
 private:
 	bool m_save_blob;
 	QPlainTextEdit* mLog;
