@@ -51,7 +51,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	mIndigoServers = new QIndigoServers(this);
 
-	m_save_blob = false;
+	save_blob = false;
 	m_indigo_item = nullptr;
 
 	//  Set central widget of window
@@ -459,7 +459,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 			m_imager_viewer->setText(QString("Unsaved") + QString(m_indigo_item->blob.format));
 			m_imager_viewer->setToolTip(QString("Unsaved") + QString(m_indigo_item->blob.format));
 		}
-		if (m_save_blob) save_blob_item(m_indigo_item);
+		if (save_blob) save_blob_item(m_indigo_item);
 	} else if (get_selected_guider_agent(selected_agent)) {
 		if ((client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME) && conf.guider_save_bandwidth == 0) ||
 			(client_match_device_property(property, selected_agent, CCD_PREVIEW_IMAGE_PROPERTY_NAME) && conf.guider_save_bandwidth > 0)) {

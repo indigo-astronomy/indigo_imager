@@ -98,6 +98,8 @@ public:
 	friend void agent_guider_start_process_change(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_dithering_property(ImagerWindow *w, indigo_property *property);
 
+	bool save_blob;
+
 signals:
 	void enable_blobs(bool on);
 	void rebuild_blob_previews();
@@ -246,7 +248,6 @@ public slots:
 		configure_spinbox_double(widget, item, perm);
 	};
 private:
-	bool m_save_blob;
 	QPlainTextEdit* mLog;
 
 	// Capture tab

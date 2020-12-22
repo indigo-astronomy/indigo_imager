@@ -401,7 +401,6 @@ void ImagerWindow::on_focus_preview_start_stop(bool clicked) {
 			ccd_exposure && ccd_exposure->state == INDIGO_BUSY_STATE) {
 			change_ccd_abort_exposure_property(selected_agent);
 		} else {
-			m_save_blob = false;
 			change_ccd_frame_property(selected_agent);
 			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			change_ccd_exposure_property(selected_agent, m_focuser_exposure_time);
@@ -420,7 +419,6 @@ void ImagerWindow::on_focus_start_stop(bool clicked) {
 		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
 			change_agent_abort_process_property(selected_agent);
 		} else {
-			m_save_blob = false;
 			m_focus_fwhm_data.clear();
 			//m_focus_graph->redraw_data(m_focus_fwhm_data);
 			change_agent_star_selection(selected_agent);

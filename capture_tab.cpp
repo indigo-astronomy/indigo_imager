@@ -332,7 +332,6 @@ void ImagerWindow::on_exposure_start_stop(bool clicked) {
 		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
 			change_agent_abort_process_property(selected_agent);
 		} else {
-			m_save_blob = true;
 			change_agent_batch_property(selected_agent);
 			change_ccd_frame_property(selected_agent);
 			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
@@ -353,7 +352,6 @@ void ImagerWindow::on_preview_start_stop(bool clicked) {
 		    ccd_exposure && ccd_exposure->state == INDIGO_BUSY_STATE) {
 			change_ccd_abort_exposure_property(selected_agent);
 		} else {
-			m_save_blob = false;
 			change_ccd_frame_property(selected_agent);
 			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			change_ccd_exposure_property(selected_agent, m_exposure_time);
@@ -367,7 +365,6 @@ void ImagerWindow::on_preview(bool clicked) {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
 		change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
-		m_save_blob = false;
 		change_ccd_frame_property(selected_agent);
 		change_ccd_exposure_property(selected_agent, m_exposure_time);
 	});
@@ -380,7 +377,6 @@ void ImagerWindow::on_start(bool clicked) {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
 
-		m_save_blob = true;
 		change_agent_batch_property(selected_agent);
 		change_ccd_frame_property(selected_agent);
 		change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
