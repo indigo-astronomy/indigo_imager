@@ -34,6 +34,8 @@ public:
     /// Text displayed on the left side of the toolbar
     QString text() const;
 
+	QLabel *getTextLabel() { return m_text_label; };
+
     /// The currently displayed image
     const preview_image& image() const;
 

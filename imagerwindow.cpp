@@ -325,6 +325,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	connect(this, &ImagerWindow::set_enabled, this, &ImagerWindow::on_set_enabled);
 	connect(this, &ImagerWindow::set_widget_state, this, &ImagerWindow::on_set_widget_state);
+	connect(this, &ImagerWindow::set_guider_label, this, &ImagerWindow::on_set_guider_label);
 	connect(this, QOverload<QDoubleSpinBox*, double>::of(&ImagerWindow::set_spinbox_value), this, QOverload<QDoubleSpinBox*, double>::of(&ImagerWindow::on_set_spinbox_value));
 	connect(this, QOverload<QSpinBox*, double>::of(&ImagerWindow::set_spinbox_value), this, QOverload<QSpinBox*, double>::of(&ImagerWindow::on_set_spinbox_value));
 	connect(this, QOverload<QDoubleSpinBox*, indigo_item*, int>::of(&ImagerWindow::configure_spinbox), this, QOverload<QDoubleSpinBox*, indigo_item*, int>::of(&ImagerWindow::on_configure_spinbox));
@@ -468,7 +469,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 			preview_image *image = preview_cache.get(key);
 			if (show_preview_in_guider_viewer(key)) {
 				indigo_debug("m_guider_viewer = %p", m_guider_viewer);
-				m_guider_viewer->setText(QString("Guider: image") + QString(item->blob.format));
+				//m_guider_viewer->setText(QString("Guider: image") + QString(item->blob.format));
 			}
 		} else {
 			preview_cache.remove(property, item);

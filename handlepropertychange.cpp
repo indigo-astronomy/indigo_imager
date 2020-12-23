@@ -720,6 +720,7 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 				w->set_widget_state(w->m_guider_calibrate_button, property->state);
 				w->set_widget_state(w->m_guider_guide_button, INDIGO_OK_STATE);
 				w->set_widget_state(w->m_guider_preview_button, INDIGO_OK_STATE);
+				w->set_guider_label(INDIGO_BUSY_STATE, " Calibrating... ");
 				w->set_enabled(w->m_guider_calibrate_button, true);
 				w->set_enabled(w->m_guider_guide_button, false);
 				w->set_enabled(w->m_guider_preview_button, false);
@@ -727,6 +728,7 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 				w->set_widget_state(w->m_guider_calibrate_button, INDIGO_OK_STATE);
 				w->set_widget_state(w->m_guider_guide_button, property->state);
 				w->set_widget_state(w->m_guider_preview_button, INDIGO_OK_STATE);
+				w->set_guider_label(INDIGO_OK_STATE, " Guiding... ");
 				w->set_enabled(w->m_guider_calibrate_button, false);
 				w->set_enabled(w->m_guider_guide_button, true);
 				w->set_enabled(w->m_guider_preview_button, false);
@@ -734,6 +736,7 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 				w->set_widget_state(w->m_guider_calibrate_button, INDIGO_OK_STATE);
 				w->set_widget_state(w->m_guider_guide_button, INDIGO_OK_STATE);
 				w->set_widget_state(w->m_guider_preview_button, property->state);
+				w->set_guider_label(INDIGO_BUSY_STATE, " Preview... ");
 				w->set_enabled(w->m_guider_calibrate_button, false);
 				w->set_enabled(w->m_guider_guide_button, false);
 				w->set_enabled(w->m_guider_preview_button, true);
@@ -743,6 +746,11 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 		w->set_widget_state(w->m_guider_preview_button, property->state);
 		w->set_widget_state(w->m_guider_calibrate_button, property->state);
 		w->set_widget_state(w->m_guider_guide_button, property->state);
+		if (property->state == INDIGO_ALERT_STATE) {
+			w->set_guider_label(INDIGO_ALERT_STATE, " Process failed ");
+		} else {
+			w->set_guider_label(INDIGO_IDLE_STATE, " Stopped ");
+		}
 		w->set_enabled(w->m_guider_preview_button, true);
 		w->set_enabled(w->m_guider_calibrate_button, true);
 		w->set_enabled(w->m_guider_guide_button, true);
