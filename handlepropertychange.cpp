@@ -457,9 +457,9 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	snprintf(drift_str, 50, "%.2f, %.2f", drift_x, drift_y);
 	w->m_drift_label->setText(drift_str);
 	if (exposure_running) {
-		set_ok(w->m_preview_button);
-		set_ok(w->m_focusing_button);
-		set_ok(w->m_focusing_preview_button);
+		w->set_widget_state(w->m_preview_button, INDIGO_OK_STATE);
+		w->set_widget_state(w->m_focusing_button, INDIGO_OK_STATE);
+		w->set_widget_state(w->m_focusing_preview_button, INDIGO_OK_STATE);
 		if (start_p->state == INDIGO_BUSY_STATE) {
 			w->m_exposure_button->setIcon(QIcon(":resource/stop.png"));
 			w->set_enabled(w->m_exposure_button, true);
@@ -517,9 +517,9 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			w->m_focus_graph->redraw_data(w->m_focus_fwhm_data);
 			prev_frame = frames_complete;
 		}
-		set_ok(w->m_preview_button);
-		set_ok(w->m_exposure_button);
-		set_ok(w->m_focusing_preview_button);
+		w->set_widget_state(w->m_preview_button, INDIGO_OK_STATE);
+		w->set_widget_state(w->m_exposure_button, INDIGO_OK_STATE);
+		w->set_widget_state(w->m_focusing_preview_button, INDIGO_OK_STATE);
 		if (start_p->state == INDIGO_BUSY_STATE) {
 			w->set_enabled(w->m_preview_button, false);
 			w->set_enabled(w->m_exposure_button, false);
@@ -718,21 +718,21 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 			indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
 			if (client_match_item(&property->items[i], AGENT_GUIDER_START_CALIBRATION_ITEM_NAME) && property->items[i].sw.value) {
 				w->set_widget_state(w->m_guider_calibrate_button, property->state);
-				set_ok(w->m_guider_guide_button);
-				set_ok(w->m_guider_preview_button);
+				w->set_widget_state(w->m_guider_guide_button, INDIGO_OK_STATE);
+				w->set_widget_state(w->m_guider_preview_button, INDIGO_OK_STATE);
 				w->set_enabled(w->m_guider_calibrate_button, true);
 				w->set_enabled(w->m_guider_guide_button, false);
 				w->set_enabled(w->m_guider_preview_button, false);
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_START_GUIDING_ITEM_NAME) && property->items[i].sw.value) {
-				set_ok(w->m_guider_calibrate_button);
+				w->set_widget_state(w->m_guider_calibrate_button, INDIGO_OK_STATE);
 				w->set_widget_state(w->m_guider_guide_button, property->state);
-				set_ok(w->m_guider_preview_button);
+				w->set_widget_state(w->m_guider_preview_button, INDIGO_OK_STATE);
 				w->set_enabled(w->m_guider_calibrate_button, false);
 				w->set_enabled(w->m_guider_guide_button, true);
 				w->set_enabled(w->m_guider_preview_button, false);
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_START_PREVIEW_ITEM_NAME) && property->items[i].sw.value) {
-				set_ok(w->m_guider_calibrate_button);
-				set_ok(w->m_guider_guide_button);
+				w->set_widget_state(w->m_guider_calibrate_button, INDIGO_OK_STATE);
+				w->set_widget_state(w->m_guider_guide_button, INDIGO_OK_STATE);
 				w->set_widget_state(w->m_guider_preview_button, property->state);
 				w->set_enabled(w->m_guider_calibrate_button, false);
 				w->set_enabled(w->m_guider_guide_button, false);
