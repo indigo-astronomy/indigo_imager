@@ -647,6 +647,21 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 			cor_ra = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_CORR_DEC_ITEM_NAME)) {
 			cor_dec = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_DITHERING_ITEM_NAME)) {
+			double rmse = property->items[i].number.value;
+			indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
+			if (p) {
+				for (int i = 0; i < p->count; i++) {
+					if (client_match_item(&p->items[i], AGENT_GUIDER_START_GUIDING_ITEM_NAME) && p->items[i].sw.value) {
+						if(rmse == 0) {
+							w->set_guider_label(INDIGO_OK_STATE, " Guiding... ");
+						} else {
+							w->set_guider_label(INDIGO_BUSY_STATE, " Dithering... ");
+						}
+						break;
+					}
+				}
+			}
 		}
 	}
 	w->m_guider_viewer->moveReference(ref_x, ref_y);
