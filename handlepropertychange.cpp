@@ -625,10 +625,12 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	double cor_ra = 0, cor_dec = 0;
 	double rmse_ra = 0, rmse_dec = 0, dither_rmse = 0;
 	double d_x = 0, d_y = 0;
-	int size = 0;
+	int size = 0, frame_count = -1;
 
 	for (int i = 0; i < property->count; i++) {
-		if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_REFERENCE_X_ITEM_NAME)) {
+		if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_FRAME_ITEM_NAME)) {
+			frame_count = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_REFERENCE_X_ITEM_NAME)) {
 			ref_x = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_REFERENCE_Y_ITEM_NAME)) {
 			ref_y = property->items[i].number.value;
@@ -662,6 +664,22 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 				} else {
 					w->set_guider_label(INDIGO_BUSY_STATE, " Dithering... ");
 				}
+
+				if(frame_count == 0) {
+					w->m_drift_data_ra.clear();
+					w->m_drift_data_dec.clear();
+					w->m_guider_graph->redraw_data2(w->m_drift_data_ra, w->m_drift_data_dec);
+				} else if (frame_count > 0) {
+					w->m_drift_data_ra.append(d_ra);
+					w->m_drift_data_dec.append(d_dec);
+
+					if (w->m_drift_data_dec.size() > 120) {
+						w->m_drift_data_dec.removeFirst();
+						w->m_drift_data_ra.removeFirst();
+					}
+					w->m_guider_graph->redraw_data2(w->m_drift_data_ra, w->m_drift_data_dec);
+				}
+
 				break;
 			}
 		}
@@ -684,15 +702,6 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 
 	snprintf(label_str, 50, "%.2f  %.2f", rmse_ra, rmse_dec);
 	w->m_guider_rmse_label->setText(label_str);
-
-	w->m_drift_data_ra.append(d_ra);
-	w->m_drift_data_dec.append(d_dec);
-
-	if (w->m_drift_data_dec.size() > 120) {
-		w->m_drift_data_dec.removeFirst();
-		w->m_drift_data_ra.removeFirst();
-	}
-	w->m_guider_graph->redraw_data2(w->m_drift_data_ra, w->m_drift_data_dec);
 }
 
 void update_guider_settings(ImagerWindow *w, indigo_property *property) {
