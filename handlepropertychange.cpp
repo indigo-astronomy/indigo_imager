@@ -623,9 +623,10 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	double ref_x = 0, ref_y = 0;
 	double d_ra = 0, d_dec = 0;
 	double cor_ra = 0, cor_dec = 0;
-	double rmse_ra = 0, rmse_dec = 0;
+	double rmse_ra = 0, rmse_dec = 0, dither_rmse = 0;
 	double d_x = 0, d_y = 0;
 	int size = 0;
+
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_REFERENCE_X_ITEM_NAME)) {
 			ref_x = property->items[i].number.value;
@@ -648,23 +649,28 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_CORR_DEC_ITEM_NAME)) {
 			cor_dec = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_DITHERING_ITEM_NAME)) {
-			double rmse = property->items[i].number.value;
-			indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
-			if (p) {
-				for (int i = 0; i < p->count; i++) {
-					if (client_match_item(&p->items[i], AGENT_GUIDER_START_GUIDING_ITEM_NAME) && p->items[i].sw.value) {
-						if(rmse == 0) {
-							w->set_guider_label(INDIGO_OK_STATE, " Guiding... ");
-						} else {
-							w->set_guider_label(INDIGO_BUSY_STATE, " Dithering... ");
-						}
-						break;
-					}
-				}
-			}
+			dither_rmse = property->items[i].number.value;
 		}
 	}
-	w->m_guider_viewer->moveReference(ref_x, ref_y);
+
+	indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
+	if (p) {
+		for (int i = 0; i < p->count; i++) {
+			if (client_match_item(&p->items[i], AGENT_GUIDER_START_GUIDING_ITEM_NAME) && p->items[i].sw.value) {
+				if(dither_rmse == 0) {
+					w->set_guider_label(INDIGO_OK_STATE, " Guiding... ");
+				} else {
+					w->set_guider_label(INDIGO_BUSY_STATE, " Dithering... ");
+				}
+				break;
+			}
+		}
+		if (p->state == INDIGO_BUSY_STATE) {
+			w->m_guider_viewer->moveReference(ref_x, ref_y);
+		} else {
+			w->m_guider_viewer->moveReference(0, 0);
+		}
+	}
 
 	char label_str[50];
 	snprintf(label_str, 50, "%+.2f  %+.2f", d_ra, d_dec);
