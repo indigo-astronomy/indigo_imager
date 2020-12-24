@@ -512,6 +512,9 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		}
 	} else if (focusing_running || preview_running) {
 		if (frames_complete != prev_frame) {
+			if (frames_complete == 0) {
+				w->m_focus_fwhm_data.clear();
+			}
 			w->m_focus_fwhm_data.append(FWHM);
 			if (w->m_focus_fwhm_data.size() > 100) w->m_focus_fwhm_data.removeFirst();
 			w->m_focus_graph->redraw_data(w->m_focus_fwhm_data);
