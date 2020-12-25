@@ -391,7 +391,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	static bool preview_running = false;
 	static int prev_start_state = INDIGO_OK_STATE;
 	static int prev_frame = -1;
-	double FWHM;
+	double FWHM = 0, HFD = 0;
 
 	indigo_item *exposure_item = properties.get_item(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME, AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME);
 	if (exposure_item) exp_time = exposure_item->number.value;
@@ -432,7 +432,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			 snprintf(fwhm_str, 50, "%.2f", FWHM);
 			 w->m_FWHM_label->setText(fwhm_str);
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_HFD_ITEM_NAME)) {
-			 double HFD = stats_p->items[i].number.value;
+			 HFD = stats_p->items[i].number.value;
 			 char hfd_str[50];
 			 snprintf(hfd_str, 50, "%.2f", HFD);
 			 w->m_HFD_label->setText(hfd_str);
@@ -514,10 +514,14 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		if (frames_complete != prev_frame) {
 			if (frames_complete == 0) {
 				w->m_focus_fwhm_data.clear();
+				w->m_focus_hfd_data.clear();
 			}
 			w->m_focus_fwhm_data.append(FWHM);
 			if (w->m_focus_fwhm_data.size() > 100) w->m_focus_fwhm_data.removeFirst();
-			w->m_focus_graph->redraw_data(w->m_focus_fwhm_data);
+			w->m_focus_hfd_data.append(HFD);
+			if (w->m_focus_hfd_data.size() > 100) w->m_focus_hfd_data.removeFirst();
+
+			if (w->m_focus_display_data) w->m_focus_graph->redraw_data(*(w->m_focus_display_data));
 			prev_frame = frames_complete;
 		}
 		w->set_widget_state(w->m_preview_button, INDIGO_OK_STATE);

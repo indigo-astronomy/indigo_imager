@@ -26,6 +26,7 @@
 #include <indigo/indigo_bus.h>
 #include "image-viewer.h"
 #include <widget_state.h>
+#include <conf.h>
 
 class QServiceModel;
 class QIndigoServers;
@@ -153,6 +154,9 @@ public slots:
 	void on_moderate_guide_stretch();
 	void on_normal_guide_stretch();
 	void on_hard_guide_stretch();
+
+	void on_focus_show_fwhm();
+	void on_focus_show_hfd();
 
 	void on_antialias_view(bool status);
 	void on_antialias_guide_view(bool status);
@@ -319,7 +323,10 @@ private:
 	QPushButton *m_focusing_preview_button;
 	QProgressBar *m_focusing_progress;
 	FocusGraph *m_focus_graph;
+	QLabel     *m_focus_graph_label;
 	QVector<double> m_focus_fwhm_data;
+	QVector<double> m_focus_hfd_data;
+	QVector<double> *m_focus_display_data;
 
 	// Guider tab
 	QComboBox *m_agent_guider_select;
@@ -412,6 +419,8 @@ private:
 	void change_focuser_focus_in_property(const char *agent) const;
 	void change_focuser_focus_out_property(const char *agent) const;
 	void change_focuser_subframe(const char *agent) const;
+
+	void select_focuser_data(focuser_display_data show);
 
 	void change_guider_agent_star_selection(const char *agent) const;
 	void change_guider_agent_subframe(const char *agent) const;

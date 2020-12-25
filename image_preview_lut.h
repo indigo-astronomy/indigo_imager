@@ -19,14 +19,6 @@
 #ifndef _IMAGE_PREVIEW_LUT_H
 #define _IMAGE_PREVIEW_LUT_H
 
-typedef enum {
-	STRETCH_NONE = 0,
-	STRETCH_SLIGHT = 1,
-	STRETCH_MODERATE = 2,
-	STRETCH_NORMAL = 3,
-	STRETCH_HARD = 4,
-} preview_stretch;
-
 const float preview_stretch_lut[] = {
 	0.0,
 	0.05,

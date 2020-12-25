@@ -119,7 +119,6 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 
 	stats_row++;
 	m_guider_graph = new FocusGraph();
-	//m_guider_graph->redraw_data(m_focus_fwhm_data);
 	m_guider_graph->set_yaxis_range(-6, 6);
 	m_guider_graph->setMinimumHeight(250);
 	stats_frame_layout->addWidget(m_guider_graph, stats_row, 0, 1, 2);
@@ -469,6 +468,21 @@ void ImagerWindow::setup_preview(const char *agent) {
 	}
 }
 
+void ImagerWindow::select_focuser_data(focuser_display_data show) {
+	switch (show) {
+		case SHOW_FWHM:
+			m_focus_display_data = &m_focus_fwhm_data;
+			m_focus_graph_label->setText("Focus FWHM:");
+			break;
+		case SHOW_HFD:
+			m_focus_display_data = &m_focus_hfd_data;
+			m_focus_graph_label->setText("Focus HFD:");
+			break;
+		default:
+			m_focus_display_data = nullptr;
+	}
+}
+
 void ImagerWindow::on_guider_agent_selected(int index) {
 	QtConcurrent::run([=]() {
 		// Clear controls
@@ -567,9 +581,6 @@ void ImagerWindow::on_guider_preview_start_stop(bool clicked) {
 		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
 			change_agent_abort_process_property(selected_agent);
 		} else {
-			// m_guider_graph->redraw_data(m_focus_fwhm_data);
-			// change_agent_batch_property_for_focus(selected_agent);
-			//change_agent_focus_params_property(selected_agent);
 			setup_preview(selected_agent);
 			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			change_agent_start_preview_property(selected_agent);
@@ -587,9 +598,6 @@ void ImagerWindow::on_guider_calibrate_start_stop(bool clicked) {
 		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
 			change_agent_abort_process_property(selected_agent);
 		} else {
-			// m_guider_graph->redraw_data(m_focus_fwhm_data);
-			// change_agent_batch_property_for_focus(selected_agent);
-			//change_agent_focus_params_property(selected_agent);
 			setup_preview(selected_agent);
 			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			change_agent_start_calibrate_property(selected_agent);
@@ -608,9 +616,6 @@ void ImagerWindow::on_guider_guide_start_stop(bool clicked) {
 		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
 			change_agent_abort_process_property(selected_agent);
 		} else {
-			// m_guider_graph->redraw_data(m_focus_fwhm_data);
-			// change_agent_batch_property_for_focus(selected_agent);
-			//change_agent_focus_params_property(selected_agent);
 			setup_preview(selected_agent);
 			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			change_agent_start_guide_property(selected_agent);

@@ -35,6 +35,26 @@
 
 #define CONFIG_FILENAME "indigo_imager.conf"
 
+
+typedef enum {
+	STRETCH_NONE = 0,
+	STRETCH_SLIGHT = 1,
+	STRETCH_MODERATE = 2,
+	STRETCH_NORMAL = 3,
+	STRETCH_HARD = 4,
+} preview_stretch;
+
+typedef enum {
+	SHOW_FWHM = 0,
+	SHOW_HFD = 1,
+} focuser_display_data;
+
+typedef enum {
+	SHOW_RA_DEC_DRIFT = 0,
+	SHOW_RA_DEC_PULSE = 1,
+	SHOW_X_Y_DRIFT = 2,
+} guider_display_data;
+
 typedef struct {
 	bool blobs_enabled;
 	bool auto_connect;
@@ -50,6 +70,8 @@ typedef struct {
 	int focuser_subframe;
 	preview_stretch guider_stretch_level;
 	bool guider_antialiasing_enabled;
+	focuser_display_data focuser_display;
+	guider_display_data guider_display;
 	char unused[100];
 } conf_t;
 

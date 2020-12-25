@@ -216,6 +216,23 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_hard_guide_stretch);
 	stretch_group->addAction(act);
 
+	sub_menu = menu->addMenu("&Focuser Graph");
+
+	QActionGroup *graph_group = new QActionGroup(this);
+	graph_group->setExclusive(true);
+
+	act = sub_menu->addAction("&FWHM");
+	act->setCheckable(true);
+	if (conf.focuser_display == SHOW_FWHM) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_focus_show_fwhm);
+	graph_group->addAction(act);
+
+	act = sub_menu->addAction("&HFD");
+	act->setCheckable(true);
+	if (conf.focuser_display == SHOW_HFD) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_focus_show_hfd);
+	graph_group->addAction(act);
+
 	menu->addSeparator();
 
 	QActionGroup *log_group = new QActionGroup(this);
@@ -319,6 +336,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	propertyLayout->addWidget(hSplitter, 85);
 	propertyLayout->addWidget(mLog, 15);
+
+	select_focuser_data(conf.focuser_display);
 
 	mServiceModel = new QServiceModel("_indigo._tcp");
 	mServiceModel->enable_auto_connect(conf.auto_connect);
@@ -788,6 +807,25 @@ void ImagerWindow::on_antialias_guide_view(bool status) {
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
+
+
+void ImagerWindow::on_focus_show_fwhm() {
+	conf.focuser_display = SHOW_FWHM;
+	select_focuser_data(conf.focuser_display);
+	if (m_focus_display_data) m_focus_graph->redraw_data(*m_focus_display_data);
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+
+void ImagerWindow::on_focus_show_hfd() {
+	conf.focuser_display = SHOW_HFD;
+	select_focuser_data(conf.focuser_display);
+	if (m_focus_display_data) m_focus_graph->redraw_data(*m_focus_display_data);
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
 
 void ImagerWindow::on_log_error() {
 	conf.indigo_log_level = INDIGO_LOG_ERROR;

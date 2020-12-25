@@ -142,9 +142,9 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	stats_frame->setContentsMargins(0, 0, 0, 0);
 
 	int stats_row = 0;
-	label = new QLabel("Focus statistics:");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	stats_frame_layout->addWidget(label, stats_row, 0, 1, 4);
+	m_focus_graph_label = new QLabel();
+	m_focus_graph_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	stats_frame_layout->addWidget(m_focus_graph_label, stats_row, 0, 1, 4);
 
 	stats_row++;
 	m_focus_graph = new FocusGraph();
