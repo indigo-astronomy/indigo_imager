@@ -113,9 +113,9 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	stats_frame->setContentsMargins(0, 0, 0, 0);
 
 	int stats_row = 0;
-	label = new QLabel("Drift Graph RA / Dec (px):");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	stats_frame_layout->addWidget(label, stats_row, 0, 1, 2);
+	m_guider_graph_label = new QLabel();
+	m_guider_graph_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	stats_frame_layout->addWidget(m_guider_graph_label, stats_row, 0, 1, 2);
 
 	stats_row++;
 	m_guider_graph = new FocusGraph();
@@ -235,9 +235,6 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	settings_frame_layout->addWidget(m_guide_star_x , settings_row, 2);
 	connect(m_guide_star_x, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
 
-	//settings_row++;
-	//label = new QLabel("Star selection Y:");
-	//settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
 	m_guide_star_y = new QDoubleSpinBox();
 	m_guide_star_y->setMaximum(100000);
 	m_guide_star_y->setMinimum(0);
@@ -324,9 +321,6 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	advanced_frame_layout->addWidget(m_guide_min_pulse, advanced_row, 2);
 	connect(m_guide_min_pulse, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_pulse_changed);
 
-	//advanced_row++;
-	//label = new QLabel("Max guide pulse (s):");
-	//advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
 	m_guide_max_pulse = new QDoubleSpinBox();
 	m_guide_max_pulse->setMaximum(100000);
 	m_guide_max_pulse->setMinimum(0);
@@ -353,9 +347,6 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	advanced_frame_layout->addWidget(m_guide_ra_aggr, advanced_row, 2);
 	connect(m_guide_ra_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_aggressivity_changed);
 
-	//advanced_row++;
-	//label = new QLabel("Dec Aggressivity (%):");
-	//advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
 	m_guide_dec_aggr = new QSpinBox();
 	m_guide_dec_aggr->setMaximum(100);
 	m_guide_dec_aggr->setMinimum(0);
@@ -373,9 +364,6 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	advanced_frame_layout->addWidget(m_guide_ra_pw, advanced_row, 2);
 	connect(m_guide_ra_pw, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_change_guider_agent_pw_changed);
 
-	//advanced_row++;
-	//label = new QLabel("Dec Proportional weight:");
-	//advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
 	m_guide_dec_pw = new QDoubleSpinBox();
 	m_guide_dec_pw->setMaximum(1);
 	m_guide_dec_pw->setMinimum(0);
@@ -468,18 +456,29 @@ void ImagerWindow::setup_preview(const char *agent) {
 	}
 }
 
-void ImagerWindow::select_focuser_data(focuser_display_data show) {
+void ImagerWindow::select_guider_data(guider_display_data show) {
 	switch (show) {
-		case SHOW_FWHM:
-			m_focus_display_data = &m_focus_fwhm_data;
-			m_focus_graph_label->setText("Focus FWHM (px):");
+		case SHOW_RA_DEC_DRIFT:
+			m_guider_data_1 = &m_drift_data_ra;
+			m_guider_data_2 = &m_drift_data_dec;
+			m_guider_graph->set_yaxis_range(-6, 6);
+			m_guider_graph_label->setText("Drift RA / Dec (px):");
 			break;
-		case SHOW_HFD:
-			m_focus_display_data = &m_focus_hfd_data;
-			m_focus_graph_label->setText("Focus HFD (px):");
+		case SHOW_RA_DEC_PULSE:
+			m_guider_data_1 = &m_pulse_data_ra;
+			m_guider_data_2 = &m_pulse_data_dec;
+			m_guider_graph->set_yaxis_range(-1.5, 1.5);
+			m_guider_graph_label->setText("Guiding Pulses RA / Dec (s):");
+			break;
+		case SHOW_X_Y_DRIFT:
+			m_guider_data_1 = &m_drift_data_x;
+			m_guider_data_2 = &m_drift_data_y;
+			m_guider_graph->set_yaxis_range(-6, 6);
+			m_guider_graph_label->setText("Drift X / Y (px):");
 			break;
 		default:
-			m_focus_display_data = nullptr;
+			m_guider_data_1 = nullptr;
+			m_guider_data_2 = nullptr;
 	}
 }
 

@@ -317,6 +317,23 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	connect(m_focuser_subframe_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focuser_subframe_changed);
 }
 
+
+void ImagerWindow::select_focuser_data(focuser_display_data show) {
+	switch (show) {
+		case SHOW_FWHM:
+			m_focus_display_data = &m_focus_fwhm_data;
+			m_focus_graph_label->setText("Focus FWHM (px):");
+			break;
+		case SHOW_HFD:
+			m_focus_display_data = &m_focus_hfd_data;
+			m_focus_graph_label->setText("Focus HFD (px):");
+			break;
+		default:
+			m_focus_display_data = nullptr;
+	}
+}
+
+
 void ImagerWindow::on_focuser_selected(int index) {
 	QtConcurrent::run([=]() {
 		static char selected_focuser[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];

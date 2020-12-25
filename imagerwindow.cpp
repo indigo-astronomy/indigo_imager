@@ -233,6 +233,29 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_focus_show_hfd);
 	graph_group->addAction(act);
 
+	sub_menu = menu->addMenu("&Guider Graph");
+
+	graph_group = new QActionGroup(this);
+	graph_group->setExclusive(true);
+
+	act = sub_menu->addAction("&RA / Dec Drift");
+	act->setCheckable(true);
+	if (conf.guider_display == SHOW_RA_DEC_DRIFT) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_guide_show_rd_drift);
+	graph_group->addAction(act);
+
+	act = sub_menu->addAction("RA / Dec &Pulses");
+	act->setCheckable(true);
+	if (conf.guider_display == SHOW_RA_DEC_PULSE) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_guide_show_rd_pulse);
+	graph_group->addAction(act);
+
+	act = sub_menu->addAction("&X / Y Drift");
+	act->setCheckable(true);
+	if (conf.guider_display == SHOW_X_Y_DRIFT) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_guide_show_xy_drift);
+	graph_group->addAction(act);
+
 	menu->addSeparator();
 
 	QActionGroup *log_group = new QActionGroup(this);
@@ -338,6 +361,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	propertyLayout->addWidget(mLog, 15);
 
 	select_focuser_data(conf.focuser_display);
+	select_guider_data(conf.guider_display);
 
 	mServiceModel = new QServiceModel("_indigo._tcp");
 	mServiceModel->enable_auto_connect(conf.auto_connect);
@@ -808,7 +832,6 @@ void ImagerWindow::on_antialias_guide_view(bool status) {
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
-
 void ImagerWindow::on_focus_show_fwhm() {
 	conf.focuser_display = SHOW_FWHM;
 	select_focuser_data(conf.focuser_display);
@@ -826,6 +849,29 @@ void ImagerWindow::on_focus_show_hfd() {
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
+void ImagerWindow::on_guide_show_rd_drift() {
+	conf.guider_display = SHOW_RA_DEC_DRIFT;
+	select_guider_data(conf.guider_display);
+	if (m_guider_data_1 && m_guider_data_2) m_guider_graph->redraw_data2(*m_guider_data_1, *m_guider_data_2);
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_guide_show_rd_pulse() {
+	conf.guider_display = SHOW_RA_DEC_PULSE;
+	select_guider_data(conf.guider_display);
+	if (m_guider_data_1 && m_guider_data_2) m_guider_graph->redraw_data2(*m_guider_data_1, *m_guider_data_2);
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_guide_show_xy_drift() {
+	conf.guider_display = SHOW_X_Y_DRIFT;
+	select_guider_data(conf.guider_display);
+	if (m_guider_data_1 && m_guider_data_2) m_guider_graph->redraw_data2(*m_guider_data_1, *m_guider_data_2);
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
 
 void ImagerWindow::on_log_error() {
 	conf.indigo_log_level = INDIGO_LOG_ERROR;

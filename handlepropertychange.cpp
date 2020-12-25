@@ -675,18 +675,29 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 				if(frame_count == 0) {
 					w->m_drift_data_ra.clear();
 					w->m_drift_data_dec.clear();
-					w->m_guider_graph->redraw_data2(w->m_drift_data_ra, w->m_drift_data_dec);
+					w->m_pulse_data_ra.clear();
+					w->m_pulse_data_dec.clear();
+					w->m_drift_data_x.clear();
+					w->m_drift_data_y.clear();
+					w->m_guider_graph->redraw_data2(*(w->m_guider_data_1), *(w->m_guider_data_2));
 				} else if (frame_count > 0) {
 					w->m_drift_data_ra.append(d_ra);
 					w->m_drift_data_dec.append(d_dec);
+					w->m_pulse_data_ra.append(cor_ra);
+					w->m_pulse_data_dec.append(cor_dec);
+					w->m_drift_data_x.append(d_x);
+					w->m_drift_data_y.append(d_y);
 
 					if (w->m_drift_data_dec.size() > 120) {
 						w->m_drift_data_dec.removeFirst();
 						w->m_drift_data_ra.removeFirst();
+						w->m_pulse_data_ra.removeFirst();
+						w->m_pulse_data_dec.removeFirst();
+						w->m_drift_data_x.removeFirst();
+						w->m_drift_data_y.removeFirst();
 					}
-					w->m_guider_graph->redraw_data2(w->m_drift_data_ra, w->m_drift_data_dec);
+					w->m_guider_graph->redraw_data2(*(w->m_guider_data_1), *(w->m_guider_data_2));
 				}
-
 				break;
 			}
 		}

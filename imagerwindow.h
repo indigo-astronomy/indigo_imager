@@ -209,6 +209,9 @@ public slots:
 	void on_change_guider_agent_pw_changed(double value);
 	void on_change_guider_agent_is_changed(int value);
 	void on_guider_bw_save_changed(int index);
+	void on_guide_show_rd_drift();
+	void on_guide_show_rd_pulse();
+	void on_guide_show_xy_drift();
 
 	void on_tab_changed(int index);
 
@@ -356,6 +359,13 @@ private:
 	FocusGraph *m_guider_graph;
 	QVector<double> m_drift_data_ra;
 	QVector<double> m_drift_data_dec;
+	QVector<double> m_pulse_data_ra;
+	QVector<double> m_pulse_data_dec;
+	QVector<double> m_drift_data_x;
+	QVector<double> m_drift_data_y;
+	QVector<double> *m_guider_data_1;
+	QVector<double> *m_guider_data_2;
+	QLabel *m_guider_graph_label;
 	QLabel *m_guider_rd_drift_label;
 	QLabel *m_guider_xy_drift_label;
 	QLabel *m_guider_pulse_label;
@@ -433,6 +443,8 @@ private:
 	void change_guider_agent_pulse_min_max(const char *agent) const;
 	void change_guider_agent_aggressivity(const char *agent) const;
 	void change_guider_agent_pi(const char *agent) const;
+
+	void select_guider_data(guider_display_data show);
 
 	void setup_preview(const char *agent);
 
