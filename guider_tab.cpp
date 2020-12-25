@@ -472,11 +472,11 @@ void ImagerWindow::select_focuser_data(focuser_display_data show) {
 	switch (show) {
 		case SHOW_FWHM:
 			m_focus_display_data = &m_focus_fwhm_data;
-			m_focus_graph_label->setText("Focus FWHM:");
+			m_focus_graph_label->setText("Focus FWHM (px):");
 			break;
 		case SHOW_HFD:
 			m_focus_display_data = &m_focus_hfd_data;
-			m_focus_graph_label->setText("Focus HFD:");
+			m_focus_graph_label->setText("Focus HFD (px):");
 			break;
 		default:
 			m_focus_display_data = nullptr;
