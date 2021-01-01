@@ -630,7 +630,8 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	double rmse_ra = 0, rmse_dec = 0, dither_rmse = 0;
 	double d_x = 0, d_y = 0;
 	int size = 0, frame_count = -1;
-	bool is_guiding = false;
+	bool is_guiding_process_on = false;
+	bool is_dithering = false;
 
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_FRAME_ITEM_NAME)) {
@@ -664,10 +665,11 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	if (p) {
 		for (int i = 0; i < p->count; i++) {
 			if (client_match_item(&p->items[i], AGENT_GUIDER_START_GUIDING_ITEM_NAME) && p->items[i].sw.value) {
-				is_guiding = true;
+				is_guiding_process_on = true;
 				if (dither_rmse == 0) {
 					w->set_guider_label(INDIGO_OK_STATE, " Guiding... ");
 				} else {
+					is_dithering = true;
 					w->set_guider_label(INDIGO_BUSY_STATE, " Dithering... ");
 				}
 
@@ -703,7 +705,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 		char time_str[255];
 		if (p->state == INDIGO_BUSY_STATE) {
 			w->m_guider_viewer->moveReference(ref_x, ref_y);
-			if (is_guiding) {
+			if (is_guiding_process_on) {
 				if (conf.guider_save_log) {
 					if (w->m_guide_log == nullptr) {
 						char file_name[255];
@@ -719,7 +721,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 							} else {
 								fprintf(w->m_guide_log, "Guiding started at %s\n", time_str);
 							}
-							fprintf(w->m_guide_log, "Timestamp,X Dif,Y Dif,RA Dif,Dec Dif,Ra Correction,Dec Correction\n");
+							fprintf(w->m_guide_log, "Timestamp,X Dif,Y Dif,RA Dif,Dec Dif,Ra Correction,Dec Correction,Dithering\n");
 						}
 					}
 				} else {
@@ -732,7 +734,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 				}
 				if (w->m_guide_log && frame_count > 0) {
 					get_timestamp(time_str);
-					fprintf(w->m_guide_log, "%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\n", time_str, d_x, d_y, d_ra, d_dec, cor_ra, cor_dec);
+					fprintf(w->m_guide_log, "\"%s\",%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%d\n", time_str, d_x, d_y, d_ra, d_dec, cor_ra, cor_dec, is_dithering);
 				}
 			}
 		} else {
