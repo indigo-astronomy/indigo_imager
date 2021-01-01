@@ -33,7 +33,8 @@ SOURCES += \
 	fits/fits.c \
 	debayer/debayer.c \
 	qcustomplot/qcustomplot.cpp \
-	focusgraph.cpp
+	focusgraph.cpp \
+	utils.cpp
 
 
 RESOURCES += \
@@ -97,7 +98,8 @@ HEADERS += \
 	focusgraph.h \
 	conf.h \
 	widget_state.h \
-	image_preview_lut.h
+	image_preview_lut.h \
+	utils.h
 
 
 

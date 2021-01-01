@@ -16,37 +16,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/time.h>
-
+#include <utils.h>
 #include "imagerwindow.h"
 #include "indigoclient.h"
 #include "propertycache.h"
 #include "conf.h"
 #include "widget_state.h"
-
-
-static void get_timestamp(char *timestamp) {
-	struct timeval tmnow;
-
-	if (!timestamp) return;
-
-	gettimeofday(&tmnow, NULL);
-#if defined(INDIGO_WINDOWS)
-	struct tm *lt;
-	time_t rawtime;
-	lt = localtime((const time_t *) &(tmnow.tv_sec));
-	if (lt == NULL) {
-		time(&rawtime);
-		lt = localtime(&rawtime);
-	}
-	strftime(timestamp, 255, "%Y-%m-%d %H:%M:%S", lt);
-#else
-	strftime(timestamp, 255, "%Y-%m-%d %H:%M:%S", localtime((const time_t *) &tmnow.tv_sec));
-#endif
-	snprintf(timestamp + strlen(timestamp), 255, ".%03ld", tmnow.tv_usec/1000);
-}
 
 template<typename W>
 static void configure_spinbox(ImagerWindow *w, indigo_item *item, int perm, W *widget) {
@@ -731,7 +706,10 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 			if (is_guiding) {
 				if (conf.guider_save_log) {
 					if (w->m_guide_log == nullptr) {
-						w->m_guide_log = fopen("Ain_guide_log.txt", "a+");
+						char file_name[255];
+						get_date_jd(time_str);
+						snprintf(file_name, sizeof(file_name), "Ain_guide_%s.log", time_str);
+						w->m_guide_log = fopen(file_name, "a+");
 						if (w->m_guide_log) {
 							get_timestamp(time_str);
 							if (frame_count > 0) {
@@ -745,7 +723,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 				} else {
 					if (w->m_guide_log) {
 						get_timestamp(time_str);
-						fprintf(w->m_guide_log, "Log stopped at %s\n\n", time_str);
+						fprintf(w->m_guide_log, "Log finished at %s\n\n", time_str);
 						fclose(w->m_guide_log);
 						w->m_guide_log = nullptr;
 					}
@@ -760,14 +738,14 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 			if (conf.guider_save_log) {
 				if (w->m_guide_log) {
 					get_timestamp(time_str);
-					fprintf(w->m_guide_log, "Guiding stopped at %s\n\n", time_str);
+					fprintf(w->m_guide_log, "Guiding finished at %s\n\n", time_str);
 					fclose(w->m_guide_log);
 					w->m_guide_log = nullptr;
 				}
 			} else {
 				if (w->m_guide_log) {
 					get_timestamp(time_str);
-					fprintf(w->m_guide_log, "Log stopped at %s\n\n", time_str);
+					fprintf(w->m_guide_log, "Log finished at %s\n\n", time_str);
 					fclose(w->m_guide_log);
 					w->m_guide_log = nullptr;
 				}
@@ -874,27 +852,14 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 
 
 void ImagerWindow::on_window_log(indigo_property* property, char *message) {
-	char timestamp[16];
+	char timestamp[255];
 	char log_line[512];
 	char message_line[512];
 	struct timeval tmnow;
 
 	if (!message) return;
 
-	gettimeofday(&tmnow, NULL);
-#if defined(INDIGO_WINDOWS)
-	struct tm *lt;
-	time_t rawtime;
-	lt = localtime((const time_t *) &(tmnow.tv_sec));
-	if (lt == NULL) {
-		time(&rawtime);
-		lt = localtime(&rawtime);
-	}
-	strftime(timestamp, sizeof(log_line), "%H:%M:%S", lt);
-#else
-	strftime(timestamp, sizeof(log_line), "%H:%M:%S", localtime((const time_t *) &tmnow.tv_sec));
-#endif
-	snprintf(timestamp + 8, sizeof(timestamp) - 8, ".%03ld", tmnow.tv_usec/1000);
+	get_time(timestamp);
 
 	if (property) {
 		snprintf(message_line, 512, "%s.%s: %s", property->device, property->name, message);
