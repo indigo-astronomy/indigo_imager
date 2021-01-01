@@ -735,9 +735,9 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 						if (w->m_guide_log) {
 							get_timestamp(time_str);
 							if (frame_count > 0) {
-								fprintf(w->m_guide_log, "Log enabled at %s\n", time_str);
+								fprintf(w->m_guide_log, "Log started at %s\n", time_str);
 							} else {
-								fprintf(w->m_guide_log, "Guiding Begins at %s\n", time_str);
+								fprintf(w->m_guide_log, "Guiding started at %s\n", time_str);
 							}
 							fprintf(w->m_guide_log, "Timestamp,X Dif,Y Dif,RA Dif,Dec Dif,Ra Correction,Dec Correction\n");
 						}
@@ -745,7 +745,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 				} else {
 					if (w->m_guide_log) {
 						get_timestamp(time_str);
-						fprintf(w->m_guide_log, "Log closed at %s\n\n", time_str);
+						fprintf(w->m_guide_log, "Log stopped at %s\n\n", time_str);
 						fclose(w->m_guide_log);
 						w->m_guide_log = nullptr;
 					}
@@ -760,14 +760,14 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 			if (conf.guider_save_log) {
 				if (w->m_guide_log) {
 					get_timestamp(time_str);
-					fprintf(w->m_guide_log, "Guiding Ends at %s\n\n", time_str);
+					fprintf(w->m_guide_log, "Guiding stopped at %s\n\n", time_str);
 					fclose(w->m_guide_log);
 					w->m_guide_log = nullptr;
 				}
 			} else {
 				if (w->m_guide_log) {
 					get_timestamp(time_str);
-					fprintf(w->m_guide_log, "Log closed at %s\n\n", time_str);
+					fprintf(w->m_guide_log, "Log stopped at %s\n\n", time_str);
 					fclose(w->m_guide_log);
 					w->m_guide_log = nullptr;
 				}
