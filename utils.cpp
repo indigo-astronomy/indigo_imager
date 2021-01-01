@@ -16,12 +16,20 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include<assert.h>
-#include<string.h>
-#include<stdio.h>
-#include<time.h>
-#include<sys/time.h>
-#include<utils.h>
+#include <assert.h>
+#include <string.h>
+#include <stdio.h>
+#include <time.h>
+#include <sys/time.h>
+#include <unistd.h>
+
+#include <QDir>
+#include <QString>
+#include <QObject>
+
+#include <utils.h>
+#include <conf.h>
+
 
 void get_timestamp(char *timestamp_str) {
 	assert(timestamp_str != nullptr);
@@ -60,7 +68,6 @@ void get_date(char *date_str) {
 #else
 	strftime(date_str, 255, "%Y-%m-%d", localtime((const time_t *) &tmnow.tv_sec));
 #endif
-	snprintf(date_str + strlen(date_str), 255, ".%03ld", tmnow.tv_usec/1000);
 }
 
 #define HALF_DAY_SECONDS 43200
@@ -103,4 +110,21 @@ void get_time(char *time_str) {
 	strftime(time_str, 255, "%H:%M:%S", localtime((const time_t *) &tmnow.tv_sec));
 #endif
 	snprintf(time_str + strlen(time_str), 255, ".%03ld", tmnow.tv_usec/1000);
+}
+
+void get_current_output_dir(char *output_dir) {
+	assert(output_dir != nullptr);
+
+	if (QDir::homePath().length() > 0) {
+		char date_str[255] = {0};
+		get_date_jd(date_str);
+		QString qlocation = QDir::toNativeSeparators(QDir::homePath() + QObject::tr("/ain_data/") + QObject::tr(date_str) + QObject::tr("/"));
+		QDir dir = QDir::root();
+		dir.mkpath(qlocation);
+		strncpy(output_dir, qlocation.toUtf8().constData(), PATH_LEN);
+	} else {
+		if (!getcwd(output_dir, sizeof(output_dir))) {
+			output_dir[0] = '\0';
+		}
+	}
 }

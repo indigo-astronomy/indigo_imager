@@ -21,6 +21,7 @@
 #include <sys/time.h>
 #include <libgen.h>
 
+#include <utils.h>
 #include "imagerwindow.h"
 #include "qservicemodel.h"
 #include "indigoclient.h"
@@ -560,16 +561,7 @@ void ImagerWindow::save_blob_item(indigo_item *item) {
 			on_window_log(NULL, message);
 			return;
 		}
-
-		if (QStandardPaths::displayName(QStandardPaths::PicturesLocation).length() > 0) {
-			QString qlocation = QDir::toNativeSeparators(QDir::homePath() + tr("/") + QStandardPaths::displayName(QStandardPaths::PicturesLocation));
-			strncpy(location, qlocation.toUtf8().constData(), PATH_LEN);
-		} else {
-			if (!getcwd(location, sizeof(location))) {
-				location[0] = '\0';
-			}
-		}
-
+		get_current_output_dir(location);
 		if (save_blob_item_with_prefix(item, location, file_name)) {
 			m_imager_viewer->setText(basename(file_name));
 			m_imager_viewer->setToolTip(file_name);
@@ -605,10 +597,10 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 	do {
 
 #if defined(INDIGO_WINDOWS)
-		sprintf(file_name, "%s\\%s_%03d%s", prefix, object_name.toUtf8().constData(), file_no++, item->blob.format);
+		sprintf(file_name, "%s%s_%03d%s", prefix, object_name.toUtf8().constData(), file_no++, item->blob.format);
 		fd = open(file_name, O_CREAT | O_WRONLY | O_EXCL | O_BINARY, 0);
 #else
-		sprintf(file_name, "%s/%s_%03d%s", prefix, object_name.toUtf8().constData(), file_no++, item->blob.format);
+		sprintf(file_name, "%s%s_%03d%s", prefix, object_name.toUtf8().constData(), file_no++, item->blob.format);
 		fd = open(file_name, O_CREAT | O_WRONLY | O_EXCL, S_IRUSR | S_IWUSR);
 #endif
 	} while ((fd < 0) && (errno == EEXIST));
@@ -649,7 +641,7 @@ void ImagerWindow::on_image_save_act() {
 	if (!m_indigo_item) return;
 	char message[PATH_LEN+100];
 	QString format = m_indigo_item->blob.format;
-	QString qlocation = QDir::toNativeSeparators(QDir::homePath() + tr("/") + QStandardPaths::displayName(QStandardPaths::PicturesLocation));
+	QString qlocation = QDir::toNativeSeparators(QDir::homePath());
 	QString file_name = QFileDialog::getSaveFileName(this,
 		tr("Save image"), qlocation,
 		QString("Image (*") + format + QString(")"));

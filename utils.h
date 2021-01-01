@@ -24,4 +24,6 @@ void get_date(char *date_str);
 void get_date_jd(char *date_str);
 void get_time(char *time_str);
 
+void get_current_output_dir(char *output_dir);
+
 #endif /* _UTILS_H */

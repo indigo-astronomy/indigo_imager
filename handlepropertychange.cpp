@@ -707,8 +707,10 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 				if (conf.guider_save_log) {
 					if (w->m_guide_log == nullptr) {
 						char file_name[255];
+						char path[PATH_LEN];
 						get_date_jd(time_str);
-						snprintf(file_name, sizeof(file_name), "Ain_guide_%s.log", time_str);
+						get_current_output_dir(path);
+						snprintf(file_name, sizeof(file_name), "%sAin_guiding_%s.log", path, time_str);
 						w->m_guide_log = fopen(file_name, "a+");
 						if (w->m_guide_log) {
 							get_timestamp(time_str);
