@@ -72,6 +72,7 @@ typedef struct {
 	bool guider_antialiasing_enabled;
 	focuser_display_data focuser_display;
 	guider_display_data guider_display;
+	bool guider_save_log;
 	char unused[100];
 } conf_t;
 

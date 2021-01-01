@@ -53,6 +53,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	save_blob = false;
 	m_indigo_item = nullptr;
+	m_guide_log = nullptr;
 
 	//  Set central widget of window
 	QWidget *central = new QWidget;
@@ -255,6 +256,13 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	if (conf.guider_display == SHOW_X_Y_DRIFT) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_guide_show_xy_drift);
 	graph_group->addAction(act);
+
+	menu->addSeparator();
+
+	act = menu->addAction(tr("&Save Guiding Log"));
+	act->setCheckable(true);
+	act->setChecked(conf.guider_save_log);
+	connect(act, &QAction::toggled, this, &ImagerWindow::on_guider_save_log);
 
 	menu->addSeparator();
 
@@ -869,6 +877,12 @@ void ImagerWindow::on_guide_show_xy_drift() {
 	conf.guider_display = SHOW_X_Y_DRIFT;
 	select_guider_data(conf.guider_display);
 	if (m_guider_data_1 && m_guider_data_2) m_guider_graph->redraw_data2(*m_guider_data_1, *m_guider_data_2);
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_guider_save_log(bool status) {
+	conf.guider_save_log = status;
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }

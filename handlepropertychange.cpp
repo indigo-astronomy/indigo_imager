@@ -26,6 +26,28 @@
 #include "conf.h"
 #include "widget_state.h"
 
+
+static void get_timestamp(char *timestamp) {
+	struct timeval tmnow;
+
+	if (!timestamp) return;
+
+	gettimeofday(&tmnow, NULL);
+#if defined(INDIGO_WINDOWS)
+	struct tm *lt;
+	time_t rawtime;
+	lt = localtime((const time_t *) &(tmnow.tv_sec));
+	if (lt == NULL) {
+		time(&rawtime);
+		lt = localtime(&rawtime);
+	}
+	strftime(timestamp, 255, "%Y-%m-%d %H:%M:%S", lt);
+#else
+	strftime(timestamp, 255, "%Y-%m-%d %H:%M:%S", localtime((const time_t *) &tmnow.tv_sec));
+#endif
+	snprintf(timestamp + strlen(timestamp), 255, ".%03ld", tmnow.tv_usec/1000);
+}
+
 template<typename W>
 static void configure_spinbox(ImagerWindow *w, indigo_item *item, int perm, W *widget) {
 	indigo_item *item_copy = nullptr;
@@ -633,6 +655,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	double rmse_ra = 0, rmse_dec = 0, dither_rmse = 0;
 	double d_x = 0, d_y = 0;
 	int size = 0, frame_count = -1;
+	bool is_guiding = false;
 
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_FRAME_ITEM_NAME)) {
@@ -666,13 +689,14 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	if (p) {
 		for (int i = 0; i < p->count; i++) {
 			if (client_match_item(&p->items[i], AGENT_GUIDER_START_GUIDING_ITEM_NAME) && p->items[i].sw.value) {
-				if(dither_rmse == 0) {
+				is_guiding = true;
+				if (dither_rmse == 0) {
 					w->set_guider_label(INDIGO_OK_STATE, " Guiding... ");
 				} else {
 					w->set_guider_label(INDIGO_BUSY_STATE, " Dithering... ");
 				}
 
-				if(frame_count == 0) {
+				if (frame_count == 0) {
 					w->m_drift_data_ra.clear();
 					w->m_drift_data_dec.clear();
 					w->m_pulse_data_ra.clear();
@@ -701,10 +725,53 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 				break;
 			}
 		}
+		char time_str[255];
 		if (p->state == INDIGO_BUSY_STATE) {
 			w->m_guider_viewer->moveReference(ref_x, ref_y);
+			if (is_guiding) {
+				if (conf.guider_save_log) {
+					if (w->m_guide_log == nullptr) {
+						w->m_guide_log = fopen("Ain_guide_log.txt", "a+");
+						if (w->m_guide_log) {
+							get_timestamp(time_str);
+							if (frame_count > 0) {
+								fprintf(w->m_guide_log, "Log enabled at %s\n", time_str);
+							} else {
+								fprintf(w->m_guide_log, "Guiding Begins at %s\n", time_str);
+							}
+							fprintf(w->m_guide_log, "Timestamp,X Dif,Y Dif,RA Dif,Dec Dif,Ra Correction,Dec Correction\n");
+						}
+					}
+				} else {
+					if (w->m_guide_log) {
+						get_timestamp(time_str);
+						fprintf(w->m_guide_log, "Log closed at %s\n\n", time_str);
+						fclose(w->m_guide_log);
+						w->m_guide_log = nullptr;
+					}
+				}
+				if (w->m_guide_log && frame_count > 0) {
+					get_timestamp(time_str);
+					fprintf(w->m_guide_log, "%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\n", time_str, d_x, d_y, d_ra, d_dec, cor_ra, cor_dec);
+				}
+			}
 		} else {
 			w->m_guider_viewer->moveReference(0, 0);
+			if (conf.guider_save_log) {
+				if (w->m_guide_log) {
+					get_timestamp(time_str);
+					fprintf(w->m_guide_log, "Guiding Ends at %s\n\n", time_str);
+					fclose(w->m_guide_log);
+					w->m_guide_log = nullptr;
+				}
+			} else {
+				if (w->m_guide_log) {
+					get_timestamp(time_str);
+					fprintf(w->m_guide_log, "Log closed at %s\n\n", time_str);
+					fclose(w->m_guide_log);
+					w->m_guide_log = nullptr;
+				}
+			}
 		}
 	}
 

@@ -81,6 +81,7 @@ int main(int argc, char *argv[]) {
 	conf.focuser_subframe = 0;
 	conf.focuser_display = SHOW_FWHM;
 	conf.guider_display = SHOW_RA_DEC_DRIFT;
+	conf.guider_save_log = false;
 	read_conf();
 
 	if (!conf.use_system_locale) qunsetenv("LC_NUMERIC");

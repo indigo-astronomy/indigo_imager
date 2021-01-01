@@ -20,6 +20,7 @@
 #ifndef IMAGERWINDOW_H
 #define IMAGERWINDOW_H
 
+#include <stdio.h>
 #include <QApplication>
 #include <QMainWindow>
 #include <QComboBox>
@@ -212,6 +213,7 @@ public slots:
 	void on_guide_show_rd_drift();
 	void on_guide_show_rd_pulse();
 	void on_guide_show_xy_drift();
+	void on_guider_save_log(bool status);
 
 	void on_tab_changed(int index);
 
@@ -376,6 +378,8 @@ private:
 
 	QComboBox *m_detection_mode_select;
 	QComboBox *m_dec_guiding_select;
+
+	FILE *m_guide_log;
 
 	// Image viewer
 	ImageViewer *m_imager_viewer;
