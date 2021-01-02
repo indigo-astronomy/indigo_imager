@@ -902,7 +902,9 @@ void ImagerWindow::on_indigo_save_log(bool status) {
 	} else {
 		fflush(stderr);
 		fclose(stderr);
+#ifndef INDIGO_WINDOWS
 		stderr = fdopen(m_stderr, "w+");
+#endif
 	}
 	indigo_debug("%s\n", __FUNCTION__);
 }
