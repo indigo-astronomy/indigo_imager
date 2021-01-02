@@ -85,7 +85,7 @@ ImageViewer::ImageViewer(QWidget *parent)
 	m_ref_x->setPen(pen);
 	m_ref_x->setOpacity(0.5);
 	m_ref_x->setVisible(false);
-	scene->addItem(m_ref_x);
+	//scene->addItem(m_ref_x);
 
 	m_ref_y = new QGraphicsLineItem(0,25,50,25, m_pixmap);
 	pen.setCosmetic(true);
@@ -94,7 +94,7 @@ ImageViewer::ImageViewer(QWidget *parent)
 	m_ref_y->setPen(pen);
 	m_ref_y->setOpacity(0.5);
 	m_ref_y->setVisible(false);
-	scene->addItem(m_ref_y);
+	//scene->addItem(m_ref_y);
 
 	m_ref_visible = false;
 
@@ -107,7 +107,7 @@ ImageViewer::ImageViewer(QWidget *parent)
 	m_selection->setOpacity(0.7);
 	m_selection->setVisible(false);
 	m_selection_visible = false;
-	scene->addItem(m_selection);
+	//scene->addItem(m_selection);
 	//m_selection->setFlags(QGraphicsItem::ItemIsMovable);
 
     makeToolbar();
