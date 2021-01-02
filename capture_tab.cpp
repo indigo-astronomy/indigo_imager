@@ -352,6 +352,7 @@ void ImagerWindow::on_preview_start_stop(bool clicked) {
 		    ccd_exposure && ccd_exposure->state == INDIGO_BUSY_STATE) {
 			change_ccd_abort_exposure_property(selected_agent);
 		} else {
+			change_agent_batch_property(selected_agent);
 			change_ccd_frame_property(selected_agent);
 			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			change_ccd_exposure_property(selected_agent, m_exposure_time);
