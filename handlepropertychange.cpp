@@ -1071,6 +1071,13 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME)) {
 		add_items_to_combobox(property, m_detection_mode_select);
+		if (indigo_get_switch(property, AGENT_GUIDER_DETECTION_SELECTION_ITEM_NAME)) {
+			m_guider_viewer->showSelection();
+			m_guider_viewer->showReference();
+		} else {
+			m_guider_viewer->hideSelection();
+			m_guider_viewer->hideReference();
+		}
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME)) {
 		add_items_to_combobox(property, m_dec_guiding_select);
@@ -1186,6 +1193,13 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_detection_mode_select);
+		if (indigo_get_switch(property, AGENT_GUIDER_DETECTION_SELECTION_ITEM_NAME)) {
+			m_guider_viewer->showSelection();
+			m_guider_viewer->showReference();
+		} else {
+			m_guider_viewer->hideSelection();
+			m_guider_viewer->hideReference();
+		}
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_dec_guiding_select);
@@ -1316,6 +1330,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_guider_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		m_detection_mode_select->clear();
+		m_guider_viewer->hideSelection();
+		m_guider_viewer->hideReference();
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
