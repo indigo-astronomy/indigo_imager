@@ -490,13 +490,6 @@ void ImagerWindow::on_tab_changed(int index) {
 	}
 	if (index == 1) m_imager_viewer->showSelection();
 	else m_imager_viewer->hideSelection();
-	//if (index == 2) {
-	//	m_guider_viewer->showSelection();
-	//	m_guider_viewer->showReference();
-	//} else {
-	//	m_guider_viewer->hideSelection();
-	//	m_guider_viewer->hideReference();
-	//}
 }
 
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){

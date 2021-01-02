@@ -122,6 +122,7 @@ static void change_combobox_selection(ImagerWindow *w, indigo_property *property
 	}
 }
 
+// should be redesigned - crashes sometimes...
 static void add_items_to_combobox(indigo_property *property, QComboBox *items_combobox) {
 	items_combobox->clear();
 	for (int i = 0; i < property->count; i++) {
@@ -242,7 +243,6 @@ void update_cooler_power(ImagerWindow *w, indigo_property *property) {
 	}
 }
 
-
 void update_agent_imager_dithering_property(ImagerWindow *w, indigo_property *property) {
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_IMAGER_DITHERING_AGGRESSIVITY_ITEM_NAME)) {
@@ -317,7 +317,6 @@ void update_focus_setup_property(ImagerWindow *w, indigo_property *property) {
 		}
 	}
 }
-
 
 void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("Set %s", property->name);
