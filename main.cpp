@@ -57,11 +57,11 @@ int main(int argc, char *argv[]) {
 	dir.mkpath(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation));
 	strncpy(config_path, QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation).toUtf8().constData(), PATH_LEN);
 
-#if defined(INDIGO_WINDOWS)
-	char filename[PATH_LEN];
-	snprintf(filename, PATH_LEN, "%s/%s", QDir::homePath().toUtf8().constData(), AIN_INDIGO_LOG_FILE);
-	freopen(filename,"w", stderr);
-#endif
+//#if defined(INDIGO_WINDOWS)
+//	char filename[PATH_LEN];
+//	snprintf(filename, PATH_LEN, "%s/%s", QDir::homePath().toUtf8().constData(), AIN_INDIGO_LOG_FILE);
+//	freopen(filename,"w", stderr);
+//#endif
 
 	memset(&conf,0,sizeof(conf_t));
 	conf.blobs_enabled = true;
@@ -81,6 +81,7 @@ int main(int argc, char *argv[]) {
 	conf.focuser_display = SHOW_FWHM;
 	conf.guider_display = SHOW_RA_DEC_DRIFT;
 	conf.guider_save_log = false;
+	conf.indigo_save_log = false;
 	read_conf();
 
 	if (!conf.use_system_locale) qunsetenv("LC_NUMERIC");

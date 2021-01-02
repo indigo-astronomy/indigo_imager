@@ -35,7 +35,8 @@
 
 #define CONFIG_FILENAME "indigo_imager.conf"
 #define AIN_GUIDER_LOG_NAME_FORMAT "ain_guiding_%s.log"
-#define AIN_INDIGO_LOG_FILE	"ain_indigo.log"
+#define AIN_INDIGO_LOG_NAME_FORMAT "ain_indigo_%s.log"
+//#define AIN_INDIGO_LOG_FILE	"ain_indigo.log"
 
 typedef enum {
 	STRETCH_NONE = 0,
@@ -74,6 +75,7 @@ typedef struct {
 	focuser_display_data focuser_display;
 	guider_display_data guider_display;
 	bool guider_save_log;
+	bool indigo_save_log;
 	char unused[100];
 } conf_t;
 

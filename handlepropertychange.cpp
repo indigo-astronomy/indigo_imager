@@ -878,10 +878,10 @@ void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 			snprintf(log_line, 512, "%s %s", timestamp, message_line);
 			break;
 		}
-		indigo_debug("[message] %s\n", message_line);
+		indigo_log("[message] %s\n", message_line);
 	} else {
 		snprintf(log_line, 512, "%s %s", timestamp, message);
-		indigo_debug("[message] %s\n", message);
+		indigo_log("[message] %s\n", message);
 	}
 	mLog->appendHtml(log_line); // Adds the message to the widget
 }

@@ -55,6 +55,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	save_blob = false;
 	m_indigo_item = nullptr;
 	m_guide_log = nullptr;
+	m_stderr = dup(STDERR_FILENO);
+	on_indigo_save_log(conf.indigo_save_log);
 
 	//  Set central widget of window
 	QWidget *central = new QWidget;
@@ -264,6 +266,11 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setCheckable(true);
 	act->setChecked(conf.guider_save_log);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_guider_save_log);
+
+	act = menu->addAction(tr("Save &INDGO Log"));
+	act->setCheckable(true);
+	act->setChecked(conf.indigo_save_log);
+	connect(act, &QAction::toggled, this, &ImagerWindow::on_indigo_save_log);
 
 	menu->addSeparator();
 
@@ -876,6 +883,27 @@ void ImagerWindow::on_guide_show_xy_drift() {
 void ImagerWindow::on_guider_save_log(bool status) {
 	conf.guider_save_log = status;
 	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_indigo_save_log(bool status) {
+	conf.indigo_save_log = status;
+	write_conf();
+
+	if (status) {
+		m_stderr = dup(m_stderr);
+		char time_str[PATH_LEN];
+		char file_name[255];
+		char path[PATH_LEN];
+		get_date_jd(time_str);
+		get_current_output_dir(path);
+		snprintf(file_name, sizeof(file_name), "%s" AIN_INDIGO_LOG_NAME_FORMAT, path, time_str);
+		freopen(file_name,"a+", stderr);
+	} else {
+		fflush(stderr);
+		fclose(stderr);
+		stderr = fdopen(m_stderr, "w+");
+	}
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
