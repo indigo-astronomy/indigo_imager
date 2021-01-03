@@ -108,7 +108,7 @@ signals:
 
 	void set_enabled(QWidget *widget, bool enabled);
 	void set_widget_state(QWidget *widget, indigo_property_state state);
-	void set_guider_label(indigo_property_state state, const char *text);
+    void set_guider_label(int state, const char *text);
 	void set_spinbox_value(QSpinBox *widget, double value);
 	void set_spinbox_value(QDoubleSpinBox *widget, double value);
 	void configure_spinbox(QSpinBox *widget, indigo_item *item, int perm);
@@ -258,7 +258,7 @@ public slots:
 		}
 	};
 
-	void on_set_guider_label(indigo_property_state state, const char *text) {
+    void on_set_guider_label(int state, const char *text) {
 		if (text) m_guider_viewer->getTextLabel()->setText(text);
 		switch (state) {
 			case INDIGO_IDLE_STATE:

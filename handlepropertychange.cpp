@@ -1398,10 +1398,10 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_enabled(m_guider_subframe_select, false);
 
 		m_guider_viewer->hideSelection();
-		m_guider_viewer->moveResizeSelection(0, 0, 1);
+    //	m_guider_viewer->moveResizeSelection(0, 0, 1);
 		m_guider_viewer->hideReference();
-		m_guider_viewer->moveReference(0, 0);
-		set_guider_label(INDIGO_IDLE_STATE, " Stopped ");
+    //	m_guider_viewer->moveReference(0, 0);
+        set_guider_label(INDIGO_IDLE_STATE, " Stopped ");
 	}
 
 	if (client_match_device_property(property, selected_guider_agent, CCD_JPEG_SETTINGS_PROPERTY_NAME) ||
