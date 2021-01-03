@@ -205,9 +205,7 @@ void update_cooler_onoff(ImagerWindow *w, indigo_property *property) {
 	w->set_enabled(w->m_cooler_onoff, true);
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], CCD_COOLER_ON_ITEM_NAME)) {
-			w->m_cooler_onoff->blockSignals(true);
-			w->m_cooler_onoff->setChecked(property->items[i].sw.value);
-			w->m_cooler_onoff->blockSignals(false);
+			w->set_checkbox_checked(w->m_cooler_onoff, property->items[i].sw.value);
 			break;
 		}
 	}
@@ -1288,9 +1286,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, CCD_COOLER_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		set_enabled(m_cooler_onoff, false);
-		m_cooler_onoff->blockSignals(true);
-		m_cooler_onoff->setChecked(false);
-		m_cooler_onoff->blockSignals(false);
+		set_checkbox_checked(m_cooler_onoff, false);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_COOLER_POWER_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {

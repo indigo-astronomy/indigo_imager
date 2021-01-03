@@ -113,6 +113,7 @@ signals:
 	void set_spinbox_value(QDoubleSpinBox *widget, double value);
 	void configure_spinbox(QSpinBox *widget, indigo_item *item, int perm);
 	void configure_spinbox(QDoubleSpinBox *widget, indigo_item *item, int perm);
+	void set_checkbox_checked(QCheckBox *widget, bool checked);
 
 public slots:
 	void on_start(bool clicked);
@@ -233,6 +234,12 @@ public slots:
 		widget->setValue(value);
 		widget->blockSignals(false);
 	};
+
+	void on_set_checkbox_checked(QCheckBox *widget, bool checked) {
+		widget->blockSignals(true);
+		widget->setChecked(checked);
+		widget->blockSignals(false);
+	}
 
 	void on_set_widget_state(QWidget *widget, indigo_property_state state) {
 		switch (state) {
