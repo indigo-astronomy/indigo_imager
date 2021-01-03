@@ -16,6 +16,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include <math.h>
 #include <fits/fits.h>
 #include <debayer/debayer.h>
 #include <debayer/pixelformat.h>
@@ -420,6 +421,42 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 	}
 
 	range = max - min;
+	switch (pix_format) {
+	case PIX_FMT_Y8:
+	case PIX_FMT_RGB24:
+	case PIX_FMT_3RGB24:
+	case PIX_FMT_SBGGR8:
+	case PIX_FMT_SGBRG8:
+	case PIX_FMT_SGRBG8:
+	case PIX_FMT_SRGGB8:
+		if (fabs(max - min) < 2) {
+			if (min >= 1) {
+				min -= 1;
+			} else if (max <= 254) {
+				max += 1;
+			}
+		}
+		break;
+	case PIX_FMT_Y16:
+	case PIX_FMT_RGB48:
+	case PIX_FMT_3RGB48:
+	case PIX_FMT_SBGGR16:
+	case PIX_FMT_SGBRG16:
+	case PIX_FMT_SGRBG16:
+	case PIX_FMT_SRGGB16:
+		if (fabs(max - min) < 2) {
+			if (min >= 1) {
+				min -= 1;
+			} else if (max <= 65534) {
+				max += 1;
+			}
+		}
+		break;
+	default:
+		indigo_error("PREVIEW: Unsupported pixel format (%d)", pix_format);
+		return nullptr;
+	}
+
 	if (range < 2) range = 2;
 	double scale = 256.0 / range;
 
