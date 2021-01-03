@@ -1329,8 +1329,6 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_guider_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		m_detection_mode_select->clear();
-		m_guider_viewer->hideSelection();
-		m_guider_viewer->hideReference();
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
@@ -1398,6 +1396,12 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_enabled(m_guide_star_radius, false);
 
 		set_enabled(m_guider_subframe_select, false);
+
+		m_guider_viewer->hideSelection();
+		m_guider_viewer->moveResizeSelection(0, 0, 1);
+		m_guider_viewer->hideReference();
+		m_guider_viewer->moveReference(0, 0);
+		set_guider_label(INDIGO_IDLE_STATE, " Stopped ");
 	}
 
 	if (client_match_device_property(property, selected_guider_agent, CCD_JPEG_SETTINGS_PROPERTY_NAME) ||
