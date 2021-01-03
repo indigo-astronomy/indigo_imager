@@ -420,7 +420,6 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		sum += hist[--max];
 	}
 
-	range = max - min;
 	switch (pix_format) {
 	case PIX_FMT_Y8:
 	case PIX_FMT_RGB24:
@@ -430,10 +429,10 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 	case PIX_FMT_SGRBG8:
 	case PIX_FMT_SRGGB8:
 		if (fabs(max - min) < 2) {
-			if (min >= 1) {
-				min -= 1;
-			} else if (max <= 254) {
-				max += 1;
+			if (min >= 2) {
+				min -= 2;
+			} else if (max <= 253) {
+				max += 2;
 			}
 		}
 		break;
@@ -445,10 +444,10 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 	case PIX_FMT_SGRBG16:
 	case PIX_FMT_SRGGB16:
 		if (fabs(max - min) < 2) {
-			if (min >= 1) {
-				min -= 1;
-			} else if (max <= 65534) {
-				max += 1;
+			if (min >= 2) {
+				min -= 2;
+			} else if (max <= 65533) {
+				max += 2;
 			}
 		}
 		break;
@@ -457,6 +456,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		return nullptr;
 	}
 
+	range = max - min;
 	if (range < 2) range = 2;
 	double scale = 256.0 / range;
 
