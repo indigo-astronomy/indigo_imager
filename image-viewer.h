@@ -54,19 +54,17 @@ public:
     bool isAntialiasingEnabled() const;
     void enableAntialiasing(bool on = true);
 
-	void showSelection();
-	void hideSelection();
-	void moveSelection(double x, double y);
-	void moveResizeSelection(double x, double y, int size);
-
-	void showReference();
-	void hideReference();
-	void moveReference(double x, double y);
-
 public slots:
     void setText(const QString &txt);
     void setToolTip(const QString &txt);
     void setImage(preview_image &im);
+
+	void showSelection(bool show);
+	void moveSelection(double x, double y);
+	void moveResizeSelection(double x, double y, int size);
+
+	void showReference(bool show);
+	void moveReference(double x, double y);
 
     void zoomFit();
     void zoomOriginal();

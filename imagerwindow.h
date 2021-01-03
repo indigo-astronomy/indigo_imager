@@ -108,12 +108,20 @@ signals:
 
 	void set_enabled(QWidget *widget, bool enabled);
 	void set_widget_state(QWidget *widget, indigo_property_state state);
-    void set_guider_label(int state, const char *text);
+	void set_guider_label(int state, const char *text);
 	void set_spinbox_value(QSpinBox *widget, double value);
 	void set_spinbox_value(QDoubleSpinBox *widget, double value);
 	void configure_spinbox(QSpinBox *widget, indigo_item *item, int perm);
 	void configure_spinbox(QDoubleSpinBox *widget, indigo_item *item, int perm);
 	void set_checkbox_checked(QCheckBox *widget, bool checked);
+
+	void show_focuser_selection(bool show);
+	void move_resize_focuser_selection(double x, double y, int size);
+
+	void show_guider_selection(bool show);
+	void move_resize_guider_selection(double x, double y, int size);
+	void show_guider_reference(bool show);
+	void move_guider_reference(double x, double y);
 
 public slots:
 	void on_start(bool clicked);

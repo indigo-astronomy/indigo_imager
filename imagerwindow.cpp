@@ -382,6 +382,13 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	mServiceModel = new QServiceModel("_indigo._tcp");
 	mServiceModel->enable_auto_connect(conf.auto_connect);
 
+	connect(this, &ImagerWindow::move_resize_focuser_selection, m_imager_viewer, &ImageViewer::moveResizeSelection);
+	connect(this, &ImagerWindow::show_focuser_selection, m_imager_viewer, &ImageViewer::showSelection);
+	connect(this, &ImagerWindow::move_resize_guider_selection, m_guider_viewer, &ImageViewer::moveResizeSelection);
+	connect(this, &ImagerWindow::show_guider_selection, m_guider_viewer, &ImageViewer::showSelection);
+	connect(this, &ImagerWindow::move_guider_reference, m_guider_viewer, &ImageViewer::moveReference);
+	connect(this, &ImagerWindow::show_guider_reference, m_guider_viewer, &ImageViewer::showReference);
+
 	connect(this, &ImagerWindow::set_enabled, this, &ImagerWindow::on_set_enabled);
 	connect(this, &ImagerWindow::set_widget_state, this, &ImagerWindow::on_set_widget_state);
 	connect(this, &ImagerWindow::set_guider_label, this, &ImagerWindow::on_set_guider_label);
@@ -489,8 +496,8 @@ void ImagerWindow::on_tab_changed(int index) {
 			m_imager_viewer->setVisible(false);
 		}
 	}
-	if (index == 1) m_imager_viewer->showSelection();
-	else m_imager_viewer->hideSelection();
+	if (index == 1) m_imager_viewer->showSelection(true);
+	else m_imager_viewer->showSelection(false);
 }
 
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){

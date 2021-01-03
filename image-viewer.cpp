@@ -172,16 +172,16 @@ void ImageViewer::setToolTip(const QString &txt) {
     m_text_label->setToolTip(txt);
 }
 
-void ImageViewer::showSelection() {
-	m_selection_visible = true;
-	if (!m_pixmap->pixmap().isNull() && !m_selection_p.isNull()) {
-		m_selection->setVisible(true);
+void ImageViewer::showSelection(bool show) {
+	if (show) {
+		m_selection_visible = true;
+		if (!m_pixmap->pixmap().isNull() && !m_selection_p.isNull()) {
+			m_selection->setVisible(true);
+		}
+	} else {
+		m_selection_visible = false;
+		m_selection->setVisible(false);
 	}
-}
-
-void ImageViewer::hideSelection() {
-	m_selection_visible = false;
-	m_selection->setVisible(false);
 }
 
 void ImageViewer::moveResizeSelection(double x, double y, int size) {
@@ -221,18 +221,18 @@ void ImageViewer::moveSelection(double x, double y) {
 	m_selection->setPos(cor_x, cor_y);
 }
 
-void ImageViewer::showReference() {
-	m_ref_visible = true;
-	if (!m_pixmap->pixmap().isNull() && !m_ref_p.isNull()) {
-		m_ref_x->setVisible(true);
-		m_ref_y->setVisible(true);
+void ImageViewer::showReference(bool show) {
+	if (show) {
+		m_ref_visible = true;
+		if (!m_pixmap->pixmap().isNull() && !m_ref_p.isNull()) {
+			m_ref_x->setVisible(true);
+			m_ref_y->setVisible(true);
+		}
+	} else {
+		m_ref_visible = false;
+		m_ref_x->setVisible(false);
+		m_ref_y->setVisible(false);
 	}
-}
-
-void ImageViewer::hideReference() {
-	m_ref_visible = false;
-	m_ref_x->setVisible(false);
-	m_ref_y->setVisible(false);
 }
 
 void ImageViewer::moveReference(double x, double y) {

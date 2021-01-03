@@ -282,7 +282,7 @@ void update_imager_selection_property(ImagerWindow *w, indigo_property *property
 			configure_spinbox(w, &property->items[i], property->perm, w->m_focus_star_radius);
 		}
 	}
-	w->m_imager_viewer->moveResizeSelection(x, y, size);
+	w->move_resize_focuser_selection(x, y, size);
 }
 
 void update_guider_selection_property(ImagerWindow *w, indigo_property *property) {
@@ -300,7 +300,7 @@ void update_guider_selection_property(ImagerWindow *w, indigo_property *property
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_star_radius);
 		}
 	}
-	w->m_guider_viewer->moveResizeSelection(x, y, size);
+	w->move_resize_guider_selection(x, y, size);
 }
 
 void update_focus_setup_property(ImagerWindow *w, indigo_property *property) {
@@ -703,7 +703,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 		}
 		char time_str[255];
 		if (p->state == INDIGO_BUSY_STATE) {
-			w->m_guider_viewer->moveReference(ref_x, ref_y);
+			w->move_guider_reference(ref_x, ref_y);
 			if (is_guiding_process_on) {
 				if (conf.guider_save_log) {
 					if (w->m_guide_log == nullptr) {
@@ -737,7 +737,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 				}
 			}
 		} else {
-			w->m_guider_viewer->moveReference(0, 0);
+			w->move_guider_reference(0, 0);
 			if (conf.guider_save_log) {
 				if (w->m_guide_log) {
 					get_timestamp(time_str);
@@ -1071,11 +1071,11 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME)) {
 		add_items_to_combobox(property, m_detection_mode_select);
 		if (indigo_get_switch(property, AGENT_GUIDER_DETECTION_SELECTION_ITEM_NAME)) {
-			m_guider_viewer->showSelection();
-			m_guider_viewer->showReference();
+			show_guider_selection(true);
+			show_guider_reference(true);
 		} else {
-			m_guider_viewer->hideSelection();
-			m_guider_viewer->hideReference();
+			show_guider_selection(false);
+			show_guider_reference(false);
 		}
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME)) {
@@ -1193,11 +1193,11 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_detection_mode_select);
 		if (indigo_get_switch(property, AGENT_GUIDER_DETECTION_SELECTION_ITEM_NAME)) {
-			m_guider_viewer->showSelection();
-			m_guider_viewer->showReference();
+			show_guider_selection(true);
+			show_guider_reference(true);
 		} else {
-			m_guider_viewer->hideSelection();
-			m_guider_viewer->hideReference();
+			show_guider_selection(false);
+			show_guider_reference(false);
 		}
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME)) {
@@ -1397,11 +1397,11 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		set_enabled(m_guider_subframe_select, false);
 
-		m_guider_viewer->hideSelection();
-    //	m_guider_viewer->moveResizeSelection(0, 0, 1);
-		m_guider_viewer->hideReference();
-    //	m_guider_viewer->moveReference(0, 0);
-        set_guider_label(INDIGO_IDLE_STATE, " Stopped ");
+		show_guider_selection(false);
+		show_guider_reference(false);
+		move_resize_guider_selection(0, 0, 1);
+		move_guider_reference(0, 0);
+		set_guider_label(INDIGO_IDLE_STATE, " Stopped ");
 	}
 
 	if (client_match_device_property(property, selected_guider_agent, CCD_JPEG_SETTINGS_PROPERTY_NAME) ||
