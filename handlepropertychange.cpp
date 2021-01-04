@@ -115,7 +115,7 @@ static void change_combobox_selection(ImagerWindow *w, indigo_property *property
 	for (int i = 0; i < property->count; i++) {
 		if (property->items[i].sw.value) {
 			QString item = QString(property->items[i].label);
-			combobox->setCurrentIndex(combobox->findText(item));
+			combobox->setCurrentText(item);
 			indigo_debug("[SELECT] %s\n", item.toUtf8().data());
 			break;
 		}
@@ -131,7 +131,7 @@ static void add_items_to_combobox(indigo_property *property, QComboBox *items_co
 			items_combobox->addItem(item, QString(property->items[i].name));
 			indigo_debug("[ADD mode] %s\n", item.toUtf8().data());
 			if (property->items[i].sw.value) {
-				items_combobox->setCurrentIndex(items_combobox->findText(item));
+				items_combobox->setCurrentText(item);
 			}
 		} else {
 			indigo_debug("[DUPLICATE mode] %s\n", item.toUtf8().data());
@@ -152,7 +152,7 @@ static void add_items_to_combobox_filtered(indigo_property *property, const char
 			items_combobox->addItem(item, QString(property->items[i].name));
 			indigo_debug("[ADD mode] %s\n", item.toUtf8().data());
 			if (property->items[i].sw.value) {
-				items_combobox->setCurrentIndex(items_combobox->findText(item));
+				items_combobox->setCurrentText(item);
 			}
 		} else {
 			indigo_debug("[DUPLICATE mode] %s\n", item.toUtf8().data());
@@ -166,7 +166,7 @@ static void change_combobox_selection_filtered(ImagerWindow *w, indigo_property 
 	for (int i = 0; i < property->count; i++) {
 		if (property->items[i].sw.value && !strncmp(property->items[i].name, begins_with, strlen(begins_with))) {
 			QString item = QString(property->items[i].label);
-			combobox->setCurrentIndex(combobox->findText(item));
+			combobox->setCurrentText(item);
 			indigo_debug("[SELECT] %s\n", item.toUtf8().data());
 			selected = true;
 			break;
@@ -371,7 +371,7 @@ void update_wheel_slot_property(ImagerWindow *w, indigo_property *property) {
 			unsigned int current_filter = (unsigned int)property->items[i].number.value - 1;
 			w->set_widget_state(w->m_filter_select, property->state);
 			if (p && current_filter < p->count) {
-				w->m_filter_select->setCurrentIndex(w->m_filter_select->findText(p->items[current_filter].text.value));
+				w->m_filter_select->setCurrentText(p->items[current_filter].text.value);
 				indigo_debug("[SELECT filter] %s\n", p->items[current_filter].label);
 			}
 		}
