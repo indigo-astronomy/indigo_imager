@@ -835,6 +835,7 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 		w->set_enabled(w->m_guider_preview_button, true);
 		w->set_enabled(w->m_guider_calibrate_button, true);
 		w->set_enabled(w->m_guider_guide_button, true);
+		w->move_guider_reference(0, 0);
 	}
 }
 
