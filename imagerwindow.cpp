@@ -389,6 +389,11 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(this, &ImagerWindow::move_guider_reference, m_guider_viewer, &ImageViewer::moveReference);
 	connect(this, &ImagerWindow::show_guider_reference, m_guider_viewer, &ImageViewer::showReference);
 
+	connect(this, &ImagerWindow::set_combobox_current_text, this, &ImagerWindow::on_set_combobox_current_text);
+	connect(this, &ImagerWindow::set_combobox_current_index, this, &ImagerWindow::on_set_combobox_current_index);
+	connect(this, &ImagerWindow::add_combobox_item, this, &ImagerWindow::on_add_combobox_item);
+	connect(this, &ImagerWindow::clear_combobox, this, &ImagerWindow::on_clear_combobox);
+
 	connect(this, &ImagerWindow::set_enabled, this, &ImagerWindow::on_set_enabled);
 	connect(this, &ImagerWindow::set_widget_state, this, &ImagerWindow::on_set_widget_state);
 	connect(this, &ImagerWindow::set_guider_label, this, &ImagerWindow::on_set_guider_label);

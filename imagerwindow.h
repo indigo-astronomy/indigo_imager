@@ -85,6 +85,7 @@ public:
 	void property_define(indigo_property* property, char *message);
 
 	friend void set_filter_selected(ImagerWindow *w, indigo_property *property);
+	friend void reset_filter_names(ImagerWindow *w, indigo_property *property);
 	friend void update_cooler_onoff(ImagerWindow *w, indigo_property *property);
 	friend void update_cooler_power(ImagerWindow *w, indigo_property *property);
 	friend void update_imager_selection_property(ImagerWindow *w, indigo_property *property);
@@ -114,6 +115,11 @@ signals:
 	void configure_spinbox(QSpinBox *widget, indigo_item *item, int perm);
 	void configure_spinbox(QDoubleSpinBox *widget, indigo_item *item, int perm);
 	void set_checkbox_checked(QCheckBox *widget, bool checked);
+
+	void set_combobox_current_text(QComboBox *combobox, const QString &item);
+	void set_combobox_current_index(QComboBox *combobox, int index);
+	void clear_combobox(QComboBox *combobox);
+	void add_combobox_item(QComboBox *combobox, const QString &item, const QString& data);
 
 	void show_focuser_selection(bool show);
 	void move_resize_focuser_selection(double x, double y, int size);
@@ -290,6 +296,27 @@ public slots:
 
 	void on_configure_spinbox(QDoubleSpinBox *widget, indigo_item *item, int perm) {
 		configure_spinbox_double(widget, item, perm);
+	};
+
+	void on_set_combobox_current_text(QComboBox *combobox, const QString &item) {
+		combobox->setCurrentText(item);
+	};
+
+	void on_set_combobox_current_index(QComboBox *combobox, int index) {
+		combobox->setCurrentIndex(index);
+	};
+
+	void on_clear_combobox(QComboBox *combobox) {
+		combobox->clear();
+	};
+
+	void on_add_combobox_item(QComboBox *combobox, const QString &item, const QString& data) {
+		if (combobox->findText(item) < 0) {
+			combobox->addItem(item, data);
+			indigo_debug("[ADD] %s\n", item.toUtf8().data());
+		} else {
+			indigo_debug("[DUPLICATE] %s\n", item.toUtf8().data());
+		}
 	};
 private:
 	QPlainTextEdit* mLog;
