@@ -392,6 +392,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(this, &ImagerWindow::set_combobox_current_text, this, &ImagerWindow::on_set_combobox_current_text);
 	connect(this, &ImagerWindow::set_combobox_current_index, this, &ImagerWindow::on_set_combobox_current_index);
 	connect(this, &ImagerWindow::add_combobox_item, this, &ImagerWindow::on_add_combobox_item);
+	connect(this, &ImagerWindow::remove_combobox_item, this, &ImagerWindow::on_remove_combobox_item);
 	connect(this, &ImagerWindow::clear_combobox, this, &ImagerWindow::on_clear_combobox);
 
 	connect(this, &ImagerWindow::set_enabled, this, &ImagerWindow::on_set_enabled);

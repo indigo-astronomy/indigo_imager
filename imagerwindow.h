@@ -120,6 +120,7 @@ signals:
 	void set_combobox_current_index(QComboBox *combobox, int index);
 	void clear_combobox(QComboBox *combobox);
 	void add_combobox_item(QComboBox *combobox, const QString &item, const QString& data);
+	void remove_combobox_item(QComboBox *combobox, int index);
 
 	void show_focuser_selection(bool show);
 	void move_resize_focuser_selection(double x, double y, int size);
@@ -317,6 +318,10 @@ public slots:
 		} else {
 			indigo_debug("[DUPLICATE] %s\n", item.toUtf8().data());
 		}
+	};
+
+	void on_remove_combobox_item(QComboBox *combobox, int index) {
+		combobox->removeItem(index);
 	};
 private:
 	QPlainTextEdit* mLog;

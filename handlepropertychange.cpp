@@ -1402,9 +1402,9 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 		int selected_index = m_agent_imager_select->currentIndex();
 		int index = m_agent_imager_select->findText(name);
 		if (index >= 0) {
-			m_agent_imager_select->removeItem(index);
+			remove_combobox_item(m_agent_imager_select, index);
 			if (selected_index == index) {
-				m_agent_imager_select->setCurrentIndex(0);
+				set_combobox_current_index(m_agent_imager_select, 0);
 				on_agent_selected(0);
 			}
 			indigo_debug("[REMOVE imager agent] %s\n", name.toUtf8().data());
@@ -1414,9 +1414,9 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 		selected_index = m_agent_guider_select->currentIndex();
 		index = m_agent_guider_select->findText(name);
 		if (index >= 0) {
-			m_agent_guider_select->removeItem(index);
+			remove_combobox_item(m_agent_guider_select, index);
 			if (selected_index == index) {
-				m_agent_guider_select->setCurrentIndex(0);
+				set_combobox_current_index(m_agent_guider_select, 0);
 				on_guider_agent_selected(0);
 			}
 			indigo_debug("[REMOVE guider agent] %s\n", name.toUtf8().data());
