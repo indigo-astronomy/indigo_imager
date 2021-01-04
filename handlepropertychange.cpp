@@ -1208,7 +1208,6 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		clear_combobox(m_wheel_select);
-
 	}
 	if (client_match_device_property(property, selected_agent, FILTER_FOCUSER_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {

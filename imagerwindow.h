@@ -108,7 +108,7 @@ signals:
 	void rebuild_blob_previews();
 
 	void set_enabled(QWidget *widget, bool enabled);
-	void set_widget_state(QWidget *widget, indigo_property_state state);
+	void set_widget_state(QWidget *widget, int state);
 	void set_guider_label(int state, const char *text);
 	void set_spinbox_value(QSpinBox *widget, double value);
 	void set_spinbox_value(QDoubleSpinBox *widget, double value);
@@ -256,7 +256,7 @@ public slots:
 		widget->blockSignals(false);
 	}
 
-	void on_set_widget_state(QWidget *widget, indigo_property_state state) {
+	void on_set_widget_state(QWidget *widget, int state) {
 		switch (state) {
 			case INDIGO_IDLE_STATE:
 				set_idle(widget);
