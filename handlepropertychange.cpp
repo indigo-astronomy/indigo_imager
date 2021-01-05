@@ -940,7 +940,19 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 
 	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_camera_select);
+		if (indigo_get_switch(property, "NONE")) {
+			m_exposure_progress->setRange(0, 1);
+			m_exposure_progress->setValue(0);
+			m_exposure_progress->setFormat("Exposure: N/A");
+			m_process_progress->setRange(0, 1);
+			m_process_progress->setValue(0);
+			m_process_progress->setFormat("Process: N/A");
+			m_focusing_progress->setRange(0, 1);
+			m_focusing_progress->setValue(0);
+			m_focusing_progress->setFormat("Focusing: N/A");
+		}
 	}
+
 	if (client_match_device_property(property, selected_agent, FILTER_WHEEL_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_wheel_select);
 	}
