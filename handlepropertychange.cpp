@@ -370,7 +370,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	static bool exposure_running = false;
 	static bool focusing_running = false;
 	static bool preview_running = false;
-	static int prev_start_state = INDIGO_OK_STATE;
 	static int prev_frame = -1;
 	double FWHM = 0, HFD = 0;
 
@@ -548,22 +547,14 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		exposure_running = false;
 	}
 
-	if (prev_start_state != start_p->state) {
+	if (property == start_p) {
 		w->set_widget_state(w->m_exposure_button, start_p->state);
 		w->set_widget_state(w->m_focusing_button, start_p->state);
-		prev_start_state = start_p->state;
 	}
 }
 
 void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 	double exp_elapsed, exp_time;
-	static int prev_property_state = INDIGO_OK_STATE;
-
-	if (prev_property_state != property->state) {
-		w->set_widget_state(w->m_focusing_preview_button, property->state);
-		w->set_widget_state(w->m_preview_button, property->state);
-		prev_property_state = property->state;
-	}
 
 	if (property->state == INDIGO_BUSY_STATE) {
 		exp_time = w->m_exposure_time->value();
@@ -605,6 +596,8 @@ void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 		w->m_exposure_progress->setFormat("Exposure: Aborted");
 		w->m_process_progress->setFormat("Process: Aborted");
 	}
+	w->set_widget_state(w->m_focusing_preview_button, property->state);
+	w->set_widget_state(w->m_preview_button, property->state);
 }
 
 void update_guider_stats(ImagerWindow *w, indigo_property *property) {
@@ -950,6 +943,15 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			m_focusing_progress->setRange(0, 1);
 			m_focusing_progress->setValue(0);
 			m_focusing_progress->setFormat("Focusing: Idle");
+			set_enabled(m_preview_button, true);
+			set_widget_state(m_preview_button, INDIGO_OK_STATE);
+			set_enabled(m_exposure_button, true);
+			set_widget_state(m_exposure_button, INDIGO_OK_STATE);
+			m_exposure_button->setIcon(QIcon(":resource/record.png"));
+			set_enabled(m_focusing_button, true);
+			set_widget_state(m_focusing_button, INDIGO_OK_STATE);
+			set_enabled(m_focusing_preview_button, true);
+			set_widget_state(m_focusing_preview_button, INDIGO_OK_STATE);
 		}
 	}
 
@@ -1042,6 +1044,14 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 
 	if (client_match_device_property(property, selected_guider_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_guider_camera_select);
+		if (indigo_get_switch(property, "NONE")) {
+			set_enabled(m_guider_calibrate_button, true);
+			set_widget_state(m_guider_calibrate_button, INDIGO_OK_STATE);
+			set_enabled(m_guider_guide_button, true);
+			set_widget_state(m_guider_guide_button, INDIGO_OK_STATE);
+			set_enabled(m_guider_preview_button, true);
+			set_widget_state(m_guider_preview_button, INDIGO_OK_STATE);
+		}
 	}
 	if (client_match_device_property(property, selected_guider_agent, FILTER_GUIDER_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_guider_select);
