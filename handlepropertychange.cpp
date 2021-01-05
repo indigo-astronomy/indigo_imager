@@ -943,13 +943,13 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		if (indigo_get_switch(property, "NONE")) {
 			m_exposure_progress->setRange(0, 1);
 			m_exposure_progress->setValue(0);
-			m_exposure_progress->setFormat("Exposure: N/A");
+			m_exposure_progress->setFormat("Exposure: Idle");
 			m_process_progress->setRange(0, 1);
 			m_process_progress->setValue(0);
-			m_process_progress->setFormat("Process: N/A");
+			m_process_progress->setFormat("Process: Idle");
 			m_focusing_progress->setRange(0, 1);
 			m_focusing_progress->setValue(0);
-			m_focusing_progress->setFormat("Focusing: N/A");
+			m_focusing_progress->setFormat("Focusing: Idle");
 		}
 	}
 
