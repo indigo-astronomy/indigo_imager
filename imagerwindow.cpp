@@ -1007,6 +1007,7 @@ void ImagerWindow::on_acl_clear_act() {
 
 void ImagerWindow::on_about_act() {
 	QMessageBox msgBox(this);
+	int platform_bits = sizeof(void*) * 8;
 	QPixmap pixmap(":resource/indigo_logo.png");
 	msgBox.setWindowTitle("About Ain Imager");
 	msgBox.setTextFormat(Qt::RichText);
@@ -1015,11 +1016,12 @@ void ImagerWindow::on_about_act() {
 		"<b>Ain INDIGO Imager</b><br>"
 		"Version "
 		AIN_VERSION
-		"</b><br><br>"
+		" (" + QString::number(platform_bits) + "bit) <br>"
+		"<br>"
 		"Author:<br>"
 		"Rumen G.Bogdanovski<br>"
 		"You can use this software under the terms of <b>INDIGO Astronomy open-source license</b><br><br>"
-		"Copyright ©2020, The INDIGO Initiative.<br>"
+		"Copyright ©2020-2021, The INDIGO Initiative.<br>"
 		"<a href='http://www.indigo-astronomy.org'>http://www.indigo-astronomy.org</a>"
 	);
 	msgBox.exec();

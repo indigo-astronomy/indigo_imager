@@ -915,22 +915,18 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		}
 		return;
 	}
-
 	if(!strncmp(property->device, "Imager Agent", 12)) {
 		QString name = QString(property->device);
 		add_combobox_item(m_agent_imager_select, name, name);
 	}
-
 	if(!strncmp(property->device, "Guider Agent", 12)) {
 		QString name = QString(property->device);
 		add_combobox_item(m_agent_guider_select, name, name);
 	}
-
 	if ((!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
 	    (!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12))) {
 		return;
 	}
-
 	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_camera_select);
 		if (indigo_get_switch(property, "NONE")) {
@@ -954,7 +950,6 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			set_widget_state(m_focusing_preview_button, INDIGO_OK_STATE);
 		}
 	}
-
 	if (client_match_device_property(property, selected_agent, FILTER_WHEEL_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_wheel_select);
 	}
@@ -1037,11 +1032,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			indigo_change_switch_property(NULL, selected_guider_agent, CCD_PREVIEW_PROPERTY_NAME, 1, items, values);
 		});
 	}
-
 	if (client_match_device_property(property, selected_guider_agent, CCD_JPEG_SETTINGS_PROPERTY_NAME)) {
 		set_enabled(m_guider_save_bw_select, true);
 	}
-
 	if (client_match_device_property(property, selected_guider_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_guider_camera_select);
 		if (indigo_get_switch(property, "NONE")) {
@@ -1380,7 +1373,6 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_spinbox_value(m_guide_is, 0);
 		set_enabled(m_guide_is, false);
 	}
-
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
 
@@ -1401,7 +1393,6 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		move_guider_reference(0, 0);
 		set_guider_label(INDIGO_IDLE_STATE, " Stopped ");
 	}
-
 	if (client_match_device_property(property, selected_guider_agent, CCD_JPEG_SETTINGS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
 		set_enabled(m_guider_save_bw_select, false);
