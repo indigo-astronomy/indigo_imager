@@ -414,8 +414,8 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 	while (hist[min] == 0 && min < max) {
 		min++;
 	};
-	sum = hist[max];
 
+	sum = hist[max];
 	while (sum < thresh && max > min) {
 		sum += hist[--max];
 	}
