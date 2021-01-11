@@ -709,7 +709,7 @@ preview_image* create_preview(indigo_item *item, const double white_threshold) {
 			!strcmp(item->blob.format, ".TIFF")
 		) {
 			preview = create_tiff_preview((unsigned char*)item->blob.value, item->blob.size);
-		} else {
+		} else if (item->blob.format[0] != '\0') {
 			/* DUMMY TEST CODE */
 			/*
 			FILE *file;
