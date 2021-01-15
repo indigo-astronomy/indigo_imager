@@ -338,8 +338,6 @@ void ImagerWindow::on_focuser_selected(int index) {
 	QtConcurrent::run([=]() {
 		static char selected_focuser[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
 		QString q_focuser_str = m_focuser_select->currentText();
-		int idx = q_focuser_str.indexOf(" @ ");
-		if (idx >=0) q_focuser_str.truncate(idx);
 		if (q_focuser_str.compare("No focuser") == 0) {
 			strcpy(selected_focuser, "NONE");
 		} else {

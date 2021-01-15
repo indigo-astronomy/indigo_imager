@@ -499,8 +499,6 @@ void ImagerWindow::on_guider_camera_selected(int index) {
 	QtConcurrent::run([=]() {
 		static char selected_camera[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
 		QString q_camera_str = m_guider_camera_select->currentText();
-		int idx = q_camera_str.indexOf(" @ ");
-		if (idx >=0) q_camera_str.truncate(idx);
 		if (q_camera_str.compare("No camera") == 0) {
 			strcpy(selected_camera, "NONE");
 		} else {
@@ -519,8 +517,6 @@ void ImagerWindow::on_guider_selected(int index) {
 	QtConcurrent::run([=]() {
 		static char selected_guider[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
 		QString q_guider_str = m_guider_select->currentText();
-		int idx = q_guider_str.indexOf(" @ ");
-		if (idx >=0) q_guider_str.truncate(idx);
 		if (q_guider_str.compare("No guider") == 0) {
 			strcpy(selected_guider, "NONE");
 		} else {

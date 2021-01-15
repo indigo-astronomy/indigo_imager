@@ -449,8 +449,8 @@ void ImagerWindow::on_camera_selected(int index) {
 	QtConcurrent::run([=]() {
 		static char selected_camera[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
 		QString q_camera_str = m_camera_select->currentText();
-		int idx = q_camera_str.indexOf(" @ ");
-		if (idx >=0) q_camera_str.truncate(idx);
+		//int idx = q_camera_str.lastIndexOf(" @ ");
+		//if (idx >=0) q_camera_str.truncate(idx);
 		if (q_camera_str.compare("No camera") == 0) {
 			strcpy(selected_camera, "NONE");
 		} else {
@@ -469,8 +469,8 @@ void ImagerWindow::on_wheel_selected(int index) {
 	QtConcurrent::run([=]() {
 		static char selected_wheel[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
 		QString q_wheel_str = m_wheel_select->currentText();
-		int idx = q_wheel_str.indexOf(" @ ");
-		if (idx >=0) q_wheel_str.truncate(idx);
+		//int idx = q_wheel_str.indexOf(" @ ");
+		//if (idx >=0) q_wheel_str.truncate(idx);
 		if (q_wheel_str.compare("No wheel") == 0) {
 			strcpy(selected_wheel, "NONE");
 		} else {
