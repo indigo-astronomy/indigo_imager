@@ -31,5 +31,7 @@ cp ../release/${APP}.exe .
 windeployqt ${APP}.exe
 popd
 
-iscc -DArch=32 ${APP}.iss
-iscc -DArch=64 ${APP}.iss
+APP_VERSION=`grep AIN_VERSION ../version.h | sed 's/"//g' |awk '{ print $3 }'`
+
+iscc -DArch=32 -DMyAppVersion=$APP_VERSION ${APP}.iss
+iscc -DArch=64 -DMyAppVersion=$APP_VERSION ${APP}.iss

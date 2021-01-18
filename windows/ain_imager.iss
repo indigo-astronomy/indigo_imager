@@ -5,7 +5,10 @@
 #define Arch "64"
 #endif
 
-#define MyAppVersion "0.1-1"
+#ifndef MyAppVersion
+#define MyAppVersion "0.0-0"
+#endif
+
 #define MyAppName "Ain INDIGO Imager"
 #define MyAppPublisher "INDIGO Initiative"
 #define MyAppURL "http://www.indigo-astronomy.org"
