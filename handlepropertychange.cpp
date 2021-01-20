@@ -846,6 +846,10 @@ void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 
 	if (!message) return;
 
+	char *str = message;
+	while(*str && *str != '\r') str++;
+	*str = 0;
+
 	get_time(timestamp);
 
 	if (property) {
