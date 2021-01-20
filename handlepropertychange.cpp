@@ -283,6 +283,8 @@ void update_guider_selection_property(ImagerWindow *w, indigo_property *property
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SELECTION_RADIUS_ITEM_NAME)) {
 			size = (int)round(property->items[i].number.value * 2 + 1);
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_star_radius);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SELECTION_EDGE_CLIPPING_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_edge_clipping);
 		}
 	}
 	w->move_resize_guider_selection(x, y, size);
@@ -1384,6 +1386,9 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		set_spinbox_value(m_guide_star_radius, 0);
 		set_enabled(m_guide_star_radius, false);
+
+		set_spinbox_value(m_guide_edge_clipping, 0);
+		set_enabled(m_guide_edge_clipping, false);
 
 		set_enabled(m_guider_subframe_select, false);
 

@@ -187,6 +187,15 @@ void ImagerWindow::change_guider_agent_subframe(const char *agent) const {
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME, 1, items, values);
 }
 
+void ImagerWindow::change_guider_agent_edge_clipping(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_SELECTION_EDGE_CLIPPING_ITEM_NAME
+	};
+	static double values[1];
+	values[0] = (double)m_guide_edge_clipping->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME, 1, items, values);
+}
+
 void ImagerWindow::change_focuser_subframe(const char *agent) const {
 	static const char *items[] = {
 		AGENT_IMAGER_SELECTION_SUBFRAME_ITEM_NAME

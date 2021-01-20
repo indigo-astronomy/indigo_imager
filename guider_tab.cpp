@@ -194,7 +194,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	settings_frame_layout->addItem(spacer, settings_row, 0);
 
 	settings_row++;
-	label = new QLabel("Guiding Algorythm:");
+	label = new QLabel("Guiding:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
 
@@ -219,10 +219,10 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	settings_frame_layout->addItem(spacer, settings_row, 0);
 
-	settings_row++;
-	label = new QLabel("Selection:");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
+	//settings_row++;
+	//label = new QLabel("Selection:");
+	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	//settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
 
 	// Star Selection
 	settings_row++;
@@ -251,6 +251,17 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guide_star_radius->setValue(0);
 	settings_frame_layout->addWidget(m_guide_star_radius, settings_row, 3);
 	connect(m_guide_star_radius, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_radius_changed);
+
+	settings_row++;
+	label = new QLabel("Edge Clipping (Donuts) (px):");
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
+	m_guide_edge_clipping = new QSpinBox();
+	m_guide_edge_clipping->setMaximum(100000);
+	m_guide_edge_clipping->setMinimum(0);
+	m_guide_edge_clipping->setValue(0);
+	m_guide_edge_clipping->setEnabled(false);
+	settings_frame_layout->addWidget(m_guide_edge_clipping, settings_row, 3);
+	connect(m_guide_edge_clipping, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_edge_clipping_changed);
 
 	settings_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -533,9 +544,8 @@ void ImagerWindow::on_guider_selected(int index) {
 }
 
 void ImagerWindow::on_guider_selection_changed(double value) {
-	int x = m_guide_star_x->value();
-	int y = m_guide_star_y->value();
-
+	//int x = m_guide_star_x->value();
+	//int y = m_guide_star_y->value();
 	//m_guider_viewer->moveSelection(x, y);
 	QtConcurrent::run([=]() {
 		char selected_agent[INDIGO_NAME_SIZE];
@@ -547,6 +557,19 @@ void ImagerWindow::on_guider_selection_changed(double value) {
 
 void ImagerWindow::on_guider_selection_radius_changed(int value) {
 	on_guider_selection_changed((double)value);
+}
+
+void ImagerWindow::on_guider_edge_clipping_changed(int value) {
+	//int x = m_guide_star_x->value();
+	//int y = m_guide_star_y->value();
+
+	//m_guider_viewer->moveSelection(x, y);
+	QtConcurrent::run([=]() {
+		char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_guider_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_guider_agent_edge_clipping(selected_agent);
+	});
 }
 
 void ImagerWindow::on_guider_image_right_click(double x, double y) {
