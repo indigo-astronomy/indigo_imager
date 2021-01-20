@@ -109,6 +109,16 @@ ImageViewer::ImageViewer(QWidget *parent)
 	m_selection_visible = false;
 	//scene->addItem(m_selection);
 	//m_selection->setFlags(QGraphicsItem::ItemIsMovable);
+	m_edge_clipping = new QGraphicsRectItem(0,0,0,0, m_pixmap);
+	m_edge_clipping_v = 0;
+	m_edge_clipping->setBrush(QBrush(Qt::NoBrush));
+	pen.setCosmetic(true);
+	pen.setWidth(1);
+	pen.setColor(Qt::red);
+	m_edge_clipping->setPen(pen);
+	m_edge_clipping->setOpacity(0.7);
+	m_edge_clipping->setVisible(false);
+	m_edge_clipping_visible = false;
 
     makeToolbar();
 
@@ -258,6 +268,41 @@ void ImageViewer::moveReference(double x, double y) {
 	m_ref_y->setLine(0, cor_y, x_len, cor_y);
 }
 
+void ImageViewer::showEdgeClipping(bool show) {
+	if (show) {
+		m_edge_clipping_visible = true;
+		if (!m_pixmap->pixmap().isNull()) {
+			m_edge_clipping->setVisible(true);
+		}
+	} else {
+		m_edge_clipping_visible = false;
+		m_edge_clipping->setVisible(false);
+	}
+}
+
+void ImageViewer::resizeEdgeClipping(double edge_clipping) {
+	m_edge_clipping_v = edge_clipping;
+
+	if (!m_pixmap) return;
+
+	double width = m_pixmap->pixmap().width() - 2 * edge_clipping;
+	double height = m_pixmap->pixmap().height() - 2 * edge_clipping;
+
+	indigo_debug("%s(): width = %.2f, height = %.2f, edge_clipping = %.2f", __FUNCTION__, width, height, edge_clipping);
+
+	if (width <= 1 || height <= 1) {
+		int ech = m_pixmap->pixmap().height() / 2;
+		int ecw = m_pixmap->pixmap().width() / 2;
+		edge_clipping = (ecw < ech) ? ecw : ech;
+		width = m_pixmap->pixmap().width() - 2 * edge_clipping + 1;
+		height = m_pixmap->pixmap().height() - 2 * edge_clipping + 1;
+	} else if (m_edge_clipping_visible){
+		m_edge_clipping->setVisible(true);
+	}
+	m_edge_clipping->setRect(edge_clipping, edge_clipping, width, height);
+}
+
+
 const preview_image &ImageViewer::image() const {
 	return m_pixmap->image();
 }
@@ -277,6 +322,13 @@ void ImageViewer::setImage(preview_image &im) {
 			m_ref_x->setVisible(false);
 			m_ref_y->setVisible(false);
 		}
+		if (m_edge_clipping_visible) {
+			m_edge_clipping->setVisible(true);
+			resizeEdgeClipping(m_edge_clipping_v);
+		} else {
+			m_edge_clipping->setVisible(false);
+		}
+		resizeEdgeClipping(m_edge_clipping_v);
 	}
 	m_view->scene()->setSceneRect(0, 0, im.width(), im.height());
 

@@ -388,6 +388,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(this, &ImagerWindow::show_guider_selection, m_guider_viewer, &ImageViewer::showSelection);
 	connect(this, &ImagerWindow::move_guider_reference, m_guider_viewer, &ImageViewer::moveReference);
 	connect(this, &ImagerWindow::show_guider_reference, m_guider_viewer, &ImageViewer::showReference);
+	connect(this, &ImagerWindow::resize_guider_edge_clipping, m_guider_viewer, &ImageViewer::resizeEdgeClipping);
+	connect(this, &ImagerWindow::show_guider_edge_clipping, m_guider_viewer, &ImageViewer::showEdgeClipping);
 
 	connect(this, &ImagerWindow::set_combobox_current_text, this, &ImagerWindow::on_set_combobox_current_text);
 	connect(this, &ImagerWindow::set_combobox_current_index, this, &ImagerWindow::on_set_combobox_current_index);

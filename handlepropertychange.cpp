@@ -273,6 +273,7 @@ void update_imager_selection_property(ImagerWindow *w, indigo_property *property
 void update_guider_selection_property(ImagerWindow *w, indigo_property *property) {
 	double x = 0, y = 0;
 	int size = 0;
+	double edge_clipping = 0;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_GUIDER_SELECTION_X_ITEM_NAME)) {
 			x = property->items[i].number.value;
@@ -284,10 +285,12 @@ void update_guider_selection_property(ImagerWindow *w, indigo_property *property
 			size = (int)round(property->items[i].number.value * 2 + 1);
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_star_radius);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SELECTION_EDGE_CLIPPING_ITEM_NAME)) {
+			edge_clipping = property->items[i].number.value;
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_edge_clipping);
 		}
 	}
 	w->move_resize_guider_selection(x, y, size);
+	w->resize_guider_edge_clipping(edge_clipping);
 }
 
 void update_focus_setup_property(ImagerWindow *w, indigo_property *property) {
@@ -1066,9 +1069,15 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		if (indigo_get_switch(property, AGENT_GUIDER_DETECTION_SELECTION_ITEM_NAME)) {
 			show_guider_selection(true);
 			show_guider_reference(true);
+			show_guider_edge_clipping(false);
+		} else if (indigo_get_switch(property, AGENT_GUIDER_DETECTION_DONUTS_ITEM_NAME)){
+			show_guider_selection(false);
+			show_guider_reference(false);
+			show_guider_edge_clipping(true);
 		} else {
 			show_guider_selection(false);
 			show_guider_reference(false);
+			show_guider_edge_clipping(false);
 		}
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME)) {
@@ -1188,9 +1197,15 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		if (indigo_get_switch(property, AGENT_GUIDER_DETECTION_SELECTION_ITEM_NAME)) {
 			show_guider_selection(true);
 			show_guider_reference(true);
+			show_guider_edge_clipping(false);
+		} else if (indigo_get_switch(property, AGENT_GUIDER_DETECTION_DONUTS_ITEM_NAME)){
+			show_guider_selection(false);
+			show_guider_reference(false);
+			show_guider_edge_clipping(true);
 		} else {
 			show_guider_selection(false);
 			show_guider_reference(false);
+			show_guider_edge_clipping(false);
 		}
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME)) {
@@ -1394,8 +1409,10 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		show_guider_selection(false);
 		show_guider_reference(false);
+		show_guider_edge_clipping(false);
 		move_resize_guider_selection(0, 0, 1);
 		move_guider_reference(0, 0);
+		resize_guider_edge_clipping(0);
 		set_guider_label(INDIGO_IDLE_STATE, " Stopped ");
 	}
 	if (client_match_device_property(property, selected_guider_agent, CCD_JPEG_SETTINGS_PROPERTY_NAME) ||

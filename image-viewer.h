@@ -66,6 +66,9 @@ public slots:
 	void showReference(bool show);
 	void moveReference(double x, double y);
 
+	void showEdgeClipping(bool show);
+	void resizeEdgeClipping(double edge_clipping);
+
     void zoomFit();
     void zoomOriginal();
     void zoomIn();
@@ -95,14 +98,17 @@ private:
     GraphicsView *m_view;
     PixmapItem *m_pixmap;
 	QGraphicsRectItem *m_selection;
+	QGraphicsRectItem *m_edge_clipping;
 	QGraphicsLineItem *m_ref_x;
 	QGraphicsLineItem *m_ref_y;
 	QPoint m_selection_p;
 	QPoint m_ref_p;
+	double m_edge_clipping_v;
     QWidget *m_toolbar;
     bool m_fit;
 	bool m_selection_visible;
 	bool m_ref_visible;
+	bool m_edge_clipping_visible;
     ToolBarMode m_bar_mode;
 };
 

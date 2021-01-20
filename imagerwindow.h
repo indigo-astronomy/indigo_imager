@@ -129,6 +129,8 @@ signals:
 	void move_resize_guider_selection(double x, double y, int size);
 	void show_guider_reference(bool show);
 	void move_guider_reference(double x, double y);
+	void show_guider_edge_clipping(bool show);
+	void resize_guider_edge_clipping(double edge_clipping);
 
 public slots:
 	void on_start(bool clicked);
