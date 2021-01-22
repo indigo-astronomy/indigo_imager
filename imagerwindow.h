@@ -432,6 +432,7 @@ private:
 	QComboBox *m_dec_guiding_select;
 
 	FILE *m_guide_log;
+	int m_guider_process;
 	int m_stderr;
 
 	// Image viewer

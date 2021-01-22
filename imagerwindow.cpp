@@ -55,8 +55,10 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	save_blob = false;
 	m_indigo_item = nullptr;
 	m_guide_log = nullptr;
+	m_guider_process = 0;
 	m_stderr = dup(STDERR_FILENO);
 	on_indigo_save_log(conf.indigo_save_log);
+	on_guider_save_log(conf.guider_save_log);
 
 	//  Set central widget of window
 	QWidget *central = new QWidget;
@@ -892,6 +894,31 @@ void ImagerWindow::on_guide_show_xy_drift() {
 void ImagerWindow::on_guider_save_log(bool status) {
 	conf.guider_save_log = status;
 	write_conf();
+	char time_str[255];
+	if (conf.guider_save_log) {
+		if (m_guide_log == nullptr) {
+			char file_name[255];
+			char path[PATH_LEN];
+			get_date_jd(time_str);
+			get_current_output_dir(path);
+			snprintf(file_name, sizeof(file_name), "%s" AIN_GUIDER_LOG_NAME_FORMAT, path, time_str);
+			m_guide_log = fopen(file_name, "a+");
+			if (m_guide_log) {
+				get_timestamp(time_str);
+				fprintf(m_guide_log, "\nLog started at %s\n", time_str);
+				fflush(m_guide_log);
+			} else {
+				on_window_log(NULL, "Can not open guider log file.");
+			}
+		}
+	} else {
+		if (m_guide_log) {
+			get_timestamp(time_str);
+			fprintf(m_guide_log, "Log finished at %s\n", time_str);
+			fclose(m_guide_log);
+			m_guide_log = nullptr;
+		}
+	}
 	indigo_debug("%s\n", __FUNCTION__);
 }
 

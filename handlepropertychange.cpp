@@ -647,7 +647,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	if (p) {
 		for (int i = 0; i < p->count; i++) {
 			if (client_match_item(&p->items[i], AGENT_GUIDER_START_GUIDING_ITEM_NAME) && p->items[i].sw.value) {
-				is_guiding_process_on = true;
+				w->m_guider_process = 1;
 				if (dither_rmse == 0) {
 					w->set_guider_label(INDIGO_OK_STATE, " Guiding... ");
 				} else {
@@ -684,58 +684,16 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 				break;
 			}
 		}
-		char time_str[255];
 		if (p->state == INDIGO_BUSY_STATE) {
 			w->move_guider_reference(ref_x, ref_y);
-			if (is_guiding_process_on) {
-				if (conf.guider_save_log) {
-					if (w->m_guide_log == nullptr) {
-						char file_name[255];
-						char path[PATH_LEN];
-						get_date_jd(time_str);
-						get_current_output_dir(path);
-						snprintf(file_name, sizeof(file_name), "%s" AIN_GUIDER_LOG_NAME_FORMAT, path, time_str);
-						w->m_guide_log = fopen(file_name, "a+");
-						if (w->m_guide_log) {
-							get_timestamp(time_str);
-							if (frame_count > 0) {
-								fprintf(w->m_guide_log, "Log started at %s\n", time_str);
-							} else {
-								fprintf(w->m_guide_log, "Guiding started at %s\n", time_str);
-							}
-							fprintf(w->m_guide_log, "Timestamp,X Dif,Y Dif,RA Dif,Dec Dif,Ra Correction,Dec Correction,Dithering\n");
-						}
-					}
-				} else {
-					if (w->m_guide_log) {
-						get_timestamp(time_str);
-						fprintf(w->m_guide_log, "Log finished at %s\n\n", time_str);
-						fclose(w->m_guide_log);
-						w->m_guide_log = nullptr;
-					}
-				}
-				if (w->m_guide_log && frame_count > 0) {
-					get_timestamp(time_str);
-					fprintf(w->m_guide_log, "\"%s\",%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%d\n", time_str, d_x, d_y, d_ra, d_dec, cor_ra, cor_dec, is_dithering);
-				}
+			if (w->m_guider_process && w->m_guide_log && conf.guider_save_log && frame_count > 1) {
+				char time_str[255];
+				get_timestamp(time_str);
+				fprintf(w->m_guide_log, "\"%s\",%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%d\n", time_str, d_x, d_y, d_ra, d_dec, cor_ra, cor_dec, is_dithering);
+				fflush(w->m_guide_log);
 			}
 		} else {
 			w->move_guider_reference(0, 0);
-			if (conf.guider_save_log) {
-				if (w->m_guide_log) {
-					get_timestamp(time_str);
-					fprintf(w->m_guide_log, "Guiding finished at %s\n\n", time_str);
-					fclose(w->m_guide_log);
-					w->m_guide_log = nullptr;
-				}
-			} else {
-				if (w->m_guide_log) {
-					get_timestamp(time_str);
-					fprintf(w->m_guide_log, "Log finished at %s\n\n", time_str);
-					fclose(w->m_guide_log);
-					w->m_guide_log = nullptr;
-				}
-			}
 		}
 	}
 
@@ -792,6 +750,7 @@ void update_guider_settings(ImagerWindow *w, indigo_property *property) {
 }
 
 void agent_guider_start_process_change(ImagerWindow *w, indigo_property *property) {
+	char time_str[255];
 	if (property->state==INDIGO_BUSY_STATE) {
 		for (int i = 0; i < property->count; i++) {
 			indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
@@ -811,6 +770,13 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 				w->set_enabled(w->m_guider_calibrate_button, false);
 				w->set_enabled(w->m_guider_guide_button, true);
 				w->set_enabled(w->m_guider_preview_button, false);
+				if (w->m_guide_log && conf.guider_save_log) {
+					w->m_guider_process = 1;
+					get_timestamp(time_str);
+					fprintf(w->m_guide_log, "\nGuiding started at %s\n", time_str);
+					fprintf(w->m_guide_log, "Timestamp,X Dif,Y Dif,RA Dif,Dec Dif,Ra Correction,Dec Correction,Dithering\n");
+					fflush(w->m_guide_log);
+				}
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_START_PREVIEW_ITEM_NAME) && property->items[i].sw.value) {
 				w->set_widget_state(w->m_guider_calibrate_button, INDIGO_OK_STATE);
 				w->set_widget_state(w->m_guider_guide_button, INDIGO_OK_STATE);
@@ -827,8 +793,20 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 		w->set_widget_state(w->m_guider_guide_button, property->state);
 		if (property->state == INDIGO_ALERT_STATE) {
 			w->set_guider_label(INDIGO_ALERT_STATE, " Process failed ");
+			if (w->m_guide_log && conf.guider_save_log && w->m_guider_process) {
+				w->m_guider_process = 0;
+				get_timestamp(time_str);
+				fprintf(w->m_guide_log, "Process failed at %s\n", time_str);
+				fflush(w->m_guide_log);
+			}
 		} else {
 			w->set_guider_label(INDIGO_IDLE_STATE, " Stopped ");
+			if (w->m_guide_log && conf.guider_save_log && w->m_guider_process == 1) {
+				w->m_guider_process = 0;
+				get_timestamp(time_str);
+				fprintf(w->m_guide_log, "Guiding finished at %s\n", time_str);
+				fflush(w->m_guide_log);
+			}
 		}
 		w->set_enabled(w->m_guider_preview_button, true);
 		w->set_enabled(w->m_guider_calibrate_button, true);
