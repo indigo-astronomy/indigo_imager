@@ -59,7 +59,7 @@ public:
 	{};
 
 	preview_image(preview_image &image): QImage(image) {
-		int size;
+		int size = 0;
 		m_width = image.m_width;
 		m_height = image.m_height;
 		m_pix_format = image.m_pix_format;
@@ -78,13 +78,19 @@ public:
 		} else if (m_pix_format == PIX_FMT_RGB48) {
 			size = m_width * m_height * 6;
 		}
+
+		if (size == 0) {
+			m_raw_data = nullptr;
+			return;
+		}
+
 		m_raw_data = (char*)malloc(size);
 		memcpy(m_raw_data, image.m_raw_data, size);
 	};
 
 	preview_image& operator=(preview_image &image) {
 		QImage::operator=(image);
-		int size;
+		int size = 0;
 		m_width = image.m_width;
 		m_height = image.m_height;
 		m_pix_format = image.m_pix_format;
@@ -106,6 +112,12 @@ public:
 		}
 
 		if (m_raw_data) free(m_raw_data);
+
+		if (size == 0) {
+			m_raw_data = nullptr;
+			return *this;
+		}
+
 		m_raw_data = (char*)malloc(size);
 		memcpy(m_raw_data, image.m_raw_data, size);
 		return *this;
