@@ -149,7 +149,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	stats_row++;
 	m_focus_graph = new FocusGraph();
 	m_focus_graph->redraw_data(m_focus_fwhm_data);
-	m_focus_graph->setMinimumHeight(150);
+	m_focus_graph->setMinimumHeight(200);
 	stats_frame_layout->addWidget(m_focus_graph, stats_row, 0, 1, 4);
 
 	stats_row++;

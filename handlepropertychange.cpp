@@ -439,7 +439,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		}
 	}
 	char drift_str[50];
-	snprintf(drift_str, 50, "%.2f, %.2f", drift_x, drift_y);
+	snprintf(drift_str, 50, "%+.2f, %+.2f", drift_x, drift_y);
 	w->m_drift_label->setText(drift_str);
 	if (exposure_running) {
 		w->set_widget_state(w->m_preview_button, INDIGO_OK_STATE);
