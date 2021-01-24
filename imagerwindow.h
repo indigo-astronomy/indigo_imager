@@ -327,7 +327,7 @@ public slots:
 		combobox->removeItem(index);
 	};
 private:
-	QPlainTextEdit* mLog;
+	QTextEdit* mLog;
 
 	// Capture tab
 	QComboBox *m_agent_imager_select;

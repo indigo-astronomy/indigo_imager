@@ -72,7 +72,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	central->setLayout(rootLayout);
 
 	//  Create log viewer
-	mLog = new QPlainTextEdit;
+	mLog = new QTextEdit;
 	mLog->setReadOnly(true);
 
 	// Create menubar
@@ -112,7 +112,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu = new QMenu("&Edit");
 	act = menu->addAction(tr("Clear &Messages"));
-	connect(act, &QAction::triggered, mLog, &QPlainTextEdit::clear);
+	connect(act, &QAction::triggered, mLog, &QTextEdit::clear);
 	menu_bar->addMenu(menu);
 
 	menu = new QMenu("&Settings");

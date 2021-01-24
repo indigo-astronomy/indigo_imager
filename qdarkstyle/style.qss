@@ -615,7 +615,7 @@ QTextEdit {
 }
 
 QTextEdit:hover {
-    border: 1px solid #F0F0F0;
+    border: 1px solid #353535;
     color: #F0F0F0;
 }
 
