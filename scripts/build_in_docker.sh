@@ -25,9 +25,11 @@ LABEL maintainer="rumen@skyarchive.org"
 RUN apt-get -y update && apt-get -y install wget unzip build-essential autoconf autotools-dev libtool cmake libudev-dev libavahi-compat-libdnssd-dev libusb-1.0-0-dev fxload libcurl4-gnutls-dev libgphoto2-dev libz-dev git curl bsdmainutils qt5-default devscripts cdbs apt-transport-https
 RUN echo 'deb [trusted=yes] https://indigo-astronomy.github.io/indigo_ppa/ppa indigo main' >>/etc/apt/sources.list
 RUN apt-get update
-RUN apt-get install indigo
-RUN git clone https://github.com/indigo-astronomy/indigo_imager.git
-WORKDIR indigo_imager
+RUN apt-get -y install indigo
+COPY ain-imager-$2.tar.gz .
+RUN tar -zxf ain-imager-$2.tar.gz
+RUN rm ain-imager-$2.tar.gz
+WORKDIR ain-imager-$2
 RUN qmake
 RUN scripts/builddeb.sh $2
 EOF
