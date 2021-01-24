@@ -41,7 +41,7 @@ class QIndigoServers;
 #include <QIcon>
 #include <QLabel>
 #include <QPixmap>
-#include <QPlainTextEdit>
+#include <QTextEdit>
 #include <QPushButton>
 #include <QToolButton>
 #include <QScrollArea>

@@ -819,8 +819,6 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 	char timestamp[255];
 	char log_line[512];
-	char message_line[512];
-	struct timeval tmnow;
 
 	if (!message) return;
 
@@ -831,7 +829,6 @@ void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 	get_time(timestamp);
 
 	if (property) {
-		snprintf(message_line, 512, "%s.%s: %s", property->device, property->name, message);
 		switch (property->state) {
 		case INDIGO_ALERT_STATE:
 			mLog->setTextColor(QColor::fromRgb(224, 0, 0));
