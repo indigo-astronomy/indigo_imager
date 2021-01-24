@@ -472,7 +472,7 @@ bool ImagerWindow::show_preview_in_imager_viewer(QString &key) {
 	if (image) {
 		m_imager_viewer->setImage(*image);
 		m_image_key = key;
-		indigo_debug("YYYYY PREVIEW: %s\n", key.toUtf8().constData());
+		indigo_error("IMAGER PREVIEW: %s\n", key.toUtf8().constData());
 		return true;
 	}
 	return false;

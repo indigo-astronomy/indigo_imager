@@ -86,7 +86,7 @@ static void handle_blob_property(indigo_property *property) {
 		}
 	} else {
 		for (int row = 0; row < property->count; row++) {
-			emit(IndigoClient::instance().remove_preview(property, &property->items[row]));
+			emit(IndigoClient::instance().no_preview(property, &property->items[row]));
 		}
 	}
 }
