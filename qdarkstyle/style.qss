@@ -1074,12 +1074,12 @@ QComboBox {
 QComboBox QAbstractItemView {
     border: 1px solid #353535;
     border-radius: 0px;
-    background-color: #404040;
+    background-color: #252525;
     selection-background-color: #515151;
 }
 
 QComboBox QAbstractItemView:hover {
-    background-color: #404040;
+    background-color: #252525;
     color: #F0F0F0;
 }
 
@@ -1089,7 +1089,7 @@ QComboBox QAbstractItemView:selected {
 }
 
 QComboBox QAbstractItemView:alternate {
-    background: #404040;
+    background: #252525;
 }
 
 QComboBox:disabled {
