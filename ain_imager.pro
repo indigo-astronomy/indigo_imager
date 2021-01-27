@@ -87,6 +87,7 @@ HEADERS += \
 	blobpreview.h \
 	propertycache.h \
 	qindigoservers.h \
+	sequence_model.h \
 	image-viewer.h \
 	logger.h \
 	#image-viewer/image-viewer.h \
