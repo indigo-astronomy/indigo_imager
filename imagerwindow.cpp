@@ -346,11 +346,18 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	QFrame *focuser_frame = new QFrame;
 	tools_tabbar->addTab(focuser_frame, "F&ocus");
 	create_focuser_tab(focuser_frame);
-	//tools_tabbar->setTabEnabled(1, false);
 
 	QFrame *guider_frame = new QFrame;
 	tools_tabbar->addTab(guider_frame, "&Guide");
 	create_guider_tab(guider_frame);
+
+	QFrame *sequence_frame = new QFrame;
+	tools_tabbar->addTab(sequence_frame,  "Se&quence");
+	//create_sequence_tab(sequence_frame);
+
+	QFrame *telescope_frame = new QFrame;
+	tools_tabbar->addTab(telescope_frame,  "&Telescope");
+	//create_telescope_tab(telescope_frame);
 
 	connect(tools_tabbar, &QTabWidget::currentChanged, this, &ImagerWindow::on_tab_changed);
 
@@ -368,6 +375,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_guider_viewer->setText("Guider Image");
 	m_guider_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
 	m_guider_viewer->setVisible(false);
+
+	m_sequence_viewer = new SequenceViewer();
 
 	QSplitter* hSplitter = new QSplitter;
 	hSplitter->addWidget(tools_panel);
@@ -497,6 +506,7 @@ void ImagerWindow::on_tab_changed(int index) {
 			m_visible_viewer = m_imager_viewer;
 			m_imager_viewer->setVisible(true);
 			m_guider_viewer->setVisible(false);
+			m_sequence_viewer->setVisible(false);
 		}
 	} else if (index == 2) {
 		if (m_visible_viewer != m_guider_viewer) {
@@ -504,6 +514,15 @@ void ImagerWindow::on_tab_changed(int index) {
 			m_visible_viewer = m_guider_viewer;
 			m_guider_viewer->setVisible(true);
 			m_imager_viewer->setVisible(false);
+			m_sequence_viewer->setVisible(false);
+		}
+	} else if (index == 3) {
+		if (m_visible_viewer != m_sequence_viewer) {
+			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_sequence_viewer);
+			m_visible_viewer = m_sequence_viewer;
+			m_guider_viewer->setVisible(false);
+			m_imager_viewer->setVisible(false);
+			m_sequence_viewer->setVisible(true);
 		}
 	}
 	if (index == 1) m_imager_viewer->showSelection(true);
