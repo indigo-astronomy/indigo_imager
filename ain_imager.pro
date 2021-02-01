@@ -34,6 +34,7 @@ SOURCES += \
 	debayer/debayer.c \
 	qcustomplot/qcustomplot.cpp \
 	focusgraph.cpp \
+	sequence_model.cpp \
 	utils.cpp
 
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Rumen G.Bogdanovski
+// Copyright (c) 2021 Rumen G.Bogdanovski
 // All rights reserved.
 //
 // You can use this software under the terms of 'INDIGO Astronomy
@@ -191,38 +191,21 @@ public:
 };
 
 class SequenceViewer : public QWidget {
-   QGridLayout m_layout{this};
-   QTableView m_view;
-   SequenceModel m_model;
-   //QSortFilterProxyModel m_proxy;
-   QInputDialog m_dialog;
+	QGridLayout m_layout{this};
+	QTableView m_view;
+	SequenceModel m_model;
+
+	QLineEdit *m_name_edit;
+	QComboBox *m_filter_select;
+	QDoubleSpinBox *m_exposure_box;
+	QDoubleSpinBox *m_delay_box;
+	QSpinBox *m_count_box;
+	QComboBox *m_mode_select;
+	QComboBox *m_frame_select;
+	QDoubleSpinBox *m_focus_exp_box;
+
 public:
-   SequenceViewer() {
-      m_layout.addWidget(&m_view, 0, 0, 1, 1);
-      //m_layout.addWidget(&m_button, 1, 0, 1, 1);
-      //connect(&m_button, SIGNAL(clicked()), &m_dialog, SLOT(open()));
-      m_model.set_batch({"M13", "800x600", "5", "Lum", "FITS","","",""});
-	  m_model.set_batch({"M13", "800x600", "5", "R", "FITS","","",""});
-	  m_model.append({"M13", "800x600", "5", "G", "FITS","","",""});
-	  m_model.append({"M13", "800x600", "5", "B", "FITS","","",""});
-
-	  m_model.set_batch({"M14", "800x600", "5", "R", "FITS","","",""}, 1);
-      //m_proxy.setSourceModel(&m_model);
-      //m_proxy.setFilterKeyColumn(2);
-      m_view.setModel(&m_model);
-
-
-	  m_model.set_batch({"M15", "800x600", "5", "R", "FITS","","",""}, 0);
-
-
-	  Batch b = m_model.get_batch(1);
-	  b.set_frame("XXXXXXXX");
-	  m_model.set_batch(b);
-	  //m_dialog.setLabelText("Enter registration number fragment to filter on. Leave empty to clear filter.");
-	  //m_dialog.setInputMode(QInputDialog::TextInput);
-	  //connect(&m_dialog, SIGNAL(textValueSelected(QString)),
-	  //&m_proxy, SLOT(setFilterFixedString(QString)));
-   }
+	SequenceViewer();
 };
 
 #endif /* _SEQUENCE_MODEL_H */
