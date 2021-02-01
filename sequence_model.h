@@ -206,6 +206,8 @@ class SequenceViewer : public QWidget {
 
 public:
 	SequenceViewer();
+	void populate_combobox(QComboBox *combobox, const char *items[255], const int count);
+	void clear_combobox(QComboBox *combobox);
 };
 
 #endif /* _SEQUENCE_MODEL_H */

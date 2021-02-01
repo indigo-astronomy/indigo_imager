@@ -17,11 +17,15 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <sequence_model.h>
+#include <indigo/indigo_bus.h>
 
 SequenceViewer::SequenceViewer() {
 	int row = 0;
 	int col = 0;
 	m_layout.addWidget(&m_view, row, col, 1, 8);
+	m_view.setSelectionBehavior(QAbstractItemView::SelectRows);
+	m_view.setSelectionMode(QAbstractItemView::SingleSelection);
+	//m_view.setSelectionMode(QAbstractItemView::ContiguousSelection);
 	//m_layout.addWidget(&m_button, 1, 0, 1, 1);
 	//connect(&m_button, SIGNAL(clicked()), &m_dialog, SLOT(open()));
 	m_model.set_batch({"M13", "800x600", "5", "Lum", "FITS","","",""});
@@ -109,4 +113,39 @@ SequenceViewer::SequenceViewer() {
 	m_focus_exp_box ->setValue(0);
 	m_focus_exp_box ->setKeyboardTracking(false);
 	m_layout.addWidget(m_focus_exp_box, row, col);
+
+	static const char *filters[] = {
+		"U",
+		"B",
+		"V",
+		"R",
+		"I"
+	};
+	populate_combobox(m_filter_select, filters, 5);
+
+	clear_combobox(m_frame_select);
+	clear_combobox(m_mode_select);
+}
+
+void SequenceViewer::populate_combobox(QComboBox *combobox, const char *items[255], const int count) {
+	if (combobox == nullptr) return;
+	combobox->clear();
+	combobox->addItem("* (no change)");
+	if (items == nullptr) return;
+
+	for (int i = 0; i < count; i++) {
+		QString item = QString(items[i]);
+		if (combobox->findText(item) < 0) {
+			combobox->addItem(item);
+			indigo_debug("[ADD] %s\n", item.toUtf8().data());
+		} else {
+			indigo_debug("[DUPLICATE] %s\n", item.toUtf8().data());
+		}
+	}
+}
+
+void SequenceViewer::clear_combobox(QComboBox *combobox) {
+	if (combobox == nullptr) return;
+	combobox->clear();
+	combobox->addItem("* (no change)");
 }
