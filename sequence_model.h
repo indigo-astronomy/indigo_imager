@@ -148,6 +148,7 @@ public:
 			case 7: return sequence.focus();
 			default: return {};
 		};
+		return {};
 	}
 
 	QVariant headerData(int section, Qt::Orientation orientation, int role) const override {
@@ -168,6 +169,7 @@ public:
 		if (orientation == Qt::Vertical) {
 			return section;
 		}
+		return {};
 	}
 
 	void append(const Batch & batch) {
@@ -191,6 +193,17 @@ public:
 };
 
 class SequenceViewer : public QWidget {
+	Q_OBJECT
+
+public:
+	SequenceViewer();
+	~SequenceViewer();
+	void populate_combobox(QComboBox *combobox, const char *items[255], const int count);
+	void populate_combobox(QComboBox *combobox, QList<QString> &items);
+	void clear_combobox(QComboBox *combobox);
+
+
+private:
 	QGridLayout m_layout{this};
 	QTableView m_view;
 	SequenceModel m_model;
@@ -204,10 +217,39 @@ class SequenceViewer : public QWidget {
 	QComboBox *m_frame_select;
 	QDoubleSpinBox *m_focus_exp_box;
 
-public:
-	SequenceViewer();
-	void populate_combobox(QComboBox *combobox, const char *items[255], const int count);
-	void clear_combobox(QComboBox *combobox);
+signals:
+	void populate_filter_select(QList<QString> &items);
+	void populate_mode_select(QList<QString> &items);
+	void populate_frame_select(QList<QString> &items);
+	void clear_filter_select();
+	void clear_mode_select();
+	void clear_frame_select();
+
+public slots:
+	void on_populate_filter_select(QList<QString> &items) {
+		populate_combobox(m_filter_select, items);
+	}
+
+	void on_populate_mode_select(QList<QString> &items) {
+		populate_combobox(m_mode_select, items);
+	}
+
+	void on_populate_frame_select(QList<QString> &items) {
+		populate_combobox(m_frame_select, items);
+	}
+
+	void on_clear_filter_select() {
+		clear_combobox(m_filter_select);
+	}
+
+	void on_clear_mode_select() {
+		clear_combobox(m_mode_select);
+	}
+
+	void on_clear_frame_select() {
+		clear_combobox(m_frame_select);
+	}
+
 };
 
 #endif /* _SEQUENCE_MODEL_H */

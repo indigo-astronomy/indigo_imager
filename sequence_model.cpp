@@ -25,6 +25,7 @@ SequenceViewer::SequenceViewer() {
 	m_layout.addWidget(&m_view, row, col, 1, 8);
 	m_view.setSelectionBehavior(QAbstractItemView::SelectRows);
 	m_view.setSelectionMode(QAbstractItemView::SingleSelection);
+
 	//m_view.setSelectionMode(QAbstractItemView::ContiguousSelection);
 	//m_layout.addWidget(&m_button, 1, 0, 1, 1);
 	//connect(&m_button, SIGNAL(clicked()), &m_dialog, SLOT(open()));
@@ -114,17 +115,30 @@ SequenceViewer::SequenceViewer() {
 	m_focus_exp_box ->setKeyboardTracking(false);
 	m_layout.addWidget(m_focus_exp_box, row, col);
 
-	static const char *filters[] = {
-		"U",
-		"B",
-		"V",
-		"R",
-		"I"
-	};
-	populate_combobox(m_filter_select, filters, 5);
+	connect(this, &SequenceViewer::populate_filter_select, this, &SequenceViewer::on_populate_filter_select);
+	connect(this, &SequenceViewer::populate_mode_select, this, &SequenceViewer::on_populate_mode_select);
+	connect(this, &SequenceViewer::populate_frame_select, this, &SequenceViewer::on_populate_frame_select);
+	connect(this, &SequenceViewer::clear_filter_select, this, &SequenceViewer::on_clear_filter_select);
+	connect(this, &SequenceViewer::clear_mode_select, this, &SequenceViewer::on_clear_mode_select);
+	connect(this, &SequenceViewer::clear_frame_select, this, &SequenceViewer::on_clear_frame_select);
 
-	clear_combobox(m_frame_select);
-	clear_combobox(m_mode_select);
+	QList<QString> filters;
+	filters.append("U");
+	filters.append("B");
+	filters.append("V");
+	filters.append("R");
+	filters.append("I");
+	populate_filter_select(filters);
+
+	clear_frame_select();
+
+	QList<QString> modes;
+	modes.append("800x600");
+	modes.append("1280x1024");
+	populate_combobox(m_mode_select, modes);
+}
+
+SequenceViewer::~SequenceViewer() {
 }
 
 void SequenceViewer::populate_combobox(QComboBox *combobox, const char *items[255], const int count) {
@@ -140,6 +154,22 @@ void SequenceViewer::populate_combobox(QComboBox *combobox, const char *items[25
 			indigo_debug("[ADD] %s\n", item.toUtf8().data());
 		} else {
 			indigo_debug("[DUPLICATE] %s\n", item.toUtf8().data());
+		}
+	}
+}
+
+void SequenceViewer::populate_combobox(QComboBox *combobox, QList<QString> &items) {
+	if (combobox == nullptr) return;
+	combobox->clear();
+	combobox->addItem("* (no change)");
+
+	QList<QString>::iterator item;
+	for (item = items.begin(); item != items.end(); ++item) {
+		if (combobox->findText(*item) < 0) {
+			combobox->addItem(*item);
+			indigo_debug("[ADD] %s\n", item->toUtf8().data());
+		} else {
+			indigo_debug("[DUPLICATE] %s\n", item->toUtf8().data());
 		}
 	}
 }
