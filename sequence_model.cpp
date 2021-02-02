@@ -25,24 +25,25 @@ SequenceViewer::SequenceViewer() {
 	m_layout.addWidget(&m_view, row, col, 1, 8);
 	m_view.setSelectionBehavior(QAbstractItemView::SelectRows);
 	m_view.setSelectionMode(QAbstractItemView::SingleSelection);
+	m_view.setModel(&m_model);
 
 	//m_view.setSelectionMode(QAbstractItemView::ContiguousSelection);
 	//m_layout.addWidget(&m_button, 1, 0, 1, 1);
 	//connect(&m_button, SIGNAL(clicked()), &m_dialog, SLOT(open()));
-	m_model.set_batch({"M13", "800x600", "5", "Lum", "FITS","","",""});
-	m_model.set_batch({"M13", "800x600", "5", "R", "FITS","","",""});
-	m_model.append({"M13", "800x600", "5", "G", "FITS","","",""});
-	m_model.append({"M13", "800x600", "5", "B", "FITS","","",""});
+	//m_model.set_batch({"M13", "800x600", "5", "Lum", "FITS","","",""});
+	//m_model.set_batch({"M13", "800x600", "5", "R", "FITS","","",""});
+	//m_model.append({"M13", "800x600", "5", "G", "FITS","","",""});
+	//m_model.append({"M13", "800x600", "5", "B", "FITS","","",""});
 
-	m_model.set_batch({"M14", "800x600", "5", "R", "FITS","","",""}, 1);
+	//m_model.set_batch({"M14", "800x600", "5", "R", "FITS","","",""}, 1);
 	//m_proxy.setSourceModel(&m_model);
 	//m_proxy.setFilterKeyColumn(2);
-	m_view.setModel(&m_model);
-	m_model.set_batch({"M15", "800x600", "5", "R", "FITS","","",""}, 0);
+	//
+	//m_model.set_batch({"M15", "800x600", "5", "R", "FITS","","",""}, 0);
 
-	Batch b = m_model.get_batch(1);
-	b.set_frame("XXXXXXXX");
-	m_model.set_batch(b);
+	//Batch b = m_model.get_batch(1);
+	//b.set_frame("XXXXXXXX");
+	//m_model.set_batch(b);
 
 	row++;
 	col=0;
@@ -115,6 +116,14 @@ SequenceViewer::SequenceViewer() {
 	m_focus_exp_box ->setKeyboardTracking(false);
 	m_layout.addWidget(m_focus_exp_box, row, col);
 
+	row++;
+	col = 0;
+	m_add_button = new QPushButton("Add Sequence");
+	m_add_button->setStyleSheet("min-width: 30px");
+	///m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
+	m_layout.addWidget(m_add_button, row, col);
+	connect(m_add_button, &QPushButton::clicked, this, &SequenceViewer::on_add_sequence);
+
 	connect(this, &SequenceViewer::populate_filter_select, this, &SequenceViewer::on_populate_filter_select);
 	connect(this, &SequenceViewer::populate_mode_select, this, &SequenceViewer::on_populate_mode_select);
 	connect(this, &SequenceViewer::populate_frame_select, this, &SequenceViewer::on_populate_frame_select);
@@ -141,16 +150,35 @@ SequenceViewer::SequenceViewer() {
 SequenceViewer::~SequenceViewer() {
 }
 
+void SequenceViewer::on_add_sequence() {
+	Batch b;
+	b.set_name(m_name_edit->text());
+	b.set_filter(m_filter_select->currentData().toString());
+	b.set_mode(m_mode_select->currentData().toString());
+	b.set_frame(m_frame_select->currentData().toString());
+	b.set_exposure(QString::number(m_exposure_box->value()));
+	b.set_delay(QString::number(m_delay_box->value()));
+	b.set_count(QString::number(m_count_box->value()));
+
+	QString focus("*");
+	if (m_focus_exp_box->value() > 0) {
+		focus = QString::number(m_focus_exp_box->value());
+	}
+	b.set_focus(focus);
+
+	m_model.append(b);
+}
+
 void SequenceViewer::populate_combobox(QComboBox *combobox, const char *items[255], const int count) {
 	if (combobox == nullptr) return;
 	combobox->clear();
-	combobox->addItem("* (no change)");
+	combobox->addItem("* (no change)", "*");
 	if (items == nullptr) return;
 
 	for (int i = 0; i < count; i++) {
 		QString item = QString(items[i]);
 		if (combobox->findText(item) < 0) {
-			combobox->addItem(item);
+			combobox->addItem(item, item);
 			indigo_debug("[ADD] %s\n", item.toUtf8().data());
 		} else {
 			indigo_debug("[DUPLICATE] %s\n", item.toUtf8().data());
@@ -161,12 +189,12 @@ void SequenceViewer::populate_combobox(QComboBox *combobox, const char *items[25
 void SequenceViewer::populate_combobox(QComboBox *combobox, QList<QString> &items) {
 	if (combobox == nullptr) return;
 	combobox->clear();
-	combobox->addItem("* (no change)");
+	combobox->addItem("* (no change)", "*");
 
 	QList<QString>::iterator item;
 	for (item = items.begin(); item != items.end(); ++item) {
 		if (combobox->findText(*item) < 0) {
-			combobox->addItem(*item);
+			combobox->addItem(*item, *item);
 			indigo_debug("[ADD] %s\n", item->toUtf8().data());
 		} else {
 			indigo_debug("[DUPLICATE] %s\n", item->toUtf8().data());
@@ -177,5 +205,5 @@ void SequenceViewer::populate_combobox(QComboBox *combobox, QList<QString> &item
 void SequenceViewer::clear_combobox(QComboBox *combobox) {
 	if (combobox == nullptr) return;
 	combobox->clear();
-	combobox->addItem("* (no change)");
+	combobox->addItem("* (no change)", "*");
 }
