@@ -1672,6 +1672,7 @@ QListView,
 QTreeView,
 QTableView,
 QColumnView {
+    outline: 0;
     background-color: #202020;
     border: 1px solid #353535;
     color: #F0F0F0;
@@ -1691,6 +1692,7 @@ QListView:selected,
 QTreeView:selected,
 QTableView:selected,
 QColumnView:selected {
+    outline: 0;
     background: #515151;
     color: #FFFFFF;
 }
@@ -1699,6 +1701,7 @@ QListView:hover,
 QTreeView::hover,
 QTableView::hover,
 QColumnView::hover {
+    outline: 0;
     background-color: #202020;
     border: 1px solid #505050;
 	color: #FFFFFF
@@ -1708,6 +1711,7 @@ QListView::item:pressed,
 QTreeView::item:pressed,
 QTableView::item:pressed,
 QColumnView::item:pressed {
+    outline: 0;
     background-color: #515151;
 }
 
@@ -1715,6 +1719,7 @@ QListView::item:selected:active,
 QTreeView::item:selected:active,
 QTableView::item:selected:active,
 QColumnView::item:selected:active {
+    outline: 0;
     background-color: #515151;
 }
 
