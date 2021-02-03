@@ -225,6 +225,9 @@ private:
 	QDoubleSpinBox *m_focus_exp_box;
 	QPushButton *m_add_button;
 	QPushButton *m_rm_button;
+	QPushButton *m_up_button;
+	QPushButton *m_down_button;
+	QPushButton *m_update_button;
 
 signals:
 	void populate_filter_select(QList<QString> &items);
@@ -236,7 +239,11 @@ signals:
 
 public slots:
 	void on_add_sequence();
+	void on_update_sequence();
 	void on_remove_sequence();
+	void on_move_up_sequence();
+	void on_move_down_sequence();
+
 
 	void on_populate_filter_select(QList<QString> &items) {
 		populate_combobox(m_filter_select, items);

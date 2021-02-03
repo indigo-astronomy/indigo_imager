@@ -119,18 +119,39 @@ SequenceViewer::SequenceViewer() {
 
 	row++;
 	col = 0;
-	m_add_button = new QPushButton("Add Sequence");
+	m_add_button = new QPushButton("+");
 	m_add_button->setStyleSheet("min-width: 30px");
 	///m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
 	m_layout.addWidget(m_add_button, row, col);
 	connect(m_add_button, &QPushButton::clicked, this, &SequenceViewer::on_add_sequence);
 
 	col++;
-	m_rm_button = new QPushButton("RM Sequence");
+	m_rm_button = new QPushButton("-");
 	m_rm_button->setStyleSheet("min-width: 30px");
 	///m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
 	m_layout.addWidget(m_rm_button, row, col);
 	connect(m_rm_button, &QPushButton::clicked, this, &SequenceViewer::on_remove_sequence);
+
+	col++;
+	m_up_button = new QPushButton("Up");
+	m_up_button->setStyleSheet("min-width: 30px");
+	///m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
+	m_layout.addWidget(m_up_button, row, col);
+	connect(m_up_button, &QPushButton::clicked, this, &SequenceViewer::on_move_up_sequence);
+
+	col++;
+	m_down_button = new QPushButton("Down");
+	m_down_button->setStyleSheet("min-width: 30px");
+	///m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
+	m_layout.addWidget(m_down_button, row, col);
+	connect(m_down_button, &QPushButton::clicked, this, &SequenceViewer::on_move_down_sequence);
+
+	col++;
+	m_update_button = new QPushButton("Update");
+	m_update_button->setStyleSheet("min-width: 30px");
+	///m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
+	m_layout.addWidget(m_update_button, row, col);
+	connect(m_update_button, &QPushButton::clicked, this, &SequenceViewer::on_update_sequence);
 
 	connect(this, &SequenceViewer::populate_filter_select, this, &SequenceViewer::on_populate_filter_select);
 	connect(this, &SequenceViewer::populate_mode_select, this, &SequenceViewer::on_populate_mode_select);
@@ -158,6 +179,31 @@ SequenceViewer::SequenceViewer() {
 SequenceViewer::~SequenceViewer() {
 }
 
+void SequenceViewer::on_move_up_sequence() {
+	int row = m_view.currentIndex().row();
+	if(row <= 0) return;
+
+	Batch b1 = m_model.get_batch(row);
+	Batch b2 = m_model.get_batch(row - 1);
+	m_model.set_batch(b1, row - 1);
+	m_model.set_batch(b2, row);
+
+	QModelIndex index = m_view.model()->index(row - 1, 0);
+	m_view.setCurrentIndex(index);
+}
+
+void SequenceViewer::on_move_down_sequence() {
+	int row = m_view.currentIndex().row();
+	if (row >= m_view.model()->rowCount() - 1) return;
+
+	Batch b1 = m_model.get_batch(row);
+	Batch b2 = m_model.get_batch(row + 1);
+	m_model.set_batch(b1, row + 1);
+	m_model.set_batch(b2, row);
+
+	QModelIndex index = m_view.model()->index(row + 1, 0);
+	m_view.setCurrentIndex(index);
+}
 
 void  SequenceViewer::on_remove_sequence() {
 	QModelIndexList selection = m_view.selectionModel()->selectedRows();
@@ -184,6 +230,29 @@ void SequenceViewer::on_add_sequence() {
 	b.set_focus(focus);
 
 	m_model.append(b);
+}
+
+void SequenceViewer::on_update_sequence() {
+	Batch b;
+	int row = m_view.currentIndex().row();
+	if (row < 0) return;
+
+	b.set_name(m_name_edit->text());
+	b.set_filter(m_filter_select->currentData().toString());
+	b.set_mode(m_mode_select->currentData().toString());
+	b.set_frame(m_frame_select->currentData().toString());
+	b.set_exposure(QString::number(m_exposure_box->value()));
+	b.set_delay(QString::number(m_delay_box->value()));
+	b.set_count(QString::number(m_count_box->value()));
+
+	QString focus("*");
+	if (m_focus_exp_box->value() > 0) {
+		focus = QString::number(m_focus_exp_box->value());
+	}
+	b.set_focus(focus);
+
+	m_model.set_batch(b, row);
+	m_view.update();
 }
 
 void SequenceViewer::populate_combobox(QComboBox *combobox, const char *items[255], const int count) {
