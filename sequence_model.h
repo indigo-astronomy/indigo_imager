@@ -178,6 +178,13 @@ public:
 		endInsertRows();
 	}
 
+	void remove(int index) {
+		if (index < 0) return;
+		beginRemoveRows({}, index, index);
+		m_data.removeAt(index);
+		endRemoveRows();
+	}
+
 	void set_batch(const Batch & batch, int pos = -1) {
 		if (pos < 0) {
 			beginInsertRows({}, m_data.count(), m_data.count());
@@ -217,6 +224,7 @@ private:
 	QComboBox *m_frame_select;
 	QDoubleSpinBox *m_focus_exp_box;
 	QPushButton *m_add_button;
+	QPushButton *m_rm_button;
 
 signals:
 	void populate_filter_select(QList<QString> &items);
@@ -228,6 +236,7 @@ signals:
 
 public slots:
 	void on_add_sequence();
+	void on_remove_sequence();
 
 	void on_populate_filter_select(QList<QString> &items) {
 		populate_combobox(m_filter_select, items);
@@ -252,7 +261,6 @@ public slots:
 	void on_clear_frame_select() {
 		clear_combobox(m_frame_select);
 	}
-
 };
 
 #endif /* _SEQUENCE_MODEL_H */

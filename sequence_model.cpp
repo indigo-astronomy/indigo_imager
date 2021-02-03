@@ -26,10 +26,11 @@ SequenceViewer::SequenceViewer() {
 	m_view.setSelectionBehavior(QAbstractItemView::SelectRows);
 	m_view.setSelectionMode(QAbstractItemView::SingleSelection);
 	m_view.setModel(&m_model);
-
 	//m_view.setSelectionMode(QAbstractItemView::ContiguousSelection);
+
 	//m_layout.addWidget(&m_button, 1, 0, 1, 1);
 	//connect(&m_button, SIGNAL(clicked()), &m_dialog, SLOT(open()));
+
 	//m_model.set_batch({"M13", "800x600", "5", "Lum", "FITS","","",""});
 	//m_model.set_batch({"M13", "800x600", "5", "R", "FITS","","",""});
 	//m_model.append({"M13", "800x600", "5", "G", "FITS","","",""});
@@ -124,6 +125,13 @@ SequenceViewer::SequenceViewer() {
 	m_layout.addWidget(m_add_button, row, col);
 	connect(m_add_button, &QPushButton::clicked, this, &SequenceViewer::on_add_sequence);
 
+	col++;
+	m_rm_button = new QPushButton("RM Sequence");
+	m_rm_button->setStyleSheet("min-width: 30px");
+	///m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
+	m_layout.addWidget(m_rm_button, row, col);
+	connect(m_rm_button, &QPushButton::clicked, this, &SequenceViewer::on_remove_sequence);
+
 	connect(this, &SequenceViewer::populate_filter_select, this, &SequenceViewer::on_populate_filter_select);
 	connect(this, &SequenceViewer::populate_mode_select, this, &SequenceViewer::on_populate_mode_select);
 	connect(this, &SequenceViewer::populate_frame_select, this, &SequenceViewer::on_populate_frame_select);
@@ -148,6 +156,15 @@ SequenceViewer::SequenceViewer() {
 }
 
 SequenceViewer::~SequenceViewer() {
+}
+
+
+void  SequenceViewer::on_remove_sequence() {
+	QModelIndexList selection = m_view.selectionModel()->selectedRows();
+	for(int i = 0; i < selection.count(); ++i) {
+		QModelIndex index = selection.at(i);
+		m_model.remove(index.row());
+	}
 }
 
 void SequenceViewer::on_add_sequence() {
