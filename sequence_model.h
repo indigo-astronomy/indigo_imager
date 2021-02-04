@@ -243,7 +243,7 @@ public slots:
 	void on_remove_sequence();
 	void on_move_up_sequence();
 	void on_move_down_sequence();
-
+	void on_row_changed(const QModelIndex &current, const QModelIndex &previous);
 
 	void on_populate_filter_select(QList<QString> &items) {
 		populate_combobox(m_filter_select, items);

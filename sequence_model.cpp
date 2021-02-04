@@ -160,6 +160,9 @@ SequenceViewer::SequenceViewer() {
 	connect(this, &SequenceViewer::clear_mode_select, this, &SequenceViewer::on_clear_mode_select);
 	connect(this, &SequenceViewer::clear_frame_select, this, &SequenceViewer::on_clear_frame_select);
 
+	QItemSelectionModel *selection_model = m_view.selectionModel();
+	connect(selection_model, &QItemSelectionModel::currentRowChanged, this, &SequenceViewer::on_row_changed);
+
 	QList<QString> filters;
 	filters.append("U");
 	filters.append("B");
@@ -177,6 +180,37 @@ SequenceViewer::SequenceViewer() {
 }
 
 SequenceViewer::~SequenceViewer() {
+}
+
+void SequenceViewer::on_row_changed(const QModelIndex &current, const QModelIndex &previous) {
+	Q_UNUSED(previous);
+
+	int row = current.row();
+	if(row < 0) return;
+
+	Batch b = m_model.get_batch(row);
+
+	m_name_edit->setText(b.name());
+
+	int index = m_filter_select->findData(b.filter());
+	if ( index != -1 ) {
+		m_filter_select->setCurrentIndex(index);
+	}
+
+	index = m_mode_select->findData(b.mode());
+	if ( index != -1 ) {
+		m_mode_select->setCurrentIndex(index);
+	}
+
+	index = m_frame_select->findData(b.frame());
+	if ( index != -1 ) {
+		m_frame_select->setCurrentIndex(index);
+	}
+
+	m_exposure_box->setValue(b.exposure().toFloat());
+	m_delay_box->setValue(b.delay().toFloat());
+	m_count_box->setValue(b.count().toInt());
+	m_focus_exp_box->setValue(b.focus().toFloat());
 }
 
 void SequenceViewer::on_move_up_sequence() {
