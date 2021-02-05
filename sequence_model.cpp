@@ -211,6 +211,18 @@ void SequenceViewer::on_row_changed(const QModelIndex &current, const QModelInde
 	m_delay_box->setValue(b.delay().toFloat());
 	m_count_box->setValue(b.count().toInt());
 	m_focus_exp_box->setValue(b.focus().toFloat());
+
+	// TESTCODE !!!!
+	/*
+	QList<QString> batches;
+	QString s;
+	generate_sequence(s, batches);
+	indigo_error("[SEQUENCE] %s\n", s.toUtf8().data());
+	QList<QString>::iterator item;
+	for (item = batches.begin(); item != batches.end(); ++item) {
+		indigo_error("[BATCH] %s\n", item->toUtf8().data());
+	}
+	*/
 }
 
 void SequenceViewer::on_move_up_sequence() {
@@ -326,4 +338,56 @@ void SequenceViewer::clear_combobox(QComboBox *combobox) {
 	if (combobox == nullptr) return;
 	combobox->clear();
 	combobox->addItem("* (no change)", "*");
+}
+
+void SequenceViewer::generate_sequence(QString &sequence, QList<QString> &batches) {
+	int row_count = m_view.model()->rowCount();
+	batches.clear();
+	sequence.clear();
+
+	if (row_count <= 0) {
+		return;
+	}
+
+	for (int row = 0; row < row_count; row++) {
+		Batch b = m_model.get_batch(row);
+		QString batch_str("");
+
+		if (!b.name().isEmpty()) {
+			batch_str.append("prefix=" + b.name() + ";");
+		}
+
+		if (!b.filter().isEmpty() && b.filter() != "*") {
+			batch_str.append("filter=" + b.filter() + ";");
+		}
+
+		if (!b.exposure().isEmpty() && b.exposure() != "*") {
+			batch_str.append("exposure=" + b.exposure() + ";");
+		}
+
+		if (!b.delay().isEmpty() && b.delay() != "*") {
+			batch_str.append("delay=" + b.delay() + ";");
+		}
+
+		if (!b.count().isEmpty() && b.count() != "*") {
+			batch_str.append("count=" + b.count() + ";");
+		}
+
+		if (!b.mode().isEmpty() && b.mode() != "*") {
+			batch_str.append("mode=" + b.mode() + ";");
+		}
+
+		if (!b.frame().isEmpty() && b.frame() != "*") {
+			batch_str.append("frame=" + b.frame() + ";");
+		}
+
+		if (!b.focus().isEmpty() && b.focus() != "*") {
+			batch_str.append("focus=" + b.focus() + ";");
+		}
+
+		if (!batch_str.isEmpty()) {
+			sequence.append(QString().number(row) + ";");
+			batches.append(batch_str);
+		}
+	}
 }
