@@ -87,7 +87,7 @@ SequenceViewer::SequenceViewer() {
 	m_delay_box = new QDoubleSpinBox();
 	m_delay_box->setMaximum(10000);
 	m_delay_box->setMinimum(0);
-	m_delay_box->setValue(1);
+	m_delay_box->setValue(0);
 	m_delay_box->setKeyboardTracking(false);
 	m_layout.addWidget(m_delay_box, row, col);
 
