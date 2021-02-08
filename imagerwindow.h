@@ -100,6 +100,7 @@ public:
 	friend void update_guider_settings(ImagerWindow *w, indigo_property *property);
 	friend void agent_guider_start_process_change(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_dithering_property(ImagerWindow *w, indigo_property *property);
+	friend void condigure_guider_overlays(ImagerWindow *w, char *device, indigo_property *property);
 
 	bool save_blob;
 

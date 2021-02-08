@@ -846,6 +846,33 @@ void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 	mLog->verticalScrollBar()->setValue(mLog->verticalScrollBar()->maximum());
 }
 
+void condigure_guider_overlays(ImagerWindow *w, char *device, indigo_property *property) {
+	if (device == nullptr) return;
+
+	indigo_property *p = nullptr;
+	if (property) {
+		p = property;
+	} else {
+		p = properties.get(device, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME);
+	}
+
+	if (p) {
+		if (indigo_get_switch(p, AGENT_GUIDER_DETECTION_SELECTION_ITEM_NAME)) {
+			w->show_guider_selection(true);
+			w->show_guider_reference(true);
+			w->show_guider_edge_clipping(false);
+		} else if (indigo_get_switch(p, AGENT_GUIDER_DETECTION_DONUTS_ITEM_NAME)){
+			w->show_guider_selection(false);
+			w->show_guider_reference(false);
+			w->show_guider_edge_clipping(true);
+		} else {
+			w->show_guider_selection(false);
+			w->show_guider_reference(false);
+			w->show_guider_edge_clipping(false);
+		}
+	}
+}
+
 void ImagerWindow::property_define(indigo_property* property, char *message) {
 	char selected_agent[INDIGO_VALUE_SIZE] = {0, 0};
 	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0, 0};
@@ -1037,25 +1064,14 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		QtConcurrent::run([=]() {
 			change_guider_agent_subframe(selected_guider_agent);
 		});
+		condigure_guider_overlays(this, property->device, nullptr);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_STATS_PROPERTY_NAME)) {
 		update_guider_stats(this, property);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_detection_mode_select);
-		if (indigo_get_switch(property, AGENT_GUIDER_DETECTION_SELECTION_ITEM_NAME)) {
-			show_guider_selection(true);
-			show_guider_reference(true);
-			show_guider_edge_clipping(false);
-		} else if (indigo_get_switch(property, AGENT_GUIDER_DETECTION_DONUTS_ITEM_NAME)){
-			show_guider_selection(false);
-			show_guider_reference(false);
-			show_guider_edge_clipping(true);
-		} else {
-			show_guider_selection(false);
-			show_guider_reference(false);
-			show_guider_edge_clipping(false);
-		}
+		condigure_guider_overlays(this, property->device, property);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_dec_guiding_select);
@@ -1171,19 +1187,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_detection_mode_select);
-		if (indigo_get_switch(property, AGENT_GUIDER_DETECTION_SELECTION_ITEM_NAME)) {
-			show_guider_selection(true);
-			show_guider_reference(true);
-			show_guider_edge_clipping(false);
-		} else if (indigo_get_switch(property, AGENT_GUIDER_DETECTION_DONUTS_ITEM_NAME)){
-			show_guider_selection(false);
-			show_guider_reference(false);
-			show_guider_edge_clipping(true);
-		} else {
-			show_guider_selection(false);
-			show_guider_reference(false);
-			show_guider_edge_clipping(false);
-		}
+		condigure_guider_overlays(this, property->device, property);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_dec_guiding_select);
