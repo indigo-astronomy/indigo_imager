@@ -129,6 +129,7 @@ signals:
 	void show_guider_selection(bool show);
 	void move_resize_guider_selection(double x, double y, int size);
 	void move_resize_guider_extra_selection(QList<QPointF> &point_list, int size);
+	void show_guider_extra_selection(bool show);
 	void show_guider_reference(bool show);
 	void move_guider_reference(double x, double y);
 	void show_guider_edge_clipping(bool show);

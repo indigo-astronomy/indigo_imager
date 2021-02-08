@@ -388,6 +388,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(this, &ImagerWindow::show_focuser_selection, m_imager_viewer, &ImageViewer::showSelection);
 	connect(this, &ImagerWindow::move_resize_guider_selection, m_guider_viewer, &ImageViewer::moveResizeSelection);
 	connect(this, &ImagerWindow::move_resize_guider_extra_selection, m_guider_viewer, &ImageViewer::moveResizeExtraSelection);
+	connect(this, &ImagerWindow::show_guider_extra_selection, m_guider_viewer, &ImageViewer::showExtraSelection);
 	connect(this, &ImagerWindow::show_guider_selection, m_guider_viewer, &ImageViewer::showSelection);
 	connect(this, &ImagerWindow::move_guider_reference, m_guider_viewer, &ImageViewer::moveReference);
 	connect(this, &ImagerWindow::show_guider_reference, m_guider_viewer, &ImageViewer::showReference);

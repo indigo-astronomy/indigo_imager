@@ -294,23 +294,30 @@ void update_guider_selection_property(ImagerWindow *w, indigo_property *property
 		}
 	}
 
+	QList<QPointF> s_list;
 	if (count > 1) {
 		QPointF sel;
-		QList<QPointF> s_list;
 		for (int i = 2; i <= count; i++) {
 			char name[INDIGO_NAME_SIZE];
+
 			sprintf(name, "%s_%d", AGENT_GUIDER_SELECTION_X_ITEM_NAME, i);
 			indigo_item *item = indigo_get_item(property, name);
-			double x = item->number.value;
+			double x = 0;
+			if (item) x = item->number.value;
+
 			sprintf(name, "%s_%d", AGENT_GUIDER_SELECTION_Y_ITEM_NAME, i);
 			item = indigo_get_item(property, name);
-			double y = item->number.value;
-			QPointF *sel = new QPointF(x, y);
-			s_list.append(*sel);
+			double y = 0;
+			if (item) y = item->number.value;
+
+			if (x > 0 && y > 0) {
+				QPointF *sel = new QPointF(x, y);
+				s_list.append(*sel);
+			}
 		}
 		w->move_resize_guider_extra_selection(s_list, size);
 	}
-
+	w->move_resize_guider_extra_selection(s_list, size);
 	w->move_resize_guider_selection(x, y, size);
 	w->resize_guider_edge_clipping(edge_clipping);
 }
@@ -881,14 +888,17 @@ void condigure_guider_overlays(ImagerWindow *w, char *device, indigo_property *p
 	if (p) {
 		if (indigo_get_switch(p, AGENT_GUIDER_DETECTION_SELECTION_ITEM_NAME)) {
 			w->show_guider_selection(true);
+			w->show_guider_extra_selection(true);
 			w->show_guider_reference(true);
 			w->show_guider_edge_clipping(false);
 		} else if (indigo_get_switch(p, AGENT_GUIDER_DETECTION_DONUTS_ITEM_NAME)){
 			w->show_guider_selection(false);
+			w->show_guider_extra_selection(false);
 			w->show_guider_reference(false);
 			w->show_guider_edge_clipping(true);
 		} else {
 			w->show_guider_selection(false);
+			w->show_guider_extra_selection(false);
 			w->show_guider_reference(false);
 			w->show_guider_edge_clipping(false);
 		}
@@ -1405,12 +1415,16 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_spinbox_value(m_guide_star_radius, 0);
 		set_enabled(m_guide_star_radius, false);
 
+		set_spinbox_value(m_guide_star_count, 0);
+		set_enabled(m_guide_star_count, false);
+
 		set_spinbox_value(m_guide_edge_clipping, 0);
 		set_enabled(m_guide_edge_clipping, false);
 
 		set_enabled(m_guider_subframe_select, false);
 
 		show_guider_selection(false);
+		show_guider_extra_selection(false);
 		show_guider_reference(false);
 		show_guider_edge_clipping(false);
 		move_resize_guider_selection(0, 0, 1);

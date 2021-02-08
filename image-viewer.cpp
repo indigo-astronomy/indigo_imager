@@ -85,7 +85,6 @@ ImageViewer::ImageViewer(QWidget *parent)
 	m_ref_x->setPen(pen);
 	m_ref_x->setOpacity(0.5);
 	m_ref_x->setVisible(false);
-	//scene->addItem(m_ref_x);
 
 	m_ref_y = new QGraphicsLineItem(0,25,50,25, m_pixmap);
 	pen.setCosmetic(true);
@@ -94,7 +93,6 @@ ImageViewer::ImageViewer(QWidget *parent)
 	m_ref_y->setPen(pen);
 	m_ref_y->setOpacity(0.5);
 	m_ref_y->setVisible(false);
-	//scene->addItem(m_ref_y);
 
 	m_ref_visible = false;
 
@@ -107,8 +105,7 @@ ImageViewer::ImageViewer(QWidget *parent)
 	m_selection->setOpacity(0.7);
 	m_selection->setVisible(false);
 	m_selection_visible = false;
-	//scene->addItem(m_selection);
-	//m_selection->setFlags(QGraphicsItem::ItemIsMovable);
+
 	m_edge_clipping = new QGraphicsRectItem(0,0,0,0, m_pixmap);
 	m_edge_clipping_v = 0;
 	m_edge_clipping->setBrush(QBrush(Qt::NoBrush));
@@ -127,6 +124,8 @@ ImageViewer::ImageViewer(QWidget *parent)
     box->addWidget(m_toolbar);
     box->addWidget(m_view, 1);
     setLayout(box);
+
+	m_extra_selections_visible = false;
 }
 
 // toolbar with a few quick actions and display information
@@ -195,29 +194,24 @@ void ImageViewer::showSelection(bool show) {
 }
 
 void ImageViewer::showExtraSelection(bool show) {
-	m_extra_points_visible = show;
-	QList<QGraphicsRectItem*>::iterator sel;
+	m_extra_selections_visible = show;
+	QList<QGraphicsEllipseItem*>::iterator sel;
 	for (sel = m_extra_selections.begin(); sel != m_extra_selections.end(); ++sel) {
-		(*sel)->setVisible(show);
+		if (!m_pixmap->pixmap().isNull()) (*sel)->setVisible(show);
+		else (*sel)->setVisible(false);
 	}
-}
-
-void ImageViewer::moveExtraSelection(QList<QPointF> &point_list) {
-
 }
 
 void ImageViewer::moveResizeExtraSelection(QList<QPointF> &point_list, int size) {
 	while (!m_extra_selections.isEmpty()) delete m_extra_selections.takeFirst();
-	if (m_extra_points_visible != true) return;
 	QPen pen;
 	pen.setCosmetic(true);
 	pen.setWidth(1);
-	pen.setColor(Qt::red);
+	pen.setColor(Qt::green);
+	//pen.setColor(QColor(255, 255, 0));
 	QList<QPointF>::iterator point;
 	for (point = point_list.begin(); point != point_list.end(); ++point) {
-		m_extra_points_visible = true;
-		//QGraphicsEllipseItem *selection = new QGraphicsEllipseItem(0,0,25,25, m_pixmap);
-		QGraphicsRectItem *selection = new QGraphicsRectItem(m_pixmap);
+		QGraphicsEllipseItem *selection = new QGraphicsEllipseItem(0, 0, size, size, m_pixmap);
 		double x = point->x() - size / 2.0;
 		double y = point->y() - size / 2.0;
 		selection->setRect(0, 0, size, size);
@@ -225,8 +219,11 @@ void ImageViewer::moveResizeExtraSelection(QList<QPointF> &point_list, int size)
 		selection->setBrush(QBrush(Qt::NoBrush));
 		selection->setPen(pen);
 		selection->setOpacity(0.7);
-		// if (x y 0 0) -> visible false
-		selection->setVisible(true);
+		if (x <= size / 2.0 || y <= size / 2.0 || !m_extra_selections_visible && m_pixmap->pixmap().isNull()) {
+			selection->setVisible(false);
+		} else {
+			selection->setVisible(true);
+		}
 		m_extra_selections.append(selection);
 	}
 }
