@@ -273,6 +273,7 @@ void update_imager_selection_property(ImagerWindow *w, indigo_property *property
 void update_guider_selection_property(ImagerWindow *w, indigo_property *property) {
 	double x = 0, y = 0;
 	int size = 0;
+	int count = 1;
 	double edge_clipping = 0;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_GUIDER_SELECTION_X_ITEM_NAME)) {
@@ -284,6 +285,9 @@ void update_guider_selection_property(ImagerWindow *w, indigo_property *property
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SELECTION_RADIUS_ITEM_NAME)) {
 			size = (int)round(property->items[i].number.value * 2 + 1);
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_star_radius);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SELECTION_STAR_COUNT_ITEM_NAME)) {
+			count = property->items[i].number.value;
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_star_count);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SELECTION_EDGE_CLIPPING_ITEM_NAME)) {
 			edge_clipping = property->items[i].number.value;
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_edge_clipping);

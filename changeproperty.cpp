@@ -178,6 +178,15 @@ void ImagerWindow::change_guider_agent_star_selection(const char *agent) const {
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME, 3, items, values);
 }
 
+void ImagerWindow::change_guider_agent_star_count(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_SELECTION_STAR_COUNT_ITEM_NAME
+	};
+	static double values[1];
+	values[0] = (double)m_guide_star_count->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME, 1, items, values);
+}
+
 void ImagerWindow::change_guider_agent_subframe(const char *agent) const {
 	static const char *items[] = {
 		AGENT_GUIDER_SELECTION_SUBFRAME_ITEM_NAME

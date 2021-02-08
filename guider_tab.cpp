@@ -253,6 +253,20 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	connect(m_guide_star_radius, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_radius_changed);
 
 	settings_row++;
+	label = new QLabel("Star count:");
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
+	m_guide_star_count = new QSpinBox();
+	m_guide_star_count->setMaximum(100);
+	m_guide_star_count->setMinimum(1);
+	m_guide_star_count->setValue(1);
+	settings_frame_layout->addWidget(m_guide_star_count, settings_row, 3);
+	connect(m_guide_star_count, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_star_count_changed);
+
+	settings_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	settings_frame_layout->addItem(spacer, settings_row, 0);
+
+	settings_row++;
 	label = new QLabel("Edge Clipping (Donuts) (px):");
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
 	m_guide_edge_clipping = new QSpinBox();
@@ -262,38 +276,6 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guide_edge_clipping->setEnabled(false);
 	settings_frame_layout->addWidget(m_guide_edge_clipping, settings_row, 3);
 	connect(m_guide_edge_clipping, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_edge_clipping_changed);
-
-	settings_row++;
-	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
-	settings_frame_layout->addItem(spacer, settings_row, 0);
-
-	settings_row++;
-	label = new QLabel("Save bandwidth:");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
-
-	settings_row++;
-	label = new QLabel("Use JPEG:");
-	settings_frame_layout->addWidget(label, settings_row, 0, 1, 2);
-	m_guider_save_bw_select = new QComboBox();
-	m_guider_save_bw_select->addItem("Off");
-	m_guider_save_bw_select->addItem("Fine");
-	m_guider_save_bw_select->addItem("Normal");
-	m_guider_save_bw_select->addItem("Coarse");
-	settings_frame_layout->addWidget(m_guider_save_bw_select, settings_row, 2, 1, 2);
-	m_guider_save_bw_select->setCurrentIndex(conf.guider_save_bandwidth);
-	connect(m_guider_save_bw_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_bw_save_changed);
-
-	settings_row++;
-	label = new QLabel("Use subframe:");
-	settings_frame_layout->addWidget(label, settings_row, 0, 1 ,2);
-	m_guider_subframe_select = new QComboBox();
-	m_guider_subframe_select->addItem("Off");
-	m_guider_subframe_select->addItem("10 radii");
-	m_guider_subframe_select->addItem("20 radii");
-	settings_frame_layout->addWidget(m_guider_subframe_select, settings_row, 2, 1, 2);
-	m_guider_subframe_select->setCurrentIndex(conf.guider_subframe);
-	connect(m_guider_subframe_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_subframe_changed);
 
 	QFrame *advanced_frame = new QFrame;
 	guider_tabbar->addTab(advanced_frame, "Advanced");
@@ -447,6 +429,43 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guide_dec_speed->setValue(0);
 	advanced_frame_layout->addWidget(m_guide_dec_speed, advanced_row, 3);
 	connect(m_guide_dec_speed, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_callibration_changed);
+
+	QFrame *misc_frame = new QFrame;
+	guider_tabbar->addTab(misc_frame, "Misc");
+
+	QGridLayout *misc_frame_layout = new QGridLayout();
+	misc_frame_layout->setAlignment(Qt::AlignTop);
+	misc_frame->setLayout(misc_frame_layout);
+	misc_frame->setFrameShape(QFrame::StyledPanel);
+	misc_frame->setContentsMargins(0, 0, 0, 0);
+
+	int misc_row = 0;
+	label = new QLabel("Save bandwidth:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 4);
+
+	misc_row++;
+	label = new QLabel("Use JPEG:");
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 2);
+	m_guider_save_bw_select = new QComboBox();
+	m_guider_save_bw_select->addItem("Off");
+	m_guider_save_bw_select->addItem("Fine");
+	m_guider_save_bw_select->addItem("Normal");
+	m_guider_save_bw_select->addItem("Coarse");
+	misc_frame_layout->addWidget(m_guider_save_bw_select, misc_row, 2, 1, 2);
+	m_guider_save_bw_select->setCurrentIndex(conf.guider_save_bandwidth);
+	connect(m_guider_save_bw_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_bw_save_changed);
+
+	misc_row++;
+	label = new QLabel("Use subframe:");
+	misc_frame_layout->addWidget(label, misc_row, 0, 1 ,2);
+	m_guider_subframe_select = new QComboBox();
+	m_guider_subframe_select->addItem("Off");
+	m_guider_subframe_select->addItem("10 radii");
+	m_guider_subframe_select->addItem("20 radii");
+	misc_frame_layout->addWidget(m_guider_subframe_select, misc_row, 2, 1, 2);
+	m_guider_subframe_select->setCurrentIndex(conf.guider_subframe);
+	connect(m_guider_subframe_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_subframe_changed);
 }
 
 void ImagerWindow::setup_preview(const char *agent) {
@@ -557,6 +576,15 @@ void ImagerWindow::on_guider_selection_changed(double value) {
 
 void ImagerWindow::on_guider_selection_radius_changed(int value) {
 	on_guider_selection_changed((double)value);
+}
+
+void ImagerWindow::on_guider_selection_star_count_changed(int value) {
+	QtConcurrent::run([=]() {
+		char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_guider_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_guider_agent_star_count(selected_agent);
+	});
 }
 
 void ImagerWindow::on_guider_edge_clipping_changed(int value) {

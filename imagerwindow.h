@@ -214,6 +214,7 @@ public slots:
 	void on_guider_selection_changed(double value);
 	void on_guider_subframe_changed(int index);
 	void on_guider_selection_radius_changed(int value);
+	void on_guider_selection_star_count_changed(int value);
 	void on_guider_edge_clipping_changed(int value);
 	void on_guider_image_right_click(double x, double y);
 	void on_guider_preview_start_stop(bool clicked);
@@ -394,6 +395,7 @@ private:
 	QDoubleSpinBox  *m_guide_star_x;
 	QDoubleSpinBox  *m_guide_star_y;
 	QSpinBox  *m_guide_star_radius;
+	QSpinBox  *m_guide_star_count;
 	QSpinBox  *m_guide_edge_clipping;
 	QComboBox *m_guider_save_bw_select;
 	QComboBox *m_guider_subframe_select;
@@ -492,6 +494,7 @@ private:
 	void select_focuser_data(focuser_display_data show);
 
 	void change_guider_agent_star_selection(const char *agent) const;
+	void change_guider_agent_star_count(const char *agent) const;
 	void change_guider_agent_subframe(const char *agent) const;
 	void change_agent_start_guide_property(const char *agent) const;
 	void change_agent_start_calibrate_property(const char *agent) const;
