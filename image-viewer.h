@@ -63,6 +63,10 @@ public slots:
 	void moveSelection(double x, double y);
 	void moveResizeSelection(double x, double y, int size);
 
+	void showExtraSelection(bool show);
+	void moveExtraSelection(QList<QPointF> &point_list);
+	void moveResizeExtraSelection(QList<QPointF> &point_list, int size);
+
 	void showReference(bool show);
 	void moveReference(double x, double y);
 
@@ -104,6 +108,11 @@ private:
 	QPoint m_selection_p;
 	QPoint m_ref_p;
 	double m_edge_clipping_v;
+
+	QList<QGraphicsRectItem*> m_extra_selections;
+	QList<QPoint> m_extra_points;
+	bool m_extra_points_visible;
+
     QWidget *m_toolbar;
     bool m_fit;
 	bool m_selection_visible;

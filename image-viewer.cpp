@@ -194,6 +194,43 @@ void ImageViewer::showSelection(bool show) {
 	}
 }
 
+void ImageViewer::showExtraSelection(bool show) {
+	m_extra_points_visible = show;
+	QList<QGraphicsRectItem*>::iterator sel;
+	for (sel = m_extra_selections.begin(); sel != m_extra_selections.end(); ++sel) {
+		(*sel)->setVisible(show);
+	}
+}
+
+void ImageViewer::moveExtraSelection(QList<QPointF> &point_list) {
+
+}
+
+void ImageViewer::moveResizeExtraSelection(QList<QPointF> &point_list, int size) {
+	while (!m_extra_selections.isEmpty()) delete m_extra_selections.takeFirst();
+	if (m_extra_points_visible != true) return;
+	QPen pen;
+	pen.setCosmetic(true);
+	pen.setWidth(1);
+	pen.setColor(Qt::red);
+	QList<QPointF>::iterator point;
+	for (point = point_list.begin(); point != point_list.end(); ++point) {
+		m_extra_points_visible = true;
+		//QGraphicsEllipseItem *selection = new QGraphicsEllipseItem(0,0,25,25, m_pixmap);
+		QGraphicsRectItem *selection = new QGraphicsRectItem(m_pixmap);
+		double x = point->x() - size / 2.0;
+		double y = point->y() - size / 2.0;
+		selection->setRect(0, 0, size, size);
+		selection->setPos(x, y);
+		selection->setBrush(QBrush(Qt::NoBrush));
+		selection->setPen(pen);
+		selection->setOpacity(0.7);
+		// if (x y 0 0) -> visible false
+		selection->setVisible(true);
+		m_extra_selections.append(selection);
+	}
+}
+
 void ImageViewer::moveResizeSelection(double x, double y, int size) {
 	double cor_x = x - (double)size / 2.0;
 	double cor_y = y - (double)size / 2.0;
