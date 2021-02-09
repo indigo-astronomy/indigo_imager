@@ -13,68 +13,68 @@
 // Graphics View with better mouse events handling
 class GraphicsView : public QGraphicsView {
 public:
-    explicit GraphicsView(ImageViewer *viewer)
-        : QGraphicsView()
-        , m_viewer(viewer)
-    {
-        // no antialiasing or filtering, we want to see the exact image content
-        setRenderHint(QPainter::Antialiasing, false);
-        setDragMode(QGraphicsView::ScrollHandDrag);
-        setOptimizationFlags(QGraphicsView::DontSavePainterState);
-        setViewportUpdateMode(QGraphicsView::SmartViewportUpdate);
-        setTransformationAnchor(QGraphicsView::AnchorUnderMouse); // zoom at cursor position
-        //setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        //setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        setInteractive(true);
-        setMouseTracking(true);
-    }
+	explicit GraphicsView(ImageViewer *viewer)
+		: QGraphicsView()
+		, m_viewer(viewer)
+	{
+		// no antialiasing or filtering, we want to see the exact image content
+		setRenderHint(QPainter::Antialiasing, false);
+		setDragMode(QGraphicsView::ScrollHandDrag);
+		setOptimizationFlags(QGraphicsView::DontSavePainterState);
+		setViewportUpdateMode(QGraphicsView::SmartViewportUpdate);
+		setTransformationAnchor(QGraphicsView::AnchorUnderMouse); // zoom at cursor position
+		//setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+		//setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+		setInteractive(true);
+		setMouseTracking(true);
+	}
 
 protected:
-    void wheelEvent(QWheelEvent *event) override {
-        if (event->modifiers() == Qt::NoModifier) {
-            if (event->delta() > 0)
-                m_viewer->zoomIn();
-            else if (event->delta() < 0)
-                m_viewer->zoomOut();
-            event->accept();
-        }
-        else
-            QGraphicsView::wheelEvent(event);
-    }
+	void wheelEvent(QWheelEvent *event) override {
+		if (event->modifiers() == Qt::NoModifier) {
+			if (event->delta() > 0)
+				m_viewer->zoomIn();
+			else if (event->delta() < 0)
+				m_viewer->zoomOut();
+			event->accept();
+		} else {
+			QGraphicsView::wheelEvent(event);
+		}
+	}
 
-    void enterEvent(QEvent *event) override {
-        QGraphicsView::enterEvent(event);
-        viewport()->setCursor(Qt::CrossCursor);
-    }
+	void enterEvent(QEvent *event) override {
+		QGraphicsView::enterEvent(event);
+		viewport()->setCursor(Qt::CrossCursor);
+	}
 
-    void mousePressEvent(QMouseEvent *event) override {
-        QGraphicsView::mousePressEvent(event);
-    }
+	void mousePressEvent(QMouseEvent *event) override {
+		QGraphicsView::mousePressEvent(event);
+	}
 
-    void mouseReleaseEvent(QMouseEvent *event) override {
-        QGraphicsView::mouseReleaseEvent(event);
-        viewport()->setCursor(Qt::CrossCursor);
-    }
+	void mouseReleaseEvent(QMouseEvent *event) override {
+		QGraphicsView::mouseReleaseEvent(event);
+		viewport()->setCursor(Qt::CrossCursor);
+	}
 
 private:
-    ImageViewer *m_viewer;
+	ImageViewer *m_viewer;
 };
 
 
 ImageViewer::ImageViewer(QWidget *parent)
-    : QFrame(parent)
-    , m_zoom_level(0)
-    , m_fit(true)
-    , m_bar_mode(ToolBarMode::Visible)
+	: QFrame(parent)
+	, m_zoom_level(0)
+	, m_fit(true)
+	, m_bar_mode(ToolBarMode::Visible)
 {
-    auto scene = new QGraphicsScene(this);
-    m_view = new GraphicsView(this);
-    m_view->setScene(scene);
+	auto scene = new QGraphicsScene(this);
+	m_view = new GraphicsView(this);
+	m_view->setScene(scene);
 
-    // graphic object holding the image buffer
-    m_pixmap = new PixmapItem;
-    scene->addItem(m_pixmap);
-    connect(m_pixmap, SIGNAL(mouseMoved(double,double)), SLOT(mouseAt(double,double)));
+	// graphic object holding the image buffer
+	m_pixmap = new PixmapItem;
+	scene->addItem(m_pixmap);
+	connect(m_pixmap, SIGNAL(mouseMoved(double,double)), SLOT(mouseAt(double,double)));
 	connect(m_pixmap, SIGNAL(mouseRightPress(double,double)), SLOT(mouseRightPressAt(double,double)));
 
 	m_ref_x = new QGraphicsLineItem(25,0,25,50, m_pixmap);
@@ -117,68 +117,68 @@ ImageViewer::ImageViewer(QWidget *parent)
 	m_edge_clipping->setVisible(false);
 	m_edge_clipping_visible = false;
 
-    makeToolbar();
+	makeToolbar();
 
-    auto box = new QVBoxLayout;
-    box->setContentsMargins(0,0,0,0);
-    box->addWidget(m_toolbar);
-    box->addWidget(m_view, 1);
-    setLayout(box);
+	auto box = new QVBoxLayout;
+	box->setContentsMargins(0,0,0,0);
+	box->addWidget(m_toolbar);
+	box->addWidget(m_view, 1);
+	setLayout(box);
 
 	m_extra_selections_visible = false;
 }
 
 // toolbar with a few quick actions and display information
 void ImageViewer::makeToolbar() {
-    // text and value at pixel
-    m_text_label = new QLabel(this);
-    m_text_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-    m_pixel_value = new QLabel(this);
+	// text and value at pixel
+	m_text_label = new QLabel(this);
+	m_text_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	m_pixel_value = new QLabel(this);
 
-    auto fit = new QToolButton(this);
-    fit->setToolTip(tr("Fit image to window"));
-    fit->setIcon(QIcon(":resource/zoom-fit-best.png"));
-    connect(fit, SIGNAL(clicked()), SLOT(zoomFit()));
+	auto fit = new QToolButton(this);
+	fit->setToolTip(tr("Fit image to window"));
+	fit->setIcon(QIcon(":resource/zoom-fit-best.png"));
+	connect(fit, SIGNAL(clicked()), SLOT(zoomFit()));
 
-    auto orig = new QToolButton(this);
-    orig->setToolTip(tr("Zoom 1:1"));
-    orig->setIcon(QIcon(":resource/zoom-original.png"));
-    connect(orig, SIGNAL(clicked()), SLOT(zoomOriginal()));
+	auto orig = new QToolButton(this);
+	orig->setToolTip(tr("Zoom 1:1"));
+	orig->setIcon(QIcon(":resource/zoom-original.png"));
+	connect(orig, SIGNAL(clicked()), SLOT(zoomOriginal()));
 
-    auto zoomin = new QToolButton(this);
-    zoomin->setToolTip(tr("Zoom In"));
-    zoomin->setIcon(QIcon(":resource/zoom-in.png"));
-    connect(zoomin, SIGNAL(clicked()), SLOT(zoomIn()));
+	auto zoomin = new QToolButton(this);
+	zoomin->setToolTip(tr("Zoom In"));
+	zoomin->setIcon(QIcon(":resource/zoom-in.png"));
+	connect(zoomin, SIGNAL(clicked()), SLOT(zoomIn()));
 
-    auto zoomout = new QToolButton(this);
-    zoomout->setToolTip(tr("Zoom Out"));
-    zoomout->setIcon(QIcon(":resource/zoom-out.png"));
-    connect(zoomout, SIGNAL(clicked()), SLOT(zoomOut()));
+	auto zoomout = new QToolButton(this);
+	zoomout->setToolTip(tr("Zoom Out"));
+	zoomout->setIcon(QIcon(":resource/zoom-out.png"));
+	connect(zoomout, SIGNAL(clicked()), SLOT(zoomOut()));
 
-    m_toolbar = new QWidget;
-    auto box = new QHBoxLayout(m_toolbar);
-    m_toolbar->setContentsMargins(0,0,0,0);
-    box->setContentsMargins(0,0,0,0);
-    box->addWidget(m_text_label);
-    box->addStretch(1);
-    box->addWidget(m_pixel_value);
+	m_toolbar = new QWidget;
+	auto box = new QHBoxLayout(m_toolbar);
+	m_toolbar->setContentsMargins(0,0,0,0);
+	box->setContentsMargins(0,0,0,0);
+	box->addWidget(m_text_label);
+	box->addStretch(1);
+	box->addWidget(m_pixel_value);
 
-    box->addWidget(zoomout);
-    box->addWidget(zoomin);
-    box->addWidget(fit);
-    box->addWidget(orig);
+	box->addWidget(zoomout);
+	box->addWidget(zoomin);
+	box->addWidget(fit);
+	box->addWidget(orig);
 }
 
 QString ImageViewer::text() const {
-    return m_text_label->text();
+	return m_text_label->text();
 }
 
 void ImageViewer::setText(const QString &txt) {
-    m_text_label->setText(txt);
+	m_text_label->setText(txt);
 }
 
 void ImageViewer::setToolTip(const QString &txt) {
-    m_text_label->setToolTip(txt);
+	m_text_label->setToolTip(txt);
 }
 
 void ImageViewer::showSelection(bool show) {
@@ -382,33 +382,33 @@ void ImageViewer::setImage(preview_image &im) {
 }
 
 const PixmapItem *ImageViewer::pixmapItem() const {
-    return m_pixmap;
+	return m_pixmap;
 }
 
 PixmapItem *ImageViewer::pixmapItem() {
-    return m_pixmap;
+	return m_pixmap;
 }
 
 ImageViewer::ToolBarMode ImageViewer::toolBarMode() const {
-    return m_bar_mode;
+	return m_bar_mode;
 }
 
 void ImageViewer::setToolBarMode(ToolBarMode mode) {
-    m_bar_mode = mode;
-    if (mode == ToolBarMode::Hidden)
-        m_toolbar->hide();
-    else if (mode == ToolBarMode::Visible)
-        m_toolbar->show();
-    else
-        m_toolbar->setVisible(underMouse());
+	m_bar_mode = mode;
+	if (mode == ToolBarMode::Hidden)
+		m_toolbar->hide();
+	else if (mode == ToolBarMode::Visible)
+		m_toolbar->show();
+	else
+		m_toolbar->setVisible(underMouse());
 }
 
 bool ImageViewer::isAntialiasingEnabled() const {
-    return m_view->renderHints() & QPainter::Antialiasing;
+	return m_view->renderHints() & QPainter::Antialiasing;
 }
 
 void ImageViewer::enableAntialiasing(bool on) {
-    m_view->setRenderHint(QPainter::Antialiasing, on);
+	m_view->setRenderHint(QPainter::Antialiasing, on);
 	if (on) {
 		m_pixmap->setTransformationMode(Qt::SmoothTransformation);
 	} else {
@@ -417,32 +417,32 @@ void ImageViewer::enableAntialiasing(bool on) {
 }
 
 void ImageViewer::addTool(QWidget *tool) {
-    m_toolbar->layout()->addWidget(tool);
+	m_toolbar->layout()->addWidget(tool);
 }
 
 void ImageViewer::setMatrix() {
-    qreal scale = m_zoom_level / 100.0;
+	qreal scale = m_zoom_level / 100.0;
 
-    QMatrix matrix;
-    matrix.scale(scale, scale);
+	QMatrix matrix;
+	matrix.scale(scale, scale);
 
-    m_view->setMatrix(matrix);
-    emit zoomChanged(m_view->matrix().m11());
+	m_view->setMatrix(matrix);
+	emit zoomChanged(m_view->matrix().m11());
 }
 
 void ImageViewer::zoomFit() {
-    m_view->fitInView(m_pixmap, Qt::KeepAspectRatio);
-    m_zoom_level = 100.0 * m_view->matrix().m11();
+	m_view->fitInView(m_pixmap, Qt::KeepAspectRatio);
+	m_zoom_level = 100.0 * m_view->matrix().m11();
 	indigo_debug("Zoom FIT = %d", m_zoom_level);
-    m_fit = true;
-    emit zoomChanged(m_view->matrix().m11());
+	m_fit = true;
+	emit zoomChanged(m_view->matrix().m11());
 }
 
 void ImageViewer::zoomOriginal() {
-    m_zoom_level = 100;
+	m_zoom_level = 100;
 	indigo_debug("Zoom 1:1 = %d", m_zoom_level);
-    m_fit = false;
-    setMatrix();
+	m_fit = false;
+	setMatrix();
 }
 
 void ImageViewer::zoomIn() {
@@ -461,8 +461,8 @@ void ImageViewer::zoomIn() {
 		m_zoom_level = 5000;
 	}
 	indigo_debug("Zoom IN = %d", m_zoom_level);
-    m_fit = false;
-    setMatrix();
+	m_fit = false;
+	setMatrix();
 }
 
 void ImageViewer::zoomOut() {
@@ -478,7 +478,7 @@ void ImageViewer::zoomOut() {
 		m_zoom_level = 1;
 	}
 	indigo_debug("Zoom OUT = %d", m_zoom_level);
-    m_fit = false;
+	m_fit = false;
 	setMatrix();
 }
 
@@ -523,33 +523,33 @@ void ImageViewer::enterEvent(QEvent *event) {
 }
 
 void ImageViewer::leaveEvent(QEvent *event) {
-    QFrame::leaveEvent(event);
-    if (m_bar_mode == ToolBarMode::AutoHidden) {
-        m_toolbar->hide();
-        if (m_fit)
-            zoomFit();
-    }
+	QFrame::leaveEvent(event);
+	if (m_bar_mode == ToolBarMode::AutoHidden) {
+		m_toolbar->hide();
+		if (m_fit)
+			zoomFit();
+	}
 	emit mouseAt(-1, -1);
 }
 
 void ImageViewer::resizeEvent(QResizeEvent *event) {
-    QFrame::resizeEvent(event);
-    if (m_fit)
-        zoomFit();
+	QFrame::resizeEvent(event);
+	if (m_fit)
+		zoomFit();
 }
 
 void ImageViewer::showEvent(QShowEvent *event) {
-    QFrame::showEvent(event);
-    if (m_fit)
-        zoomFit();
+	QFrame::showEvent(event);
+	if (m_fit)
+		zoomFit();
 }
 
 
 PixmapItem::PixmapItem(QGraphicsItem *parent) :
-    QObject(), QGraphicsPixmapItem(parent)
+	QObject(), QGraphicsPixmapItem(parent)
 {
 	//setTransformationMode(Qt::SmoothTransformation);
-    setAcceptHoverEvents(true);
+	setAcceptHoverEvents(true);
 }
 
 void PixmapItem::setImage(preview_image im) {
@@ -576,11 +576,11 @@ void PixmapItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
 }
 
 void PixmapItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
-    QGraphicsItem::mouseReleaseEvent(event);
+	QGraphicsItem::mouseReleaseEvent(event);
 }
 
 void PixmapItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event) {
-    auto pos = event->pos();
-    emit mouseMoved(pos.x(), pos.y());
-    QGraphicsItem::hoverMoveEvent(event);
+	auto pos = event->pos();
+	emit mouseMoved(pos.x(), pos.y());
+	QGraphicsItem::hoverMoveEvent(event);
 }

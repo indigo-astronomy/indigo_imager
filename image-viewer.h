@@ -16,48 +16,48 @@ class GraphicsView;
  * @brief ImageViewer displays images and allows basic interaction with it
  */
 class ImageViewer : public QFrame {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-    /**
-     * ToolBar visibility
-     */
-    enum class ToolBarMode {
-        Visible,
-        Hidden,
-        AutoHidden
-    };
+	/**
+	* ToolBar visibility
+	*/
+	enum class ToolBarMode {
+		Visible,
+		Hidden,
+		AutoHidden
+	};
 
 public:
-    explicit ImageViewer(QWidget *parent = nullptr);
+	explicit ImageViewer(QWidget *parent = nullptr);
 
-    /// Text displayed on the left side of the toolbar
-    QString text() const;
+	/// Text displayed on the left side of the toolbar
+	QString text() const;
 
 	QLabel *getTextLabel() { return m_text_label; };
 
-    /// The currently displayed image
-    const preview_image& image() const;
+	/// The currently displayed image
+	const preview_image& image() const;
 
-    /// Access to the pixmap so that other tools can add things to it
-    const PixmapItem* pixmapItem() const;
-    PixmapItem* pixmapItem();
+	/// Access to the pixmap so that other tools can add things to it
+	const PixmapItem* pixmapItem() const;
+	PixmapItem* pixmapItem();
 
-    /// Add a tool to the toolbar
-    void addTool(QWidget *tool);
+	/// Add a tool to the toolbar
+	void addTool(QWidget *tool);
 
-    /// Toolbar visibility
-    ToolBarMode toolBarMode() const;
-    void setToolBarMode(ToolBarMode mode);
+	/// Toolbar visibility
+	ToolBarMode toolBarMode() const;
+	void setToolBarMode(ToolBarMode mode);
 
-    /// Anti-aliasing
-    bool isAntialiasingEnabled() const;
-    void enableAntialiasing(bool on = true);
+	/// Anti-aliasing
+	bool isAntialiasingEnabled() const;
+	void enableAntialiasing(bool on = true);
 
 public slots:
-    void setText(const QString &txt);
-    void setToolTip(const QString &txt);
-    void setImage(preview_image &im);
+	void setText(const QString &txt);
+	void setToolTip(const QString &txt);
+	void setImage(preview_image &im);
 
 	void showSelection(bool show);
 	void moveSelection(double x, double y);
@@ -72,34 +72,34 @@ public slots:
 	void showEdgeClipping(bool show);
 	void resizeEdgeClipping(double edge_clipping);
 
-    void zoomFit();
-    void zoomOriginal();
-    void zoomIn();
-    void zoomOut();
-    void mouseAt(double x, double y);
+	void zoomFit();
+	void zoomOriginal();
+	void zoomIn();
+	void zoomOut();
+	void mouseAt(double x, double y);
 	void mouseRightPressAt(double x, double y);
 
 signals:
-    void imageChanged();
+	void imageChanged();
 	void mouseRightPress(double x, double y);
-    void zoomChanged(double scale);
+	void zoomChanged(double scale);
 
 protected:
-    void enterEvent(QEvent *event) override;
-    void leaveEvent(QEvent *event) override;
-    void resizeEvent(QResizeEvent *event) override;
-    void showEvent(QShowEvent *event) override;
+	void enterEvent(QEvent *event) override;
+	void leaveEvent(QEvent *event) override;
+	void resizeEvent(QResizeEvent *event) override;
+	void showEvent(QShowEvent *event) override;
 
 private:
-    void setMatrix();
-    void makeToolbar();
+	void setMatrix();
+	void makeToolbar();
 
 private:
-    int m_zoom_level;
-    QLabel *m_text_label;
-    QLabel *m_pixel_value;
-    GraphicsView *m_view;
-    PixmapItem *m_pixmap;
+	int m_zoom_level;
+	QLabel *m_text_label;
+	QLabel *m_pixel_value;
+	GraphicsView *m_view;
+	PixmapItem *m_pixmap;
 	QGraphicsRectItem *m_selection;
 	QGraphicsRectItem *m_edge_clipping;
 	QGraphicsLineItem *m_ref_x;
@@ -112,38 +112,38 @@ private:
 	//QList<QPoint> m_extra_points;
 	bool m_extra_selections_visible;
 
-    QWidget *m_toolbar;
-    bool m_fit;
+	QWidget *m_toolbar;
+	bool m_fit;
 	bool m_selection_visible;
 	bool m_ref_visible;
 	bool m_edge_clipping_visible;
-    ToolBarMode m_bar_mode;
+	ToolBarMode m_bar_mode;
 };
 
 
 class PixmapItem : public QObject, public QGraphicsPixmapItem {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-    PixmapItem(QGraphicsItem *parent = nullptr);
-    const preview_image & image() const { return m_image; }
+	PixmapItem(QGraphicsItem *parent = nullptr);
+	const preview_image & image() const { return m_image; }
 
 public slots:
-    void setImage(preview_image im);
+	void setImage(preview_image im);
 
 signals:
-    void imageChanged(const preview_image &);
-    void sizeChanged(int w, int h);
+	void imageChanged(const preview_image &);
+	void sizeChanged(int w, int h);
 	void mouseRightPress(double x, double y);
-    void mouseMoved(double x, double y);
+	void mouseMoved(double x, double y);
 
 protected:
-    void mousePressEvent(QGraphicsSceneMouseEvent *) override;
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent *) override;
-    void hoverMoveEvent(QGraphicsSceneHoverEvent *) override;
+	void mousePressEvent(QGraphicsSceneMouseEvent *) override;
+	void mouseReleaseEvent(QGraphicsSceneMouseEvent *) override;
+	void hoverMoveEvent(QGraphicsSceneHoverEvent *) override;
 
 private:
-    preview_image m_image;
+	preview_image m_image;
 };
 
 #endif // IMAGEVIEWER_H
