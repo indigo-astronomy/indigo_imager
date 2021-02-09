@@ -296,7 +296,6 @@ void update_guider_selection_property(ImagerWindow *w, indigo_property *property
 
 	QList<QPointF> s_list;
 	if (count > 1) {
-		QPointF sel;
 		for (int i = 2; i <= count; i++) {
 			char name[INDIGO_NAME_SIZE];
 
@@ -311,8 +310,8 @@ void update_guider_selection_property(ImagerWindow *w, indigo_property *property
 			if (item) y = item->number.value;
 
 			if (x > 0 && y > 0) {
-				QPointF *sel = new QPointF(x, y);
-				s_list.append(*sel);
+				QPointF sel(x, y);
+				s_list.append(sel);
 			}
 		}
 		w->move_resize_guider_extra_selection(s_list, size);
