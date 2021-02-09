@@ -41,6 +41,7 @@ QServiceModel::QServiceModel(const QByteArray &type) {
 
 QServiceModel::~QServiceModel() {
 	saveManualServices();
+	while (!m_services.isEmpty()) delete m_services.takeFirst();
 }
 
 
@@ -223,12 +224,14 @@ void QServiceModel::onServiceAdded(QZeroConfService service) {
 			indigo_debug("SERVICE HAS RECORD [%s] connect = %d\n", service->name().toUtf8().constData(), stored_service->auto_connect);
 		} else {
 			indigo_debug("DUPLICATE SERVICE [%s]\n", service->name().toUtf8().constData());
+			delete indigo_service;
 			return;
 		}
 	}
 
 	if (stored_service->auto_connect) stored_service->connect();
 	emit(serviceAdded(*stored_service));
+	delete indigo_service;
 }
 
 
