@@ -193,6 +193,43 @@ void ImageViewer::showSelection(bool show) {
 	}
 }
 
+void ImageViewer::moveResizeSelection(double x, double y, int size) {
+	double cor_x = x - (double)size / 2.0;
+	double cor_y = y - (double)size / 2.0;
+
+	if (!m_pixmap->pixmap().isNull() && ((cor_x < 0) || (cor_y < 0) ||
+	    (cor_x > m_pixmap->pixmap().width() - size + 1) ||
+	    (cor_y > m_pixmap->pixmap().height() - size + 1))) {
+		return;
+	}
+	indigo_debug("%s(): %.2f -> %.2f, %.2f -> %.2f, %d", __FUNCTION__, x, cor_x, y, cor_y, size);
+	m_selection_p.setX(x);
+	m_selection_p.setY(y);
+	if (m_selection_p.isNull() || m_pixmap->pixmap().isNull()) {
+		m_selection->setVisible(false);
+	} else if (m_selection_visible){
+		m_selection->setVisible(true);
+	}
+	m_selection->setRect(0, 0, size, size);
+	m_selection->setPos(cor_x, cor_y);
+}
+
+void ImageViewer::moveSelection(double x, double y) {
+	QRectF br = m_selection->boundingRect();
+	double cor_x = x - (br.width() - 1) / 2.0;
+	double cor_y = y - (br.height() - 1) / 2.0;
+
+	if (!m_pixmap->pixmap().isNull() && ((cor_x < 0) || (cor_y < 0) ||
+	    (cor_x > m_pixmap->pixmap().width() - (int)br.width() + 1) ||
+	    (cor_y > m_pixmap->pixmap().height() - (int)br.height() + 1))) {
+		return;
+	}
+	indigo_debug("%s(): %.2f -> %.2f, %.2f -> %.2f, %d", __FUNCTION__, x, cor_x, y, cor_y, (int)br.width()-1);
+	m_selection_p.setX(x);
+	m_selection_p.setY(y);
+	m_selection->setPos(cor_x, cor_y);
+}
+
 void ImageViewer::showExtraSelection(bool show) {
 	m_extra_selections_visible = show;
 	QList<QGraphicsEllipseItem*>::iterator sel;
@@ -219,50 +256,13 @@ void ImageViewer::moveResizeExtraSelection(QList<QPointF> &point_list, int size)
 		selection->setBrush(QBrush(Qt::NoBrush));
 		selection->setPen(pen);
 		selection->setOpacity(0.7);
-		if (x <= size / 2.0 || y <= size / 2.0 || !m_extra_selections_visible && m_pixmap->pixmap().isNull()) {
+		if (x <= size / 2.0 || y <= size / 2.0 || !m_extra_selections_visible || m_pixmap->pixmap().isNull()) {
 			selection->setVisible(false);
 		} else {
 			selection->setVisible(true);
 		}
 		m_extra_selections.append(selection);
 	}
-}
-
-void ImageViewer::moveResizeSelection(double x, double y, int size) {
-	double cor_x = x - (double)size / 2.0;
-	double cor_y = y - (double)size / 2.0;
-
-	if (!m_pixmap->pixmap().isNull() && ((cor_x < 0) || (cor_y < 0) ||
-	    (cor_x > m_pixmap->pixmap().width() - size + 1) ||
-	    (cor_y > m_pixmap->pixmap().height() - size + 1))) {
-		return;
-	}
-	indigo_debug("%s(): %.2f -> %.2f, %.2f -> %.2f, %d", __FUNCTION__, x, cor_x, y, cor_y, size);
-	m_selection_p.setX(x);
-	m_selection_p.setY(y);
-	if (m_selection_p.isNull()) {
-		m_selection->setVisible(false);
-	} else if (m_selection_visible){
-		m_selection->setVisible(true);
-	}
-	m_selection->setRect(0, 0, size, size);
-	m_selection->setPos(cor_x, cor_y);
-}
-
-void ImageViewer::moveSelection(double x, double y) {
-	QRectF br = m_selection->boundingRect();
-	double cor_x = x - (br.width() - 1) / 2.0;
-	double cor_y = y - (br.height() - 1) / 2.0;
-
-	if (!m_pixmap->pixmap().isNull() && ((cor_x < 0) || (cor_y < 0) ||
-	    (cor_x > m_pixmap->pixmap().width() - (int)br.width() + 1) ||
-	    (cor_y > m_pixmap->pixmap().height() - (int)br.height() + 1))) {
-		return;
-	}
-	indigo_debug("%s(): %.2f -> %.2f, %.2f -> %.2f, %d", __FUNCTION__, x, cor_x, y, cor_y, (int)br.width()-1);
-	m_selection_p.setX(x);
-	m_selection_p.setY(y);
-	m_selection->setPos(cor_x, cor_y);
 }
 
 void ImageViewer::showReference(bool show) {
@@ -363,6 +363,16 @@ void ImageViewer::setImage(preview_image &im) {
 			m_edge_clipping->setVisible(false);
 		}
 		resizeEdgeClipping(m_edge_clipping_v);
+
+		QList<QGraphicsEllipseItem*>::iterator sel;
+		for (sel = m_extra_selections.begin(); sel != m_extra_selections.end(); ++sel) {
+			//QRectF rect = (*sel)->rect();
+			//if (rect.x() > 0 && rect.y() > 0) {
+				(*sel)->setVisible(m_extra_selections_visible);
+			//} else {
+			//	(*sel)->setVisible(false);
+			//}
+		}
 	}
 	m_view->scene()->setSceneRect(0, 0, im.width(), im.height());
 
