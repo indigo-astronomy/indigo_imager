@@ -929,7 +929,9 @@ void ImagerWindow::on_indigo_save_log(bool status) {
 	write_conf();
 
 	if (status) {
+#ifndef INDIGO_WINDOWS
 		m_stderr = dup(m_stderr);
+#endif
 		char time_str[PATH_LEN];
 		char file_name[255];
 		char path[PATH_LEN];
@@ -938,13 +940,16 @@ void ImagerWindow::on_indigo_save_log(bool status) {
 		snprintf(file_name, sizeof(file_name), "%s" AIN_INDIGO_LOG_NAME_FORMAT, path, time_str);
 		freopen(file_name,"a+", stderr);
 	} else {
+#ifndef INDIGO_WINDOWS
 		fflush(stderr);
 		fclose(stderr);
-#ifndef INDIGO_WINDOWS
-		stderr = fdopen(m_stderr, "w+");
+        stderr = _fdopen(m_stderr, "w+");
+#else
+        indigo_log("On Windows INDIGO log can not be stopped for the current session, it will take effect on Ain restart.");
 #endif
 	}
-	indigo_debug("%s\n", __FUNCTION__);
+    indigo_debug("%s\n", __FUNCTION__);
+
 }
 
 void ImagerWindow::on_log_error() {
