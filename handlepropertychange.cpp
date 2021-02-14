@@ -717,7 +717,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 			if (w->m_guider_process && w->m_guide_log && conf.guider_save_log && frame_count > 1) {
 				char time_str[255];
 				get_timestamp(time_str);
-				fprintf(w->m_guide_log, "\"%s\",%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%d\n", time_str, d_x, d_y, d_ra, d_dec, cor_ra, cor_dec, is_dithering);
+				fprintf(w->m_guide_log, "\"%s\", %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %d\n", time_str, d_x, d_y, d_ra, d_dec, cor_ra, cor_dec, is_dithering);
 				fflush(w->m_guide_log);
 			}
 		} else {
@@ -802,7 +802,33 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 					w->m_guider_process = 1;
 					get_timestamp(time_str);
 					fprintf(w->m_guide_log, "\nGuiding started at %s\n", time_str);
-					fprintf(w->m_guide_log, "Timestamp,X Dif,Y Dif,RA Dif,Dec Dif,Ra Correction,Dec Correction,Dithering\n");
+					indigo_property *p = properties.get(property->device, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME);
+					if (p) {
+						char method[INDIGO_VALUE_SIZE] = {0};
+						for (int i = 0; i < p->count; i++ ) {
+							if (p->items[i].sw.value) {
+								strncpy(method, p->items[i].label, INDIGO_VALUE_SIZE);
+								break;
+							}
+						}
+						p = properties.get(property->device, AGENT_GUIDER_SELECTION_PROPERTY_NAME);
+						if (p) {
+							int radius = 0;
+							int star_count = 0;
+							int edge_clipping = 0;
+							for (int i = 0; i < p->count; i++) {
+								if (client_match_item(&p->items[i], AGENT_GUIDER_SELECTION_RADIUS_ITEM_NAME)) {
+									radius = (int)round(p->items[i].number.value);
+								} else if (client_match_item(&p->items[i], AGENT_GUIDER_SELECTION_STAR_COUNT_ITEM_NAME)) {
+									star_count = (int)p->items[i].number.value;
+								} else if (client_match_item(&p->items[i], AGENT_GUIDER_SELECTION_EDGE_CLIPPING_ITEM_NAME)) {
+									edge_clipping = (int)p->items[i].number.value;
+								}
+							}
+							fprintf(w->m_guide_log, "Method: %s, Parameters: Radius = %dpx, Star count = %d, Edge clipping = %dpx\n", method, radius, star_count, edge_clipping);
+						}
+					}
+					fprintf(w->m_guide_log, "Timestamp, X Dif, Y Dif, RA Dif, Dec Dif, Ra Correction, Dec Correction, Dithering\n");
 					fflush(w->m_guide_log);
 				}
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_START_PREVIEW_ITEM_NAME) && property->items[i].sw.value) {
