@@ -777,6 +777,95 @@ void update_guider_settings(ImagerWindow *w, indigo_property *property) {
 	}
 }
 
+void log_guide_header(ImagerWindow *w, char *device_name) {
+	char time_str[255];
+	if (w->m_guide_log == nullptr || device_name == nullptr) return;
+
+	get_timestamp(time_str);
+	fprintf(w->m_guide_log, "\nGuiding started at %s\n", time_str);
+	indigo_property *p = properties.get(device_name, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME);
+	if (p) {
+		char method[INDIGO_VALUE_SIZE] = {0};
+		for (int i = 0; i < p->count; i++ ) {
+			if (p->items[i].sw.value) {
+				strncpy(method, p->items[i].label, INDIGO_VALUE_SIZE);
+				break;
+			}
+		}
+		p = properties.get(device_name, AGENT_GUIDER_SELECTION_PROPERTY_NAME);
+		if (p) {
+			int radius = 0;
+			int star_count = 0;
+			int edge_clipping = 0;
+			for (int i = 0; i < p->count; i++) {
+				if (client_match_item(&p->items[i], AGENT_GUIDER_SELECTION_RADIUS_ITEM_NAME)) {
+					radius = (int)round(p->items[i].number.value);
+				} else if (client_match_item(&p->items[i], AGENT_GUIDER_SELECTION_STAR_COUNT_ITEM_NAME)) {
+					star_count = (int)p->items[i].number.value;
+				} else if (client_match_item(&p->items[i], AGENT_GUIDER_SELECTION_EDGE_CLIPPING_ITEM_NAME)) {
+					edge_clipping = (int)p->items[i].number.value;
+				}
+			}
+			fprintf(w->m_guide_log, "Method: '%s', Parameters: Radius = %d px, Star count = %d, Edge clipping = %d px\n", method, radius, star_count, edge_clipping);
+		}
+
+		p = properties.get(device_name, AGENT_GUIDER_SETTINGS_PROPERTY_NAME);
+		double exposure = 0;
+		double delay = 0;
+		double min_err = 0;
+		double min_pulse = 0;
+		double max_pulse = 0;
+		double ra_aggr = 0;
+		double dec_aggr = 0;
+		double pw_ra = 0;
+		double pw_dec = 0;
+		double stack = 0;
+		for (int i = 0; i < p->count; i++) {
+			if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_EXPOSURE_ITEM_NAME)) {
+				exposure = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_DELAY_ITEM_NAME)) {
+				delay = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_MIN_ERR_ITEM_NAME)) {
+				min_err = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_MIN_PULSE_ITEM_NAME)) {
+				min_pulse = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_MAX_PULSE_ITEM_NAME)) {
+				max_pulse = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_AGG_RA_ITEM_NAME)) {
+				ra_aggr = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_AGG_DEC_ITEM_NAME)) {
+				dec_aggr = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_PW_RA_ITEM_NAME)) {
+				pw_ra = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_PW_DEC_ITEM_NAME)) {
+				pw_dec = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_STACK_ITEM_NAME)) {
+				stack = p->items[i].number.value;
+			}
+		}
+		fprintf(
+			w->m_guide_log,
+			"Guider Settings: Exp = %.3f s, Delay = %.3f s, Min Error = %.3f px, Min Pulse = %.3f s, Max Pulse = %.3f s\n",
+			exposure,
+			delay,
+			min_err,
+			min_pulse,
+			max_pulse
+		);
+		fprintf(
+			w->m_guide_log,
+			"PI Settings: RA Aggr = %.3f %%, Dec Aggr = %.3f %%, RA P Weight = %.3f, Dec P Weight = %.3f, Stack = %.0f\n",
+			ra_aggr,
+			dec_aggr,
+			pw_ra,
+			pw_dec,
+			stack
+		);
+	}
+	fprintf(w->m_guide_log, "Timestamp, X Dif, Y Dif, RA Dif, Dec Dif, Ra Correction, Dec Correction, Dithering\n");
+	fflush(w->m_guide_log);
+}
+
 void agent_guider_start_process_change(ImagerWindow *w, indigo_property *property) {
 	char time_str[255];
 	if (property->state==INDIGO_BUSY_STATE) {
@@ -798,38 +887,9 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 				w->set_enabled(w->m_guider_calibrate_button, false);
 				w->set_enabled(w->m_guider_guide_button, true);
 				w->set_enabled(w->m_guider_preview_button, false);
-				if (w->m_guide_log && conf.guider_save_log) {
+				if (w->m_guide_log && conf.guider_save_log && w->m_guider_process == 0) {
 					w->m_guider_process = 1;
-					get_timestamp(time_str);
-					fprintf(w->m_guide_log, "\nGuiding started at %s\n", time_str);
-					indigo_property *p = properties.get(property->device, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME);
-					if (p) {
-						char method[INDIGO_VALUE_SIZE] = {0};
-						for (int i = 0; i < p->count; i++ ) {
-							if (p->items[i].sw.value) {
-								strncpy(method, p->items[i].label, INDIGO_VALUE_SIZE);
-								break;
-							}
-						}
-						p = properties.get(property->device, AGENT_GUIDER_SELECTION_PROPERTY_NAME);
-						if (p) {
-							int radius = 0;
-							int star_count = 0;
-							int edge_clipping = 0;
-							for (int i = 0; i < p->count; i++) {
-								if (client_match_item(&p->items[i], AGENT_GUIDER_SELECTION_RADIUS_ITEM_NAME)) {
-									radius = (int)round(p->items[i].number.value);
-								} else if (client_match_item(&p->items[i], AGENT_GUIDER_SELECTION_STAR_COUNT_ITEM_NAME)) {
-									star_count = (int)p->items[i].number.value;
-								} else if (client_match_item(&p->items[i], AGENT_GUIDER_SELECTION_EDGE_CLIPPING_ITEM_NAME)) {
-									edge_clipping = (int)p->items[i].number.value;
-								}
-							}
-							fprintf(w->m_guide_log, "Method: %s, Parameters: Radius = %dpx, Star count = %d, Edge clipping = %dpx\n", method, radius, star_count, edge_clipping);
-						}
-					}
-					fprintf(w->m_guide_log, "Timestamp, X Dif, Y Dif, RA Dif, Dec Dif, Ra Correction, Dec Correction, Dithering\n");
-					fflush(w->m_guide_log);
+					log_guide_header(w, property->device);
 				}
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_START_PREVIEW_ITEM_NAME) && property->items[i].sw.value) {
 				w->set_widget_state(w->m_guider_calibrate_button, INDIGO_OK_STATE);

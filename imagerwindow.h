@@ -101,6 +101,7 @@ public:
 	friend void agent_guider_start_process_change(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_dithering_property(ImagerWindow *w, indigo_property *property);
 	friend void condigure_guider_overlays(ImagerWindow *w, char *device, indigo_property *property);
+	friend void log_guide_header(ImagerWindow *w, char *device_name);
 
 	bool save_blob;
 
