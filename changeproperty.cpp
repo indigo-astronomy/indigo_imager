@@ -16,7 +16,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "imagerwindow.h"
+#include <imagerwindow.h>
+#include <propertycache.h>
 
 void ImagerWindow::change_ccd_frame_property(const char *agent) const {
 	static const char *items[] = {
@@ -176,6 +177,44 @@ void ImagerWindow::change_guider_agent_star_selection(const char *agent) const {
 	values[1] = (double)m_guide_star_y->value();
 	values[2] = (double)m_guide_star_radius->value();
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME, 3, items, values);
+}
+
+
+void ImagerWindow::clear_guider_agent_star_selection(const char *agent) const {
+	const int max_stars = 25;
+
+	char item_names[max_stars * 2][INDIGO_NAME_SIZE];
+	static char *items[max_stars * 2];
+
+	indigo_property *p = properties.get((char*)agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME);
+	if (p == nullptr) return;
+	indigo_item *item = indigo_get_item(p, AGENT_GUIDER_SELECTION_STAR_COUNT_ITEM_NAME);
+	if (item == nullptr) return;
+	int count = item->number.value;
+
+	if (count > max_stars) {
+		indigo_error("Too many selected stars. Should be < %s", max_stars);
+		count = max_stars * 2;
+	} else {
+		count *= 2;
+	}
+
+	snprintf(item_names[0], INDIGO_VALUE_SIZE, AGENT_GUIDER_SELECTION_X_ITEM_NAME);
+	items[0] = item_names[0];
+	snprintf(item_names[1], INDIGO_VALUE_SIZE, AGENT_GUIDER_SELECTION_Y_ITEM_NAME);
+	items[1] = item_names[1];
+	int index=2;
+	for (int i = 2; i < count; i += 2) {
+		snprintf(item_names[i], INDIGO_VALUE_SIZE, "%s_%d", AGENT_GUIDER_SELECTION_X_ITEM_NAME, index);
+		items[i] = item_names[i];
+		snprintf(item_names[i + 1], INDIGO_VALUE_SIZE, "%s_%d", AGENT_GUIDER_SELECTION_Y_ITEM_NAME, index);
+		items[i + 1] = item_names[i + 1];
+		index++;
+	}
+
+	static double values[max_stars] = {0};
+
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME, count, (const char**)items, values);
 }
 
 void ImagerWindow::change_guider_agent_star_count(const char *agent) const {

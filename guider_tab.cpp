@@ -263,6 +263,12 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	connect(m_guide_star_count, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_star_count_changed);
 
 	settings_row++;
+	button = new QPushButton("Clear star selection");
+	button->setStyleSheet("min-width: 30px");
+	settings_frame_layout->addWidget(button, settings_row, 0, 1, 4);
+	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_guider_clear_selection);
+
+	settings_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	settings_frame_layout->addItem(spacer, settings_row, 0);
 
@@ -787,5 +793,15 @@ void ImagerWindow::on_guider_subframe_changed(int index) {
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_guider_agent_subframe(selected_agent);
+	});
+}
+
+void ImagerWindow::on_guider_clear_selection(bool clicked) {
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_guider_agent(selected_agent);
+
+		clear_guider_agent_star_selection(selected_agent);
 	});
 }
