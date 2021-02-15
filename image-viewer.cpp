@@ -197,14 +197,16 @@ void ImageViewer::moveResizeSelection(double x, double y, int size) {
 	double cor_x = x - (double)size / 2.0;
 	double cor_y = y - (double)size / 2.0;
 
+	m_selection_p.setX(x);
+	m_selection_p.setY(y);
+
 	if (!m_pixmap->pixmap().isNull() && ((cor_x < 0) || (cor_y < 0) ||
 	    (cor_x > m_pixmap->pixmap().width() - size + 1) ||
 	    (cor_y > m_pixmap->pixmap().height() - size + 1))) {
+		m_selection->setVisible(false);
 		return;
 	}
 	indigo_debug("%s(): %.2f -> %.2f, %.2f -> %.2f, %d", __FUNCTION__, x, cor_x, y, cor_y, size);
-	m_selection_p.setX(x);
-	m_selection_p.setY(y);
 	if (m_selection_p.isNull() || m_pixmap->pixmap().isNull()) {
 		m_selection->setVisible(false);
 	} else if (m_selection_visible){
