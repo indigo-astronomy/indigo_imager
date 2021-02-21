@@ -510,15 +510,15 @@ void ImagerWindow::change_guider_agent_aggressivity(const char *agent) const {
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 2, items, values);
 }
 
-void ImagerWindow::change_guider_agent_pi(const char *agent) const {
+void ImagerWindow::change_guider_agent_i(const char *agent) const {
 	static const char *items[] = {
-		AGENT_GUIDER_SETTINGS_PW_RA_ITEM_NAME,
-		AGENT_GUIDER_SETTINGS_PW_DEC_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_I_GAIN_RA_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_I_GAIN_DEC_ITEM_NAME,
 		AGENT_GUIDER_SETTINGS_STACK_ITEM_NAME
 	};
 	static double values[3];
-	values[0] = (double)m_guide_ra_pw->value();
-	values[1] = (double)m_guide_dec_pw->value();
+	values[0] = (double)m_guide_i_gain_ra->value();
+	values[1] = (double)m_guide_i_gain_dec->value();
 	values[2] = (double)m_guide_is->value();
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 3, items, values);
 }

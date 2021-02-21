@@ -767,10 +767,10 @@ void update_guider_settings(ImagerWindow *w, indigo_property *property) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_ra_aggr);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_AGG_DEC_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_dec_aggr);
-		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_PW_RA_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_ra_pw);
-		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_PW_DEC_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_dec_pw);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_I_GAIN_RA_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_i_gain_ra);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_I_GAIN_DEC_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_i_gain_dec);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_STACK_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_is);
 		}
@@ -817,8 +817,8 @@ void log_guide_header(ImagerWindow *w, char *device_name) {
 		double max_pulse = 0;
 		double ra_aggr = 0;
 		double dec_aggr = 0;
-		double pw_ra = 0;
-		double pw_dec = 0;
+		double i_gain_ra = 0;
+		double i_gain_dec = 0;
 		double stack = 0;
 		for (int i = 0; i < p->count; i++) {
 			if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_EXPOSURE_ITEM_NAME)) {
@@ -835,10 +835,10 @@ void log_guide_header(ImagerWindow *w, char *device_name) {
 				ra_aggr = p->items[i].number.value;
 			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_AGG_DEC_ITEM_NAME)) {
 				dec_aggr = p->items[i].number.value;
-			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_PW_RA_ITEM_NAME)) {
-				pw_ra = p->items[i].number.value;
-			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_PW_DEC_ITEM_NAME)) {
-				pw_dec = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_I_GAIN_RA_ITEM_NAME)) {
+				i_gain_ra = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_I_GAIN_DEC_ITEM_NAME)) {
+				i_gain_dec = p->items[i].number.value;
 			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_STACK_ITEM_NAME)) {
 				stack = p->items[i].number.value;
 			}
@@ -854,11 +854,11 @@ void log_guide_header(ImagerWindow *w, char *device_name) {
 		);
 		fprintf(
 			w->m_guide_log,
-			"PI Settings: RA Aggr = %.3f %%, Dec Aggr = %.3f %%, RA P Weight = %.3f, Dec P Weight = %.3f, Stack = %.0f\n",
+			"PI Settings: RA Aggr = %.3f %%, Dec Aggr = %.3f %%, RA I Gain = %.3f, Dec I Gain = %.3f, Stack = %.0f\n",
 			ra_aggr,
 			dec_aggr,
-			pw_ra,
-			pw_dec,
+			i_gain_ra,
+			i_gain_dec,
 			stack
 		);
 	}
@@ -1033,8 +1033,8 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 				int build;
 				char message[255];
 				sscanf(item->text.value, "%d.%d-%d", &version_major, &version_minor, &build);
-				if (build < 135) {
-					sprintf(message, "WARNING: Some features will not work on '%s' running Indigo %s as Ain requires 2.0-135 or newer!", property->device, item->text.value);
+				if (build < 143) {
+					sprintf(message, "WARNING: Some features will not work on '%s' running Indigo %s as Ain requires 2.0-143 or newer!", property->device, item->text.value);
 					on_window_log(nullptr, message);
 				}
 			}
@@ -1479,11 +1479,11 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_spinbox_value(m_guide_dec_aggr, 0);
 		set_enabled(m_guide_dec_aggr, false);
 
-		set_spinbox_value(m_guide_ra_pw, 0);
-		set_enabled(m_guide_ra_pw, false);
+		set_spinbox_value(m_guide_i_gain_ra, 0);
+		set_enabled(m_guide_i_gain_ra, false);
 
-		set_spinbox_value(m_guide_dec_pw, 0);
-		set_enabled(m_guide_dec_pw, false);
+		set_spinbox_value(m_guide_i_gain_dec, 0);
+		set_enabled(m_guide_i_gain_dec, false);
 
 		set_spinbox_value(m_guide_is, 0);
 		set_enabled(m_guide_is, false);
