@@ -337,7 +337,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 4);
 
 	advanced_row++;
-	label = new QLabel("RA/Dec Aggressivity (%):");
+	label = new QLabel("RA/Dec P Aggressiv. (%):");
 	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 2);
 	m_guide_ra_aggr = new QSpinBox();
 	m_guide_ra_aggr->setMaximum(100);
