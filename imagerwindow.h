@@ -232,7 +232,7 @@ public slots:
 	void on_guider_agent_callibration_changed(double value);
 	void on_guider_agent_pulse_changed(double value);
 	void on_guider_agent_aggressivity_changed(int value);
-	void on_change_guider_agent_i_aggr_changed(double value);
+	void on_change_guider_agent_i_gain_changed(double value);
 	void on_change_guider_agent_is_changed(int value);
 	void on_guider_bw_save_changed(int index);
 	void on_guide_show_rd_drift();
@@ -414,8 +414,8 @@ private:
 	QDoubleSpinBox  *m_guide_max_pulse;
 	QSpinBox  *m_guide_ra_aggr;
 	QSpinBox  *m_guide_dec_aggr;
-	QDoubleSpinBox  *m_guide_ra_i_aggr;
-	QDoubleSpinBox  *m_guide_dec_i_aggr;
+	QDoubleSpinBox  *m_guide_i_gain_ra;
+	QDoubleSpinBox  *m_guide_i_gain_dec;
 	QSpinBox  *m_guide_is;
 	FocusGraph *m_guider_graph;
 	QVector<double> m_drift_data_ra;

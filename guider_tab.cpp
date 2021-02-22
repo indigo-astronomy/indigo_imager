@@ -337,7 +337,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 4);
 
 	advanced_row++;
-	label = new QLabel("RA/Dec P Aggr. (%):");
+	label = new QLabel("RA/Dec Aggressivity (%):");
 	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 2);
 	m_guide_ra_aggr = new QSpinBox();
 	m_guide_ra_aggr->setMaximum(100);
@@ -354,21 +354,21 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	connect(m_guide_dec_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_aggressivity_changed);
 
 	advanced_row++;
-	label = new QLabel("RA/Dec I Aggr. (%):");
+	label = new QLabel("RA/Dec I gain:");
 	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 2);
-	m_guide_ra_i_aggr = new QDoubleSpinBox();
-	m_guide_ra_i_aggr->setMaximum(1);
-	m_guide_ra_i_aggr->setMinimum(0);
-	m_guide_ra_i_aggr->setValue(0);
-	advanced_frame_layout->addWidget(m_guide_ra_i_aggr, advanced_row, 2);
-	connect(m_guide_ra_i_aggr, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_change_guider_agent_i_aggr_changed);
+	m_guide_i_gain_ra = new QDoubleSpinBox();
+	m_guide_i_gain_ra->setMaximum(1);
+	m_guide_i_gain_ra->setMinimum(0);
+	m_guide_i_gain_ra->setValue(0);
+	advanced_frame_layout->addWidget(m_guide_i_gain_ra, advanced_row, 2);
+	connect(m_guide_i_gain_ra, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_change_guider_agent_i_gain_changed);
 
-	m_guide_dec_i_aggr = new QDoubleSpinBox();
-	m_guide_dec_i_aggr->setMaximum(1);
-	m_guide_dec_i_aggr->setMinimum(0);
-	m_guide_dec_i_aggr->setValue(0);
-	advanced_frame_layout->addWidget(m_guide_dec_i_aggr, advanced_row, 3);
-	connect(m_guide_dec_i_aggr, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_change_guider_agent_i_aggr_changed);
+	m_guide_i_gain_dec = new QDoubleSpinBox();
+	m_guide_i_gain_dec->setMaximum(1);
+	m_guide_i_gain_dec->setMinimum(0);
+	m_guide_i_gain_dec->setValue(0);
+	advanced_frame_layout->addWidget(m_guide_i_gain_dec, advanced_row, 3);
+	connect(m_guide_i_gain_dec, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_change_guider_agent_i_gain_changed);
 
 	advanced_row++;
 	label = new QLabel("I stack (frames):");
@@ -744,7 +744,7 @@ void ImagerWindow::on_guider_agent_aggressivity_changed(int value) {
 	});
 }
 
-void ImagerWindow::on_change_guider_agent_i_aggr_changed(double value) {
+void ImagerWindow::on_change_guider_agent_i_gain_changed(double value) {
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -756,7 +756,7 @@ void ImagerWindow::on_change_guider_agent_i_aggr_changed(double value) {
 }
 
 void ImagerWindow::on_change_guider_agent_is_changed(int value) {
-	on_change_guider_agent_i_aggr_changed((double)value);
+	on_change_guider_agent_i_gain_changed((double)value);
 }
 
 void ImagerWindow::on_guider_agent_callibration_changed(double value) {
