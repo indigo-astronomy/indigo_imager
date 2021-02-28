@@ -20,6 +20,6 @@
 #ifndef VERSION_H
 #define VERSION_H
 
-#define AIN_VERSION "0.2-alpha4"
+#define AIN_VERSION "0.2-1"
 
 #endif // VERSION_H
