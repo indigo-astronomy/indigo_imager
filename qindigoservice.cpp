@@ -43,8 +43,8 @@ QIndigoService::QIndigoService(const QZeroConfService& _service, bool connect) :
 }
 
 
-QIndigoService::QIndigoService(const QIndigoService &other) : m_service(other.m_service) {
-}
+//QIndigoService::QIndigoService(const QIndigoService &other) : m_service(other.m_service) {
+//}
 
 
 QIndigoService::QIndigoService(QByteArray name, QByteArray host, int port) :

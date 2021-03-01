@@ -222,6 +222,7 @@ void QServiceModel::onServiceAdded(QZeroConfService service) {
 			stored_service->port() == indigo_service->port()
 		) {
 			indigo_debug("SERVICE HAS RECORD [%s] connect = %d\n", service->name().toUtf8().constData(), stored_service->auto_connect);
+			delete indigo_service;
 		} else {
 			indigo_debug("DUPLICATE SERVICE [%s]\n", service->name().toUtf8().constData());
 			delete indigo_service;
@@ -231,7 +232,6 @@ void QServiceModel::onServiceAdded(QZeroConfService service) {
 
 	if (stored_service->auto_connect) stored_service->connect();
 	emit(serviceAdded(*stored_service));
-	delete indigo_service;
 }
 
 
