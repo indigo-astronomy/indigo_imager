@@ -352,6 +352,10 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	tools_tabbar->addTab(guider_frame, "&Guide");
 	create_guider_tab(guider_frame);
 
+	QFrame *telescope_frame = new QFrame;
+	tools_tabbar->addTab(telescope_frame, "&Telescope");
+	create_telescope_tab(telescope_frame);
+
 	connect(tools_tabbar, &QTabWidget::currentChanged, this, &ImagerWindow::on_tab_changed);
 
 	// Image viewer

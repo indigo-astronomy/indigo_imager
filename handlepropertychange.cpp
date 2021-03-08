@@ -991,8 +991,9 @@ void condigure_guider_overlays(ImagerWindow *w, char *device, indigo_property *p
 }
 
 void ImagerWindow::property_define(indigo_property* property, char *message) {
-	char selected_agent[INDIGO_VALUE_SIZE] = {0, 0};
-	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0, 0};
+	char selected_agent[INDIGO_VALUE_SIZE] = {0};
+	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0};
+	char selected_mount_agent[INDIGO_VALUE_SIZE] = {0};
 	static pthread_mutex_t l_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 	if (!strncmp(property->device, "Server", 6)) {
@@ -1002,10 +1003,13 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			// load indigo_agent_image and indigo_agent_guider
 			bool imager_not_loaded = true;
 			bool guider_not_loaded = true;
+			bool mount_not_loaded = true;
+
 			indigo_property *p = properties.get(property->device, "DRIVERS");
 			if (p) {
 				imager_not_loaded = !indigo_get_switch(p, "indigo_agent_imager");
 				guider_not_loaded = !indigo_get_switch(p, "indigo_agent_guider");
+				mount_not_loaded = !indigo_get_switch(p, "indigo_agent_mount");
 			}
 			char *device_name = (char*)malloc(INDIGO_NAME_SIZE);
 			strncpy(device_name, property->device, INDIGO_NAME_SIZE);
@@ -1019,6 +1023,11 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 				if (guider_not_loaded) {
 					static const char *items[] = { "DRIVER" };
 					static const char *values[] = { "indigo_agent_guider" };
+					indigo_change_text_property(NULL, device_name, "LOAD", 1, items, values);
+				}
+				if (mount_not_loaded) {
+					static const char *items[] = { "DRIVER" };
+					static const char *values[] = { "indigo_agent_mount" };
 					indigo_change_text_property(NULL, device_name, "LOAD", 1, items, values);
 				}
 				pthread_mutex_unlock(&l_mutex);
@@ -1049,8 +1058,15 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		QString name = QString(property->device);
 		add_combobox_item(m_agent_guider_select, name, name);
 	}
-	if ((!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
-	    (!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12))) {
+	if(!strncmp(property->device, "Mount Agent", 11)) {
+		QString name = QString(property->device);
+		add_combobox_item(m_agent_mount_select, name, name);
+	}
+	if (
+		(!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
+		(!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12)) &&
+		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11))
+	) {
 		return;
 	}
 	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
@@ -1199,6 +1215,11 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_guider_agent, AGENT_START_PROCESS_PROPERTY_NAME)) {
 		agent_guider_start_process_change(this, property);
 	}
+
+	// Mount agent
+	if (client_match_device_property(property, selected_mount_agent, FILTER_MOUNT_LIST_PROPERTY_NAME)) {
+		add_items_to_combobox(this, property, m_mount_select);
+	}
 }
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
@@ -1208,11 +1229,15 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 
 
 void ImagerWindow::on_property_change(indigo_property* property, char *message) {
-	char selected_agent[INDIGO_VALUE_SIZE] = {0, 0};
-	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0, 0};
+	char selected_agent[INDIGO_VALUE_SIZE] = {0};
+	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0};
+	char selected_mount_agent[INDIGO_VALUE_SIZE] = {0};
 
-	if ((!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
-	    (!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12))) {
+	if (
+		(!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
+		(!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12)) &&
+		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11))
+	) {
 		return;
 	}
 
@@ -1315,16 +1340,26 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_guider_agent, AGENT_START_PROCESS_PROPERTY_NAME)) {
 		agent_guider_start_process_change(this, property);
 	}
+
+	// Mount Agent
+	if (client_match_device_property(property, selected_mount_agent, FILTER_MOUNT_LIST_PROPERTY_NAME)) {
+		change_combobox_selection(this, property, m_mount_select);
+	}
+
 	properties.create(property);
 }
 
 void ImagerWindow::property_delete(indigo_property* property, char *message) {
-	char selected_agent[INDIGO_VALUE_SIZE] = {0, 0};
-	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0, 0};
+	char selected_agent[INDIGO_VALUE_SIZE] = {0};
+	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0};
+	char selected_mount_agent[INDIGO_VALUE_SIZE] = {0};
 
 	indigo_debug("[REMOVE REMOVE REMOVE REMOVE REMOVE] %s.%s\n", property->device, property->name);
-	if ((!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
-	    (!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12))) {
+	if (
+		(!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
+		(!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12)) &&
+		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11))
+	) {
 		return;
 	}
 	indigo_debug("[REMOVE REMOVE REMOVE REMOVE] %s.%s\n", property->device, property->name);
@@ -1521,11 +1556,22 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_guider_agent)) {
 		set_enabled(m_guider_save_bw_select, false);
 	}
+
+	// Mount Agent
+	if (client_match_device_property(property, selected_mount_agent, FILTER_MOUNT_LIST_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		clear_combobox(m_mount_select);
+	}
 }
 
 void ImagerWindow::on_property_delete(indigo_property* property, char *message) {
 
-	if ((strncmp(property->device, "Imager Agent", 12)) && (strncmp(property->device, "Guider Agent", 12))) {
+	if (
+		(strncmp(property->device, "Imager Agent", 12)) &&
+		(strncmp(property->device, "Guider Agent", 12)) &&
+		(strncmp(property->device, "Mount Agent", 11))
+	) {
 		properties.remove(property);
 		free(property);
 		return;
@@ -1536,6 +1582,7 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 	if (client_match_device_property(property, property->device, INFO_PROPERTY_NAME) ||
 		client_match_device_no_property(property, property->device)) {
 		QString name = QString(property->device);
+
 		int selected_index = m_agent_imager_select->currentIndex();
 		int index = m_agent_imager_select->findText(name);
 		if (index >= 0) {
@@ -1548,6 +1595,7 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 		} else {
 			indigo_debug("[NOT FOUND imager agent] %s\n", name.toUtf8().data());
 		}
+
 		selected_index = m_agent_guider_select->currentIndex();
 		index = m_agent_guider_select->findText(name);
 		if (index >= 0) {
@@ -1559,6 +1607,19 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 			indigo_debug("[REMOVE guider agent] %s\n", name.toUtf8().data());
 		} else {
 			indigo_debug("[NOT FOUND guider agent] %s\n", name.toUtf8().data());
+		}
+
+		selected_index = m_agent_mount_select->currentIndex();
+		index = m_agent_mount_select->findText(name);
+		if (index >= 0) {
+			remove_combobox_item(m_agent_mount_select, index);
+			if (selected_index == index) {
+				set_combobox_current_index(m_agent_mount_select, 0);
+				on_mount_agent_selected(0);
+			}
+			indigo_debug("[REMOVE mount agent] %s\n", name.toUtf8().data());
+		} else {
+			indigo_debug("[NOT FOUND mount agent] %s\n", name.toUtf8().data());
 		}
 	}
 	properties.remove(property);

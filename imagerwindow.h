@@ -81,6 +81,13 @@ public:
 		return true;
 	};
 
+	bool get_selected_mount_agent(char * selected_agent) {
+		if (!selected_agent || !m_agent_mount_select) return false;
+		strncpy(selected_agent, m_agent_mount_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+		indigo_debug("SELECTED GUIDER AGENT = %s", selected_agent);
+		return true;
+	};
+
 	void property_delete(indigo_property* property, char *message);
 	void property_define(indigo_property* property, char *message);
 
@@ -240,6 +247,9 @@ public slots:
 	void on_guide_show_xy_drift();
 	void on_guider_save_log(bool status);
 	void on_indigo_save_log(bool status);
+
+	void on_mount_agent_selected(int index);
+	void on_mount_selected(int index);
 
 	void on_tab_changed(int index);
 
@@ -438,6 +448,10 @@ private:
 	QComboBox *m_detection_mode_select;
 	QComboBox *m_dec_guiding_select;
 
+	// Telescope tab
+	QComboBox *m_agent_mount_select;
+	QComboBox *m_mount_select;
+
 	FILE *m_guide_log;
 	int m_guider_process;
 	int m_stderr;
@@ -466,7 +480,8 @@ private:
 
 	void create_focuser_tab(QFrame *capture_frame);
 	void create_imager_tab(QFrame *camera_frame);
-	void create_guider_tab(QFrame *camera_frame);
+	void create_guider_tab(QFrame *guider_frame);
+	void create_telescope_tab(QFrame *telescope_frame);
 	void change_ccd_frame_property(const char *agent) const;
 	void change_ccd_exposure_property(const char *agent, QDoubleSpinBox *exp_time) const;
 	void change_ccd_abort_exposure_property(const char *agent) const;

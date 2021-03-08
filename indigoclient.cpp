@@ -21,6 +21,19 @@
 #include "indigoclient.h"
 #include "conf.h"
 
+bool processed_device(char *device) {
+	if (device == nullptr) return false;
+	if (
+		strncmp(device, "Imager Agent", 12) &&
+		strncmp(device, "Guider Agent", 12) &&
+		strncmp(device, "Mount Agent", 11) &&
+		strncmp(device, "Server", 6)
+	) {
+		return false;
+	} else {
+		return true;
+	}
+}
 
 bool client_match_item(indigo_item *item, const char *item_name) {
 	if (item == nullptr || item_name == nullptr) return false;
@@ -94,7 +107,8 @@ static void handle_blob_property(indigo_property *property) {
 
 static indigo_result client_define_property(indigo_client *client, indigo_device *device, indigo_property *property, const char *message) {
 	Q_UNUSED(device);
-	if(strncmp(property->device, "Imager Agent", 12) && strncmp(property->device, "Guider Agent", 12) && strncmp(property->device, "Server", 6)) return INDIGO_OK;
+
+	if (!processed_device(property->device)) return INDIGO_OK;
 
 	if (property->type == INDIGO_BLOB_VECTOR) {
 		if (device->version < INDIGO_VERSION_2_0)
@@ -120,7 +134,8 @@ static indigo_result client_define_property(indigo_client *client, indigo_device
 static indigo_result client_update_property(indigo_client *client, indigo_device *device, indigo_property *property, const char *message) {
 	Q_UNUSED(client);
 	Q_UNUSED(device);
-	if(strncmp(property->device, "Imager Agent", 12) && strncmp(property->device, "Guider Agent", 12) && strncmp(property->device, "Server", 6)) return INDIGO_OK;
+
+	if (!processed_device(property->device)) return INDIGO_OK;
 
 	if (property->type == INDIGO_BLOB_VECTOR) {
 		handle_blob_property(property);
@@ -142,7 +157,8 @@ static indigo_result client_delete_property(indigo_client *client, indigo_device
 	Q_UNUSED(client);
 	Q_UNUSED(device);
 	indigo_debug("Deleting property [%s] on device [%s]\n", property->name, property->device);
-	if(strncmp(property->device, "Imager Agent", 12) && strncmp(property->device, "Guider Agent", 12) && strncmp(property->device, "Server", 6)) return INDIGO_OK;
+
+	if (!processed_device(property->device)) return INDIGO_OK;
 
 	if (property->type == INDIGO_BLOB_VECTOR) {
 		for (int row = 0; row < property->count; row++) {
