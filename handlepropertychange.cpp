@@ -196,6 +196,58 @@ void update_cooler_onoff(ImagerWindow *w, indigo_property *property) {
 	}
 }
 
+void update_mount_ra_dec(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	QString ra_str;
+	QString dec_str;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], MOUNT_EQUATORIAL_COORDINATES_RA_ITEM_NAME)) {
+			ra_str = QString(indigo_dtos(property->items[i].number.value, NULL));
+		} else if (client_match_item(&property->items[i], MOUNT_EQUATORIAL_COORDINATES_DEC_ITEM_NAME)) {
+			dec_str = QString(indigo_dtos(property->items[i].number.value, NULL));
+		}
+	}
+	QString col = QLatin1String(":");
+    ra_str.replace(ra_str.indexOf(col), col.size(), QLatin1String(": "));
+	w->set_lcd(w->m_mount_ra_label, ra_str, property->state);
+	dec_str.replace(dec_str.indexOf(col), col.size(), QLatin1String("' "));
+	dec_str.replace(col , QLatin1String(" "));
+	w->set_lcd(w->m_mount_dec_label, dec_str, property->state);
+}
+
+void update_mount_az_alt(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	QString az_str;
+	QString alt_str;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], MOUNT_HORIZONTAL_COORDINATES_AZ_ITEM_NAME)) {
+			az_str = QString(indigo_dtos(property->items[i].number.value, NULL));
+		} else if (client_match_item(&property->items[i], MOUNT_HORIZONTAL_COORDINATES_ALT_ITEM_NAME)) {
+			alt_str = QString(indigo_dtos(property->items[i].number.value, NULL));
+		}
+	}
+	QString col = QLatin1String(":");
+    az_str.replace(az_str.indexOf(col), col.size(), QLatin1String("' "));
+	az_str.replace(col , QLatin1String(" "));
+	w->set_lcd(w->m_mount_az_label, az_str, property->state);
+	alt_str.replace(alt_str.indexOf(col), col.size(), QLatin1String("' "));
+	alt_str.replace(col , QLatin1String(" "));
+	w->set_lcd(w->m_mount_alt_label, alt_str, property->state);
+}
+
+void update_mount_lst(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	QString lst_str;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], MOUNT_LST_TIME_ITEM_NAME)) {
+			lst_str = QString(indigo_dtos(property->items[i].number.value, NULL));
+		}
+	}
+	QString col = QLatin1String(":");
+    lst_str.replace(lst_str.indexOf(col), col.size(), QLatin1String(": "));
+	w->set_lcd(w->m_mount_lst_label, lst_str, property->state);
+}
+
 static void update_ccd_temperature(ImagerWindow *w, indigo_property *property, QLineEdit *current_temp, QDoubleSpinBox *set_temp, bool update_value = false) {
 	indigo_debug("change %s", property->name);
 	for (int i = 0; i < property->count; i++) {
@@ -1220,6 +1272,15 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, FILTER_MOUNT_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_mount_select);
 	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_EQUATORIAL_COORDINATES_PROPERTY_NAME)) {
+		update_mount_ra_dec(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_HORIZONTAL_COORDINATES_PROPERTY_NAME)) {
+		update_mount_az_alt(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_LST_TIME_PROPERTY_NAME)) {
+		update_mount_lst(this, property);
+	}
 }
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
@@ -1344,6 +1405,15 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	// Mount Agent
 	if (client_match_device_property(property, selected_mount_agent, FILTER_MOUNT_LIST_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_mount_select);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_EQUATORIAL_COORDINATES_PROPERTY_NAME)) {
+		update_mount_ra_dec(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_HORIZONTAL_COORDINATES_PROPERTY_NAME)) {
+		update_mount_az_alt(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_LST_TIME_PROPERTY_NAME)) {
+		update_mount_lst(this, property);
 	}
 
 	properties.create(property);
@@ -1562,6 +1632,23 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		clear_combobox(m_mount_select);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_EQUATORIAL_COORDINATES_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		set_lcd(m_mount_ra_label, "00: 00:00.00", INDIGO_IDLE_STATE);
+		set_lcd(m_mount_dec_label, "00' 00 00.00", INDIGO_IDLE_STATE);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_HORIZONTAL_COORDINATES_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		set_lcd(m_mount_az_label, "00' 00 00.00", INDIGO_IDLE_STATE);
+		set_lcd(m_mount_alt_label, "00' 00 00.00", INDIGO_IDLE_STATE);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_HORIZONTAL_COORDINATES_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		set_lcd(m_mount_lst_label, "00: 00:00.00", INDIGO_IDLE_STATE);
 	}
 }
 

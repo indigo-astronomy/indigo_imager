@@ -19,6 +19,7 @@
 #include "imagerwindow.h"
 #include "propertycache.h"
 #include "conf.h"
+#include <QLCDNumber>
 
 #include <image_preview_lut.h>
 
@@ -28,7 +29,9 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	QGridLayout *telescope_frame_layout = new QGridLayout();
 	telescope_frame_layout->setAlignment(Qt::AlignTop);
 	telescope_frame_layout->setColumnStretch(0, 1);
-	telescope_frame_layout->setColumnStretch(1, 3);
+	telescope_frame_layout->setColumnStretch(1, 1);
+	telescope_frame_layout->setColumnStretch(2, 1);
+	telescope_frame_layout->setColumnStretch(3, 1);
 
 	telescope_frame->setLayout(telescope_frame_layout);
 	telescope_frame->setFrameShape(QFrame::StyledPanel);
@@ -37,7 +40,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 
 	int row = 0;
 	m_agent_mount_select = new QComboBox();
-	telescope_frame_layout->addWidget(m_agent_mount_select, row, 0, 1, 2);
+	telescope_frame_layout->addWidget(m_agent_mount_select, row, 0, 1, 4);
 	connect(m_agent_mount_select, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ImagerWindow::on_mount_agent_selected);
 
 	row++;
@@ -45,12 +48,81 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	telescope_frame_layout->addWidget(label, row, 0);
 	m_mount_select = new QComboBox();
-	telescope_frame_layout->addWidget(m_mount_select, row, 1);
+	telescope_frame_layout->addWidget(m_mount_select, row, 1, 1, 3);
 	connect(m_mount_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_mount_selected);
 
 	row++;
 	QSpacerItem *spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
-	telescope_frame_layout->addItem(spacer, row, 0);
+	telescope_frame_layout->addItem(spacer, row, 0, 1, 4);
+
+	#define LCD_SIZE 24
+	row++;
+	label = new QLabel("RA / Dec:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	telescope_frame_layout->addWidget(label, row, 0);
+
+	m_mount_ra_label = new QLCDNumber(13);
+	m_mount_ra_label->setSegmentStyle(QLCDNumber::Flat);
+	m_mount_ra_label->setMinimumHeight(LCD_SIZE);
+	m_mount_ra_label->display("00: 00:00.00");
+	set_ok(m_mount_ra_label);
+	m_mount_ra_label->show();
+	telescope_frame_layout->addWidget(m_mount_ra_label, row, 2, 1, 2);
+
+	row++;
+	m_mount_dec_label = new QLCDNumber(13);
+	m_mount_dec_label->setSegmentStyle(QLCDNumber::Flat);
+	m_mount_dec_label->setMinimumHeight(LCD_SIZE);
+	m_mount_dec_label->display("00' 00 00.00");
+	set_ok(m_mount_dec_label);
+	m_mount_dec_label->show();
+	telescope_frame_layout->addWidget(m_mount_dec_label, row, 2, 1, 2);
+
+	row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	telescope_frame_layout->addItem(spacer, row, 0, 1, 4);
+
+	row++;
+	label = new QLabel("Az / Alt:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	telescope_frame_layout->addWidget(label, row, 0);
+
+	m_mount_az_label = new QLCDNumber(13);
+	m_mount_az_label->setSegmentStyle(QLCDNumber::Flat);
+	m_mount_az_label->setMinimumHeight(LCD_SIZE);
+	m_mount_az_label->display("00' 00 00.00");
+	set_ok(m_mount_az_label);
+	m_mount_az_label->show();
+	telescope_frame_layout->addWidget(m_mount_az_label, row, 2, 1, 2);
+
+	row++;
+	m_mount_alt_label = new QLCDNumber(13);
+	m_mount_alt_label->setSegmentStyle(QLCDNumber::Flat);
+	m_mount_alt_label->setMinimumHeight(LCD_SIZE);
+	m_mount_alt_label->display("00' 00 00.00");
+	set_ok(m_mount_alt_label);
+	m_mount_alt_label->show();
+	telescope_frame_layout->addWidget(m_mount_alt_label, row, 2, 1, 2);
+
+	row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	telescope_frame_layout->addItem(spacer, row, 0, 1, 4);
+
+	row++;
+	label = new QLabel("LST:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	telescope_frame_layout->addWidget(label, row, 0);
+
+	m_mount_lst_label = new QLCDNumber(13);
+	m_mount_lst_label->setSegmentStyle(QLCDNumber::Flat);
+	m_mount_lst_label->setMinimumHeight(LCD_SIZE);
+	m_mount_lst_label->display("00: 00:00.00");
+	set_ok(m_mount_lst_label);
+	m_mount_lst_label->show();
+	telescope_frame_layout->addWidget(m_mount_lst_label, row, 2, 1, 2);
+
+	//telescope_frame_layout->addWidget(ra_dec_frame, row, 0, 2, 0);
+
 }
 
 void ImagerWindow::on_mount_agent_selected(int index) {

@@ -47,6 +47,7 @@ class QIndigoServers;
 #include <QScrollArea>
 #include <QComboBox>
 #include <QDoubleSpinBox>
+#include <QLCDNumber>
 #include <QMessageBox>
 #include <QActionGroup>
 #include <QLineEdit>
@@ -106,6 +107,9 @@ public:
 	friend void update_guider_stats(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_settings(ImagerWindow *w, indigo_property *property);
 	friend void agent_guider_start_process_change(ImagerWindow *w, indigo_property *property);
+	friend void update_mount_ra_dec(ImagerWindow *w, indigo_property *property);
+	friend void update_mount_az_alt(ImagerWindow *w, indigo_property *property);
+	friend void update_mount_lst(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_dithering_property(ImagerWindow *w, indigo_property *property);
 	friend void condigure_guider_overlays(ImagerWindow *w, char *device, indigo_property *property);
 	friend void log_guide_header(ImagerWindow *w, char *device_name);
@@ -124,6 +128,8 @@ signals:
 	void configure_spinbox(QSpinBox *widget, indigo_item *item, int perm);
 	void configure_spinbox(QDoubleSpinBox *widget, indigo_item *item, int perm);
 	void set_checkbox_checked(QCheckBox *widget, bool checked);
+
+	void set_lcd(QLCDNumber *widget, QString text, int state);
 
 	void set_combobox_current_text(QComboBox *combobox, const QString &item);
 	void set_combobox_current_index(QComboBox *combobox, int index);
@@ -292,6 +298,24 @@ public slots:
 		}
 	};
 
+	void on_set_lcd(QLCDNumber *widget, QString text, int state) {
+		switch (state) {
+			case INDIGO_IDLE_STATE:
+				set_idle(widget);
+				break;
+			case INDIGO_OK_STATE:
+				set_ok(widget);
+				break;
+			case INDIGO_BUSY_STATE:
+				set_busy(widget);
+				break;
+			case INDIGO_ALERT_STATE:
+				set_alert(widget);
+				break;
+		}
+		widget->display(text);
+	};
+
     void on_set_guider_label(int state, const char *text) {
 		if (text) m_guider_viewer->getTextLabel()->setText(text);
 		switch (state) {
@@ -448,12 +472,18 @@ private:
 	QComboBox *m_detection_mode_select;
 	QComboBox *m_dec_guiding_select;
 
+	FILE *m_guide_log;
+	int m_guider_process;
+
 	// Telescope tab
 	QComboBox *m_agent_mount_select;
 	QComboBox *m_mount_select;
+	QLCDNumber *m_mount_ra_label;
+	QLCDNumber *m_mount_dec_label;
+	QLCDNumber *m_mount_az_label;
+	QLCDNumber *m_mount_alt_label;
+	QLCDNumber *m_mount_lst_label;
 
-	FILE *m_guide_log;
-	int m_guider_process;
 	int m_stderr;
 
 	// Image viewer
