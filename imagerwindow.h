@@ -107,7 +107,7 @@ public:
 	friend void update_guider_stats(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_settings(ImagerWindow *w, indigo_property *property);
 	friend void agent_guider_start_process_change(ImagerWindow *w, indigo_property *property);
-	friend void update_mount_ra_dec(ImagerWindow *w, indigo_property *property);
+	friend void update_mount_ra_dec(ImagerWindow *w, indigo_property *property, bool update_input);
 	friend void update_mount_az_alt(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_lst(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_dithering_property(ImagerWindow *w, indigo_property *property);
@@ -256,6 +256,9 @@ public slots:
 
 	void on_mount_agent_selected(int index);
 	void on_mount_selected(int index);
+	void on_mount_goto(int index);
+	void on_mount_sync(int index);
+	void on_mount_abort(int index);
 
 	void on_tab_changed(int index);
 
@@ -483,6 +486,11 @@ private:
 	QLCDNumber *m_mount_az_label;
 	QLCDNumber *m_mount_alt_label;
 	QLCDNumber *m_mount_lst_label;
+	QLineEdit *m_mount_ra_input;
+	QLineEdit *m_mount_dec_input;
+	QPushButton *m_mount_goto_button;
+	QPushButton *m_mount_sync_button;
+	QPushButton *m_mount_abort_button;
 
 	int m_stderr;
 
@@ -556,6 +564,9 @@ private:
 	void change_guider_agent_aggressivity(const char *agent) const;
 	void change_guider_agent_i(const char *agent) const;
 	void change_guider_agent_edge_clipping(const char *agent) const;
+
+	void change_mount_agent_equatorial(const char *agent, bool sync=false) const;
+	void change_mount_agent_abort(const char *agent) const;
 
 	void select_guider_data(guider_display_data show);
 

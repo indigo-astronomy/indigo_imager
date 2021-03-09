@@ -196,7 +196,7 @@ void update_cooler_onoff(ImagerWindow *w, indigo_property *property) {
 	}
 }
 
-void update_mount_ra_dec(ImagerWindow *w, indigo_property *property) {
+void update_mount_ra_dec(ImagerWindow *w, indigo_property *property, bool update_input=false) {
 	indigo_debug("change %s", property->name);
 	QString ra_str;
 	QString dec_str;
@@ -207,12 +207,24 @@ void update_mount_ra_dec(ImagerWindow *w, indigo_property *property) {
 			dec_str = QString(indigo_dtos(property->items[i].number.value, NULL));
 		}
 	}
+	if (update_input) {
+		w->m_mount_ra_input->setText(ra_str);
+		w->m_mount_dec_input->setText(dec_str);
+	}
 	QString col = QLatin1String(":");
     ra_str.replace(ra_str.indexOf(col), col.size(), QLatin1String(": "));
 	w->set_lcd(w->m_mount_ra_label, ra_str, property->state);
 	dec_str.replace(dec_str.indexOf(col), col.size(), QLatin1String("' "));
 	dec_str.replace(col , QLatin1String(" "));
 	w->set_lcd(w->m_mount_dec_label, dec_str, property->state);
+
+	w->set_widget_state(w->m_mount_goto_button, property->state);
+	w->set_widget_state(w->m_mount_sync_button, property->state);
+	if (property->state == INDIGO_BUSY_STATE) {
+		w->set_enabled(w->m_mount_sync_button, false);
+	} else {
+		w->set_enabled(w->m_mount_sync_button, true);
+	}
 }
 
 void update_mount_az_alt(ImagerWindow *w, indigo_property *property) {
@@ -1273,7 +1285,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		add_items_to_combobox(this, property, m_mount_select);
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_EQUATORIAL_COORDINATES_PROPERTY_NAME)) {
-		update_mount_ra_dec(this, property);
+		update_mount_ra_dec(this, property, true);
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_HORIZONTAL_COORDINATES_PROPERTY_NAME)) {
 		update_mount_az_alt(this, property);

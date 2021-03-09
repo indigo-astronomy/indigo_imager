@@ -28,10 +28,10 @@ void write_conf();
 void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	QGridLayout *telescope_frame_layout = new QGridLayout();
 	telescope_frame_layout->setAlignment(Qt::AlignTop);
-	telescope_frame_layout->setColumnStretch(0, 1);
-	telescope_frame_layout->setColumnStretch(1, 1);
-	telescope_frame_layout->setColumnStretch(2, 1);
-	telescope_frame_layout->setColumnStretch(3, 1);
+	telescope_frame_layout->setColumnStretch(0, 2);
+	telescope_frame_layout->setColumnStretch(1, 2);
+	telescope_frame_layout->setColumnStretch(2, 3);
+	telescope_frame_layout->setColumnStretch(3, 3);
 
 	telescope_frame->setLayout(telescope_frame_layout);
 	telescope_frame->setFrameShape(QFrame::StyledPanel);
@@ -121,8 +121,49 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_mount_lst_label->show();
 	telescope_frame_layout->addWidget(m_mount_lst_label, row, 2, 1, 2);
 
-	//telescope_frame_layout->addWidget(ra_dec_frame, row, 0, 2, 0);
+	row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	telescope_frame_layout->addItem(spacer, row, 0, 1, 4);
 
+	row++;
+	label = new QLabel("Ra / Dec input:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	telescope_frame_layout->addWidget(label, row, 0, 1, 2);
+
+	m_mount_ra_input = new QLineEdit();
+	telescope_frame_layout->addWidget(m_mount_ra_input, row, 2);
+
+	m_mount_dec_input = new QLineEdit();
+	telescope_frame_layout->addWidget(m_mount_dec_input, row, 3);
+
+	row++;
+	QWidget *toolbar = new QWidget;
+	QHBoxLayout *toolbox = new QHBoxLayout(toolbar);
+	toolbar->setContentsMargins(1,1,1,1);
+	toolbox->setContentsMargins(1,1,1,1);
+	telescope_frame_layout->addWidget(toolbar, row, 0, 1, 4);
+
+	row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	telescope_frame_layout->addItem(spacer, row, 0, 1, 4);
+
+	m_mount_goto_button = new QPushButton("Goto");
+	m_mount_goto_button->setStyleSheet("min-width: 30px");
+	m_mount_goto_button->setIcon(QIcon(":resource/play.png"));
+	toolbox->addWidget(m_mount_goto_button);
+	connect(m_mount_goto_button, &QPushButton::clicked, this, &ImagerWindow::on_mount_goto);
+
+	m_mount_sync_button = new QPushButton("Sync");
+	m_mount_sync_button->setStyleSheet("min-width: 30px");
+	m_mount_sync_button->setIcon(QIcon(":resource/calibrate.png"));
+	toolbox->addWidget(m_mount_sync_button);
+	connect(m_mount_sync_button , &QPushButton::clicked, this, &ImagerWindow::on_mount_sync);
+
+	m_mount_abort_button = new QPushButton("Abort");
+	m_mount_abort_button->setStyleSheet("min-width: 30px");
+	m_mount_abort_button->setIcon(QIcon(":resource/stop.png"));
+	toolbox->addWidget(m_mount_abort_button);
+	connect(m_mount_abort_button, &QPushButton::clicked, this, &ImagerWindow::on_mount_abort);
 }
 
 void ImagerWindow::on_mount_agent_selected(int index) {
@@ -154,5 +195,56 @@ void ImagerWindow::on_mount_selected(int index) {
 
 		static bool values[] = { true };
 		indigo_change_switch_property(nullptr, selected_agent, FILTER_MOUNT_LIST_PROPERTY_NAME, 1, items, values);
+	});
+}
+
+void ImagerWindow::on_mount_goto(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_mount[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
+		QString q_mount_str = m_mount_select->currentText();
+		if (q_mount_str.compare("No mount") == 0) {
+			strcpy(selected_mount, "NONE");
+		} else {
+			strncpy(selected_mount, q_mount_str.toUtf8().constData(), INDIGO_NAME_SIZE);
+		}
+		get_selected_mount_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_mount);
+
+		change_mount_agent_equatorial(selected_agent, false);
+	});
+}
+
+void ImagerWindow::on_mount_sync(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_mount[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
+		QString q_mount_str = m_mount_select->currentText();
+		if (q_mount_str.compare("No mount") == 0) {
+			strcpy(selected_mount, "NONE");
+		} else {
+			strncpy(selected_mount, q_mount_str.toUtf8().constData(), INDIGO_NAME_SIZE);
+		}
+		get_selected_mount_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_mount);
+
+		change_mount_agent_equatorial(selected_agent, true);
+	});
+}
+
+void ImagerWindow::on_mount_abort(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_mount[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
+		QString q_mount_str = m_mount_select->currentText();
+		if (q_mount_str.compare("No mount") == 0) {
+			strcpy(selected_mount, "NONE");
+		} else {
+			strncpy(selected_mount, q_mount_str.toUtf8().constData(), INDIGO_NAME_SIZE);
+		}
+		get_selected_mount_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_mount);
+
+		change_mount_agent_abort(selected_agent);
 	});
 }

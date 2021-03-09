@@ -522,3 +522,24 @@ void ImagerWindow::change_guider_agent_i(const char *agent) const {
 	values[2] = (double)m_guide_is->value();
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 3, items, values);
 }
+
+void ImagerWindow::change_mount_agent_equatorial(const char *agent, bool sync) const {
+	if (sync) {
+		indigo_change_switch_property_1(nullptr, agent, MOUNT_ON_COORDINATES_SET_PROPERTY_NAME, MOUNT_ON_COORDINATES_SET_SYNC_ITEM_NAME, true);
+	} else {
+		indigo_change_switch_property_1(nullptr, agent, MOUNT_ON_COORDINATES_SET_PROPERTY_NAME, MOUNT_ON_COORDINATES_SET_TRACK_ITEM_NAME, true);
+	}
+
+	static const char *items[] = {
+		MOUNT_EQUATORIAL_COORDINATES_RA_ITEM_NAME,
+		MOUNT_EQUATORIAL_COORDINATES_DEC_ITEM_NAME
+	};
+	static double values[2];
+	values[0] = indigo_stod((char*)m_mount_ra_input->text().trimmed().toStdString().c_str());
+	values[1] = indigo_stod((char*)m_mount_dec_input->text().trimmed().toStdString().c_str());
+	indigo_change_number_property(nullptr, agent, MOUNT_EQUATORIAL_COORDINATES_PROPERTY_NAME, 2, items, values);
+}
+
+void ImagerWindow::change_mount_agent_abort(const char *agent) const {
+	indigo_change_switch_property_1(nullptr, agent, MOUNT_ABORT_MOTION_PROPERTY_NAME, MOUNT_ABORT_MOTION_ITEM_NAME, true);
+}
