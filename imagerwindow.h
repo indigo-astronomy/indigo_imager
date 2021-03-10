@@ -500,9 +500,15 @@ private:
 	QComboBox *m_mount_select;
 	QLCDNumber *m_mount_ra_label;
 	QLCDNumber *m_mount_dec_label;
+#ifdef USE_LCD
+	QLCDNumber *m_mount_lst_label;
 	QLCDNumber *m_mount_az_label;
 	QLCDNumber *m_mount_alt_label;
-	QLCDNumber *m_mount_lst_label;
+#else
+	QLabel *m_mount_lst_label;
+	QLabel *m_mount_az_label;
+	QLabel *m_mount_alt_label;
+#endif
 	QLineEdit *m_mount_ra_input;
 	QLineEdit *m_mount_dec_input;
 	QPushButton *m_mount_goto_button;

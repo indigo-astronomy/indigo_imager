@@ -81,4 +81,6 @@ typedef struct {
 extern conf_t conf;
 extern char config_path[PATH_LEN];
 
+//#define USE_LCD
+
 #endif // CONF_H

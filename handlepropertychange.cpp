@@ -238,6 +238,7 @@ void update_mount_az_alt(ImagerWindow *w, indigo_property *property) {
 			alt_str = QString(indigo_dtos(property->items[i].number.value, NULL));
 		}
 	}
+#ifdef USE_LCD
 	QString col = QLatin1String(":");
     az_str.replace(az_str.indexOf(col), col.size(), QLatin1String("' "));
 	az_str.replace(col , QLatin1String(" "));
@@ -245,6 +246,12 @@ void update_mount_az_alt(ImagerWindow *w, indigo_property *property) {
 	alt_str.replace(alt_str.indexOf(col), col.size(), QLatin1String("' "));
 	alt_str.replace(col , QLatin1String(" "));
 	w->set_lcd(w->m_mount_alt_label, alt_str, property->state);
+#else
+	w->m_mount_az_label->setText(az_str);
+	w->set_widget_state(w->m_mount_az_label, property->state);
+	w->m_mount_alt_label->setText(alt_str);
+	w->set_widget_state(w->m_mount_alt_label, property->state);
+#endif
 }
 
 void update_mount_lst(ImagerWindow *w, indigo_property *property) {
@@ -255,9 +262,14 @@ void update_mount_lst(ImagerWindow *w, indigo_property *property) {
 			lst_str = QString(indigo_dtos(property->items[i].number.value, NULL));
 		}
 	}
+#ifdef USE_LCD
 	QString col = QLatin1String(":");
-    lst_str.replace(lst_str.indexOf(col), col.size(), QLatin1String(": "));
+	lst_str.replace(lst_str.indexOf(col), col.size(), QLatin1String(": "));
 	w->set_lcd(w->m_mount_lst_label, lst_str, property->state);
+#else
+	w->m_mount_lst_label->setText(lst_str);
+	w->set_widget_state(w->m_mount_lst_label, property->state);
+#endif
 }
 
 void update_mount_park(ImagerWindow *w, indigo_property *property) {
@@ -1754,13 +1766,25 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_HORIZONTAL_COORDINATES_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+#ifdef USE_LCD
 		set_lcd(m_mount_az_label, "00' 00 00.00", INDIGO_IDLE_STATE);
 		set_lcd(m_mount_alt_label, "00' 00 00.00", INDIGO_IDLE_STATE);
+#else
+		m_mount_az_label->setText("00:00:00.00");
+		set_widget_state(m_mount_az_label, INDIGO_IDLE_STATE);
+		m_mount_alt_label->setText("00:00:00.00");
+		set_widget_state(m_mount_alt_label, INDIGO_IDLE_STATE);
+#endif
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_HORIZONTAL_COORDINATES_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+#ifdef USE_LCD
 		set_lcd(m_mount_lst_label, "00: 00:00.00", INDIGO_IDLE_STATE);
+#else
+		m_mount_lst_label->setText("00:00:00.00");
+		set_widget_state(m_mount_lst_label, INDIGO_IDLE_STATE);
+#endif
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_PARK_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {

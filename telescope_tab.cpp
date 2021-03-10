@@ -58,7 +58,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	#define LCD_SIZE 24
 	row++;
 	label = new QLabel("RA / Dec:");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	telescope_frame_layout->addWidget(label, row, 0);
 
 	m_mount_ra_label = new QLCDNumber(13);
@@ -82,28 +82,12 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	telescope_frame_layout->addItem(spacer, row, 0, 1, 4);
 
-	row++;
-	label = new QLabel("LST:");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	telescope_frame_layout->addWidget(label, row, 0);
-
-	m_mount_lst_label = new QLCDNumber(13);
-	m_mount_lst_label->setSegmentStyle(QLCDNumber::Flat);
-	m_mount_lst_label->setMinimumHeight(LCD_SIZE);
-	m_mount_lst_label->display("00: 00:00.00");
-	set_ok(m_mount_lst_label);
-	m_mount_lst_label->show();
-	telescope_frame_layout->addWidget(m_mount_lst_label, row, 2, 1, 2);
-
-	//row++;
-	//spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
-	//telescope_frame_layout->addItem(spacer, row, 0, 1, 4);
-
+	QFont font;
 	row++;
 	label = new QLabel("Az / Alt:");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	telescope_frame_layout->addWidget(label, row, 0);
-
+#ifdef USE_LCD
 	m_mount_az_label = new QLCDNumber(13);
 	m_mount_az_label->setSegmentStyle(QLCDNumber::Flat);
 	m_mount_az_label->setMinimumHeight(LCD_SIZE/2);
@@ -119,6 +103,49 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	set_ok(m_mount_alt_label);
 	m_mount_alt_label->show();
 	telescope_frame_layout->addWidget(m_mount_alt_label, row, 3, 1, 1);
+#else
+	m_mount_az_label = new QLabel("00:00:00.00");
+	m_mount_az_label->setAlignment(Qt::AlignCenter);
+	font = m_mount_az_label->font();
+	font.setPointSize(11);
+	//font.setBold(true);
+	m_mount_az_label->setFont(font);
+	set_ok(m_mount_az_label);
+	telescope_frame_layout->addWidget(m_mount_az_label, row, 2, 1, 1);
+
+	m_mount_alt_label = new QLabel("00:00:00.00");
+	m_mount_alt_label->setAlignment(Qt::AlignCenter);
+	font = m_mount_alt_label->font();
+	font.setPointSize(11);
+	//font.setBold(true);
+	m_mount_alt_label->setFont(font);
+	set_ok(m_mount_alt_label);
+	telescope_frame_layout->addWidget(m_mount_alt_label, row, 3, 1, 1);
+#endif
+
+	row++;
+	label = new QLabel("LST:");
+	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	telescope_frame_layout->addWidget(label, row, 0);
+
+#ifdef USE_LCD
+	m_mount_lst_label = new QLCDNumber(13);
+	m_mount_lst_label->setSegmentStyle(QLCDNumber::Flat);
+	m_mount_lst_label->setMinimumHeight(LCD_SIZE);
+	m_mount_lst_label->display("00: 00:00.00");
+	set_ok(m_mount_lst_label);
+	m_mount_lst_label->show();
+	telescope_frame_layout->addWidget(m_mount_lst_label, row, 2, 1, 2);
+#else
+	m_mount_lst_label = new QLabel("00:00:00.00");
+	m_mount_lst_label->setAlignment(Qt::AlignCenter);
+	font = m_mount_lst_label->font();
+	font.setPointSize(11);
+	//font.setBold(true);
+	m_mount_lst_label->setFont(font);
+	set_ok(m_mount_lst_label);
+	telescope_frame_layout->addWidget(m_mount_lst_label, row, 2, 1, 2);
+#endif
 
 	row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -126,7 +153,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 
 	row++;
 	label = new QLabel("Ra / Dec input:");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	telescope_frame_layout->addWidget(label, row, 0, 1, 2);
 
 	m_mount_ra_input = new QLineEdit();
