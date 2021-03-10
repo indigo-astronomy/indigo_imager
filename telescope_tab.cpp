@@ -30,8 +30,9 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	telescope_frame_layout->setAlignment(Qt::AlignTop);
 	telescope_frame_layout->setColumnStretch(0, 2);
 	telescope_frame_layout->setColumnStretch(1, 2);
-	telescope_frame_layout->setColumnStretch(2, 3);
-	telescope_frame_layout->setColumnStretch(3, 3);
+	telescope_frame_layout->setColumnStretch(2, 7);
+	telescope_frame_layout->setColumnStretch(3, 7);
+	//telescope_frame_layout->setColumnStretch(4, 3);
 
 	telescope_frame->setLayout(telescope_frame_layout);
 	telescope_frame->setFrameShape(QFrame::StyledPanel);
@@ -106,8 +107,9 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 #else
 	m_mount_az_label = new QLabel("00:00:00.00");
 	m_mount_az_label->setAlignment(Qt::AlignCenter);
+	//m_mount_az_label->setContentsMargins(1, 1, 1, 1);
 	font = m_mount_az_label->font();
-	font.setPointSize(11);
+	font.setPointSize(font.pointSize() + 2);
 	//font.setBold(true);
 	m_mount_az_label->setFont(font);
 	set_ok(m_mount_az_label);
@@ -115,8 +117,9 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 
 	m_mount_alt_label = new QLabel("00:00:00.00");
 	m_mount_alt_label->setAlignment(Qt::AlignCenter);
+	//m_mount_alt_label->setContentsMargins(1, 1, 1, 1);
 	font = m_mount_alt_label->font();
-	font.setPointSize(11);
+	font.setPointSize(font.pointSize() + 2);
 	//font.setBold(true);
 	m_mount_alt_label->setFont(font);
 	set_ok(m_mount_alt_label);
@@ -140,7 +143,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_mount_lst_label = new QLabel("00:00:00.00");
 	m_mount_lst_label->setAlignment(Qt::AlignCenter);
 	font = m_mount_lst_label->font();
-	font.setPointSize(11);
+	font.setPointSize(font.pointSize() + 2);
 	//font.setBold(true);
 	m_mount_lst_label->setFont(font);
 	set_ok(m_mount_lst_label);
@@ -152,7 +155,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	telescope_frame_layout->addItem(spacer, row, 0, 1, 4);
 
 	row++;
-	label = new QLabel("Ra / Dec input:");
+	label = new QLabel("RA / Dec input:");
 	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	telescope_frame_layout->addWidget(label, row, 0, 1, 2);
 
