@@ -110,6 +110,9 @@ public:
 	friend void update_mount_ra_dec(ImagerWindow *w, indigo_property *property, bool update_input);
 	friend void update_mount_az_alt(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_lst(ImagerWindow *w, indigo_property *property);
+	friend void update_mount_park(ImagerWindow *w, indigo_property *property);
+	friend void update_mount_track(ImagerWindow *w, indigo_property *property);
+	friend void update_mount_slew_rates(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_dithering_property(ImagerWindow *w, indigo_property *property);
 	friend void condigure_guider_overlays(ImagerWindow *w, char *device, indigo_property *property);
 	friend void log_guide_header(ImagerWindow *w, char *device_name);
@@ -259,6 +262,20 @@ public slots:
 	void on_mount_goto(int index);
 	void on_mount_sync(int index);
 	void on_mount_abort(int index);
+	void on_mount_track(int state);
+	void on_mount_park(int state);
+	void on_mount_move_north();
+	void on_mount_stop_north();
+	void on_mount_move_south();
+	void on_mount_stop_south();
+	void on_mount_move_east();
+	void on_mount_stop_east();
+	void on_mount_move_west();
+	void on_mount_stop_west();
+	void on_mount_set_guide_rate(int state);
+	void on_mount_set_center_rate(int state);
+	void on_mount_set_find_rate(int state);
+	void on_mount_set_max_rate(int state);
 
 	void on_tab_changed(int index);
 
@@ -491,6 +508,12 @@ private:
 	QPushButton *m_mount_goto_button;
 	QPushButton *m_mount_sync_button;
 	QPushButton *m_mount_abort_button;
+	QCheckBox *m_mount_track_cbox;
+	QCheckBox *m_mount_park_cbox;
+	QCheckBox *m_mount_guide_rate_cbox;
+	QCheckBox *m_mount_center_rate_cbox;
+	QCheckBox *m_mount_find_rate_cbox;
+	QCheckBox *m_mount_max_rate_cbox;
 
 	int m_stderr;
 
@@ -567,6 +590,7 @@ private:
 
 	void change_mount_agent_equatorial(const char *agent, bool sync=false) const;
 	void change_mount_agent_abort(const char *agent) const;
+	void mount_agent_set_switch_async(char *property, char *item, bool move);
 
 	void select_guider_data(guider_display_data show);
 

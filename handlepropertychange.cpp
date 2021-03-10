@@ -260,6 +260,88 @@ void update_mount_lst(ImagerWindow *w, indigo_property *property) {
 	w->set_lcd(w->m_mount_lst_label, lst_str, property->state);
 }
 
+void update_mount_park(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	bool parked = false;
+	bool unparked = false;
+
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], MOUNT_PARK_PARKED_ITEM_NAME)) {
+			parked = property->items[i].sw.value;
+		} else if (client_match_item(&property->items[i], MOUNT_PARK_UNPARKED_ITEM_NAME)) {
+			unparked = property->items[i].sw.value;
+		}
+	}
+
+	w->set_enabled(w->m_mount_park_cbox, true);
+	w->set_widget_state(w->m_mount_park_cbox, property->state);
+	if (property->state == INDIGO_BUSY_STATE) {
+		w->m_mount_park_cbox->setText("Parking...");
+		w->m_mount_park_cbox->setCheckState(Qt::PartiallyChecked);
+	} else {
+		if (parked) {
+			w->m_mount_park_cbox->setText("Parked");
+			w->m_mount_park_cbox->setCheckState(Qt::Checked);
+		} else {
+			w->m_mount_park_cbox->setText("Unparked");
+			w->m_mount_park_cbox->setCheckState(Qt::Unchecked);
+		}
+	}
+}
+
+void update_mount_track(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	bool on = false;
+	bool off = false;
+
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], MOUNT_TRACKING_ON_ITEM_NAME)) {
+			on = property->items[i].sw.value;
+		} else if (client_match_item(&property->items[i], MOUNT_TRACKING_OFF_ITEM_NAME)) {
+			off = property->items[i].sw.value;
+		}
+	}
+
+	w->set_enabled(w->m_mount_track_cbox, true);
+	w->set_widget_state(w->m_mount_track_cbox, property->state);
+	if (property->state == INDIGO_BUSY_STATE) {
+		w->m_mount_track_cbox->setCheckState(Qt::PartiallyChecked);
+	} else {
+		if (on) {
+			w->m_mount_track_cbox->setText("Tracking");
+			w->m_mount_track_cbox->setCheckState(Qt::Checked);
+		} else {
+			w->m_mount_track_cbox->setText("Not Tracking");
+			w->m_mount_track_cbox->setCheckState(Qt::Unchecked);
+		}
+	}
+}
+
+void update_mount_slew_rates(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+
+	w->set_enabled(w->m_mount_guide_rate_cbox, true);
+	w->set_enabled(w->m_mount_center_rate_cbox, true);
+	w->set_enabled(w->m_mount_find_rate_cbox, true);
+	w->set_enabled(w->m_mount_max_rate_cbox, true);
+	w->m_mount_guide_rate_cbox->setCheckState(Qt::Unchecked);
+	w->m_mount_center_rate_cbox->setCheckState(Qt::Unchecked);
+	w->m_mount_find_rate_cbox->setCheckState(Qt::Unchecked);
+	w->m_mount_max_rate_cbox->setCheckState(Qt::Unchecked);
+
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], MOUNT_SLEW_RATE_GUIDE_ITEM_NAME)) {
+			if (property->items[i].sw.value) w->m_mount_guide_rate_cbox->setCheckState(Qt::Checked);
+		} else if (client_match_item(&property->items[i], MOUNT_SLEW_RATE_CENTERING_ITEM_NAME)) {
+			if (property->items[i].sw.value) w->m_mount_center_rate_cbox->setCheckState(Qt::Checked);
+		} else if (client_match_item(&property->items[i], MOUNT_SLEW_RATE_FIND_ITEM_NAME)) {
+			if (property->items[i].sw.value) w->m_mount_find_rate_cbox->setCheckState(Qt::Checked);
+		} else if (client_match_item(&property->items[i], MOUNT_SLEW_RATE_MAX_ITEM_NAME)) {
+			if (property->items[i].sw.value) w->m_mount_max_rate_cbox->setCheckState(Qt::Checked);
+		}
+	}
+}
+
 static void update_ccd_temperature(ImagerWindow *w, indigo_property *property, QLineEdit *current_temp, QDoubleSpinBox *set_temp, bool update_value = false) {
 	indigo_debug("change %s", property->name);
 	for (int i = 0; i < property->count; i++) {
@@ -1293,6 +1375,15 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_LST_TIME_PROPERTY_NAME)) {
 		update_mount_lst(this, property);
 	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_PARK_PROPERTY_NAME)) {
+		update_mount_park(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_TRACKING_PROPERTY_NAME)) {
+		update_mount_track(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_SLEW_RATE_PROPERTY_NAME)) {
+		update_mount_slew_rates(this, property);
+	}
 }
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
@@ -1426,6 +1517,15 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_LST_TIME_PROPERTY_NAME)) {
 		update_mount_lst(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_PARK_PROPERTY_NAME)) {
+		update_mount_park(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_TRACKING_PROPERTY_NAME)) {
+		update_mount_track(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_SLEW_RATE_PROPERTY_NAME)) {
+		update_mount_slew_rates(this, property);
 	}
 
 	properties.create(property);
@@ -1661,6 +1761,32 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		set_lcd(m_mount_lst_label, "00: 00:00.00", INDIGO_IDLE_STATE);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_PARK_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		m_mount_park_cbox->setCheckState(Qt::Unchecked);
+		m_mount_park_cbox->setText("Park");
+		set_enabled(m_mount_park_cbox, false);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_TRACKING_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		m_mount_track_cbox->setCheckState(Qt::Unchecked);
+		m_mount_track_cbox->setText("Tracking");
+		set_enabled(m_mount_track_cbox, false);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_SLEW_RATE_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		set_enabled(m_mount_guide_rate_cbox, false);
+		set_enabled(m_mount_center_rate_cbox, false);
+		set_enabled(m_mount_find_rate_cbox, false);
+		set_enabled(m_mount_max_rate_cbox, false);
+		m_mount_guide_rate_cbox->setCheckState(Qt::Unchecked);
+		m_mount_center_rate_cbox->setCheckState(Qt::Unchecked);
+		m_mount_find_rate_cbox->setCheckState(Qt::Unchecked);
+		m_mount_max_rate_cbox->setCheckState(Qt::Unchecked);
 	}
 }
 
