@@ -205,7 +205,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	slew_frame_layout->setColumnStretch(1, 1);
 	slew_frame_layout->setColumnStretch(2, 1);
 	slew_frame_layout->setColumnStretch(3, 1);
-	slew_frame_layout->setColumnStretch(4, 3);
+	slew_frame_layout->setColumnStretch(4, 4);
 	slew_frame->setLayout(slew_frame_layout);
 	slew_frame->setFrameShape(QFrame::StyledPanel);
 	slew_frame->setContentsMargins(0, 0, 0, 0);
@@ -242,44 +242,44 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	connect(move_button, &QPushButton::pressed, this, &ImagerWindow::on_mount_move_south);
 	connect(move_button, &QPushButton::released, this, &ImagerWindow::on_mount_stop_south);
 
-	slew_col = 4;
-	slew_row = 0;
+	slew_col = 0;
+	slew_row = 3;
 	m_mount_guide_rate_cbox = new QCheckBox("Guide rate");
 	m_mount_guide_rate_cbox->setEnabled(false);
-	slew_frame_layout->addWidget(m_mount_guide_rate_cbox, slew_row, slew_col);
+	slew_frame_layout->addWidget(m_mount_guide_rate_cbox, slew_row, slew_col, 1, 3);
 	connect(m_mount_guide_rate_cbox, &QPushButton::clicked, this, &ImagerWindow::on_mount_set_guide_rate);
 
 	slew_row++;
 	m_mount_center_rate_cbox = new QCheckBox("Centering rate");
 	m_mount_center_rate_cbox->setEnabled(false);
-	slew_frame_layout->addWidget(m_mount_center_rate_cbox, slew_row, slew_col);
+	slew_frame_layout->addWidget(m_mount_center_rate_cbox, slew_row, slew_col, 1, 3);
 	connect(m_mount_center_rate_cbox, &QPushButton::clicked, this, &ImagerWindow::on_mount_set_center_rate);
 
 	slew_row++;
 	m_mount_find_rate_cbox = new QCheckBox("Finding rate");
 	m_mount_find_rate_cbox->setEnabled(false);
-	slew_frame_layout->addWidget(m_mount_find_rate_cbox, slew_row, slew_col);
+	slew_frame_layout->addWidget(m_mount_find_rate_cbox, slew_row, slew_col, 1, 3);
 	connect(m_mount_find_rate_cbox, &QPushButton::clicked, this, &ImagerWindow::on_mount_set_find_rate);
 
 	slew_row++;
 	m_mount_max_rate_cbox = new QCheckBox("Max rate");
 	m_mount_max_rate_cbox->setEnabled(false);
-	slew_frame_layout->addWidget(m_mount_max_rate_cbox, slew_row, slew_col);
+	slew_frame_layout->addWidget(m_mount_max_rate_cbox, slew_row, slew_col, 1, 3);
 	connect(m_mount_max_rate_cbox, &QPushButton::clicked, this, &ImagerWindow::on_mount_set_max_rate);
 
-	slew_col = 0;
-	slew_row++;
+	slew_col = 4;
+	slew_row = 0;
 	m_mount_track_cbox = new QCheckBox("Tracking");
 	m_mount_track_cbox->setEnabled(false);
 	set_ok(m_mount_track_cbox);
-	slew_frame_layout->addWidget(m_mount_track_cbox, slew_row, slew_col, 1, 3);
+	slew_frame_layout->addWidget(m_mount_track_cbox, slew_row, slew_col);
 	connect(m_mount_track_cbox, &QPushButton::clicked, this, &ImagerWindow::on_mount_track);
 
 	slew_row++;
 	m_mount_park_cbox = new QCheckBox("Park");
 	m_mount_park_cbox->setEnabled(false);
 	set_ok(m_mount_park_cbox);
-	slew_frame_layout->addWidget(m_mount_park_cbox, slew_row, slew_col, 1, 3);
+	slew_frame_layout->addWidget(m_mount_park_cbox, slew_row, slew_col);
 	connect(m_mount_park_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_park);
 
 	QFrame *solve_frame = new QFrame();
