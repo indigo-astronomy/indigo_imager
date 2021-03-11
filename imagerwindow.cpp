@@ -499,7 +499,7 @@ bool ImagerWindow::show_preview_in_guider_viewer(QString &key) {
 
 
 void ImagerWindow::on_tab_changed(int index) {
-	if ((index == 0) || (index == 1)) {
+	if (index == 0 || index == 1 || index == 3) {
 		if (m_visible_viewer != m_imager_viewer) {
 			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_imager_viewer);
 			m_visible_viewer = m_imager_viewer;
