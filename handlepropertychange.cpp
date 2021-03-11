@@ -231,26 +231,36 @@ void update_mount_az_alt(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("change %s", property->name);
 	QString az_str;
 	QString alt_str;
+	double alt = 0;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], MOUNT_HORIZONTAL_COORDINATES_AZ_ITEM_NAME)) {
 			az_str = QString(indigo_dtos(property->items[i].number.value, NULL));
 		} else if (client_match_item(&property->items[i], MOUNT_HORIZONTAL_COORDINATES_ALT_ITEM_NAME)) {
-			alt_str = QString(indigo_dtos(property->items[i].number.value, NULL));
+			alt = property->items[i].number.value;
+			alt_str = QString(indigo_dtos(alt, NULL));
 		}
 	}
+
+	int state = OBJECT_OK;
+	if (alt < 10) {
+		state = OBJECT_TOO_LOW;
+	} else if (alt < 30) {
+		state = OBJECT_LOW;
+	}
+
 #ifdef USE_LCD
 	QString col = QLatin1String(":");
     az_str.replace(az_str.indexOf(col), col.size(), QLatin1String("' "));
 	az_str.replace(col , QLatin1String(" "));
-	w->set_lcd(w->m_mount_az_label, az_str, property->state);
+	w->set_lcd(w->m_mount_az_label, az_str, state);
 	alt_str.replace(alt_str.indexOf(col), col.size(), QLatin1String("' "));
 	alt_str.replace(col , QLatin1String(" "));
-	w->set_lcd(w->m_mount_alt_label, alt_str, property->state);
+	w->set_lcd(w->m_mount_alt_label, alt_str, state);
 #else
 	w->m_mount_az_label->setText(az_str);
-	w->set_widget_state(w->m_mount_az_label, property->state);
+	w->set_widget_state(w->m_mount_az_label, state);
 	w->m_mount_alt_label->setText(alt_str);
-	w->set_widget_state(w->m_mount_alt_label, property->state);
+	w->set_widget_state(w->m_mount_alt_label, state);
 #endif
 }
 
@@ -270,6 +280,30 @@ void update_mount_lst(ImagerWindow *w, indigo_property *property) {
 	w->m_mount_lst_label->setText(lst_str);
 	w->set_widget_state(w->m_mount_lst_label, property->state);
 #endif
+}
+
+void update_mount_side_of_pier(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	bool east = false;
+	bool west = false;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], MOUNT_SIDE_OF_PIER_WEST_ITEM_NAME)) {
+			if (property->items[i].sw.value) west = true;
+		} else if (client_match_item(&property->items[i], MOUNT_SIDE_OF_PIER_EAST_ITEM_NAME)) {
+			if (property->items[i].sw.value) east = true;
+		}
+	}
+
+	if (east) {
+		w->m_mount_side_of_pier_label->setText("Side of pier: East");
+		w->set_widget_state(w->m_mount_side_of_pier_label, property->state);
+	} else if (west) {
+		w->m_mount_side_of_pier_label->setText("Side of pier: West");
+		w->set_widget_state(w->m_mount_side_of_pier_label, property->state);
+	} else {
+		w->m_mount_side_of_pier_label->setText("Side of pier: Unknown");
+		w->set_widget_state(w->m_mount_side_of_pier_label, INDIGO_ALERT_STATE);
+	}
 }
 
 void update_mount_park(ImagerWindow *w, indigo_property *property) {
@@ -1396,6 +1430,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_SLEW_RATE_PROPERTY_NAME)) {
 		update_mount_slew_rates(this, property);
 	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_SIDE_OF_PIER_PROPERTY_NAME)) {
+		update_mount_side_of_pier(this, property);
+	}
 }
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
@@ -1538,6 +1575,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_SLEW_RATE_PROPERTY_NAME)) {
 		update_mount_slew_rates(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_SIDE_OF_PIER_PROPERTY_NAME)) {
+		update_mount_side_of_pier(this, property);
 	}
 
 	properties.create(property);
@@ -1811,6 +1851,12 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		m_mount_center_rate_cbox->setCheckState(Qt::Unchecked);
 		m_mount_find_rate_cbox->setCheckState(Qt::Unchecked);
 		m_mount_max_rate_cbox->setCheckState(Qt::Unchecked);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_SIDE_OF_PIER_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		m_mount_side_of_pier_label->setText("Side of pier: Unknown");
+		set_widget_state(m_mount_side_of_pier_label, INDIGO_IDLE_STATE);
 	}
 }
 

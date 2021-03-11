@@ -113,6 +113,7 @@ public:
 	friend void update_mount_park(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_track(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_slew_rates(ImagerWindow *w, indigo_property *property);
+	friend void update_mount_side_of_pier(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_dithering_property(ImagerWindow *w, indigo_property *property);
 	friend void condigure_guider_overlays(ImagerWindow *w, char *device, indigo_property *property);
 	friend void log_guide_header(ImagerWindow *w, char *device_name);
@@ -315,6 +316,9 @@ public slots:
 			case INDIGO_ALERT_STATE:
 				set_alert(widget);
 				break;
+			case OBJECT_OK:
+				set_ok2(widget);
+				break;
 		}
 	};
 
@@ -509,6 +513,7 @@ private:
 	QLabel *m_mount_az_label;
 	QLabel *m_mount_alt_label;
 #endif
+	QLabel *m_mount_side_of_pier_label;
 	QLineEdit *m_mount_ra_input;
 	QLineEdit *m_mount_dec_input;
 	QPushButton *m_mount_goto_button;

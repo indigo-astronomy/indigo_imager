@@ -269,6 +269,11 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 
 	slew_col = 4;
 	slew_row = 0;
+	m_mount_side_of_pier_label = new QLabel("Side of pier: Unknown");
+	set_ok(m_mount_side_of_pier_label);
+	slew_frame_layout->addWidget(m_mount_side_of_pier_label, slew_row, slew_col);
+
+	slew_row = 2;
 	m_mount_track_cbox = new QCheckBox("Tracking");
 	m_mount_track_cbox->setEnabled(false);
 	set_ok(m_mount_track_cbox);

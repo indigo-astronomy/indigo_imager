@@ -56,6 +56,12 @@ typedef enum {
 	SHOW_X_Y_DRIFT = 2,
 } guider_display_data;
 
+typedef enum {
+	OBJECT_TOO_LOW = INDIGO_ALERT_STATE,
+	OBJECT_LOW = INDIGO_BUSY_STATE,
+	OBJECT_OK = 100
+} object_alt_state;
+
 typedef struct {
 	bool blobs_enabled;
 	bool auto_connect;
