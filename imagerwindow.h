@@ -115,6 +115,9 @@ public:
 	friend void update_mount_slew_rates(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_side_of_pier(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_dithering_property(ImagerWindow *w, indigo_property *property);
+	friend void update_mount_gps_lon_lat_elev(ImagerWindow *w, indigo_property *property);
+	friend void update_mount_gps_utc(ImagerWindow *w, indigo_property *property);
+	friend void update_mount_gps_status(ImagerWindow *w, indigo_property *property);
 	friend void condigure_guider_overlays(ImagerWindow *w, char *device, indigo_property *property);
 	friend void log_guide_header(ImagerWindow *w, char *device_name);
 
@@ -277,6 +280,7 @@ public slots:
 	void on_mount_set_center_rate(int state);
 	void on_mount_set_find_rate(int state);
 	void on_mount_set_max_rate(int state);
+	void on_mount_gps_selected(int index);
 
 	void on_tab_changed(int index);
 
@@ -316,7 +320,7 @@ public slots:
 			case INDIGO_ALERT_STATE:
 				set_alert(widget);
 				break;
-			case OBJECT_OK:
+			case AIN_OK_STATE:
 				set_ok2(widget);
 				break;
 		}
@@ -525,6 +529,13 @@ private:
 	QCheckBox *m_mount_center_rate_cbox;
 	QCheckBox *m_mount_find_rate_cbox;
 	QCheckBox *m_mount_max_rate_cbox;
+	QComboBox *m_mount_gps_select;
+	QLabel *m_gps_latitude;
+	QLabel *m_gps_longitude;
+	QLabel *m_gps_elevation;
+	QLabel *m_gps_utc;
+	QLabel *m_gps_status;
+
 
 	int m_stderr;
 

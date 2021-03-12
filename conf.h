@@ -57,9 +57,9 @@ typedef enum {
 } guider_display_data;
 
 typedef enum {
-	OBJECT_TOO_LOW = INDIGO_ALERT_STATE,
-	OBJECT_LOW = INDIGO_BUSY_STATE,
-	OBJECT_OK = 100
+	AIN_ALERT_STATE = INDIGO_ALERT_STATE,
+	AIN_WARNING_STATE = INDIGO_BUSY_STATE,
+	AIN_OK_STATE = 100
 } object_alt_state;
 
 typedef struct {

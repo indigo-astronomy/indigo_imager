@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Rumen G.Bogdanovski
+// Copyright (c) 2021 Rumen G.Bogdanovski
 // All rights reserved.
 //
 // You can use this software under the terms of 'INDIGO Astronomy
@@ -197,7 +197,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 
 	// image frame
 	QFrame *slew_frame = new QFrame();
-	telescope_tabbar->addTab(slew_frame, "Slew&&Track");
+	telescope_tabbar->addTab(slew_frame, "Slew && Track");
 
 	QGridLayout *slew_frame_layout = new QGridLayout();
 	slew_frame_layout->setAlignment(Qt::AlignTop);
@@ -287,6 +287,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	slew_frame_layout->addWidget(m_mount_park_cbox, slew_row, slew_col);
 	connect(m_mount_park_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_park);
 
+	/*
 	QFrame *solve_frame = new QFrame();
 	telescope_tabbar->addTab(solve_frame, "Solve");
 
@@ -297,17 +298,71 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	solve_frame->setContentsMargins(0, 0, 0, 0);
 
 	int solve_row = 0;
+	*/
 
-	QFrame *site_frame = new QFrame();
-	telescope_tabbar->addTab(site_frame, "Site");
+	QFrame *gps_frame = new QFrame();
+	telescope_tabbar->addTab(gps_frame, "GPS");
 
-	QGridLayout *site_frame_layout = new QGridLayout();
-	site_frame_layout->setAlignment(Qt::AlignTop);
-	site_frame->setLayout(site_frame_layout);
-	site_frame->setFrameShape(QFrame::StyledPanel);
-	site_frame->setContentsMargins(0, 0, 0, 0);
+	QGridLayout *gps_frame_layout = new QGridLayout();
+	gps_frame_layout->setAlignment(Qt::AlignTop);
+	gps_frame->setLayout(gps_frame_layout);
+	gps_frame->setFrameShape(QFrame::StyledPanel);
+	gps_frame->setContentsMargins(0, 0, 0, 0);
 
-	int site_row = 0;
+	int gps_row = 0;
+	label = new QLabel("GPS:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	gps_frame_layout->addWidget(label, gps_row, 0);
+	m_mount_gps_select = new QComboBox();
+	gps_frame_layout->addWidget(m_mount_gps_select, gps_row, 1, 1, 3);
+	connect(m_mount_gps_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_mount_gps_selected);
+
+	gps_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	gps_frame_layout->addItem(spacer, gps_row, 0, 1, 4);
+
+	gps_row++;
+	label = new QLabel("GPS status:");
+	gps_frame_layout->addWidget(label, gps_row, 0, 1, 2);
+	m_gps_status = new QLabel("Unknown");
+	set_idle(m_gps_status);
+	gps_frame_layout->addWidget(m_gps_status, gps_row, 2, 1, 2);
+
+	gps_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	gps_frame_layout->addItem(spacer, gps_row, 0, 1, 4);
+
+	gps_row++;
+	label = new QLabel("Latitude (-S / +N):");
+	gps_frame_layout->addWidget(label, gps_row, 0, 1, 2);
+	m_gps_latitude = new QLabel("0° 00' 00.0\"");
+	set_ok(m_gps_latitude);
+	gps_frame_layout->addWidget(m_gps_latitude, gps_row, 2, 1, 2);
+
+	gps_row++;
+	label = new QLabel("Longitude (-W / +E):");
+	gps_frame_layout->addWidget(label, gps_row, 0, 1, 2);
+	m_gps_longitude = new QLabel("0° 00' 00.0\"");
+	set_ok(m_gps_longitude);
+	gps_frame_layout->addWidget(m_gps_longitude, gps_row, 2, 1, 2);
+
+	gps_row++;
+	label = new QLabel("Elevation (m):");
+	gps_frame_layout->addWidget(label, gps_row, 0, 1, 2);
+	m_gps_elevation = new QLabel("0");
+	set_ok(m_gps_elevation);
+	gps_frame_layout->addWidget(m_gps_elevation, gps_row, 2, 1, 2);
+
+	gps_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	gps_frame_layout->addItem(spacer, gps_row, 0, 1, 4);
+
+	gps_row++;
+	label = new QLabel("UTC time:");
+	gps_frame_layout->addWidget(label, gps_row, 0, 1, 2);
+	m_gps_utc = new QLabel("00");
+	set_idle(m_gps_utc);
+	gps_frame_layout->addWidget(m_gps_utc, gps_row, 2, 1, 2);
 
 }
 
@@ -501,4 +556,23 @@ void ImagerWindow::on_mount_set_find_rate(int state) {
 
 void ImagerWindow::on_mount_set_max_rate(int state) {
 	mount_agent_set_switch_async(MOUNT_SLEW_RATE_PROPERTY_NAME, MOUNT_SLEW_RATE_MAX_ITEM_NAME, true);
+}
+
+void ImagerWindow::on_mount_gps_selected(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_gps[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
+		QString q_gps_str = m_mount_gps_select->currentText();
+		if (q_gps_str.compare("No GPS") == 0) {
+			strcpy(selected_gps, "NONE");
+		} else {
+			strncpy(selected_gps, q_gps_str.toUtf8().constData(), INDIGO_NAME_SIZE);
+		}
+		get_selected_mount_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_gps);
+		static const char * items[] = { selected_gps };
+
+		static bool values[] = { true };
+		indigo_change_switch_property(nullptr, selected_agent, FILTER_GPS_LIST_PROPERTY_NAME, 1, items, values);
+	});
 }

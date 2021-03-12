@@ -239,11 +239,11 @@ void update_mount_az_alt(ImagerWindow *w, indigo_property *property) {
 		}
 	}
 
-	int state = OBJECT_OK;
+	int state = AIN_OK_STATE;
 	if (alt < 10) {
-		state = OBJECT_TOO_LOW;
+		state = AIN_ALERT_STATE;
 	} else if (alt < 30) {
-		state = OBJECT_LOW;
+		state = AIN_WARNING_STATE;
 	}
 
 #ifdef USE_LCD
@@ -383,6 +383,62 @@ void update_mount_slew_rates(ImagerWindow *w, indigo_property *property) {
 			if (property->items[i].sw.value) w->m_mount_find_rate_cbox->setCheckState(Qt::Checked);
 		} else if (client_match_item(&property->items[i], MOUNT_SLEW_RATE_MAX_ITEM_NAME)) {
 			if (property->items[i].sw.value) w->m_mount_max_rate_cbox->setCheckState(Qt::Checked);
+		}
+	}
+}
+
+void update_mount_gps_lon_lat_elev(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	double lon = 0;
+	double lat = 0;
+	double elev = 0;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], GEOGRAPHIC_COORDINATES_LONGITUDE_ITEM_NAME)) {
+			lon = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], GEOGRAPHIC_COORDINATES_LATITUDE_ITEM_NAME)) {
+			lat = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], GEOGRAPHIC_COORDINATES_ELEVATION_ITEM_NAME)) {
+			elev = property->items[i].number.value;
+		}
+	}
+
+	QString lon_str(indigo_dtos(lon, "%d° %02d' %04.1f\""));
+	w->m_gps_longitude->setText(lon_str);
+	w->set_widget_state(w->m_gps_longitude, property->state);
+
+	QString lat_str(indigo_dtos(lat, "%d° %02d' %04.1f\""));
+	w->m_gps_latitude->setText(lat_str);
+	w->set_widget_state(w->m_gps_latitude, property->state);
+
+	QString elev_str = QString::number(elev);
+	w->m_gps_elevation->setText(elev_str);
+	w->set_widget_state(w->m_gps_elevation, property->state);
+}
+
+void update_mount_gps_utc(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], UTC_TIME_ITEM_NAME)) {
+			w->m_gps_utc->setText(property->items[i].text.value);
+		}
+	}
+
+	w->set_widget_state(w->m_gps_utc, property->state);
+}
+
+void update_mount_gps_status(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+
+	for (int i = 0; i < property->count; i++) {
+		if (property->items[i].light.value != INDIGO_IDLE_STATE) {
+			w->m_gps_status->setText(property->items[i].label);
+			if (property->items[i].light.value == INDIGO_OK_STATE) {
+				w->set_widget_state(w->m_gps_status, AIN_OK_STATE);
+			} else {
+				w->set_widget_state(w->m_gps_status, property->items[i].light.value);
+			}
+			break;
 		}
 	}
 }
@@ -1432,6 +1488,20 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_SIDE_OF_PIER_PROPERTY_NAME)) {
 		update_mount_side_of_pier(this, property);
 	}
+	if (client_match_device_property(property, selected_mount_agent, FILTER_GPS_LIST_PROPERTY_NAME)) {
+		add_items_to_combobox(this, property, m_mount_gps_select);
+	}
+	QString geographic_coords_property = QString("GPS_") + QString(GEOGRAPHIC_COORDINATES_PROPERTY_NAME);
+	if (client_match_device_property(property, selected_mount_agent, geographic_coords_property.toUtf8().constData())) {
+		update_mount_gps_lon_lat_elev(this, property);
+	}
+	QString utc_time_property = QString("GPS_") + QString(UTC_TIME_PROPERTY_NAME);
+	if (client_match_device_property(property, selected_mount_agent, utc_time_property.toUtf8().constData())) {
+		update_mount_gps_utc(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, GPS_STATUS_PROPERTY_NAME)) {
+		update_mount_gps_status(this, property);
+	}
 }
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
@@ -1577,6 +1647,20 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_SIDE_OF_PIER_PROPERTY_NAME)) {
 		update_mount_side_of_pier(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, FILTER_GPS_LIST_PROPERTY_NAME)) {
+		change_combobox_selection(this, property, m_mount_gps_select);
+	}
+	QString geographic_coords_property = QString("GPS_") + QString(GEOGRAPHIC_COORDINATES_PROPERTY_NAME);
+	if (client_match_device_property(property, selected_mount_agent, geographic_coords_property.toUtf8().constData())) {
+		update_mount_gps_lon_lat_elev(this, property);
+	}
+	QString utc_time_property = QString("GPS_") + QString(UTC_TIME_PROPERTY_NAME);
+	if (client_match_device_property(property, selected_mount_agent, utc_time_property.toUtf8().constData())) {
+		update_mount_gps_utc(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, GPS_STATUS_PROPERTY_NAME)) {
+		update_mount_gps_status(this, property);
 	}
 
 	properties.create(property);
@@ -1860,6 +1944,36 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		m_mount_side_of_pier_label->setText("Side of pier: Unknown");
 		set_widget_state(m_mount_side_of_pier_label, INDIGO_IDLE_STATE);
+	}
+	if (client_match_device_property(property, selected_mount_agent, FILTER_GPS_LIST_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		clear_combobox(m_mount_gps_select);
+	}
+	QString geographic_coords_property = QString("GPS_") + QString(GEOGRAPHIC_COORDINATES_PROPERTY_NAME);
+	if (client_match_device_property(property, selected_mount_agent, geographic_coords_property.toUtf8().constData()) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		QString zero_str(indigo_dtos(0, "%d:%02d:%04.1f"));
+		m_gps_latitude->setText(zero_str);
+		set_widget_state(m_gps_latitude, INDIGO_IDLE_STATE);
+		m_gps_longitude->setText(zero_str);
+		set_widget_state(m_gps_longitude, INDIGO_IDLE_STATE);
+		m_gps_elevation->setText("0");
+		set_widget_state(m_gps_elevation, INDIGO_IDLE_STATE);
+	}
+	QString utc_time_property = QString("GPS_") + QString(UTC_TIME_PROPERTY_NAME);
+	if (client_match_device_property(property, selected_mount_agent, utc_time_property.toUtf8().constData()) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		m_gps_utc->setText("");
+		set_widget_state(m_gps_utc, INDIGO_IDLE_STATE);
+	}
+	if (client_match_device_property(property, selected_mount_agent, GPS_STATUS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		m_gps_status->setText("Unknown");
+		set_widget_state(m_gps_status, INDIGO_IDLE_STATE);
 	}
 }
 
