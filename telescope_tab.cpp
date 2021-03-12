@@ -89,23 +89,23 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	telescope_frame_layout->addWidget(label, row, 0);
 #ifdef USE_LCD
-	m_mount_az_label = new QLCDNumber(13);
+	m_mount_az_label = new QLCDNumber(12);
 	m_mount_az_label->setSegmentStyle(QLCDNumber::Flat);
 	m_mount_az_label->setMinimumHeight(LCD_SIZE/2);
-	m_mount_az_label->display("00' 00 00.00");
+	m_mount_az_label->display("00' 00 00.0");
 	set_ok(m_mount_az_label);
 	m_mount_az_label->show();
 	telescope_frame_layout->addWidget(m_mount_az_label, row, 2, 1, 1);
 
-	m_mount_alt_label = new QLCDNumber(13);
+	m_mount_alt_label = new QLCDNumber(12);
 	m_mount_alt_label->setSegmentStyle(QLCDNumber::Flat);
 	m_mount_alt_label->setMinimumHeight(LCD_SIZE/2);
-	m_mount_alt_label->display("00' 00 00.00");
+	m_mount_alt_label->display("00' 00 00.0");
 	set_ok(m_mount_alt_label);
 	m_mount_alt_label->show();
 	telescope_frame_layout->addWidget(m_mount_alt_label, row, 3, 1, 1);
 #else
-	m_mount_az_label = new QLabel("00:00:00.00");
+	m_mount_az_label = new QLabel("0° 00' 00.0\"");
 	m_mount_az_label->setAlignment(Qt::AlignCenter);
 	//m_mount_az_label->setContentsMargins(1, 1, 1, 1);
 	font = m_mount_az_label->font();
@@ -115,7 +115,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	set_ok(m_mount_az_label);
 	telescope_frame_layout->addWidget(m_mount_az_label, row, 2, 1, 1);
 
-	m_mount_alt_label = new QLabel("00:00:00.00");
+	m_mount_alt_label = new QLabel("0° 00' 00.0\"");
 	m_mount_alt_label->setAlignment(Qt::AlignCenter);
 	//m_mount_alt_label->setContentsMargins(1, 1, 1, 1);
 	font = m_mount_alt_label->font();
@@ -132,15 +132,15 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	telescope_frame_layout->addWidget(label, row, 0);
 
 #ifdef USE_LCD
-	m_mount_lst_label = new QLCDNumber(13);
+	m_mount_lst_label = new QLCDNumber(12);
 	m_mount_lst_label->setSegmentStyle(QLCDNumber::Flat);
 	m_mount_lst_label->setMinimumHeight(LCD_SIZE);
-	m_mount_lst_label->display("00: 00:00.00");
+	m_mount_lst_label->display("0: 00:00.0");
 	set_ok(m_mount_lst_label);
 	m_mount_lst_label->show();
 	telescope_frame_layout->addWidget(m_mount_lst_label, row, 2, 1, 2);
 #else
-	m_mount_lst_label = new QLabel("00:00:00.00");
+	m_mount_lst_label = new QLabel("0:00:00.0");
 	m_mount_lst_label->setAlignment(Qt::AlignCenter);
 	font = m_mount_lst_label->font();
 	font.setPointSize(font.pointSize() + 2);

@@ -198,24 +198,24 @@ void update_cooler_onoff(ImagerWindow *w, indigo_property *property) {
 
 void update_mount_ra_dec(ImagerWindow *w, indigo_property *property, bool update_input=false) {
 	indigo_debug("change %s", property->name);
-	QString ra_str;
-	QString dec_str;
+	double ra = 0;
+	double dec = 0;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], MOUNT_EQUATORIAL_COORDINATES_RA_ITEM_NAME)) {
-			ra_str = QString(indigo_dtos(property->items[i].number.value, NULL));
+			ra = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], MOUNT_EQUATORIAL_COORDINATES_DEC_ITEM_NAME)) {
-			dec_str = QString(indigo_dtos(property->items[i].number.value, NULL));
+			dec = property->items[i].number.value;
 		}
 	}
+
 	if (update_input) {
-		w->m_mount_ra_input->setText(ra_str);
-		w->m_mount_dec_input->setText(dec_str);
+		w->m_mount_ra_input->setText(indigo_dtos(ra, "%d:%02d:%04.1f"));
+		w->m_mount_dec_input->setText(indigo_dtos(dec, "%d:%02d:%04.1f"));
 	}
-	QString col = QLatin1String(":");
-    ra_str.replace(ra_str.indexOf(col), col.size(), QLatin1String(": "));
+
+	QString ra_str(indigo_dtos(ra, "%d: %02d:%04.1f"));
+	QString dec_str(indigo_dtos(dec, "%d' %02d %04.1f"));
 	w->set_lcd(w->m_mount_ra_label, ra_str, property->state);
-	dec_str.replace(dec_str.indexOf(col), col.size(), QLatin1String("' "));
-	dec_str.replace(col , QLatin1String(" "));
 	w->set_lcd(w->m_mount_dec_label, dec_str, property->state);
 
 	w->set_widget_state(w->m_mount_goto_button, property->state);
@@ -229,15 +229,13 @@ void update_mount_ra_dec(ImagerWindow *w, indigo_property *property, bool update
 
 void update_mount_az_alt(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("change %s", property->name);
-	QString az_str;
-	QString alt_str;
+	double az = 0;
 	double alt = 0;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], MOUNT_HORIZONTAL_COORDINATES_AZ_ITEM_NAME)) {
-			az_str = QString(indigo_dtos(property->items[i].number.value, NULL));
+			az = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], MOUNT_HORIZONTAL_COORDINATES_ALT_ITEM_NAME)) {
 			alt = property->items[i].number.value;
-			alt_str = QString(indigo_dtos(alt, NULL));
 		}
 	}
 
@@ -249,16 +247,17 @@ void update_mount_az_alt(ImagerWindow *w, indigo_property *property) {
 	}
 
 #ifdef USE_LCD
-	QString col = QLatin1String(":");
-    az_str.replace(az_str.indexOf(col), col.size(), QLatin1String("' "));
-	az_str.replace(col , QLatin1String(" "));
+	QString az_str(indigo_dtos(az, "%d' %02d %04.1f"));
 	w->set_lcd(w->m_mount_az_label, az_str, state);
-	alt_str.replace(alt_str.indexOf(col), col.size(), QLatin1String("' "));
-	alt_str.replace(col , QLatin1String(" "));
+
+	QString alt_str(indigo_dtos(alt, "%d' %02d %04.1f"));
 	w->set_lcd(w->m_mount_alt_label, alt_str, state);
 #else
+	QString az_str(indigo_dtos(az, "%d° %02d' %04.1f\""));
 	w->m_mount_az_label->setText(az_str);
 	w->set_widget_state(w->m_mount_az_label, state);
+
+	QString alt_str(indigo_dtos(alt, "%d° %02d' %04.1f\""));
 	w->m_mount_alt_label->setText(alt_str);
 	w->set_widget_state(w->m_mount_alt_label, state);
 #endif
@@ -1800,19 +1799,21 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_EQUATORIAL_COORDINATES_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
-		set_lcd(m_mount_ra_label, "00: 00:00.00", INDIGO_IDLE_STATE);
-		set_lcd(m_mount_dec_label, "00' 00 00.00", INDIGO_IDLE_STATE);
+		set_lcd(m_mount_ra_label, "0: 00:00.0", INDIGO_IDLE_STATE);
+		set_lcd(m_mount_dec_label, "0' 00 00.0", INDIGO_IDLE_STATE);
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_HORIZONTAL_COORDINATES_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 #ifdef USE_LCD
-		set_lcd(m_mount_az_label, "00' 00 00.00", INDIGO_IDLE_STATE);
-		set_lcd(m_mount_alt_label, "00' 00 00.00", INDIGO_IDLE_STATE);
+		QString zero_str(indigo_dtos(0, "%d' %02d %04.1f"));
+		set_lcd(m_mount_az_label, zero_str, INDIGO_IDLE_STATE);
+		set_lcd(m_mount_alt_label, zero_str, INDIGO_IDLE_STATE);
 #else
-		m_mount_az_label->setText("00:00:00.00");
+		QString zero_str(indigo_dtos(0, "%d° %02d' %04.1f\""));
+		m_mount_az_label->setText(zero_str);
 		set_widget_state(m_mount_az_label, INDIGO_IDLE_STATE);
-		m_mount_alt_label->setText("00:00:00.00");
+		m_mount_alt_label->setText(zero_str);
 		set_widget_state(m_mount_alt_label, INDIGO_IDLE_STATE);
 #endif
 	}
@@ -1820,9 +1821,11 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 #ifdef USE_LCD
-		set_lcd(m_mount_lst_label, "00: 00:00.00", INDIGO_IDLE_STATE);
+		QString zero_str(indigo_dtos(0, "%d: %02d:%04.1f"));
+		set_lcd(m_mount_lst_label, zero_str, INDIGO_IDLE_STATE);
 #else
-		m_mount_lst_label->setText("00:00:00.00");
+		QString zero_str(indigo_dtos(0, "%d:%02d:%04.1f"));
+		m_mount_lst_label->setText(zero_str);
 		set_widget_state(m_mount_lst_label, INDIGO_IDLE_STATE);
 #endif
 	}
