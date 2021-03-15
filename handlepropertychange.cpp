@@ -1502,6 +1502,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, GPS_STATUS_PROPERTY_NAME)) {
 		update_mount_gps_status(this, property);
 	}
+	if (client_match_device_property(property, selected_mount_agent, AGENT_SITE_DATA_SOURCE_PROPERTY_NAME)) {
+		add_items_to_combobox(this, property, m_mount_coord_source_select);
+	}
 }
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
@@ -1661,6 +1664,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, GPS_STATUS_PROPERTY_NAME)) {
 		update_mount_gps_status(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, AGENT_SITE_DATA_SOURCE_PROPERTY_NAME)) {
+		change_combobox_selection(this, property, m_mount_coord_source_select);
 	}
 
 	properties.create(property);

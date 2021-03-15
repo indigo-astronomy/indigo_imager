@@ -281,6 +281,7 @@ public slots:
 	void on_mount_set_find_rate(int state);
 	void on_mount_set_max_rate(int state);
 	void on_mount_gps_selected(int index);
+	void on_mount_coord_source_selected(int index);
 
 	void on_tab_changed(int index);
 
@@ -530,6 +531,7 @@ private:
 	QCheckBox *m_mount_find_rate_cbox;
 	QCheckBox *m_mount_max_rate_cbox;
 	QComboBox *m_mount_gps_select;
+	QComboBox *m_mount_coord_source_select;
 	QLabel *m_gps_latitude;
 	QLabel *m_gps_longitude;
 	QLabel *m_gps_elevation;

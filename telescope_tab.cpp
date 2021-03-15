@@ -287,6 +287,22 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	slew_frame_layout->addWidget(m_mount_park_cbox, slew_row, slew_col);
 	connect(m_mount_park_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_park);
 
+	QFrame *site_frame = new QFrame();
+	telescope_tabbar->addTab(site_frame, "Site");
+	QGridLayout *site_frame_layout = new QGridLayout();
+	site_frame_layout->setAlignment(Qt::AlignTop);
+	site_frame->setLayout(site_frame_layout);
+	site_frame->setFrameShape(QFrame::StyledPanel);
+	site_frame->setContentsMargins(0, 0, 0, 0);
+
+	int site_row = 0;
+	label = new QLabel("Source:");
+	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	site_frame_layout->addWidget(label, site_row, 0);
+	m_mount_coord_source_select = new QComboBox();
+	site_frame_layout->addWidget(m_mount_coord_source_select, site_row, 1, 1, 3);
+	connect(m_mount_coord_source_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_mount_coord_source_selected);
+
 	/*
 	QFrame *solve_frame = new QFrame();
 	telescope_tabbar->addTab(solve_frame, "Solve");
@@ -556,6 +572,18 @@ void ImagerWindow::on_mount_set_find_rate(int state) {
 
 void ImagerWindow::on_mount_set_max_rate(int state) {
 	mount_agent_set_switch_async(MOUNT_SLEW_RATE_PROPERTY_NAME, MOUNT_SLEW_RATE_MAX_ITEM_NAME, true);
+}
+
+void ImagerWindow::on_mount_coord_source_selected(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_source[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
+
+		strncpy(selected_source, m_mount_coord_source_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+		get_selected_mount_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_source);
+
+		indigo_change_switch_property_1(nullptr, selected_agent, AGENT_SITE_DATA_SOURCE_PROPERTY_NAME, selected_source, true);
+	});
 }
 
 void ImagerWindow::on_mount_gps_selected(int index) {
