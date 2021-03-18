@@ -118,6 +118,9 @@ public:
 	friend void update_mount_gps_lon_lat_elev(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_gps_utc(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_gps_status(ImagerWindow *w, indigo_property *property);
+	friend void update_mount_lon_lat(ImagerWindow *w, indigo_property *property);
+	friend void update_mount_utc(ImagerWindow *w, indigo_property *property);
+	friend void update_mount_agent_sync_time(ImagerWindow *w, indigo_property *property);
 	friend void condigure_guider_overlays(ImagerWindow *w, char *device, indigo_property *property);
 	friend void log_guide_header(ImagerWindow *w, char *device_name);
 
@@ -282,6 +285,7 @@ public slots:
 	void on_mount_set_max_rate(int state);
 	void on_mount_gps_selected(int index);
 	void on_mount_coord_source_selected(int index);
+	void on_mount_sync_time(int state);
 
 	void on_tab_changed(int index);
 
@@ -532,6 +536,13 @@ private:
 	QCheckBox *m_mount_max_rate_cbox;
 	QComboBox *m_mount_gps_select;
 	QComboBox *m_mount_coord_source_select;
+	QLabel *m_mount_latitude;
+	QLabel *m_mount_longitude;
+	QLabel *m_mount_elevation;
+	QLabel *m_mount_utc;
+	QLineEdit *m_mount_lat_input;
+	QLineEdit *m_mount_lon_input;
+	QCheckBox *m_mount_sync_time_cbox;
 	QLabel *m_gps_latitude;
 	QLabel *m_gps_longitude;
 	QLabel *m_gps_elevation;

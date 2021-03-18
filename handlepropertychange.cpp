@@ -362,6 +362,27 @@ void update_mount_track(ImagerWindow *w, indigo_property *property) {
 	}
 }
 
+void update_mount_agent_sync_time(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	bool sync_mount = false;
+	bool sync_dome = false;
+
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], AGENT_SET_HOST_TIME_MOUNT_ITEM_NAME)) {
+			sync_mount = property->items[i].sw.value;
+		} else if (client_match_item(&property->items[i], AGENT_SET_HOST_TIME_DOME_ITEM_NAME)) {
+			sync_dome = property->items[i].sw.value;
+		}
+	}
+
+	w->set_enabled(w->m_mount_sync_time_cbox, true);
+	if (sync_mount) {
+		w->m_mount_sync_time_cbox->setCheckState(Qt::Checked);
+	} else {
+		w->m_mount_sync_time_cbox->setCheckState(Qt::Unchecked);
+	}
+}
+
 void update_mount_slew_rates(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("change %s", property->name);
 
@@ -415,6 +436,28 @@ void update_mount_gps_lon_lat_elev(ImagerWindow *w, indigo_property *property) {
 	w->set_widget_state(w->m_gps_elevation, property->state);
 }
 
+void update_mount_lon_lat(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	double lon = 0;
+	double lat = 0;
+	double elev = 0;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], GEOGRAPHIC_COORDINATES_LONGITUDE_ITEM_NAME)) {
+			lon = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], GEOGRAPHIC_COORDINATES_LATITUDE_ITEM_NAME)) {
+			lat = property->items[i].number.value;
+		}
+	}
+
+	QString lon_str(indigo_dtos(lon, "%d° %02d' %04.1f\""));
+	w->m_mount_longitude->setText(lon_str);
+	w->set_widget_state(w->m_mount_longitude, property->state);
+
+	QString lat_str(indigo_dtos(lat, "%d° %02d' %04.1f\""));
+	w->m_mount_latitude->setText(lat_str);
+	w->set_widget_state(w->m_mount_latitude, property->state);
+}
+
 void update_mount_gps_utc(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("change %s", property->name);
 
@@ -425,6 +468,18 @@ void update_mount_gps_utc(ImagerWindow *w, indigo_property *property) {
 	}
 
 	w->set_widget_state(w->m_gps_utc, property->state);
+}
+
+void update_mount_utc(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], UTC_TIME_ITEM_NAME)) {
+			w->m_mount_utc->setText(property->items[i].text.value);
+		}
+	}
+
+	w->set_widget_state(w->m_mount_utc, property->state);
 }
 
 void update_mount_gps_status(ImagerWindow *w, indigo_property *property) {
@@ -1505,6 +1560,17 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, AGENT_SITE_DATA_SOURCE_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_mount_coord_source_select);
 	}
+	geographic_coords_property = QString("MOUNT_") + QString(GEOGRAPHIC_COORDINATES_PROPERTY_NAME);
+	if (client_match_device_property(property, selected_mount_agent, geographic_coords_property.toUtf8().constData())) {
+		update_mount_lon_lat(this, property);
+	}
+	utc_time_property = QString("MOUNT_") + QString(UTC_TIME_PROPERTY_NAME);
+	if (client_match_device_property(property, selected_mount_agent, utc_time_property.toUtf8().constData())) {
+		update_mount_utc(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, AGENT_SET_HOST_TIME_PROPERTY_NAME)) {
+		update_mount_agent_sync_time(this, property);
+	}
 }
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
@@ -1667,6 +1733,17 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, AGENT_SITE_DATA_SOURCE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_mount_coord_source_select);
+	}
+	geographic_coords_property = QString("MOUNT_") + QString(GEOGRAPHIC_COORDINATES_PROPERTY_NAME);
+	if (client_match_device_property(property, selected_mount_agent, geographic_coords_property.toUtf8().constData())) {
+		update_mount_lon_lat(this, property);
+	}
+	utc_time_property = QString("MOUNT_") + QString(UTC_TIME_PROPERTY_NAME);
+	if (client_match_device_property(property, selected_mount_agent, utc_time_property.toUtf8().constData())) {
+		update_mount_utc(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, AGENT_SET_HOST_TIME_PROPERTY_NAME)) {
+		update_mount_agent_sync_time(this, property);
 	}
 
 	properties.create(property);
@@ -1980,6 +2057,29 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		m_gps_status->setText("Unknown");
 		set_widget_state(m_gps_status, INDIGO_IDLE_STATE);
+	}
+	geographic_coords_property = QString("MOUNT_") + QString(GEOGRAPHIC_COORDINATES_PROPERTY_NAME);
+	if (client_match_device_property(property, selected_mount_agent, geographic_coords_property.toUtf8().constData()) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		QString zero_str(indigo_dtos(0, "%d:%02d:%04.1f"));
+		m_mount_latitude->setText(zero_str);
+		set_widget_state(m_mount_latitude, INDIGO_IDLE_STATE);
+		m_mount_longitude->setText(zero_str);
+		set_widget_state(m_mount_longitude, INDIGO_IDLE_STATE);
+	}
+	utc_time_property = QString("MOUNT_") + QString(UTC_TIME_PROPERTY_NAME);
+	if (client_match_device_property(property, selected_mount_agent, utc_time_property.toUtf8().constData()) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		m_mount_utc->setText("");
+		set_widget_state(m_mount_utc, INDIGO_IDLE_STATE);
+	}
+	if (client_match_device_property(property, selected_mount_agent, AGENT_SET_HOST_TIME_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		m_mount_sync_time_cbox->setCheckState(Qt::Unchecked);
+		set_enabled(m_mount_sync_time_cbox, false);
 	}
 }
 

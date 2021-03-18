@@ -303,6 +303,97 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	site_frame_layout->addWidget(m_mount_coord_source_select, site_row, 1, 1, 3);
 	connect(m_mount_coord_source_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_mount_coord_source_selected);
 
+	site_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	site_frame_layout->addItem(spacer, site_row, 0, 1, 4);
+
+	site_row++;
+	label = new QLabel("Latitude (-S / +N):");
+	site_frame_layout->addWidget(label, site_row, 0, 1, 2);
+	m_mount_latitude = new QLabel("0° 00' 00.0\"");
+	set_ok(m_mount_latitude);
+	site_frame_layout->addWidget(m_mount_latitude, site_row, 2, 1, 2);
+
+	site_row++;
+	label = new QLabel("Longitude (-W / +E):");
+	site_frame_layout->addWidget(label, site_row, 0, 1, 2);
+	m_mount_longitude = new QLabel("0° 00' 00.0\"");
+	set_ok(m_mount_longitude);
+	site_frame_layout->addWidget(m_mount_longitude, site_row, 2, 1, 2);
+
+	//site_row++;
+	//label = new QLabel("Elevation (m):");
+	//site_frame_layout->addWidget(label, site_row, 0, 1, 2);
+	//m_mount_elevation = new QLabel("0");
+	//set_ok(m_mount_elevation);
+	//site_frame_layout->addWidget(m_mount_elevation, site_row, 2, 1, 2);
+
+	site_row++;
+	label = new QLabel("UTC time:");
+	site_frame_layout->addWidget(label, site_row, 0, 1, 2);
+	m_mount_utc = new QLabel("00");
+	set_idle(m_mount_utc);
+	site_frame_layout->addWidget(m_mount_utc, site_row, 2, 1, 2);
+
+	site_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	site_frame_layout->addItem(spacer, site_row, 0, 1, 4);
+
+	site_row++;
+	toolbar = new QWidget;
+	toolbox = new QHBoxLayout(toolbar);
+	toolbar->setContentsMargins(1,1,1,1);
+	toolbox->setContentsMargins(1,1,1,1);
+	site_frame_layout->addWidget(toolbar, site_row, 0, 1, 4);
+
+	label = new QLabel("Lat / Lon:");
+	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	toolbox->addWidget(label);
+
+	m_mount_lat_input = new QLineEdit();
+	toolbox->addWidget(m_mount_lat_input);
+
+	m_mount_lon_input = new QLineEdit();
+	toolbox->addWidget(m_mount_lon_input);
+
+/*
+	site_row++;
+	toolbar = new QWidget;
+	toolbox = new QHBoxLayout(toolbar);
+	toolbar->setContentsMargins(1,0,1,0);
+	toolbox->setContentsMargins(1,0,1,0);
+	site_frame_layout->addWidget(toolbar, site_row, 0, 1, 4);
+*/
+
+	site_row++;
+	toolbar = new QWidget;
+	toolbox = new QHBoxLayout(toolbar);
+	toolbar->setContentsMargins(1,0,1,0);
+	toolbox->setContentsMargins(1,0,1,0);
+	site_frame_layout->addWidget(toolbar, site_row, 0, 1, 4);
+
+	QPushButton *button = new QPushButton("Set Location to Mount");
+	button->setStyleSheet("min-width: 30px");
+	//button->setIcon(QIcon(":resource/calibrate.png"));
+	toolbox->addWidget(button);
+	//connect(button , &QPushButton::clicked, this, &ImagerWindow::on_mount_sync);
+
+	button = new QPushButton("Set Location to Agent");
+	button->setStyleSheet("min-width: 30px");
+	//button->setIcon(QIcon(":resource/calibrate.png"));
+	toolbox->addWidget(button);
+	//connect(button , &QPushButton::clicked, this, &ImagerWindow::on_mount_sync);
+
+	site_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	site_frame_layout->addItem(spacer, site_row, 0, 1, 4);
+
+	site_row++;
+	m_mount_sync_time_cbox = new QCheckBox("Keep mount time sychronized");
+	m_mount_sync_time_cbox->setEnabled(false);
+	site_frame_layout->addWidget(m_mount_sync_time_cbox, site_row, 0, 1, 4);
+	connect(m_mount_sync_time_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_sync_time);
+
 	/*
 	QFrame *solve_frame = new QFrame();
 	telescope_tabbar->addTab(solve_frame, "Solve");
@@ -572,6 +663,10 @@ void ImagerWindow::on_mount_set_find_rate(int state) {
 
 void ImagerWindow::on_mount_set_max_rate(int state) {
 	mount_agent_set_switch_async(MOUNT_SLEW_RATE_PROPERTY_NAME, MOUNT_SLEW_RATE_MAX_ITEM_NAME, true);
+}
+
+void ImagerWindow::on_mount_sync_time(int state) {
+	mount_agent_set_switch_async(AGENT_SET_HOST_TIME_PROPERTY_NAME, AGENT_SET_HOST_TIME_MOUNT_ITEM_NAME, state);
 }
 
 void ImagerWindow::on_mount_coord_source_selected(int index) {
