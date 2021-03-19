@@ -492,16 +492,10 @@ void ImagerWindow::on_mount_selected(int index) {
 
 void ImagerWindow::on_mount_goto(int index) {
 	QtConcurrent::run([=]() {
-		static char selected_mount[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
-		QString q_mount_str = m_mount_select->currentText();
-		if (q_mount_str.compare("No mount") == 0) {
-			strcpy(selected_mount, "NONE");
-		} else {
-			strncpy(selected_mount, q_mount_str.toUtf8().constData(), INDIGO_NAME_SIZE);
-		}
+		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_mount_agent(selected_agent);
 
-		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_mount);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 
 		change_mount_agent_equatorial(selected_agent, false);
 	});
@@ -509,16 +503,10 @@ void ImagerWindow::on_mount_goto(int index) {
 
 void ImagerWindow::on_mount_sync(int index) {
 	QtConcurrent::run([=]() {
-		static char selected_mount[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
-		QString q_mount_str = m_mount_select->currentText();
-		if (q_mount_str.compare("No mount") == 0) {
-			strcpy(selected_mount, "NONE");
-		} else {
-			strncpy(selected_mount, q_mount_str.toUtf8().constData(), INDIGO_NAME_SIZE);
-		}
+		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_mount_agent(selected_agent);
 
-		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_mount);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 
 		change_mount_agent_equatorial(selected_agent, true);
 	});
@@ -526,16 +514,10 @@ void ImagerWindow::on_mount_sync(int index) {
 
 void ImagerWindow::on_mount_abort(int index) {
 	QtConcurrent::run([=]() {
-		static char selected_mount[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
-		QString q_mount_str = m_mount_select->currentText();
-		if (q_mount_str.compare("No mount") == 0) {
-			strcpy(selected_mount, "NONE");
-		} else {
-			strncpy(selected_mount, q_mount_str.toUtf8().constData(), INDIGO_NAME_SIZE);
-		}
+		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_mount_agent(selected_agent);
 
-		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_mount);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 
 		change_mount_agent_abort(selected_agent);
 	});
@@ -543,17 +525,11 @@ void ImagerWindow::on_mount_abort(int index) {
 
 void ImagerWindow::on_mount_track(int state) {
 	QtConcurrent::run([=]() {
-		static char selected_mount[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
-		QString q_mount_str = m_mount_select->currentText();
-		if (q_mount_str.compare("No mount") == 0) {
-			strcpy(selected_mount, "NONE");
-		} else {
-			strncpy(selected_mount, q_mount_str.toUtf8().constData(), INDIGO_NAME_SIZE);
-		}
+		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_mount_agent(selected_agent);
 		bool checked = m_mount_track_cbox->checkState();
 
-		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_mount);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 
 		if (checked) {
 			indigo_change_switch_property_1(nullptr, selected_agent, MOUNT_TRACKING_PROPERTY_NAME, MOUNT_TRACKING_ON_ITEM_NAME, true);
@@ -565,17 +541,11 @@ void ImagerWindow::on_mount_track(int state) {
 
 void ImagerWindow::on_mount_park(int state) {
 	QtConcurrent::run([=]() {
-		static char selected_mount[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
-		QString q_mount_str = m_mount_select->currentText();
-		if (q_mount_str.compare("No mount") == 0) {
-			strcpy(selected_mount, "NONE");
-		} else {
-			strncpy(selected_mount, q_mount_str.toUtf8().constData(), INDIGO_NAME_SIZE);
-		}
+		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_mount_agent(selected_agent);
 		bool checked = m_mount_park_cbox->checkState();
 
-		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_mount);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 
 		if (checked) {
 			indigo_change_switch_property_1(nullptr, selected_agent, MOUNT_PARK_PROPERTY_NAME, MOUNT_PARK_PARKED_ITEM_NAME, true);
@@ -587,16 +557,10 @@ void ImagerWindow::on_mount_park(int state) {
 
 void ImagerWindow::mount_agent_set_switch_async(char *property, char *item, bool move) {
 	QtConcurrent::run([=]() {
-		static char selected_mount[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
-		QString q_mount_str = m_mount_select->currentText();
-		if (q_mount_str.compare("No mount") == 0) {
-			strcpy(selected_mount, "NONE");
-		} else {
-			strncpy(selected_mount, q_mount_str.toUtf8().constData(), INDIGO_NAME_SIZE);
-		}
+		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_mount_agent(selected_agent);
 
-		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_mount);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 
 		indigo_change_switch_property_1(nullptr, selected_agent, property, item, move);
 	});
