@@ -440,22 +440,32 @@ void update_mount_lon_lat(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("change %s", property->name);
 	double lon = 0;
 	double lat = 0;
-	double elev = 0;
+	double target_lon = 0;
+	double target_lat = 0;
+
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], GEOGRAPHIC_COORDINATES_LONGITUDE_ITEM_NAME)) {
 			lon = property->items[i].number.value;
+			target_lon = property->items[i].number.target;
 		} else if (client_match_item(&property->items[i], GEOGRAPHIC_COORDINATES_LATITUDE_ITEM_NAME)) {
 			lat = property->items[i].number.value;
+			target_lat = property->items[i].number.target;
 		}
 	}
 
 	QString lon_str(indigo_dtos(lon, "%d° %02d' %04.1f\""));
 	w->m_mount_longitude->setText(lon_str);
 	w->set_widget_state(w->m_mount_longitude, property->state);
+	if (w->m_mount_lon_input->isEnabled()) {
+		w->set_lineedit_text(w->m_mount_lon_input, indigo_dtos(target_lon, "%d:%02d:%04.1f"));
+	}
 
 	QString lat_str(indigo_dtos(lat, "%d° %02d' %04.1f\""));
 	w->m_mount_latitude->setText(lat_str);
 	w->set_widget_state(w->m_mount_latitude, property->state);
+	if (w->m_mount_lat_input->isEnabled()) {
+		w->set_lineedit_text(w->m_mount_lat_input, indigo_dtos(target_lat, "%d:%02d:%04.1f"));
+	}
 }
 
 void update_mount_gps_utc(ImagerWindow *w, indigo_property *property) {
@@ -1559,9 +1569,17 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_mount_agent, AGENT_SITE_DATA_SOURCE_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_mount_coord_source_select);
+		/*
+		if(indigo_get_switch(property, AGENT_SITE_DATA_SOURCE_HOST_ITEM_NAME)) {
+			set_enabled(m_mount_lon_input, true);
+			set_enabled(m_mount_lat_input, true);
+		} else {
+			set_enabled(m_mount_lon_input, false);
+			set_enabled(m_mount_lat_input, false);
+		}
+		*/
 	}
-	geographic_coords_property = QString("MOUNT_") + QString(GEOGRAPHIC_COORDINATES_PROPERTY_NAME);
-	if (client_match_device_property(property, selected_mount_agent, geographic_coords_property.toUtf8().constData())) {
+	if (client_match_device_property(property, selected_mount_agent, GEOGRAPHIC_COORDINATES_PROPERTY_NAME)) {
 		update_mount_lon_lat(this, property);
 	}
 	utc_time_property = QString("MOUNT_") + QString(UTC_TIME_PROPERTY_NAME);
@@ -1733,9 +1751,17 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, AGENT_SITE_DATA_SOURCE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_mount_coord_source_select);
+		/*
+		if(indigo_get_switch(property, AGENT_SITE_DATA_SOURCE_HOST_ITEM_NAME)) {
+			set_enabled(m_mount_lon_input, true);
+			set_enabled(m_mount_lat_input, true);
+		} else {
+			set_enabled(m_mount_lon_input, false);
+			set_enabled(m_mount_lat_input, false);
+		}
+		*/
 	}
-	geographic_coords_property = QString("MOUNT_") + QString(GEOGRAPHIC_COORDINATES_PROPERTY_NAME);
-	if (client_match_device_property(property, selected_mount_agent, geographic_coords_property.toUtf8().constData())) {
+	if (client_match_device_property(property, selected_mount_agent, GEOGRAPHIC_COORDINATES_PROPERTY_NAME)) {
 		update_mount_lon_lat(this, property);
 	}
 	utc_time_property = QString("MOUNT_") + QString(UTC_TIME_PROPERTY_NAME);
@@ -2058,8 +2084,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		m_gps_status->setText("Unknown");
 		set_widget_state(m_gps_status, INDIGO_IDLE_STATE);
 	}
-	geographic_coords_property = QString("MOUNT_") + QString(GEOGRAPHIC_COORDINATES_PROPERTY_NAME);
-	if (client_match_device_property(property, selected_mount_agent, geographic_coords_property.toUtf8().constData()) ||
+	if (client_match_device_property(property, selected_mount_agent,  GEOGRAPHIC_COORDINATES_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		QString zero_str(indigo_dtos(0, "%d:%02d:%04.1f"));
@@ -2067,6 +2092,10 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_widget_state(m_mount_latitude, INDIGO_IDLE_STATE);
 		m_mount_longitude->setText(zero_str);
 		set_widget_state(m_mount_longitude, INDIGO_IDLE_STATE);
+		set_lineedit_text(m_mount_lon_input, "");
+		//set_enabled(m_mount_lon_input, false);
+		set_lineedit_text(m_mount_lat_input, "");
+		//set_enabled(m_mount_lat_input, false);
 	}
 	utc_time_property = QString("MOUNT_") + QString(UTC_TIME_PROPERTY_NAME);
 	if (client_match_device_property(property, selected_mount_agent, utc_time_property.toUtf8().constData()) ||

@@ -340,6 +340,11 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	site_frame_layout->addItem(spacer, site_row, 0, 1, 4);
 
 	site_row++;
+	label = new QLabel("Set Location / Time:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	site_frame_layout->addWidget(label, site_row, 0, 1, 4);
+
+	site_row++;
 	toolbar = new QWidget;
 	toolbox = new QHBoxLayout(toolbar);
 	toolbar->setContentsMargins(1,1,1,1);
@@ -351,38 +356,18 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	toolbox->addWidget(label);
 
 	m_mount_lat_input = new QLineEdit();
+	//m_mount_lat_input->setEnabled(false);
 	toolbox->addWidget(m_mount_lat_input);
 
 	m_mount_lon_input = new QLineEdit();
+	//m_mount_lon_input->setEnabled(false);
 	toolbox->addWidget(m_mount_lon_input);
 
-/*
-	site_row++;
-	toolbar = new QWidget;
-	toolbox = new QHBoxLayout(toolbar);
-	toolbar->setContentsMargins(1,0,1,0);
-	toolbox->setContentsMargins(1,0,1,0);
-	site_frame_layout->addWidget(toolbar, site_row, 0, 1, 4);
-*/
-
-	site_row++;
-	toolbar = new QWidget;
-	toolbox = new QHBoxLayout(toolbar);
-	toolbar->setContentsMargins(1,0,1,0);
-	toolbox->setContentsMargins(1,0,1,0);
-	site_frame_layout->addWidget(toolbar, site_row, 0, 1, 4);
-
-	QPushButton *button = new QPushButton("Set Location to Mount");
-	button->setStyleSheet("min-width: 30px");
+	QPushButton *button = new QPushButton("Set");
+	button->setStyleSheet("min-width: 25px");
 	//button->setIcon(QIcon(":resource/calibrate.png"));
 	toolbox->addWidget(button);
-	//connect(button , &QPushButton::clicked, this, &ImagerWindow::on_mount_sync);
-
-	button = new QPushButton("Set Location to Agent");
-	button->setStyleSheet("min-width: 30px");
-	//button->setIcon(QIcon(":resource/calibrate.png"));
-	toolbox->addWidget(button);
-	//connect(button , &QPushButton::clicked, this, &ImagerWindow::on_mount_sync);
+	connect(button , &QPushButton::clicked, this, &ImagerWindow::on_mount_set_coordinates_to_agent);
 
 	site_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -678,6 +663,18 @@ void ImagerWindow::on_mount_coord_source_selected(int index) {
 		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_source);
 
 		indigo_change_switch_property_1(nullptr, selected_agent, AGENT_SITE_DATA_SOURCE_PROPERTY_NAME, selected_source, true);
+	});
+}
+
+void ImagerWindow::on_mount_set_coordinates_to_agent() {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_mount_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+
+		change_mount_agent_location(selected_agent, "");
 	});
 }
 

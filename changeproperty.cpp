@@ -540,6 +540,21 @@ void ImagerWindow::change_mount_agent_equatorial(const char *agent, bool sync) c
 	indigo_change_number_property(nullptr, agent, MOUNT_EQUATORIAL_COORDINATES_PROPERTY_NAME, 2, items, values);
 }
 
+void ImagerWindow::change_mount_agent_location(const char *agent, QString property_prefix) const {
+	static const char *items[] = {
+		GEOGRAPHIC_COORDINATES_LONGITUDE_ITEM_NAME,
+		GEOGRAPHIC_COORDINATES_LATITUDE_ITEM_NAME
+	};
+	static double values[2];
+	values[0] = indigo_stod((char*)m_mount_lon_input->text().trimmed().toStdString().c_str());
+	values[1] = indigo_stod((char*)m_mount_lat_input->text().trimmed().toStdString().c_str());
+	QString coords_property = QString(GEOGRAPHIC_COORDINATES_PROPERTY_NAME);
+	if (!property_prefix.isEmpty()) {
+		coords_property = property_prefix + QString("_") + QString(GEOGRAPHIC_COORDINATES_PROPERTY_NAME);
+	}
+	indigo_change_number_property(nullptr, agent, coords_property.toUtf8().constData(), 2, items, values);
+}
+
 void ImagerWindow::change_mount_agent_abort(const char *agent) const {
 	indigo_change_switch_property_1(nullptr, agent, MOUNT_ABORT_MOTION_PROPERTY_NAME, MOUNT_ABORT_MOTION_ITEM_NAME, true);
 }

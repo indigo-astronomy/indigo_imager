@@ -143,6 +143,7 @@ signals:
 
 	void set_combobox_current_text(QComboBox *combobox, const QString &item);
 	void set_combobox_current_index(QComboBox *combobox, int index);
+	void set_lineedit_text(QLineEdit *line_edit, const QString &text);
 	void clear_combobox(QComboBox *combobox);
 	void add_combobox_item(QComboBox *combobox, const QString &item, const QString& data);
 	void remove_combobox_item(QComboBox *combobox, int index);
@@ -286,6 +287,7 @@ public slots:
 	void on_mount_gps_selected(int index);
 	void on_mount_coord_source_selected(int index);
 	void on_mount_sync_time(int state);
+	void on_mount_set_coordinates_to_agent();
 
 	void on_tab_changed(int index);
 
@@ -398,6 +400,10 @@ public slots:
 
 	void on_remove_combobox_item(QComboBox *combobox, int index) {
 		combobox->removeItem(index);
+	};
+
+	void on_set_lineedit_text(QLineEdit *line_edit, const QString &text) {
+		line_edit->setText(text);
 	};
 private:
 	QTextEdit* mLog;
@@ -625,6 +631,7 @@ private:
 
 	void change_mount_agent_equatorial(const char *agent, bool sync=false) const;
 	void change_mount_agent_abort(const char *agent) const;
+	void change_mount_agent_location(const char *agent, QString property_prefix) const;
 	void mount_agent_set_switch_async(char *property, char *item, bool move);
 
 	void select_guider_data(guider_display_data show);
