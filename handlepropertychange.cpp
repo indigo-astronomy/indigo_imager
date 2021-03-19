@@ -456,16 +456,12 @@ void update_mount_lon_lat(ImagerWindow *w, indigo_property *property) {
 	QString lon_str(indigo_dtos(lon, "%d° %02d' %04.1f\""));
 	w->m_mount_longitude->setText(lon_str);
 	w->set_widget_state(w->m_mount_longitude, property->state);
-	if (w->m_mount_lon_input->isEnabled()) {
-		w->set_lineedit_text(w->m_mount_lon_input, indigo_dtos(target_lon, "%d:%02d:%04.1f"));
-	}
+	w->set_lineedit_text(w->m_mount_lon_input, indigo_dtos(target_lon, "%d:%02d:%04.1f"));
 
 	QString lat_str(indigo_dtos(lat, "%d° %02d' %04.1f\""));
 	w->m_mount_latitude->setText(lat_str);
 	w->set_widget_state(w->m_mount_latitude, property->state);
-	if (w->m_mount_lat_input->isEnabled()) {
-		w->set_lineedit_text(w->m_mount_lat_input, indigo_dtos(target_lat, "%d:%02d:%04.1f"));
-	}
+	w->set_lineedit_text(w->m_mount_lat_input, indigo_dtos(target_lat, "%d:%02d:%04.1f"));
 }
 
 void update_mount_gps_utc(ImagerWindow *w, indigo_property *property) {
@@ -1569,7 +1565,6 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_mount_agent, AGENT_SITE_DATA_SOURCE_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_mount_coord_source_select);
-		/*
 		if(indigo_get_switch(property, AGENT_SITE_DATA_SOURCE_HOST_ITEM_NAME)) {
 			set_enabled(m_mount_lon_input, true);
 			set_enabled(m_mount_lat_input, true);
@@ -1577,7 +1572,6 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			set_enabled(m_mount_lon_input, false);
 			set_enabled(m_mount_lat_input, false);
 		}
-		*/
 	}
 	if (client_match_device_property(property, selected_mount_agent, GEOGRAPHIC_COORDINATES_PROPERTY_NAME)) {
 		update_mount_lon_lat(this, property);
@@ -1751,7 +1745,6 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, AGENT_SITE_DATA_SOURCE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_mount_coord_source_select);
-		/*
 		if(indigo_get_switch(property, AGENT_SITE_DATA_SOURCE_HOST_ITEM_NAME)) {
 			set_enabled(m_mount_lon_input, true);
 			set_enabled(m_mount_lat_input, true);
@@ -1759,7 +1752,6 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			set_enabled(m_mount_lon_input, false);
 			set_enabled(m_mount_lat_input, false);
 		}
-		*/
 	}
 	if (client_match_device_property(property, selected_mount_agent, GEOGRAPHIC_COORDINATES_PROPERTY_NAME)) {
 		update_mount_lon_lat(this, property);
@@ -2093,9 +2085,9 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		m_mount_longitude->setText(zero_str);
 		set_widget_state(m_mount_longitude, INDIGO_IDLE_STATE);
 		set_lineedit_text(m_mount_lon_input, "");
-		//set_enabled(m_mount_lon_input, false);
+		set_enabled(m_mount_lon_input, false);
 		set_lineedit_text(m_mount_lat_input, "");
-		//set_enabled(m_mount_lat_input, false);
+		set_enabled(m_mount_lat_input, false);
 	}
 	utc_time_property = QString("MOUNT_") + QString(UTC_TIME_PROPERTY_NAME);
 	if (client_match_device_property(property, selected_mount_agent, utc_time_property.toUtf8().constData()) ||

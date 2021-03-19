@@ -356,11 +356,11 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	toolbox->addWidget(label);
 
 	m_mount_lat_input = new QLineEdit();
-	//m_mount_lat_input->setEnabled(false);
+	m_mount_lat_input->setEnabled(false);
 	toolbox->addWidget(m_mount_lat_input);
 
 	m_mount_lon_input = new QLineEdit();
-	//m_mount_lon_input->setEnabled(false);
+	m_mount_lon_input->setEnabled(false);
 	toolbox->addWidget(m_mount_lon_input);
 
 	QPushButton *button = new QPushButton("Set");

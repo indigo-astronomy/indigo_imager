@@ -403,7 +403,9 @@ public slots:
 	};
 
 	void on_set_lineedit_text(QLineEdit *line_edit, const QString &text) {
+		line_edit->blockSignals(true);
 		line_edit->setText(text);
+		line_edit->blockSignals(false);
 	};
 private:
 	QTextEdit* mLog;
