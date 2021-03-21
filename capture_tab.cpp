@@ -320,6 +320,32 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_dither_to->setEnabled(false);
 	dither_frame_layout->addWidget(m_dither_to, dither_row, 3);
 	connect(m_dither_to, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_imager_dithering_changed);
+
+	// settings
+	QFrame *camera_frame = new QFrame();
+	capture_tabbar->addTab(camera_frame, "Camera");
+
+	QGridLayout *camera_frame_layout = new QGridLayout();
+	camera_frame_layout->setAlignment(Qt::AlignTop);
+	camera_frame->setLayout(camera_frame_layout);
+	camera_frame->setFrameShape(QFrame::StyledPanel);
+	camera_frame->setContentsMargins(0, 0, 0, 0);
+
+	int camera_row = 0;
+	label = new QLabel("Gain:");
+	camera_frame_layout->addWidget(label, camera_row, 0, 1, 3);
+	m_imager_gain = new QSpinBox();
+	m_imager_gain->setEnabled(false);
+	camera_frame_layout->addWidget(m_imager_gain, camera_row, 3);
+	connect(m_imager_gain, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_imager_gain_changed);
+
+	camera_row++;
+	label = new QLabel("Offset:");
+	camera_frame_layout->addWidget(label, camera_row, 0, 1, 3);
+	m_imager_offset = new QSpinBox();
+	m_imager_offset->setEnabled(false);
+	camera_frame_layout->addWidget(m_imager_offset, camera_row, 3);
+	connect(m_imager_offset, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_imager_offset_changed);
 }
 
 void ImagerWindow::on_exposure_start_stop(bool clicked) {
@@ -550,6 +576,28 @@ void ImagerWindow::on_agent_imager_dithering_changed(int index) {
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_agent_imager_dithering_property(selected_agent);
+	});
+}
+
+void ImagerWindow::on_agent_imager_gain_changed(int value) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_imager_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_agent_imager_gain_property(selected_agent);
+	});
+}
+
+void ImagerWindow::on_agent_imager_offset_changed(int value) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_imager_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_agent_imager_offset_property(selected_agent);
 	});
 }
 

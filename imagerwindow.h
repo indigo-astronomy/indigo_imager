@@ -98,6 +98,7 @@ public:
 	friend void update_cooler_power(ImagerWindow *w, indigo_property *property);
 	friend void update_imager_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_selection_property(ImagerWindow *w, indigo_property *property);
+	friend void update_agent_imager_gain_offset_property(ImagerWindow *w, indigo_property *property);
 	friend void update_focus_setup_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *property);
 	friend void update_ccd_frame_property(ImagerWindow *w, indigo_property *property);
@@ -223,6 +224,8 @@ public slots:
 	void on_filter_selected(int index);
 	void on_cooler_onoff(bool state);
 	void on_temperature_set(double value);
+	void on_agent_imager_gain_changed(int value);
+	void on_agent_imager_offset_changed(int value);
 
 	void on_focus_start_stop(bool clicked);
 	void on_focus_preview_start_stop(bool clicked);
@@ -422,6 +425,8 @@ private:
 	QSpinBox  *m_roi_y, *m_roi_h;
 	QSpinBox  *m_dither_aggr;
 	QSpinBox  *m_dither_to;
+	QSpinBox  *m_imager_gain;
+	QSpinBox  *m_imager_offset;
 	QDoubleSpinBox *m_exposure_time;
 	QDoubleSpinBox *m_exposure_delay;
 	QSpinBox *m_frame_count;
@@ -603,6 +608,8 @@ private:
 	void change_ccd_upload_property(const char *agent, const char *item_name) const;
 	void change_related_dither_agent(const char *agent, const char *old_agent, const char *new_agent) const;
 	void change_agent_imager_dithering_property(const char *agent) const;
+	void change_agent_imager_gain_property(const char *agent) const;
+	void change_agent_imager_offset_property(const char *agent) const;
 
 	void change_agent_start_preview_property(const char *agent) const;
 	void change_agent_start_focusing_property(const char *agent) const;

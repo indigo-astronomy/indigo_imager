@@ -119,6 +119,16 @@ void ImagerWindow::change_agent_imager_dithering_property(const char *agent) con
 	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_DITHERING_PROPERTY_NAME, 2, items, values);
 }
 
+void ImagerWindow::change_agent_imager_gain_property(const char *agent) const {
+	double value = (double)m_imager_gain->value();
+	indigo_change_number_property_1(nullptr, agent, CCD_GAIN_PROPERTY_NAME, CCD_GAIN_ITEM_NAME, value);
+}
+
+void ImagerWindow::change_agent_imager_offset_property(const char *agent) const {
+	double value = (double)m_imager_offset->value();
+	indigo_change_number_property_1(nullptr, agent, CCD_OFFSET_PROPERTY_NAME, CCD_OFFSET_ITEM_NAME, value);
+}
+
 void ImagerWindow::change_ccd_frame_type_property(const char *agent) const {
 	static char selected_type[INDIGO_NAME_SIZE];
 	strncpy(selected_type, m_frame_type_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
