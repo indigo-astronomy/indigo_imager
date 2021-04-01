@@ -139,6 +139,11 @@ signals:
 	void configure_spinbox(QSpinBox *widget, indigo_item *item, int perm);
 	void configure_spinbox(QDoubleSpinBox *widget, indigo_item *item, int perm);
 	void set_checkbox_checked(QCheckBox *widget, bool checked);
+	void set_checkbox_state(QCheckBox *widget, int state);
+	void set_text(QLabel *widget, QString text);
+	void set_text(QLineEdit *widget, QString text);
+	void set_text(QPushButton *widget, QString text);
+	void set_text(QCheckBox *widget, QString text);
 
 	void set_lcd(QLCDNumber *widget, QString text, int state);
 
@@ -298,6 +303,22 @@ public slots:
 		widget->setEnabled(enabled);
 	};
 
+	void on_set_text(QLabel *widget, QString text) {
+		widget->setText(text);
+	};
+
+	void on_set_text(QLineEdit *widget, QString text) {
+		widget->setText(text);
+	};
+
+	void on_set_text(QPushButton *widget, QString text) {
+		widget->setText(text);
+	};
+
+	void on_set_text(QCheckBox *widget, QString text) {
+		widget->setText(text);
+	};
+
 	void on_set_spinbox_value(QSpinBox *widget, double value) {
 		widget->blockSignals(true);
 		widget->setValue(value);
@@ -313,6 +334,12 @@ public slots:
 	void on_set_checkbox_checked(QCheckBox *widget, bool checked) {
 		widget->blockSignals(true);
 		widget->setChecked(checked);
+		widget->blockSignals(false);
+	}
+
+	void on_set_checkbox_state(QCheckBox *widget, int state) {
+		widget->blockSignals(true);
+		widget->setCheckState((Qt::CheckState)state);
 		widget->blockSignals(false);
 	}
 
@@ -354,7 +381,7 @@ public slots:
 		widget->display(text);
 	};
 
-    void on_set_guider_label(int state, const char *text) {
+	void on_set_guider_label(int state, const char *text) {
 		if (text) m_guider_viewer->getTextLabel()->setText(text);
 		switch (state) {
 			case INDIGO_IDLE_STATE:

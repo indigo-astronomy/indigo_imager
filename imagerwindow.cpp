@@ -414,8 +414,12 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(this, QOverload<QSpinBox*, double>::of(&ImagerWindow::set_spinbox_value), this, QOverload<QSpinBox*, double>::of(&ImagerWindow::on_set_spinbox_value));
 	connect(this, QOverload<QDoubleSpinBox*, indigo_item*, int>::of(&ImagerWindow::configure_spinbox), this, QOverload<QDoubleSpinBox*, indigo_item*, int>::of(&ImagerWindow::on_configure_spinbox));
 	connect(this, QOverload<QSpinBox*, indigo_item*, int>::of(&ImagerWindow::configure_spinbox), this, QOverload<QSpinBox*, indigo_item*, int>::of(&ImagerWindow::on_configure_spinbox));
+	connect(this, QOverload<QLabel*, QString>::of(&ImagerWindow::set_text), this, QOverload<QLabel*, QString>::of(&ImagerWindow::on_set_text));
+	connect(this, QOverload<QLineEdit*, QString>::of(&ImagerWindow::set_text), this, QOverload<QLineEdit*, QString>::of(&ImagerWindow::on_set_text));
+	connect(this, QOverload<QPushButton*, QString>::of(&ImagerWindow::set_text), this, QOverload<QPushButton*, QString>::of(&ImagerWindow::on_set_text));
+	connect(this, QOverload<QCheckBox*, QString>::of(&ImagerWindow::set_text), this, QOverload<QCheckBox*, QString>::of(&ImagerWindow::on_set_text));
 	connect(this, &ImagerWindow::set_checkbox_checked, this, &ImagerWindow::on_set_checkbox_checked);
-
+	connect(this, &ImagerWindow::set_checkbox_state, this, &ImagerWindow::on_set_checkbox_state);
 
 	connect(mServiceModel, &QServiceModel::serviceAdded, mIndigoServers, &QIndigoServers::onAddService);
 	connect(mServiceModel, &QServiceModel::serviceRemoved, mIndigoServers, &QIndigoServers::onRemoveService);

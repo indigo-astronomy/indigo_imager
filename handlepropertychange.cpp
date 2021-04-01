@@ -209,8 +209,8 @@ void update_mount_ra_dec(ImagerWindow *w, indigo_property *property, bool update
 	}
 
 	if (update_input) {
-		w->m_mount_ra_input->setText(indigo_dtos(ra, "%d:%02d:%04.1f"));
-		w->m_mount_dec_input->setText(indigo_dtos(dec, "%d:%02d:%04.1f"));
+		w->set_text(w->m_mount_ra_input, indigo_dtos(ra, "%d:%02d:%04.1f"));
+		w->set_text(w->m_mount_dec_input, indigo_dtos(dec, "%d:%02d:%04.1f"));
 	}
 
 	QString ra_str(indigo_dtos(ra, "%d: %02d:%04.1f"));
@@ -254,11 +254,11 @@ void update_mount_az_alt(ImagerWindow *w, indigo_property *property) {
 	w->set_lcd(w->m_mount_alt_label, alt_str, state);
 #else
 	QString az_str(indigo_dtos(az, "%d° %02d' %04.1f\""));
-	w->m_mount_az_label->setText(az_str);
+	w->set_text(w->m_mount_az_label, az_str);
 	w->set_widget_state(w->m_mount_az_label, state);
 
 	QString alt_str(indigo_dtos(alt, "%d° %02d' %04.1f\""));
-	w->m_mount_alt_label->setText(alt_str);
+	w->set_text(w->m_mount_alt_label, alt_str);
 	w->set_widget_state(w->m_mount_alt_label, state);
 #endif
 }
@@ -276,7 +276,7 @@ void update_mount_lst(ImagerWindow *w, indigo_property *property) {
 	lst_str.replace(lst_str.indexOf(col), col.size(), QLatin1String(": "));
 	w->set_lcd(w->m_mount_lst_label, lst_str, property->state);
 #else
-	w->m_mount_lst_label->setText(lst_str);
+	w->set_text(w->m_mount_lst_label, lst_str);
 	w->set_widget_state(w->m_mount_lst_label, property->state);
 #endif
 }
@@ -294,13 +294,13 @@ void update_mount_side_of_pier(ImagerWindow *w, indigo_property *property) {
 	}
 
 	if (east) {
-		w->m_mount_side_of_pier_label->setText("Side of pier: East");
+		w->set_text(w->m_mount_side_of_pier_label, "Side of pier: East");
 		w->set_widget_state(w->m_mount_side_of_pier_label, property->state);
 	} else if (west) {
-		w->m_mount_side_of_pier_label->setText("Side of pier: West");
+		w->set_text(w->m_mount_side_of_pier_label, "Side of pier: West");
 		w->set_widget_state(w->m_mount_side_of_pier_label, property->state);
 	} else {
-		w->m_mount_side_of_pier_label->setText("Side of pier: Unknown");
+		w->set_text(w->m_mount_side_of_pier_label, "Side of pier: Unknown");
 		w->set_widget_state(w->m_mount_side_of_pier_label, INDIGO_ALERT_STATE);
 	}
 }
@@ -321,15 +321,15 @@ void update_mount_park(ImagerWindow *w, indigo_property *property) {
 	w->set_enabled(w->m_mount_park_cbox, true);
 	w->set_widget_state(w->m_mount_park_cbox, property->state);
 	if (property->state == INDIGO_BUSY_STATE) {
-		w->m_mount_park_cbox->setText("Parking...");
-		w->m_mount_park_cbox->setCheckState(Qt::PartiallyChecked);
+		w->set_text(w->m_mount_park_cbox, "Parking...");
+		w->set_checkbox_state(w->m_mount_park_cbox, Qt::PartiallyChecked);
 	} else {
 		if (parked) {
-			w->m_mount_park_cbox->setText("Parked");
-			w->m_mount_park_cbox->setCheckState(Qt::Checked);
+			w->set_text(w->m_mount_park_cbox, "Parked");
+			w->set_checkbox_state(w->m_mount_park_cbox, Qt::Checked);
 		} else {
-			w->m_mount_park_cbox->setText("Unparked");
-			w->m_mount_park_cbox->setCheckState(Qt::Unchecked);
+			w->set_text(w->m_mount_park_cbox, "Unparked");
+			w->set_checkbox_state(w->m_mount_park_cbox, Qt::Unchecked);
 		}
 	}
 }
@@ -350,14 +350,14 @@ void update_mount_track(ImagerWindow *w, indigo_property *property) {
 	w->set_enabled(w->m_mount_track_cbox, true);
 	w->set_widget_state(w->m_mount_track_cbox, property->state);
 	if (property->state == INDIGO_BUSY_STATE) {
-		w->m_mount_track_cbox->setCheckState(Qt::PartiallyChecked);
+		w->set_checkbox_state(w->m_mount_track_cbox, Qt::PartiallyChecked);
 	} else {
 		if (on) {
-			w->m_mount_track_cbox->setText("Tracking");
-			w->m_mount_track_cbox->setCheckState(Qt::Checked);
+			w->set_text(w->m_mount_track_cbox, "Tracking");
+			w->set_checkbox_state(w->m_mount_track_cbox, Qt::Checked);
 		} else {
-			w->m_mount_track_cbox->setText("Not Tracking");
-			w->m_mount_track_cbox->setCheckState(Qt::Unchecked);
+			w->set_text(w->m_mount_track_cbox, "Not Tracking");
+			w->set_checkbox_state(w->m_mount_track_cbox, Qt::Unchecked);
 		}
 	}
 }
@@ -377,9 +377,9 @@ void update_mount_agent_sync_time(ImagerWindow *w, indigo_property *property) {
 
 	w->set_enabled(w->m_mount_sync_time_cbox, true);
 	if (sync_mount) {
-		w->m_mount_sync_time_cbox->setCheckState(Qt::Checked);
+		w->set_checkbox_state(w->m_mount_sync_time_cbox, Qt::Checked);
 	} else {
-		w->m_mount_sync_time_cbox->setCheckState(Qt::Unchecked);
+		w->set_checkbox_state(w->m_mount_sync_time_cbox, Qt::Unchecked);
 	}
 }
 
@@ -390,20 +390,20 @@ void update_mount_slew_rates(ImagerWindow *w, indigo_property *property) {
 	w->set_enabled(w->m_mount_center_rate_cbox, true);
 	w->set_enabled(w->m_mount_find_rate_cbox, true);
 	w->set_enabled(w->m_mount_max_rate_cbox, true);
-	w->m_mount_guide_rate_cbox->setCheckState(Qt::Unchecked);
-	w->m_mount_center_rate_cbox->setCheckState(Qt::Unchecked);
-	w->m_mount_find_rate_cbox->setCheckState(Qt::Unchecked);
-	w->m_mount_max_rate_cbox->setCheckState(Qt::Unchecked);
+	w->set_checkbox_state(w->m_mount_guide_rate_cbox, Qt::Unchecked);
+	w->set_checkbox_state(w->m_mount_center_rate_cbox, Qt::Unchecked);
+	w->set_checkbox_state(w->m_mount_find_rate_cbox, Qt::Unchecked);
+	w->set_checkbox_state(w->m_mount_max_rate_cbox, Qt::Unchecked);
 
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], MOUNT_SLEW_RATE_GUIDE_ITEM_NAME)) {
-			if (property->items[i].sw.value) w->m_mount_guide_rate_cbox->setCheckState(Qt::Checked);
+			if (property->items[i].sw.value) w->set_checkbox_state(w->m_mount_guide_rate_cbox, Qt::Checked);
 		} else if (client_match_item(&property->items[i], MOUNT_SLEW_RATE_CENTERING_ITEM_NAME)) {
-			if (property->items[i].sw.value) w->m_mount_center_rate_cbox->setCheckState(Qt::Checked);
+			if (property->items[i].sw.value) w->set_checkbox_state(w->m_mount_center_rate_cbox, Qt::Checked);
 		} else if (client_match_item(&property->items[i], MOUNT_SLEW_RATE_FIND_ITEM_NAME)) {
-			if (property->items[i].sw.value) w->m_mount_find_rate_cbox->setCheckState(Qt::Checked);
+			if (property->items[i].sw.value) w->set_checkbox_state(w->m_mount_find_rate_cbox, Qt::Checked);
 		} else if (client_match_item(&property->items[i], MOUNT_SLEW_RATE_MAX_ITEM_NAME)) {
-			if (property->items[i].sw.value) w->m_mount_max_rate_cbox->setCheckState(Qt::Checked);
+			if (property->items[i].sw.value) w->set_checkbox_state(w->m_mount_max_rate_cbox, Qt::Checked);
 		}
 	}
 }
@@ -424,15 +424,15 @@ void update_mount_gps_lon_lat_elev(ImagerWindow *w, indigo_property *property) {
 	}
 
 	QString lon_str(indigo_dtos(lon, "%d° %02d' %04.1f\""));
-	w->m_gps_longitude->setText(lon_str);
+	w->set_text(w->m_gps_longitude, lon_str);
 	w->set_widget_state(w->m_gps_longitude, property->state);
 
 	QString lat_str(indigo_dtos(lat, "%d° %02d' %04.1f\""));
-	w->m_gps_latitude->setText(lat_str);
+	w->set_text(w->m_gps_latitude, lat_str);
 	w->set_widget_state(w->m_gps_latitude, property->state);
 
 	QString elev_str = QString::number(elev);
-	w->m_gps_elevation->setText(elev_str);
+	w->set_text(w->m_gps_elevation, elev_str);
 	w->set_widget_state(w->m_gps_elevation, property->state);
 }
 
@@ -454,12 +454,12 @@ void update_mount_lon_lat(ImagerWindow *w, indigo_property *property) {
 	}
 
 	QString lon_str(indigo_dtos(lon, "%d° %02d' %04.1f\""));
-	w->m_mount_longitude->setText(lon_str);
+	w->set_text(w->m_mount_longitude, lon_str);
 	w->set_widget_state(w->m_mount_longitude, property->state);
 	w->set_lineedit_text(w->m_mount_lon_input, indigo_dtos(target_lon, "%d:%02d:%04.1f"));
 
 	QString lat_str(indigo_dtos(lat, "%d° %02d' %04.1f\""));
-	w->m_mount_latitude->setText(lat_str);
+	w->set_text(w->m_mount_latitude, lat_str);
 	w->set_widget_state(w->m_mount_latitude, property->state);
 	w->set_lineedit_text(w->m_mount_lat_input, indigo_dtos(target_lat, "%d:%02d:%04.1f"));
 }
@@ -469,7 +469,7 @@ void update_mount_gps_utc(ImagerWindow *w, indigo_property *property) {
 
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], UTC_TIME_ITEM_NAME)) {
-			w->m_gps_utc->setText(property->items[i].text.value);
+			w->set_text(w->m_gps_utc, property->items[i].text.value);
 		}
 	}
 
@@ -481,7 +481,7 @@ void update_mount_utc(ImagerWindow *w, indigo_property *property) {
 
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], UTC_TIME_ITEM_NAME)) {
-			w->m_mount_utc->setText(property->items[i].text.value);
+			w->set_text(w->m_mount_utc, property->items[i].text.value);
 		}
 	}
 
@@ -493,7 +493,7 @@ void update_mount_gps_status(ImagerWindow *w, indigo_property *property) {
 
 	for (int i = 0; i < property->count; i++) {
 		if (property->items[i].light.value != INDIGO_IDLE_STATE) {
-			w->m_gps_status->setText(property->items[i].label);
+			w->set_text(w->m_gps_status, property->items[i].label);
 			if (property->items[i].light.value == INDIGO_OK_STATE) {
 				w->set_widget_state(w->m_gps_status, AIN_OK_STATE);
 			} else {
@@ -517,7 +517,7 @@ static void update_ccd_temperature(ImagerWindow *w, indigo_property *property, Q
 			indigo_debug("change %s = %f", property->items[i].name, property->items[i].number.value);
 			char temperature[INDIGO_VALUE_SIZE];
 			snprintf(temperature, INDIGO_VALUE_SIZE, "%.1f", property->items[i].number.value);
-			current_temp->setText(temperature);
+			w->set_text(current_temp, temperature);
 			w->set_widget_state(current_temp, property->state);
 		}
 	}
@@ -530,7 +530,8 @@ void update_cooler_power(ImagerWindow *w, indigo_property *property) {
 			indigo_debug("change %s = %f", property->items[i].name, property->items[i].number.value);
 			char power[INDIGO_VALUE_SIZE];
 			snprintf(power, INDIGO_VALUE_SIZE, "%.1f%%", property->items[i].number.value);
-			w->m_cooler_pwr->setText(power);
+			w->set_text(w->m_cooler_pwr, power);
+			w->set_text(w->m_cooler_pwr, power);
 			w->set_widget_state(w->m_cooler_pwr, property->state);
 		}
 	}
@@ -685,15 +686,15 @@ void update_ccd_frame_property(ImagerWindow *w, indigo_property *property) {
 }
 
 
-static void update_agent_imager_pause_process_property(indigo_property *property, QPushButton* pause_button) {
+static void update_agent_imager_pause_process_property(ImagerWindow *w, indigo_property *property, QPushButton* pause_button) {
 	indigo_debug("Set %s", property->name);
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_PAUSE_PROCESS_ITEM_NAME)) {
 			if(property->state == INDIGO_BUSY_STATE) {
-				pause_button->setText("Resume");
+				w->set_text(pause_button, "Resume");
 				set_busy(pause_button);
 			} else {
-				pause_button->setText("Pause");
+				w->set_text(pause_button, "Pause");
 				set_ok(pause_button);
 			}
 		}
@@ -761,17 +762,17 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			 FWHM = stats_p->items[i].number.value;
 			 char fwhm_str[50];
 			 snprintf(fwhm_str, 50, "%.2f", FWHM);
-			 w->m_FWHM_label->setText(fwhm_str);
+			 w->set_text(w->m_FWHM_label, fwhm_str);
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_HFD_ITEM_NAME)) {
 			 HFD = stats_p->items[i].number.value;
 			 char hfd_str[50];
 			 snprintf(hfd_str, 50, "%.2f", HFD);
-			 w->m_HFD_label->setText(hfd_str);
+			 w->set_text(w->m_HFD_label, hfd_str);
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_PEAK_ITEM_NAME)) {
 			int peak = (int)stats_p->items[i].number.value;
 			char peak_str[50];
 			snprintf(peak_str, 50, "%d", peak);
-			w->m_peak_label->setText(peak_str);
+			w->set_text(w->m_peak_label, peak_str);
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_DRIFT_X_ITEM_NAME)) {
 			drift_x = stats_p->items[i].number.value;
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_DRIFT_Y_ITEM_NAME)) {
@@ -786,7 +787,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	}
 	char drift_str[50];
 	snprintf(drift_str, 50, "%+.2f, %+.2f", drift_x, drift_y);
-	w->m_drift_label->setText(drift_str);
+	w->set_text(w->m_drift_label, drift_str);
 	if (exposure_running) {
 		w->set_widget_state(w->m_preview_button, INDIGO_OK_STATE);
 		w->set_widget_state(w->m_focusing_button, INDIGO_OK_STATE);
@@ -1045,16 +1046,16 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 
 	char label_str[50];
 	snprintf(label_str, 50, "%+.2f  %+.2f", d_ra, d_dec);
-	w->m_guider_rd_drift_label->setText(label_str);
+	w->set_text(w->m_guider_rd_drift_label, label_str);
 
 	snprintf(label_str, 50, "%+.2f  %+.2f", d_x, d_y);
-	w->m_guider_xy_drift_label->setText(label_str);
+	w->set_text(w->m_guider_xy_drift_label, label_str);
 
 	snprintf(label_str, 50, "%+.2f  %+.2f", cor_ra, cor_dec);
-	w->m_guider_pulse_label->setText(label_str);
+	w->set_text(w->m_guider_pulse_label, label_str);
 
 	snprintf(label_str, 50, "%.2f  %.2f", rmse_ra, rmse_dec);
-	w->m_guider_rmse_label->setText(label_str);
+	w->set_text(w->m_guider_rmse_label, label_str);
 }
 
 void update_guider_settings(ImagerWindow *w, indigo_property *property) {
@@ -1462,7 +1463,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		set_filter_selected(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
-		update_agent_imager_pause_process_property(property, m_pause_button);
+		update_agent_imager_pause_process_property(this, property, m_pause_button);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_COOLER_PROPERTY_NAME)) {
 		update_cooler_onoff(this, property);
@@ -1679,7 +1680,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		update_ccd_frame_property(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
-		update_agent_imager_pause_process_property(property, m_pause_button);
+		update_agent_imager_pause_process_property(this, property, m_pause_button);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_COOLER_PROPERTY_NAME)) {
 		update_cooler_onoff(this, property);
@@ -1868,12 +1869,12 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, CCD_COOLER_POWER_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("REMOVE %s", property->name);
-		m_cooler_pwr->setText("");
+		set_text(m_cooler_pwr, "");
 	}
 	if (client_match_device_property(property, selected_agent, CCD_TEMPERATURE_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("REMOVE %s", property->name);
-		m_current_temp->setText("");
+		set_text(m_current_temp, "");
 		set_enabled(m_set_temp, false);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME) ||
@@ -2024,9 +2025,9 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_lcd(m_mount_alt_label, zero_str, INDIGO_IDLE_STATE);
 #else
 		QString zero_str(indigo_dtos(0, "%d° %02d' %04.1f\""));
-		m_mount_az_label->setText(zero_str);
+		set_text(m_mount_az_label, zero_str);
 		set_widget_state(m_mount_az_label, INDIGO_IDLE_STATE);
-		m_mount_alt_label->setText(zero_str);
+		set_text(m_mount_alt_label, zero_str);
 		set_widget_state(m_mount_alt_label, INDIGO_IDLE_STATE);
 #endif
 	}
@@ -2038,22 +2039,22 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_lcd(m_mount_lst_label, zero_str, INDIGO_IDLE_STATE);
 #else
 		QString zero_str(indigo_dtos(0, "%d:%02d:%04.1f"));
-		m_mount_lst_label->setText(zero_str);
+		set_text(m_mount_lst_label, zero_str);
 		set_widget_state(m_mount_lst_label, INDIGO_IDLE_STATE);
 #endif
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_PARK_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
-		m_mount_park_cbox->setCheckState(Qt::Unchecked);
-		m_mount_park_cbox->setText("Park");
+		set_checkbox_state(m_mount_park_cbox, Qt::Unchecked);
+		set_text(m_mount_park_cbox, "Park");
 		set_enabled(m_mount_park_cbox, false);
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_TRACKING_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
-		m_mount_track_cbox->setCheckState(Qt::Unchecked);
-		m_mount_track_cbox->setText("Tracking");
+		set_checkbox_state(m_mount_track_cbox, Qt::Unchecked);
+		set_text(m_mount_track_cbox, "Tracking");
 		set_enabled(m_mount_track_cbox, false);
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_SLEW_RATE_PROPERTY_NAME) ||
@@ -2063,15 +2064,15 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_enabled(m_mount_center_rate_cbox, false);
 		set_enabled(m_mount_find_rate_cbox, false);
 		set_enabled(m_mount_max_rate_cbox, false);
-		m_mount_guide_rate_cbox->setCheckState(Qt::Unchecked);
-		m_mount_center_rate_cbox->setCheckState(Qt::Unchecked);
-		m_mount_find_rate_cbox->setCheckState(Qt::Unchecked);
-		m_mount_max_rate_cbox->setCheckState(Qt::Unchecked);
+		set_checkbox_state(m_mount_guide_rate_cbox, Qt::Unchecked);
+		set_checkbox_state(m_mount_center_rate_cbox, Qt::Unchecked);
+		set_checkbox_state(m_mount_find_rate_cbox, Qt::Unchecked);
+		set_checkbox_state(m_mount_max_rate_cbox, Qt::Unchecked);
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_SIDE_OF_PIER_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
-		m_mount_side_of_pier_label->setText("Side of pier: Unknown");
+		set_text(m_mount_side_of_pier_label, "Side of pier: Unknown");
 		set_widget_state(m_mount_side_of_pier_label, INDIGO_IDLE_STATE);
 	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_GPS_LIST_PROPERTY_NAME) ||
@@ -2084,33 +2085,33 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		QString zero_str(indigo_dtos(0, "%d:%02d:%04.1f"));
-		m_gps_latitude->setText(zero_str);
+		set_text(m_gps_latitude, zero_str);
 		set_widget_state(m_gps_latitude, INDIGO_IDLE_STATE);
-		m_gps_longitude->setText(zero_str);
+		set_text(m_gps_longitude, zero_str);
 		set_widget_state(m_gps_longitude, INDIGO_IDLE_STATE);
-		m_gps_elevation->setText("0");
+		set_text(m_gps_elevation, "0");
 		set_widget_state(m_gps_elevation, INDIGO_IDLE_STATE);
 	}
 	QString utc_time_property = QString("GPS_") + QString(UTC_TIME_PROPERTY_NAME);
 	if (client_match_device_property(property, selected_mount_agent, utc_time_property.toUtf8().constData()) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
-		m_gps_utc->setText("");
+		set_text(m_gps_utc, "");
 		set_widget_state(m_gps_utc, INDIGO_IDLE_STATE);
 	}
 	if (client_match_device_property(property, selected_mount_agent, GPS_STATUS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
-		m_gps_status->setText("Unknown");
+		set_text(m_gps_status, "Unknown");
 		set_widget_state(m_gps_status, INDIGO_IDLE_STATE);
 	}
 	if (client_match_device_property(property, selected_mount_agent,  GEOGRAPHIC_COORDINATES_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		QString zero_str(indigo_dtos(0, "%d:%02d:%04.1f"));
-		m_mount_latitude->setText(zero_str);
+		set_text(m_mount_latitude, zero_str);
 		set_widget_state(m_mount_latitude, INDIGO_IDLE_STATE);
-		m_mount_longitude->setText(zero_str);
+		set_text(m_mount_longitude, zero_str);
 		set_widget_state(m_mount_longitude, INDIGO_IDLE_STATE);
 		set_lineedit_text(m_mount_lon_input, "");
 		set_enabled(m_mount_lon_input, false);
@@ -2121,13 +2122,13 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, utc_time_property.toUtf8().constData()) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
-		m_mount_utc->setText("");
+		set_text(m_mount_utc, "");
 		set_widget_state(m_mount_utc, INDIGO_IDLE_STATE);
 	}
 	if (client_match_device_property(property, selected_mount_agent, AGENT_SET_HOST_TIME_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
-		m_mount_sync_time_cbox->setCheckState(Qt::Unchecked);
+		set_checkbox_state(m_mount_sync_time_cbox, Qt::Unchecked);
 		set_enabled(m_mount_sync_time_cbox, false);
 	}
 }
