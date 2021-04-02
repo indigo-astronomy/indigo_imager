@@ -80,6 +80,15 @@ int main(int argc, char *argv[]) {
 
 	if (!conf.use_system_locale) qunsetenv("LC_NUMERIC");
 
+#ifndef INDIGO_WINDOWS
+	for (int i = 1; i < argc; i++) {
+		if (!strcmp(argv[i], "-q") || !strcmp(argv[i], "--quiet")) {
+			freopen("/dev/null","a+", stderr);
+			i++;
+		}
+	}
+#endif
+
 	indigo_set_log_level(conf.indigo_log_level);
 
 	/* This shall be set only before connecting */
