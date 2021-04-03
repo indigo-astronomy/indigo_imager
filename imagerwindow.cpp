@@ -950,9 +950,8 @@ void ImagerWindow::on_indigo_save_log(bool status) {
 	} else {
 #ifndef INDIGO_WINDOWS
 		fflush(stderr);
-		fclose(stderr);
 		dup2(m_stderr, STDERR_FILENO);
-		stderr = fdopen(STDERR_FILENO, "w+");
+		setvbuf(stderr, NULL, _IONBF, 0);
 #else
 		indigo_log("On Windows INDIGO log can not be stopped for the current session, it will take effect on Ain restart.");
 #endif
