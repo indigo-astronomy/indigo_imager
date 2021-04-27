@@ -1492,9 +1492,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	// Guider Agent
 	if (client_match_device_property(property, selected_guider_agent, CCD_PREVIEW_PROPERTY_NAME)) {
 		QtConcurrent::run([=]() {
-			static const char *items[] = { CCD_PREVIEW_ENABLED_ITEM_NAME };
-			static const bool values[] = { true };
-			indigo_change_switch_property(NULL, selected_guider_agent, CCD_PREVIEW_PROPERTY_NAME, 1, items, values);
+			change_agent_ccd_peview(selected_guider_agent, (bool)conf.guider_save_bandwidth);
 		});
 	}
 	if (client_match_device_property(property, selected_guider_agent, CCD_JPEG_SETTINGS_PROPERTY_NAME)) {

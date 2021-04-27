@@ -664,6 +664,7 @@ private:
 	void change_guider_agent_aggressivity(const char *agent) const;
 	void change_guider_agent_i(const char *agent) const;
 	void change_guider_agent_edge_clipping(const char *agent) const;
+	void change_agent_ccd_peview(const char *agent, bool enable) const;
 
 	void change_mount_agent_equatorial(const char *agent, bool sync=false) const;
 	void change_mount_agent_abort(const char *agent) const;

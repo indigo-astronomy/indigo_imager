@@ -410,6 +410,14 @@ void ImagerWindow::change_agent_abort_process_property(const char *agent) const 
 	indigo_change_switch_property(nullptr, agent, AGENT_ABORT_PROCESS_PROPERTY_NAME, 1, items, values);
 }
 
+void ImagerWindow::change_agent_ccd_peview(const char *agent, bool enable) const {
+	if (enable) {
+		indigo_change_switch_property_1(nullptr, agent, CCD_PREVIEW_PROPERTY_NAME, CCD_PREVIEW_ENABLED_ITEM_NAME, true);
+	} else {
+		indigo_change_switch_property_1(nullptr, agent, CCD_PREVIEW_PROPERTY_NAME, CCD_PREVIEW_DISABLED_ITEM_NAME, true);
+	}
+}
+
 void ImagerWindow::change_wheel_slot_property(const char *agent) const {
 	static const char *items[] = {
 		WHEEL_SLOT_ITEM_NAME

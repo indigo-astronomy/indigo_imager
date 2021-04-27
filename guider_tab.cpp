@@ -475,6 +475,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 }
 
 void ImagerWindow::setup_preview(const char *agent) {
+	change_agent_ccd_peview(agent, (bool)conf.guider_save_bandwidth);
 	switch (conf.guider_save_bandwidth) {
 	case 0:
 		break;
