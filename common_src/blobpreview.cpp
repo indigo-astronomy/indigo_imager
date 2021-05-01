@@ -17,9 +17,9 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <math.h>
-#include <fits/fits.h>
-#include <debayer/debayer.h>
-#include <debayer/pixelformat.h>
+#include <fits.h>
+#include <debayer.h>
+#include <pixelformat.h>
 #include <blobpreview.h>
 #include <QPainter>
 

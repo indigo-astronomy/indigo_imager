@@ -1,4 +1,4 @@
-#include "image-viewer.h"
+#include "imageviewer.h"
 #include <cmath>
 #include <QGraphicsScene>
 #include <QGraphicsView>

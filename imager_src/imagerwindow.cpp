@@ -31,7 +31,7 @@
 #include "logger.h"
 #include "conf.h"
 #include "version.h"
-#include "image-viewer.h"
+#include <imageviewer.h>
 
 void write_conf();
 

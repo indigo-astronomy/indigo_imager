@@ -16,26 +16,26 @@ DEFINES += QT_DEPRECATED_WARNINGS QZEROCONF_STATIC
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-	main.cpp \
-	qservicemodel.cpp \
-	capture_tab.cpp \
-	focuser_tab.cpp \
-	guider_tab.cpp \
-	telescope_tab.cpp \
-	imagerwindow.cpp \
-	qindigoservice.cpp \
-	indigoclient.cpp \
-	qindigoservers.cpp \
-	blobpreview.cpp \
-	propertycache.cpp \
-	changeproperty.cpp \
-	handlepropertychange.cpp \
-	image-viewer.cpp \
-	fits/fits.c \
-	debayer/debayer.c \
+	imager_src/main.cpp \
+	imager_src/qservicemodel.cpp \
+	imager_src/capture_tab.cpp \
+	imager_src/focuser_tab.cpp \
+	imager_src/guider_tab.cpp \
+	imager_src/telescope_tab.cpp \
+	imager_src/imagerwindow.cpp \
+	imager_src/qindigoservice.cpp \
+	imager_src/indigoclient.cpp \
+	imager_src/qindigoservers.cpp \
+	common_src/blobpreview.cpp \
+	imager_src/propertycache.cpp \
+	imager_src/changeproperty.cpp \
+	imager_src/handlepropertychange.cpp \
+	common_src/imageviewer.cpp \
+	common_src/fits.c \
+	common_src/debayer.c \
 	qcustomplot/qcustomplot.cpp \
-	focusgraph.cpp \
-	utils.cpp
+	imager_src/focusgraph.cpp \
+	imager_src/utils.cpp
 
 
 RESOURCES += \
@@ -80,27 +80,25 @@ else: unix:!android: target.path = /usr/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
-	version.h \
-	qservicemodel.h \
-	imagerwindow.h \
-	qindigoservice.h \
-	indigoclient.h \
-	blobpreview.h \
-	propertycache.h \
-	qindigoservers.h \
-	image-viewer.h \
-	logger.h \
-	#image-viewer/image-viewer.h \
-	#image-viewer/image-viewer-global.h \
-	fits/fits.h \
-	debayer/debayer.h \
-	debayer/pixelformat.h \
+	imager_src/version.h \
+	imager_src/qservicemodel.h \
+	imager_src/imagerwindow.h \
+	imager_src/qindigoservice.h \
+	imager_src/indigoclient.h \
+	common_src/blobpreview.h \
+	imager_src/propertycache.h \
+	imager_src/qindigoservers.h \
+	common_src/imageviewer.h \
+	imager_src/logger.h \
+	common_src/fits.h \
+	common_src/debayer.h \
+	common_src/pixelformat.h \
 	qcustomplot/qcustomplot.h \
-	focusgraph.h \
-	conf.h \
-	widget_state.h \
-	image_preview_lut.h \
-	utils.h
+	imager_src/focusgraph.h \
+	imager_src/conf.h \
+	imager_src/widget_state.h \
+	common_src/image_preview_lut.h \
+	imager_src/utils.h
 
 
 
@@ -112,7 +110,7 @@ include(qtzeroconf/qtzeroconf.pri)
 #    PKGCONFIG += indigo
 #}
 
-INCLUDEPATH += "$${PWD}/indigo/indigo_libs"
+INCLUDEPATH += "$${PWD}/indigo/indigo_libs" + "$${PWD}/fits" + "$${PWD}/common_src" + "$${PWD}/imager_src"
 
 unix {
 	INCLUDEPATH += "$${PWD}/libjpeg"

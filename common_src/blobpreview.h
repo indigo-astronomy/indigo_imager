@@ -22,7 +22,7 @@
 #include <QImage>
 #include <QHash>
 #include <indigo/indigo_client.h>
-#include <debayer/pixelformat.h>
+#include <pixelformat.h>
 
 #include <image_preview_lut.h>
 

@@ -25,7 +25,7 @@
 #include <QMainWindow>
 #include <QComboBox>
 #include <indigo/indigo_bus.h>
-#include "image-viewer.h"
+#include <imageviewer.h>
 #include <widget_state.h>
 #include <conf.h>
 
