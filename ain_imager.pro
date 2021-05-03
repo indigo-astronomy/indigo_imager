@@ -26,16 +26,17 @@ SOURCES += \
 	imager_src/qindigoservice.cpp \
 	imager_src/indigoclient.cpp \
 	imager_src/qindigoservers.cpp \
-	common_src/blobpreview.cpp \
 	imager_src/propertycache.cpp \
 	imager_src/changeproperty.cpp \
 	imager_src/handlepropertychange.cpp \
+	imager_src/focusgraph.cpp \
+	imager_src/utils.cpp \
+	imager_src/blobpreview.cpp \
+	common_src/imagepreview.cpp \
 	common_src/imageviewer.cpp \
 	common_src/fits.c \
 	common_src/debayer.c \
-	qcustomplot/qcustomplot.cpp \
-	imager_src/focusgraph.cpp \
-	imager_src/utils.cpp
+	qcustomplot/qcustomplot.cpp
 
 
 RESOURCES += \
@@ -85,20 +86,21 @@ HEADERS += \
 	imager_src/imagerwindow.h \
 	imager_src/qindigoservice.h \
 	imager_src/indigoclient.h \
-	common_src/blobpreview.h \
 	imager_src/propertycache.h \
 	imager_src/qindigoservers.h \
-	common_src/imageviewer.h \
 	imager_src/logger.h \
-	common_src/fits.h \
-	common_src/debayer.h \
-	common_src/pixelformat.h \
-	qcustomplot/qcustomplot.h \
 	imager_src/focusgraph.h \
 	imager_src/conf.h \
 	imager_src/widget_state.h \
+	imager_src/utils.h \
+	imager_src/blobpreview.h \
 	common_src/image_preview_lut.h \
-	imager_src/utils.h
+	common_src/imagepreview.h \
+	common_src/imageviewer.h \
+	common_src/fits.h \
+	common_src/debayer.h \
+	common_src/pixelformat.h \
+	qcustomplot/qcustomplot.h
 
 
 
