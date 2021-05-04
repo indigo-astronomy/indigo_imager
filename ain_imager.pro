@@ -36,7 +36,7 @@ SOURCES += \
 	common_src/imageviewer.cpp \
 	common_src/fits.c \
 	common_src/debayer.c \
-	qcustomplot/qcustomplot.cpp
+	external/qcustomplot/qcustomplot.cpp
 
 
 RESOURCES += \
@@ -100,23 +100,22 @@ HEADERS += \
 	common_src/fits.h \
 	common_src/debayer.h \
 	common_src/pixelformat.h \
-	qcustomplot/qcustomplot.h
+	external/qcustomplot/qcustomplot.h
 
 
 
-include(qtzeroconf/qtzeroconf.pri)
-#include(image-viewer/image-viewer.pri)
+include(external/qtzeroconf/qtzeroconf.pri)
 
 #unix:!mac {
 #    CONFIG += link_pkgconfig
 #    PKGCONFIG += indigo
 #}
 
-INCLUDEPATH += "$${PWD}/indigo/indigo_libs" + "$${PWD}/fits" + "$${PWD}/common_src" + "$${PWD}/imager_src"
+INCLUDEPATH += "$${PWD}/indigo/indigo_libs" + "$${PWD}/external" + "$${PWD}/external/qtzeroconf/" + "$${PWD}/common_src" + "$${PWD}/imager_src"
 
 unix {
-	INCLUDEPATH += "$${PWD}/libjpeg"
-	LIBS += -L"$${PWD}/libjpeg/.libs" -L"$${PWD}/indigo/build/lib" -lindigo -ljpeg
+	INCLUDEPATH += "$${PWD}/external/libjpeg"
+	LIBS += -L"$${PWD}/external/libjpeg/.libs" -L"$${PWD}/indigo/build/lib" -lindigo -ljpeg
 }
 
 DISTFILES += \
