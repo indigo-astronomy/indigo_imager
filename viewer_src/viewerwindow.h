@@ -67,6 +67,7 @@ public:
 public slots:
 
 	void on_use_system_locale_changed(bool status);
+	void on_image_open_act();
 	void on_image_save_act();
 	void on_exit_act();
 	void on_about_act();
