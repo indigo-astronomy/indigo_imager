@@ -2,7 +2,7 @@
 #define IMAGEVIEWER_H
 
 #include <QFrame>
-#include <blobpreview.h>
+#include <imagepreview.h>
 #include <QGraphicsPixmapItem>
 
 QT_BEGIN_NAMESPACE

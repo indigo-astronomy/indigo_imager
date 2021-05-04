@@ -93,7 +93,7 @@ HEADERS += \
 	imager_src/conf.h \
 	imager_src/widget_state.h \
 	imager_src/blobpreview.h \
-	commom_src/utils.h \
+	common_src/utils.h \
 	common_src/image_preview_lut.h \
 	common_src/imagepreview.h \
 	common_src/imageviewer.h \
