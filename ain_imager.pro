@@ -30,8 +30,8 @@ SOURCES += \
 	imager_src/changeproperty.cpp \
 	imager_src/handlepropertychange.cpp \
 	imager_src/focusgraph.cpp \
-	imager_src/utils.cpp \
 	imager_src/blobpreview.cpp \
+	common_src/utils.cpp \
 	common_src/imagepreview.cpp \
 	common_src/imageviewer.cpp \
 	common_src/fits.c \
@@ -92,8 +92,8 @@ HEADERS += \
 	imager_src/focusgraph.h \
 	imager_src/conf.h \
 	imager_src/widget_state.h \
-	imager_src/utils.h \
 	imager_src/blobpreview.h \
+	commom_src/utils.h \
 	common_src/image_preview_lut.h \
 	common_src/imagepreview.h \
 	common_src/imageviewer.h \
