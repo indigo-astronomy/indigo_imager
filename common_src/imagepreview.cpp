@@ -543,36 +543,40 @@ preview_image* create_preview(indigo_property *property, indigo_item *item, cons
 }
 
 preview_image* create_preview(indigo_item *item, const double white_threshold) {
+	return create_preview((unsigned char*)item->blob.value, item->blob.size, item->blob.format, white_threshold);
+}
+
+preview_image* create_preview(unsigned char *data, size_t size, const char* format, const double white_threshold) {
 	preview_image *preview = nullptr;
-	if (item->blob.value != NULL) {
-		if (!strcmp(item->blob.format, ".jpeg") ||
-			!strcmp(item->blob.format, ".jpg")  ||
-			!strcmp(item->blob.format, ".JPG")  ||
-			!strcmp(item->blob.format, ".JPEG")
+	if (data != NULL) {
+		if (!strcmp(format, ".jpeg") ||
+			!strcmp(format, ".jpg")  ||
+			!strcmp(format, ".JPG")  ||
+			!strcmp(format, ".JPEG")
 		) {
-			preview = create_jpeg_preview((unsigned char*)item->blob.value, item->blob.size);
+			preview = create_jpeg_preview(data, size);
 		} else if (
-			!strcmp(item->blob.format, ".fits") ||
-			!strcmp(item->blob.format, ".fit")  ||
-			!strcmp(item->blob.format, ".fts")  ||
-			!strcmp(item->blob.format, ".FITS") ||
-			!strcmp(item->blob.format, ".FIT")  ||
-			!strcmp(item->blob.format, ".FTS")
+			!strcmp(format, ".fits") ||
+			!strcmp(format, ".fit")  ||
+			!strcmp(format, ".fts")  ||
+			!strcmp(format, ".FITS") ||
+			!strcmp(format, ".FIT")  ||
+			!strcmp(format, ".FTS")
 		) {
-			preview = create_fits_preview((unsigned char*)item->blob.value, item->blob.size, white_threshold);
+			preview = create_fits_preview(data, size, white_threshold);
 		} else if (
-			!strcmp(item->blob.format, ".raw") ||
-			!strcmp(item->blob.format, ".RAW")
+			!strcmp(format, ".raw") ||
+			!strcmp(format, ".RAW")
 		) {
-			preview = create_raw_preview((unsigned char*)item->blob.value, item->blob.size, white_threshold);
+			preview = create_raw_preview(data, size, white_threshold);
 		} else if (
-			!strcmp(item->blob.format, ".tif")  ||
-			!strcmp(item->blob.format, ".tiff") ||
-			!strcmp(item->blob.format, ".TIF")  ||
-			!strcmp(item->blob.format, ".TIFF")
+			!strcmp(format, ".tif")  ||
+			!strcmp(format, ".tiff") ||
+			!strcmp(format, ".TIF")  ||
+			!strcmp(format, ".TIFF")
 		) {
-			preview = create_tiff_preview((unsigned char*)item->blob.value, item->blob.size);
-		} else if (item->blob.format[0] != '\0') {
+			preview = create_tiff_preview(data, size);
+		} else if (format[0] != '\0') {
 			/* DUMMY TEST CODE */
 			/*
 			FILE *file;
@@ -588,7 +592,7 @@ preview_image* create_preview(indigo_item *item, const double white_threshold) {
 			fclose(file);
 			preview = create_qt_preview((unsigned char*)buffer, fileLen);
 			*/
-			preview = create_qtsupported_preview((unsigned char*)item->blob.value, item->blob.size);
+			preview = create_qtsupported_preview(data, size);
 		}
 	}
 	return preview;

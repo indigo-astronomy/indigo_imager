@@ -168,29 +168,38 @@ void close_fd(int fd) {
 }
 
 void ViewerWindow::on_image_open_act() {
-	/*
-	if (!m_indigo_item) return;
 	char message[PATH_LEN+100];
-	QString format = m_indigo_item->blob.format;
 	QString qlocation = QDir::toNativeSeparators(QDir::homePath());
-	QString file_name = QFileDialog::getSaveFileName(this,
-		tr("Save image"), qlocation,
-		QString("Image (*") + format + QString(")"));
+	QString file_name = QFileDialog::getOpenFileName(this,
+		tr("Open image"), qlocation,
+		QString("FITS (*.fit, *.fits);;Indigo RAW (*.raw);; jpeg (*.jpg, *.jpeg);; All Files (*)"));
 
 	if (file_name == "") return;
 
-	if (!file_name.endsWith(m_indigo_item->blob.format,Qt::CaseInsensitive)) file_name += m_indigo_item->blob.format;
+	FILE *file;
+	unsigned char *buffer;
+	size_t file_len;
+	char name[PATH_LEN] = "";
 
-	if (save_blob_item(m_indigo_item, file_name.toUtf8().data())) {
-		m_imager_viewer->setText(basename(file_name.toUtf8().data()));
-		m_imager_viewer->setToolTip(file_name);
-		snprintf(message, sizeof(message), "Image saved to '%s'", file_name.toUtf8().data());
-		on_window_log(NULL, message);
-	} else {
-		snprintf(message, sizeof(message), "Can not save '%s'", file_name.toUtf8().data());
-		on_window_log(NULL, message);
+	strncpy(name, file_name.toUtf8().data(), PATH_LEN);
+	file = fopen(name, "rb");
+	if (file) {
+		fseek(file, 0, SEEK_END);
+		file_len=ftell(file);
+		fseek(file, 0, SEEK_SET);
+		buffer=(unsigned char *)malloc(file_len+1);
+		fread(buffer, file_len, 1, file);
+		fclose(file);
 	}
-	*/
+
+	char *format = strrchr(name, '.');
+	preview_image *preview = create_preview(buffer, file_len, (const char*)format,  preview_stretch_lut[conf.preview_stretch_level]);
+
+	if(preview) {
+		m_imager_viewer->setImage(*preview);
+		m_imager_viewer->setText(file_name);
+	}
+	free(buffer);
 }
 
 void ViewerWindow::on_image_save_act() {
