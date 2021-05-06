@@ -35,7 +35,7 @@
 
 void write_conf();
 
-ImageViewer *m_imager_viewer;
+//ImageViewer *m_imager_viewer;
 
 ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	setWindowTitle(tr("Ain INDIGO Imager"));
