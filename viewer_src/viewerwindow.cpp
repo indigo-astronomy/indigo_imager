@@ -30,11 +30,15 @@
 
 void write_conf();
 
-ImageViewer *m_imager_viewer;
-
 ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	setWindowTitle(tr("Ain Image Viewer"));
 	resize(1200, 768);
+
+	m_image_data = nullptr;
+	m_image_size = 0;
+	m_image_formrat = nullptr;
+	m_image_path[0] = '\0';
+	m_preview_image = nullptr;
 
 	QIcon icon(":resource/appicon.png");
 	this->setWindowIcon(icon);
@@ -64,6 +68,9 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	act = menu->addAction(tr("&Open Image..."));
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_open_act);
+
+	act = menu->addAction(tr("&Close"));
+	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_close_act);
 
 	act = menu->addAction(tr("&Save Image As..."));
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_save_act);
@@ -175,31 +182,48 @@ void ViewerWindow::on_image_open_act() {
 		QString("FITS (*.fit, *.fits);;Indigo RAW (*.raw);; jpeg (*.jpg, *.jpeg);; All Files (*)"));
 
 	if (file_name == "") return;
-
 	FILE *file;
-	unsigned char *buffer;
-	size_t file_len;
-	char name[PATH_LEN] = "";
-
-	strncpy(name, file_name.toUtf8().data(), PATH_LEN);
-	file = fopen(name, "rb");
+	strncpy(m_image_path, file_name.toUtf8().data(), PATH_LEN);
+	file = fopen(m_image_path, "rb");
 	if (file) {
 		fseek(file, 0, SEEK_END);
-		file_len=ftell(file);
+		m_image_size = (size_t)ftell(file);
 		fseek(file, 0, SEEK_SET);
-		buffer=(unsigned char *)malloc(file_len+1);
-		fread(buffer, file_len, 1, file);
+		if (m_image_data == nullptr) {
+			m_image_data = (unsigned char *)malloc(m_image_size + 1);
+		} else {
+			m_image_data = (unsigned char *)realloc(m_image_data, m_image_size + 1);
+		}
+		fread(m_image_data, m_image_size, 1, file);
 		fclose(file);
 	}
 
-	char *format = strrchr(name, '.');
-	preview_image *preview = create_preview(buffer, file_len, (const char*)format,  preview_stretch_lut[conf.preview_stretch_level]);
-
-	if(preview) {
-		m_imager_viewer->setImage(*preview);
-		m_imager_viewer->setText(file_name);
+	m_image_formrat = strrchr(m_image_path, '.');
+	if (m_preview_image) {
+		delete(m_preview_image);
+		m_preview_image = nullptr;
 	}
-	free(buffer);
+	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat,  preview_stretch_lut[conf.preview_stretch_level]);
+
+	if (m_preview_image) {
+		m_imager_viewer->setImage(*m_preview_image);
+		m_imager_viewer->setText(m_image_path);
+	}
+}
+
+void ViewerWindow::on_image_close_act() {
+	if (m_preview_image) {
+		delete(m_preview_image);
+		m_preview_image = nullptr;
+	}
+	//m_imager_viewer->setImage(*pi);
+	if (m_image_data) {
+		free(m_image_data);
+		m_image_data = nullptr;
+	}
+	m_image_size = 0;
+	m_image_path[0] = '\0';
+	m_image_formrat = nullptr;
 }
 
 void ViewerWindow::on_image_save_act() {
@@ -253,43 +277,68 @@ void ViewerWindow::on_antialias_view(bool status) {
 
 void ViewerWindow::on_no_stretch() {
 	conf.preview_stretch_level = STRETCH_NONE;
-	//preview_cache.recreate(m_image_key, m_indigo_item, preview_stretch_lut[conf.preview_stretch_level]);
-	// show image
+	if (m_preview_image) {
+		delete(m_preview_image);
+		m_preview_image = nullptr;
+	}
+	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat,  preview_stretch_lut[conf.preview_stretch_level]);
+	if (m_preview_image) {
+		m_imager_viewer->setImage(*m_preview_image);
+	}
 	write_conf();
-	//indigo_debug("%s\n", __FUNCTION__);
 }
 
 void ViewerWindow::on_slight_stretch() {
 	conf.preview_stretch_level = STRETCH_SLIGHT;
-	//preview_cache.recreate(m_image_key, m_indigo_item, preview_stretch_lut[conf.preview_stretch_level]);
-	// show image
+	if (m_preview_image) {
+		delete(m_preview_image);
+		m_preview_image = nullptr;
+	}
+	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat,  preview_stretch_lut[conf.preview_stretch_level]);
+	if (m_preview_image) {
+		m_imager_viewer->setImage(*m_preview_image);
+	}
 	write_conf();
-	//indigo_debug("%s\n", __FUNCTION__);
 }
 
 void ViewerWindow::on_moderate_stretch() {
 	conf.preview_stretch_level = STRETCH_MODERATE;
-	//preview_cache.recreate(m_image_key, m_indigo_item, preview_stretch_lut[conf.preview_stretch_level]);
-	//show_preview_in_imager_viewer(m_image_key);
+	if (m_preview_image) {
+		delete(m_preview_image);
+		m_preview_image = nullptr;
+	}
+	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat,  preview_stretch_lut[conf.preview_stretch_level]);
+	if (m_preview_image) {
+		m_imager_viewer->setImage(*m_preview_image);
+	}
 	write_conf();
-	//indigo_debug("%s\n", __FUNCTION__);
 }
 
 void ViewerWindow::on_normal_stretch() {
 	conf.preview_stretch_level = STRETCH_NORMAL;
-	//preview_cache.recreate(m_image_key, m_indigo_item, preview_stretch_lut[conf.preview_stretch_level]);
-	//show_preview_in_imager_viewer(m_image_key);
+	if (m_preview_image) {
+		delete(m_preview_image);
+		m_preview_image = nullptr;
+	}
+	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat,  preview_stretch_lut[conf.preview_stretch_level]);
+	if (m_preview_image) {
+		m_imager_viewer->setImage(*m_preview_image);
+	}
 	write_conf();
-	//indigo_debug("%s\n", __FUNCTION__);
 }
 
 
 void ViewerWindow::on_hard_stretch() {
 	conf.preview_stretch_level = STRETCH_HARD;
-	//preview_cache.recreate(m_image_key, m_indigo_item, preview_stretch_lut[conf.preview_stretch_level]);
-	//show_preview_in_imager_viewer(m_image_key);
+	if (m_preview_image) {
+		delete(m_preview_image);
+		m_preview_image = nullptr;
+	}
+	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat,  preview_stretch_lut[conf.preview_stretch_level]);
+	if (m_preview_image) {
+		m_imager_viewer->setImage(*m_preview_image);
+	}
 	write_conf();
-	//indigo_debug("%s\n", __FUNCTION__);
 }
 
 void ViewerWindow::on_about_act() {
