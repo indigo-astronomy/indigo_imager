@@ -31,7 +31,7 @@
 void write_conf();
 
 ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
-	setWindowTitle(tr("Ain Image Viewer"));
+	setWindowTitle(tr("Ain Viewer"));
 	resize(1200, 768);
 
 	m_image_data = nullptr;
@@ -151,8 +151,6 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	// Image viewer
 	m_imager_viewer = new ImageViewer(this);
-	m_imager_viewer->setText("No Image");
-	m_imager_viewer->setToolTip("No Image");
 	m_imager_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
 	form_layout->addWidget((QWidget*)m_imager_viewer);
 	m_imager_viewer->setMinimumWidth(PROPERTY_AREA_MIN_WIDTH);
@@ -162,12 +160,12 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_imager_viewer->enableAntialiasing(conf.antialiasing_enabled);
 }
 
-
 ViewerWindow::~ViewerWindow () {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
+	delete m_preview_image;
+	delete m_image_data;
 	delete m_imager_viewer;
 }
-
 
 /* C++ looks for method close - maybe name collision so... */
 void close_fd(int fd) {
@@ -207,16 +205,26 @@ void ViewerWindow::on_image_open_act() {
 
 	if (m_preview_image) {
 		m_imager_viewer->setImage(*m_preview_image);
-		m_imager_viewer->setText(m_image_path);
+		setWindowTitle(tr("Ain Viewer - ") + QString(m_image_path));
+		char info[256] = {};
+		int w = m_preview_image->width();
+		int h = m_preview_image->width();
+		sprintf(info, "%s [%d x %d]", basename(m_image_path), w, h);
+		m_imager_viewer->setText(info);
 	}
 }
 
 void ViewerWindow::on_image_close_act() {
+	setWindowTitle(tr("Ain Viewer"));
+	m_imager_viewer->setText("");
+	m_imager_viewer->setToolTip("");
 	if (m_preview_image) {
 		delete(m_preview_image);
 		m_preview_image = nullptr;
 	}
-	//m_imager_viewer->setImage(*pi);
+	preview_image *pi = new preview_image();
+	m_imager_viewer->setImage(*pi);
+	delete pi;
 	if (m_image_data) {
 		free(m_image_data);
 		m_image_data = nullptr;

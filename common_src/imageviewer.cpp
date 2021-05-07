@@ -555,7 +555,7 @@ PixmapItem::PixmapItem(QGraphicsItem *parent) :
 }
 
 void PixmapItem::setImage(preview_image im) {
-	if (im.isNull()) return;
+	//if (im.isNull()) return;
 
 	auto image_size = m_image.size();
 	m_image = im;
