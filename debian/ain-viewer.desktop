@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Encoding=UTF-8
+Name=Ain Viewer
+Comment=Ain Viewer
+Exec=ain_viewer %u
+Icon=ain-viewer.png
+Terminal=false
+Type=Application
+Categories=Education;Science;Astronomy;
+Keywords=astronomy
