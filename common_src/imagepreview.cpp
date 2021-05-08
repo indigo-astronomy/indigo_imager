@@ -167,7 +167,6 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 	preview_image *img = create_preview(header.naxisn[0], header.naxisn[1],
 	        pix_format, fits_data, hist, white_threshold);
 
-	free(hist);
 	free(fits_data);
 	return img;
 }
@@ -217,8 +216,8 @@ preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long
 
 	if ((header->signature == INDIGO_RAW_MONO16) ||
 	    (header->signature == INDIGO_RAW_RGB48)) {
-		hist = (int*)malloc(65536*sizeof(int));
-		memset(hist, 0, 65536*sizeof(int));
+		hist = (int*)malloc(65536 * sizeof(int));
+		memset(hist, 0, 65536 * sizeof(int));
 		uint16_t* buf = (uint16_t*)raw_data;
 		for (int pix = 0; pix < pixel_count; ++pix) {
 			hist[*buf++]++;
@@ -239,7 +238,6 @@ preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long
 	preview_image *img = create_preview(header->width, header->height,
 	        pix_format, raw_data, hist, white_threshold);
 
-	free(hist);
 	return img;
 }
 
@@ -340,6 +338,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 			}
 		}
 		img->m_raw_data = (char*)pixmap_data;
+		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_Y8;
 		img->m_height = height;
 		img->m_width = width;
@@ -357,6 +356,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 			}
 		}
 		img->m_raw_data = (char*)pixmap_data;
+		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_Y16;
 		img->m_height = height;
 		img->m_width = width;
@@ -386,6 +386,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 			}
 		}
 		img->m_raw_data = (char*)pixmap_data;
+		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_RGB24;
 		img->m_height = height;
 		img->m_width = width;
@@ -415,6 +416,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 			}
 		}
 		img->m_raw_data = (char*)pixmap_data;
+		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_RGB48;
 		img->m_height = height;
 		img->m_width = width;
@@ -444,6 +446,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 			}
 		}
 		img->m_raw_data = (char*)pixmap_data;
+		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_RGB24;
 		img->m_height = height;
 		img->m_width = width;
@@ -473,6 +476,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 			}
 		}
 		img->m_raw_data = (char*)pixmap_data;
+		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_RGB48;
 		img->m_height = height;
 		img->m_width = width;
@@ -498,6 +502,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 			}
 		}
 		img->m_raw_data = (char*)rgb_data;
+		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_RGB24;
 		img->m_height = height;
 		img->m_width = width;
@@ -523,6 +528,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 			}
 		}
 		img->m_raw_data = (char*)rgb_data;
+		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_RGB48;
 		img->m_height = height;
 		img->m_width = width;
@@ -532,6 +538,147 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		img = nullptr;
 	}
 	return img;
+}
+
+
+void stretch_preview(preview_image *img, double white_threshold) {
+	int range, max, min = 0, sum;
+	int width = img->m_width;
+	int height = img->m_height;
+	int pix_format = img->m_pix_format;
+	int *hist = img->m_histogram;
+
+	if ((hist == nullptr) || (img->m_raw_data == nullptr)) {
+		indigo_debug("image not scalable");
+		return;
+	}
+
+	int pix_cnt = width * height;
+	int thresh = (int)(white_threshold / 100.0 * pix_cnt); // white thresh is in percentiles
+
+	switch (pix_format) {
+	case PIX_FMT_Y8:
+	case PIX_FMT_RGB24:
+		max = 255;
+		break;
+	case PIX_FMT_Y16:
+	case PIX_FMT_RGB48:
+		max = 65535;
+		break;
+	default:
+		indigo_error("PREVIEW: Unsupported pixel format (%d)", pix_format);
+		return;
+	}
+
+	min = 0;
+	while (hist[min] == 0 && min < max) {
+		min++;
+	};
+
+	sum = hist[max];
+	while (sum < thresh && max > min) {
+		sum += hist[--max];
+	}
+
+	switch (pix_format) {
+	case PIX_FMT_Y8:
+	case PIX_FMT_RGB24:
+		if (fabs(max - min) < 2) {
+			if (min >= 2) {
+				min -= 2;
+			} else if (max <= 253) {
+				max += 2;
+			}
+		}
+		break;
+	case PIX_FMT_Y16:
+	case PIX_FMT_RGB48:
+		if (fabs(max - min) < 2) {
+			if (min >= 2) {
+				min -= 2;
+			} else if (max <= 65533) {
+				max += 2;
+			}
+		}
+		break;
+	default:
+		indigo_error("PREVIEW: Unsupported pixel format (%d)", pix_format);
+		return;
+	}
+
+	range = max - min;
+	if (range < 2) range = 2;
+	double scale = 256.0 / range;
+
+	indigo_debug("PREVIEW: pix_format = %d sum = %d thresh = %d max = %d min = %d", pix_format, sum, thresh, max, min);
+
+	if (pix_format == PIX_FMT_Y8) {
+		uint8_t* buf = (uint8_t*)img->m_raw_data;
+		int index = 0;
+		for (int y = 0; y < height; ++y) {
+			for (int x = 0; x < width; ++x) {
+				int value = buf[index++] - min;
+				if (value >= range) value = 255;
+				else value *= scale;
+				img->setPixel(x, y, qRgb(value, value, value));
+			}
+		}
+	} else if (pix_format == PIX_FMT_Y16) {
+		uint16_t* buf = (uint16_t*)img->m_raw_data;
+		int index = 0;
+		for (int y = 0; y < height; ++y) {
+			for (int x = 0; x < width; ++x) {
+				int value = buf[index++] - min;
+				if (value >= range) value = 255;
+				else value *= scale;
+				img->setPixel(x, y, qRgb(value, value, value));
+			}
+		}
+	} else if (pix_format == PIX_FMT_RGB24) {
+		uint8_t* buf = (uint8_t*)img->m_raw_data;
+		int index = 0;
+		for (int y = 0; y < height; ++y) {
+			for (int x = 0; x < width; ++x) {
+				int value_r = buf[index] - min;
+				index++;
+				int value_g = buf[index] - min;
+				index++;
+				int value_b = buf[index] - min;
+				index++;
+
+				if (value_r >= range) value_r = 255;
+				else value_r *= scale;
+				if (value_g >= range) value_g = 255;
+				else value_g *= scale;
+				if (value_b >= range) value_b = 255;
+				else value_b *= scale;
+				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
+			}
+		}
+	} else if (pix_format == PIX_FMT_RGB48) {
+		uint16_t* buf = (uint16_t*)img->m_raw_data;
+		int index = 0;
+		for (int y = 0; y < height; ++y) {
+			for (int x = 0; x < width; ++x) {
+				int value_r = buf[index] - min;
+				index++;
+				int value_g = buf[index] - min;
+				index++;
+				int value_b = buf[index] - min;
+				index++;
+
+				if (value_r >= range) value_r = 255;
+				else value_r *= scale;
+				if (value_g >= range) value_g = 255;
+				else value_g *= scale;
+				if (value_b >= range) value_b = 255;
+				else value_b *= scale;
+				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
+			}
+		}
+	} else {
+		indigo_error("PREVIEW: Unsupported pixel format (%d)", pix_format);
+	}
 }
 
 preview_image* create_preview(indigo_property *property, indigo_item *item, const double white_threshold) {

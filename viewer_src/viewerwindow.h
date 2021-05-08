@@ -32,27 +32,8 @@
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>
-#include <QSplitter>
-#include <QTreeView>
 #include <QMenuBar>
-#include <QProgressBar>
-#include <QIcon>
-#include <QLabel>
-#include <QPixmap>
-#include <QTextEdit>
-#include <QPushButton>
-#include <QToolButton>
-#include <QScrollArea>
-#include <QComboBox>
-#include <QDoubleSpinBox>
-#include <QLCDNumber>
 #include <QMessageBox>
-#include <QActionGroup>
-#include <QLineEdit>
-#include <QCheckBox>
-#include <QStandardPaths>
-#include <QDir>
-#include <QDateTime>
 #include <QFileDialog>
 #include <QThread>
 #include <QtConcurrentRun>
@@ -63,21 +44,16 @@ class ViewerWindow : public QMainWindow {
 public:
 	explicit ViewerWindow(QWidget *parent = nullptr);
 	virtual ~ViewerWindow();
+	void open_image(QString file_name);
 
 public slots:
-
 	void on_use_system_locale_changed(bool status);
 	void on_image_open_act();
 	void on_image_close_act();
-	void on_image_save_act();
 	void on_exit_act();
 	void on_about_act();
 
-	void on_no_stretch();
-	void on_slight_stretch();
-	void on_moderate_stretch();
-	void on_normal_stretch();
-	void on_hard_stretch();
+	void on_stretch_changed(int level);
 	void on_antialias_view(bool status);
 
 private:

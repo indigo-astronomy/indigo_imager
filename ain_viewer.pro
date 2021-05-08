@@ -35,7 +35,8 @@ RESOURCES += \
 	resource/manual_service.png \
 	resource/no-preview.png \
 	resource/zoom-in.png \
-	resource/zoom-out.png
+	resource/zoom-out.png \
+	resource/histogram.png
 
 
 # Additional import path used to resolve QML modules in Qt Creator\'s code model

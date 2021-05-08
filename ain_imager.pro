@@ -66,7 +66,8 @@ RESOURCES += \
 	resource/focus_in.png \
 	resource/focus_out.png \
 	resource/zoom-in.png \
-	resource/zoom-out.png
+	resource/zoom-out.png \
+	resource/histogram.png
 
 
 # Additional import path used to resolve QML modules in Qt Creator\'s code model

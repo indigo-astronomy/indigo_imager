@@ -37,6 +37,7 @@ class preview_image: public QImage {
 public:
 	preview_image():
 		m_raw_data(nullptr),
+		m_histogram(nullptr),
 		m_width(0),
 		m_height(0),
 		m_pix_format(0)
@@ -53,6 +54,7 @@ public:
 	preview_image(int width, int height, QImage::Format format):
 		QImage(width, height, format),
 		m_raw_data(nullptr),
+		m_histogram(nullptr),
 		m_width(0),
 		m_height(0),
 		m_pix_format(0)
@@ -60,37 +62,47 @@ public:
 
 	preview_image(preview_image &image): QImage(image) {
 		int size = 0;
+		int hist_size = 0;
 		m_width = image.m_width;
 		m_height = image.m_height;
 		m_pix_format = image.m_pix_format;
 
 		if (image.m_raw_data == nullptr) {
 			m_raw_data = nullptr;
+			m_histogram = nullptr;
 			return;
 		}
 
 		if (m_pix_format == PIX_FMT_Y8) {
 			size = m_width * m_height;
+			hist_size = 256;
 		} else if (m_pix_format == PIX_FMT_Y16) {
 			size = m_width * m_height * 2;
+			hist_size = 65536;
 		} else if (m_pix_format == PIX_FMT_RGB24) {
 			size = m_width * m_height * 3;
+			hist_size = 256;
 		} else if (m_pix_format == PIX_FMT_RGB48) {
 			size = m_width * m_height * 6;
+			hist_size = 65536;
 		}
 
 		if (size == 0) {
 			m_raw_data = nullptr;
+			m_histogram = nullptr;
 			return;
 		}
 
 		m_raw_data = (char*)malloc(size);
 		memcpy(m_raw_data, image.m_raw_data, size);
+		m_histogram = (int*)malloc(hist_size * sizeof(int));
+		memcpy(m_histogram, image.m_histogram, hist_size * sizeof(int));
 	};
 
 	preview_image& operator=(preview_image &image) {
 		QImage::operator=(image);
 		int size = 0;
+		int hist_size = 0;
 		m_width = image.m_width;
 		m_height = image.m_height;
 		m_pix_format = image.m_pix_format;
@@ -98,28 +110,38 @@ public:
 		if (image.m_raw_data == nullptr) {
 			if (m_raw_data) free(m_raw_data);
 			m_raw_data = nullptr;
+			if (m_histogram) free(m_histogram);
+			m_histogram = nullptr;
 			return *this;
 		}
 
 		if (m_pix_format == PIX_FMT_Y8) {
 			size = m_width * m_height;
+			hist_size = 256;
 		} else if (m_pix_format == PIX_FMT_Y16) {
 			size = m_width * m_height * 2;
+			hist_size = 65536;
 		} else if (m_pix_format == PIX_FMT_RGB24) {
 			size = m_width * m_height * 3;
+			hist_size = 256;
 		} else if (m_pix_format == PIX_FMT_RGB48) {
 			size = m_width * m_height * 6;
+			hist_size = 65536;
 		}
 
 		if (m_raw_data) free(m_raw_data);
+		if (m_histogram) free(m_histogram);
 
 		if (size == 0) {
 			m_raw_data = nullptr;
+			m_histogram = nullptr;
 			return *this;
 		}
 
 		m_raw_data = (char*)malloc(size);
 		memcpy(m_raw_data, image.m_raw_data, size);
+		m_histogram = (int*)malloc(hist_size * sizeof(int));
+		memcpy(m_histogram, image.m_histogram, hist_size * sizeof(int));
 		return *this;
 	}
 
@@ -127,6 +149,10 @@ public:
 		if (m_raw_data != nullptr) {
 			free(m_raw_data);
 			m_raw_data = nullptr;
+		}
+		if (m_histogram != nullptr) {
+			free(m_histogram);
+			m_histogram = nullptr;
 		}
 	};
 
@@ -159,7 +185,7 @@ public:
 			r = pixels[3 * (y * m_width + x)];
 			g = pixels[3 * (y * m_width + x) + 1];
 			b = pixels[3 * (y * m_width + x) + 2];
-		}else if (m_pix_format == PIX_FMT_RGB48) {
+		} else if (m_pix_format == PIX_FMT_RGB48) {
 			uint16_t* pixels = (uint16_t*) m_raw_data;
 			r = pixels[3 * (y * m_width + x)];
 			g = pixels[3 * (y * m_width + x) + 1];
@@ -169,6 +195,7 @@ public:
 	};
 
 	char *m_raw_data;
+	int *m_histogram;
 	int m_width;
 	int m_height;
 	int m_pix_format;
@@ -181,5 +208,6 @@ preview_image* create_preview(unsigned char *data, size_t size, const char* form
 preview_image* create_preview(int width, int height, int pixel_format, char *image_data, int *hist, double white_threshold);
 preview_image* create_preview(indigo_property *property, indigo_item *item, const double white_threshold);
 preview_image* create_preview(indigo_item *item, const double white_threshold);
+void stretch_preview(preview_image *img, double white_threshold);
 
 #endif /* _IMAGEPREVIEW_H */

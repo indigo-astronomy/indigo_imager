@@ -32,7 +32,7 @@ void write_conf();
 
 ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	setWindowTitle(tr("Ain Viewer"));
-	resize(1200, 768);
+	resize(1024, 768);
 
 	m_image_data = nullptr;
 	m_image_size = 0;
@@ -66,22 +66,17 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	QMenu *sub_menu;
 	QAction *act;
 
-	act = menu->addAction(tr("&Open Image..."));
+	act = menu->addAction(tr("&Open Image"));
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_open_act);
 
-	act = menu->addAction(tr("&Close"));
+	act = menu->addAction(tr("&Close Image"));
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_close_act);
-
-	act = menu->addAction(tr("&Save Image As..."));
-	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_save_act);
 
 	menu->addSeparator();
 
 	act = menu->addAction(tr("&Exit"));
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_exit_act);
 	menu_bar->addMenu(menu);
-
-
 
 	menu = new QMenu("&Settings");
 
@@ -91,47 +86,11 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(act, &QAction::toggled, this, &ViewerWindow::on_use_system_locale_changed);
 
 	menu->addSeparator();
-	sub_menu = menu->addMenu("&Capture Image Preview");
 
-	act = sub_menu->addAction(tr("Enable &antialiasing"));
+	act = menu->addAction(tr("Enable &antialiasing"));
 	act->setCheckable(true);
 	act->setChecked(conf.antialiasing_enabled);
 	connect(act, &QAction::toggled, this, &ViewerWindow::on_antialias_view);
-
-	sub_menu->addSeparator();
-
-	QActionGroup *stretch_group = new QActionGroup(this);
-	stretch_group->setExclusive(true);
-
-	act = sub_menu->addAction("Stretch: N&one");
-	act->setCheckable(true);
-	if (conf.preview_stretch_level == STRETCH_NONE) act->setChecked(true);
-	connect(act, &QAction::triggered, this, &ViewerWindow::on_no_stretch);
-	stretch_group->addAction(act);
-
-	act = sub_menu->addAction("Stretch: &Slight");
-	act->setCheckable(true);
-	if (conf.preview_stretch_level == STRETCH_SLIGHT) act->setChecked(true);
-	connect(act, &QAction::triggered, this, &ViewerWindow::on_slight_stretch);
-	stretch_group->addAction(act);
-
-	act = sub_menu->addAction("Stretch: &Moderate");
-	act->setCheckable(true);
-	if (conf.preview_stretch_level == STRETCH_MODERATE) act->setChecked(true);
-	connect(act, &QAction::triggered, this, &ViewerWindow::on_moderate_stretch);
-	stretch_group->addAction(act);
-
-	act = sub_menu->addAction("Stretch: &Normal");
-	act->setCheckable(true);
-	if (conf.preview_stretch_level == STRETCH_NORMAL) act->setChecked(true);
-	connect(act, &QAction::triggered, this, &ViewerWindow::on_normal_stretch);
-	stretch_group->addAction(act);
-
-	act = sub_menu->addAction("Stretch: &Hard");
-	act->setCheckable(true);
-	if (conf.preview_stretch_level == STRETCH_HARD) act->setChecked(true);
-	connect(act, &QAction::triggered, this, &ViewerWindow::on_hard_stretch);
-	stretch_group->addAction(act);
 
 	menu_bar->addMenu(menu);
 
@@ -155,9 +114,13 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	form_layout->addWidget((QWidget*)m_imager_viewer);
 	m_imager_viewer->setMinimumWidth(PROPERTY_AREA_MIN_WIDTH);
 	rootLayout->addWidget(form_panel);
-	//connect(m_imager_viewer, &ImageViewer::mouseRightPress, this, &ViewerWindow::on_image_right_click);
+
+	m_imager_viewer->setStretch(conf.preview_stretch_level);
+
+	connect(m_imager_viewer, &ImageViewer::stretchChanged, this, &ViewerWindow::on_stretch_changed);
 
 	m_imager_viewer->enableAntialiasing(conf.antialiasing_enabled);
+	if (conf.file_open[0] != '\0') open_image(conf.file_open);
 }
 
 ViewerWindow::~ViewerWindow () {
@@ -172,13 +135,7 @@ void close_fd(int fd) {
 	close(fd);
 }
 
-void ViewerWindow::on_image_open_act() {
-	char message[PATH_LEN+100];
-	QString qlocation = QDir::toNativeSeparators(QDir::homePath());
-	QString file_name = QFileDialog::getOpenFileName(this,
-		tr("Open image"), qlocation,
-		QString("FITS (*.fit, *.fits);;Indigo RAW (*.raw);; jpeg (*.jpg, *.jpeg);; All Files (*)"));
-
+void ViewerWindow::open_image(QString file_name) {
 	if (file_name == "") return;
 	FILE *file;
 	strncpy(m_image_path, file_name.toUtf8().data(), PATH_LEN);
@@ -214,6 +171,16 @@ void ViewerWindow::on_image_open_act() {
 	}
 }
 
+void ViewerWindow::on_image_open_act() {
+	char message[PATH_LEN+100];
+	QString qlocation = QDir::toNativeSeparators(QDir::homePath());
+	QString file_name = QFileDialog::getOpenFileName(this,
+		tr("Open image"), qlocation,
+		QString("FITS (*.fit, *.fits);;Indigo RAW (*.raw);;JPEG (*.jpg, *.jpeg);;All Files (*)"));
+
+	open_image(file_name);
+}
+
 void ViewerWindow::on_image_close_act() {
 	setWindowTitle(tr("Ain Viewer"));
 	m_imager_viewer->setText("");
@@ -234,31 +201,6 @@ void ViewerWindow::on_image_close_act() {
 	m_image_formrat = nullptr;
 }
 
-void ViewerWindow::on_image_save_act() {
-	/*
-	if (!m_indigo_item) return;
-	char message[PATH_LEN+100];
-	QString format = m_indigo_item->blob.format;
-	QString qlocation = QDir::toNativeSeparators(QDir::homePath());
-	QString file_name = QFileDialog::getSaveFileName(this,
-		tr("Save image"), qlocation,
-		QString("Image (*") + format + QString(")"));
-
-	if (file_name == "") return;
-
-	if (!file_name.endsWith(m_indigo_item->blob.format,Qt::CaseInsensitive)) file_name += m_indigo_item->blob.format;
-
-	if (save_blob_item(m_indigo_item, file_name.toUtf8().data())) {
-		m_imager_viewer->setText(basename(file_name.toUtf8().data()));
-		m_imager_viewer->setToolTip(file_name);
-		snprintf(message, sizeof(message), "Image saved to '%s'", file_name.toUtf8().data());
-		on_window_log(NULL, message);
-	} else {
-		snprintf(message, sizeof(message), "Can not save '%s'", file_name.toUtf8().data());
-		on_window_log(NULL, message);
-	}
-	*/
-}
 
 void ViewerWindow::on_exit_act() {
 	QApplication::quit();
@@ -275,77 +217,14 @@ void ViewerWindow::on_use_system_locale_changed(bool status) {
 	//indigo_debug("%s\n", __FUNCTION__);
 }
 
-
 void ViewerWindow::on_antialias_view(bool status) {
 	conf.antialiasing_enabled = status;
 	m_imager_viewer->enableAntialiasing(status);
 	write_conf();
-	//indigo_debug("%s\n", __FUNCTION__);
 }
 
-void ViewerWindow::on_no_stretch() {
-	conf.preview_stretch_level = STRETCH_NONE;
-	if (m_preview_image) {
-		delete(m_preview_image);
-		m_preview_image = nullptr;
-	}
-	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat,  preview_stretch_lut[conf.preview_stretch_level]);
-	if (m_preview_image) {
-		m_imager_viewer->setImage(*m_preview_image);
-	}
-	write_conf();
-}
-
-void ViewerWindow::on_slight_stretch() {
-	conf.preview_stretch_level = STRETCH_SLIGHT;
-	if (m_preview_image) {
-		delete(m_preview_image);
-		m_preview_image = nullptr;
-	}
-	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat,  preview_stretch_lut[conf.preview_stretch_level]);
-	if (m_preview_image) {
-		m_imager_viewer->setImage(*m_preview_image);
-	}
-	write_conf();
-}
-
-void ViewerWindow::on_moderate_stretch() {
-	conf.preview_stretch_level = STRETCH_MODERATE;
-	if (m_preview_image) {
-		delete(m_preview_image);
-		m_preview_image = nullptr;
-	}
-	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat,  preview_stretch_lut[conf.preview_stretch_level]);
-	if (m_preview_image) {
-		m_imager_viewer->setImage(*m_preview_image);
-	}
-	write_conf();
-}
-
-void ViewerWindow::on_normal_stretch() {
-	conf.preview_stretch_level = STRETCH_NORMAL;
-	if (m_preview_image) {
-		delete(m_preview_image);
-		m_preview_image = nullptr;
-	}
-	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat,  preview_stretch_lut[conf.preview_stretch_level]);
-	if (m_preview_image) {
-		m_imager_viewer->setImage(*m_preview_image);
-	}
-	write_conf();
-}
-
-
-void ViewerWindow::on_hard_stretch() {
-	conf.preview_stretch_level = STRETCH_HARD;
-	if (m_preview_image) {
-		delete(m_preview_image);
-		m_preview_image = nullptr;
-	}
-	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat,  preview_stretch_lut[conf.preview_stretch_level]);
-	if (m_preview_image) {
-		m_imager_viewer->setImage(*m_preview_image);
-	}
+void ViewerWindow::on_stretch_changed(int level) {
+	conf.preview_stretch_level = (preview_stretch)level;
 	write_conf();
 }
 
