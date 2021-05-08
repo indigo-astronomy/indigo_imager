@@ -1,2 +1,4 @@
 debian/ain-imager.desktop usr/share/applications
 debian/ain-imager.png usr/share/icons/hicolor/48x48/apps
+debian/ain-viewer.desktop usr/share/applications
+debian/ain-viewer.png usr/share/icons/hicolor/48x48/apps
