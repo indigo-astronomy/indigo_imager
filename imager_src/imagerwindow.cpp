@@ -138,89 +138,18 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_use_system_locale_changed);
 
 	menu->addSeparator();
-	sub_menu = menu->addMenu("&Capture Image Preview");
 
-	act = sub_menu->addAction(tr("Enable &antialiasing"));
+	act = menu->addAction(tr("Enable image &antialiasing"));
 	act->setCheckable(true);
 	act->setChecked(conf.antialiasing_enabled);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_antialias_view);
 
-	sub_menu->addSeparator();
-
-	QActionGroup *stretch_group = new QActionGroup(this);
-	stretch_group->setExclusive(true);
-
-	act = sub_menu->addAction("Stretch: N&one");
-	act->setCheckable(true);
-	if (conf.preview_stretch_level == STRETCH_NONE) act->setChecked(true);
-	connect(act, &QAction::triggered, this, &ImagerWindow::on_no_stretch);
-	stretch_group->addAction(act);
-
-	act = sub_menu->addAction("Stretch: &Slight");
-	act->setCheckable(true);
-	if (conf.preview_stretch_level == STRETCH_SLIGHT) act->setChecked(true);
-	connect(act, &QAction::triggered, this, &ImagerWindow::on_slight_stretch);
-	stretch_group->addAction(act);
-
-	act = sub_menu->addAction("Stretch: &Moderate");
-	act->setCheckable(true);
-	if (conf.preview_stretch_level == STRETCH_MODERATE) act->setChecked(true);
-	connect(act, &QAction::triggered, this, &ImagerWindow::on_moderate_stretch);
-	stretch_group->addAction(act);
-
-	act = sub_menu->addAction("Stretch: &Normal");
-	act->setCheckable(true);
-	if (conf.preview_stretch_level == STRETCH_NORMAL) act->setChecked(true);
-	connect(act, &QAction::triggered, this, &ImagerWindow::on_normal_stretch);
-	stretch_group->addAction(act);
-
-	act = sub_menu->addAction("Stretch: &Hard");
-	act->setCheckable(true);
-	if (conf.preview_stretch_level == STRETCH_HARD) act->setChecked(true);
-	connect(act, &QAction::triggered, this, &ImagerWindow::on_hard_stretch);
-	stretch_group->addAction(act);
-
-	sub_menu = menu->addMenu("&Guider Image Preview");
-
-	act = sub_menu->addAction(tr("Enable &antialiasing"));
+	act = menu->addAction(tr("Enable guider &antialiasing"));
 	act->setCheckable(true);
 	act->setChecked(conf.guider_antialiasing_enabled);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_antialias_guide_view);
 
-	sub_menu->addSeparator();
-
-	stretch_group = new QActionGroup(this);
-	stretch_group->setExclusive(true);
-
-	act = sub_menu->addAction("Stretch: N&one");
-	act->setCheckable(true);
-	if (conf.guider_stretch_level == STRETCH_NONE) act->setChecked(true);
-	connect(act, &QAction::triggered, this, &ImagerWindow::on_no_guide_stretch);
-	stretch_group->addAction(act);
-
-	act = sub_menu->addAction("Stretch: &Slight");
-	act->setCheckable(true);
-	if (conf.guider_stretch_level == STRETCH_SLIGHT) act->setChecked(true);
-	connect(act, &QAction::triggered, this, &ImagerWindow::on_slight_guide_stretch);
-	stretch_group->addAction(act);
-
-	act = sub_menu->addAction("Stretch: &Moderate");
-	act->setCheckable(true);
-	if (conf.guider_stretch_level == STRETCH_MODERATE) act->setChecked(true);
-	connect(act, &QAction::triggered, this, &ImagerWindow::on_moderate_guide_stretch);
-	stretch_group->addAction(act);
-
-	act = sub_menu->addAction("Stretch: &Normal");
-	act->setCheckable(true);
-	if (conf.guider_stretch_level == STRETCH_NORMAL) act->setChecked(true);
-	connect(act, &QAction::triggered, this, &ImagerWindow::on_normal_guide_stretch);
-	stretch_group->addAction(act);
-
-	act = sub_menu->addAction("Stretch: &Hard");
-	act->setCheckable(true);
-	if (conf.guider_stretch_level == STRETCH_HARD) act->setChecked(true);
-	connect(act, &QAction::triggered, this, &ImagerWindow::on_hard_guide_stretch);
-	stretch_group->addAction(act);
+	menu->addSeparator();
 
 	sub_menu = menu->addMenu("&Focuser Graph");
 
@@ -365,12 +294,14 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_imager_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
 	form_layout->addWidget((QWidget*)m_imager_viewer);
 	m_imager_viewer->setMinimumWidth(PROPERTY_AREA_MIN_WIDTH);
+	m_imager_viewer->setStretch(conf.preview_stretch_level);
 	m_visible_viewer = m_imager_viewer;
 
 	// Image guide viewer
 	m_guider_viewer = new ImageViewer(this);
 	m_guider_viewer->setText("Guider Image");
 	m_guider_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
+	m_guider_viewer->setStretch(conf.guider_stretch_level);
 	m_guider_viewer->setVisible(false);
 
 	QSplitter* hSplitter = new QSplitter;
@@ -387,6 +318,9 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	mServiceModel = new QServiceModel("_indigo._tcp");
 	mServiceModel->enable_auto_connect(conf.auto_connect);
+
+	connect(m_imager_viewer, &ImageViewer::stretchChanged, this, &ImagerWindow::on_imager_stretch_changed);
+	connect(m_guider_viewer, &ImageViewer::stretchChanged, this, &ImagerWindow::on_guider_stretch_changed);
 
 	connect(this, &ImagerWindow::move_resize_focuser_selection, m_imager_viewer, &ImageViewer::moveResizeSelection);
 	connect(this, &ImagerWindow::show_focuser_selection, m_imager_viewer, &ImageViewer::showSelection);
@@ -741,110 +675,19 @@ void ImagerWindow::on_use_system_locale_changed(bool status) {
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
-
-void ImagerWindow::on_no_stretch() {
-	conf.preview_stretch_level = STRETCH_NONE;
-	preview_cache.recreate(m_image_key, m_indigo_item, preview_stretch_lut[conf.preview_stretch_level]);
-	show_preview_in_imager_viewer(m_image_key);
+void ImagerWindow::on_imager_stretch_changed(int level) {
+	conf.preview_stretch_level = (preview_stretch)level;
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
-void ImagerWindow::on_slight_stretch() {
-	conf.preview_stretch_level = STRETCH_SLIGHT;
-	preview_cache.recreate(m_image_key, m_indigo_item, preview_stretch_lut[conf.preview_stretch_level]);
-	show_preview_in_imager_viewer(m_image_key);
-	write_conf();
-	indigo_debug("%s\n", __FUNCTION__);
-}
-
-void ImagerWindow::on_moderate_stretch() {
-	conf.preview_stretch_level = STRETCH_MODERATE;
-	preview_cache.recreate(m_image_key, m_indigo_item, preview_stretch_lut[conf.preview_stretch_level]);
-	show_preview_in_imager_viewer(m_image_key);
-	write_conf();
-	indigo_debug("%s\n", __FUNCTION__);
-}
-
-void ImagerWindow::on_normal_stretch() {
-	conf.preview_stretch_level = STRETCH_NORMAL;
-	preview_cache.recreate(m_image_key, m_indigo_item, preview_stretch_lut[conf.preview_stretch_level]);
-	show_preview_in_imager_viewer(m_image_key);
-	write_conf();
-	indigo_debug("%s\n", __FUNCTION__);
-}
-
-
-void ImagerWindow::on_hard_stretch() {
-	conf.preview_stretch_level = STRETCH_HARD;
-	preview_cache.recreate(m_image_key, m_indigo_item, preview_stretch_lut[conf.preview_stretch_level]);
-	show_preview_in_imager_viewer(m_image_key);
-	write_conf();
-	indigo_debug("%s\n", __FUNCTION__);
-}
-
-
-void ImagerWindow::on_no_guide_stretch() {
-	conf.guider_stretch_level = STRETCH_NONE;
-	//	preview_cache.recreate(m_guider_key, m_indigo_item, preview_stretch_lut[conf.guider_stretch_level]);
+void ImagerWindow::on_guider_stretch_changed(int level) {
+	conf.guider_stretch_level = (preview_stretch)level;
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_guider_agent(selected_agent);
 		setup_preview(selected_agent);
 	});
-	//show_preview_in_guider_viewer(m_guider_key);
-	write_conf();
-	indigo_debug("%s\n", __FUNCTION__);
-}
-
-void ImagerWindow::on_slight_guide_stretch() {
-	conf.guider_stretch_level = STRETCH_SLIGHT;
-	//	preview_cache.recreate(m_guider_key, m_indigo_item, preview_stretch_lut[conf.guider_stretch_level]);
-	QtConcurrent::run([=]() {
-		static char selected_agent[INDIGO_NAME_SIZE];
-		get_selected_guider_agent(selected_agent);
-		setup_preview(selected_agent);
-	});
-	//show_preview_in_guider_viewer(m_guider_key);
-	write_conf();
-	indigo_debug("%s\n", __FUNCTION__);
-}
-
-void ImagerWindow::on_moderate_guide_stretch() {
-	conf.guider_stretch_level = STRETCH_MODERATE;
-	//	preview_cache.recreate(m_guider_key, m_indigo_item, preview_stretch_lut[conf.guider_stretch_level]);
-	QtConcurrent::run([=]() {
-		static char selected_agent[INDIGO_NAME_SIZE];
-		get_selected_guider_agent(selected_agent);
-		setup_preview(selected_agent);
-	});
-	//show_preview_in_guider_viewer(m_guider_key);
-	write_conf();
-	indigo_debug("%s\n", __FUNCTION__);
-}
-
-void ImagerWindow::on_normal_guide_stretch() {
-	conf.guider_stretch_level = STRETCH_NORMAL;
-	//	preview_cache.recreate(m_guider_key, m_indigo_item, preview_stretch_lut[conf.guider_stretch_level]);
-	QtConcurrent::run([=]() {
-		static char selected_agent[INDIGO_NAME_SIZE];
-		get_selected_guider_agent(selected_agent);
-		setup_preview(selected_agent);
-	});
-	// show_preview_in_guider_viewer(m_guider_key);
-	write_conf();
-	indigo_debug("%s\n", __FUNCTION__);
-}
-
-void ImagerWindow::on_hard_guide_stretch() {
-	conf.guider_stretch_level = STRETCH_HARD;
-	//preview_cache.recreate(m_guider_key, m_indigo_item, preview_stretch_lut[conf.guider_stretch_level]);
-	QtConcurrent::run([=]() {
-		static char selected_agent[INDIGO_NAME_SIZE];
-		get_selected_guider_agent(selected_agent);
-		setup_preview(selected_agent);
-	});
-	//show_preview_in_guider_viewer(m_guider_key);
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
