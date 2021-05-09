@@ -13,6 +13,8 @@
 #define MyAppPublisher "INDIGO Initiative"
 #define MyAppURL "http://www.indigo-astronomy.org"
 #define MyAppExeName "ain_imager.exe"
+#define MyViewerExeName "ain_viewer.exe"
+#define MyViewerName "Ain INDIGO Viewer"
 #define MySourcePrefix "ain_imager_" + Arch + "\ain_imager"
 
 [Setup]
@@ -53,7 +55,9 @@ Source: "{#MySourcePrefix}\*"; DestDir: "{app}"; Flags: ignoreversion recursesub
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\appicon.ico"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\appicon.ico"; Tasks: desktopicon
+Name: "{autoprograms}\{#MyViewerName}"; Filename: "{app}\{#MyViewerExeName}"; IconFilename: "{app}\appicon.ico"
+Name: "{autodesktop}\{#MyViewerName}"; Filename: "{app}\{#MyViewerExeName}"; IconFilename: "{app}\appicon.ico"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
-
+Filename: "{app}\{#MyViewerExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyViewerName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
