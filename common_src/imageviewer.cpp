@@ -1,6 +1,8 @@
 #include "imageviewer.h"
 #include <cmath>
 #include <QGraphicsScene>
+#include <QMenu>
+#include <QActionGroup>
 #include <QGraphicsView>
 #include <QGraphicsSceneHoverEvent>
 #include <QWheelEvent>
@@ -64,6 +66,7 @@ private:
 ImageViewer::ImageViewer(QWidget *parent)
 	: QFrame(parent)
 	, m_zoom_level(0)
+	, m_stretch_level(PREVIEW_STRETCH_NONE)
 	, m_fit(true)
 	, m_bar_mode(ToolBarMode::Visible)
 {
@@ -155,6 +158,47 @@ void ImageViewer::makeToolbar() {
 	zoomout->setIcon(QIcon(":resource/zoom-out.png"));
 	connect(zoomout, SIGNAL(clicked()), SLOT(zoomOut()));
 
+	QMenu *menu = new QMenu("");
+	QAction *act;
+
+	QActionGroup *stretch_group = new QActionGroup(this);
+	stretch_group->setExclusive(true);
+	act = menu->addAction("Stretch: N&one");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::stretchNone);
+	stretch_group->addAction(act);
+	m_stretch_act[PREVIEW_STRETCH_NONE] = act;
+
+	act = menu->addAction("Stretch: &Slight");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::stretchSlight);
+	stretch_group->addAction(act);
+	m_stretch_act[PREVIEW_STRETCH_SLIGHT] = act;
+
+	act = menu->addAction("Stretch: &Moderate");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::stretchModerate);
+	stretch_group->addAction(act);
+	m_stretch_act[PREVIEW_STRETCH_MODERATE] = act;
+
+	act = menu->addAction("Stretch: &Normal");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::stretchNormal);
+	stretch_group->addAction(act);
+	m_stretch_act[PREVIEW_STRETCH_NORMAL] = act;
+
+	act = menu->addAction("Stretch: &Hard");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::stretchHard);
+	stretch_group->addAction(act);
+	m_stretch_act[PREVIEW_STRETCH_HARD] = act;
+
+	auto stretch = new QToolButton(this);
+	stretch->setToolTip(tr("Histogram Stretch"));
+	stretch->setIcon(QIcon(":resource/histogram.png"));
+	stretch->setMenu(menu);
+	stretch->setPopupMode(QToolButton::InstantPopup);
+
 	m_toolbar = new QWidget;
 	auto box = new QHBoxLayout(m_toolbar);
 	m_toolbar->setContentsMargins(0,0,0,0);
@@ -167,6 +211,7 @@ void ImageViewer::makeToolbar() {
 	box->addWidget(zoomin);
 	box->addWidget(fit);
 	box->addWidget(orig);
+	box->addWidget(stretch);
 }
 
 QString ImageViewer::text() const {
@@ -546,6 +591,73 @@ void ImageViewer::showEvent(QShowEvent *event) {
 		zoomFit();
 }
 
+void ImageViewer::stretchNone() {
+	m_stretch_level = PREVIEW_STRETCH_NONE;
+	preview_image &image = (preview_image&)m_pixmap->image();
+	stretch_preview(&image, preview_stretch_lut[m_stretch_level]);
+	setImage(image);
+	emit stretchChanged(m_stretch_level);
+}
+
+void ImageViewer::stretchSlight() {
+	m_stretch_level = PREVIEW_STRETCH_SLIGHT;
+	preview_image &image = (preview_image&)m_pixmap->image();
+	stretch_preview(&image, preview_stretch_lut[m_stretch_level]);
+	setImage(image);
+	emit stretchChanged(m_stretch_level);
+}
+
+void ImageViewer::stretchModerate() {
+	m_stretch_level = PREVIEW_STRETCH_MODERATE;
+	preview_image &image = (preview_image&)m_pixmap->image();
+	stretch_preview(&image, preview_stretch_lut[m_stretch_level]);
+	setImage(image);
+	emit stretchChanged(m_stretch_level);
+}
+
+void ImageViewer::stretchNormal() {
+	m_stretch_level = PREVIEW_STRETCH_NORMAL;
+	preview_image &image = (preview_image&)m_pixmap->image();
+	stretch_preview(&image, preview_stretch_lut[m_stretch_level]);
+	setImage(image);
+	emit stretchChanged(m_stretch_level);
+}
+
+void ImageViewer::stretchHard() {
+	m_stretch_level = PREVIEW_STRETCH_HARD;
+	preview_image &image = (preview_image&)m_pixmap->image();
+	stretch_preview(&image, preview_stretch_lut[m_stretch_level]);
+	setImage(image);
+	emit stretchChanged(m_stretch_level);
+}
+
+void ImageViewer::setStretch(int level) {
+	switch (level) {
+		case PREVIEW_STRETCH_NONE:
+			m_stretch_act[PREVIEW_STRETCH_NONE]->setChecked(true);
+			stretchNone();
+			break;
+		case PREVIEW_STRETCH_SLIGHT:
+			m_stretch_act[PREVIEW_STRETCH_SLIGHT]->setChecked(true);
+			stretchSlight();
+			break;
+		case PREVIEW_STRETCH_MODERATE:
+			m_stretch_act[PREVIEW_STRETCH_MODERATE]->setChecked(true);
+			stretchModerate();
+			break;
+		case PREVIEW_STRETCH_NORMAL:
+			m_stretch_act[PREVIEW_STRETCH_NORMAL]->setChecked(true);
+			stretchNormal();
+			break;
+		case PREVIEW_STRETCH_HARD:
+			m_stretch_act[PREVIEW_STRETCH_HARD]->setChecked(true);
+			stretchHard();
+			break;
+		default:
+			m_stretch_act[PREVIEW_STRETCH_NONE]->setChecked(true);
+			stretchNone();
+	}
+}
 
 PixmapItem::PixmapItem(QGraphicsItem *parent) :
 	QObject(), QGraphicsPixmapItem(parent)
@@ -555,7 +667,7 @@ PixmapItem::PixmapItem(QGraphicsItem *parent) :
 }
 
 void PixmapItem::setImage(preview_image im) {
-	if (im.isNull()) return;
+	//if (im.isNull()) return;
 
 	auto image_size = m_image.size();
 	m_image = im;

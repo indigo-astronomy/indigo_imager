@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Rumen G.Bogdanovski
+// Copyright (c) 2021 Rumen G.Bogdanovski
 // All rights reserved.
 //
 // You can use this software under the terms of 'INDIGO Astronomy
@@ -33,9 +33,7 @@
 #define CAMERA_FRAME_MIN_WIDTH 390
 #define PREVIEW_WIDTH 550
 
-#define CONFIG_FILENAME "indigo_imager.conf"
-#define AIN_GUIDER_LOG_NAME_FORMAT "ain_guiding_%s.log"
-#define AIN_INDIGO_LOG_NAME_FORMAT "ain_indigo_%s.log"
+#define CONFIG_FILENAME "indigo_viewer.conf"
 
 typedef enum {
 	STRETCH_NONE = 0,
@@ -63,24 +61,12 @@ typedef enum {
 } object_alt_state;
 
 typedef struct {
-	bool blobs_enabled;
-	bool auto_connect;
-	bool indigo_use_host_suffix;
 	indigo_log_levels indigo_log_level;
 	bool use_state_icons;
 	bool use_system_locale;
 	bool antialiasing_enabled;
-	int focus_mode;
 	preview_stretch preview_stretch_level;
-	int guider_save_bandwidth;
-	int guider_subframe;
-	int focuser_subframe;
-	preview_stretch guider_stretch_level;
-	bool guider_antialiasing_enabled;
-	focuser_display_data focuser_display;
-	guider_display_data guider_display;
-	bool guider_save_log;
-	bool indigo_save_log;
+	char file_open[PATH_LEN];
 	char unused[100];
 } conf_t;
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Rumen G.Bogdanovski & David Hulse
+// Copyright (c) 2021 Rumen G.Bogdanovski & David Hulse
 // All rights reserved.
 //
 // You can use this software under the terms of 'INDIGO Astronomy
@@ -55,36 +55,21 @@ int main(int argc, char *argv[]) {
 	strncpy(config_path, QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation).toUtf8().constData(), PATH_LEN);
 
 	memset(&conf,0,sizeof(conf_t));
-	conf.blobs_enabled = true;
-	conf.auto_connect = true;
-	conf.indigo_use_host_suffix = true;
 	conf.use_state_icons = false;
 	conf.use_system_locale = false;
 	conf.indigo_log_level = INDIGO_LOG_INFO;
 	conf.preview_stretch_level = STRETCH_NORMAL;
-	conf.guider_stretch_level = STRETCH_MODERATE;
 	conf.antialiasing_enabled = false;
-	conf.guider_antialiasing_enabled = false;
-	conf.focus_mode = 0;
-	conf.guider_save_bandwidth = 1;
-	conf.guider_subframe = 0;
-	conf.focuser_subframe = 0;
-	conf.focuser_display = SHOW_FWHM;
-	conf.guider_display = SHOW_RA_DEC_DRIFT;
-	conf.guider_save_log = false;
-	conf.indigo_save_log = false;
 	read_conf();
+	conf.file_open[0] = '\0';
 
 	if (!conf.use_system_locale) qunsetenv("LC_NUMERIC");
 
-#ifndef INDIGO_WINDOWS
-	for (int i = 1; i < argc; i++) {
-		if (!strcmp(argv[i], "-q") || !strcmp(argv[i], "--quiet")) {
-			freopen("/dev/null","a+", stderr);
-			i++;
-		}
+	if (argc > 1) {
+		strncpy(conf.file_open, argv[argc-1], PATH_MAX);
 	}
-#endif
+
+	indigo_set_log_level(conf.indigo_log_level);
 
 	QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 	QApplication app(argc, argv);

@@ -53,6 +53,7 @@ public:
 	/// Anti-aliasing
 	bool isAntialiasingEnabled() const;
 	void enableAntialiasing(bool on = true);
+	void setStretch(int level);
 
 public slots:
 	void setText(const QString &txt);
@@ -79,10 +80,17 @@ public slots:
 	void mouseAt(double x, double y);
 	void mouseRightPressAt(double x, double y);
 
+	void stretchNone();
+	void stretchSlight();
+	void stretchModerate();
+	void stretchNormal();
+	void stretchHard();
+
 signals:
 	void imageChanged();
 	void mouseRightPress(double x, double y);
 	void zoomChanged(double scale);
+	void stretchChanged(int level);
 
 protected:
 	void enterEvent(QEvent *event) override;
@@ -107,7 +115,7 @@ private:
 	QPoint m_selection_p;
 	QPoint m_ref_p;
 	double m_edge_clipping_v;
-
+	preview_stretch_level m_stretch_level;
 	QList<QGraphicsEllipseItem*> m_extra_selections;
 	//QList<QPoint> m_extra_points;
 	bool m_extra_selections_visible;
@@ -118,6 +126,7 @@ private:
 	bool m_ref_visible;
 	bool m_edge_clipping_visible;
 	ToolBarMode m_bar_mode;
+	QAction *m_stretch_act[PREVIEW_STRETCH_COUNT];
 };
 
 

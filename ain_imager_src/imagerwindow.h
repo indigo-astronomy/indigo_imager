@@ -196,17 +196,8 @@ public slots:
 	void on_exit_act();
 	void on_about_act();
 
-	void on_no_stretch();
-	void on_slight_stretch();
-	void on_moderate_stretch();
-	void on_normal_stretch();
-	void on_hard_stretch();
-
-	void on_no_guide_stretch();
-	void on_slight_guide_stretch();
-	void on_moderate_guide_stretch();
-	void on_normal_guide_stretch();
-	void on_hard_guide_stretch();
+	void on_imager_stretch_changed(int level);
+	void on_guider_stretch_changed(int level);
 
 	void on_focus_show_fwhm();
 	void on_focus_show_hfd();
