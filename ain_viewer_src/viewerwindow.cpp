@@ -40,7 +40,7 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_image_path[0] = '\0';
 	m_preview_image = nullptr;
 
-	QIcon icon(":resource/appicon.png");
+	QIcon icon(":resource/ain_viewer.png");
 	this->setWindowIcon(icon);
 
 	QFile f(":resource/control_panel.qss");

@@ -27,7 +27,7 @@ SOURCES += \
 RESOURCES += \
 	../qdarkstyle/style.qrc \
 	../resource/control_panel.qss \
-	../resource/appicon.png \
+	../resource/ain_viewer.png \
 	../resource/indigo_logo.png \
 	../resource/zoom-fit-best.png \
 	../resource/zoom-original.png \
