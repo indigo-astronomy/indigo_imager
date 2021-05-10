@@ -173,10 +173,14 @@ void ViewerWindow::open_image(QString file_name) {
 
 void ViewerWindow::on_image_open_act() {
 	char message[PATH_LEN+100];
-	QString qlocation = QDir::toNativeSeparators(QDir::homePath());
-	QString file_name = QFileDialog::getOpenFileName(this,
-		tr("Open image"), qlocation,
-		QString("FITS (*.fit, *.fits);;Indigo RAW (*.raw);;JPEG (*.jpg, *.jpeg);;All Files (*)"));
+	QString qlocation(dirname(m_image_path));
+	if (m_image_path[0] == '\0') qlocation = QDir::toNativeSeparators(QDir::homePath());
+	QString file_name = QFileDialog::getOpenFileName(
+		this,
+		tr("Open image"),
+		qlocation,
+		QString("FITS (*.fit *.fits *.fts);;Indigo RAW (*.raw);;FITS / Indigo RAW (*.fit *.fits *.fts *.raw);;JPEG / TIFF / PNG (*.jpg *.jpeg *.tif *.tiff *.png);;All Files (*)")
+	);
 
 	open_image(file_name);
 }

@@ -1,8 +1,8 @@
 [Desktop Entry]
 Version=1.0
 Encoding=UTF-8
-Name=Ain Viewer
-Comment=Ain Viewer
+Name=Ain INDIGO Viewer
+Comment=Ain INDIGO Viewer
 Exec=ain_viewer %u
 Icon=ain-viewer.png
 Terminal=false
