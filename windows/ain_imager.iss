@@ -56,7 +56,7 @@ Source: "{#MySourcePrefix}\*"; DestDir: "{app}"; Flags: ignoreversion recursesub
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\appicon.ico"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\appicon.ico"; Tasks: desktopicon
 Name: "{autoprograms}\{#MyViewerName}"; Filename: "{app}\{#MyViewerExeName}"; IconFilename: "{app}\appicon.ico"
-Name: "{autodesktop}\{#MyViewerName}"; Filename: "{app}\{#MyViewerExeName}"; IconFilename: "{app}\appicon.ico"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyViewerName}"; Filename: "{app}\{#MyViewerExeName}"; IconFilename: "{app}\ain_viewer.ico"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
