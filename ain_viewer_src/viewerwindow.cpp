@@ -149,8 +149,8 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 
 ViewerWindow::~ViewerWindow () {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
+	free(m_image_data);
 	delete m_preview_image;
-	delete m_image_data;
 	delete m_imager_viewer;
 }
 
@@ -177,7 +177,7 @@ void ViewerWindow::open_image(QString file_name) {
 		fread(m_image_data, m_image_size, 1, file);
 		fclose(file);
 	} else {
-		snprintf(msg, PATH_LEN, "File '%s'\n\nCan not be open for reading.", m_image_path);
+		snprintf(msg, PATH_LEN, "File '%s'\nCan not be open for reading.", QDir::toNativeSeparators(m_image_path).toUtf8().data());
 		show_error("Error!", msg);
 	}
 
@@ -197,7 +197,7 @@ void ViewerWindow::open_image(QString file_name) {
 		sprintf(info, "%s [%d x %d]", basename(m_image_path), w, h);
 		m_imager_viewer->setText(info);
 	} else {
-		snprintf(msg, PATH_LEN, "File: '%s'\n\Does not seem to be a supported image format.", m_image_path);
+		snprintf(msg, PATH_LEN, "File: '%s'\nDoes not seem to be a supported image format.", QDir::toNativeSeparators(m_image_path).toUtf8().data());
 		show_error("Error!", msg);
 	}
 }
