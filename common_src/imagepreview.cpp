@@ -37,6 +37,10 @@ preview_image* create_qtsupported_preview(unsigned char *image_buffer, unsigned 
 	indigo_debug("PREVIEW: %s(): called", __FUNCTION__);
 	preview_image* img = new preview_image();
 	img->loadFromData((const uchar*)image_buffer, size);
+	if(img->width() == 0 || img->height() == 0) {
+		delete img;
+		return nullptr;
+	}
 	return img;
 }
 
@@ -695,7 +699,7 @@ preview_image* create_preview(indigo_item *item, const double white_threshold) {
 
 preview_image* create_preview(unsigned char *data, size_t size, const char* format, const double white_threshold) {
 	preview_image *preview = nullptr;
-	if (data != NULL) {
+	if (data != NULL && format != NULL) {
 		if (!strcmp(format, ".jpeg") ||
 			!strcmp(format, ".jpg")  ||
 			!strcmp(format, ".JPG")  ||

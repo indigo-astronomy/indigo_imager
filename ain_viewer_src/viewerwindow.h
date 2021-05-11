@@ -35,7 +35,6 @@
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QFileDialog>
-#include <QShortcut>
 #include <QThread>
 #include <QtConcurrentRun>
 
@@ -46,6 +45,7 @@ public:
 	explicit ViewerWindow(QWidget *parent = nullptr);
 	virtual ~ViewerWindow();
 	void open_image(QString file_name);
+	void show_error(const char *title, const char *message);
 
 public slots:
 	void on_use_system_locale_changed(bool status);

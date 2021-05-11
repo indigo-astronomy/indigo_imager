@@ -28,6 +28,7 @@
 #include "version.h"
 #include <imageviewer.h>
 
+
 void write_conf();
 
 ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
@@ -159,6 +160,7 @@ void close_fd(int fd) {
 }
 
 void ViewerWindow::open_image(QString file_name) {
+	char msg[PATH_LEN];
 	if (file_name == "") return;
 	FILE *file;
 	strncpy(m_image_path, file_name.toUtf8().data(), PATH_LEN);
@@ -174,15 +176,18 @@ void ViewerWindow::open_image(QString file_name) {
 		}
 		fread(m_image_data, m_image_size, 1, file);
 		fclose(file);
+	} else {
+		snprintf(msg, PATH_LEN, "File '%s'\n\nCan not be open for reading.", m_image_path);
+		show_error("Error!", msg);
 	}
 
-	m_image_formrat = strrchr(m_image_path, '.');
 	if (m_preview_image) {
 		delete(m_preview_image);
 		m_preview_image = nullptr;
 	}
-	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat,  preview_stretch_lut[conf.preview_stretch_level]);
 
+	m_image_formrat = strrchr(m_image_path, '.');
+	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat,  preview_stretch_lut[conf.preview_stretch_level]);
 	if (m_preview_image) {
 		m_imager_viewer->setImage(*m_preview_image);
 		setWindowTitle(tr("Ain Viewer - ") + QString(m_image_path));
@@ -191,6 +196,9 @@ void ViewerWindow::open_image(QString file_name) {
 		int h = m_preview_image->height();
 		sprintf(info, "%s [%d x %d]", basename(m_image_path), w, h);
 		m_imager_viewer->setText(info);
+	} else {
+		snprintf(msg, PATH_LEN, "File: '%s'\n\Does not seem to be a supported image format.", m_image_path);
+		show_error("Error!", msg);
 	}
 }
 
@@ -228,7 +236,7 @@ void ViewerWindow::on_image_next_act() {
 	}
 
 	QString next_file = QDir::toNativeSeparators(QString(dirname(path)) + "/" + m_image_list.at(index));
-	//printf ("5: next_index = %d, %s\n", index, next_file.toUtf8().data());
+	indigo_debug("next_index = %d, %s\n", index, next_file.toUtf8().data());
 
 	open_image(next_file.toUtf8().data());
 }
@@ -250,7 +258,7 @@ void ViewerWindow::on_image_prev_act() {
 	}
 
 	QString next_file = QDir::toNativeSeparators(QString(dirname(path)) + "/" + m_image_list.at(index));
-	//printf ("5: prev_index = %d, %s\n", index, next_file.toUtf8().data());
+	indigo_debug("prev_index = %d, %s\n", index, next_file.toUtf8().data());
 
 	open_image(next_file.toUtf8().data());
 }
@@ -324,4 +332,13 @@ void ViewerWindow::on_about_act() {
 	);
 	msgBox.exec();
 	//indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ViewerWindow::show_error(const char *title, const char *message) {
+	QMessageBox msgBox(this);
+	indigo_error(message);
+	msgBox.setWindowTitle(title);
+	msgBox.setIcon(QMessageBox::Warning);
+	msgBox.setText(message);
+	msgBox.exec();
 }
