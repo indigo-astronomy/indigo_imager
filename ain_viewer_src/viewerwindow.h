@@ -35,6 +35,7 @@
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QShortcut>
 #include <QThread>
 #include <QtConcurrentRun>
 
@@ -49,6 +50,8 @@ public:
 public slots:
 	void on_use_system_locale_changed(bool status);
 	void on_image_open_act();
+	void on_image_next_act();
+	void on_image_prev_act();
 	void on_image_close_act();
 	void on_exit_act();
 	void on_about_act();
@@ -64,6 +67,7 @@ private:
 	size_t m_image_size;
 	char m_image_path[PATH_LEN];
 	char *m_image_formrat;
+	QStringList m_image_list;
 };
 
 #endif // VIEWERWINDOW_H

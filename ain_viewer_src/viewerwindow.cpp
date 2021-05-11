@@ -66,10 +66,26 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	QMenu *sub_menu;
 	QAction *act;
 
-	act = menu->addAction(tr("&Open Image"));
+	act = menu->addAction(tr("&Open Image..."));
+	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_O));
+	act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_open_act);
 
+	act = menu->addAction(tr("&Next Image"));
+	act->setShortcut(QKeySequence(Qt::Key_Right));
+	act->setShortcutVisibleInContextMenu(true);
+	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_next_act);
+
+	act = menu->addAction(tr("&Previois Image"));
+	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_prev_act);
+	act->setShortcut(QKeySequence(Qt::Key_Left));
+	act->setShortcutVisibleInContextMenu(true);
+
+	menu->addSeparator();
+
 	act = menu->addAction(tr("&Close Image"));
+	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_C));
+	act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_close_act);
 
 	menu->addSeparator();
@@ -118,6 +134,12 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_imager_viewer->setStretch(conf.preview_stretch_level);
 
 	connect(m_imager_viewer, &ImageViewer::stretchChanged, this, &ViewerWindow::on_stretch_changed);
+
+	//QShortcut *next_sc = new QShortcut(QKeySequence(Qt::Key_Right), this);
+	//QShortcut *prev_sc = new QShortcut(QKeySequence(Qt::Key_Left), this);
+
+	//QObject::connect(next_sc, &QShortcut::activated, this, &ViewerWindow::on_image_next_act);
+	//QObject::connect(prev_sc, &QShortcut::activated, this, &ViewerWindow::on_image_prev_act);
 
 	m_imager_viewer->enableAntialiasing(conf.antialiasing_enabled);
 	if (conf.file_open[0] != '\0') open_image(conf.file_open);
@@ -172,8 +194,9 @@ void ViewerWindow::open_image(QString file_name) {
 }
 
 void ViewerWindow::on_image_open_act() {
-	char message[PATH_LEN+100];
-	QString qlocation(dirname(m_image_path));
+	char path[PATH_LEN];
+	strncpy(path, m_image_path, PATH_LEN);
+	QString qlocation(dirname(path));
 	if (m_image_path[0] == '\0') qlocation = QDir::toNativeSeparators(QDir::homePath());
 	QString file_name = QFileDialog::getOpenFileName(
 		this,
@@ -181,8 +204,54 @@ void ViewerWindow::on_image_open_act() {
 		qlocation,
 		QString("FITS (*.fit *.fits *.fts);;Indigo RAW (*.raw);;FITS / Indigo RAW (*.fit *.fits *.fts *.raw);;JPEG / TIFF / PNG (*.jpg *.jpeg *.tif *.tiff *.png);;All Files (*)")
 	);
-
 	open_image(file_name);
+	QDir directory(dirname(file_name.toUtf8().data()));
+	QString pattern = "*" + QString(m_image_formrat);
+	m_image_list = directory.entryList(QStringList() << pattern, QDir::Files);
+}
+
+void ViewerWindow::on_image_next_act() {
+	char path[PATH_LEN];
+
+	if (m_image_path[0] == '\0') return;
+	strncpy(path, m_image_path, PATH_LEN);
+
+	char *file_name = basename(path);
+	if (file_name == nullptr) return;
+	int index = m_image_list.indexOf(file_name) + 1;
+
+	if (index <= 0) return;
+
+	if (index >= m_image_list.size()) {
+		index = 0;
+	}
+
+	QString next_file = QString(dirname(path)) + "/" + m_image_list.at(index);
+	printf ("5: next_index = %d, %s\n", index, next_file.toUtf8().data());
+
+	open_image(next_file.toUtf8().data());
+}
+
+void ViewerWindow::on_image_prev_act() {
+	char path[PATH_LEN];
+
+	if (m_image_path[0] == '\0') return;
+	strncpy(path, m_image_path, PATH_LEN);
+
+	char *file_name = basename(path);
+	if (file_name == nullptr) return;
+	int index = m_image_list.indexOf(file_name) - 1;
+
+	if (index < -1) return;
+
+	if (index == -1) {
+		index = m_image_list.size() - 1;
+	}
+
+	QString next_file = QString(dirname(path)) + "/" + m_image_list.at(index);
+	printf ("5: prev_index = %d, %s\n", index, next_file.toUtf8().data());
+
+	open_image(next_file.toUtf8().data());
 }
 
 void ViewerWindow::on_image_close_act() {
@@ -200,6 +269,7 @@ void ViewerWindow::on_image_close_act() {
 		free(m_image_data);
 		m_image_data = nullptr;
 	}
+	m_image_list.clear();
 	m_image_size = 0;
 	m_image_path[0] = '\0';
 	m_image_formrat = nullptr;
