@@ -28,6 +28,8 @@ RESOURCES += \
 	../qdarkstyle/style.qrc \
 	../resource/control_panel.qss \
 	../resource/ain_viewer.png \
+	../resource/previous.png \
+	../resource/next.png \
 	../resource/indigo_logo.png \
 	../resource/zoom-fit-best.png \
 	../resource/zoom-original.png \

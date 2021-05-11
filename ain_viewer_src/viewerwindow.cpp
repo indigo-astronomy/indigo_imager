@@ -63,7 +63,6 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	// Create menubar
 	QMenuBar *menu_bar = new QMenuBar;
 	QMenu *menu = new QMenu("&File");
-	QMenu *sub_menu;
 	QAction *act;
 
 	act = menu->addAction(tr("&Open Image..."));
@@ -125,7 +124,7 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	form_panel->setLayout(form_layout);
 
 	// Image viewer
-	m_imager_viewer = new ImageViewer(this);
+	m_imager_viewer = new ImageViewer(this, true);
 	m_imager_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
 	form_layout->addWidget((QWidget*)m_imager_viewer);
 	m_imager_viewer->setMinimumWidth(PROPERTY_AREA_MIN_WIDTH);
@@ -134,6 +133,8 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_imager_viewer->setStretch(conf.preview_stretch_level);
 
 	connect(m_imager_viewer, &ImageViewer::stretchChanged, this, &ViewerWindow::on_stretch_changed);
+	connect(m_imager_viewer, &ImageViewer::previousRequested, this, &ViewerWindow::on_image_prev_act);
+	connect(m_imager_viewer, &ImageViewer::nextRequested, this, &ViewerWindow::on_image_next_act);
 
 	//QShortcut *next_sc = new QShortcut(QKeySequence(Qt::Key_Right), this);
 	//QShortcut *prev_sc = new QShortcut(QKeySequence(Qt::Key_Left), this);
@@ -187,7 +188,7 @@ void ViewerWindow::open_image(QString file_name) {
 		setWindowTitle(tr("Ain Viewer - ") + QString(m_image_path));
 		char info[256] = {};
 		int w = m_preview_image->width();
-		int h = m_preview_image->width();
+		int h = m_preview_image->height();
 		sprintf(info, "%s [%d x %d]", basename(m_image_path), w, h);
 		m_imager_viewer->setText(info);
 	}
@@ -200,7 +201,7 @@ void ViewerWindow::on_image_open_act() {
 	if (m_image_path[0] == '\0') qlocation = QDir::toNativeSeparators(QDir::homePath());
 	QString file_name = QFileDialog::getOpenFileName(
 		this,
-		tr("Open image"),
+		tr("Open Image"),
 		qlocation,
 		QString("FITS (*.fit *.fits *.fts);;Indigo RAW (*.raw);;FITS / Indigo RAW (*.fit *.fits *.fts *.raw);;JPEG / TIFF / PNG (*.jpg *.jpeg *.tif *.tiff *.png);;All Files (*)")
 	);
@@ -226,8 +227,8 @@ void ViewerWindow::on_image_next_act() {
 		index = 0;
 	}
 
-	QString next_file = QString(dirname(path)) + "/" + m_image_list.at(index);
-	printf ("5: next_index = %d, %s\n", index, next_file.toUtf8().data());
+	QString next_file = QDir::toNativeSeparators(QString(dirname(path)) + "/" + m_image_list.at(index));
+	//printf ("5: next_index = %d, %s\n", index, next_file.toUtf8().data());
 
 	open_image(next_file.toUtf8().data());
 }
@@ -248,8 +249,8 @@ void ViewerWindow::on_image_prev_act() {
 		index = m_image_list.size() - 1;
 	}
 
-	QString next_file = QString(dirname(path)) + "/" + m_image_list.at(index);
-	printf ("5: prev_index = %d, %s\n", index, next_file.toUtf8().data());
+	QString next_file = QDir::toNativeSeparators(QString(dirname(path)) + "/" + m_image_list.at(index));
+	//printf ("5: prev_index = %d, %s\n", index, next_file.toUtf8().data());
 
 	open_image(next_file.toUtf8().data());
 }

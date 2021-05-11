@@ -29,7 +29,7 @@ public:
 	};
 
 public:
-	explicit ImageViewer(QWidget *parent = nullptr);
+	explicit ImageViewer(QWidget *parent = nullptr, bool prev_next = false);
 
 	/// Text displayed on the left side of the toolbar
 	QString text() const;
@@ -86,11 +86,16 @@ public slots:
 	void stretchNormal();
 	void stretchHard();
 
+	void onPrevious();
+	void onNext();
+
 signals:
 	void imageChanged();
 	void mouseRightPress(double x, double y);
 	void zoomChanged(double scale);
 	void stretchChanged(int level);
+	void previousRequested();
+	void nextRequested();
 
 protected:
 	void enterEvent(QEvent *event) override;
@@ -100,7 +105,7 @@ protected:
 
 private:
 	void setMatrix();
-	void makeToolbar();
+	void makeToolbar(bool prev_next);
 
 private:
 	int m_zoom_level;

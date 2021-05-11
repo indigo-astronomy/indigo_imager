@@ -65,6 +65,8 @@ RESOURCES += \
 	../resource/guide.png \
 	../resource/focus_in.png \
 	../resource/focus_out.png \
+	../resource/previous.png \
+	../resource/next.png \
 	../resource/zoom-in.png \
 	../resource/zoom-out.png \
 	../resource/histogram.png

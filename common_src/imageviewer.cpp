@@ -63,7 +63,7 @@ private:
 };
 
 
-ImageViewer::ImageViewer(QWidget *parent)
+ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
 	: QFrame(parent)
 	, m_zoom_level(0)
 	, m_stretch_level(PREVIEW_STRETCH_NONE)
@@ -120,7 +120,7 @@ ImageViewer::ImageViewer(QWidget *parent)
 	m_edge_clipping->setVisible(false);
 	m_edge_clipping_visible = false;
 
-	makeToolbar();
+	makeToolbar(prev_next);
 
 	auto box = new QVBoxLayout;
 	box->setContentsMargins(0,0,0,0);
@@ -132,7 +132,7 @@ ImageViewer::ImageViewer(QWidget *parent)
 }
 
 // toolbar with a few quick actions and display information
-void ImageViewer::makeToolbar() {
+void ImageViewer::makeToolbar(bool prev_next) {
 	// text and value at pixel
 	m_text_label = new QLabel(this);
 	m_text_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
@@ -203,6 +203,22 @@ void ImageViewer::makeToolbar() {
 	auto box = new QHBoxLayout(m_toolbar);
 	m_toolbar->setContentsMargins(0,0,0,0);
 	box->setContentsMargins(0,0,0,0);
+	if (prev_next) {
+		auto prev = new QToolButton(this);
+		prev->setToolTip(tr("Previous Image in Folder"));
+		prev->setIcon(QIcon(":resource/previous.png"));
+		connect(prev, SIGNAL(clicked()), SLOT(onPrevious()));
+
+		auto next = new QToolButton(this);
+		next->setToolTip(tr("Next Image in Folder"));
+		next->setIcon(QIcon(":resource/next.png"));
+		connect(next, SIGNAL(clicked()), SLOT(onNext()));
+
+		box->addWidget(prev);
+		box->addWidget(next);
+	}
+
+
 	box->addWidget(m_text_label);
 	box->addStretch(1);
 	box->addWidget(m_pixel_value);
@@ -629,6 +645,14 @@ void ImageViewer::stretchHard() {
 	stretch_preview(&image, preview_stretch_lut[m_stretch_level]);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
+}
+
+void ImageViewer::onPrevious() {
+	emit previousRequested();
+}
+
+void ImageViewer::onNext() {
+	emit nextRequested();
 }
 
 void ImageViewer::setStretch(int level) {
