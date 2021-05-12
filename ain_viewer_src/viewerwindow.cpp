@@ -211,7 +211,8 @@ void ViewerWindow::on_image_open_act() {
 		this,
 		tr("Open Image"),
 		qlocation,
-		QString("FITS (*.fit *.fits *.fts);;Indigo RAW (*.raw);;FITS / Indigo RAW (*.fit *.fits *.fts *.raw);;JPEG / TIFF / PNG (*.jpg *.jpeg *.tif *.tiff *.png);;All Files (*)")
+		QString("FITS (*.fit *.fits *.fts);;Indigo RAW (*.raw);;FITS / Indigo RAW (*.fit *.fits *.fts *.raw);;JPEG / TIFF / PNG (*.jpg *.jpeg *.tif *.tiff *.png);;All Files (*)"),
+		&m_selected_filter
 	);
 	open_image(file_name);
 	QDir directory(dirname(file_name.toUtf8().data()));
