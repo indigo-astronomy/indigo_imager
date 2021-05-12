@@ -16,6 +16,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include <setjmp.h>
 #include <math.h>
 #include <fits.h>
 #include <debayer.h>
@@ -44,6 +45,11 @@ preview_image* create_qtsupported_preview(unsigned char *image_buffer, unsigned 
 	return img;
 }
 
+static jmp_buf jpeg_error;
+static void jpeg_error_cb(j_common_ptr cinfo) {
+	cinfo;
+	longjmp(jpeg_error, 1);
+}
 
 preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_size) {
 #if !defined(USE_LIBJPEG)
@@ -54,7 +60,7 @@ preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_
 
 #else // INDIGO Mac and Linux
 
-	unsigned char *bmp_buffer;
+	unsigned char *bmp_buffer = nullptr;
 	unsigned long bmp_size;
 
 	struct jpeg_decompress_struct cinfo;
@@ -63,6 +69,15 @@ preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_
 	int row_stride, width, height, pixel_size, color_space;
 
 	cinfo.err = jpeg_std_error(&jerr);
+	/* override default exit() and return 2 lines below */
+	jerr.error_exit = jpeg_error_cb;
+	/* Jump here in case of a decmpression error */
+	if (setjmp(jpeg_error)) {
+		if (bmp_buffer) free(bmp_buffer);
+		jpeg_destroy_decompress(&cinfo);
+		return nullptr;
+	}
+
 	jpeg_create_decompress(&cinfo);
 
 	jpeg_mem_src(&cinfo, jpg_buffer, jpg_size);
