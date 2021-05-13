@@ -342,7 +342,7 @@ void ViewerWindow::on_image_raw_to_fits() {
 			file_num - failed,
 			failed
 		);
-		show_message("Conversion results", message);
+		show_message("RAW to FITS conversion results", message);
 	} else {
 		char message[100];
 		snprintf(
@@ -351,7 +351,7 @@ void ViewerWindow::on_image_raw_to_fits() {
 			"%d file(s) succeessfully converted.",
 			file_num
 		);
-		show_message("RAW to Conversion results", message, QMessageBox::Information);
+		show_message("RAW to FITS conversion results", message, QMessageBox::Information);
 	}
 }
 
