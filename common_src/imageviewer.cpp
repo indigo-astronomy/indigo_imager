@@ -204,18 +204,27 @@ void ImageViewer::makeToolbar(bool prev_next) {
 	m_toolbar->setContentsMargins(0,0,0,0);
 	box->setContentsMargins(0,0,0,0);
 	if (prev_next) {
+		auto pn_bar = new QWidget;
+		auto pn_box = new QHBoxLayout(pn_bar);
+		pn_bar->setContentsMargins(0,0,0,0);
+		pn_box->setSpacing(0);
+		pn_box->setContentsMargins(0,0,0,0);
+
 		auto prev = new QToolButton(this);
 		prev->setToolTip(tr("Previous Image in Folder"));
 		prev->setIcon(QIcon(":resource/previous.png"));
+		prev->setStyleSheet("QToolButton {border-top-right-radius: 0px; border-bottom-right-radius: 0px;}");
 		connect(prev, SIGNAL(clicked()), SLOT(onPrevious()));
 
 		auto next = new QToolButton(this);
 		next->setToolTip(tr("Next Image in Folder"));
 		next->setIcon(QIcon(":resource/next.png"));
+		next->setStyleSheet("QToolButton {border-top-left-radius: 0px; border-bottom-left-radius: 0px;}");
 		connect(next, SIGNAL(clicked()), SLOT(onNext()));
 
-		box->addWidget(prev);
-		box->addWidget(next);
+		pn_box->addWidget(prev);
+		pn_box->addWidget(next);
+		box->addWidget(pn_bar);
 	}
 
 
