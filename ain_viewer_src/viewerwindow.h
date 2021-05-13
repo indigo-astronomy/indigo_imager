@@ -35,8 +35,10 @@
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QProgressDialog>
 #include <QThread>
 #include <QtConcurrentRun>
+#include <QProgressBar>
 
 
 class ViewerWindow : public QMainWindow {
@@ -45,7 +47,7 @@ public:
 	explicit ViewerWindow(QWidget *parent = nullptr);
 	virtual ~ViewerWindow();
 	void open_image(QString file_name);
-	void show_error(const char *title, const char *message);
+	void show_message(const char *title, const char *message, QMessageBox::Icon icon = QMessageBox::Warning);
 
 public slots:
 	void on_use_system_locale_changed(bool status);
@@ -53,6 +55,7 @@ public slots:
 	void on_image_next_act();
 	void on_image_prev_act();
 	void on_image_close_act();
+	void on_image_raw_to_fits();
 	void on_exit_act();
 	void on_about_act();
 

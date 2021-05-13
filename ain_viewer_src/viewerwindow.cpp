@@ -27,6 +27,7 @@
 #include "conf.h"
 #include "version.h"
 #include <imageviewer.h>
+#include <raw_to_fits.h>
 
 
 void write_conf();
@@ -87,6 +88,13 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_C));
 	act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_close_act);
+
+	menu->addSeparator();
+
+	act = menu->addAction(tr("Convert &RAW to FITS"));
+	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_R));
+	act->setShortcutVisibleInContextMenu(true);
+	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_raw_to_fits);
 
 	menu->addSeparator();
 
@@ -178,7 +186,7 @@ void ViewerWindow::open_image(QString file_name) {
 		fclose(file);
 	} else {
 		snprintf(msg, PATH_LEN, "File '%s'\nCan not be open for reading.", QDir::toNativeSeparators(m_image_path).toUtf8().data());
-		show_error("Error!", msg);
+		show_message("Error!", msg);
 	}
 
 	if (m_preview_image) {
@@ -198,7 +206,7 @@ void ViewerWindow::open_image(QString file_name) {
 		m_imager_viewer->setText(info);
 	} else {
 		snprintf(msg, PATH_LEN, "File: '%s'\nDoes not seem to be a supported image format.", QDir::toNativeSeparators(m_image_path).toUtf8().data());
-		show_error("Error!", msg);
+		show_message("Error!", msg);
 	}
 }
 
@@ -211,7 +219,7 @@ void ViewerWindow::on_image_open_act() {
 		this,
 		tr("Open Image"),
 		qlocation,
-		QString("FITS (*.fit *.fits *.fts);;Indigo RAW (*.raw);;FITS / Indigo RAW (*.fit *.fits *.fts *.raw);;JPEG / TIFF / PNG (*.jpg *.jpeg *.tif *.tiff *.png);;All Files (*)"),
+		QString("FITS (*.fit *.FIT *.fits *.FITS *.fts *.FTS );;Indigo RAW (*.raw *.RAW);;FITS / Indigo RAW (*.fit *FIT *.fits *.FITS *.fts *.FTS *.raw *.RAW);;JPEG / TIFF / PNG (*.jpg *.JPG *.jpeg *.JPEG *.jpe *.JPE *.tif *.TIF *.tiff *.TIFF *.png *.PNG);;All Files (*)"),
 		&m_selected_filter
 	);
 	open_image(file_name);
@@ -285,6 +293,67 @@ void ViewerWindow::on_image_close_act() {
 	m_image_formrat = nullptr;
 }
 
+void ViewerWindow::on_image_raw_to_fits() {
+	char path[PATH_LEN];
+	strncpy(path, m_image_path, PATH_LEN);
+	QString qlocation(dirname(path));
+	if (m_image_path[0] == '\0') qlocation = QDir::toNativeSeparators(QDir::homePath());
+	QStringList file_names = QFileDialog::getOpenFileNames(
+		this,
+		tr("Select RAW Images to convert to FITS..."),
+		qlocation,
+		QString("Indigo RAW (*.raw *.RAW);;All Files (*)")
+	);
+
+	int file_num = file_names.size();
+	printf("size = %d\n", file_num);
+	if (file_num == 0) {
+		return;
+	}
+	QProgressDialog progress("", "Abort", 0, file_num, this);
+	progress.setMinimumWidth(350);
+	progress.setMinimumDuration(0);
+	progress.setWindowModality(Qt::WindowModal);
+	int failed = 0;
+	char file_name[PATH_MAX];
+	for (int i = 0; i < file_num; i++) {
+		progress.setValue(i);
+		if (progress.wasCanceled())
+			break;
+
+		strncpy(file_name, file_names.at(i).toUtf8().data(), PATH_MAX);
+		char message[500];
+		snprintf(message, 500, "Converting '%s'... (%d of %d)", basename(file_name), i, file_num);
+		progress.setLabelText(message);
+		int res = convert_raw_to_fits(file_name);
+		printf("file '%s' -> %d\n", file_name ,res);
+		if (res < 0) {
+			failed ++;
+		}
+	}
+	progress.setValue(file_num);
+
+	if (failed) {
+		char message[100];
+		snprintf(
+			message,
+			100,
+			"%d file(s) succeessfully converted.\n%d file(s) failed to convert.",
+			file_num - failed,
+			failed
+		);
+		show_message("Conversion results", message);
+	} else {
+		char message[100];
+		snprintf(
+			message,
+			100,
+			"%d file(s) succeessfully converted.",
+			file_num
+		);
+		show_message("RAW to Conversion results", message, QMessageBox::Information);
+	}
+}
 
 void ViewerWindow::on_exit_act() {
 	QApplication::quit();
@@ -335,11 +404,11 @@ void ViewerWindow::on_about_act() {
 	//indigo_debug("%s\n", __FUNCTION__);
 }
 
-void ViewerWindow::show_error(const char *title, const char *message) {
+void ViewerWindow::show_message(const char *title, const char *message, QMessageBox::Icon icon) {
 	QMessageBox msgBox(this);
 	indigo_error(message);
 	msgBox.setWindowTitle(title);
-	msgBox.setIcon(QMessageBox::Warning);
+	msgBox.setIcon(icon);
 	msgBox.setText(message);
 	msgBox.exec();
 }

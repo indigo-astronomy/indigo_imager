@@ -22,6 +22,7 @@ SOURCES += \
 	../common_src/imagepreview.cpp \
 	../common_src/imageviewer.cpp \
 	../common_src/fits.c \
+	../common_src/raw_to_fits.c \
 	../common_src/debayer.c \
 
 RESOURCES += \
@@ -61,6 +62,7 @@ HEADERS += \
 	../common_src/imagepreview.h \
 	../common_src/imageviewer.h \
 	../common_src/fits.h \
+	../common_src/raw_to_fits.h \
 	../common_src/debayer.h \
 	../common_src/pixelformat.h
 
