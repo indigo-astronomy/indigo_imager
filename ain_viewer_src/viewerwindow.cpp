@@ -72,6 +72,11 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_open_act);
 
+	act = menu->addAction(tr("FITS &Herader"));
+	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_H));
+	act->setShortcutVisibleInContextMenu(true);
+	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_info_act);
+
 	act = menu->addAction(tr("&Next Image"));
 	act->setShortcut(QKeySequence(Qt::Key_Right));
 	act->setShortcutVisibleInContextMenu(true);
@@ -207,6 +212,24 @@ void ViewerWindow::open_image(QString file_name) {
 	} else {
 		snprintf(msg, PATH_LEN, "File: '%s'\nDoes not seem to be a supported image format.", QDir::toNativeSeparators(m_image_path).toUtf8().data());
 		show_message("Error!", msg);
+	}
+}
+
+void ViewerWindow::on_image_info_act() {
+	char *card = (char*)m_image_data;
+	char *end = card + m_image_size;
+	if (m_image_size < FITS_HEADER_SIZE || m_image_data == nullptr) return;
+	if (!strncmp(card, "SIMPLE", 6)) {
+ 		while (card <= end) {
+			char card_line[81];
+			strncpy(card_line, card, 80);
+			card_line[81] ='\0';
+			printf("%s\n", card_line);
+			if (!strncmp(card, "END", 3)) break;
+			card+=80;
+		}
+	} else {
+		show_message("Error!", "Not a FITS file!");
 	}
 }
 
