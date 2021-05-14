@@ -51,6 +51,8 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	this->setStyleSheet(ts.readAll());
 	f.close();
 
+	m_header_info = new TextDialog("FITS Header", this);
+
 	//  Set central widget of window
 	QWidget *central = new QWidget;
 	setCentralWidget(central);
@@ -165,6 +167,7 @@ ViewerWindow::~ViewerWindow () {
 	free(m_image_data);
 	delete m_preview_image;
 	delete m_imager_viewer;
+	delete m_header_info;
 }
 
 /* C++ looks for method close - maybe name collision so... */
@@ -218,16 +221,21 @@ void ViewerWindow::open_image(QString file_name) {
 void ViewerWindow::on_image_info_act() {
 	char *card = (char*)m_image_data;
 	char *end = card + m_image_size;
-	if (m_image_size < FITS_HEADER_SIZE || m_image_data == nullptr) return;
+	if (m_image_size < 2880 || m_image_data == nullptr) return;
 	if (!strncmp(card, "SIMPLE", 6)) {
+		auto text = m_header_info->textWidget();
+		text->clear();
  		while (card <= end) {
 			char card_line[81];
 			strncpy(card_line, card, 80);
-			card_line[81] ='\0';
-			printf("%s\n", card_line);
+			card_line[80] ='\0';
+			//printf("%s\n", card_line);
+			text->append(card_line);
 			if (!strncmp(card, "END", 3)) break;
 			card+=80;
 		}
+		m_header_info->show();
+		m_header_info->scrollTop();
 	} else {
 		show_message("Error!", "Not a FITS file!");
 	}

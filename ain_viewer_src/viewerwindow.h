@@ -27,6 +27,7 @@
 #include <indigo/indigo_bus.h>
 #include <imageviewer.h>
 #include <imagepreview.h>
+#include <textdialog.h>
 
 #include <conf.h>
 
@@ -65,6 +66,7 @@ public slots:
 
 private:
 	// Image viewer
+	TextDialog *m_header_info;
 	ImageViewer *m_imager_viewer;
 	preview_image *m_preview_image;
 	unsigned char *m_image_data;

@@ -17,6 +17,7 @@ DEFINES += QT_DEPRECATED_WARNINGS QZEROCONF_STATIC
 
 SOURCES += \
 	main.cpp \
+	textdialog.cpp \
 	viewerwindow.cpp \
 	../common_src/utils.cpp \
 	../common_src/imagepreview.cpp \
@@ -56,6 +57,7 @@ else: unix:!android: target.path = /usr/bin
 HEADERS += \
 	version.h \
 	viewerwindow.h \
+	textdialog.h \
 	conf.h \
 	../common_src/utils.h \
 	../common_src/image_preview_lut.h \
