@@ -71,36 +71,36 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	act = menu->addAction(tr("&Open Image..."));
 	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_O));
-	act->setShortcutVisibleInContextMenu(true);
+	//act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_open_act);
 
 	act = menu->addAction(tr("FITS &Hedader"));
 	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_H));
-	act->setShortcutVisibleInContextMenu(true);
+	//act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_info_act);
 
 	act = menu->addAction(tr("&Next Image"));
 	act->setShortcut(QKeySequence(Qt::Key_Right));
-	act->setShortcutVisibleInContextMenu(true);
+	//act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_next_act);
 
 	act = menu->addAction(tr("&Previois Image"));
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_prev_act);
 	act->setShortcut(QKeySequence(Qt::Key_Left));
-	act->setShortcutVisibleInContextMenu(true);
+	//act->setShortcutVisibleInContextMenu(true);
 
 	menu->addSeparator();
 
 	act = menu->addAction(tr("&Close Image"));
 	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_C));
-	act->setShortcutVisibleInContextMenu(true);
+	//act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_close_act);
 
 	menu->addSeparator();
 
 	act = menu->addAction(tr("Convert &RAW to FITS"));
 	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_R));
-	act->setShortcutVisibleInContextMenu(true);
+	//act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_raw_to_fits);
 
 	menu->addSeparator();
