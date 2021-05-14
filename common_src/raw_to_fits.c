@@ -125,7 +125,7 @@ int indigo_raw_to_fists(char *image, char **fits, int *size) {
 			uint16_t *out_ch2 = (uint16_t *)p + 2 * pixel_count;
 			// 16 bit RGB - average and swap endianness
 			uint16_t *in = (uint16_t *)image;
-			for (int i = 0; i < pixel_count * 3; i++) {
+            for (int i = 0; i < pixel_count; i++) {
 				int value =  *in++ - 32768;
 				*out_ch0++ = (value & 0xff) << 8 | (value & 0xff00) >> 8;
 				value =  *in++ - 32768;
@@ -137,7 +137,7 @@ int indigo_raw_to_fists(char *image, char **fits, int *size) {
 			uint8_t *out_ch0 = (uint8_t *)p;
 			uint8_t *out_ch1 = (uint8_t *)p + pixel_count;
 			uint8_t *out_ch2 = (uint8_t *)p + 2 * pixel_count;
-			uint8_t *in = image;
+            uint8_t *in = (uint8_t *)image;
 			for (int i = 0; i < pixel_count; i++) {
 				*out_ch0++ = *in++;
 				*out_ch1++ = *in++;
@@ -155,15 +155,18 @@ int save_file(char *file_name, char *data, int size) {
 	if (handle < 0) {
 		return -1;
 	}
-	indigo_write(handle, data, size);
+    int res = write(handle, data, size);
+   // if (res < size) {
+   //     close(handle);
+   //     return -1;
+   // }
 	close(handle);
-	return 0;
+    return 0;
 }
 
 int open_file(const char *file_name, char **data, int *size) {
-	char msg[PATH_MAX];
 	int image_size = 0;
-	if (file_name == "") {
+    if (!strcmp(file_name, "")) {
 		errno = ENOENT;
 		return -1;
 	}
@@ -201,7 +204,7 @@ int convert_raw_to_fits(char *infile_name) {
 	if (res != 0) {
 		if (in_data) free(in_data);
 		if (out_data) free(out_data);
-		return -1;
+        return -1;
 	}
 
 	char outfile_name[PATH_MAX];
