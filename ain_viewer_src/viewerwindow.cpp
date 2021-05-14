@@ -74,7 +74,7 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_open_act);
 
-	act = menu->addAction(tr("FITS &Herader"));
+	act = menu->addAction(tr("FITS &Hedader"));
 	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_H));
 	act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_info_act);
@@ -206,11 +206,11 @@ void ViewerWindow::open_image(QString file_name) {
 	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat,  preview_stretch_lut[conf.preview_stretch_level]);
 	if (m_preview_image) {
 		m_imager_viewer->setImage(*m_preview_image);
-		setWindowTitle(tr("Ain Viewer - ") + QString(m_image_path));
 		char info[256] = {};
 		int w = m_preview_image->width();
 		int h = m_preview_image->height();
 		sprintf(info, "%s [%d x %d]", basename(m_image_path), w, h);
+		setWindowTitle(tr("Ain Viewer - ") + QString(m_image_path));
 		m_imager_viewer->setText(info);
 	} else {
 		snprintf(msg, PATH_LEN, "File: '%s'\nDoes not seem to be a supported image format.", QDir::toNativeSeparators(m_image_path).toUtf8().data());
