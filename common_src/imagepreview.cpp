@@ -45,11 +45,14 @@ preview_image* create_qtsupported_preview(unsigned char *image_buffer, unsigned 
 	return img;
 }
 
+
+#if defined(USE_LIBJPEG)
 static jmp_buf jpeg_error;
 static void jpeg_error_cb(j_common_ptr cinfo) {
 	cinfo;
 	longjmp(jpeg_error, 1);
 }
+#endif
 
 preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_size) {
 #if !defined(USE_LIBJPEG)
