@@ -79,15 +79,17 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	//act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_info_act);
 
-	m_next_act = menu->addAction(tr("&Next Image"));
-	m_next_act->setShortcut(QKeySequence(Qt::Key_Right));
+	act = menu->addAction(tr("&Next Image"));
+	act->setShortcut(QKeySequence(Qt::Key_Right));
+	act->setAutoRepeat(false);
 	//act->setShortcutVisibleInContextMenu(true);
-	connect(m_next_act, &QAction::triggered, this, &ViewerWindow::on_image_next_act);
+	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_next_act);
 
-	m_prev_act = menu->addAction(tr("&Previois Image"));
-	m_prev_act->setShortcut(QKeySequence(Qt::Key_Left));
+	act = menu->addAction(tr("&Previois Image"));
+	act->setShortcut(QKeySequence(Qt::Key_Left));
+	act->setAutoRepeat(false);
 	//act->setShortcutVisibleInContextMenu(true);
-	connect(m_prev_act, &QAction::triggered, this, &ViewerWindow::on_image_prev_act);
+	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_prev_act);
 
 	menu->addSeparator();
 
@@ -168,8 +170,6 @@ ViewerWindow::~ViewerWindow () {
 	delete m_preview_image;
 	delete m_imager_viewer;
 	delete m_header_info;
-	delete m_prev_act;
-	delete m_next_act;
 }
 
 /* C++ looks for method close - maybe name collision so... */
