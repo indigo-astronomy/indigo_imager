@@ -79,15 +79,15 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	//act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_info_act);
 
-	act = menu->addAction(tr("&Next Image"));
-	act->setShortcut(QKeySequence(Qt::Key_Right));
+	m_next_act = menu->addAction(tr("&Next Image"));
+	m_next_act->setShortcut(QKeySequence(Qt::Key_Right));
 	//act->setShortcutVisibleInContextMenu(true);
-	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_next_act);
+	connect(m_next_act, &QAction::triggered, this, &ViewerWindow::on_image_next_act);
 
-	act = menu->addAction(tr("&Previois Image"));
-	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_prev_act);
-	act->setShortcut(QKeySequence(Qt::Key_Left));
+	m_prev_act = menu->addAction(tr("&Previois Image"));
+	m_prev_act->setShortcut(QKeySequence(Qt::Key_Left));
 	//act->setShortcutVisibleInContextMenu(true);
+	connect(m_prev_act, &QAction::triggered, this, &ViewerWindow::on_image_prev_act);
 
 	menu->addSeparator();
 
@@ -164,10 +164,12 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 
 ViewerWindow::~ViewerWindow () {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
-	free(m_image_data);
+	if (m_image_data) free(m_image_data);
 	delete m_preview_image;
 	delete m_imager_viewer;
 	delete m_header_info;
+	delete m_prev_act;
+	delete m_next_act;
 }
 
 /* C++ looks for method close - maybe name collision so... */
@@ -179,6 +181,7 @@ void ViewerWindow::open_image(QString file_name) {
 	char msg[PATH_LEN];
 	if (file_name == "") return;
 	FILE *file;
+	block_scrolling(true);
 	strncpy(m_image_path, file_name.toUtf8().data(), PATH_LEN);
 	file = fopen(m_image_path, "rb");
 	if (file) {
@@ -193,8 +196,10 @@ void ViewerWindow::open_image(QString file_name) {
 		fread(m_image_data, m_image_size, 1, file);
 		fclose(file);
 	} else {
+		block_scrolling(false);
 		snprintf(msg, PATH_LEN, "File '%s'\nCan not be open for reading.", QDir::toNativeSeparators(m_image_path).toUtf8().data());
 		show_message("Error!", msg);
+		return;
 	}
 
 	if (m_preview_image) {
@@ -204,6 +209,7 @@ void ViewerWindow::open_image(QString file_name) {
 
 	m_image_formrat = strrchr(m_image_path, '.');
 	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat,  preview_stretch_lut[conf.preview_stretch_level]);
+
 	if (m_preview_image) {
 		m_imager_viewer->setImage(*m_preview_image);
 		char info[256] = {};
@@ -213,9 +219,11 @@ void ViewerWindow::open_image(QString file_name) {
 		setWindowTitle(tr("Ain Viewer - ") + QString(m_image_path));
 		m_imager_viewer->setText(info);
 	} else {
+		block_scrolling(false);
 		snprintf(msg, PATH_LEN, "File: '%s'\nDoes not seem to be a supported image format.", QDir::toNativeSeparators(m_image_path).toUtf8().data());
 		show_message("Error!", msg);
 	}
+	block_scrolling(false);
 }
 
 void ViewerWindow::on_image_info_act() {

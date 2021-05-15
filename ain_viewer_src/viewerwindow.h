@@ -49,6 +49,15 @@ public:
 	virtual ~ViewerWindow();
 	void open_image(QString file_name);
 	void show_message(const char *title, const char *message, QMessageBox::Icon icon = QMessageBox::Warning);
+	void block_scrolling(bool blocked) {
+		m_prev_act->blockSignals(blocked);
+		m_next_act->blockSignals(blocked);
+		if (blocked) {
+			QApplication::setOverrideCursor(Qt::WaitCursor);
+		} else {
+			QApplication::restoreOverrideCursor();
+		}
+	}
 
 public slots:
 	void on_use_system_locale_changed(bool status);
@@ -75,6 +84,8 @@ private:
 	char *m_image_formrat;
 	QString m_selected_filter;
 	QStringList m_image_list;
+	QAction *m_prev_act;
+	QAction *m_next_act;
 };
 
 #endif // VIEWERWINDOW_H
