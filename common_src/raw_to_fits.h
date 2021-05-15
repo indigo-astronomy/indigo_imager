@@ -28,7 +28,7 @@ extern "C" {
 
 int save_file(char *file_name, char *data, int size);
 int open_file(const char *file_name, char **data, int *size);
-int indigo_raw_to_fists(char *image, char **fits, int *size);
+int raw_to_fists(char *image, char **fits, int *size);
 int convert_raw_to_fits(char *infile_name);
 
 #ifdef __cplusplus

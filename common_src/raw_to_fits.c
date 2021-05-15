@@ -32,7 +32,7 @@
 #include <limits.h>
 #define FITS_HEADER_SIZE 2880
 
-int indigo_raw_to_fists(char *image, char **fits, int *size) {
+int raw_to_fists(char *image, char **fits, int *size) {
 	int byte_per_pixel = 0, components = 0;
 	int frame_width = 0, frame_height = 0;
 	if (!strncmp("RAW1", (const char *)(image), 4)) {
@@ -207,7 +207,7 @@ int convert_raw_to_fits(char *infile_name) {
 		return -1;
 	}
 
-	res = indigo_raw_to_fists(in_data, &out_data, &size);
+	res = raw_to_fists(in_data, &out_data, &size);
 	if (res != 0) {
 		if (in_data) free(in_data);
 		if (out_data) free(out_data);
