@@ -231,6 +231,7 @@ void ViewerWindow::on_image_info_act() {
 	char *end = card + m_image_size;
 	if (m_image_size < 2880 || m_image_data == nullptr) return;
 	if (!strncmp(card, "SIMPLE", 6)) {
+		m_header_info->setWindowTitle(QString("FITS Header: ") + QString(basename(m_image_path)));
 		auto text = m_header_info->textWidget();
 		text->clear();
  		while (card <= end) {
