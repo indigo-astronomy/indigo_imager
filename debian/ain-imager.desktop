@@ -2,7 +2,7 @@
 Version=1.0
 Encoding=UTF-8
 Name=Ain Imager
-Comment=Ain Imager
+Comment=Ain INDIGO Imager
 Exec=ain_imager
 Icon=ain-imager.png
 Terminal=false

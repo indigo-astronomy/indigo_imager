@@ -1,7 +1,7 @@
 [Desktop Entry]
 Version=1.0
 Encoding=UTF-8
-Name=Ain INDIGO Viewer
+Name=Ain Viewer
 Comment=Ain INDIGO Viewer
 Exec=ain_viewer %u
 Icon=ain-viewer.png
