@@ -224,6 +224,9 @@ void ViewerWindow::open_image(QString file_name) {
 		show_message("Error!", msg);
 	}
 	block_scrolling(false);
+	QDir directory(dirname(file_name.toUtf8().data()));
+	QString pattern = "*" + QString(m_image_formrat);
+	m_image_list = directory.entryList(QStringList() << pattern, QDir::Files);
 }
 
 void ViewerWindow::on_image_info_act() {
@@ -263,9 +266,6 @@ void ViewerWindow::on_image_open_act() {
 		&m_selected_filter
 	);
 	open_image(file_name);
-	QDir directory(dirname(file_name.toUtf8().data()));
-	QString pattern = "*" + QString(m_image_formrat);
-	m_image_list = directory.entryList(QStringList() << pattern, QDir::Files);
 }
 
 void ViewerWindow::on_image_next_act() {
