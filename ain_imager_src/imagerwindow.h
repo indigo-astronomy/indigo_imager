@@ -608,7 +608,8 @@ private:
 	void create_focuser_tab(QFrame *capture_frame);
 	void create_imager_tab(QFrame *camera_frame);
 	void create_guider_tab(QFrame *guider_frame);
-	void create_telescope_tab(QFrame *telescope_frame);
+	void create_telescope_tab(QFrame *solver_frame);
+	void create_solver_tab(QFrame *telescope_frame);
 	void change_ccd_frame_property(const char *agent) const;
 	void change_ccd_exposure_property(const char *agent, QDoubleSpinBox *exp_time) const;
 	void change_ccd_abort_exposure_property(const char *agent) const;

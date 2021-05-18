@@ -172,6 +172,11 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	toolbox->setContentsMargins(1,1,1,1);
 	telescope_frame_layout->addWidget(toolbar, row, 0, 1, 4);
 
+	QCheckBox *cbox = new QCheckBox("Use Solver");
+	cbox->setEnabled(false);
+	toolbox->addWidget(cbox);
+	//connect(m_mount_guide_rate_cbox, &QPushButton::clicked, this, &ImagerWindow::on_mount_set_guide_rate);
+
 	m_mount_goto_button = new QPushButton("Goto");
 	m_mount_goto_button->setStyleSheet("min-width: 30px");
 	m_mount_goto_button->setIcon(QIcon(":resource/play.png"));
@@ -287,6 +292,34 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	slew_frame_layout->addWidget(m_mount_park_cbox, slew_row, slew_col);
 	connect(m_mount_park_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_park);
 
+
+	QFrame *solve_frame = new QFrame();
+	telescope_tabbar->addTab(solve_frame, "Solver");
+
+	QGridLayout *solve_frame_layout = new QGridLayout();
+	solve_frame_layout->setAlignment(Qt::AlignTop);
+	solve_frame->setLayout(solve_frame_layout);
+	solve_frame->setFrameShape(QFrame::StyledPanel);
+	solve_frame->setContentsMargins(0, 0, 0, 0);
+
+	int solve_row = 0;
+	// Exposure time
+	label = new QLabel("Exposure time (s):");
+	solve_frame_layout->addWidget(label, solve_row, 0, 1, 2);
+	QDoubleSpinBox *exposure_time = new QDoubleSpinBox();
+	exposure_time->setMaximum(10000);
+	exposure_time->setMinimum(0);
+	exposure_time->setValue(1);
+	solve_frame_layout->addWidget(exposure_time, solve_row, 2, 1, 2);
+
+	solve_row++;
+	label = new QLabel("Image source:");
+	solve_frame_layout->addWidget(label, solve_row, 0, 1, 2);
+	QComboBox *solver_source_select = new QComboBox();
+	solve_frame_layout->addWidget(solver_source_select, solve_row, 2, 1, 2);
+	//solver_source_select->setCurrentIndex(conf.focus_mode);
+	//connect(solver_source_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_inmage_source_selected);
+
 	QFrame *site_frame = new QFrame();
 	telescope_tabbar->addTab(site_frame, "Site");
 	QGridLayout *site_frame_layout = new QGridLayout();
@@ -378,19 +411,6 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_mount_sync_time_cbox->setEnabled(false);
 	site_frame_layout->addWidget(m_mount_sync_time_cbox, site_row, 0, 1, 4);
 	connect(m_mount_sync_time_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_sync_time);
-
-	/*
-	QFrame *solve_frame = new QFrame();
-	telescope_tabbar->addTab(solve_frame, "Solve");
-
-	QGridLayout *solve_frame_layout = new QGridLayout();
-	solve_frame_layout->setAlignment(Qt::AlignTop);
-	solve_frame->setLayout(solve_frame_layout);
-	solve_frame->setFrameShape(QFrame::StyledPanel);
-	solve_frame->setContentsMargins(0, 0, 0, 0);
-
-	int solve_row = 0;
-	*/
 
 	QFrame *gps_frame = new QFrame();
 	telescope_tabbar->addTab(gps_frame, "GPS");

@@ -285,6 +285,16 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	tools_tabbar->addTab(telescope_frame, "&Telescope");
 	create_telescope_tab(telescope_frame);
 
+	QFrame *solver_frame = new QFrame;
+	tools_tabbar->addTab(solver_frame, "&Solver");
+	create_solver_tab(solver_frame);
+
+	/*
+	QFrame *sequence_frame = new QFrame;
+	tools_tabbar->addTab(sequence_frame, "&Sequence");
+	//create_telescope_tab(sequence_frame);
+	*/
+
 	connect(tools_tabbar, &QTabWidget::currentChanged, this, &ImagerWindow::on_tab_changed);
 
 	// Image viewer

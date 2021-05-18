@@ -22,6 +22,7 @@ SOURCES += \
 	focuser_tab.cpp \
 	guider_tab.cpp \
 	telescope_tab.cpp \
+	solver_tab.cpp \
 	imagerwindow.cpp \
 	qindigoservice.cpp \
 	indigoclient.cpp \

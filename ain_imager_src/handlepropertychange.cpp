@@ -1313,6 +1313,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	char selected_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_mount_agent[INDIGO_VALUE_SIZE] = {0};
+	char selected_solver_agent[INDIGO_VALUE_SIZE] = {0};
 	static pthread_mutex_t l_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 	if (!strncmp(property->device, "Server", 6)) {
@@ -1323,12 +1324,14 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			bool imager_not_loaded = true;
 			bool guider_not_loaded = true;
 			bool mount_not_loaded = true;
+			bool solver_not_loaded = true;
 
 			indigo_property *p = properties.get(property->device, "DRIVERS");
 			if (p) {
 				imager_not_loaded = !indigo_get_switch(p, "indigo_agent_imager");
 				guider_not_loaded = !indigo_get_switch(p, "indigo_agent_guider");
 				mount_not_loaded = !indigo_get_switch(p, "indigo_agent_mount");
+				solver_not_loaded = !indigo_get_switch(p, "indigo_agent_astrometry");
 			}
 			char *device_name = (char*)malloc(INDIGO_NAME_SIZE);
 			strncpy(device_name, property->device, INDIGO_NAME_SIZE);
@@ -1347,6 +1350,11 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 				if (mount_not_loaded) {
 					static const char *items[] = { "DRIVER" };
 					static const char *values[] = { "indigo_agent_mount" };
+					indigo_change_text_property(NULL, device_name, "LOAD", 1, items, values);
+				}
+				if (solver_not_loaded) {
+					static const char *items[] = { "DRIVER" };
+					static const char *values[] = { "indigo_agent_astrometry" };
 					indigo_change_text_property(NULL, device_name, "LOAD", 1, items, values);
 				}
 				pthread_mutex_unlock(&l_mutex);
