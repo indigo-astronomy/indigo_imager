@@ -89,6 +89,13 @@ public:
 		return true;
 	};
 
+	bool get_selected_solver_agent(char * selected_agent) {
+		if (!selected_agent || !m_agent_solver_select) return false;
+		strncpy(selected_agent, m_agent_solver_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+		indigo_debug("SELECTED SOLVER AGENT = %s", selected_agent);
+		return true;
+	};
+
 	void property_delete(indigo_property* property, char *message);
 	void property_define(indigo_property* property, char *message);
 
@@ -287,6 +294,8 @@ public slots:
 	void on_mount_coord_source_selected(int index);
 	void on_mount_sync_time(int state);
 	void on_mount_set_coordinates_to_agent();
+
+	void on_solver_agent_selected(int index);
 
 	void on_tab_changed(int index);
 
@@ -580,6 +589,8 @@ private:
 	QLabel *m_gps_utc;
 	QLabel *m_gps_status;
 
+	//Solver agent
+	QComboBox *m_agent_solver_select;
 
 	int m_stderr;
 

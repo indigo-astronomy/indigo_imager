@@ -39,8 +39,13 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	solver_frame->setContentsMargins(0, 0, 0, 0);
 
 	int row = 0;
+
+	m_agent_solver_select = new QComboBox();
+	solver_frame_layout->addWidget(m_agent_solver_select, row, 0, 1, 4);
+	connect(m_agent_solver_select, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ImagerWindow::on_solver_agent_selected);
+
 /*
-	// Focuser selection
+	// Solver selection
 	row++;
 	QLabel *label = new QLabel("Focuser:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
@@ -49,4 +54,17 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	focuser_frame_layout->addWidget(m_focuser_select, row, 1, 1, 3);
 	connect(m_focuser_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focuser_selected);
 */
+}
+
+void ImagerWindow::on_solver_agent_selected(int index) {
+	QtConcurrent::run([=]() {
+		// Clear controls
+		indigo_property *property = (indigo_property*)malloc(sizeof(indigo_property));
+		memset(property, 0, sizeof(indigo_property));
+		get_selected_solver_agent(property->device);
+		property_delete(property, nullptr);
+		free(property);
+
+		indigo_enumerate_properties(nullptr, &INDIGO_ALL_PROPERTIES);
+	});
 }

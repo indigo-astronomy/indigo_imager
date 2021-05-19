@@ -1389,10 +1389,15 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		QString name = QString(property->device);
 		add_combobox_item(m_agent_mount_select, name, name);
 	}
+	if(!strncmp(property->device, "Astrometry Agent", 16)) {
+		QString name = QString(property->device);
+		add_combobox_item(m_agent_solver_select, name, name);
+	}
 	if (
 		(!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
 		(!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12)) &&
-		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11))
+		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11)) &&
+		(!get_selected_solver_agent(selected_solver_agent) || strncmp(property->device, "Astrometry Agent", 16))
 	) {
 		return;
 	}
@@ -1616,11 +1621,13 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	char selected_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_mount_agent[INDIGO_VALUE_SIZE] = {0};
+	char selected_solver_agent[INDIGO_VALUE_SIZE] = {0};
 
 	if (
 		(!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
 		(!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12)) &&
-		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11))
+		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11)) &&
+		(!get_selected_solver_agent(selected_solver_agent) || strncmp(property->device, "Astrometry Agent", 16))
 	) {
 		return;
 	}
@@ -1796,12 +1803,14 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	char selected_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_mount_agent[INDIGO_VALUE_SIZE] = {0};
+	char selected_solver_agent[INDIGO_VALUE_SIZE] = {0};
 
 	indigo_debug("[REMOVE REMOVE REMOVE REMOVE REMOVE] %s.%s\n", property->device, property->name);
 	if (
 		(!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
 		(!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12)) &&
-		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11))
+		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11)) &&
+		(!get_selected_solver_agent(selected_solver_agent) || strncmp(property->device, "Astrometry Agent", 16))
 	) {
 		return;
 	}
