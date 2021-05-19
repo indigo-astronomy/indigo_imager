@@ -589,8 +589,13 @@ private:
 	QLabel *m_gps_utc;
 	QLabel *m_gps_status;
 
+	QCheckBox *m_mount_use_solver_cbox;
+	QComboBox *m_solver_source_select2;
+	QDoubleSpinBox *m_solver_exposure;
+
 	//Solver agent
 	QComboBox *m_agent_solver_select;
+	QComboBox *m_solver_source_select1;
 
 	int m_stderr;
 

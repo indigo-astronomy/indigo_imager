@@ -44,6 +44,13 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	solver_frame_layout->addWidget(m_agent_solver_select, row, 0, 1, 4);
 	connect(m_agent_solver_select, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ImagerWindow::on_solver_agent_selected);
 
+	row++;
+	QLabel *label = new QLabel("Image source:");
+	solver_frame_layout->addWidget(label, row, 0, 1, 2);
+	m_solver_source_select1 = new QComboBox();
+	solver_frame_layout->addWidget(m_solver_source_select1, row, 2, 1, 2);
+
+
 /*
 	// Solver selection
 	row++;

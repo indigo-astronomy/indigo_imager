@@ -134,9 +134,11 @@ static void add_items_to_combobox(ImagerWindow *w, indigo_property *property, QC
 	}
 }
 
-static void add_items_to_combobox_filtered(ImagerWindow *w, indigo_property *property, const char *begins_with, QComboBox *items_combobox) {
-	w->clear_combobox(items_combobox);
-	w->add_combobox_item(items_combobox, QString("None"), QString(""));
+static void add_items_to_combobox_filtered(ImagerWindow *w, indigo_property *property, const char *begins_with, QComboBox *items_combobox, bool append = false) {
+	if (!append) {
+		w->clear_combobox(items_combobox);
+		w->add_combobox_item(items_combobox, QString("None"), QString(""));
+	}
 	for (int i = 0; i < property->count; i++) {
 		if (strncmp(property->items[i].name, begins_with, strlen(begins_with))) {
 			indigo_debug("[DOES NOT MATCH mode] '%s' skipped\n", begins_with);
@@ -1609,6 +1611,16 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, AGENT_SET_HOST_TIME_PROPERTY_NAME)) {
 		update_mount_agent_sync_time(this, property);
 	}
+
+	// Astrometry Agent
+	if (client_match_device_property(property, selected_solver_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
+		add_items_to_combobox_filtered(this, property, "Imager Agent", m_solver_source_select1);
+		add_items_to_combobox_filtered(this, property, "Guider Agent", m_solver_source_select1, true);
+		add_items_to_combobox_filtered(this, property, "Imager Agent", m_solver_source_select2);
+		add_items_to_combobox_filtered(this, property, "Guider Agent", m_solver_source_select2, true);
+		set_enabled(m_mount_use_solver_cbox, true);
+		set_enabled(m_solver_exposure, true);
+	}
 }
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
@@ -2146,6 +2158,16 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_checkbox_state(m_mount_sync_time_cbox, Qt::Unchecked);
 		set_enabled(m_mount_sync_time_cbox, false);
 	}
+
+	// Solver Agent
+	if (client_match_device_property(property, selected_solver_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_solver_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		clear_combobox(m_solver_source_select1);
+		clear_combobox(m_solver_source_select2);
+		set_enabled(m_solver_exposure, false);
+		set_enabled(m_mount_use_solver_cbox, false);
+	}
 }
 
 void ImagerWindow::on_property_delete(indigo_property* property, char *message) {
@@ -2153,7 +2175,8 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 	if (
 		(strncmp(property->device, "Imager Agent", 12)) &&
 		(strncmp(property->device, "Guider Agent", 12)) &&
-		(strncmp(property->device, "Mount Agent", 11))
+		(strncmp(property->device, "Mount Agent", 11)) &&
+		(strncmp(property->device, "Astrometry Agent", 16))
 	) {
 		properties.remove(property);
 		free(property);
@@ -2203,6 +2226,19 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 			indigo_debug("[REMOVE mount agent] %s\n", name.toUtf8().data());
 		} else {
 			indigo_debug("[NOT FOUND mount agent] %s\n", name.toUtf8().data());
+		}
+
+		selected_index = m_agent_solver_select->currentIndex();
+		index = m_agent_solver_select->findText(name);
+		if (index >= 0) {
+			remove_combobox_item(m_agent_solver_select, index);
+			if (selected_index == index) {
+				set_combobox_current_index(m_agent_solver_select, 0);
+				on_mount_agent_selected(0);
+			}
+			indigo_debug("[REMOVE solver agent] %s\n", name.toUtf8().data());
+		} else {
+			indigo_debug("[NOT FOUND solver agent] %s\n", name.toUtf8().data());
 		}
 	}
 	properties.remove(property);

@@ -172,9 +172,9 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	toolbox->setContentsMargins(1,1,1,1);
 	telescope_frame_layout->addWidget(toolbar, row, 0, 1, 4);
 
-	QCheckBox *cbox = new QCheckBox("Use Solver");
-	cbox->setEnabled(false);
-	toolbox->addWidget(cbox);
+	m_mount_use_solver_cbox = new QCheckBox("Use Solver");
+	m_mount_use_solver_cbox->setEnabled(false);
+	toolbox->addWidget(m_mount_use_solver_cbox);
 	//connect(m_mount_guide_rate_cbox, &QPushButton::clicked, this, &ImagerWindow::on_mount_set_guide_rate);
 
 	m_mount_goto_button = new QPushButton("Goto");
@@ -306,17 +306,17 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	// Exposure time
 	label = new QLabel("Exposure time (s):");
 	solve_frame_layout->addWidget(label, solve_row, 0, 1, 2);
-	QDoubleSpinBox *exposure_time = new QDoubleSpinBox();
-	exposure_time->setMaximum(10000);
-	exposure_time->setMinimum(0);
-	exposure_time->setValue(1);
-	solve_frame_layout->addWidget(exposure_time, solve_row, 2, 1, 2);
+	m_solver_exposure = new QDoubleSpinBox();
+	m_solver_exposure->setMaximum(10000);
+	m_solver_exposure->setMinimum(0);
+	m_solver_exposure->setValue(1);
+	solve_frame_layout->addWidget(m_solver_exposure, solve_row, 2, 1, 2);
 
 	solve_row++;
 	label = new QLabel("Image source:");
 	solve_frame_layout->addWidget(label, solve_row, 0, 1, 2);
-	QComboBox *solver_source_select = new QComboBox();
-	solve_frame_layout->addWidget(solver_source_select, solve_row, 2, 1, 2);
+	m_solver_source_select2 = new QComboBox();
+	solve_frame_layout->addWidget(m_solver_source_select2, solve_row, 2, 1, 2);
 	//solver_source_select->setCurrentIndex(conf.focus_mode);
 	//connect(solver_source_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_inmage_source_selected);
 
