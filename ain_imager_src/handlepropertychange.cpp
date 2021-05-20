@@ -506,6 +506,70 @@ void update_mount_gps_status(ImagerWindow *w, indigo_property *property) {
 	}
 }
 
+void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	double ra = 0;
+	double dec = 0;
+	double angle = 0;
+	double scale = 0;
+	double width = 0;
+	double height = 0;
+	int parity = 0;
+	int index_used = 0;
+
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], AGENT_PLATESOLVER_WCS_RA_ITEM_NAME)) {
+			ra = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_WCS_DEC_ITEM_NAME)) {
+			dec = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_WCS_ANGLE_ITEM_NAME)) {
+			angle = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_WCS_WIDTH_ITEM_NAME)) {
+			width = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_WCS_HEIGHT_ITEM_NAME)) {
+			height = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_WCS_SCALE_ITEM_NAME)) {
+			scale = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_WCS_PARITY_ITEM_NAME)) {
+			parity = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_WCS_INDEX_ITEM_NAME)) {
+			index_used = property->items[i].number.value;
+		}
+	}
+
+	QString ra_str(indigo_dtos(ra, "%dh %02d' %04.1f\""));
+	w->set_text(w->m_solver_ra_solution, ra_str);
+	w->set_widget_state(w->m_solver_ra_solution, property->state);
+
+	QString dec_str(indigo_dtos(dec, "%d° %02d' %04.1f\""));
+	w->set_text(w->m_solver_dec_solution, dec_str);
+	w->set_widget_state(w->m_solver_dec_solution, property->state);
+
+	QString angle_str(indigo_dtos(angle, "%d° %02d' %04.1f\""));
+	w->set_text(w->m_solver_angle_solution, angle_str);
+	w->set_widget_state(w->m_solver_angle_solution, property->state);
+
+	QString scale_str = QString::number(scale * 3600); // we want it in "
+	w->set_text(w->m_solver_scale_solution, scale_str);
+	w->set_widget_state(w->m_solver_scale_solution, property->state);
+
+	QString width_str(indigo_dtos(width, "%d° %02d' %04.1f\""));
+	w->set_text(w->m_solver_fwidth_solution, width_str);
+	w->set_widget_state(w->m_solver_fwidth_solution, property->state);
+
+	QString height_str(indigo_dtos(height, "%d° %02d' %04.1f\""));
+	w->set_text(w->m_solver_fheight_solution, height_str);
+	w->set_widget_state(w->m_solver_fheight_solution, property->state);
+
+	QString parity_str = QString::number(parity);
+	w->set_text(w->m_solver_parity_solution, parity_str);
+	w->set_widget_state(w->m_solver_parity_solution, property->state);
+
+	QString index_str = QString::number(index_used);
+	w->set_text(w->m_solver_usedindex_solution, index_str);
+	w->set_widget_state(w->m_solver_usedindex_solution, property->state);
+}
+
 static void update_ccd_temperature(ImagerWindow *w, indigo_property *property, QLineEdit *current_temp, QDoubleSpinBox *set_temp, bool update_value = false) {
 	indigo_debug("change %s", property->name);
 	for (int i = 0; i < property->count; i++) {
@@ -1621,6 +1685,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		set_enabled(m_mount_use_solver_cbox, true);
 		set_enabled(m_solver_exposure, true);
 	}
+	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME)) {
+		update_solver_agent_wcs(this, property);
+	}
 }
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
@@ -1806,6 +1873,11 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, AGENT_SET_HOST_TIME_PROPERTY_NAME)) {
 		update_mount_agent_sync_time(this, property);
+	}
+
+	// Solver Agent
+	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME)) {
+		update_solver_agent_wcs(this, property);
 	}
 
 	properties.create(property);

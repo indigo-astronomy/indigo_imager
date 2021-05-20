@@ -95,7 +95,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	solver_frame_layout->addWidget(m_solver_fwidth_solution, row, 2, 1, 2);
 
 	row++;
-	label = new QLabel("Frame Scale (°/px):");
+	label = new QLabel("Frame Scale (\"/px):");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_solver_scale_solution = new QLabel("0");
 	set_ok(m_solver_scale_solution);
