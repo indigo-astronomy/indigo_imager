@@ -596,6 +596,22 @@ private:
 	//Solver agent
 	QComboBox *m_agent_solver_select;
 	QComboBox *m_solver_source_select1;
+	QLabel *m_solver_ra_solution;
+	QLabel *m_solver_dec_solution;
+	QLabel *m_solver_angle_solution;
+	QLabel *m_solver_scale_solution;
+	QLabel *m_solver_fwidth_solution;
+	QLabel *m_solver_fheight_solution;
+	QLabel *m_solver_parity_solution;
+	QLabel *m_solver_usedindex_solution;
+
+	QLineEdit *m_solver_ra_hint;
+	QLineEdit *m_solver_dec_hint;
+	QDoubleSpinBox *m_solver_radius_hint;
+	QSpinBox *m_solver_ds_hint;
+	QSpinBox *m_solver_parity_hint;
+	QSpinBox *m_solver_depth_hint;
+	QSpinBox *m_solver_tlimit_hint;
 
 	int m_stderr;
 
