@@ -62,49 +62,49 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	row++;
 	label = new QLabel("Frame center RA (hours):");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
-	m_solver_ra_solution = new QLabel("0° 00' 00.0\"");
+	m_solver_ra_solution = new QLabel("");
 	set_ok(m_solver_ra_solution);
 	solver_frame_layout->addWidget(m_solver_ra_solution, row, 2, 1, 2);
 
 	row++;
 	label = new QLabel("Frame center Dec (°):");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
-	m_solver_dec_solution = new QLabel("0° 00' 00.0\"");
+	m_solver_dec_solution = new QLabel("");
 	set_ok(m_solver_dec_solution);
 	solver_frame_layout->addWidget(m_solver_dec_solution, row, 2, 1, 2);
 
 	row++;
 	label = new QLabel("Rotation angle (° E of N):");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
-	m_solver_angle_solution = new QLabel("00");
+	m_solver_angle_solution = new QLabel("");
 	set_idle(m_solver_angle_solution);
 	solver_frame_layout->addWidget(m_solver_angle_solution, row, 2, 1, 2);
 
 	row++;
 	label = new QLabel("Frame height (°):");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
-	m_solver_fheight_solution = new QLabel("0° 00' 00.0\"");
+	m_solver_fheight_solution = new QLabel("");
 	set_ok(m_solver_fheight_solution);
 	solver_frame_layout->addWidget(m_solver_fheight_solution, row, 2, 1, 2);
 
 	row++;
 	label = new QLabel("Frame width (°):");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
-	m_solver_fwidth_solution = new QLabel("0° 00' 00.0\"");
+	m_solver_fwidth_solution = new QLabel("");
 	set_ok(m_solver_fwidth_solution);
 	solver_frame_layout->addWidget(m_solver_fwidth_solution, row, 2, 1, 2);
 
 	row++;
 	label = new QLabel("Frame Scale (\"/px):");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
-	m_solver_scale_solution = new QLabel("0");
+	m_solver_scale_solution = new QLabel("");
 	set_ok(m_solver_scale_solution);
 	solver_frame_layout->addWidget(m_solver_scale_solution, row, 2, 1, 2);
 
 	row++;
 	label = new QLabel("Parity (-1,1):");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
-	m_solver_parity_solution = new QLabel("0");
+	m_solver_parity_solution = new QLabel("");
 	set_ok(m_solver_parity_solution);
 	solver_frame_layout->addWidget(m_solver_parity_solution, row, 2, 1, 2);
 
@@ -125,17 +125,30 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	solver_frame_layout->addWidget(label, row, 0, 1, 4);
 
 	row++;
-	label = new QLabel("RA / Dec:");
+
+	QWidget *toolbar = new QWidget;
+	QHBoxLayout *toolbox = new QHBoxLayout(toolbar);
+	toolbar->setContentsMargins(0,0,0,0);
+	toolbox->setContentsMargins(0,0,0,0);
+	solver_frame_layout->addWidget(toolbar, row, 0, 1, 4);
+
+	label = new QLabel("RA (h) / Dec (°):");
 	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	solver_frame_layout->addWidget(label, row, 0, 1, 2);
+	toolbox->addWidget(label);
 
 	m_solver_ra_hint = new QLineEdit();
 	m_solver_ra_hint->setEnabled(false);
-	solver_frame_layout->addWidget(m_solver_ra_hint, row, 2);
+	toolbox->addWidget(m_solver_ra_hint);
 
 	m_solver_dec_hint = new QLineEdit();
 	m_solver_dec_hint->setEnabled(false);
-	solver_frame_layout->addWidget(m_solver_dec_hint, row, 3);
+	toolbox->addWidget(m_solver_dec_hint);
+
+	QPushButton *button = new QPushButton("Set");
+	button->setStyleSheet("min-width: 25px");
+	//button->setIcon(QIcon(":resource/calibrate.png"));
+	toolbox->addWidget(button);
+	connect(button , &QPushButton::clicked, this, &ImagerWindow::on_mount_set_coordinates_to_agent);
 
 	row++;
 	label = new QLabel("Search radius (°):");
@@ -144,7 +157,9 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	m_solver_radius_hint->setMaximum(180);
 	m_solver_radius_hint->setMinimum(0);
 	m_solver_radius_hint->setValue(0);
+	m_solver_radius_hint->setEnabled(false);
 	solver_frame_layout->addWidget(m_solver_radius_hint, row, 3);
+
 	//connect(m_solver_radius_hint, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
 
 	row++;
@@ -154,6 +169,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	m_solver_ds_hint->setMaximum(16);
 	m_solver_ds_hint->setMinimum(0);
 	m_solver_ds_hint->setValue(0);
+	m_solver_ds_hint->setEnabled(false);
 	solver_frame_layout->addWidget(m_solver_ds_hint, row, 3);
 	//connect(m_solver_radius_hint, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
 
@@ -164,6 +180,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	m_solver_parity_hint->setMaximum(16);
 	m_solver_parity_hint->setMinimum(0);
 	m_solver_parity_hint->setValue(0);
+	m_solver_parity_hint->setEnabled(false);
 	solver_frame_layout->addWidget(m_solver_parity_hint, row, 3);
 	//connect(m_solver_radius_hint, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
 
@@ -174,16 +191,18 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	m_solver_depth_hint->setMaximum(16);
 	m_solver_depth_hint->setMinimum(0);
 	m_solver_depth_hint->setValue(0);
+	m_solver_depth_hint->setEnabled(false);
 	solver_frame_layout->addWidget(m_solver_depth_hint, row, 3);
 	//connect(m_solver_radius_hint, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
 
 	row++;
-	label = new QLabel(" Time Limit (s):");
+	label = new QLabel("Time Limit (s):");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_solver_tlimit_hint = new QSpinBox();
 	m_solver_tlimit_hint->setMaximum(16);
 	m_solver_tlimit_hint->setMinimum(0);
 	m_solver_tlimit_hint->setValue(0);
+	m_solver_tlimit_hint->setEnabled(false);
 	solver_frame_layout->addWidget(m_solver_tlimit_hint, row, 3);
 	//connect(m_solver_radius_hint, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
 

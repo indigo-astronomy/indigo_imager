@@ -570,6 +570,40 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 	w->set_widget_state(w->m_solver_usedindex_solution, property->state);
 }
 
+void update_solver_agent_hints(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	double ra = 0;
+	double dec = 0;
+
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], AGENT_PLATESOLVER_HINTS_RA_ITEM_NAME)) {
+			ra = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_HINTS_DEC_ITEM_NAME)) {
+			dec = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_HINTS_RADIUS_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_solver_radius_hint);
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_HINTS_PARITY_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_solver_parity_hint);
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_HINTS_DOWNSAMPLE_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_solver_ds_hint);
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_HINTS_DEPTH_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_solver_depth_hint);
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_HINTS_CPU_LIMIT_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_solver_tlimit_hint);
+		}
+	}
+
+	QString ra_str(indigo_dtos(ra, "%d:%02d:%04.1f"));
+	w->set_enabled(w->m_solver_ra_hint, true);
+	w->set_lineedit_text(w->m_solver_ra_hint, ra_str);
+	w->set_widget_state(w->m_solver_ra_hint, property->state);
+
+	QString dec_str(indigo_dtos(dec, "%d:%02d:%04.1f"));
+	w->set_enabled(w->m_solver_dec_hint, true);
+	w->set_lineedit_text(w->m_solver_dec_hint, dec_str);
+	w->set_widget_state(w->m_solver_dec_hint, property->state);
+}
+
 static void update_ccd_temperature(ImagerWindow *w, indigo_property *property, QLineEdit *current_temp, QDoubleSpinBox *set_temp, bool update_value = false) {
 	indigo_debug("change %s", property->name);
 	for (int i = 0; i < property->count; i++) {
@@ -1688,6 +1722,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME)) {
 		update_solver_agent_wcs(this, property);
 	}
+	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_HINTS_PROPERTY_NAME)) {
+		update_solver_agent_hints(this, property);
+	}
 }
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
@@ -1878,6 +1915,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	// Solver Agent
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME)) {
 		update_solver_agent_wcs(this, property);
+	}
+	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_HINTS_PROPERTY_NAME)) {
+		update_solver_agent_hints(this, property);
 	}
 
 	properties.create(property);
@@ -2239,6 +2279,50 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		clear_combobox(m_solver_source_select2);
 		set_enabled(m_solver_exposure, false);
 		set_enabled(m_mount_use_solver_cbox, false);
+	}
+	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_solver_agent)) {
+		set_text(m_solver_ra_solution, "");
+		set_widget_state(m_solver_ra_solution, INDIGO_IDLE_STATE);
+		set_text(m_solver_dec_solution, "");
+		set_widget_state(m_solver_dec_solution, INDIGO_IDLE_STATE);
+		set_text(m_solver_angle_solution, "");
+		set_widget_state(m_solver_angle_solution, INDIGO_IDLE_STATE);
+		set_text(m_solver_fheight_solution, "");
+		set_widget_state(m_solver_fheight_solution, INDIGO_IDLE_STATE);
+		set_text(m_solver_fwidth_solution, "");
+		set_widget_state(m_solver_fwidth_solution, INDIGO_IDLE_STATE);
+		set_text(m_solver_scale_solution, "");
+		set_widget_state(m_solver_scale_solution, INDIGO_IDLE_STATE);
+		set_text(m_solver_parity_solution, "");
+		set_widget_state(m_solver_parity_solution, INDIGO_IDLE_STATE);
+		set_text(m_solver_usedindex_solution, "");
+		set_widget_state(m_solver_usedindex_solution, INDIGO_IDLE_STATE);
+	}
+	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_HINTS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_solver_agent)) {
+		set_lineedit_text(m_solver_ra_hint, "");
+		set_widget_state(m_solver_ra_hint, INDIGO_IDLE_STATE);
+		set_enabled(m_solver_ra_hint, false);
+
+		set_lineedit_text(m_solver_dec_hint, "");
+		set_widget_state(m_solver_dec_hint, INDIGO_IDLE_STATE);
+		set_enabled(m_solver_ra_hint, false);
+
+		set_spinbox_value(m_solver_radius_hint, 0);
+		set_enabled(m_solver_radius_hint, false);
+
+		set_spinbox_value(m_solver_ds_hint, 0);
+		set_enabled(m_solver_ds_hint, false);
+
+		set_spinbox_value(m_solver_parity_hint, 0);
+		set_enabled(m_solver_parity_hint, false);
+
+		set_spinbox_value(m_solver_depth_hint, 0);
+		set_enabled(m_solver_depth_hint, false);
+
+		set_spinbox_value(m_solver_tlimit_hint, 0);
+		set_enabled(m_solver_tlimit_hint, false);
 	}
 }
 
