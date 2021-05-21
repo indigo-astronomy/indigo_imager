@@ -576,3 +576,25 @@ void ImagerWindow::change_mount_agent_location(const char *agent, QString proper
 void ImagerWindow::change_mount_agent_abort(const char *agent) const {
 	indigo_change_switch_property_1(nullptr, agent, MOUNT_ABORT_MOTION_PROPERTY_NAME, MOUNT_ABORT_MOTION_ITEM_NAME, true);
 }
+
+void ImagerWindow::change_solver_agent_hints_property(const char *agent) const {
+	static const char *items[] = {
+		AGENT_PLATESOLVER_HINTS_RA_ITEM_NAME,
+		AGENT_PLATESOLVER_HINTS_DEC_ITEM_NAME,
+		AGENT_PLATESOLVER_HINTS_RADIUS_ITEM_NAME,
+		AGENT_PLATESOLVER_HINTS_PARITY_ITEM_NAME,
+		AGENT_PLATESOLVER_HINTS_DOWNSAMPLE_ITEM_NAME,
+		AGENT_PLATESOLVER_HINTS_DEPTH_ITEM_NAME,
+		AGENT_PLATESOLVER_HINTS_CPU_LIMIT_ITEM_NAME
+	};
+	static double values[7];
+	values[0] = indigo_stod((char*)m_solver_ra_hint->text().trimmed().toStdString().c_str());
+	values[1] = indigo_stod((char*)m_solver_dec_hint->text().trimmed().toStdString().c_str());
+	values[2] = (double)m_solver_radius_hint->value();
+	values[3] = (double)m_solver_parity_hint->value();
+	values[4] = (double)m_solver_ds_hint->value();
+	values[5] = (double)m_solver_depth_hint->value();
+	values[6] = (double)m_solver_tlimit_hint->value();
+
+	indigo_change_number_property(nullptr, agent, AGENT_PLATESOLVER_HINTS_PROPERTY_NAME, 7, items, values);
+}

@@ -49,6 +49,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_solver_source_select1 = new QComboBox();
 	solver_frame_layout->addWidget(m_solver_source_select1, row, 2, 1, 2);
+	// connect(m_solver_source_select1, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ImagerWindow::on_solver_sgent_source_selected);
 
 	row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -148,7 +149,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	button->setStyleSheet("min-width: 25px");
 	//button->setIcon(QIcon(":resource/calibrate.png"));
 	toolbox->addWidget(button);
-	connect(button , &QPushButton::clicked, this, &ImagerWindow::on_mount_set_coordinates_to_agent);
+	connect(button , &QPushButton::clicked, this, &ImagerWindow::on_solver_ra_dec_hints_changed);
 
 	row++;
 	label = new QLabel("Search radius (°):");
@@ -159,8 +160,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	m_solver_radius_hint->setValue(0);
 	m_solver_radius_hint->setEnabled(false);
 	solver_frame_layout->addWidget(m_solver_radius_hint, row, 3);
-
-	//connect(m_solver_radius_hint, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
+	connect(m_solver_radius_hint, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, QOverload<double>::of(&ImagerWindow::on_solver_hints_changed));
 
 	row++;
 	label = new QLabel("Downsample:");
@@ -171,7 +171,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	m_solver_ds_hint->setValue(0);
 	m_solver_ds_hint->setEnabled(false);
 	solver_frame_layout->addWidget(m_solver_ds_hint, row, 3);
-	//connect(m_solver_radius_hint, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
+	connect(m_solver_ds_hint, QOverload<int>::of(&QSpinBox::valueChanged), this, QOverload<int>::of(&ImagerWindow::on_solver_hints_changed));
 
 	row++;
 	label = new QLabel("Parity:");
@@ -182,7 +182,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	m_solver_parity_hint->setValue(0);
 	m_solver_parity_hint->setEnabled(false);
 	solver_frame_layout->addWidget(m_solver_parity_hint, row, 3);
-	//connect(m_solver_radius_hint, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
+	connect(m_solver_parity_hint, QOverload<int>::of(&QSpinBox::valueChanged), this, QOverload<int>::of(&ImagerWindow::on_solver_hints_changed));
 
 	row++;
 	label = new QLabel("Depth:");
@@ -193,7 +193,8 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	m_solver_depth_hint->setValue(0);
 	m_solver_depth_hint->setEnabled(false);
 	solver_frame_layout->addWidget(m_solver_depth_hint, row, 3);
-	//connect(m_solver_radius_hint, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
+	connect(m_solver_depth_hint, QOverload<int>::of(&QSpinBox::valueChanged), this, QOverload<int>::of(&ImagerWindow::on_solver_hints_changed));
+
 
 	row++;
 	label = new QLabel("Time Limit (s):");
@@ -204,19 +205,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	m_solver_tlimit_hint->setValue(0);
 	m_solver_tlimit_hint->setEnabled(false);
 	solver_frame_layout->addWidget(m_solver_tlimit_hint, row, 3);
-	//connect(m_solver_radius_hint, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_changed);
-
-/*
-	// Solver selection
-	row++;
-	QLabel *label = new QLabel("Focuser:");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	solver_frame_layout->addWidget(label, row, 0);
-	m_focuser_select = new QComboBox();
-	focuser_frame_layout->addWidget(m_focuser_select, row, 1, 1, 3);
-	connect(m_focuser_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focuser_selected);
-*/
-
+	connect(m_solver_tlimit_hint, QOverload<int>::of(&QSpinBox::valueChanged), this, QOverload<int>::of(&ImagerWindow::on_solver_hints_changed));
 }
 
 void ImagerWindow::on_solver_agent_selected(int index) {
@@ -229,5 +218,35 @@ void ImagerWindow::on_solver_agent_selected(int index) {
 		free(property);
 
 		indigo_enumerate_properties(nullptr, &INDIGO_ALL_PROPERTIES);
+	});
+}
+
+void ImagerWindow::on_solver_ra_dec_hints_changed(bool clicked) {
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_solver_agent(selected_agent);
+
+		change_solver_agent_hints_property(selected_agent);
+	});
+}
+
+void ImagerWindow::on_solver_hints_changed(int value) {
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_solver_agent(selected_agent);
+
+		change_solver_agent_hints_property(selected_agent);
+	});
+}
+
+void ImagerWindow::on_solver_hints_changed(double value) {
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_solver_agent(selected_agent);
+
+		change_solver_agent_hints_property(selected_agent);
 	});
 }

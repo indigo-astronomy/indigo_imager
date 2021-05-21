@@ -172,9 +172,9 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	toolbox->setContentsMargins(1,1,1,1);
 	telescope_frame_layout->addWidget(toolbar, row, 0, 1, 4);
 
-	m_mount_use_solver_cbox = new QCheckBox("Use Solver");
-	m_mount_use_solver_cbox->setEnabled(false);
-	toolbox->addWidget(m_mount_use_solver_cbox);
+	//m_mount_use_solver_cbox = new QCheckBox("Use Solver");
+	//m_mount_use_solver_cbox->setEnabled(false);
+	//toolbox->addWidget(m_mount_use_solver_cbox);
 	//connect(m_mount_guide_rate_cbox, &QPushButton::clicked, this, &ImagerWindow::on_mount_set_guide_rate);
 
 	m_mount_goto_button = new QPushButton("Goto");
@@ -319,6 +319,29 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	solve_frame_layout->addWidget(m_solver_source_select2, solve_row, 2, 1, 2);
 	//solver_source_select->setCurrentIndex(conf.focus_mode);
 	//connect(solver_source_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_inmage_source_selected);
+
+	solve_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	solve_frame_layout->addItem(spacer, solve_row, 0, 1, 4);
+
+	solve_row++;
+	toolbar = new QWidget;
+	toolbox = new QHBoxLayout(toolbar);
+	toolbar->setContentsMargins(0,0,0,0);
+	toolbox->setContentsMargins(0,0,0,0);
+	solve_frame_layout->addWidget(toolbar, solve_row, 0, 1, 4);
+
+	m_mount_solve_and_center_button = new QPushButton("Solve && Center");
+	m_mount_solve_and_center_button->setStyleSheet("min-width: 30px");
+	m_mount_solve_and_center_button->setIcon(QIcon(":resource/play.png"));
+	toolbox->addWidget(m_mount_solve_and_center_button);
+	connect(m_mount_solve_and_center_button, &QPushButton::clicked, this, &ImagerWindow::on_mount_goto);
+
+	m_mount_solve_and_sync_button = new QPushButton("Solve && Sync");
+	m_mount_solve_and_sync_button->setStyleSheet("min-width: 30px");
+	m_mount_solve_and_sync_button->setIcon(QIcon(":resource/calibrate.png"));
+	toolbox->addWidget(m_mount_solve_and_sync_button);
+	connect(m_mount_solve_and_sync_button , &QPushButton::clicked, this, &ImagerWindow::on_mount_sync);
 
 	QFrame *site_frame = new QFrame();
 	telescope_tabbar->addTab(site_frame, "Site");

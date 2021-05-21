@@ -1716,7 +1716,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		add_items_to_combobox_filtered(this, property, "Guider Agent", m_solver_source_select1, true);
 		add_items_to_combobox_filtered(this, property, "Imager Agent", m_solver_source_select2);
 		add_items_to_combobox_filtered(this, property, "Guider Agent", m_solver_source_select2, true);
-		set_enabled(m_mount_use_solver_cbox, true);
+		//set_enabled(m_mount_use_solver_cbox, true);
 		set_enabled(m_solver_exposure, true);
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME)) {
@@ -2278,7 +2278,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		clear_combobox(m_solver_source_select1);
 		clear_combobox(m_solver_source_select2);
 		set_enabled(m_solver_exposure, false);
-		set_enabled(m_mount_use_solver_cbox, false);
+		//set_enabled(m_mount_use_solver_cbox, false);
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_solver_agent)) {

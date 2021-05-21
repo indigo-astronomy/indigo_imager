@@ -298,6 +298,9 @@ public slots:
 	void on_mount_set_coordinates_to_agent();
 
 	void on_solver_agent_selected(int index);
+	void on_solver_ra_dec_hints_changed(bool clicked);
+	void on_solver_hints_changed(int value);
+	void on_solver_hints_changed(double value);
 
 	void on_tab_changed(int index);
 
@@ -591,7 +594,10 @@ private:
 	QLabel *m_gps_utc;
 	QLabel *m_gps_status;
 
-	QCheckBox *m_mount_use_solver_cbox;
+	QPushButton *m_mount_solve_and_center_button;
+	QPushButton *m_mount_solve_and_sync_button;
+
+	//QCheckBox *m_mount_use_solver_cbox;
 	QComboBox *m_solver_source_select2;
 	QDoubleSpinBox *m_solver_exposure;
 
@@ -695,6 +701,9 @@ private:
 	void change_mount_agent_equatorial(const char *agent, bool sync=false) const;
 	void change_mount_agent_abort(const char *agent) const;
 	void change_mount_agent_location(const char *agent, QString property_prefix) const;
+
+	void change_solver_agent_hints_property(const char *agent) const;
+
 	void mount_agent_set_switch_async(char *property, char *item, bool move);
 
 	void select_guider_data(guider_display_data show);
