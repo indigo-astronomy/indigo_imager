@@ -598,3 +598,34 @@ void ImagerWindow::change_solver_agent_hints_property(const char *agent) const {
 
 	indigo_change_number_property(nullptr, agent, AGENT_PLATESOLVER_HINTS_PROPERTY_NAME, 7, items, values);
 }
+
+
+void ImagerWindow::clear_solver_agent_releated_agents(const char *agent) const {
+	const int max_agents = 32;
+
+	static char *item_names[max_agents];
+	static bool values[max_agents] = {false};
+
+	indigo_property *p = properties.get((char*)agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
+	if (p == nullptr) return;
+
+	int count = p->count;
+
+	if (count > max_agents) {
+		count = max_agents;
+	}
+
+	for (int i = 0; i < count; i++) {
+		item_names[i] = p->items[i].name;
+	}
+
+	indigo_change_switch_property(nullptr, agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME, count, (const char **)item_names, values);
+}
+
+void ImagerWindow::set_agent_releated_agent(const char *agent, const char *related_agent, bool select) const {
+	indigo_change_switch_property_1(nullptr, agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME, related_agent, select);
+}
+
+void ImagerWindow::set_agent_solver_sync_action(const char *agent, char *item) const {
+	indigo_change_switch_property_1(nullptr, agent, AGENT_PLATESOLVER_SYNC_PROPERTY_NAME, item, true);
+}

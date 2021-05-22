@@ -705,8 +705,14 @@ private:
 	void change_mount_agent_location(const char *agent, QString property_prefix) const;
 
 	void change_solver_agent_hints_property(const char *agent) const;
+	void clear_solver_agent_releated_agents(const char *agent) const;
+
+	void set_agent_releated_agent(const char *agent, const char *related_agent, bool select) const;
+	void set_agent_solver_sync_action(const char *agent, char *item) const;
 
 	void mount_agent_set_switch_async(char *property, char *item, bool move);
+
+	void trigger_solve_and_sync(bool recenter);
 
 	void select_guider_data(guider_display_data show);
 
