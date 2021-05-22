@@ -296,6 +296,8 @@ public slots:
 	void on_mount_coord_source_selected(int index);
 	void on_mount_sync_time(int state);
 	void on_mount_set_coordinates_to_agent();
+	void on_mount_solve_and_center();
+	void on_mount_solve_and_sync();
 
 	void on_solver_agent_selected(int index);
 	void on_solver_ra_dec_hints_changed(bool clicked);

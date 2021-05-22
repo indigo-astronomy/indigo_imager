@@ -22,6 +22,7 @@
 #include <QLCDNumber>
 
 #include <image_preview_lut.h>
+#include <utils.h>
 
 void write_conf();
 
@@ -335,13 +336,13 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_mount_solve_and_center_button->setStyleSheet("min-width: 30px");
 	m_mount_solve_and_center_button->setIcon(QIcon(":resource/play.png"));
 	toolbox->addWidget(m_mount_solve_and_center_button);
-	connect(m_mount_solve_and_center_button, &QPushButton::clicked, this, &ImagerWindow::on_mount_goto);
+	connect(m_mount_solve_and_center_button, &QPushButton::clicked, this, &ImagerWindow::on_mount_solve_and_center);
 
 	m_mount_solve_and_sync_button = new QPushButton("Solve && Sync");
 	m_mount_solve_and_sync_button->setStyleSheet("min-width: 30px");
 	m_mount_solve_and_sync_button->setIcon(QIcon(":resource/calibrate.png"));
 	toolbox->addWidget(m_mount_solve_and_sync_button);
-	connect(m_mount_solve_and_sync_button , &QPushButton::clicked, this, &ImagerWindow::on_mount_sync);
+	connect(m_mount_solve_and_sync_button , &QPushButton::clicked, this, &ImagerWindow::on_mount_solve_and_sync);
 
 	QFrame *site_frame = new QFrame();
 	telescope_tabbar->addTab(site_frame, "Site");
@@ -701,5 +702,64 @@ void ImagerWindow::on_mount_gps_selected(int index) {
 
 		static bool values[] = { true };
 		indigo_change_switch_property(nullptr, selected_agent, FILTER_GPS_LIST_PROPERTY_NAME, 1, items, values);
+	});
+}
+
+
+void ImagerWindow::on_mount_solve_and_center() {
+	QtConcurrent::run([=]() {
+		static char selected_image_agent[INDIGO_NAME_SIZE];
+		static char selected_mount_agent[INDIGO_NAME_SIZE];
+		static char selected_solver_agent[INDIGO_NAME_SIZE];
+		static char domain_name[INDIGO_NAME_SIZE];
+
+		get_selected_solver_agent(selected_solver_agent);
+		// if() do checks
+
+		QString solver_source = m_solver_source_select2->currentText();
+		if (solver_source == "None") return;
+		strncpy(selected_image_agent, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
+		get_indigo_device_domain(domain_name, selected_solver_agent);
+		add_indigo_device_domain(selected_image_agent, domain_name);
+
+		get_selected_mount_agent(selected_mount_agent);
+		remove_indigo_device_domain(selected_mount_agent, 1);
+
+		indigo_log("[SELECTED] %s image_agent = '%s'\n", __FUNCTION__, selected_image_agent);
+		indigo_log("[SELECTED] %s mount_agent = '%s'\n", __FUNCTION__, selected_mount_agent);
+		indigo_log("[SELECTED] %s solver_agent = '%s'\n", __FUNCTION__, selected_solver_agent);
+
+		// Setup everything here!
+
+		change_ccd_exposure_property(selected_image_agent, m_solver_exposure);
+	});
+}
+
+void ImagerWindow::on_mount_solve_and_sync() {
+	QtConcurrent::run([=]() {
+		static char selected_image_agent[INDIGO_NAME_SIZE];
+		static char selected_mount_agent[INDIGO_NAME_SIZE];
+		static char selected_solver_agent[INDIGO_NAME_SIZE];
+		static char domain_name[INDIGO_NAME_SIZE];
+
+		get_selected_solver_agent(selected_solver_agent);
+		// if() do checks
+
+		QString solver_source = m_solver_source_select2->currentText();
+		if (solver_source == "None") return;
+		strncpy(selected_image_agent, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
+		get_indigo_device_domain(domain_name, selected_solver_agent);
+		add_indigo_device_domain(selected_image_agent, domain_name);
+
+		get_selected_mount_agent(selected_mount_agent);
+		remove_indigo_device_domain(selected_mount_agent, 1);
+
+		indigo_log("[SELECTED] %s image_agent = '%s'\n", __FUNCTION__, selected_image_agent);
+		indigo_log("[SELECTED] %s mount_agent = '%s'\n", __FUNCTION__, selected_mount_agent);
+		indigo_log("[SELECTED] %s solver_agent = '%s'\n", __FUNCTION__, selected_solver_agent);
+
+		// Setup everything here!
+
+		change_ccd_exposure_property(selected_image_agent, m_solver_exposure);
 	});
 }
