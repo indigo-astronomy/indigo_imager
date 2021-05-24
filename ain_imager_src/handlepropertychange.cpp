@@ -826,7 +826,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	double FWHM = 0, HFD = 0;
 
 	indigo_item *exposure_item = properties.get_item(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME, AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME);
-	if (exposure_item) exp_time = exposure_item->number.value;
+	if (exposure_item) exp_time = exposure_item->number.target;
 
 	indigo_property *stats_p;
 	indigo_property *start_p;
@@ -1006,12 +1006,12 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 }
 
 void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
-	double exp_elapsed, exp_time;
+	double exp_elapsed, exp_time = 1;
 
 	if (property->state == INDIGO_BUSY_STATE) {
-		exp_time = w->m_exposure_time->value();
 		for (int i = 0; i < property->count; i++) {
 			if (client_match_item(&property->items[i], CCD_EXPOSURE_ITEM_NAME)) {
+				exp_time = property->items[i].number.target;
 				exp_elapsed = exp_time - property->items[i].number.value;
 			}
 		}
