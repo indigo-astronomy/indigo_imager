@@ -55,55 +55,68 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	solver_frame_layout->addItem(spacer, row, 0, 1, 4);
 
+	QFont font;
 	row++;
 	label = new QLabel("WCS solution:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	solver_frame_layout->addWidget(label, row, 0, 1, 4);
 
 	row++;
-	label = new QLabel("Frame center RA (hours):");
+	label = new QLabel("Frame center RA :");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_solver_ra_solution = new QLabel("");
+	m_solver_ra_solution->setAlignment(Qt::AlignCenter);
+	font = m_solver_ra_solution->font();
+	font.setPointSize(font.pointSize() + 2);
+	m_solver_ra_solution->setFont(font);
 	set_ok(m_solver_ra_solution);
 	solver_frame_layout->addWidget(m_solver_ra_solution, row, 2, 1, 2);
 
 	row++;
-	label = new QLabel("Frame center Dec (°):");
+	label = new QLabel("Frame center Dec :");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_solver_dec_solution = new QLabel("");
+	m_solver_dec_solution->setAlignment(Qt::AlignCenter);
+	font = m_solver_dec_solution->font();
+	font.setPointSize(font.pointSize() + 2);
+	m_solver_dec_solution->setFont(font);
 	set_ok(m_solver_dec_solution);
 	solver_frame_layout->addWidget(m_solver_dec_solution, row, 2, 1, 2);
 
 	row++;
-	label = new QLabel("Rotation angle (° E of N):");
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	solver_frame_layout->addItem(spacer, row, 0, 1, 4);
+
+	row++;
+	label = new QLabel("Rotation angle (E of N):");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_solver_angle_solution = new QLabel("");
 	set_idle(m_solver_angle_solution);
 	solver_frame_layout->addWidget(m_solver_angle_solution, row, 2, 1, 2);
 
 	row++;
-	label = new QLabel("Frame height (°):");
+	label = new QLabel("Frame height:");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_solver_fheight_solution = new QLabel("");
 	set_ok(m_solver_fheight_solution);
 	solver_frame_layout->addWidget(m_solver_fheight_solution, row, 2, 1, 2);
 
 	row++;
-	label = new QLabel("Frame width (°):");
+	label = new QLabel("Frame width:");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_solver_fwidth_solution = new QLabel("");
 	set_ok(m_solver_fwidth_solution);
 	solver_frame_layout->addWidget(m_solver_fwidth_solution, row, 2, 1, 2);
 
 	row++;
-	label = new QLabel("Frame Scale (\"/px):");
+	label = new QLabel("Frame Scale:");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_solver_scale_solution = new QLabel("");
 	set_ok(m_solver_scale_solution);
 	solver_frame_layout->addWidget(m_solver_scale_solution, row, 2, 1, 2);
 
 	row++;
-	label = new QLabel("Parity (-1,1):");
+	label = new QLabel("Parity:");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_solver_parity_solution = new QLabel("");
 	set_ok(m_solver_parity_solution);

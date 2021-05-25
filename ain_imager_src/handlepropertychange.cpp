@@ -549,8 +549,10 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 	w->set_text(w->m_solver_angle_solution, angle_str);
 	w->set_widget_state(w->m_solver_angle_solution, property->state);
 
-	QString scale_str = QString::number(scale * 3600); // we want it in "
-	w->set_text(w->m_solver_scale_solution, scale_str);
+	char scale_s[64];
+	snprintf(scale_s, 64, "%.2f \"/px", scale * 3600); // we want it in "
+	//QString scale_str = QString(scale_s); // we want it in "
+	w->set_text(w->m_solver_scale_solution, scale_s);
 	w->set_widget_state(w->m_solver_scale_solution, property->state);
 
 	QString width_str(indigo_dtos(width, "%d° %02d' %04.1f\""));
@@ -562,6 +564,13 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 	w->set_widget_state(w->m_solver_fheight_solution, property->state);
 
 	QString parity_str = QString::number(parity);
+	if (parity == 1) {
+		parity_str = QString("positive");
+	} else if (parity == -1) {
+		parity_str = QString("negative");
+	} else {
+		parity_str = QString("N/A");
+	}
 	w->set_text(w->m_solver_parity_solution, parity_str);
 	w->set_widget_state(w->m_solver_parity_solution, property->state);
 
