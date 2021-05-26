@@ -130,7 +130,7 @@ void get_current_output_dir(char *output_dir) {
 }
 
 void get_indigo_device_domain(char *device_domain, const char *device_name) {
-	char *at = strrchr(device_name, '@');
+	char *at = strrchr((char*)device_name, '@');
 	if (at && at[1] != '\0') {
 		strncpy(device_domain, &at[2], INDIGO_NAME_SIZE);
 	} else {
