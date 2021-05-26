@@ -17,6 +17,7 @@ DEFINES += QT_DEPRECATED_WARNINGS QZEROCONF_STATIC
 
 SOURCES += \
 	main.cpp \
+	changeproperty.cpp \
 	qservicemodel.cpp \
 	capture_tab.cpp \
 	focuser_tab.cpp \
@@ -28,7 +29,6 @@ SOURCES += \
 	indigoclient.cpp \
 	qindigoservers.cpp \
 	propertycache.cpp \
-	changeproperty.cpp \
 	handlepropertychange.cpp \
 	focusgraph.cpp \
 	blobpreview.cpp \

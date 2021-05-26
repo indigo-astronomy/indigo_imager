@@ -539,14 +539,17 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 
 	w->set_widget_state(w->m_mount_solve_and_center_button, property->state);
 	w->set_widget_state(w->m_mount_solve_and_sync_button, property->state);
+	w->set_widget_state(w->m_solve_button, property->state);
 	if (property->state == INDIGO_OK_STATE) {
 		w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-green.png\"> Solved");
 		w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-green.png\"> Solved");
 		w->set_enabled(w->m_mount_solve_and_center_button, true);
 		w->set_enabled(w->m_mount_solve_and_sync_button, true);
+		w->set_enabled(w->m_solve_button, true);
 	} else if (property->state == INDIGO_ALERT_STATE) {
 		w->set_enabled(w->m_mount_solve_and_center_button, true);
 		w->set_enabled(w->m_mount_solve_and_sync_button, true);
+		w->set_enabled(w->m_solve_button, true);
 		if (scale == 0) {
 			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-red.png\"> No solution");
 			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-red.png\"> No solution");
@@ -557,6 +560,7 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 	} else if (property->state == INDIGO_BUSY_STATE) {
 		w->set_enabled(w->m_mount_solve_and_center_button, false);
 		w->set_enabled(w->m_mount_solve_and_sync_button, false);
+		w->set_enabled(w->m_solve_button, false);
 		if (scale == 0) {
 			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Solving frame");
 			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Solving frame");
@@ -1750,7 +1754,8 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		add_items_to_combobox_filtered(this, property, "Imager Agent", m_solver_source_select2);
 		add_items_to_combobox_filtered(this, property, "Guider Agent", m_solver_source_select2, true);
 		//set_enabled(m_mount_use_solver_cbox, true);
-		set_enabled(m_solver_exposure, true);
+		set_enabled(m_solver_exposure1, true);
+		set_enabled(m_solver_exposure2, true);
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME)) {
 		update_solver_agent_wcs(this, property);
@@ -2322,7 +2327,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		clear_combobox(m_solver_source_select1);
 		clear_combobox(m_solver_source_select2);
-		set_enabled(m_solver_exposure, false);
+		set_enabled(m_solver_exposure1, false);
+		set_enabled(m_solver_exposure2, false);
 		//set_enabled(m_mount_use_solver_cbox, false);
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME) ||

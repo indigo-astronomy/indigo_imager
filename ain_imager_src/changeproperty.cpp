@@ -18,6 +18,7 @@
 
 #include <imagerwindow.h>
 #include <propertycache.h>
+#include <utils.h>
 
 void ImagerWindow::change_ccd_frame_property(const char *agent) const {
 	static const char *items[] = {
@@ -628,4 +629,76 @@ void ImagerWindow::set_agent_releated_agent(const char *agent, const char *relat
 
 void ImagerWindow::set_agent_solver_sync_action(const char *agent, char *item) const {
 	indigo_change_switch_property_1(nullptr, agent, AGENT_PLATESOLVER_SYNC_PROPERTY_NAME, item, true);
+}
+
+void ImagerWindow::trigger_solve() {
+	QtConcurrent::run([=]() {
+		static char selected_image_agent[INDIGO_NAME_SIZE];
+		static char selected_mount_agent[INDIGO_NAME_SIZE];
+		static char selected_solver_agent[INDIGO_NAME_SIZE];
+		static char selected_solver_source[INDIGO_NAME_SIZE];
+		static char domain_name[INDIGO_NAME_SIZE];
+
+		get_selected_solver_agent(selected_solver_agent);
+		// if() do checks
+
+		QString solver_source = m_solver_source_select1->currentText();
+		if (solver_source == "None" || solver_source == "") return;
+		strncpy(selected_image_agent, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
+		strncpy(selected_solver_source, selected_image_agent, INDIGO_NAME_SIZE);
+		get_indigo_device_domain(domain_name, selected_solver_agent);
+		add_indigo_device_domain(selected_image_agent, domain_name);
+
+		get_selected_mount_agent(selected_mount_agent);
+		remove_indigo_device_domain(selected_mount_agent, 1);
+
+		indigo_debug("[SELECTED] %s image_agent = '%s'\n", __FUNCTION__, selected_image_agent);
+		indigo_debug("[SELECTED] %s mount_agent = '%s'\n", __FUNCTION__, selected_mount_agent);
+		indigo_debug("[SELECTED] %s solver_agent = '%s'\n", __FUNCTION__, selected_solver_agent);
+
+		set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME);
+
+		set_agent_releated_agent(selected_solver_agent, selected_mount_agent, true);
+		set_agent_releated_agent(selected_solver_agent, selected_solver_source, true);
+
+		change_ccd_exposure_property(selected_image_agent, m_solver_exposure1);
+	});
+}
+
+void ImagerWindow::trigger_solve_and_sync(bool recenter) {
+	QtConcurrent::run([=]() {
+		static char selected_image_agent[INDIGO_NAME_SIZE];
+		static char selected_mount_agent[INDIGO_NAME_SIZE];
+		static char selected_solver_agent[INDIGO_NAME_SIZE];
+		static char selected_solver_source[INDIGO_NAME_SIZE];
+		static char domain_name[INDIGO_NAME_SIZE];
+
+		get_selected_solver_agent(selected_solver_agent);
+		// if() do checks
+
+		QString solver_source = m_solver_source_select2->currentText();
+		if (solver_source == "None" || solver_source == "") return;
+		strncpy(selected_image_agent, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
+		strncpy(selected_solver_source, selected_image_agent, INDIGO_NAME_SIZE);
+		get_indigo_device_domain(domain_name, selected_solver_agent);
+		add_indigo_device_domain(selected_image_agent, domain_name);
+
+		get_selected_mount_agent(selected_mount_agent);
+		remove_indigo_device_domain(selected_mount_agent, 1);
+
+		indigo_debug("[SELECTED] %s image_agent = '%s'\n", __FUNCTION__, selected_image_agent);
+		indigo_debug("[SELECTED] %s mount_agent = '%s'\n", __FUNCTION__, selected_mount_agent);
+		indigo_debug("[SELECTED] %s solver_agent = '%s'\n", __FUNCTION__, selected_solver_agent);
+
+		if (recenter) {
+			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_CENTER_ITEM_NAME);
+		} else {
+			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_SYNC_ITEM_NAME);
+		}
+
+		set_agent_releated_agent(selected_solver_agent, selected_mount_agent, true);
+		set_agent_releated_agent(selected_solver_agent, selected_solver_source, true);
+
+		change_ccd_exposure_property(selected_image_agent, m_solver_exposure2);
+	});
 }

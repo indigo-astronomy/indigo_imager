@@ -16,10 +16,15 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "imagerwindow.h"
-#include "propertycache.h"
-#include "conf.h"
-#include "widget_state.h"
+//#include "imagerwindow.h"
+//#include "propertycache.h"
+//#include "conf.h"
+//#include "widget_state.h"
+//#include "utils.h"
+
+#include <imagerwindow.h>
+#include <propertycache.h>
+#include <conf.h>
 
 void write_conf();
 
@@ -50,6 +55,22 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	m_solver_source_select1 = new QComboBox();
 	solver_frame_layout->addWidget(m_solver_source_select1, row, 2, 1, 2);
 	// connect(m_solver_source_select1, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ImagerWindow::on_solver_sgent_source_selected);
+
+	row++;
+	// Exposure time
+	label = new QLabel("Exposure time (s):");
+	solver_frame_layout->addWidget(label, row, 0, 1, 2);
+	m_solver_exposure1 = new QDoubleSpinBox();
+	m_solver_exposure1->setMaximum(10000);
+	m_solver_exposure1->setMinimum(0);
+	m_solver_exposure1->setValue(1);
+	solver_frame_layout->addWidget(m_solver_exposure1, row, 2);
+
+	m_solve_button = new QPushButton("Solve");
+	m_solve_button->setStyleSheet("min-width: 30px");
+	m_solve_button->setIcon(QIcon(":resource/play.png"));
+	solver_frame_layout->addWidget(m_solve_button, row, 3);
+	connect(m_solve_button, &QPushButton::clicked, this, &ImagerWindow::on_trigger_solve);
 
 	row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -262,4 +283,8 @@ void ImagerWindow::on_solver_hints_changed(double value) {
 
 		change_solver_agent_hints_property(selected_agent);
 	});
+}
+
+void ImagerWindow::on_trigger_solve() {
+	trigger_solve();
 }

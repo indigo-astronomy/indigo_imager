@@ -16,13 +16,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "imagerwindow.h"
-#include "propertycache.h"
-#include "conf.h"
+#include <imagerwindow.h>
+#include <propertycache.h>
+#include <conf.h>
 #include <QLCDNumber>
-
-#include <image_preview_lut.h>
-#include <utils.h>
 
 void write_conf();
 
@@ -314,11 +311,11 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	// Exposure time
 	label = new QLabel("Exposure time (s):");
 	solve_frame_layout->addWidget(label, solve_row, 0, 1, 2);
-	m_solver_exposure = new QDoubleSpinBox();
-	m_solver_exposure->setMaximum(10000);
-	m_solver_exposure->setMinimum(0);
-	m_solver_exposure->setValue(1);
-	solve_frame_layout->addWidget(m_solver_exposure, solve_row, 2, 1, 2);
+	m_solver_exposure2 = new QDoubleSpinBox();
+	m_solver_exposure2->setMaximum(10000);
+	m_solver_exposure2->setMinimum(0);
+	m_solver_exposure2->setValue(1);
+	solve_frame_layout->addWidget(m_solver_exposure2, solve_row, 2, 1, 2);
 
 	solve_row++;
 	label = new QLabel("Image source:");
@@ -719,42 +716,4 @@ void ImagerWindow::on_mount_solve_and_center() {
 
 void ImagerWindow::on_mount_solve_and_sync() {
 	trigger_solve_and_sync(false);
-}
-
-void ImagerWindow::trigger_solve_and_sync(bool recenter) {
-	QtConcurrent::run([=]() {
-		static char selected_image_agent[INDIGO_NAME_SIZE];
-		static char selected_mount_agent[INDIGO_NAME_SIZE];
-		static char selected_solver_agent[INDIGO_NAME_SIZE];
-		static char selected_solver_source[INDIGO_NAME_SIZE];
-		static char domain_name[INDIGO_NAME_SIZE];
-
-		get_selected_solver_agent(selected_solver_agent);
-		// if() do checks
-
-		QString solver_source = m_solver_source_select2->currentText();
-		if (solver_source == "None") return;
-		strncpy(selected_image_agent, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
-		strncpy(selected_solver_source, selected_image_agent, INDIGO_NAME_SIZE);
-		get_indigo_device_domain(domain_name, selected_solver_agent);
-		add_indigo_device_domain(selected_image_agent, domain_name);
-
-		get_selected_mount_agent(selected_mount_agent);
-		remove_indigo_device_domain(selected_mount_agent, 1);
-
-		indigo_log("[SELECTED] %s image_agent = '%s'\n", __FUNCTION__, selected_image_agent);
-		indigo_log("[SELECTED] %s mount_agent = '%s'\n", __FUNCTION__, selected_mount_agent);
-		indigo_log("[SELECTED] %s solver_agent = '%s'\n", __FUNCTION__, selected_solver_agent);
-
-		if (recenter) {
-			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_CENTER_ITEM_NAME);
-		} else {
-			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_SYNC_ITEM_NAME);
-		}
-
-		set_agent_releated_agent(selected_solver_agent, selected_mount_agent, true);
-		set_agent_releated_agent(selected_solver_agent, selected_solver_source, true);
-
-		change_ccd_exposure_property(selected_image_agent, m_solver_exposure);
-	});
 }

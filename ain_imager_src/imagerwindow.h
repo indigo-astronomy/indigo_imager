@@ -298,6 +298,7 @@ public slots:
 	void on_mount_set_coordinates_to_agent();
 	void on_mount_solve_and_center();
 	void on_mount_solve_and_sync();
+	void on_trigger_solve();
 
 	void on_solver_agent_selected(int index);
 	void on_solver_ra_dec_hints_changed(bool clicked);
@@ -601,12 +602,14 @@ private:
 
 	//QCheckBox *m_mount_use_solver_cbox;
 	QComboBox *m_solver_source_select2;
-	QDoubleSpinBox *m_solver_exposure;
+	QDoubleSpinBox *m_solver_exposure2;
 	QLabel *m_solver_status_label2;
 
 	//Solver agent
 	QComboBox *m_agent_solver_select;
 	QComboBox *m_solver_source_select1;
+	QDoubleSpinBox *m_solver_exposure1;
+	QPushButton *m_solve_button;
 	QLabel *m_solver_ra_solution;
 	QLabel *m_solver_dec_solution;
 	QLabel *m_solver_angle_solution;
@@ -714,6 +717,7 @@ private:
 	void mount_agent_set_switch_async(char *property, char *item, bool move);
 
 	void trigger_solve_and_sync(bool recenter);
+	void trigger_solve();
 
 	void select_guider_data(guider_display_data show);
 
