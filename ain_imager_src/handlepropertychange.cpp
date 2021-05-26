@@ -537,6 +537,35 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 		}
 	}
 
+	w->set_widget_state(w->m_mount_solve_and_center_button, property->state);
+	w->set_widget_state(w->m_mount_solve_and_sync_button, property->state);
+	if (property->state == INDIGO_OK_STATE) {
+		w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-green.png\"> Solved");
+		w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-green.png\"> Solved");
+		w->set_enabled(w->m_mount_solve_and_center_button, true);
+		w->set_enabled(w->m_mount_solve_and_sync_button, true);
+	} else if (property->state == INDIGO_ALERT_STATE) {
+		w->set_enabled(w->m_mount_solve_and_center_button, true);
+		w->set_enabled(w->m_mount_solve_and_sync_button, true);
+		if (scale == 0) {
+			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-red.png\"> No solution");
+			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-red.png\"> No solution");
+		} else {
+			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-red.png\"> Sync failed");
+			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-red.png\"> Sync failed");
+		}
+	} else if (property->state == INDIGO_BUSY_STATE) {
+		w->set_enabled(w->m_mount_solve_and_center_button, false);
+		w->set_enabled(w->m_mount_solve_and_sync_button, false);
+		if (scale == 0) {
+			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Solving frame");
+			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Solving frame");
+		} else {
+			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Syncing telescope");
+			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Syncing telescope");
+		}
+	}
+
 	QString ra_str(indigo_dtos(ra, "%dh %02d' %04.1f\""));
 	w->set_text(w->m_solver_ra_solution, ra_str);
 	w->set_widget_state(w->m_solver_ra_solution, property->state);
@@ -545,23 +574,18 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 	w->set_text(w->m_solver_dec_solution, dec_str);
 	w->set_widget_state(w->m_solver_dec_solution, property->state);
 
-	QString angle_str(indigo_dtos(angle, "%d° %02d' %04.1f\""));
-	w->set_text(w->m_solver_angle_solution, angle_str);
+	char buf_str[64];
+	snprintf(buf_str, 64, "%.3f°", angle);
+	w->set_text(w->m_solver_angle_solution, buf_str);
 	w->set_widget_state(w->m_solver_angle_solution, property->state);
 
-	char scale_s[64];
-	snprintf(scale_s, 64, "%.2f \"/px", scale * 3600); // we want it in "
-	//QString scale_str = QString(scale_s); // we want it in "
-	w->set_text(w->m_solver_scale_solution, scale_s);
+	snprintf(buf_str, 64, "%.3f\"/px", scale * 3600); // we want it in "
+	w->set_text(w->m_solver_scale_solution, buf_str);
 	w->set_widget_state(w->m_solver_scale_solution, property->state);
 
-	QString width_str(indigo_dtos(width, "%d° %02d' %04.1f\""));
-	w->set_text(w->m_solver_fwidth_solution, width_str);
-	w->set_widget_state(w->m_solver_fwidth_solution, property->state);
-
-	QString height_str(indigo_dtos(height, "%d° %02d' %04.1f\""));
-	w->set_text(w->m_solver_fheight_solution, height_str);
-	w->set_widget_state(w->m_solver_fheight_solution, property->state);
+	snprintf(buf_str, 64, "%.3f° x %.3f°", width, height);
+	w->set_text(w->m_solver_fsize_solution, buf_str);
+	w->set_widget_state(w->m_solver_fsize_solution, property->state);
 
 	QString parity_str = QString::number(parity);
 	if (parity == 1) {
@@ -2309,16 +2333,16 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_widget_state(m_solver_dec_solution, INDIGO_IDLE_STATE);
 		set_text(m_solver_angle_solution, "");
 		set_widget_state(m_solver_angle_solution, INDIGO_IDLE_STATE);
-		set_text(m_solver_fheight_solution, "");
-		set_widget_state(m_solver_fheight_solution, INDIGO_IDLE_STATE);
-		set_text(m_solver_fwidth_solution, "");
-		set_widget_state(m_solver_fwidth_solution, INDIGO_IDLE_STATE);
+		set_text(m_solver_fsize_solution, "");
+		set_widget_state(m_solver_fsize_solution, INDIGO_IDLE_STATE);
 		set_text(m_solver_scale_solution, "");
 		set_widget_state(m_solver_scale_solution, INDIGO_IDLE_STATE);
 		set_text(m_solver_parity_solution, "");
 		set_widget_state(m_solver_parity_solution, INDIGO_IDLE_STATE);
 		set_text(m_solver_usedindex_solution, "");
 		set_widget_state(m_solver_usedindex_solution, INDIGO_IDLE_STATE);
+		set_text(m_solver_status_label1, "<img src=\":resource/led-grey.png\"> Idle");
+		set_text(m_solver_status_label2, "<img src=\":resource/led-grey.png\"> Idle");
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_HINTS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_solver_agent)) {

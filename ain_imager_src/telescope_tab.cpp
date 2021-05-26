@@ -304,6 +304,13 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	solve_frame->setContentsMargins(0, 0, 0, 0);
 
 	int solve_row = 0;
+
+	m_solver_status_label2 = new QLabel("");
+	m_solver_status_label2->setTextFormat(Qt::RichText);
+	m_solver_status_label2->setText("<img src=\":resource/led-grey.png\"> Idle");
+	solve_frame_layout->addWidget(m_solver_status_label2, solve_row, 0, 1, 4);
+
+	solve_row++;
 	// Exposure time
 	label = new QLabel("Exposure time (s):");
 	solve_frame_layout->addWidget(label, solve_row, 0, 1, 2);

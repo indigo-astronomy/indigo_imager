@@ -602,6 +602,7 @@ private:
 	//QCheckBox *m_mount_use_solver_cbox;
 	QComboBox *m_solver_source_select2;
 	QDoubleSpinBox *m_solver_exposure;
+	QLabel *m_solver_status_label2;
 
 	//Solver agent
 	QComboBox *m_agent_solver_select;
@@ -610,10 +611,10 @@ private:
 	QLabel *m_solver_dec_solution;
 	QLabel *m_solver_angle_solution;
 	QLabel *m_solver_scale_solution;
-	QLabel *m_solver_fwidth_solution;
-	QLabel *m_solver_fheight_solution;
+	QLabel *m_solver_fsize_solution;
 	QLabel *m_solver_parity_solution;
 	QLabel *m_solver_usedindex_solution;
+	QLabel *m_solver_status_label1;
 
 	QLineEdit *m_solver_ra_hint;
 	QLineEdit *m_solver_dec_hint;

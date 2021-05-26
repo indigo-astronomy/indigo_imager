@@ -59,7 +59,14 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	row++;
 	label = new QLabel("WCS solution:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	solver_frame_layout->addWidget(label, row, 0, 1, 4);
+	solver_frame_layout->addWidget(label, row, 0, 1, 2);
+
+	//row++;
+	m_solver_status_label1 = new QLabel("");
+	m_solver_status_label1->setTextFormat(Qt::RichText);
+	m_solver_status_label1->setText("<img src=\":resource/led-grey.png\"> Idle");
+	//set_idle(m_solver_status_label);
+	solver_frame_layout->addWidget(m_solver_status_label1, row, 2, 1, 2);
 
 	row++;
 	label = new QLabel("Frame center RA :");
@@ -88,6 +95,13 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	solver_frame_layout->addItem(spacer, row, 0, 1, 4);
 
 	row++;
+	label = new QLabel("Frame size:");
+	solver_frame_layout->addWidget(label, row, 0, 1, 2);
+	m_solver_fsize_solution = new QLabel("");
+	set_ok(m_solver_fsize_solution);
+	solver_frame_layout->addWidget(m_solver_fsize_solution, row, 2, 1, 2);
+
+	row++;
 	label = new QLabel("Rotation angle (E of N):");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_solver_angle_solution = new QLabel("");
@@ -95,21 +109,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	solver_frame_layout->addWidget(m_solver_angle_solution, row, 2, 1, 2);
 
 	row++;
-	label = new QLabel("Frame height:");
-	solver_frame_layout->addWidget(label, row, 0, 1, 2);
-	m_solver_fheight_solution = new QLabel("");
-	set_ok(m_solver_fheight_solution);
-	solver_frame_layout->addWidget(m_solver_fheight_solution, row, 2, 1, 2);
-
-	row++;
-	label = new QLabel("Frame width:");
-	solver_frame_layout->addWidget(label, row, 0, 1, 2);
-	m_solver_fwidth_solution = new QLabel("");
-	set_ok(m_solver_fwidth_solution);
-	solver_frame_layout->addWidget(m_solver_fwidth_solution, row, 2, 1, 2);
-
-	row++;
-	label = new QLabel("Frame Scale:");
+	label = new QLabel("Scale:");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_solver_scale_solution = new QLabel("");
 	set_ok(m_solver_scale_solution);
