@@ -636,11 +636,10 @@ void ImagerWindow::trigger_solve() {
     static char selected_mount_agent[INDIGO_NAME_SIZE];
     static char selected_solver_agent[INDIGO_NAME_SIZE];
     static char selected_solver_source[INDIGO_NAME_SIZE];
-    static char domain_name[INDIGO_NAME_SIZE];
+    char domain_name[INDIGO_NAME_SIZE];
 
     get_selected_solver_agent(selected_solver_agent);
     get_indigo_device_domain(domain_name, selected_solver_agent);
-    get_selected_solver_agent(selected_solver_agent);
     // if() do checks
 
     QString solver_source = m_solver_source_select1->currentText();
@@ -652,9 +651,12 @@ void ImagerWindow::trigger_solve() {
     get_selected_mount_agent(selected_mount_agent);
     remove_indigo_device_domain(selected_mount_agent, 1);
 
-    indigo_debug("[SELECTED] %s image_agent = '%s'\n", __FUNCTION__, selected_image_agent);
-    indigo_debug("[SELECTED] %s mount_agent = '%s'\n", __FUNCTION__, selected_mount_agent);
-    indigo_debug("[SELECTED] %s solver_agent = '%s'\n", __FUNCTION__, selected_solver_agent);
+    indigo_log("[SELECTED] %s image_agent = '%s'\n", __FUNCTION__, selected_image_agent);
+    indigo_log("[SELECTED] %s solver_source = '%s'\n", __FUNCTION__, selected_solver_source);
+    indigo_log("[SELECTED] %s mount_agent = '%s'\n", __FUNCTION__, selected_mount_agent);
+    indigo_log("[SELECTED] %s solver_agent = '%s'\n", __FUNCTION__, selected_solver_agent);
+    indigo_log("[SELECTED] %s domain_name = '%s'\n", __FUNCTION__, domain_name);
+
     QtConcurrent::run([&]() {
 		set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME);
 
@@ -670,11 +672,10 @@ void ImagerWindow::trigger_solve_and_sync(bool recenter) {
     static char selected_mount_agent[INDIGO_NAME_SIZE];
     static char selected_solver_agent[INDIGO_NAME_SIZE];
     static char selected_solver_source[INDIGO_NAME_SIZE];
-    static char domain_name[INDIGO_NAME_SIZE];
+    char domain_name[INDIGO_NAME_SIZE];
 
     get_selected_solver_agent(selected_solver_agent);
     get_indigo_device_domain(domain_name, selected_solver_agent);
-    get_selected_solver_agent(selected_solver_agent);
     // if() do checks
 
     QString solver_source = m_solver_source_select2->currentText();
@@ -686,9 +687,11 @@ void ImagerWindow::trigger_solve_and_sync(bool recenter) {
     get_selected_mount_agent(selected_mount_agent);
     remove_indigo_device_domain(selected_mount_agent, 1);
 
-    indigo_debug("[SELECTED] %s image_agent = '%s'\n", __FUNCTION__, selected_image_agent);
-    indigo_debug("[SELECTED] %s mount_agent = '%s'\n", __FUNCTION__, selected_mount_agent);
-    indigo_debug("[SELECTED] %s solver_agent = '%s'\n", __FUNCTION__, selected_solver_agent);
+    indigo_log("[SELECTED] %s image_agent = '%s'\n", __FUNCTION__, selected_image_agent);
+    indigo_log("[SELECTED] %s solver_source = '%s'\n", __FUNCTION__, selected_solver_source);
+    indigo_log("[SELECTED] %s mount_agent = '%s'\n", __FUNCTION__, selected_mount_agent);
+    indigo_log("[SELECTED] %s solver_agent = '%s'\n", __FUNCTION__, selected_solver_agent);
+    indigo_log("[SELECTED] %s domain_name = '%s'\n", __FUNCTION__, domain_name);
 
     QtConcurrent::run([&]() {
 		if (recenter) {
