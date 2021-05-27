@@ -81,6 +81,8 @@ typedef struct {
 	guider_display_data guider_display;
 	bool guider_save_log;
 	bool indigo_save_log;
+	char solver_image_source1[INDIGO_NAME_SIZE];
+	char solver_image_source2[INDIGO_NAME_SIZE];
 	char unused[100];
 } conf_t;
 

@@ -54,7 +54,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_solver_source_select1 = new QComboBox();
 	solver_frame_layout->addWidget(m_solver_source_select1, row, 2, 1, 2);
-	// connect(m_solver_source_select1, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ImagerWindow::on_solver_sgent_source_selected);
+	connect(m_solver_source_select1, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ImagerWindow::on_image_source1_selected);
 
 	row++;
 	// Exposure time
@@ -287,4 +287,11 @@ void ImagerWindow::on_solver_hints_changed(double value) {
 
 void ImagerWindow::on_trigger_solve() {
 	trigger_solve();
+}
+
+void ImagerWindow::on_image_source1_selected(int index) {
+	QString solver_source = m_solver_source_select1->currentText();
+	strncpy(conf.solver_image_source1, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
+	indigo_debug("%s -> %s\n", __FUNCTION__, conf.solver_image_source1);
+	write_conf();
 }

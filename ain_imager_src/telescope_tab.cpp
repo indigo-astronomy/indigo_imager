@@ -322,8 +322,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	solve_frame_layout->addWidget(label, solve_row, 0, 1, 2);
 	m_solver_source_select2 = new QComboBox();
 	solve_frame_layout->addWidget(m_solver_source_select2, solve_row, 2, 1, 2);
-	//solver_source_select->setCurrentIndex(conf.focus_mode);
-	//connect(solver_source_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_inmage_source_selected);
+	connect(m_solver_source_select2, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_image_source2_selected);
 
 	solve_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -716,4 +715,11 @@ void ImagerWindow::on_mount_solve_and_center() {
 
 void ImagerWindow::on_mount_solve_and_sync() {
 	trigger_solve_and_sync(false);
+}
+
+void ImagerWindow::on_image_source2_selected(int index) {
+	QString solver_source = m_solver_source_select2->currentText();
+	strncpy(conf.solver_image_source2, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
+	indigo_debug("%s -> %s\n", __FUNCTION__, conf.solver_image_source2);
+	write_conf();
 }

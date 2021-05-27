@@ -1749,11 +1749,16 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 
 	// Astrometry Agent
 	if (client_match_device_property(property, selected_solver_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
+		m_solver_source_select1->blockSignals(true);
+		m_solver_source_select2->blockSignals(true);
 		add_items_to_combobox_filtered(this, property, "Imager Agent", m_solver_source_select1);
 		add_items_to_combobox_filtered(this, property, "Guider Agent", m_solver_source_select1, true);
 		add_items_to_combobox_filtered(this, property, "Imager Agent", m_solver_source_select2);
 		add_items_to_combobox_filtered(this, property, "Guider Agent", m_solver_source_select2, true);
-		//set_enabled(m_mount_use_solver_cbox, true);
+		set_combobox_current_text(m_solver_source_select1, conf.solver_image_source1);
+		set_combobox_current_text(m_solver_source_select2, conf.solver_image_source2);
+		m_solver_source_select1->blockSignals(false);
+		m_solver_source_select2->blockSignals(false);
 		set_enabled(m_solver_exposure1, true);
 		set_enabled(m_solver_exposure2, true);
 	}

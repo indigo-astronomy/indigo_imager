@@ -299,11 +299,13 @@ public slots:
 	void on_mount_solve_and_center();
 	void on_mount_solve_and_sync();
 	void on_trigger_solve();
+	void on_image_source2_selected(int index);
 
 	void on_solver_agent_selected(int index);
 	void on_solver_ra_dec_hints_changed(bool clicked);
 	void on_solver_hints_changed(int value);
 	void on_solver_hints_changed(double value);
+	void on_image_source1_selected(int index);
 
 	void on_tab_changed(int index);
 
