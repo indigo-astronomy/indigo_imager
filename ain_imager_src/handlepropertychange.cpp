@@ -200,19 +200,21 @@ void update_cooler_onoff(ImagerWindow *w, indigo_property *property) {
 
 void update_mount_ra_dec(ImagerWindow *w, indigo_property *property, bool update_input=false) {
 	indigo_debug("change %s", property->name);
-	double ra = 0;
-	double dec = 0;
+	double ra = 0, ra_tgt = 0;
+	double dec = 0, dec_tgt = 0;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], MOUNT_EQUATORIAL_COORDINATES_RA_ITEM_NAME)) {
 			ra = property->items[i].number.value;
+			ra_tgt = property->items[i].number.target;
 		} else if (client_match_item(&property->items[i], MOUNT_EQUATORIAL_COORDINATES_DEC_ITEM_NAME)) {
 			dec = property->items[i].number.value;
+			dec_tgt = property->items[i].number.target;
 		}
 	}
 
 	if (update_input) {
-		w->set_text(w->m_mount_ra_input, indigo_dtos(ra, "%d:%02d:%04.1f"));
-		w->set_text(w->m_mount_dec_input, indigo_dtos(dec, "%d:%02d:%04.1f"));
+		w->set_text(w->m_mount_ra_input, indigo_dtos(ra_tgt, "%d:%02d:%04.1f"));
+		w->set_text(w->m_mount_dec_input, indigo_dtos(dec_tgt, "%d:%02d:%04.1f"));
 	}
 
 	QString ra_str(indigo_dtos(ra, "%d: %02d:%04.1f"));
