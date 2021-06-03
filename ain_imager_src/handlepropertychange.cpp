@@ -543,8 +543,13 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 	w->set_widget_state(w->m_mount_solve_and_sync_button, property->state);
 	w->set_widget_state(w->m_solve_button, property->state);
 	if (property->state == INDIGO_OK_STATE) {
-		w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-green.png\"> Solved");
-		w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-green.png\"> Solved");
+		if (scale != 0) {
+			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-green.png\"> Solved");
+			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-green.png\"> Solved");
+		} else {
+			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-grey.png\"> Idle");
+			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-grey.png\"> Idle");
+		}
 		w->set_enabled(w->m_mount_solve_and_center_button, true);
 		w->set_enabled(w->m_mount_solve_and_sync_button, true);
 		w->set_enabled(w->m_solve_button, true);
