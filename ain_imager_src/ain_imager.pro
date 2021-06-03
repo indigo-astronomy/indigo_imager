@@ -32,6 +32,7 @@ SOURCES += \
 	handlepropertychange.cpp \
 	focusgraph.cpp \
 	blobpreview.cpp \
+	../object_data/indigo_cat_data.c \
 	../common_src/utils.cpp \
 	../common_src/imagepreview.cpp \
 	../common_src/imageviewer.cpp \
@@ -97,6 +98,7 @@ HEADERS += \
 	conf.h \
 	widget_state.h \
 	blobpreview.h \
+	../object_data/indigo_cat_data.h \
 	../common_src/utils.h \
 	../common_src/image_preview_lut.h \
 	../common_src/imagepreview.h \
@@ -115,7 +117,7 @@ include(../external/qtzeroconf/qtzeroconf.pri)
 #    PKGCONFIG += indigo
 #}
 
-INCLUDEPATH += "../indigo/indigo_libs" + "../external" + "../external/qtzeroconf/" + "../common_src" + "../ain_imager_src"
+INCLUDEPATH += "../indigo/indigo_libs" + "../external" + "../external/qtzeroconf/" + "../common_src" + "../object_data" + "../ain_imager_src"
 
 unix {
 	INCLUDEPATH += "../external/libjpeg"

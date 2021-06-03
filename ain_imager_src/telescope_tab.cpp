@@ -19,6 +19,7 @@
 #include <imagerwindow.h>
 #include <propertycache.h>
 #include <conf.h>
+#include <indigo_cat_data.h>
 #include <QLCDNumber>
 
 void write_conf();
@@ -290,6 +291,28 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	slew_frame_layout->addWidget(m_mount_park_cbox, slew_row, slew_col);
 	connect(m_mount_park_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_park);
 
+	QFrame *obj_frame = new QFrame();
+	telescope_tabbar->addTab(obj_frame, "Object");
+
+	QGridLayout *obj_frame_layout = new QGridLayout();
+	obj_frame_layout->setAlignment(Qt::AlignTop);
+	obj_frame_layout->setColumnStretch(0, 2);
+	obj_frame_layout->setColumnStretch(2, 0);
+	obj_frame->setLayout(obj_frame_layout);
+	obj_frame->setFrameShape(QFrame::StyledPanel);
+	obj_frame->setContentsMargins(0, 0, 0, 0);
+
+	int obj_row = 0;
+	m_object_search_line = new QLineEdit();
+	obj_frame_layout->addWidget(m_object_search_line, obj_row, 0);
+	connect(m_object_search_line, &QLineEdit::textEdited, this, &ImagerWindow::on_object_search_changed);
+	connect(m_object_search_line, &QLineEdit::returnPressed, this, &ImagerWindow::on_object_search_entered);
+
+	obj_row++;
+	m_object_list = new QListWidget();
+	m_object_list->setStyleSheet("QListWidget {border: 1px solid #353535;}");
+	obj_frame_layout->addWidget(m_object_list, obj_row, 0);
+	connect(m_object_list, &QListWidget::itemSelectionChanged, this, &ImagerWindow::on_object_selected);
 
 	QFrame *solve_frame = new QFrame();
 	telescope_tabbar->addTab(solve_frame, "Solver");
@@ -722,4 +745,59 @@ void ImagerWindow::on_image_source2_selected(int index) {
 	strncpy(conf.solver_image_source2, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
 	indigo_debug("%s -> %s\n", __FUNCTION__, conf.solver_image_source2);
 	write_conf();
+}
+
+void ImagerWindow::on_object_search_changed(const QString &obj_name) {
+	QString data;
+	QString name;
+	char obj_name_c[1000];
+	m_object_list->clear();
+	strcpy(obj_name_c, obj_name.toUtf8().data());
+
+	if (obj_name_c[0] == '\0') return;
+
+	indigo_dso_entry *dso = &indigo_dso_data[0];
+	while (dso->id) {
+		if (nullptr != strcasestr(dso->id, obj_name_c) || nullptr != strcasestr(dso->name, obj_name_c)) {
+			data = QString(dso->id);
+			name = QString(dso->id) + ", " + dso->name;
+
+			QListWidgetItem *item = new QListWidgetItem(name);
+			item->setData(Qt::UserRole, data);
+			m_object_list->addItem(item);
+
+			indigo_debug("%s -> %s = %s\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
+		}
+		dso++;
+	}
+	indigo_debug("%s -> %s\n", __FUNCTION__, obj_name.toUtf8().constData());
+}
+
+void ImagerWindow::on_object_search_entered() {
+	if (m_object_list->count() == 0) return;
+	m_object_list->setCurrentRow(0);
+	m_object_list->setFocus();
+	indigo_log("%s -> 0\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_object_selected() {
+	QList<QListWidgetItem *> selected = m_object_list->selectedItems();
+	if (selected.isEmpty()) return;
+	QListWidgetItem *object = selected.at(0);
+	QString data = object->data(Qt::UserRole).toString();
+
+	char obj_id_c[1000];
+	strcpy(obj_id_c, data.toUtf8().data());
+
+	indigo_dso_entry *dso = &indigo_dso_data[0];
+	while (dso->id) {
+		if (!strcmp(dso->id, obj_id_c)) {
+			set_text(m_mount_ra_input, indigo_dtos(dso->ra, "%d:%02d:%04.1f"));
+			set_text(m_mount_dec_input, indigo_dtos(dso->dec, "%d:%02d:%04.1f"));
+			break;
+		}
+		dso++;
+	}
+
+	indigo_log("%s -> %s = %s\n", __FUNCTION__, object->text().toUtf8().constData(), data.toUtf8().constData());
 }

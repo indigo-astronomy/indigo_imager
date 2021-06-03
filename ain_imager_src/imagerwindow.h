@@ -306,6 +306,9 @@ public slots:
 	void on_solver_hints_changed(int value);
 	void on_solver_hints_changed(double value);
 	void on_image_source1_selected(int index);
+	void on_object_selected();
+	void on_object_search_changed(const QString &obj_name);
+	void on_object_search_entered();
 
 	void on_tab_changed(int index);
 
@@ -598,6 +601,8 @@ private:
 	QLabel *m_gps_elevation;
 	QLabel *m_gps_utc;
 	QLabel *m_gps_status;
+	QListWidget* m_object_list;
+	QLineEdit* m_object_search_line;
 
 	QPushButton *m_mount_solve_and_center_button;
 	QPushButton *m_mount_solve_and_sync_button;
