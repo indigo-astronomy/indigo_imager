@@ -758,14 +758,15 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 
 	indigo_dso_entry *dso = &indigo_dso_data[0];
 	while (dso->id) {
-		if (nullptr != strcasestr(dso->id, obj_name_c) || nullptr != strcasestr(dso->name, obj_name_c)) {
+		if (
+			QString(dso->id).contains(obj_name_c, Qt::CaseInsensitive) ||
+			QString(dso->name).contains(obj_name_c, Qt::CaseInsensitive)
+		) {
 			data = QString(dso->id);
 			name = QString(dso->id) + ", " + dso->name;
-
 			QListWidgetItem *item = new QListWidgetItem(name);
 			item->setData(Qt::UserRole, data);
 			m_object_list->addItem(item);
-
 			indigo_debug("%s -> %s = %s\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
 		}
 		dso++;
@@ -777,7 +778,7 @@ void ImagerWindow::on_object_search_entered() {
 	if (m_object_list->count() == 0) return;
 	m_object_list->setCurrentRow(0);
 	m_object_list->setFocus();
-	indigo_log("%s -> 0\n", __FUNCTION__);
+	indigo_debug("%s -> 0\n", __FUNCTION__);
 }
 
 void ImagerWindow::on_object_selected() {
@@ -798,6 +799,5 @@ void ImagerWindow::on_object_selected() {
 		}
 		dso++;
 	}
-
-	indigo_log("%s -> %s = %s\n", __FUNCTION__, object->text().toUtf8().constData(), data.toUtf8().constData());
+	indigo_debug("%s -> %s = %s\n", __FUNCTION__, object->text().toUtf8().constData(), data.toUtf8().constData());
 }
