@@ -752,10 +752,10 @@ void ImagerWindow::on_image_source2_selected(int index) {
 void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 	QString data;
 	QString name;
-	char obj_name_c[INDIGO_NAME_SIZE];
-	char tooltip_c[INDIGO_NAME_SIZE];
+	char obj_name_c[INDIGO_VALUE_SIZE];
+	char tooltip_c[INDIGO_VALUE_SIZE];
 	m_object_list->clear();
-	strncpy(obj_name_c, obj_name.toUtf8().data(), INDIGO_NAME_SIZE);
+	strncpy(obj_name_c, obj_name.toUtf8().data(), INDIGO_VALUE_SIZE);
 
 	if (obj_name_c[0] == '\0') return;
 	indigo_dso_entry *dso = &indigo_dso_data[0];
@@ -773,8 +773,8 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 			QListWidgetItem *item = new QListWidgetItem(name);
 			snprintf(
 				tooltip_c,
-				INDIGO_NAME_SIZE,
-				"<b>%s</b> (%s)<p>Apparent size: %.2f' x %.2f'<br>Apparent mag: %.2fm<br>Names: %s</p>\n",
+				INDIGO_VALUE_SIZE,
+				"<b>%s</b> (%s)<p>Apparent size: %.1f' x %.1f'<br>Apparent magnitude: %.1f<sup>m</sup><br><nobr>Names: %s</nobr></p>\n",
 				dso->id,
 				dso->type,
 				dso->r1, dso->r2,
@@ -799,8 +799,8 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 			QListWidgetItem *item = new QListWidgetItem(name);
 			snprintf(
 				tooltip_c,
-				INDIGO_NAME_SIZE,
-				"<b>HIP%d</b> (Star)<p>Apparent mag: %.2fm<br>Names: %s</p>\n",
+				INDIGO_VALUE_SIZE,
+				"<b>HIP%d</b> (Star)<p>Apparent magnitude: %.1f<sup>m</sup><br><nobr>Names: %s</nobr></p>\n",
 				star->hip,
 				star->mag,
 				star->name
