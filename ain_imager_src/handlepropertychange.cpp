@@ -577,6 +577,14 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 		}
 	}
 
+	if (property->state == INDIGO_BUSY_STATE) {
+		w->set_enabled(w->m_solver_ra_hint, false);
+		w->set_enabled(w->m_solver_dec_hint, false);
+	} else {
+		w->set_enabled(w->m_solver_ra_hint, true);
+		w->set_enabled(w->m_solver_dec_hint, true);
+	}
+
 	QString ra_str(indigo_dtos(ra, "%dh %02d' %04.1f\""));
 	w->set_text(w->m_solver_ra_solution, ra_str);
 	w->set_widget_state(w->m_solver_ra_solution, property->state);
@@ -638,12 +646,10 @@ void update_solver_agent_hints(ImagerWindow *w, indigo_property *property) {
 	}
 
 	QString ra_str(indigo_dtos(ra, "%d:%02d:%04.1f"));
-	w->set_enabled(w->m_solver_ra_hint, true);
 	w->set_lineedit_text(w->m_solver_ra_hint, ra_str);
 	w->set_widget_state(w->m_solver_ra_hint, property->state);
 
 	QString dec_str(indigo_dtos(dec, "%d:%02d:%04.1f"));
-	w->set_enabled(w->m_solver_dec_hint, true);
 	w->set_lineedit_text(w->m_solver_dec_hint, dec_str);
 	w->set_widget_state(w->m_solver_dec_hint, property->state);
 }
