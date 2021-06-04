@@ -159,9 +159,11 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	telescope_frame_layout->addWidget(label, row, 0, 1, 2);
 
 	m_mount_ra_input = new QLineEdit();
+	m_mount_ra_input->setPlaceholderText("hh:mm:ss");
 	telescope_frame_layout->addWidget(m_mount_ra_input, row, 2);
 
 	m_mount_dec_input = new QLineEdit();
+	m_mount_dec_input->setPlaceholderText("dd:mm:ss");
 	telescope_frame_layout->addWidget(m_mount_dec_input, row, 3);
 
 	row++;
@@ -306,6 +308,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	label = new QLabel("Search object: ");
 	obj_frame_layout->addWidget(label, obj_row, 0);
 	m_object_search_line = new QLineEdit();
+	m_object_search_line->setPlaceholderText("E.g. M42, Ain, Vega ...");
 	obj_frame_layout->addWidget(m_object_search_line, obj_row, 1);
 	connect(m_object_search_line, &QLineEdit::textEdited, this, &ImagerWindow::on_object_search_changed);
 	connect(m_object_search_line, &QLineEdit::returnPressed, this, &ImagerWindow::on_object_search_entered);

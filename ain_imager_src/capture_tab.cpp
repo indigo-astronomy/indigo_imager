@@ -109,6 +109,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	label = new QLabel("Object:");
 	capture_frame_layout->addWidget(label, row, 0);
 	m_object_name = new QLineEdit();
+	m_object_name->setPlaceholderText("Used as file prefix e.g. M16, M33 ...");
 	capture_frame_layout->addWidget(m_object_name, row, 1, 1, 3);
 
 	row++;
