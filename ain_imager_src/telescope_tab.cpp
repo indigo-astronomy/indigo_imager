@@ -763,8 +763,13 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 			QString(dso->name).contains(obj_name_c, Qt::CaseInsensitive)
 		) {
 			data = QString(dso->id);
-			name = QString(dso->id) + ", " + dso->name;
+			if (dso->name[0] == '\0') {
+				name = QString(dso->id);
+			} else {
+				name = QString(dso->id) + ", " + dso->name;
+			}
 			QListWidgetItem *item = new QListWidgetItem(name);
+			item->setToolTip(dso->type);
 			item->setData(Qt::UserRole, data);
 			m_object_list->addItem(item);
 			indigo_debug("%s -> %s = %s\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
