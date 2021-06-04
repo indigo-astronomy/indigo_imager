@@ -296,23 +296,26 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 
 	QGridLayout *obj_frame_layout = new QGridLayout();
 	obj_frame_layout->setAlignment(Qt::AlignTop);
-	obj_frame_layout->setColumnStretch(0, 2);
-	obj_frame_layout->setColumnStretch(2, 0);
+	//obj_frame_layout->setColumnStretch(0, 1);
+	//obj_frame_layout->setColumnStretch(1, 3);
 	obj_frame->setLayout(obj_frame_layout);
 	obj_frame->setFrameShape(QFrame::StyledPanel);
 	obj_frame->setContentsMargins(0, 0, 0, 0);
 
 	int obj_row = 0;
+	label = new QLabel("Search object: ");
+	obj_frame_layout->addWidget(label, obj_row, 0);
 	m_object_search_line = new QLineEdit();
-	obj_frame_layout->addWidget(m_object_search_line, obj_row, 0);
+	obj_frame_layout->addWidget(m_object_search_line, obj_row, 1);
 	connect(m_object_search_line, &QLineEdit::textEdited, this, &ImagerWindow::on_object_search_changed);
 	connect(m_object_search_line, &QLineEdit::returnPressed, this, &ImagerWindow::on_object_search_entered);
 
 	obj_row++;
 	m_object_list = new QListWidget();
 	m_object_list->setStyleSheet("QListWidget {border: 1px solid #353535;}");
-	obj_frame_layout->addWidget(m_object_list, obj_row, 0);
+	obj_frame_layout->addWidget(m_object_list, obj_row, 0, 1, 2);
 	connect(m_object_list, &QListWidget::itemSelectionChanged, this, &ImagerWindow::on_object_selected);
+	connect(m_object_list, &QListWidget::itemClicked, this, &ImagerWindow::on_object_clicked);
 
 	QFrame *solve_frame = new QFrame();
 	telescope_tabbar->addTab(solve_frame, "Solver");
@@ -324,7 +327,6 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	solve_frame->setContentsMargins(0, 0, 0, 0);
 
 	int solve_row = 0;
-
 	m_solver_status_label2 = new QLabel("");
 	m_solver_status_label2->setTextFormat(Qt::RichText);
 	m_solver_status_label2->setText("<img src=\":resource/led-grey.png\"> Idle");
@@ -750,12 +752,12 @@ void ImagerWindow::on_image_source2_selected(int index) {
 void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 	QString data;
 	QString name;
-	char obj_name_c[1000];
+	char obj_name_c[INDIGO_NAME_SIZE];
+	char tooltip_c[INDIGO_NAME_SIZE];
 	m_object_list->clear();
-	strcpy(obj_name_c, obj_name.toUtf8().data());
+	strncpy(obj_name_c, obj_name.toUtf8().data(), INDIGO_NAME_SIZE);
 
 	if (obj_name_c[0] == '\0') return;
-
 	indigo_dso_entry *dso = &indigo_dso_data[0];
 	while (dso->id) {
 		if (
@@ -769,7 +771,17 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 				name = QString(dso->id) + ", " + dso->name;
 			}
 			QListWidgetItem *item = new QListWidgetItem(name);
-			item->setToolTip(dso->type);
+			snprintf(
+				tooltip_c,
+				INDIGO_NAME_SIZE,
+				"<b>%s</b> (%s)<p>Apparent size: %.2f' x %.2f'<br>Apparent mag: %.2fm<br>Names: %s</p>\n",
+				dso->id,
+				dso->type,
+				dso->r1, dso->r2,
+				dso->mag,
+				dso->name
+			);
+			item->setToolTip(tooltip_c);
 			item->setData(Qt::UserRole, data);
 			m_object_list->addItem(item);
 			indigo_debug("%s -> %s = %s\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
@@ -785,7 +797,15 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 			data = QString(star->name);
 			name = QString(star->name);
 			QListWidgetItem *item = new QListWidgetItem(name);
-			item->setToolTip("Star " + QString().number(star->mag) +"m");
+			snprintf(
+				tooltip_c,
+				INDIGO_NAME_SIZE,
+				"<b>HIP%d</b> (Star)<p>Apparent mag: %.2fm<br>Names: %s</p>\n",
+				star->hip,
+				star->mag,
+				star->name
+			);
+			item->setToolTip(tooltip_c);
 			item->setData(Qt::UserRole, data);
 			m_object_list->addItem(item);
 			indigo_debug("%s -> %s = %s\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
@@ -800,6 +820,11 @@ void ImagerWindow::on_object_search_entered() {
 	m_object_list->setCurrentRow(0);
 	m_object_list->setFocus();
 	indigo_debug("%s -> 0\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_object_clicked(QListWidgetItem *item) {
+	Q_UNUSED(item);
+	on_object_selected();
 }
 
 void ImagerWindow::on_object_selected() {

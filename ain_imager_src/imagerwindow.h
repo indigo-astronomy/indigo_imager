@@ -307,6 +307,7 @@ public slots:
 	void on_solver_hints_changed(double value);
 	void on_image_source1_selected(int index);
 	void on_object_selected();
+	void on_object_clicked(QListWidgetItem *item);
 	void on_object_search_changed(const QString &obj_name);
 	void on_object_search_entered();
 
