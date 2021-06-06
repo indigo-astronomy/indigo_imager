@@ -48,7 +48,7 @@ sub hms2d($) {
         return (($hms[0]+$hms[1]/60+$hms[2]/3600)*15);
 }
 
-my %types = (
+my %types2 = (
     '*' => 'Star',
     '**' => 'Double star',
     '*Ass' => 'Association of stars',
@@ -72,12 +72,55 @@ my %types = (
     'Other' => 'Other classification'
 );
 
+my %types = (
+    '*' => 'Star',
+    '**' => 'Double star',
+    '*Ass' => 'ASSOCIATION_OF_STARS',
+    'OCl' => 'OPEN_CLUSTER',
+    'GCl' => 'GLOBULAR_CLUSTER',
+    'Cl+N' => 'STAR_CLUSTER_NEBULA',
+    'G' => 'GALAXY',
+    'GPair' => 'GALAXY_PAIR',
+    'GTrpl' => 'GALAXY_TRIPLET',
+    'GGroup' => 'GROUP_OF_GALAXIES',
+    'PN' => 'PLANETARY_NEBULA',
+    'HII' => 'HII_REGION',
+    'DrkN' => 'DARK_NEBULA',
+    'EmN' => 'EMISSION_NEBULA',
+    'Neb' => 'NEBULA',
+    'RfN' => 'REFLECTION_NEBULA',
+    'SNR' => 'SUPERNOVA_REMNANT',
+    'Nova' => 'NOVA_STAR',
+    'NonEx' => 'NONEXISTANT',
+    'Dup' => 'DUPLICATE',
+    'Other' => 'OTHER_CLASSIFICATION'
+);
+
+my %extra_names = (
+	"NGC1952" => "Crab nebula",
+	"NGC2573" => "Polarissima Australis",
+	"NGC3172" => "Polarissima Borealis",
+	"NGC3918" => "Blue planetary nebula",
+	"NGC4435" => "The Eyes",
+	"NGC4438" => "The Eyes",
+	"NGC4567" => "Siamese Twins",
+	"NGC6523" => "Hourglass nebula",
+	"NGC6960" => "Filamentary nebula",
+	"NGC6992" => "Network nebula",
+	"NGC6995" => "Network nebula"
+);
+
+
 my $file = $ARGV[0] or die "Need to get CSV file on the command line\n";
 
 my $sum = 0;
 open(my $data, '<', $file) or die "Could not open '$file' $!\n";
 
 print "indigo_dso_entry indigo_dso_data[] = {\n";
+
+print "\t{ \"Sh 2-276\", EMISSION_NEBULA, 5.45, -3.96, 5.0, 600.0, 600.0, 0.0, \"Barnard's Loop\" },\n";
+print "\t{ \"Cl Melotte 22\", OPEN_CLUSTER, 3.79, 24.11, 1.6, 110, 110, 0, \"M45,  Seven Sisters, The Pleiades\" },\n";
+print "\t{ \"C41\", OPEN_CLUSTER, 4.45, 15.87, 0.5, 330, 330, 0, \"Melotte 25, The Hyades\" },\n";
 
 while (my $line = <$data>) {
 	chomp $line;
@@ -102,7 +145,7 @@ while (my $line = <$data>) {
 
 	if (defined $f[1]) {
 		my $type = $types{$f[1]};
-		print "\"$type\"";
+		print "$type";
 	}
 	print ", ";
 
@@ -123,8 +166,37 @@ while (my $line = <$data>) {
 	print ", ";
 
 	# magnitude
+	my $mag_sum = 0;
+	my $mag_count = 0;
+
+	if (defined $f[8] && $f[8] ne "") {
+		$mag_sum = $mag_sum + $f[8];
+		$mag_count++;
+	}
+
 	if (defined $f[9] && $f[9] ne "") {
-		print "$f[9]";
+		$mag_sum = $mag_sum + $f[9];
+		$mag_count++;
+	}
+
+	if (defined $f[10] && $f[10] ne "") {
+		$mag_sum = $mag_sum + $f[10];
+		$mag_count++;
+	}
+
+	if (defined $f[11] && $f[11] ne "") {
+		$mag_sum = $mag_sum + $f[11];
+		$mag_count++;
+	}
+
+	if (defined $f[12] && $f[12] ne "") {
+		$mag_sum = $mag_sum + $f[12];
+		$mag_count++;
+	}
+
+
+	if ($mag_count > 0) {
+		printf "%.2f", $mag_sum/$mag_count;
 	} else {
 		print "0.0";
 	}
@@ -173,10 +245,15 @@ while (my $line = <$data>) {
 		$names = $names . "IC$f[20], ";
 	}
 
-	if (defined $f[23]) {
+	if (defined $f[23] && $f[23] ne "") {
 		$f[23]=~ s/,/, /g;
 		$names = $names . "$f[23], ";
 	}
+
+	if (defined $extra_names{$f[0]}) {
+		$names = $names . "$extra_names{$f[0]}, ";
+	}
+
 	$names =~ s/,\s+$//;
 	$names =~ s/,\s+$//;
 	print "\"$names\" },\n";
