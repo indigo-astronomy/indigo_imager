@@ -779,7 +779,7 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 				INDIGO_VALUE_SIZE,
 				"<b>%s</b> (%s)<p>Apparent size: %.1f' x %.1f'<br>Apparent magnitude: %.1f<sup>m</sup><br><nobr>Names: %s</nobr></p>\n",
 				dso->id,
-				dso->type,
+				indigo_dso_type_description[dso->type],
 				dso->r1, dso->r2,
 				dso->mag,
 				dso->name
