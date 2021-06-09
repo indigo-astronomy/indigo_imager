@@ -462,6 +462,19 @@ void ImagerWindow::on_tab_changed(int index) {
 			m_guider_viewer->setVisible(true);
 			m_imager_viewer->setVisible(false);
 		}
+	} else if (index == 4) {
+		QString solver_source = m_solver_source_select1->currentText();
+		if (solver_source.startsWith("Guider Agent") && m_visible_viewer != m_guider_viewer) {
+			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_guider_viewer);
+			m_visible_viewer = m_guider_viewer;
+			m_guider_viewer->setVisible(true);
+			m_imager_viewer->setVisible(false);
+		} else if (m_visible_viewer != m_imager_viewer) {
+			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_imager_viewer);
+			m_visible_viewer = m_imager_viewer;
+			m_imager_viewer->setVisible(true);
+			m_guider_viewer->setVisible(false);
+		}
 	}
 	if (index == 1) m_imager_viewer->showSelection(true);
 	else m_imager_viewer->showSelection(false);
