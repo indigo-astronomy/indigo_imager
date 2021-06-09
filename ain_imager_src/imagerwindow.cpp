@@ -446,6 +446,19 @@ bool ImagerWindow::show_preview_in_guider_viewer(QString &key) {
 	return false;
 }
 
+void ImagerWindow::show_selected_preview_in_solver_tab(QString &solver_source) {
+	if (solver_source.startsWith("Guider Agent") && m_visible_viewer != m_guider_viewer) {
+		m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_guider_viewer);
+		m_visible_viewer = m_guider_viewer;
+		m_guider_viewer->setVisible(true);
+		m_imager_viewer->setVisible(false);
+	} else if (!solver_source.startsWith("Guider Agent") && m_visible_viewer != m_imager_viewer) {
+		m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_imager_viewer);
+		m_visible_viewer = m_imager_viewer;
+		m_imager_viewer->setVisible(true);
+		m_guider_viewer->setVisible(false);
+	}
+}
 
 void ImagerWindow::on_tab_changed(int index) {
 	if (index == 0 || index == 1 || index == 3) {
@@ -464,17 +477,7 @@ void ImagerWindow::on_tab_changed(int index) {
 		}
 	} else if (index == 4) {
 		QString solver_source = m_solver_source_select1->currentText();
-		if (solver_source.startsWith("Guider Agent") && m_visible_viewer != m_guider_viewer) {
-			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_guider_viewer);
-			m_visible_viewer = m_guider_viewer;
-			m_guider_viewer->setVisible(true);
-			m_imager_viewer->setVisible(false);
-		} else if (m_visible_viewer != m_imager_viewer) {
-			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_imager_viewer);
-			m_visible_viewer = m_imager_viewer;
-			m_imager_viewer->setVisible(true);
-			m_guider_viewer->setVisible(false);
-		}
+		show_selected_preview_in_solver_tab(solver_source);
 	}
 	if (index == 1) m_imager_viewer->showSelection(true);
 	else m_imager_viewer->showSelection(false);

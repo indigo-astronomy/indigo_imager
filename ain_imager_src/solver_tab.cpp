@@ -293,16 +293,6 @@ void ImagerWindow::on_image_source1_selected(int index) {
 	QString solver_source = m_solver_source_select1->currentText();
 	strncpy(conf.solver_image_source1, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
 	write_conf();
-	if (solver_source.startsWith("Guider Agent") && m_visible_viewer != m_guider_viewer) {
-		m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_guider_viewer);
-		m_visible_viewer = m_guider_viewer;
-		m_guider_viewer->setVisible(true);
-		m_imager_viewer->setVisible(false);
-	} else if (m_visible_viewer != m_imager_viewer) {
-		m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_imager_viewer);
-		m_visible_viewer = m_imager_viewer;
-		m_imager_viewer->setVisible(true);
-		m_guider_viewer->setVisible(false);
-	}
+	show_selected_preview_in_solver_tab(solver_source);
 	indigo_debug("%s -> %s\n", __FUNCTION__, conf.solver_image_source1);
 }
