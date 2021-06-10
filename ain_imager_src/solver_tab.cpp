@@ -245,8 +245,8 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 void ImagerWindow::update_solver_widgets_at_start(const char *imager_agent, const char *solver_agent) {
 	bool done = false;
 	int wait_busy = 25;
-	set_text(m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Witing for exposure");
-	set_text(m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Witing for exposure");
+	set_text(m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Witing for image");
+	set_text(m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Witing for image");
 	set_widget_state(m_mount_solve_and_sync_button, INDIGO_BUSY_STATE);
 	set_widget_state(m_mount_solve_and_center_button, INDIGO_BUSY_STATE);
 	set_widget_state(m_solve_button, INDIGO_BUSY_STATE);
@@ -268,8 +268,8 @@ void ImagerWindow::update_solver_widgets_at_start(const char *imager_agent, cons
 				set_widget_state(m_mount_solve_and_sync_button, INDIGO_OK_STATE);
 				set_widget_state(m_mount_solve_and_center_button, INDIGO_OK_STATE);
 				set_widget_state(m_solve_button, INDIGO_OK_STATE);
-				set_text(m_solver_status_label1, "<img src=\":resource/led-red.png\"> No frame");
-				set_text(m_solver_status_label2, "<img src=\":resource/led-red.png\"> No frame");
+				set_text(m_solver_status_label1, "<img src=\":resource/led-red.png\"> No image");
+				set_text(m_solver_status_label2, "<img src=\":resource/led-red.png\"> No image");
 				Logger::instance().log(NULL, "Solve failed, exposure did not start");
 			}
 		}

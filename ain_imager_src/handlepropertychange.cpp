@@ -2376,7 +2376,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		set_lineedit_text(m_solver_dec_hint, "");
 		set_widget_state(m_solver_dec_hint, INDIGO_IDLE_STATE);
-		set_enabled(m_solver_ra_hint, false);
+		set_enabled(m_solver_dec_hint, false);
 
 		set_spinbox_value(m_solver_radius_hint, 0);
 		set_enabled(m_solver_radius_hint, false);
