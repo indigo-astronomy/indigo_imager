@@ -25,6 +25,7 @@
 #include <imagerwindow.h>
 #include <propertycache.h>
 #include <conf.h>
+#include <logger.h>
 
 void write_conf();
 
@@ -229,7 +230,6 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	solver_frame_layout->addWidget(m_solver_depth_hint, row, 3);
 	connect(m_solver_depth_hint, QOverload<int>::of(&QSpinBox::valueChanged), this, QOverload<int>::of(&ImagerWindow::on_solver_hints_changed));
 
-
 	row++;
 	label = new QLabel("Time Limit (s):");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
@@ -240,6 +240,41 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	m_solver_tlimit_hint->setEnabled(false);
 	solver_frame_layout->addWidget(m_solver_tlimit_hint, row, 3);
 	connect(m_solver_tlimit_hint, QOverload<int>::of(&QSpinBox::valueChanged), this, QOverload<int>::of(&ImagerWindow::on_solver_hints_changed));
+}
+
+void ImagerWindow::update_solver_widgets_at_start(const char *imager_agent, const char *solver_agent) {
+	bool done = false;
+	int wait_busy = 25;
+	set_text(m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Witing for exposure");
+	set_text(m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Witing for exposure");
+	set_widget_state(m_mount_solve_and_sync_button, INDIGO_BUSY_STATE);
+	set_widget_state(m_mount_solve_and_center_button, INDIGO_BUSY_STATE);
+	set_widget_state(m_solve_button, INDIGO_BUSY_STATE);
+	do {
+		indigo_property *exp = properties.get((char*)imager_agent, CCD_EXPOSURE_PROPERTY_NAME);
+		if (wait_busy) {
+			if (exp && exp->state == INDIGO_BUSY_STATE) {
+				done = true;
+			} else {
+				indigo_usleep(100000);
+				wait_busy --;
+				indigo_debug("%s(): WAIT_BUSY = %d", __FUNCTION__, wait_busy);
+			}
+		}
+		if (wait_busy == 0) {
+			done = true;
+			indigo_property *wcs = properties.get((char*)solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME);
+			if (wcs && wcs->state != INDIGO_BUSY_STATE) {
+				set_widget_state(m_mount_solve_and_sync_button, INDIGO_OK_STATE);
+				set_widget_state(m_mount_solve_and_center_button, INDIGO_OK_STATE);
+				set_widget_state(m_solve_button, INDIGO_OK_STATE);
+				set_text(m_solver_status_label1, "<img src=\":resource/led-red.png\"> No frame");
+				set_text(m_solver_status_label2, "<img src=\":resource/led-red.png\"> No frame");
+				Logger::instance().log(NULL, "Solve failed, exposure did not start");
+			}
+		}
+	} while (!done);
+	indigo_debug("%s(): DONE", __FUNCTION__);
 }
 
 void ImagerWindow::on_solver_agent_selected(int index) {

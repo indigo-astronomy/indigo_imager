@@ -722,6 +722,8 @@ private:
 	void set_agent_releated_agent(const char *agent, const char *related_agent, bool select) const;
 	void set_agent_solver_sync_action(const char *agent, char *item) const;
 
+	void update_solver_widgets_at_start(const char *image_agent, const char *solver_agent);
+
 	void mount_agent_set_switch_async(char *property, char *item, bool move);
 
 	void trigger_solve_and_sync(bool recenter);
