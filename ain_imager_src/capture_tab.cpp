@@ -110,6 +110,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	capture_frame_layout->addWidget(label, row, 0);
 	m_object_name = new QLineEdit();
 	m_object_name->setPlaceholderText("Image file prefix e.g. M16, M33 ...");
+	m_object_name->setToolTip("Object name or any text that will be used as a file name prefix.\nIf empty images will not be saved.");
 	capture_frame_layout->addWidget(m_object_name, row, 1, 1, 3);
 
 	row++;
@@ -181,10 +182,11 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	capture_frame_layout->addWidget(cooler_bar, row, 0, 1, 4);
 	cooler_bar->setContentsMargins(0,0,0,6);
 
-	label = new QLabel("Cooler (C):");
+	label = new QLabel("Cooler (°C):");
 	cooler_box->addWidget(label);
 
 	m_current_temp = new QLineEdit();
+	m_current_temp->setToolTip("Current CCD Temperture");
 	cooler_box->addWidget(m_current_temp);
 	m_current_temp->setStyleSheet("width: 30px");
 	m_current_temp->setText("");
@@ -194,17 +196,20 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	cooler_box->addWidget(label);
 
 	m_cooler_pwr = new QLineEdit();
+	m_cooler_pwr->setToolTip("Current CCD Cooler Power");
 	cooler_box->addWidget(m_cooler_pwr);
 	m_cooler_pwr->setStyleSheet("width: 30px");
 	m_cooler_pwr->setText("");
 	m_cooler_pwr->setEnabled(false);
 
 	m_cooler_onoff = new QCheckBox();
+	m_cooler_onoff->setToolTip("Turn CCD Cooler ON/OFF");
 	cooler_box->addWidget(m_cooler_onoff);
 	m_cooler_onoff->setEnabled(false);
 	connect(m_cooler_onoff, &QCheckBox::toggled, this, &ImagerWindow::on_cooler_onoff);
 
 	m_set_temp = new QDoubleSpinBox();
+	m_set_temp->setToolTip("Cooler Target Temperature (°C)");
 	m_set_temp->setMaximum(60);
 	m_set_temp->setMinimum(-120);
 	m_set_temp->setValue(0);
