@@ -56,9 +56,11 @@ class QIndigoServers;
 #include <QDir>
 #include <QDateTime>
 #include <QFileDialog>
+#include <QTableView>
 #include <QThread>
 #include <QtConcurrentRun>
 #include "focusgraph.h"
+#include "sequence_model.h"
 
 
 class ImagerWindow : public QMainWindow {
@@ -640,8 +642,12 @@ private:
 	// Image viewer
 	ImageViewer *m_imager_viewer;
 	ImageViewer *m_guider_viewer;
-	ImageViewer *m_visible_viewer;
+//	ImageViewer *m_visible_viewer;
+	QWidget *m_visible_viewer;
+
 	indigo_item *m_indigo_item;
+
+	SequenceViewer *m_sequence_viewer;
 
 	QString m_image_key;
 	QString m_guider_key;

@@ -272,6 +272,10 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	tools_tabbar->addTab(capture_frame, "&Capture");
 	create_imager_tab(capture_frame);
 
+	QFrame *sequence_frame = new QFrame;
+	tools_tabbar->addTab(sequence_frame,  "Se&quence");
+	//create_sequence_tab(sequence_frame);
+
 	QFrame *focuser_frame = new QFrame;
 	tools_tabbar->addTab(focuser_frame, "F&ocus");
 	create_focuser_tab(focuser_frame);
@@ -313,6 +317,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_guider_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
 	m_guider_viewer->setStretch(conf.guider_stretch_level);
 	m_guider_viewer->setVisible(false);
+
+	m_sequence_viewer = new SequenceViewer();
 
 	QSplitter* hSplitter = new QSplitter;
 	hSplitter->addWidget(tools_panel);
@@ -461,25 +467,37 @@ void ImagerWindow::show_selected_preview_in_solver_tab(QString &solver_source) {
 }
 
 void ImagerWindow::on_tab_changed(int index) {
-	if (index == 0 || index == 1 || index == 3) {
+	if (index == 0 || index == 2 || index == 4) {
 		if (m_visible_viewer != m_imager_viewer) {
 			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_imager_viewer);
 			m_visible_viewer = m_imager_viewer;
 			m_imager_viewer->setVisible(true);
 			m_guider_viewer->setVisible(false);
+			m_sequence_viewer->setVisible(false);
 		}
-	} else if (index == 2) {
+	} else if (index == 1) {
+		if (m_visible_viewer != m_sequence_viewer) {
+			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_sequence_viewer);
+			m_visible_viewer = m_sequence_viewer;
+			m_guider_viewer->setVisible(false);
+			m_imager_viewer->setVisible(false);
+			m_sequence_viewer->setVisible(true);
+		}
+	} else if (index == 3) {
 		if (m_visible_viewer != m_guider_viewer) {
 			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_guider_viewer);
 			m_visible_viewer = m_guider_viewer;
 			m_guider_viewer->setVisible(true);
 			m_imager_viewer->setVisible(false);
+			m_sequence_viewer->setVisible(false);
 		}
-	} else if (index == 4) {
+	} else if (index == 5) {
 		QString solver_source = m_solver_source_select1->currentText();
 		show_selected_preview_in_solver_tab(solver_source);
+		m_sequence_viewer->setVisible(false);
 	}
-	if (index == 1) m_imager_viewer->showSelection(true);
+
+	if (index == 2) m_imager_viewer->showSelection(true);
 	else m_imager_viewer->showSelection(false);
 }
 
