@@ -32,6 +32,7 @@ SOURCES += \
 	handlepropertychange.cpp \
 	focusgraph.cpp \
 	blobpreview.cpp \
+	sequence_model.cpp \
 	../object_data/indigo_cat_data.c \
 	../common_src/utils.cpp \
 	../common_src/imagepreview.cpp \
@@ -98,6 +99,7 @@ HEADERS += \
 	conf.h \
 	widget_state.h \
 	blobpreview.h \
+	sequence_model.h \
 	../object_data/indigo_cat_data.h \
 	../common_src/utils.h \
 	../common_src/image_preview_lut.h \
