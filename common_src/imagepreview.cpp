@@ -23,6 +23,7 @@
 #include <pixelformat.h>
 #include <imagepreview.h>
 #include <QPainter>
+#include <QCoreApplication>
 
 // Related Functions
 
@@ -369,6 +370,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		uint16_t* pixmap_data = (uint16_t*)malloc(sizeof(uint16_t) * height * width);
 		int index = 0;
 		for (int y = 0; y < height; ++y) {
+			QCoreApplication::processEvents();
 			for (int x = 0; x < width; ++x) {
 				pixmap_data[index] = buf[index];
 				int value = buf[index++] - min;
@@ -389,6 +391,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		int index = 0;
 		int index2 = 0;
 		for (int y = 0; y < height; ++y) {
+			QCoreApplication::processEvents();
 			for (int x = 0; x < width; ++x) {
 				int value_r = buf[index] - min;
 				int value_g = buf[index + channel_offest] - min;
@@ -419,6 +422,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		int index = 0;
 		int index2 = 0;
 		for (int y = 0; y < height; ++y) {
+			QCoreApplication::processEvents();
 			for (int x = 0; x < width; ++x) {
 				int value_r = buf[index] - min;
 				int value_g = buf[index + channel_offest] - min;
@@ -447,6 +451,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		uint8_t* pixmap_data = (uint8_t*)malloc(sizeof(uint8_t) * height * width * 3);
 		int index = 0;
 		for (int y = 0; y < height; ++y) {
+			QCoreApplication::processEvents();
 			for (int x = 0; x < width; ++x) {
 				pixmap_data[index] = buf[index];
 				int value_r = buf[index] - min;
@@ -477,6 +482,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		uint16_t* pixmap_data = (uint16_t*)malloc(sizeof(uint16_t) * height * width * 3);
 		int index = 0;
 		for (int y = 0; y < height; ++y) {
+			QCoreApplication::processEvents();
 			for (int x = 0; x < width; ++x) {
 				pixmap_data[index] = buf[index];
 				int value_r = buf[index] - min;
@@ -509,6 +515,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		uint8_t* buf = (uint8_t*)rgb_data;
 		int index = 0;
 		for (int y = 0; y < height; ++y) {
+			QCoreApplication::processEvents();
 			for (int x = 0; x < width; ++x) {
 				int value_r = buf[index++] - min;
 				int value_g = buf[index++] - min;
@@ -535,6 +542,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		uint16_t* buf = (uint16_t*)rgb_data;
 		int index = 0;
 		for (int y = 0; y < height; ++y) {
+			QCoreApplication::processEvents();
 			for (int x = 0; x < width; ++x) {
 				int value_r = buf[index++] - min;
 				int value_g = buf[index++] - min;
@@ -638,6 +646,7 @@ void stretch_preview(preview_image *img, double white_threshold) {
 		uint8_t* buf = (uint8_t*)img->m_raw_data;
 		int index = 0;
 		for (int y = 0; y < height; ++y) {
+			QCoreApplication::processEvents();
 			for (int x = 0; x < width; ++x) {
 				int value = buf[index++] - min;
 				if (value >= range) value = 255;
@@ -649,6 +658,7 @@ void stretch_preview(preview_image *img, double white_threshold) {
 		uint16_t* buf = (uint16_t*)img->m_raw_data;
 		int index = 0;
 		for (int y = 0; y < height; ++y) {
+			QCoreApplication::processEvents();
 			for (int x = 0; x < width; ++x) {
 				int value = buf[index++] - min;
 				if (value >= range) value = 255;
@@ -660,6 +670,7 @@ void stretch_preview(preview_image *img, double white_threshold) {
 		uint8_t* buf = (uint8_t*)img->m_raw_data;
 		int index = 0;
 		for (int y = 0; y < height; ++y) {
+			QCoreApplication::processEvents();
 			for (int x = 0; x < width; ++x) {
 				int value_r = buf[index] - min;
 				index++;
@@ -681,6 +692,7 @@ void stretch_preview(preview_image *img, double white_threshold) {
 		uint16_t* buf = (uint16_t*)img->m_raw_data;
 		int index = 0;
 		for (int y = 0; y < height; ++y) {
+			QCoreApplication::processEvents();
 			for (int x = 0; x < width; ++x) {
 				int value_r = buf[index] - min;
 				index++;
