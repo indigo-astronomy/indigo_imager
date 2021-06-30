@@ -674,9 +674,10 @@ void ImagerWindow::trigger_solve_and_sync(bool recenter) {
 	static char selected_mount_agent[INDIGO_NAME_SIZE];
 	static char selected_solver_agent[INDIGO_NAME_SIZE];
 	static char selected_solver_source[INDIGO_NAME_SIZE];
-	static bool recenter_cache = recenter;
+	static bool recenter_cache;
 	char domain_name[INDIGO_NAME_SIZE];
 
+	recenter_cache = recenter;
 	get_selected_solver_agent(selected_solver_agent);
 	get_indigo_device_domain(domain_name, selected_solver_agent);
 	// if() do checks
