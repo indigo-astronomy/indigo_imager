@@ -385,8 +385,6 @@ QMenu::item:selected {
     color: #F0F0F0;
 }
 
-
-
 QMenu::indicator {
     width: 12px;
     height: 12px;
@@ -1130,8 +1128,8 @@ QComboBox::item:alternate {
 }
 
 QComboBox::item:checked {
-    font-weight: bold; /* Breaks newer qt > 5.12 */
-    color: #FFFFFF;
+    /* font-weight: bold; */ /* Breaks newer qt > 5.12 */
+    color: #A0A0A0;
 }
 
 QComboBox::item:selected {
