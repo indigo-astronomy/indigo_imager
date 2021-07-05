@@ -22,7 +22,6 @@
 #include <QStandardPaths>
 #include <QTextStream>
 #include <QVersionNumber>
-#include <QLibraryInfo>
 #include "imagerwindow.h"
 #include <conf.h>
 
@@ -115,7 +114,7 @@ int main(int argc, char *argv[]) {
 	app.setFont(font);
 	//qDebug() << "Font: " << app.font().family() << app.font().pointSize();
 
-	QVersionNumber running_version = QLibraryInfo::version();
+	QVersionNumber running_version = QVersionNumber::fromString(qVersion());
 	QVersionNumber threshod_version(5, 13, 0);
 	QString qss_resource(":qdarkstyle/style.qss");
 	if (running_version >= threshod_version) {
