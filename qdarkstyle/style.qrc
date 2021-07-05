@@ -42,5 +42,6 @@
   </qresource>
   <qresource prefix="qdarkstyle">
       <file>style.qss</file>
+      <file>style-5.13.qss</file>
   </qresource>
 </RCC>

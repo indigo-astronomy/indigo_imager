@@ -376,7 +376,7 @@ QMenu::icon {
 }
 
 QMenu::item {
-    padding: 4px 24px 4px 24px;
+    padding: 4px 12px 4px 12px;
     border: 1px transparent #353535;  /* reserve space for selection border */
 	background-color: #404040;
 }
@@ -384,8 +384,6 @@ QMenu::item {
 QMenu::item:selected {
     color: #F0F0F0;
 }
-
-
 
 QMenu::indicator {
     width: 12px;
@@ -1130,8 +1128,8 @@ QComboBox::item:alternate {
 }
 
 QComboBox::item:checked {
-    font-weight: bold; /* Breaks newer qt > 5.12 */
-    color: #FFFFFF;
+    /* font-weight: bold; */ /* Breaks newer qt > 5.12 */
+    color: #A0A0A0;
 }
 
 QComboBox::item:selected {

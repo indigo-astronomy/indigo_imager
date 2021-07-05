@@ -21,6 +21,8 @@
 #include <QDir>
 #include <QStandardPaths>
 #include <QTextStream>
+#include <QVersionNumber>
+#include <QLibraryInfo>
 #include "imagerwindow.h"
 #include <conf.h>
 
@@ -113,7 +115,13 @@ int main(int argc, char *argv[]) {
 	app.setFont(font);
 	//qDebug() << "Font: " << app.font().family() << app.font().pointSize();
 
-	QFile f(":qdarkstyle/style.qss");
+	QVersionNumber running_version = QLibraryInfo::version();
+	QVersionNumber threshod_version(5, 13, 0);
+	QString qss_resource(":qdarkstyle/style.qss");
+	if (running_version >= threshod_version) {
+		qss_resource = ":qdarkstyle/style-5.13.qss";
+	}
+	QFile f(qss_resource);
 	f.open(QFile::ReadOnly | QFile::Text);
 	QTextStream ts(&f);
 	app.setStyleSheet(ts.readAll());
