@@ -54,9 +54,9 @@ void ImagerWindow::change_ccd_abort_exposure_property(const char *agent) const {
 	indigo_change_switch_property(nullptr, agent, CCD_ABORT_EXPOSURE_PROPERTY_NAME, 1, items, values);
 }
 
-void ImagerWindow::change_ccd_mode_property(const char *agent) const {
+void ImagerWindow::change_ccd_mode_property(const char *agent, QComboBox *frame_size_select) const {
 	static char selected_mode[INDIGO_NAME_SIZE];
-	strncpy(selected_mode, m_frame_size_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	strncpy(selected_mode, frame_size_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
 	static const char * items[] = {
 		selected_mode
 	};
@@ -120,13 +120,13 @@ void ImagerWindow::change_agent_imager_dithering_property(const char *agent) con
 	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_DITHERING_PROPERTY_NAME, 2, items, values);
 }
 
-void ImagerWindow::change_agent_imager_gain_property(const char *agent) const {
-	double value = (double)m_imager_gain->value();
+void ImagerWindow::change_agent_gain_property(const char *agent, QSpinBox *ccd_gain) const {
+	double value = (double)ccd_gain->value();
 	indigo_change_number_property_1(nullptr, agent, CCD_GAIN_PROPERTY_NAME, CCD_GAIN_ITEM_NAME, value);
 }
 
-void ImagerWindow::change_agent_imager_offset_property(const char *agent) const {
-	double value = (double)m_imager_offset->value();
+void ImagerWindow::change_agent_offset_property(const char *agent, QSpinBox *ccd_offset) const {
+	double value = (double)ccd_offset->value();
 	indigo_change_number_property_1(nullptr, agent, CCD_OFFSET_PROPERTY_NAME, CCD_OFFSET_ITEM_NAME, value);
 }
 

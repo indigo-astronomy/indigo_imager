@@ -707,6 +707,16 @@ void update_agent_imager_gain_offset_property(ImagerWindow *w, indigo_property *
 	}
 }
 
+void update_agent_guider_gain_offset_property(ImagerWindow *w, indigo_property *property) {
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], CCD_GAIN_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guider_gain);
+		} else if (client_match_item(&property->items[i], CCD_OFFSET_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guider_offset);
+		}
+	}
+}
+
 static void update_focuser_poition(ImagerWindow *w, indigo_property *property, QSpinBox *set_position) {
 	indigo_debug("change %s", property->name);
 	for (int i = 0; i < property->count; i++) {
@@ -1658,6 +1668,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			change_agent_ccd_peview(selected_guider_agent, (bool)conf.guider_save_bandwidth);
 		});
 	}
+	if (client_match_device_property(property, selected_guider_agent, CCD_MODE_PROPERTY_NAME)) {
+		add_items_to_combobox(this, property, m_guider_frame_size_select);
+	}
 	if (client_match_device_property(property, selected_guider_agent, CCD_JPEG_SETTINGS_PROPERTY_NAME)) {
 		set_enabled(m_guider_save_bw_select, true);
 	}
@@ -1698,6 +1711,10 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_START_PROCESS_PROPERTY_NAME)) {
 		agent_guider_start_process_change(this, property);
+	}
+	if (client_match_device_property(property, selected_guider_agent, CCD_GAIN_PROPERTY_NAME) ||
+	    client_match_device_property(property, selected_guider_agent, CCD_OFFSET_PROPERTY_NAME)) {
+		update_agent_guider_gain_offset_property(this, property);
 	}
 
 	// Mount agent
@@ -1888,6 +1905,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 
 	// Guider Agent
+	if (client_match_device_property(property, selected_guider_agent, CCD_MODE_PROPERTY_NAME)) {
+		change_combobox_selection(this, property, m_guider_frame_size_select);
+	}
 	if (client_match_device_property(property, selected_guider_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_guider_camera_select);
 	}
@@ -1912,6 +1932,10 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_START_PROCESS_PROPERTY_NAME)) {
 		agent_guider_start_process_change(this, property);
+	}
+	if (client_match_device_property(property, selected_guider_agent, CCD_GAIN_PROPERTY_NAME) ||
+	    client_match_device_property(property, selected_guider_agent, CCD_OFFSET_PROPERTY_NAME)) {
+		update_agent_guider_gain_offset_property(this, property);
 	}
 
 	// Mount Agent
@@ -2110,6 +2134,11 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	}
 
 	// Guider Agent
+	if (client_match_device_property(property, selected_guider_agent, CCD_MODE_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		clear_combobox(m_guider_frame_size_select);
+	}
 	if (client_match_device_property(property, selected_guider_agent, FILTER_CCD_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
@@ -2187,7 +2216,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_enabled(m_guide_star_y, false);
 
 		set_spinbox_value(m_guide_star_radius, 0);
-		set_enabled(m_guide_star_radius, false);
+		set_enabled(m_guidScreenshot from 2021-07-06 18-21-38e_star_radius, false);
 
 		set_spinbox_value(m_guide_star_count, 0);
 		set_enabled(m_guide_star_count, false);
@@ -2209,6 +2238,16 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_guider_agent, CCD_JPEG_SETTINGS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
 		set_enabled(m_guider_save_bw_select, false);
+	}
+	if (client_match_device_property(property, selected_guider_agent, CCD_GAIN_PROPERTY_NAME) ||
+	    client_match_device_property(property, selected_guider_agent, CCD_OFFSET_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
+
+		set_spinbox_value(m_guider_gain, 0);
+		set_enabled(m_guider_gain, false);
+
+		set_spinbox_value(m_guider_offset, 0);
+		set_enabled(m_guider_offset, false);
 	}
 
 	// Mount Agent

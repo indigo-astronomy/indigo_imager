@@ -106,6 +106,7 @@ public:
 	friend void update_imager_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_gain_offset_property(ImagerWindow *w, indigo_property *property);
+	friend void update_agent_guider_gain_offset_property(ImagerWindow *w, indigo_property *property);
 	friend void update_focus_setup_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *property);
 	friend void update_ccd_frame_property(ImagerWindow *w, indigo_property *property);
@@ -259,6 +260,9 @@ public slots:
 	void on_detection_mode_selected(int index);
 	void on_dec_guiding_selected(int index);
 	void on_guider_clear_selection(bool clicked);
+	void on_guider_ccd_mode_selected(int index);
+	void on_agent_guider_gain_changed(int value);
+	void on_agent_guider_offset_changed(int value);
 
 	void on_guider_agent_exposure_changed(double value);
 	void on_guider_agent_callibration_changed(double value);
@@ -524,6 +528,9 @@ private:
 	QSpinBox  *m_guide_edge_clipping;
 	QComboBox *m_guider_save_bw_select;
 	QComboBox *m_guider_subframe_select;
+	QComboBox *m_guider_frame_size_select;
+	QSpinBox  *m_guider_gain;
+	QSpinBox  *m_guider_offset;
 
 	QDoubleSpinBox  *m_guide_cal_step;
 	QDoubleSpinBox  *m_guide_rotation;
@@ -667,7 +674,7 @@ private:
 	void change_ccd_frame_property(const char *agent) const;
 	void change_ccd_exposure_property(const char *agent, QDoubleSpinBox *exp_time) const;
 	void change_ccd_abort_exposure_property(const char *agent) const;
-	void change_ccd_mode_property(const char *agent) const;
+	void change_ccd_mode_property(const char *agent, QComboBox *frame_size_select) const;
 	void change_ccd_image_format_property(const char *agent) const;
 	void change_ccd_frame_type_property(const char *agent) const;
 	void change_agent_batch_property(const char *agent) const;
@@ -681,8 +688,8 @@ private:
 	void change_ccd_upload_property(const char *agent, const char *item_name) const;
 	void change_related_dither_agent(const char *agent, const char *old_agent, const char *new_agent) const;
 	void change_agent_imager_dithering_property(const char *agent) const;
-	void change_agent_imager_gain_property(const char *agent) const;
-	void change_agent_imager_offset_property(const char *agent) const;
+	void change_agent_gain_property(const char *agent, QSpinBox *ccd_gain) const;
+	void change_agent_offset_property(const char *agent, QSpinBox *ccd_offset) const;
 
 	void change_agent_start_preview_property(const char *agent) const;
 	void change_agent_start_focusing_property(const char *agent) const;

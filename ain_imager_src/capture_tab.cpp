@@ -521,7 +521,7 @@ void ImagerWindow::on_ccd_mode_selected(int index) {
 		get_selected_imager_agent(selected_agent);
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-		change_ccd_mode_property(selected_agent);
+		change_ccd_mode_property(selected_agent, m_frame_size_select);
 	});
 }
 
@@ -592,7 +592,7 @@ void ImagerWindow::on_agent_imager_gain_changed(int value) {
 		get_selected_imager_agent(selected_agent);
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-		change_agent_imager_gain_property(selected_agent);
+		change_agent_gain_property(selected_agent, m_imager_gain);
 	});
 }
 
@@ -603,7 +603,7 @@ void ImagerWindow::on_agent_imager_offset_changed(int value) {
 		get_selected_imager_agent(selected_agent);
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-		change_agent_imager_offset_property(selected_agent);
+		change_agent_offset_property(selected_agent, m_imager_offset);
 	});
 }
 

@@ -444,6 +444,10 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	misc_frame->setLayout(misc_frame_layout);
 	misc_frame->setFrameShape(QFrame::StyledPanel);
 	misc_frame->setContentsMargins(0, 0, 0, 0);
+	misc_frame_layout->setColumnStretch(0, 3);
+	misc_frame_layout->setColumnStretch(1, 1);
+	misc_frame_layout->setColumnStretch(2, 1);
+	misc_frame_layout->setColumnStretch(3, 1);
 
 	int misc_row = 0;
 	label = new QLabel("Save bandwidth:");
@@ -472,6 +476,38 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	misc_frame_layout->addWidget(m_guider_subframe_select, misc_row, 2, 1, 2);
 	m_guider_subframe_select->setCurrentIndex(conf.guider_subframe);
 	connect(m_guider_subframe_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_subframe_changed);
+
+	misc_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	misc_frame_layout->addItem(spacer, misc_row, 0);
+
+	misc_row++;
+	label = new QLabel("Camera Settings:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 4);
+
+	misc_row++;
+	label = new QLabel("Frame:");
+	misc_frame_layout->addWidget(label, misc_row, 0);
+	m_guider_frame_size_select = new QComboBox();
+	misc_frame_layout->addWidget(m_guider_frame_size_select, misc_row, 1, 1, 3);
+	connect(m_guider_frame_size_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_ccd_mode_selected);
+
+	misc_row++;
+	label = new QLabel("Gain:");
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 2);
+	m_guider_gain = new QSpinBox();
+	m_guider_gain->setEnabled(false);
+	misc_frame_layout->addWidget(m_guider_gain, misc_row, 2, 1, 2);
+	connect(m_guider_gain, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_guider_gain_changed);
+
+	misc_row++;
+	label = new QLabel("Offset:");
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 2);
+	m_guider_offset = new QSpinBox();
+	m_guider_offset->setEnabled(false);
+	misc_frame_layout->addWidget(m_guider_offset, misc_row, 2, 1, 2);
+	connect(m_guider_offset, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_guider_offset_changed);
 }
 
 void ImagerWindow::setup_preview(const char *agent) {
@@ -807,5 +843,38 @@ void ImagerWindow::on_guider_clear_selection(bool clicked) {
 		get_selected_guider_agent(selected_agent);
 
 		clear_guider_agent_star_selection(selected_agent);
+	});
+}
+
+void ImagerWindow::on_guider_ccd_mode_selected(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[MODE CHANGE SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_ccd_mode_property(selected_agent, m_guider_frame_size_select);
+	});
+}
+
+void ImagerWindow::on_agent_guider_gain_changed(int value) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_agent_gain_property(selected_agent, m_guider_gain);
+	});
+}
+
+void ImagerWindow::on_agent_guider_offset_changed(int value) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_agent_offset_property(selected_agent, m_guider_offset);
 	});
 }
