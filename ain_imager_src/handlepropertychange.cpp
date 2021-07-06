@@ -2216,7 +2216,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_enabled(m_guide_star_y, false);
 
 		set_spinbox_value(m_guide_star_radius, 0);
-		set_enabled(m_guidScreenshot from 2021-07-06 18-21-38e_star_radius, false);
+		set_enabled(m_guide_star_radius, false);
 
 		set_spinbox_value(m_guide_star_count, 0);
 		set_enabled(m_guide_star_count, false);
