@@ -552,11 +552,13 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 		}
 		w->set_enabled(w->m_mount_solve_and_center_button, true);
 		w->set_enabled(w->m_mount_solve_and_sync_button, true);
-		w->set_enabled(w->m_solve_button, true);
+		//w->set_enabled(w->m_solve_button, true);
+		w->m_solve_button->setIcon(QIcon(":resource/play.png"));
 	} else if (property->state == INDIGO_ALERT_STATE) {
 		w->set_enabled(w->m_mount_solve_and_center_button, true);
 		w->set_enabled(w->m_mount_solve_and_sync_button, true);
-		w->set_enabled(w->m_solve_button, true);
+		//w->set_enabled(w->m_solve_button, true);
+		w->m_solve_button->setIcon(QIcon(":resource/play.png"));
 		if (scale == 0) {
 			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-red.png\"> No solution");
 			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-red.png\"> No solution");
@@ -567,7 +569,8 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 	} else if (property->state == INDIGO_BUSY_STATE) {
 		w->set_enabled(w->m_mount_solve_and_center_button, false);
 		w->set_enabled(w->m_mount_solve_and_sync_button, false);
-		w->set_enabled(w->m_solve_button, false);
+		//w->set_enabled(w->m_solve_button, false);
+		w->m_solve_button->setIcon(QIcon(":resource/stop.png"));
 		if (scale == 0) {
 			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Solving frame");
 			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Solving frame");
@@ -1522,16 +1525,20 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			});
 		}
 		if (client_match_device_property(property, property->device, SERVER_INFO_PROPERTY_NAME)) {
+			/* this is not reliable as it will disply message only once per Ain session but still bettter than nothng */
+			/* To be fixed */
+			static bool warn = true;
 			indigo_item *item = indigo_get_item(property, SERVER_INFO_VERSION_ITEM_NAME);
-			if (item) {
+			if (item && warn) {
 				int version_major;
 				int version_minor;
 				int build;
 				char message[255];
 				sscanf(item->text.value, "%d.%d-%d", &version_major, &version_minor, &build);
-				if (build < 143) {
-					sprintf(message, "WARNING: Some features will not work on '%s' running Indigo %s as Ain requires 2.0-143 or newer!", property->device, item->text.value);
+				if (build < 155) {
+					sprintf(message, "WARNING: Some features will not work on '%s' running Indigo %s as Ain requires 2.0-155 or newer!", property->device, item->text.value);
 					on_window_log(nullptr, message);
+					warn = false;
 				}
 			}
 		}

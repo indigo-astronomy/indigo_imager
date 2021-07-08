@@ -578,6 +578,10 @@ void ImagerWindow::change_mount_agent_abort(const char *agent) const {
 	indigo_change_switch_property_1(nullptr, agent, MOUNT_ABORT_MOTION_PROPERTY_NAME, MOUNT_ABORT_MOTION_ITEM_NAME, true);
 }
 
+void ImagerWindow::change_solver_agent_abort(const char *agent) const {
+	indigo_change_switch_property_1(nullptr, agent, AGENT_PLATESOLVER_ABORT_PROPERTY_NAME, AGENT_PLATESOLVER_ABORT_PROPERTY_NAME, true);
+}
+
 void ImagerWindow::change_solver_agent_hints_property(const char *agent) const {
 	static const char *items[] = {
 		AGENT_PLATESOLVER_HINTS_RA_ITEM_NAME,
@@ -658,14 +662,19 @@ void ImagerWindow::trigger_solve() {
 	indigo_log("[SELECTED] %s domain_name = '%s'\n", __FUNCTION__, domain_name);
 
 	QtConcurrent::run([&]() {
-		set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME);
+		indigo_property *agent_wcs_property = properties.get(selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME);
+		if (agent_wcs_property && agent_wcs_property->state == INDIGO_BUSY_STATE ) {
+			change_solver_agent_abort(selected_solver_agent);
+		} else {
+			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME);
 
-		set_agent_releated_agent(selected_solver_agent, selected_mount_agent, true);
-		set_agent_releated_agent(selected_solver_agent, selected_solver_source, true);
+			set_agent_releated_agent(selected_solver_agent, selected_mount_agent, true);
+			set_agent_releated_agent(selected_solver_agent, selected_solver_source, true);
 
-		change_ccd_exposure_property(selected_image_agent, m_solver_exposure1);
+			change_ccd_exposure_property(selected_image_agent, m_solver_exposure1);
 
-		update_solver_widgets_at_start(selected_image_agent, selected_solver_agent);
+			update_solver_widgets_at_start(selected_image_agent, selected_solver_agent);
+		}
 	});
 }
 

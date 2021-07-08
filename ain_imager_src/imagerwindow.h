@@ -725,6 +725,7 @@ private:
 
 	void change_solver_agent_hints_property(const char *agent) const;
 	void clear_solver_agent_releated_agents(const char *agent) const;
+	void change_solver_agent_abort(const char *agent) const;
 
 	void set_agent_releated_agent(const char *agent, const char *related_agent, bool select) const;
 	void set_agent_solver_sync_action(const char *agent, char *item) const;
