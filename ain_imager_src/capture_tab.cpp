@@ -456,6 +456,7 @@ void ImagerWindow::on_agent_selected(int index) {
 		memset(property, 0, sizeof(indigo_property));
 		get_selected_imager_agent(property->device);
 		property_delete(property, nullptr);
+		properties.remove(property);
 		free(property);
 
 		// populate them again with the new values

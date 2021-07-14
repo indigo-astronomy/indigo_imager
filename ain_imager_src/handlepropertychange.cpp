@@ -1625,7 +1625,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_focus_setup_property(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME)) {
-		update_agent_imager_batch_property(this, property);
+		/* do not update controls if AGENT_IMAGER_BATCH_PROPERTY is already defned */
+		indigo_property *p = properties.get(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME);
+		if (!p) update_agent_imager_batch_property(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME)) {
 		update_ccd_frame_property(this, property);
