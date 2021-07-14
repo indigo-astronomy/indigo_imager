@@ -834,7 +834,7 @@ void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *proper
 
 
 void define_ccd_exposure_property(ImagerWindow *w, indigo_property *property) {
-	indigo_error("Set %s.%s", property->device, property->name);
+	indigo_debug("Set %s.%s", property->device, property->name);
 	double preview_time = w->m_preview_exposure_time->value();
 	for (int i = 0; i < property->count; i++) {
 		indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
