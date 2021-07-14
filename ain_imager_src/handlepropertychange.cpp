@@ -832,6 +832,20 @@ void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *proper
 	}
 }
 
+
+void define_ccd_exposure_property(ImagerWindow *w, indigo_property *property) {
+	indigo_error("Set %s.%s", property->device, property->name);
+	double preview_time = w->m_preview_exposure_time->value();
+	for (int i = 0; i < property->count; i++) {
+		indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
+		if (client_match_item(&property->items[i], CCD_EXPOSURE_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_preview_exposure_time);
+		}
+	}
+	w->set_spinbox_value(w->m_preview_exposure_time, preview_time);
+}
+
+
 void update_ccd_frame_property(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("Set %s", property->name);
 	for (int i = 0; i < property->count; i++) {
@@ -1657,6 +1671,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_agent_imager_stats_property(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME)) {
+		define_ccd_exposure_property(this, property);
 		indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
 		if (!save_blob && p && p->state != INDIGO_BUSY_STATE ) {
 			update_ccd_exposure(this, property);

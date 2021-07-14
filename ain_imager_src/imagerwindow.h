@@ -134,6 +134,7 @@ public:
 	friend void log_guide_header(ImagerWindow *w, char *device_name);
 	friend void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property);
 	friend void update_solver_agent_hints(ImagerWindow *w, indigo_property *property);
+	friend void define_ccd_exposure_property(ImagerWindow *w, indigo_property *property);
 
 	bool save_blob;
 
@@ -179,7 +180,6 @@ signals:
 public slots:
 	void on_start(bool clicked);
 	void on_exposure_start_stop(bool clicked);
-	void on_preview(bool clicked);
 	void on_preview_start_stop(bool clicked);
 	void on_abort(bool clicked);
 	void on_pause(bool clicked);
@@ -488,6 +488,7 @@ private:
 	QCheckBox *m_cooler_onoff;
 	QPushButton *m_exposure_button;
 	QPushButton *m_preview_button;
+	QDoubleSpinBox *m_preview_exposure_time;
 
 	// Focuser tabbar
 	QComboBox *m_focuser_select;
