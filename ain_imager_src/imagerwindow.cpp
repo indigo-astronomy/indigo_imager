@@ -122,6 +122,11 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setChecked(conf.blobs_enabled);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_blobs_changed);
 
+	act = menu->addAction(tr("Save &noname images"));
+	act->setCheckable(true);
+	act->setChecked(conf.save_noname_images);
+	connect(act, &QAction::toggled, this, &ImagerWindow::on_save_noname_images_changed);
+
 	act = menu->addAction(tr("&Auto connect new services"));
 	act->setCheckable(true);
 	act->setChecked(conf.auto_connect);
@@ -547,7 +552,7 @@ void ImagerWindow::save_blob_item(indigo_item *item) {
 		char message[PATH_LEN+100];
 		char location[PATH_LEN];
 
-		if (m_object_name->text().trimmed() == "") {
+		if (m_object_name->text().trimmed() == "" && !conf.save_noname_images) {
 			snprintf(message, sizeof(message), "Image not saved, provide object name");
 			on_window_log(NULL, message);
 			return;
@@ -575,6 +580,7 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 	int file_no = 0;
 
 	QString object_name = m_object_name->text().trimmed();
+	if (object_name == "") object_name = "noname";
 	QString filter_name = m_filter_select->currentText().trimmed();
 	QString frame_type = m_frame_type_select->currentText().trimmed();
 	QDateTime date = date.currentDateTime();
@@ -663,6 +669,14 @@ void ImagerWindow::on_blobs_changed(bool status) {
 	emit(enable_blobs(status));
 	if (status) on_window_log(NULL, "BLOBs enabled");
 	else on_window_log(NULL, "BLOBs disabled");
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+
+void ImagerWindow::on_save_noname_images_changed(bool status) {
+	conf.save_noname_images = status;
+	mServiceModel->enable_auto_connect(conf.save_noname_images);
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }

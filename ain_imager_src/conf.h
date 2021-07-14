@@ -83,6 +83,7 @@ typedef struct {
 	bool indigo_save_log;
 	char solver_image_source1[INDIGO_NAME_SIZE];
 	char solver_image_source2[INDIGO_NAME_SIZE];
+	bool save_noname_images;
 	char unused[100];
 } conf_t;
 

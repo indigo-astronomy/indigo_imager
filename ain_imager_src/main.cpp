@@ -77,6 +77,7 @@ int main(int argc, char *argv[]) {
 	conf.guider_display = SHOW_RA_DEC_DRIFT;
 	conf.guider_save_log = false;
 	conf.indigo_save_log = false;
+	conf.save_noname_images = false;
 	read_conf();
 
 	if (!conf.use_system_locale) qunsetenv("LC_NUMERIC");
