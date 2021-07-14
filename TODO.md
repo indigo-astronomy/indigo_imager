@@ -1,5 +1,7 @@
 #Ain Imager TODO list
 
+- Make it possible to change host of all agents at once, and lock to one host.
+
 ## Sequencer (Observing Blocks)
 - implement it
 - make possible to load a sequence and disconnect, once connected again download the data and
@@ -20,6 +22,7 @@ monitor the progress (use Imager Agent's unattended operation capabilities)
 
 ## Telescope
 - Point on image and center on this after the image is solved
+- save user defined objects
 - Larger DSO library (from Stellarium? Alex gave permission)
 - Show star chart and select objects to goto
 - alignment point management
@@ -29,3 +32,7 @@ monitor the progress (use Imager Agent's unattended operation capabilities)
 
 ## Dashboard
 - be able to pin selected properties to be monitored
+
+## BUGS
+- solver does not show the image from if the imager agent and astrometry agent are on different host
+- fix preview exposure time tooltip
