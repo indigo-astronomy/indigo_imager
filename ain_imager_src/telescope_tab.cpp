@@ -531,7 +531,49 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	set_idle(m_gps_utc);
 	gps_frame_layout->addWidget(m_gps_utc, gps_row, 2, 1, 2);
 
+	QFrame *misc_frame = new QFrame();
+	telescope_tabbar->addTab(misc_frame, "Misc");
+
+	QGridLayout *misc_frame_layout = new QGridLayout();
+	misc_frame_layout->setAlignment(Qt::AlignTop);
+	misc_frame->setLayout(misc_frame_layout);
+	misc_frame->setFrameShape(QFrame::StyledPanel);
+	misc_frame->setContentsMargins(0, 0, 0, 0);
+
+	int misc_row = 0;
+	label = new QLabel("Stop guiding on slew:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	misc_frame_layout->addWidget(label, misc_row, 0);
+	m_mount_guider_select = new QComboBox();
+	misc_frame_layout->addWidget(m_mount_guider_select, misc_row, 1, 1, 3);
+	connect(m_mount_guider_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_mount_guider_agent_selected);
 }
+
+
+void ImagerWindow::on_mount_guider_agent_selected(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE] = {0};
+		static char old_agent[INDIGO_NAME_SIZE] = {0};
+		static char new_agent[INDIGO_NAME_SIZE] = {0};
+
+		get_selected_mount_agent(selected_agent);
+
+		indigo_property *p = properties.get(selected_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
+		if (!p) return;
+
+		for (int i = 0; i < p->count; i++) {
+			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Guider Agent", strlen("Guider Agent"))) {
+				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
+				break;
+			}
+		}
+		strncpy(new_agent, m_mount_guider_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+
+		indigo_debug("[SELECTED] %s '%s' %s -> %s\n", __FUNCTION__, selected_agent, old_agent, new_agent);
+		change_related_agent(selected_agent, old_agent, new_agent);
+	});
+}
+
 
 void ImagerWindow::on_mount_agent_selected(int index) {
 	QtConcurrent::run([=]() {

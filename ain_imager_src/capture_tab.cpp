@@ -572,7 +572,7 @@ void ImagerWindow::on_dither_agent_selected(int index) {
 		strncpy(new_agent, m_dither_agent_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
 
 		indigo_debug("[SELECTED] %s '%s' %s -> %s\n", __FUNCTION__, selected_agent, old_agent, new_agent);
-		change_related_dither_agent(selected_agent, old_agent, new_agent);
+		change_related_agent(selected_agent, old_agent, new_agent);
 	});
 }
 

@@ -88,7 +88,7 @@ void ImagerWindow::change_ccd_upload_property(const char *agent, const char *ite
 	indigo_change_switch_property(nullptr, agent, CCD_UPLOAD_MODE_PROPERTY_NAME, 1, items, values);
 }
 
-void ImagerWindow::change_related_dither_agent(const char *agent, const char *old_agent, const char *new_agent) const {
+void ImagerWindow::change_related_agent(const char *agent, const char *old_agent, const char *new_agent) const {
 	if (old_agent[0] != '\0') {
 		static const char * items[] = {
 			old_agent

@@ -1738,6 +1738,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 
 	// Mount agent
+	if (client_match_device_property(property, selected_mount_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
+		add_items_to_combobox_filtered(this, property, "Guider Agent", m_mount_guider_select);
+	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_MOUNT_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_mount_select);
 	}
@@ -1959,6 +1962,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 
 	// Mount Agent
+	if (client_match_device_property(property, selected_mount_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
+		change_combobox_selection_filtered(this, property, "Guider Agent", m_mount_guider_select);
+	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_MOUNT_LIST_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_mount_select);
 	}
@@ -2271,6 +2277,11 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	}
 
 	// Mount Agent
+	if (client_match_device_property(property, selected_mount_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		clear_combobox(m_mount_guider_select);
+	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_MOUNT_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
