@@ -324,7 +324,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 
 	obj_row++;
 	m_object_list = new QListWidget();
-	m_object_list->setStyleSheet("QListWidget {border: 1px solid #353535;}");
+	m_object_list->setStyleSheet("QListWidget {border: 1px solid #404040;}");
 	obj_frame_layout->addWidget(m_object_list, obj_row, 0, 1, 2);
 	connect(m_object_list, &QListWidget::itemSelectionChanged, this, &ImagerWindow::on_object_selected);
 	connect(m_object_list, &QListWidget::itemClicked, this, &ImagerWindow::on_object_clicked);

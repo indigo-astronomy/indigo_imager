@@ -19,10 +19,10 @@
 #ifndef _WIDGET_STATE_H
 #define _WIDGET_STATE_H
 
-#define set_alert(widget) (widget->setStyleSheet("*:enabled { background-color: #312222;} *:!enabled { background-color: #292222;}"))
-#define set_idle(widget) (widget->setStyleSheet("*:enabled {background-color: #252525;} *:!enabled {background-color: #252525;}"))
-#define set_busy(widget) (widget->setStyleSheet("*:enabled {background-color: #313120;} *:!enabled {background-color: #292920;}"))
-#define set_ok(widget) (widget->setStyleSheet("*:enabled {background-color: #252525;} QSpinBox:!enabled {background-color: #202020;}"))
+#define set_alert(widget) (widget->setStyleSheet("*:enabled { background-color: #342424;} *:!enabled { background-color: #322424;}"))
+#define set_idle(widget) (widget->setStyleSheet("*:enabled {background-color: #272727;} *:!enabled {background-color: #272727;}"))
+#define set_busy(widget) (widget->setStyleSheet("*:enabled {background-color: #343422;} *:!enabled {background-color: #323222;}"))
+#define set_ok(widget) (widget->setStyleSheet("*:enabled {background-color: #272727;} QSpinBox:!enabled {background-color: #222222;}"))
 #define set_ok2(widget) (widget->setStyleSheet("background-color: #273727;"))
 
 #endif /* _WIDGET_STATE_H */
