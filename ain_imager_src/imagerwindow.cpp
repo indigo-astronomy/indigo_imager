@@ -270,28 +270,28 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	tools_panel->setLayout(tools_panel_layout);
 
 	// Tools tabbar
-	QTabWidget *tools_tabbar = new QTabWidget;
-	tools_panel_layout->addWidget(tools_tabbar);
+	m_tools_tabbar = new QTabWidget;
+	tools_panel_layout->addWidget(m_tools_tabbar);
 
 	QFrame *capture_frame = new QFrame();
-	tools_tabbar->addTab(capture_frame, "&Capture");
+	m_tools_tabbar->addTab(capture_frame, "&Capture");
 	create_imager_tab(capture_frame);
 
 	QFrame *focuser_frame = new QFrame;
-	tools_tabbar->addTab(focuser_frame, "F&ocus");
+	m_tools_tabbar->addTab(focuser_frame, "F&ocus");
 	create_focuser_tab(focuser_frame);
-	//tools_tabbar->setTabEnabled(1, false);
+	//m_tools_tabbar->setTabEnabled(1, false);
 
 	QFrame *guider_frame = new QFrame;
-	tools_tabbar->addTab(guider_frame, "&Guide");
+	m_tools_tabbar->addTab(guider_frame, "&Guide");
 	create_guider_tab(guider_frame);
 
 	QFrame *telescope_frame = new QFrame;
-	tools_tabbar->addTab(telescope_frame, "&Telescope");
+	m_tools_tabbar->addTab(telescope_frame, "&Telescope");
 	create_telescope_tab(telescope_frame);
 
 	QFrame *solver_frame = new QFrame;
-	tools_tabbar->addTab(solver_frame, "&Solver");
+	m_tools_tabbar->addTab(solver_frame, "&Solver");
 	create_solver_tab(solver_frame);
 
 	/*
@@ -300,7 +300,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	//create_telescope_tab(sequence_frame);
 	*/
 
-	connect(tools_tabbar, &QTabWidget::currentChanged, this, &ImagerWindow::on_tab_changed);
+	connect(m_tools_tabbar, &QTabWidget::currentChanged, this, &ImagerWindow::on_tab_changed);
 
 	// Image viewer
 	m_imager_viewer = new ImageViewer(this);

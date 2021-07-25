@@ -459,6 +459,7 @@ public slots:
 	};
 private:
 	QTextEdit* mLog;
+	QTabWidget *m_tools_tabbar;
 
 	// Capture tab
 	QComboBox *m_agent_imager_select;

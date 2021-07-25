@@ -1539,6 +1539,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			});
 		}
 		if (client_match_device_property(property, property->device, SERVER_INFO_PROPERTY_NAME)) {
+			on_tab_changed(m_tools_tabbar->currentIndex());
 			indigo_item *item = indigo_get_item(property, SERVER_INFO_VERSION_ITEM_NAME);
 			if (item) {
 				int version_major;
@@ -2484,6 +2485,7 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 		client_match_device_no_property(property, property->device)) {
 		QString name = QString(property->device);
 
+		on_tab_changed(m_tools_tabbar->currentIndex());
 		int selected_index = m_agent_imager_select->currentIndex();
 		int index = m_agent_imager_select->findText(name);
 		if (index >= 0) {
