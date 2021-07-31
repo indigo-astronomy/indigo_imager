@@ -38,7 +38,8 @@ SOURCES += \
 	../common_src/imageviewer.cpp \
 	../common_src/fits.c \
 	../common_src/debayer.c \
-	../external/qcustomplot/qcustomplot.cpp
+	../external/qcustomplot/qcustomplot.cpp \
+	../common_src/coordconv.c
 
 
 RESOURCES += \
@@ -106,7 +107,8 @@ HEADERS += \
 	../common_src/fits.h \
 	../common_src/debayer.h \
 	../common_src/pixelformat.h \
-	../external/qcustomplot/qcustomplot.h
+	../external/qcustomplot/qcustomplot.h \
+	../common_src/coordconv.h
 
 
 

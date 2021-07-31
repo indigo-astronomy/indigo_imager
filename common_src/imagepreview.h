@@ -23,8 +23,8 @@
 #include <QHash>
 #include <indigo/indigo_client.h>
 #include <pixelformat.h>
-
 #include <image_preview_lut.h>
+#include <coordconv.h>
 
 #if !defined(INDIGO_WINDOWS)
 #define USE_LIBJPEG
@@ -40,7 +40,11 @@ public:
 		m_histogram(nullptr),
 		m_width(0),
 		m_height(0),
-		m_pix_format(0)
+		m_pix_format(0),
+		m_center_ra(0),
+		m_center_dec(0),
+		m_rotation_angle(0),
+		m_pix_scale(0)
 	{};
 
 	//preview_image(preview_image &&other) = delete;
@@ -57,7 +61,11 @@ public:
 		m_histogram(nullptr),
 		m_width(0),
 		m_height(0),
-		m_pix_format(0)
+		m_pix_format(0),
+		m_center_ra(0),
+		m_center_dec(0),
+		m_rotation_angle(0),
+		m_pix_scale(0)
 	{};
 
 	preview_image(preview_image &image): QImage(image) {
@@ -66,6 +74,10 @@ public:
 		m_width = image.m_width;
 		m_height = image.m_height;
 		m_pix_format = image.m_pix_format;
+		m_center_ra = image.m_center_ra;
+		m_center_dec = image.m_center_dec;
+		m_rotation_angle = image.m_rotation_angle;
+		m_pix_scale = image.m_pix_scale;
 
 		if (image.m_raw_data == nullptr) {
 			m_raw_data = nullptr;
@@ -106,6 +118,10 @@ public:
 		m_width = image.m_width;
 		m_height = image.m_height;
 		m_pix_format = image.m_pix_format;
+		m_center_ra = image.m_center_ra;
+		m_center_dec = image.m_center_dec;
+		m_rotation_angle = image.m_rotation_angle;
+		m_pix_scale = image.m_pix_scale;
 
 		if (image.m_raw_data == nullptr) {
 			if (m_raw_data) free(m_raw_data);
@@ -194,11 +210,27 @@ public:
 		return m_pix_format;
 	};
 
+	void set_wcs_data(double center_ra, double center_dec, double rotation_angle, double pix_scale) {
+		m_center_ra = center_ra;
+		m_center_dec = center_dec;
+		m_rotation_angle = rotation_angle;
+		m_pix_scale = pix_scale;
+	}
+
+	int wcs_data(double x, double y, double *ra, double *dec, double *pix_scale = nullptr) {
+		//double xu, yu;
+		//derotate_xy(x,y, m_rotation_angle, &xu, &yu);
+	}
+
 	char *m_raw_data;
 	int *m_histogram;
 	int m_width;
 	int m_height;
 	int m_pix_format;
+	double m_center_ra;
+	double m_center_dec;
+	double m_rotation_angle;
+	double m_pix_scale;
 };
 
 preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_size);
