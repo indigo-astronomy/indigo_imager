@@ -44,7 +44,7 @@ typedef struct {
 } spherical_point_t;
 
 /* convert spherical to cartesian coordinates */
-cartesian_point_t indigo_spherical_to_cartesian(const spherical_point_t *spoint);
+cartesian_point_t spherical_to_cartesian(const spherical_point_t *spoint);
 
 /* convert spherical (in radians) to cartesian coordinates */
 spherical_point_t cartesian_to_sphercal(const cartesian_point_t *cpoint);

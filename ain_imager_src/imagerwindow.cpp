@@ -463,6 +463,7 @@ void ImagerWindow::show_selected_preview_in_solver_tab(QString &solver_source) {
 		m_imager_viewer->setVisible(true);
 		m_guider_viewer->setVisible(false);
 	}
+	m_visible_viewer->showWCS(true);
 }
 
 void ImagerWindow::on_tab_changed(int index) {
@@ -473,6 +474,8 @@ void ImagerWindow::on_tab_changed(int index) {
 			m_imager_viewer->setVisible(true);
 			m_guider_viewer->setVisible(false);
 		}
+		if (index == 3) m_visible_viewer->showWCS(true);
+		else m_visible_viewer->showWCS(false);
 	} else if (index == 2) {
 		if (m_visible_viewer != m_guider_viewer) {
 			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_guider_viewer);
@@ -480,6 +483,7 @@ void ImagerWindow::on_tab_changed(int index) {
 			m_guider_viewer->setVisible(true);
 			m_imager_viewer->setVisible(false);
 		}
+		m_visible_viewer->showWCS(false);
 	} else if (index == 4) {
 		QString solver_source = m_solver_source_select1->currentText();
 		show_selected_preview_in_solver_tab(solver_source);

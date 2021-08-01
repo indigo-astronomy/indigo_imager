@@ -98,6 +98,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
 	m_ref_y->setVisible(false);
 
 	m_ref_visible = false;
+	m_show_wcs = false;
 
 	m_selection = new QGraphicsRectItem(0,0,25,25, m_pixmap);
 	m_selection->setBrush(QBrush(Qt::NoBrush));
@@ -374,6 +375,10 @@ void ImageViewer::moveReference(double x, double y) {
 	m_ref_y->setLine(0, cor_y, x_len, cor_y);
 }
 
+void ImageViewer::showWCS(bool show) {
+	m_show_wcs = show;
+}
+
 void ImageViewer::showEdgeClipping(bool show) {
 	if (show) {
 		m_edge_clipping_visible = true;
@@ -557,18 +562,23 @@ void ImageViewer::zoomOut() {
 void ImageViewer::mouseAt(double x, double y) {
 	if (m_pixmap->image().valid(x,y)) {
 		int r,g,b;
+		double ra, dec;
 		int pix_format = m_pixmap->image().pixel_value(x, y, r, g, b);
-
+		int res = m_pixmap->image().wcs_data(x, y, &ra, &dec);
 		QString s;
-		if (pix_format == PIX_FMT_INDEX) {
-			s.sprintf("%d%% [%5.1f, %5.1f]", m_zoom_level, x, y);
+		if (res != -1 && m_show_wcs) {
+			s.sprintf("%d%% [%5.1f, %5.1f] α = %s δ = %s ", m_zoom_level, x, y, indigo_dtos(ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(dec, "%d° %02d' %04.1f\""));
 		} else {
-			if (g == -1) {
-				//s = QString("%1% [%2, %3] (%4)").arg(scale).arg(x).arg(y).arg(r);
-				s.sprintf("%d%% [%5.1f, %5.1f] (%5d)", m_zoom_level, x, y, r);
+			if (pix_format == PIX_FMT_INDEX) {
+				s.sprintf("%d%% [%5.1f, %5.1f]", m_zoom_level, x, y);
 			} else {
-				//s = QString("%1% [%2, %3] (%4, %5, %6)").arg(scale).arg(x).arg(y).arg(r).arg(g).arg(b);
-				s.sprintf("%d%% [%5.1f, %5.1f] (%5d, %5d, %5d)", m_zoom_level, x, y, r, g, b);
+				if (g == -1) {
+					//s = QString("%1% [%2, %3] (%4)").arg(scale).arg(x).arg(y).arg(r);
+					s.sprintf("%d%% [%5.1f, %5.1f] (%5d)", m_zoom_level, x, y, r);
+				} else {
+					//s = QString("%1% [%2, %3] (%4, %5, %6)").arg(scale).arg(x).arg(y).arg(r).arg(g).arg(b);
+					s.sprintf("%d%% [%5.1f, %5.1f] (%5d, %5d, %5d)", m_zoom_level, x, y, r, g, b);
+				}
 			}
 		}
 		m_pixel_value->setText(s);

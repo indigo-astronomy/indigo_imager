@@ -19,6 +19,7 @@ SOURCES += \
 	main.cpp \
 	textdialog.cpp \
 	viewerwindow.cpp \
+	../common_src/coordconv.c \
 	../common_src/utils.cpp \
 	../common_src/imagepreview.cpp \
 	../common_src/imageviewer.cpp \
@@ -66,7 +67,8 @@ HEADERS += \
 	../common_src/fits.h \
 	../common_src/raw_to_fits.h \
 	../common_src/debayer.h \
-	../common_src/pixelformat.h
+	../common_src/pixelformat.h \
+	../common_src/coordconv.h
 
 #unix:!mac {
 #    CONFIG += link_pkgconfig

@@ -32,14 +32,14 @@ SOURCES += \
 	handlepropertychange.cpp \
 	focusgraph.cpp \
 	blobpreview.cpp \
+	../common_src/coordconv.c \
 	../object_data/indigo_cat_data.c \
 	../common_src/utils.cpp \
 	../common_src/imagepreview.cpp \
 	../common_src/imageviewer.cpp \
 	../common_src/fits.c \
 	../common_src/debayer.c \
-	../external/qcustomplot/qcustomplot.cpp \
-	../common_src/coordconv.c
+	../external/qcustomplot/qcustomplot.cpp
 
 
 RESOURCES += \

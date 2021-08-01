@@ -70,6 +70,8 @@ public slots:
 	void showReference(bool show);
 	void moveReference(double x, double y);
 
+	void showWCS(bool show);
+
 	void showEdgeClipping(bool show);
 	void resizeEdgeClipping(double edge_clipping);
 
@@ -129,6 +131,7 @@ private:
 	bool m_fit;
 	bool m_selection_visible;
 	bool m_ref_visible;
+	bool m_show_wcs;
 	bool m_edge_clipping_visible;
 	ToolBarMode m_bar_mode;
 	QAction *m_stretch_act[PREVIEW_STRETCH_COUNT];

@@ -22,7 +22,7 @@
 #include<coordconv.h>
 
 /* convert spherical to cartesian coordinates */
-cartesian_point_t indigo_spherical_to_cartesian(const spherical_point_t *spoint) {
+cartesian_point_t spherical_to_cartesian(const spherical_point_t *spoint) {
 	cartesian_point_t cpoint = {0,0,0};
 	double cos_d = cos(spoint->d);
 	cpoint.x = spoint->r * cos_d * cos(spoint->a);

@@ -217,9 +217,23 @@ public:
 		m_pix_scale = pix_scale;
 	}
 
-	int wcs_data(double x, double y, double *ra, double *dec, double *pix_scale = nullptr) {
-		//double xu, yu;
-		//derotate_xy(x,y, m_rotation_angle, &xu, &yu);
+	int wcs_data(double x, double y, double *ra, double *dec, double *pix_scale = nullptr) const {
+		if (m_pix_scale == 0) return -1;
+		double center_x = width() / 2.0;
+		double center_y = height() / 2.0;
+		double dxr = (x - center_x);
+		double dyr = (center_y - y);
+		double dx, dy;
+		//indigo_log("center_x = %f, center_y = %f => dxr = %f dyr = %f", center_x, center_y, dxr, dyr);
+		dxr *= m_pix_scale;
+		dyr *= m_pix_scale;
+		derotate_xy(dxr, dyr, m_rotation_angle, &dx, &dy);
+		//indigo_log("derotated x = %f, y = %f  ->  dra = %f ddec = %f scale %f", dxr, dyr, dx, dy, m_pix_scale);
+		*ra = m_center_ra + dx;
+		*dec = m_center_dec - dy;
+		if (pix_scale) *pix_scale = m_pix_scale;
+		indigo_debug("X,Y = %f, %f => RA, Dec = %s, %s", x, y, indigo_dtos(*ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(*dec, "%d° %02d' %04.1f\""));
+		return 0;
 	}
 
 	char *m_raw_data;
