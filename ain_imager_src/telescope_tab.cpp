@@ -160,10 +160,12 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 
 	m_mount_ra_input = new QLineEdit();
 	m_mount_ra_input->setPlaceholderText("hh:mm:ss");
+	m_mount_ra_input->setToolTip("Enter Right ascension in format hh:mm:ss or\nright-click on a solved image to load the coordinates");
 	telescope_frame_layout->addWidget(m_mount_ra_input, row, 2);
 
 	m_mount_dec_input = new QLineEdit();
 	m_mount_dec_input->setPlaceholderText("dd:mm:ss");
+	m_mount_dec_input->setToolTip("Enter Declination in format dd:mm:ss or\nright-click on a solved image to load the coordinates");
 	telescope_frame_layout->addWidget(m_mount_dec_input, row, 3);
 
 	row++;
@@ -770,6 +772,10 @@ void ImagerWindow::on_mount_gps_selected(int index) {
 	});
 }
 
+void ImagerWindow::on_image_right_click_ra_dec(double ra, double dec) {
+	set_text(m_mount_ra_input, indigo_dtos(ra / 15.0, "%d:%02d:%04.1f"));
+	set_text(m_mount_dec_input, indigo_dtos(dec, "%d:%02d:%04.1f"));
+}
 
 void ImagerWindow::on_mount_solve_and_center() {
 	trigger_solve_and_sync(true);

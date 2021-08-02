@@ -94,6 +94,7 @@ public slots:
 signals:
 	void imageChanged();
 	void mouseRightPress(double x, double y);
+	void mouseRightPressRADec(double ra, double dec);
 	void zoomChanged(double scale);
 	void stretchChanged(int level);
 	void previousRequested();
