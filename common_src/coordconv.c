@@ -21,50 +21,50 @@
 
 #include<coordconv.h>
 
-/* convert spherical to cartesian coordinates */
-cartesian_point_t spherical_to_cartesian(const spherical_point_t *spoint) {
-	cartesian_point_t cpoint = {0,0,0};
-	double cos_d = cos(spoint->d);
-	cpoint.x = spoint->r * cos_d * cos(spoint->a);
-	cpoint.y = spoint->r * cos_d * sin(spoint->a);
-	cpoint.z = spoint->r * sin(spoint->d);
-	return cpoint;
-}
-
-/* convert spherical (in radians) to cartesian coordinates */
-spherical_point_t cartesian_to_sphercal(const cartesian_point_t *cpoint) {
-	spherical_point_t spoint = {0,0,0};
-	spoint.r = sqrt(cpoint->x * cpoint->x + cpoint->y * cpoint->y + cpoint->z * cpoint->z);
-	spoint.a = atan(cpoint->y / cpoint->x);
-	spoint.d = acos(cpoint->z / spoint.r);
-	return spoint;
-}
-
-/* convert spherical point in radians to ha/ra dec in hours and degrees */
-void spherical_to_ra_dec(const spherical_point_t *spoint, const double lst, double *ra, double *dec) {
-	*ra  = lst + spoint->a / DEG2RAD / 15.0 ;
-	if (*ra > 24) {
-		*ra -= 24.0;
-	}
-	*dec = spoint->d / DEG2RAD;
-}
-
-/* convert ha/ra dec in hours and degrees to spherical point in radians */
-void ra_dec_to_point(const double ra, const double dec, const double lst, spherical_point_t *spoint) {
-	double ha = lst - ra;
-	if (ha < 0) {
-		ha += 24;
-	}
-	spoint->a = ha * 15.0 * DEG2RAD;
-	spoint->d = dec * DEG2RAD;
-	spoint->r = 1;
-}
-
 /* derotate xr yr on the image rotated at angle */
-void derotate_xy(double xr, double yr, double angle, double *x, double *y) {
-	double angler = angle * DEG2RAD;
+int derotate_xy(double xr, double yr, double angle, int parity, double *x, double *y) {
+	double angler = angle;
+	if (parity == -1) {
+		angler += 180;
+	} else if (parity == 0) {
+		return -1;
+	}
+	angler *= DEG2RAD;
 	double sin_a = sin(angler);
 	double cos_a = cos(angler);
 	*x = xr * cos_a - yr * sin_a;
 	*y = xr * sin_a + yr * cos_a;
+	return 0;
+}
+
+// Gnomonic procjection Radius
+double gn_R0(double xy_radius, double pix_scale) {
+	if (xy_radius <= 0 || pix_scale <= 0) {
+		return -1;
+	}
+	double ang_R = xy_radius * pix_scale / 2 * DEG2RAD;
+	return xy_radius * cos(ang_R) / (2 * sin(ang_R));
+}
+
+// Gnomonic image X Y to Ra Dec
+void gn_xy2radec(double x, double y, double x0, double y0, double ra0, double dec0, double R0, double *ra, double *dec) {
+	double sin_ra0 = sin(ra0 * DEG2RAD);
+	double cos_ra0 = cos(ra0 * DEG2RAD);
+
+	double sin_dec0 = sin(dec0 * DEG2RAD);
+	double cos_dec0 = cos(dec0 * DEG2RAD);
+
+	double dx = x - x0;
+	double dy = y - y0;
+
+	double psi = dx * sin_ra0 - dy * sin_dec0 *  cos_ra0 + R0 * cos_dec0 * cos_ra0;
+	double eta = dy * cos_dec0 + R0 *  sin_dec0;
+	double ksi = -1 * dx * cos_ra0- dy * sin_dec0 * sin_ra0 + R0 * cos_dec0 * sin_ra0;
+
+	double sin_dec = eta / sqrt ( ksi * ksi + eta * eta + psi * psi);
+
+	*dec  = atan2(sin_dec, sqrt(1 - sin_dec * sin_dec)) * RAD2DEG;
+	*ra = atan2(ksi, psi) * RAD2DEG;
+
+	if (ra < 0) { ra += 360; }
 }

@@ -590,7 +590,7 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 
 	// To be fixed should work on selected image
 	auto im = (preview_image &)w->m_visible_viewer->pixmapItem()->image();
-	im.set_wcs_data(ra * 15, dec, angle, scale);
+	im.set_wcs_data(ra * 15, dec, angle, parity, scale);
 	w->m_visible_viewer->setImage(im);
 
 	QString ra_str(indigo_dtos(ra, "%dh %02d' %04.1f\""));

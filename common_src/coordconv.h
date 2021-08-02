@@ -31,32 +31,15 @@ extern "C" {
 #define  DEG2RAD (M_PI / 180.0)
 #define  RAD2DEG (180.0 / M_PI)
 
-typedef struct {
-	double x;
-	double y;
-	double z;
-} cartesian_point_t;
-
-typedef struct {
-	double a;   /* longitude, az, ra, ha in radians*/
-	double d;   /* latitude, alt, dec in radians */
-	double r;   /* radius (1 for celestial coordinates) */
-} spherical_point_t;
-
-/* convert spherical to cartesian coordinates */
-cartesian_point_t spherical_to_cartesian(const spherical_point_t *spoint);
-
-/* convert spherical (in radians) to cartesian coordinates */
-spherical_point_t cartesian_to_sphercal(const cartesian_point_t *cpoint);
-
-/* convert spherical point in radians to ha/ra dec in hours and degrees */
-void spherical_to_ra_dec(const spherical_point_t *spoint, const double lst, double *ra, double *dec);
-
-/* convert ha/ra dec in hours and degrees to spherical point in radians */
-void ra_dec_to_point(const double ra, const double dec, const double lst, spherical_point_t *spoint);
-
 /* derotate xr yr on the image rotated at angle */
-void derotate_xy(double xr, double yr, double angle, double *x, double *y);
+int derotate_xy(double xr, double yr, double angle, int parity, double *x, double *y);
+
+// Gnomonic procjection Radius
+double gn_R0(double xy_radius, double pix_scale);
+
+// Gnomonic image X Y to Ra Dec
+void gn_xy2radec(double x, double y, double x0, double y0, double ra0, double dec0, double R0, double *ra, double *dec);
+
 
 #ifdef __cplusplus
 }

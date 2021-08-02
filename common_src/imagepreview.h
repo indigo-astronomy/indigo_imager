@@ -44,6 +44,7 @@ public:
 		m_center_ra(0),
 		m_center_dec(0),
 		m_rotation_angle(0),
+		m_parity(0),
 		m_pix_scale(0)
 	{};
 
@@ -65,6 +66,7 @@ public:
 		m_center_ra(0),
 		m_center_dec(0),
 		m_rotation_angle(0),
+		m_parity(0),
 		m_pix_scale(0)
 	{};
 
@@ -77,6 +79,7 @@ public:
 		m_center_ra = image.m_center_ra;
 		m_center_dec = image.m_center_dec;
 		m_rotation_angle = image.m_rotation_angle;
+		m_parity = image.m_parity;
 		m_pix_scale = image.m_pix_scale;
 
 		if (image.m_raw_data == nullptr) {
@@ -121,6 +124,7 @@ public:
 		m_center_ra = image.m_center_ra;
 		m_center_dec = image.m_center_dec;
 		m_rotation_angle = image.m_rotation_angle;
+		m_parity = image.m_parity;
 		m_pix_scale = image.m_pix_scale;
 
 		if (image.m_raw_data == nullptr) {
@@ -210,10 +214,11 @@ public:
 		return m_pix_format;
 	};
 
-	void set_wcs_data(double center_ra, double center_dec, double rotation_angle, double pix_scale) {
+	void set_wcs_data(double center_ra, double center_dec, double rotation_angle, int parity, double pix_scale) {
 		m_center_ra = center_ra;
 		m_center_dec = center_dec;
 		m_rotation_angle = rotation_angle;
+		m_parity = parity;
 		m_pix_scale = pix_scale;
 	}
 
@@ -224,15 +229,17 @@ public:
 		double dxr = (x - center_x);
 		double dyr = (center_y - y);
 		double dx, dy;
-		//indigo_log("center_x = %f, center_y = %f => dxr = %f dyr = %f", center_x, center_y, dxr, dyr);
-		dxr *= m_pix_scale;
-		dyr *= m_pix_scale;
-		derotate_xy(dxr, dyr, m_rotation_angle, &dx, &dy);
-		//indigo_log("derotated x = %f, y = %f  ->  dra = %f ddec = %f scale %f", dxr, dyr, dx, dy, m_pix_scale);
-		*ra = m_center_ra + dx;
-		*dec = m_center_dec - dy;
+
+		if (derotate_xy(dxr, dyr, m_rotation_angle, m_parity, &dx, &dy)) return -1;
+
+		double radius = sqrt(dx * dx + dy * dy);
+		double gn_radius = gn_R0(radius, m_pix_scale);
+		if (gn_radius <= 0) return 0;
+
+		gn_xy2radec(dx, dy, 0, 0, m_center_ra, m_center_dec, gn_radius, ra, dec);
+
 		if (pix_scale) *pix_scale = m_pix_scale;
-		indigo_debug("X,Y = %f, %f => RA, Dec = %s, %s", x, y, indigo_dtos(*ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(*dec, "%d° %02d' %04.1f\""));
+		indigo_debug("x = %f, y = %f => RA = %s, Dec = %s", x, y, indigo_dtos(*ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(*dec, "%d° %02d' %04.1f\""));
 		return 0;
 	}
 
@@ -244,6 +251,7 @@ public:
 	double m_center_ra;
 	double m_center_dec;
 	double m_rotation_angle;
+	int m_parity;
 	double m_pix_scale;
 };
 
