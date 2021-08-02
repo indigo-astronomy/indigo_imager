@@ -651,6 +651,7 @@ void ImagerWindow::trigger_solve() {
 	strncpy(selected_image_agent, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
 	strncpy(selected_solver_source, selected_image_agent, INDIGO_NAME_SIZE);
 	add_indigo_device_domain(selected_image_agent, domain_name);
+	m_last_solver_source = QString(selected_solver_source);
 
 	get_selected_mount_agent(selected_mount_agent);
 	remove_indigo_device_domain(selected_mount_agent, 1);
@@ -696,6 +697,7 @@ void ImagerWindow::trigger_solve_and_sync(bool recenter) {
 	strncpy(selected_image_agent, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
 	strncpy(selected_solver_source, selected_image_agent, INDIGO_NAME_SIZE);
 	add_indigo_device_domain(selected_image_agent, domain_name);
+	m_last_solver_source = QString(selected_solver_source);
 
 	get_selected_mount_agent(selected_mount_agent);
 	remove_indigo_device_domain(selected_mount_agent, 1);

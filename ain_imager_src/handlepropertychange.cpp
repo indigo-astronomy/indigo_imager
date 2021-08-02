@@ -539,10 +539,26 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 		}
 	}
 
+	// Set WCS data to the appropriate image
+	if (w->m_last_solver_source.startsWith("Imager Agent")) {
+		auto im = (preview_image &)w->m_imager_viewer->pixmapItem()->image();
+		im.set_wcs_data(ra * 15, dec, angle, parity, scale);
+		w->m_imager_viewer->setImage(im);
+	} else if (w->m_last_solver_source.startsWith("Guider Agent")) {
+		auto im = (preview_image &)w->m_guider_viewer->pixmapItem()->image();
+		im.set_wcs_data(ra * 15, dec, angle, parity, scale);
+		w->m_guider_viewer->setImage(im);
+	} else {
+		auto im = (preview_image &)w->m_visible_viewer->pixmapItem()->image();
+		im.set_wcs_data(ra * 15, dec, angle, parity, scale);
+		w->m_visible_viewer->setImage(im);
+	}
+
 	w->set_widget_state(w->m_mount_solve_and_center_button, property->state);
 	w->set_widget_state(w->m_mount_solve_and_sync_button, property->state);
 	w->set_widget_state(w->m_solve_button, property->state);
 	if (property->state == INDIGO_OK_STATE) {
+		w->m_last_solver_source = "";
 		if (scale != 0) {
 			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-green.png\"> Solved");
 			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-green.png\"> Solved");
@@ -555,6 +571,7 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 		//w->set_enabled(w->m_solve_button, true);
 		w->m_solve_button->setIcon(QIcon(":resource/play.png"));
 	} else if (property->state == INDIGO_ALERT_STATE) {
+		w->m_last_solver_source = "";
 		w->set_enabled(w->m_mount_solve_and_center_button, true);
 		w->set_enabled(w->m_mount_solve_and_sync_button, true);
 		//w->set_enabled(w->m_solve_button, true);
@@ -587,11 +604,6 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 		w->set_enabled(w->m_solver_ra_hint, true);
 		w->set_enabled(w->m_solver_dec_hint, true);
 	}
-
-	// To be fixed should work on selected image
-	auto im = (preview_image &)w->m_visible_viewer->pixmapItem()->image();
-	im.set_wcs_data(ra * 15, dec, angle, parity, scale);
-	w->m_visible_viewer->setImage(im);
 
 	QString ra_str(indigo_dtos(ra, "%dh %02d' %04.1f\""));
 	w->set_text(w->m_solver_ra_solution, ra_str);

@@ -647,6 +647,7 @@ private:
 	QSpinBox *m_solver_parity_hint;
 	QSpinBox *m_solver_depth_hint;
 	QSpinBox *m_solver_tlimit_hint;
+	QString m_last_solver_source;
 
 	int m_stderr;
 

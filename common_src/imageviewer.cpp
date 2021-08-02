@@ -567,7 +567,8 @@ void ImageViewer::mouseAt(double x, double y) {
 		int res = m_pixmap->image().wcs_data(x, y, &ra, &dec);
 		QString s;
 		if (res != -1 && m_show_wcs) {
-			s.sprintf("%d%% [%5.1f, %5.1f] α = %s δ = %s ", m_zoom_level, x, y, indigo_dtos(ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(dec, "%d° %02d' %04.1f\""));
+			s.sprintf("%d%% [%5.1f, %5.1f] (%s, %s) ", m_zoom_level, x, y, indigo_dtos(ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(dec, "%+d° %02d' %04.1f\""));
+			//s.sprintf("%d%% [%5.1f, %5.1f] α = %s δ = %s ", m_zoom_level, x, y, indigo_dtos(ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(dec, "%+d° %02d' %04.1f\""));
 		} else {
 			if (pix_format == PIX_FMT_INDEX) {
 				s.sprintf("%d%% [%5.1f, %5.1f]", m_zoom_level, x, y);

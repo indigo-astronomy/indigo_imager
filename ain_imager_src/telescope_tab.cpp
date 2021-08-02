@@ -773,8 +773,12 @@ void ImagerWindow::on_mount_gps_selected(int index) {
 }
 
 void ImagerWindow::on_image_right_click_ra_dec(double ra, double dec) {
+	char message[255];
+
 	set_text(m_mount_ra_input, indigo_dtos(ra / 15.0, "%d:%02d:%04.1f"));
 	set_text(m_mount_dec_input, indigo_dtos(dec, "%d:%02d:%04.1f"));
+	snprintf(message, 255, "Loaded α = %s, δ = %s, push Goto to center", indigo_dtos(ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(dec, "%+d° %02d' %04.1f\""));
+	on_window_log(nullptr, message);
 }
 
 void ImagerWindow::on_mount_solve_and_center() {
