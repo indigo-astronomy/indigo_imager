@@ -66,5 +66,5 @@ void gn_xy2radec(double x, double y, double x0, double y0, double ra0, double de
 	*dec  = atan2(sin_dec, sqrt(1 - sin_dec * sin_dec)) * RAD2DEG;
 	*ra = atan2(ksi, psi) * RAD2DEG;
 
-	if (ra < 0) { ra += 360; }
+	if (*ra < 0) { *ra += 360; }
 }
