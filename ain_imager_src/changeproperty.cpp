@@ -320,6 +320,11 @@ void ImagerWindow::change_agent_focus_params_property(const char *agent) const {
 	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME, 4, items, values);
 }
 
+void ImagerWindow::change_agent_focuser_backlash(const char *agent) const {
+	double value = (double)m_focus_backlash->value();
+	indigo_change_number_property_1(nullptr, agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME, AGENT_IMAGER_FOCUS_BACKLASH_ITEM_NAME, value);
+}
+
 void ImagerWindow::change_agent_start_exposure_property(const char *agent) const {
 	static const char *items[] = {
 		AGENT_IMAGER_START_EXPOSURE_ITEM_NAME

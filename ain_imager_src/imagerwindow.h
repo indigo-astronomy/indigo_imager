@@ -245,6 +245,7 @@ public slots:
 	void on_focus_in(bool clicked);
 	void on_focus_out(bool clicked);
 	void on_focuser_subframe_changed(int index);
+	void on_focuser_backlash_changed(int value);
 
 	void on_guider_agent_selected(int index);
 	void on_guider_camera_selected(int index);
@@ -702,6 +703,7 @@ private:
 	void change_agent_start_focusing_property(const char *agent) const;
 	void change_agent_star_selection(const char *agent) const;
 	void change_agent_focus_params_property(const char *agent) const;
+	void change_agent_focuser_backlash(const char *agent) const;
 	void change_focuser_steps_property(const char *agent) const;
 	void change_focuser_position_property(const char *agent) const;
 	void change_focuser_focus_in_property(const char *agent) const;

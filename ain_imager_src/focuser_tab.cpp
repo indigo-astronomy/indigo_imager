@@ -286,6 +286,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_backlash->setValue(0);
 	//m_focus_backlash->setEnabled(false);
 	settings_frame_layout->addWidget(m_focus_backlash, settings_row, 1);
+	connect(m_focus_backlash, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_focuser_backlash_changed);
 
 	label = new QLabel("Stacking:");
 	settings_frame_layout->addWidget(label, settings_row, 2);
@@ -349,6 +350,15 @@ void ImagerWindow::on_focuser_selected(int index) {
 		static const char * items[] = { selected_focuser };
 		static bool values[] = { true };
 		indigo_change_switch_property(nullptr, selected_agent, FILTER_FOCUSER_LIST_PROPERTY_NAME, 1, items, values);
+	});
+}
+
+void ImagerWindow::on_focuser_backlash_changed(int value) {
+	QtConcurrent::run([=]() {
+		char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_agent_focuser_backlash(selected_agent);
 	});
 }
 
