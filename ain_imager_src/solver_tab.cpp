@@ -244,7 +244,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 
 void ImagerWindow::update_solver_widgets_at_start(const char *imager_agent, const char *solver_agent) {
 	bool done = false;
-	int wait_busy = 25;
+	int wait_busy = 40; // wait 4s to start exposure
 	set_text(m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Waiting for image");
 	set_text(m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Waiting for image");
 	set_widget_state(m_mount_solve_and_sync_button, INDIGO_BUSY_STATE);
