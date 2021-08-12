@@ -40,6 +40,8 @@ double gn_R0(double xy_radius, double pix_scale);
 // Gnomonic image X Y to Ra Dec
 void gn_xy2radec(double x, double y, double x0, double y0, double ra0, double dec0, double R0, double *ra, double *dec);
 
+// Gnomomic Ra Dec to X Y
+void gn_radec2xy(double ra, double dec, double ra0, double dec0, double x0, double y0, double R0, double *x, double *y);
 
 #ifdef __cplusplus
 }

@@ -61,10 +61,28 @@ void gn_xy2radec(double x, double y, double x0, double y0, double ra0, double de
 	double eta = dy * cos_dec0 + R0 *  sin_dec0;
 	double ksi = -1 * dx * cos_ra0- dy * sin_dec0 * sin_ra0 + R0 * cos_dec0 * sin_ra0;
 
-	double sin_dec = eta / sqrt ( ksi * ksi + eta * eta + psi * psi);
+	double sin_dec = eta / sqrt (ksi * ksi + eta * eta + psi * psi);
 
 	*dec  = atan2(sin_dec, sqrt(1 - sin_dec * sin_dec)) * RAD2DEG;
 	*ra = atan2(ksi, psi) * RAD2DEG;
 
 	if (*ra < 0) { *ra += 360; }
+}
+
+void gn_radec2xy(double ra, double dec, double ra0, double dec0, double x0, double y0, double R0, double *x, double *y) {
+	double sin_dec0 = sin(dec0 * DEG2RAD);
+	double cos_dec0 = cos(dec0 * DEG2RAD);
+
+	double sin_ra = sin(ra * DEG2RAD);
+	double cos_ra = cos(ra * DEG2RAD);
+
+	double sin_dec = sin(dec * DEG2RAD);
+	double cos_dec = cos(dec * DEG2RAD);
+
+	double dra = (ra - ra0) * DEG2RAD;
+	double sin_dra = sin(dra);
+	double cos_dra = cos(dra);
+
+	*x = x0 + R0 * (-1 * cos_dec * sin_dra) / (sin_dec * sin_dec0 + cos_dec * cos_dec0 * cos_dra);
+	*y = y0 + R0 * (sin_dec * cos_dec0 - cos_dec * sin_dec0 * cos_dra) / (sin_dec * sin_dec0 + cos_dec * cos_dec0 * cos_dra);
 }
