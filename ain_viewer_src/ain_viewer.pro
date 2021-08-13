@@ -56,10 +56,10 @@ else: unix:!android: target.path = /usr/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
-	version.h \
 	viewerwindow.h \
 	textdialog.h \
 	conf.h \
+	../common_src/version.h \
 	../common_src/utils.h \
 	../common_src/image_preview_lut.h \
 	../common_src/imagepreview.h \

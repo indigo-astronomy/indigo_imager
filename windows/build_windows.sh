@@ -51,7 +51,7 @@ mingw32-make -f Makefile.release
 cp release/${VIEWER}.exe ../${APP}_64/${APP}
 popd
 
-APP_VERSION=`grep AIN_VERSION ../ain_imager_src/version.h | sed 's/"//g' |awk '{ print $3 }'`
+APP_VERSION=`grep AIN_VERSION ../common_src/version.h | sed 's/"//g' |awk '{ print $3 }'`
 
 iscc -DArch=32 -DMyAppVersion=$APP_VERSION ${APP}.iss
 iscc -DArch=64 -DMyAppVersion=$APP_VERSION ${APP}.iss

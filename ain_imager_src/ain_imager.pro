@@ -87,7 +87,6 @@ else: unix:!android: target.path = /usr/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
-	version.h \
 	qservicemodel.h \
 	imagerwindow.h \
 	qindigoservice.h \
@@ -99,6 +98,7 @@ HEADERS += \
 	conf.h \
 	widget_state.h \
 	blobpreview.h \
+	../common_src/version.h \
 	../object_data/indigo_cat_data.h \
 	../common_src/utils.h \
 	../common_src/image_preview_lut.h \
