@@ -84,6 +84,7 @@ typedef struct {
 	char solver_image_source1[INDIGO_NAME_SIZE];
 	char solver_image_source2[INDIGO_NAME_SIZE];
 	bool save_noname_images;
+	char data_dir_prefix[PATH_LEN];
 	char unused[100];
 } conf_t;
 

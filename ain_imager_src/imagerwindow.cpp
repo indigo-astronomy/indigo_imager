@@ -57,8 +57,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_guide_log = nullptr;
 	m_guider_process = 0;
 	m_stderr = dup(STDERR_FILENO);
-	on_indigo_save_log(conf.indigo_save_log);
-	on_guider_save_log(conf.guider_save_log);
 
 	//  Set central widget of window
 	QWidget *central = new QWidget;
@@ -75,6 +73,9 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	mLog = new QTextEdit;
 	mLog->setReadOnly(true);
 
+	on_indigo_save_log(conf.indigo_save_log);
+	on_guider_save_log(conf.guider_save_log);
+
 	// Create menubar
 	QMenuBar *menu_bar = new QMenuBar;
 	QMenu *menu = new QMenu("&File");
@@ -88,6 +89,11 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	act = menu->addAction(tr("&Save Image As..."));
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_image_save_act);
+
+	menu->addSeparator();
+
+	act = menu->addAction(tr("Select &Data Directroy..."));
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_data_directory_prefix_act);
 
 	menu->addSeparator();
 
@@ -562,7 +568,7 @@ void ImagerWindow::save_blob_item(indigo_item *item) {
 			on_window_log(NULL, message);
 			return;
 		}
-		get_current_output_dir(location);
+		get_current_output_dir(location, conf.data_dir_prefix);
 		if (save_blob_item_with_prefix(item, location, file_name)) {
 			m_imager_viewer->setText(basename(file_name));
 			m_imager_viewer->setToolTip(file_name);
@@ -661,6 +667,29 @@ void ImagerWindow::on_image_save_act() {
 		snprintf(message, sizeof(message), "Can not save '%s'", file_name.toUtf8().data());
 		on_window_log(NULL, message);
 	}
+}
+
+void ImagerWindow::on_data_directory_prefix_act() {
+	char message[PATH_LEN+100];
+	QString qlocation = QDir::toNativeSeparators(QDir::homePath());
+	if (conf.data_dir_prefix[0] != '\0') qlocation = QString(conf.data_dir_prefix);
+
+	QString dir = QFileDialog::getExistingDirectory(this, tr("Select output data directory..."),
+		qlocation,
+		QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+
+	if (dir == "") return;
+	QFileInfo dir_info(QDir::toNativeSeparators(dir));
+	if(!dir_info.isWritable()) {
+		snprintf(message, sizeof(message), "Selected directory '%s' is not writable. Using the old one.", dir.toUtf8().data());
+		on_window_log(NULL, message);
+		return;
+	}
+
+	strncpy(conf.data_dir_prefix, dir.toUtf8().data(), PATH_LEN);
+	snprintf(message, sizeof(message), "Data will be saved to: '%s'", conf.data_dir_prefix);
+	on_window_log(NULL, message);
+	write_conf();
 }
 
 void ImagerWindow::on_exit_act() {
@@ -801,7 +830,7 @@ void ImagerWindow::on_guider_save_log(bool status) {
 			char file_name[255];
 			char path[PATH_LEN];
 			get_date_jd(time_str);
-			get_current_output_dir(path);
+			get_current_output_dir(path, conf.data_dir_prefix);
 			snprintf(file_name, sizeof(file_name), "%s" AIN_GUIDER_LOG_NAME_FORMAT, path, time_str);
 			m_guide_log = fopen(file_name, "a+");
 			if (m_guide_log) {
@@ -832,7 +861,7 @@ void ImagerWindow::on_indigo_save_log(bool status) {
 		char file_name[255];
 		char path[PATH_LEN];
 		get_date_jd(time_str);
-		get_current_output_dir(path);
+		get_current_output_dir(path, conf.data_dir_prefix);
 		snprintf(file_name, sizeof(file_name), "%s" AIN_INDIGO_LOG_NAME_FORMAT, path, time_str);
 		freopen(file_name,"a+", stderr);
 	} else {

@@ -78,6 +78,7 @@ int main(int argc, char *argv[]) {
 	conf.guider_save_log = false;
 	conf.indigo_save_log = false;
 	conf.save_noname_images = false;
+	conf.data_dir_prefix[0] = '\0';
 	read_conf();
 
 	if (!conf.use_system_locale) qunsetenv("LC_NUMERIC");

@@ -112,13 +112,22 @@ void get_time(char *time_str) {
 	snprintf(time_str + strlen(time_str), 255, ".%03ld", tmnow.tv_usec/1000);
 }
 
-void get_current_output_dir(char *output_dir) {
+void get_current_output_dir(char *output_dir, char *prefix) {
 	assert(output_dir != nullptr);
+	QString path_prefix = QDir::homePath();
 
-	if (QDir::homePath().length() > 0) {
+	if (prefix != nullptr && prefix[0] != '\0') path_prefix = QString(prefix);
+
+	if (path_prefix.length() > 0) {
 		char date_str[255] = {0};
 		get_date_jd(date_str);
-		QString qlocation = QDir::toNativeSeparators(QDir::homePath() + QObject::tr("/ain_data/") + QObject::tr(date_str) + QObject::tr("/"));
+		if (!path_prefix.endsWith("/")) {
+			path_prefix = path_prefix + QString("/");
+		}
+		if (!path_prefix.endsWith("/ain_data/")) {
+			path_prefix = path_prefix + QString("ain_data/");
+		}
+		QString qlocation = QDir::toNativeSeparators(path_prefix + QString(date_str) + QString("/"));
 		QDir dir = QDir::root();
 		dir.mkpath(qlocation);
 		strncpy(output_dir, qlocation.toUtf8().constData(), PATH_LEN);

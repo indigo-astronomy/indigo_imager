@@ -1447,7 +1447,7 @@ void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 	char timestamp[255];
 	char log_line[512];
 
-	if (!message) return;
+	if (!message || !mLog) return;
 
 	get_time(timestamp);
 
