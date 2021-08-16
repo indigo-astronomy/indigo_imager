@@ -74,7 +74,7 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	//act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_open_act);
 
-	act = menu->addAction(tr("FITS &Hedader"));
+	act = menu->addAction(tr("FITS &Header"));
 	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_H));
 	//act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_info_act);
@@ -85,7 +85,7 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	//act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_next_act);
 
-	act = menu->addAction(tr("&Previois Image"));
+	act = menu->addAction(tr("&Previous Image"));
 	act->setShortcut(QKeySequence(Qt::Key_Left));
 	act->setAutoRepeat(false);
 	//act->setShortcutVisibleInContextMenu(true);
