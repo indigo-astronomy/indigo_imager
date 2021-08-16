@@ -417,7 +417,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	mServiceModel->loadManualServices();
 }
 
-
 ImagerWindow::~ImagerWindow () {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
 	delete mLog;
@@ -434,6 +433,31 @@ ImagerWindow::~ImagerWindow () {
 		free(m_indigo_item);
 		m_indigo_item = nullptr;
 	}
+}
+
+void ImagerWindow::window_log(char *message, int state) {
+	char timestamp[255];
+	char log_line[512];
+
+	if (!message || !mLog) return;
+
+	get_time(timestamp);
+
+	switch (state) {
+	case INDIGO_ALERT_STATE:
+		mLog->setTextColor(QColor::fromRgb(224, 0, 0));
+		break;
+	case INDIGO_BUSY_STATE:
+		mLog->setTextColor(QColor::fromRgb(255, 165, 0));
+		break;
+	default:
+		mLog->setTextColor(Qt::white);
+		break;
+	}
+	snprintf(log_line, 512, "%s %s", timestamp, message);
+	indigo_log("[message] %s\n", log_line);
+	mLog->append(log_line);
+	mLog->verticalScrollBar()->setValue(mLog->verticalScrollBar()->maximum());
 }
 
 bool ImagerWindow::show_preview_in_imager_viewer(QString &key) {
@@ -565,7 +589,7 @@ void ImagerWindow::save_blob_item(indigo_item *item) {
 
 		if (m_object_name->text().trimmed() == "" && !conf.save_noname_images) {
 			snprintf(message, sizeof(message), "Image not saved, provide object name");
-			on_window_log(NULL, message);
+			window_log(message, INDIGO_BUSY_STATE);
 			return;
 		}
 		get_current_output_dir(location, conf.data_dir_prefix);
@@ -573,10 +597,10 @@ void ImagerWindow::save_blob_item(indigo_item *item) {
 			m_imager_viewer->setText(basename(file_name));
 			m_imager_viewer->setToolTip(file_name);
 			snprintf(message, sizeof(message), "Image saved to '%s'", file_name);
-			on_window_log(NULL, message);
+			window_log(message);
 		} else {
 			snprintf(message, sizeof(message), "Can not save '%s'", file_name);
-			on_window_log(NULL, message);
+			window_log(message, INDIGO_ALERT_STATE);
 		}
 	}
 }
@@ -662,10 +686,10 @@ void ImagerWindow::on_image_save_act() {
 		m_imager_viewer->setText(basename(file_name.toUtf8().data()));
 		m_imager_viewer->setToolTip(file_name);
 		snprintf(message, sizeof(message), "Image saved to '%s'", file_name.toUtf8().data());
-		on_window_log(NULL, message);
+		window_log(message);
 	} else {
 		snprintf(message, sizeof(message), "Can not save '%s'", file_name.toUtf8().data());
-		on_window_log(NULL, message);
+		window_log(message, INDIGO_ALERT_STATE);
 	}
 }
 
@@ -682,13 +706,13 @@ void ImagerWindow::on_data_directory_prefix_act() {
 	QFileInfo dir_info(QDir::toNativeSeparators(dir));
 	if(!dir_info.isWritable()) {
 		snprintf(message, sizeof(message), "Selected directory '%s' is not writable. Using the old one.", dir.toUtf8().data());
-		on_window_log(NULL, message);
+		window_log(message, INDIGO_ALERT_STATE);
 		return;
 	}
 
 	strncpy(conf.data_dir_prefix, dir.toUtf8().data(), PATH_LEN);
 	snprintf(message, sizeof(message), "Data will be saved to: '%s'", conf.data_dir_prefix);
-	on_window_log(NULL, message);
+	window_log(message);
 	write_conf();
 }
 
@@ -701,8 +725,8 @@ void ImagerWindow::on_blobs_changed(bool status) {
 	conf.blobs_enabled = status;
 	IndigoClient::instance().enable_blobs(status);
 	emit(enable_blobs(status));
-	if (status) on_window_log(NULL, "BLOBs enabled");
-	else on_window_log(NULL, "BLOBs disabled");
+	if (status) window_log("BLOBs enabled");
+	else window_log("BLOBs disabled");
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
@@ -742,9 +766,9 @@ void ImagerWindow::on_use_system_locale_changed(bool status) {
 	conf.use_system_locale = status;
 	write_conf();
 	if (conf.use_system_locale){
-		on_window_log(nullptr, "Locale specific decimal separator will be used on next application start");
+		window_log("Locale specific decimal separator will be used on next application start");
 	} else {
-		on_window_log(nullptr, "Dot decimal separator will be used on next application start");
+		window_log("Dot decimal separator will be used on next application start");
 	}
 	indigo_debug("%s\n", __FUNCTION__);
 }
@@ -838,7 +862,7 @@ void ImagerWindow::on_guider_save_log(bool status) {
 				fprintf(m_guide_log, "\nLog started at %s\n", time_str);
 				fflush(m_guide_log);
 			} else {
-				on_window_log(NULL, "Can not open guider log file.");
+				window_log("Can not open guider log file.", INDIGO_ALERT_STATE);
 			}
 		}
 	} else {
@@ -920,7 +944,7 @@ void ImagerWindow::on_acl_load_act() {
 		} else {
 			snprintf(message, PATH_MAX, "Current device ACL cleared but failed to load device ACL from '%s'", fname);
 		}
-		on_window_log(NULL, message);
+		window_log(message);
 	}
 	indigo_debug("%s\n", __FUNCTION__);
 }
@@ -937,7 +961,7 @@ void ImagerWindow::on_acl_append_act() {
 		} else {
 			snprintf(message, PATH_MAX, "Failed to append to device ACL form '%s'", fname);
 		}
-		on_window_log(NULL, message);
+		window_log(message);
 	}
 	indigo_debug("%s\n", __FUNCTION__);
 }
@@ -954,14 +978,14 @@ void ImagerWindow::on_acl_save_act() {
 		} else {
 			snprintf(message, PATH_MAX, "Failed to save device ACL as '%s'", fname);
 		}
-		on_window_log(NULL, message);
+		window_log(message);
 	}
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
 void ImagerWindow::on_acl_clear_act() {
 	indigo_clear_device_tokens();
-	on_window_log(NULL, "Device ACL cleared");
+	window_log("Device ACL cleared");
 	indigo_debug("%s\n", __FUNCTION__);
 }
 

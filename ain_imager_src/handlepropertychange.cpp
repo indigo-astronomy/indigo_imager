@@ -1444,33 +1444,19 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 
 
 void ImagerWindow::on_window_log(indigo_property* property, char *message) {
-	char timestamp[255];
 	char log_line[512];
+	int state = INDIGO_OK_STATE;
 
-	if (!message || !mLog) return;
-
-	get_time(timestamp);
+	if (!message) return;
 
 	if (property) {
-		switch (property->state) {
-		case INDIGO_ALERT_STATE:
-			mLog->setTextColor(QColor::fromRgb(224, 0, 0));
-			break;
-		case INDIGO_BUSY_STATE:
-			mLog->setTextColor(QColor::fromRgb(255, 165, 0));
-			break;
-		default:
-			mLog->setTextColor(Qt::white);
-			break;
-		}
-		snprintf(log_line, 512, "%s %s.%s: %s", timestamp, property->device, property->name, message);
+		snprintf(log_line, 512, "%s.%s: %s", property->device, property->name, message);
+		state = property->state;
 	} else {
-		mLog->setTextColor(Qt::white);
-		snprintf(log_line, 512, "%s %s", timestamp, message);
+		state = INDIGO_OK_STATE;
+		snprintf(log_line, 512, "%s", message);
 	}
-	indigo_log("[message] %s\n", log_line);
-	mLog->append(log_line);
-	mLog->verticalScrollBar()->setValue(mLog->verticalScrollBar()->maximum());
+	window_log(log_line, state);
 }
 
 void condigure_guider_overlays(ImagerWindow *w, char *device, indigo_property *property) {
@@ -1566,7 +1552,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 				sscanf(item->text.value, "%d.%d-%d", &version_major, &version_minor, &build);
 				if (build < 155 && !properties.get(property->device, SERVER_INFO_PROPERTY_NAME)) { /* show warning only once per connection */
 					sprintf(message, "WARNING: Some features will not work on '%s' running Indigo %s as Ain requires 2.0-155 or newer!", property->device, item->text.value);
-					on_window_log(nullptr, message);
+					window_log(message, INDIGO_BUSY_STATE);
 				}
 			}
 		}

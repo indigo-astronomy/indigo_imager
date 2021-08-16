@@ -665,6 +665,8 @@ private:
 	QIndigoServers *mIndigoServers;
 	QServiceModel *mServiceModel;
 
+	void window_log(char *message, int state = INDIGO_OK_STATE);
+
 	void change_jpeg_settings_property(
 		const char *agent,
 		const int jpeg_quality,
