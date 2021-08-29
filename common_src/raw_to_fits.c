@@ -35,7 +35,7 @@
 
 int save_file(char *file_name, char *data, int size) {
 #if defined(INDIGO_WINDOWS)
-	int handle = open(file_name, O_CREAT | O_WRONLY | O_BINARY, 0);
+	int handle = open(file_name, O_CREAT | O_WRONLY | O_BINARY, S_IRUSR | S_IWUSR);
 #else
 	int handle = open(file_name, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 #endif

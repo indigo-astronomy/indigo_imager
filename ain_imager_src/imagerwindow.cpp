@@ -18,6 +18,7 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <libgen.h>
 
@@ -630,7 +631,7 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 
 #if defined(INDIGO_WINDOWS)
 		sprintf(file_name, "%s%s_%03d%s", prefix, object_name.toUtf8().constData(), file_no++, item->blob.format);
-		fd = open(file_name, O_CREAT | O_WRONLY | O_EXCL | O_BINARY, 0);
+		fd = open(file_name, O_CREAT | O_WRONLY | O_EXCL | O_BINARY, S_IRUSR | S_IWUSR);
 #else
 		sprintf(file_name, "%s%s_%03d%s", prefix, object_name.toUtf8().constData(), file_no++, item->blob.format);
 		fd = open(file_name, O_CREAT | O_WRONLY | O_EXCL, S_IRUSR | S_IWUSR);
