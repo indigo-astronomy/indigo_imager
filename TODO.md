@@ -16,12 +16,12 @@ monitor the progress (use Imager Agent's unattended operation capabilities)
 - display MRW, CR2 and other raw files
 
 ## Solver
-- show coordinates of each pixel after the image is solved
+- **DONE** show coordinates of each pixel after the image is solved
 - show grid and scale on image
 - index handling from the app
 
 ## Telescope
-- Point on image and center on this after the image is solved
+- **DONE** Point on image and center on this after the image is solved
 - save user defined objects
 - Larger DSO library (from Stellarium? Alex gave permission)
 - Show star chart and select objects to goto
