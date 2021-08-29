@@ -79,7 +79,8 @@ INCLUDEPATH += "../indigo/indigo_libs" + "../external" + "../external/qtzeroconf
 
 unix {
 	INCLUDEPATH += "../external/libjpeg"
-	LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -lindigo -ljpeg
+	LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -l:libindigo.a -lz -ljpeg
+	#LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -lindigo -ljpeg
 }
 
 DISTFILES += \
