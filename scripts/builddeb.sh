@@ -10,7 +10,7 @@ __check_file_exits() {
 }
 
 # Check for files where version number shall be replaced.
-__check_file_exits "ain_imager_src/version.h"
+__check_file_exits "common_src/version.h"
 
 # Make sure debian/changelog does not exists because we will genrate it.
 rm -f debian/changelog
