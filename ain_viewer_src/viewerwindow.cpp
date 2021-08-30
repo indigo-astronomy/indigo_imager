@@ -208,7 +208,7 @@ void ViewerWindow::open_image(QString file_name) {
 	}
 
 	m_image_formrat = strrchr(m_image_path, '.');
-	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat,  preview_stretch_lut[conf.preview_stretch_level]);
+	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat, preview_stretch_lut[conf.preview_stretch_level][BLACK], preview_stretch_lut[conf.preview_stretch_level][WHITE]);
 
 	if (m_preview_image) {
 		m_imager_viewer->setImage(*m_preview_image);

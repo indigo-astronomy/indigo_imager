@@ -131,7 +131,7 @@ preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_
 }
 
 
-preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long fits_size, const double white_threshold) {
+preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long fits_size, const double black_threshold, const double white_threshold) {
 	fits_header header;
 	int *hist;
 	unsigned int pix_format = 0;
@@ -188,14 +188,14 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 	}
 
 	preview_image *img = create_preview(header.naxisn[0], header.naxisn[1],
-	        pix_format, fits_data, hist, white_threshold);
+	        pix_format, fits_data, hist, black_threshold, white_threshold);
 
 	free(fits_data);
 	return img;
 }
 
 
-preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size, const double white_threshold) {
+preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size, const double black_threshold, const double white_threshold) {
 	int *hist;
 	unsigned int pix_format;
 	int bitpix;
@@ -259,16 +259,17 @@ preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long
 	}
 
 	preview_image *img = create_preview(header->width, header->height,
-	        pix_format, raw_data, hist, white_threshold);
+	        pix_format, raw_data, hist, black_threshold, white_threshold);
 
 	return img;
 }
 
 
-preview_image* create_preview(int width, int height, int pix_format, char *image_data, int *hist, double white_threshold) {
+preview_image* create_preview(int width, int height, int pix_format, char *image_data, int *hist, double black_threshold, double white_threshold) {
 	int range, max, min = 0, sum;
 	int pix_cnt = width * height;
-	int thresh = (int)(white_threshold / 100.0 * pix_cnt); // white thresh is in percentiles
+	int thresh_white = (int)(white_threshold / 100.0 * pix_cnt); // white thresh is in percentiles
+	int thresh_black = (int)(black_threshold / 100.0 * pix_cnt);
 
 	switch (pix_format) {
 	case PIX_FMT_Y8:
@@ -295,12 +296,13 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 	}
 
 	min = 0;
-	while (hist[min] == 0 && min < max) {
-		min++;
-	};
+	sum = hist[min];
+	while (sum <= thresh_black && min < max) {
+		sum += hist[++min];
+	}
 
 	sum = hist[max];
-	while (sum < thresh && max > min) {
+	while (sum < thresh_white && max > min) {
 		sum += hist[--max];
 	}
 
@@ -344,7 +346,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 	if (range < 2) range = 2;
 	double scale = 256.0 / range;
 
-	indigo_debug("PREVIEW: pix_format = %d sum = %d thresh = %d max = %d min = %d", pix_format, sum, thresh, max, min);
+	indigo_debug("PREVIEW: pix_format = %d sum = %d thresh = %d max = %d min = %d", pix_format, sum, thresh_white, max, min);
 
 	preview_image* img = new preview_image(width, height, QImage::Format_RGB888);
 	if (pix_format == PIX_FMT_Y8) {
@@ -375,6 +377,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 				pixmap_data[index] = buf[index];
 				int value = buf[index++] - min;
 				if (value >= range) value = 255;
+				else if (value < 0) value = 0;
 				else value *= scale;
 				img->setPixel(x, y, qRgb(value, value, value));
 			}
@@ -402,10 +405,13 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 				index++;
 				index2 += 3;
 				if (value_r >= range) value_r = 255;
+				else if (value_r < 0) value_r = 0;
 				else value_r *= scale;
 				if (value_g >= range) value_g = 255;
+				else if (value_g < 0) value_g = 0;
 				else value_g *= scale;
 				if (value_b >= range) value_b = 255;
+				else if (value_b < 0) value_b = 0;
 				else value_b *= scale;
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
@@ -433,10 +439,13 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 				index++;
 				index2 += 3;
 				if (value_r >= range) value_r = 255;
+				else if (value_r < 0) value_r = 0;
 				else value_r *= scale;
 				if (value_g >= range) value_g = 255;
+				else if (value_g < 0) value_g = 0;
 				else value_g *= scale;
 				if (value_b >= range) value_b = 255;
+				else if (value_b < 0) value_b = 0;
 				else value_b *= scale;
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
@@ -464,10 +473,13 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 				index++;
 
 				if (value_r >= range) value_r = 255;
+				else if (value_r < 0) value_r = 0;
 				else value_r *= scale;
 				if (value_g >= range) value_g = 255;
+				else if (value_g < 0) value_g = 0;
 				else value_g *= scale;
 				if (value_b >= range) value_b = 255;
+				else if (value_b < 0) value_b = 0;
 				else value_b *= scale;
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
@@ -495,10 +507,13 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 				index++;
 
 				if (value_r >= range) value_r = 255;
+				else if (value_r < 0) value_r = 0;
 				else value_r *= scale;
 				if (value_g >= range) value_g = 255;
+				else if (value_g < 0) value_g = 0;
 				else value_g *= scale;
 				if (value_b >= range) value_b = 255;
+				else if (value_b < 0) value_b = 0;
 				else value_b *= scale;
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
@@ -522,10 +537,13 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 				int value_b = buf[index++] - min;
 
 				if (value_r >= range) value_r = 255;
+				else if (value_r < 0) value_r = 0;
 				else value_r *= scale;
 				if (value_g >= range) value_g = 255;
+				else if (value_g < 0) value_g = 0;
 				else value_g *= scale;
 				if (value_b >= range) value_b = 255;
+				else if (value_b < 0) value_b = 0;
 				else value_b *= scale;
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
@@ -541,6 +559,26 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		bayer_to_rgb48((const uint16_t*)image_data, rgb_data, width, height, pix_format);
 		uint16_t* buf = (uint16_t*)rgb_data;
 		int index = 0;
+		/*
+		int min_r = 100000, min_g = 100000, min_b = 100000;
+		const int step = 40;
+		const int index_step = 3 * (step - 1);
+		for (int y = 0; y < height; y += step) {
+			QCoreApplication::processEvents();
+			for (int x = 0; x < width; x += step) {
+				min_r = (buf[index] < min_r) ? buf[index] : min_r;
+				index++;
+				min_g = (buf[index] < min_g) ? buf[index] : min_g;
+				index++;
+				min_b = (buf[index] < min_b) ? buf[index] : min_b;
+				index++;
+				index += index_step;
+			}
+		}
+		//min_b=1500;
+		indigo_error("MIN: %d %d %d", min_r, min_g, min_b);
+		index = 0;
+		*/
 		for (int y = 0; y < height; ++y) {
 			QCoreApplication::processEvents();
 			for (int x = 0; x < width; ++x) {
@@ -549,10 +587,13 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 				int value_b = buf[index++] - min;
 
 				if (value_r >= range) value_r = 255;
+				else if (value_r < 0) value_r = 0;
 				else value_r *= scale;
 				if (value_g >= range) value_g = 255;
+				else if (value_g < 0) value_g = 0;
 				else value_g *= scale;
 				if (value_b >= range) value_b = 255;
+				else if (value_b < 0) value_b = 0;
 				else value_b *= scale;
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
@@ -571,7 +612,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 }
 
 
-void stretch_preview(preview_image *img, double white_threshold) {
+void stretch_preview(preview_image *img, double black_threshold, double white_threshold) {
 	int range, max, min = 0, sum;
 	int width = img->m_width;
 	int height = img->m_height;
@@ -584,7 +625,8 @@ void stretch_preview(preview_image *img, double white_threshold) {
 	}
 
 	int pix_cnt = width * height;
-	int thresh = (int)(white_threshold / 100.0 * pix_cnt); // white thresh is in percentiles
+	int thresh_white = (int)(white_threshold / 100.0 * pix_cnt); // white thresh is in percentiles
+	int thresh_black = (int)(black_threshold / 100.0 * pix_cnt);
 
 	switch (pix_format) {
 	case PIX_FMT_Y8:
@@ -601,12 +643,13 @@ void stretch_preview(preview_image *img, double white_threshold) {
 	}
 
 	min = 0;
-	while (hist[min] == 0 && min < max) {
-		min++;
-	};
+	sum = hist[min];
+	while (sum <= thresh_black && min < max) {
+		sum += hist[++min];
+	}
 
 	sum = hist[max];
-	while (sum < thresh && max > min) {
+	while (sum < thresh_white && max > min) {
 		sum += hist[--max];
 	}
 
@@ -640,7 +683,7 @@ void stretch_preview(preview_image *img, double white_threshold) {
 	if (range < 2) range = 2;
 	double scale = 256.0 / range;
 
-	indigo_debug("PREVIEW: pix_format = %d sum = %d thresh = %d max = %d min = %d", pix_format, sum, thresh, max, min);
+	indigo_debug("PREVIEW: pix_format = %d sum = %d thresh = %d max = %d min = %d", pix_format, sum, thresh_white, max, min);
 
 	if (pix_format == PIX_FMT_Y8) {
 		uint8_t* buf = (uint8_t*)img->m_raw_data;
@@ -650,6 +693,7 @@ void stretch_preview(preview_image *img, double white_threshold) {
 			for (int x = 0; x < width; ++x) {
 				int value = buf[index++] - min;
 				if (value >= range) value = 255;
+				else if (value < 0) value = 0;
 				else value *= scale;
 				img->setPixel(x, y, qRgb(value, value, value));
 			}
@@ -662,6 +706,7 @@ void stretch_preview(preview_image *img, double white_threshold) {
 			for (int x = 0; x < width; ++x) {
 				int value = buf[index++] - min;
 				if (value >= range) value = 255;
+				else if (value < 0) value = 0;
 				else value *= scale;
 				img->setPixel(x, y, qRgb(value, value, value));
 			}
@@ -680,10 +725,13 @@ void stretch_preview(preview_image *img, double white_threshold) {
 				index++;
 
 				if (value_r >= range) value_r = 255;
+				else if (value_r < 0) value_r = 0;
 				else value_r *= scale;
 				if (value_g >= range) value_g = 255;
+				else if (value_g < 0) value_g = 0;
 				else value_g *= scale;
 				if (value_b >= range) value_b = 255;
+				else if (value_b < 0) value_b = 0;
 				else value_b *= scale;
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
@@ -702,10 +750,13 @@ void stretch_preview(preview_image *img, double white_threshold) {
 				index++;
 
 				if (value_r >= range) value_r = 255;
+				else if (value_r < 0) value_r = 0;
 				else value_r *= scale;
 				if (value_g >= range) value_g = 255;
+				else if (value_g < 0) value_g = 0;
 				else value_g *= scale;
 				if (value_b >= range) value_b = 255;
+				else if (value_b < 0) value_b = 0;
 				else value_b *= scale;
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
@@ -715,19 +766,19 @@ void stretch_preview(preview_image *img, double white_threshold) {
 	}
 }
 
-preview_image* create_preview(indigo_property *property, indigo_item *item, const double white_threshold) {
+preview_image* create_preview(indigo_property *property, indigo_item *item, const double black_threshold, const double white_threshold) {
 	preview_image *preview = nullptr;
 	if (property->type == INDIGO_BLOB_VECTOR && property->state == INDIGO_OK_STATE) {
-		preview = create_preview(item, white_threshold);
+		preview = create_preview(item, black_threshold, white_threshold);
 	}
 	return preview;
 }
 
-preview_image* create_preview(indigo_item *item, const double white_threshold) {
-	return create_preview((unsigned char*)item->blob.value, item->blob.size, item->blob.format, white_threshold);
+preview_image* create_preview(indigo_item *item, const double black_threshold, const double white_threshold) {
+	return create_preview((unsigned char*)item->blob.value, item->blob.size, item->blob.format, black_threshold, white_threshold);
 }
 
-preview_image* create_preview(unsigned char *data, size_t size, const char* format, const double white_threshold) {
+preview_image* create_preview(unsigned char *data, size_t size, const char* format, const double black_threshold, const double white_threshold) {
 	preview_image *preview = nullptr;
 	if (data != NULL && format != NULL) {
 		if (!strcmp(format, ".jpeg") ||
@@ -744,12 +795,12 @@ preview_image* create_preview(unsigned char *data, size_t size, const char* form
 			!strcmp(format, ".FIT")  ||
 			!strcmp(format, ".FTS")
 		) {
-			preview = create_fits_preview(data, size, white_threshold);
+			preview = create_fits_preview(data, size, black_threshold, white_threshold);
 		} else if (
 			!strcmp(format, ".raw") ||
 			!strcmp(format, ".RAW")
 		) {
-			preview = create_raw_preview(data, size, white_threshold);
+			preview = create_raw_preview(data, size, black_threshold, white_threshold);
 		} else if (
 			!strcmp(format, ".tif")  ||
 			!strcmp(format, ".tiff") ||

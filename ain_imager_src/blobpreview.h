@@ -49,8 +49,8 @@ private:
 
 public:
 	QString create_key(indigo_property *property, indigo_item *item);
-	bool create(indigo_property *property, indigo_item *item, const double white_threshold);
-	bool recreate(QString &key, indigo_item *item, const double white_threshold);
+	bool create(indigo_property *property, indigo_item *item, const double black_threshold, const double white_threshold);
+	bool recreate(QString &key, indigo_item *item, const double black_threshold, const double white_threshold);
 	bool obsolete(indigo_property *property, indigo_item *item);
 	preview_image* get(indigo_property *property, indigo_item *item);
 	preview_image* get(QString &key);

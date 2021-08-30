@@ -28,12 +28,17 @@ typedef enum {
 	PREVIEW_STRETCH_COUNT
 } preview_stretch_level;
 
-const float preview_stretch_lut[] = {
-	0.0,
-	0.05,
-	0.1,
-	0.5,
-	1.0
+typedef enum {
+	BLACK = 0,
+	WHITE
+} preview_stretch_bw;
+
+const float preview_stretch_lut[][2] = {
+	{0.05, 0.00},
+	{0.05, 0.07},
+	{0.05, 0.25},
+	{0.05, 0.75},
+	{0.05, 1.30}
 };
 
 #endif /* _IMAGE_PREVIEW_LUT_H */
