@@ -28,13 +28,19 @@ typedef enum {
 	PREVIEW_STRETCH_COUNT
 } preview_stretch_level;
 
+typedef enum {
+	PREVIEW_CURVE_LINEAR = 0,
+	PREVIEW_CURVE_LOG,
+	PREVIEW_CURVE_COUNT
+} preview_curve_type;
+
 typedef struct {
 	double clip_black;
 	double clip_white;
 	int *display_lut;
 } preview_stretch_t;
 
-static int display_linear_lut[] = {
+static int display_linear_curve_lut[] = {
 	0,
 	0,
 	0,
@@ -1061,7 +1067,7 @@ static int display_linear_lut[] = {
 	255
 };
 
-static int display_log_lut[] = {
+static int display_log_curve_lut[] = {
 	0,
 	25,
 	40,
@@ -2089,20 +2095,25 @@ static int display_log_lut[] = {
 	255
 };
 
-const preview_stretch_t stretch_linear_lut[] = {
-	{0.05, 0.01, display_linear_lut},
-	{0.05, 0.07, display_linear_lut},
-	{0.05, 0.25, display_linear_lut},
-	{0.05, 0.75, display_linear_lut},
-	{0.05, 1.30, display_linear_lut},
+static const preview_stretch_t stretch_linear_lut[] = {
+	{0.01, 0.001, display_linear_curve_lut},
+	{0.01, 0.07, display_linear_curve_lut},
+	{0.01, 0.25, display_linear_curve_lut},
+	{0.01, 0.75, display_linear_curve_lut},
+	{0.01, 1.30, display_linear_curve_lut},
 };
 
-const preview_stretch_t stretch_log_lut[] = {
-	{0.01, 0.00, display_log_lut},
-	{0.01, 0.01, display_log_lut},
-	{0.01, 0.05, display_log_lut},
-	{0.01, 0.10, display_log_lut},
-	{0.01, 0.20, display_log_lut}
+static const preview_stretch_t stretch_log_lut[] = {
+	{0.001, 0.00, display_log_curve_lut},
+	{0.01, 0.01, display_log_curve_lut},
+	{0.01, 0.05, display_log_curve_lut},
+	{0.01, 0.10, display_log_curve_lut},
+	{0.01, 0.20, display_log_curve_lut}
+};
+
+static const preview_stretch_t *stretch_luts[] = {
+	stretch_linear_lut,
+	stretch_log_lut
 };
 
 #endif /* _IMAGE_PREVIEW_LUT_H */

@@ -149,8 +149,10 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	rootLayout->addWidget(form_panel);
 
 	m_imager_viewer->setStretch(conf.preview_stretch_level);
+	m_imager_viewer->setSTF(conf.preview_curve_type);
 
 	connect(m_imager_viewer, &ImageViewer::stretchChanged, this, &ViewerWindow::on_stretch_changed);
+	connect(m_imager_viewer, &ImageViewer::STFChanged, this, &ViewerWindow::on_stf_changed);
 	connect(m_imager_viewer, &ImageViewer::previousRequested, this, &ViewerWindow::on_image_prev_act);
 	connect(m_imager_viewer, &ImageViewer::nextRequested, this, &ViewerWindow::on_image_next_act);
 
@@ -208,7 +210,7 @@ void ViewerWindow::open_image(QString file_name) {
 	}
 
 	m_image_formrat = strrchr(m_image_path, '.');
-	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat, stretch_log_lut[conf.preview_stretch_level].clip_black, stretch_log_lut[conf.preview_stretch_level].clip_white);
+	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat, &stretch_luts[conf.preview_curve_type][conf.preview_stretch_level]);
 
 	if (m_preview_image) {
 		m_imager_viewer->setImage(*m_preview_image);
@@ -420,6 +422,12 @@ void ViewerWindow::on_stretch_changed(int level) {
 	conf.preview_stretch_level = (preview_stretch)level;
 	write_conf();
 }
+
+void ViewerWindow::on_stf_changed(int stf) {
+	conf.preview_curve_type = (preview_curve)stf;
+	write_conf();
+}
+
 
 void ViewerWindow::on_about_act() {
 	QMessageBox msgBox(this);

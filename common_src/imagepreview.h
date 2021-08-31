@@ -256,12 +256,12 @@ public:
 };
 
 preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_size);
-preview_image* create_fits_preview(unsigned char *fits_buffer, unsigned long fits_size, const double balck_threshold, const double white_threshold);
-preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size, const double balck_threshold, const double white_threshold);
-preview_image* create_preview(unsigned char *data, size_t size, const char* format, const double balck_threshold, const double white_threshold);
-preview_image* create_preview(int width, int height, int pixel_format, char *image_data, int *hist, double balck_threshold, double white_threshold);
-preview_image* create_preview(indigo_property *property, indigo_item *item, const double balck_threshold, const double white_threshold);
-preview_image* create_preview(indigo_item *item, const double balck_threshold, const double white_threshold);
-void stretch_preview(preview_image *img, double balck_threshold, double white_threshold);
+preview_image* create_fits_preview(unsigned char *fits_buffer, unsigned long fits_size, const preview_stretch_t *stretch);
+preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size, const preview_stretch_t *stretch);
+preview_image* create_preview(unsigned char *data, size_t size, const char* format, const preview_stretch_t *stretch);
+preview_image* create_preview(int width, int height, int pixel_format, char *image_data, int *hist, const preview_stretch_t *stretch);
+preview_image* create_preview(indigo_property *property, indigo_item *item, const preview_stretch_t *stretch);
+preview_image* create_preview(indigo_item *item, const preview_stretch_t *stretch);
+void stretch_preview(preview_image *img, const preview_stretch_t *stretch);
 
 #endif /* _IMAGEPREVIEW_H */

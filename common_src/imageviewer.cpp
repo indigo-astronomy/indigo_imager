@@ -67,6 +67,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
 	: QFrame(parent)
 	, m_zoom_level(0)
 	, m_stretch_level(PREVIEW_STRETCH_NONE)
+	, m_stf(PREVIEW_CURVE_LINEAR)
 	, m_fit(true)
 	, m_bar_mode(ToolBarMode::Visible)
 {
@@ -193,6 +194,22 @@ void ImageViewer::makeToolbar(bool prev_next) {
 	connect(act, &QAction::triggered, this, &ImageViewer::stretchHard);
 	stretch_group->addAction(act);
 	m_stretch_act[PREVIEW_STRETCH_HARD] = act;
+
+	menu->addSeparator();
+
+	QActionGroup *stf_group = new QActionGroup(this);
+	stf_group->setExclusive(true);
+	act = menu->addAction("STF: L&inear");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::onSTFLinear);
+	stf_group->addAction(act);
+	m_stf_act[PREVIEW_CURVE_LINEAR] = act;
+
+	act = menu->addAction("STF: &Log");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::onSTFLog);
+	stf_group->addAction(act);
+	m_stf_act[PREVIEW_CURVE_LOG] = act;
 
 	auto stretch = new QToolButton(this);
 	stretch->setToolTip(tr("Histogram Stretch"));
@@ -634,7 +651,7 @@ void ImageViewer::showEvent(QShowEvent *event) {
 void ImageViewer::stretchNone() {
 	m_stretch_level = PREVIEW_STRETCH_NONE;
 	preview_image &image = (preview_image&)m_pixmap->image();
-	stretch_preview(&image, stretch_log_lut[m_stretch_level].clip_black, stretch_log_lut[m_stretch_level].clip_white);
+	stretch_preview(&image, &stretch_luts[m_stf][m_stretch_level]);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
@@ -642,7 +659,7 @@ void ImageViewer::stretchNone() {
 void ImageViewer::stretchSlight() {
 	m_stretch_level = PREVIEW_STRETCH_SLIGHT;
 	preview_image &image = (preview_image&)m_pixmap->image();
-	stretch_preview(&image, stretch_log_lut[m_stretch_level].clip_black, stretch_log_lut[m_stretch_level].clip_white);
+	stretch_preview(&image, &stretch_luts[m_stf][m_stretch_level]);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
@@ -650,7 +667,7 @@ void ImageViewer::stretchSlight() {
 void ImageViewer::stretchModerate() {
 	m_stretch_level = PREVIEW_STRETCH_MODERATE;
 	preview_image &image = (preview_image&)m_pixmap->image();
-	stretch_preview(&image, stretch_log_lut[m_stretch_level].clip_black, stretch_log_lut[m_stretch_level].clip_white);
+	stretch_preview(&image, &stretch_luts[m_stf][m_stretch_level]);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
@@ -658,7 +675,7 @@ void ImageViewer::stretchModerate() {
 void ImageViewer::stretchNormal() {
 	m_stretch_level = PREVIEW_STRETCH_NORMAL;
 	preview_image &image = (preview_image&)m_pixmap->image();
-	stretch_preview(&image, stretch_log_lut[m_stretch_level].clip_black, stretch_log_lut[m_stretch_level].clip_white);
+	stretch_preview(&image, &stretch_luts[m_stf][m_stretch_level]);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
@@ -666,9 +683,25 @@ void ImageViewer::stretchNormal() {
 void ImageViewer::stretchHard() {
 	m_stretch_level = PREVIEW_STRETCH_HARD;
 	preview_image &image = (preview_image&)m_pixmap->image();
-	stretch_preview(&image, stretch_log_lut[m_stretch_level].clip_black, stretch_log_lut[m_stretch_level].clip_white);
+	stretch_preview(&image, &stretch_luts[m_stf][m_stretch_level]);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
+}
+
+void ImageViewer::onSTFLinear() {
+	m_stf = PREVIEW_CURVE_LINEAR;
+	preview_image &image = (preview_image&)m_pixmap->image();
+	stretch_preview(&image, &stretch_luts[m_stf][m_stretch_level]);
+	setImage(image);
+	emit STFChanged(m_stf);
+}
+
+void ImageViewer::onSTFLog() {
+	m_stf = PREVIEW_CURVE_LOG;
+	preview_image &image = (preview_image&)m_pixmap->image();
+	stretch_preview(&image, &stretch_luts[m_stf][m_stretch_level]);
+	setImage(image);
+	emit STFChanged(m_stf);
 }
 
 void ImageViewer::onPrevious() {
@@ -704,6 +737,22 @@ void ImageViewer::setStretch(int level) {
 		default:
 			m_stretch_act[PREVIEW_STRETCH_NONE]->setChecked(true);
 			stretchNone();
+	}
+}
+
+void ImageViewer::setSTF(int stf) {
+	switch (stf) {
+		case PREVIEW_CURVE_LINEAR:
+			m_stf_act[PREVIEW_CURVE_LINEAR]->setChecked(true);
+			onSTFLinear();
+			break;
+		case PREVIEW_CURVE_LOG:
+			m_stf_act[PREVIEW_CURVE_LOG]->setChecked(true);
+			onSTFLog();
+			break;
+		default:
+			m_stf_act[PREVIEW_CURVE_LINEAR]->setChecked(true);
+			onSTFLinear();
 	}
 }
 

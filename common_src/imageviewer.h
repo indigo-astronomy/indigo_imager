@@ -54,6 +54,7 @@ public:
 	bool isAntialiasingEnabled() const;
 	void enableAntialiasing(bool on = true);
 	void setStretch(int level);
+	void setSTF(int stf);
 
 public slots:
 	void setText(const QString &txt);
@@ -87,6 +88,8 @@ public slots:
 	void stretchModerate();
 	void stretchNormal();
 	void stretchHard();
+	void onSTFLinear();
+	void onSTFLog();
 
 	void onPrevious();
 	void onNext();
@@ -97,6 +100,7 @@ signals:
 	void mouseRightPressRADec(double ra, double dec);
 	void zoomChanged(double scale);
 	void stretchChanged(int level);
+	void STFChanged(int stf);
 	void previousRequested();
 	void nextRequested();
 
@@ -124,6 +128,7 @@ private:
 	QPoint m_ref_p;
 	double m_edge_clipping_v;
 	preview_stretch_level m_stretch_level;
+	preview_curve_type m_stf;
 	QList<QGraphicsEllipseItem*> m_extra_selections;
 	//QList<QPoint> m_extra_points;
 	bool m_extra_selections_visible;
@@ -136,6 +141,7 @@ private:
 	bool m_edge_clipping_visible;
 	ToolBarMode m_bar_mode;
 	QAction *m_stretch_act[PREVIEW_STRETCH_COUNT];
+	QAction *m_stf_act[PREVIEW_CURVE_COUNT];
 };
 
 
