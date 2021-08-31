@@ -24,6 +24,7 @@
 #include <imagepreview.h>
 #include <QPainter>
 #include <QCoreApplication>
+#include <image_preview_lut.h>
 
 // Related Functions
 
@@ -344,7 +345,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 
 	range = max - min;
 	if (range < 2) range = 2;
-	double scale = 256.0 / range;
+	double scale = 1024.0 / range;
 
 	indigo_debug("PREVIEW: pix_format = %d sum = %d thresh = %d max = %d min = %d", pix_format, sum, thresh_white, max, min);
 
@@ -357,8 +358,9 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 			for (int x = 0; x < width; ++x) {
 				pixmap_data[index] = buf[index];
 				int value = buf[index++] - min;
-				if (value >= range) value = 255;
+				if (value >= range) value = 1023;
 				else value *= scale;
+				value = display_log_lut[value];
 				img->setPixel(x, y, qRgb(value, value, value));
 			}
 		}
@@ -376,9 +378,10 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 			for (int x = 0; x < width; ++x) {
 				pixmap_data[index] = buf[index];
 				int value = buf[index++] - min;
-				if (value >= range) value = 255;
+				if (value >= range) value = 1023;
 				else if (value < 0) value = 0;
 				else value *= scale;
+				value = display_log_lut[value];
 				img->setPixel(x, y, qRgb(value, value, value));
 			}
 		}
@@ -404,15 +407,18 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 				pixmap_data[index2 + 2] = buf[index + 2 * channel_offest];
 				index++;
 				index2 += 3;
-				if (value_r >= range) value_r = 255;
+				if (value_r >= range) value_r = 1023;
 				else if (value_r < 0) value_r = 0;
 				else value_r *= scale;
-				if (value_g >= range) value_g = 255;
+				if (value_g >= range) value_g = 1023;
 				else if (value_g < 0) value_g = 0;
 				else value_g *= scale;
-				if (value_b >= range) value_b = 255;
+				if (value_b >= range) value_b = 1023;
 				else if (value_b < 0) value_b = 0;
 				else value_b *= scale;
+				value_r = display_log_lut[value_r];
+				value_g = display_log_lut[value_g];
+				value_b = display_log_lut[value_b];
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
 		}
@@ -438,15 +444,18 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 				pixmap_data[index2 + 2] = buf[index + 2 * channel_offest];
 				index++;
 				index2 += 3;
-				if (value_r >= range) value_r = 255;
+				if (value_r >= range) value_r = 1023;
 				else if (value_r < 0) value_r = 0;
 				else value_r *= scale;
-				if (value_g >= range) value_g = 255;
+				if (value_g >= range) value_g = 1023;
 				else if (value_g < 0) value_g = 0;
 				else value_g *= scale;
-				if (value_b >= range) value_b = 255;
+				if (value_b >= range) value_b = 1023;
 				else if (value_b < 0) value_b = 0;
 				else value_b *= scale;
+				value_r = display_log_lut[value_r];
+				value_g = display_log_lut[value_g];
+				value_b = display_log_lut[value_b];
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
 		}
@@ -472,15 +481,18 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 				int value_b = buf[index] - min;
 				index++;
 
-				if (value_r >= range) value_r = 255;
+				if (value_r >= range) value_r = 1023;
 				else if (value_r < 0) value_r = 0;
 				else value_r *= scale;
-				if (value_g >= range) value_g = 255;
+				if (value_g >= range) value_g = 1023;
 				else if (value_g < 0) value_g = 0;
 				else value_g *= scale;
-				if (value_b >= range) value_b = 255;
+				if (value_b >= range) value_b = 1023;
 				else if (value_b < 0) value_b = 0;
 				else value_b *= scale;
+				value_r = display_log_lut[value_r];
+				value_g = display_log_lut[value_g];
+				value_b = display_log_lut[value_b];
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
 		}
@@ -506,15 +518,18 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 				int value_b = buf[index] - min;
 				index++;
 
-				if (value_r >= range) value_r = 255;
+				if (value_r >= range) value_r = 1023;
 				else if (value_r < 0) value_r = 0;
 				else value_r *= scale;
-				if (value_g >= range) value_g = 255;
+				if (value_g >= range) value_g = 1023;
 				else if (value_g < 0) value_g = 0;
 				else value_g *= scale;
-				if (value_b >= range) value_b = 255;
+				if (value_b >= range) value_b = 1023;
 				else if (value_b < 0) value_b = 0;
 				else value_b *= scale;
+				value_r = display_log_lut[value_r];
+				value_g = display_log_lut[value_g];
+				value_b = display_log_lut[value_b];
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
 		}
@@ -536,15 +551,18 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 				int value_g = buf[index++] - min;
 				int value_b = buf[index++] - min;
 
-				if (value_r >= range) value_r = 255;
+				if (value_r >= range) value_r = 1023;
 				else if (value_r < 0) value_r = 0;
 				else value_r *= scale;
-				if (value_g >= range) value_g = 255;
+				if (value_g >= range) value_g = 1023;
 				else if (value_g < 0) value_g = 0;
 				else value_g *= scale;
-				if (value_b >= range) value_b = 255;
+				if (value_b >= range) value_b = 1023;
 				else if (value_b < 0) value_b = 0;
 				else value_b *= scale;
+				value_r = display_log_lut[value_r];
+				value_g = display_log_lut[value_g];
+				value_b = display_log_lut[value_b];
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
 		}
@@ -586,15 +604,18 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 				int value_g = buf[index++] - min;
 				int value_b = buf[index++] - min;
 
-				if (value_r >= range) value_r = 255;
+				if (value_r >= range) value_r = 1023;
 				else if (value_r < 0) value_r = 0;
 				else value_r *= scale;
-				if (value_g >= range) value_g = 255;
+				if (value_g >= range) value_g = 1023;
 				else if (value_g < 0) value_g = 0;
 				else value_g *= scale;
-				if (value_b >= range) value_b = 255;
+				if (value_b >= range) value_b = 1023;
 				else if (value_b < 0) value_b = 0;
 				else value_b *= scale;
+				value_r = display_log_lut[value_r];
+				value_g = display_log_lut[value_g];
+				value_b = display_log_lut[value_b];
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
 		}
@@ -681,7 +702,7 @@ void stretch_preview(preview_image *img, double black_threshold, double white_th
 
 	range = max - min;
 	if (range < 2) range = 2;
-	double scale = 256.0 / range;
+	double scale = 1024.0 / range;
 
 	indigo_debug("PREVIEW: pix_format = %d sum = %d thresh = %d max = %d min = %d", pix_format, sum, thresh_white, max, min);
 
@@ -692,9 +713,10 @@ void stretch_preview(preview_image *img, double black_threshold, double white_th
 			QCoreApplication::processEvents();
 			for (int x = 0; x < width; ++x) {
 				int value = buf[index++] - min;
-				if (value >= range) value = 255;
+				if (value >= range) value = 1023;
 				else if (value < 0) value = 0;
 				else value *= scale;
+				value = display_log_lut[value];
 				img->setPixel(x, y, qRgb(value, value, value));
 			}
 		}
@@ -705,9 +727,10 @@ void stretch_preview(preview_image *img, double black_threshold, double white_th
 			QCoreApplication::processEvents();
 			for (int x = 0; x < width; ++x) {
 				int value = buf[index++] - min;
-				if (value >= range) value = 255;
+				if (value >= range) value = 1023;
 				else if (value < 0) value = 0;
 				else value *= scale;
+				value = display_log_lut[value];
 				img->setPixel(x, y, qRgb(value, value, value));
 			}
 		}
@@ -724,15 +747,18 @@ void stretch_preview(preview_image *img, double black_threshold, double white_th
 				int value_b = buf[index] - min;
 				index++;
 
-				if (value_r >= range) value_r = 255;
+				if (value_r >= range) value_r = 1023;
 				else if (value_r < 0) value_r = 0;
 				else value_r *= scale;
-				if (value_g >= range) value_g = 255;
+				if (value_g >= range) value_g = 1023;
 				else if (value_g < 0) value_g = 0;
 				else value_g *= scale;
-				if (value_b >= range) value_b = 255;
+				if (value_b >= range) value_b = 1023;
 				else if (value_b < 0) value_b = 0;
 				else value_b *= scale;
+				value_r = display_log_lut[value_r];
+				value_g = display_log_lut[value_g];
+				value_b = display_log_lut[value_b];
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
 		}
@@ -749,15 +775,18 @@ void stretch_preview(preview_image *img, double black_threshold, double white_th
 				int value_b = buf[index] - min;
 				index++;
 
-				if (value_r >= range) value_r = 255;
+				if (value_r >= range) value_r = 1023;
 				else if (value_r < 0) value_r = 0;
 				else value_r *= scale;
-				if (value_g >= range) value_g = 255;
+				if (value_g >= range) value_g = 1023;
 				else if (value_g < 0) value_g = 0;
 				else value_g *= scale;
-				if (value_b >= range) value_b = 255;
+				if (value_b >= range) value_b = 1023;
 				else if (value_b < 0) value_b = 0;
 				else value_b *= scale;
+				value_r = display_log_lut[value_r];
+				value_g = display_log_lut[value_g];
+				value_b = display_log_lut[value_b];
 				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
 		}

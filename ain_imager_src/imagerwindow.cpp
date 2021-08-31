@@ -536,7 +536,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 			m_indigo_item = nullptr;
 		}
 		m_indigo_item = item;
-		preview_cache.create(property, m_indigo_item, preview_stretch_lut[conf.preview_stretch_level][BLACK], preview_stretch_lut[conf.preview_stretch_level][WHITE]);
+		preview_cache.create(property, m_indigo_item, stretch_log_lut[conf.preview_stretch_level].clip_black, stretch_log_lut[conf.preview_stretch_level].clip_white);
 		QString key = preview_cache.create_key(property, m_indigo_item);
 		//preview_image *image = preview_cache.get(m_image_key);
 		if (show_preview_in_imager_viewer(key)) {
@@ -548,7 +548,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 	} else if (get_selected_guider_agent(selected_agent)) {
 		if ((client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME) && conf.guider_save_bandwidth == 0) ||
 			(client_match_device_property(property, selected_agent, CCD_PREVIEW_IMAGE_PROPERTY_NAME) && conf.guider_save_bandwidth > 0)) {
-			preview_cache.create(property, item, preview_stretch_lut[conf.guider_stretch_level][BLACK], preview_stretch_lut[conf.guider_stretch_level][WHITE]);
+			preview_cache.create(property, item, stretch_log_lut[conf.guider_stretch_level].clip_black, stretch_log_lut[conf.guider_stretch_level].clip_white);
 			QString key = preview_cache.create_key(property, item);
 			preview_image *image = preview_cache.get(key);
 			if (show_preview_in_guider_viewer(key)) {

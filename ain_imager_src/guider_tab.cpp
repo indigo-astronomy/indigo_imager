@@ -516,13 +516,13 @@ void ImagerWindow::setup_preview(const char *agent) {
 	case 0:
 		break;
 	case 1:
-		change_jpeg_settings_property(agent, 93, preview_stretch_lut[conf.guider_stretch_level][BLACK], preview_stretch_lut[conf.guider_stretch_level][WHITE]);
+		change_jpeg_settings_property(agent, 93, stretch_linear_lut[conf.guider_stretch_level].clip_black, stretch_linear_lut[conf.guider_stretch_level].clip_white);
 		break;
 	case 2:
-		change_jpeg_settings_property(agent, 89, preview_stretch_lut[conf.guider_stretch_level][BLACK], preview_stretch_lut[conf.guider_stretch_level][WHITE]);
+		change_jpeg_settings_property(agent, 89, stretch_linear_lut[conf.guider_stretch_level].clip_black, stretch_linear_lut[conf.guider_stretch_level].clip_white);
 		break;
 	case 3:
-		change_jpeg_settings_property(agent, 50, preview_stretch_lut[conf.guider_stretch_level][BLACK], preview_stretch_lut[conf.guider_stretch_level][WHITE]);
+		change_jpeg_settings_property(agent, 50, stretch_linear_lut[conf.guider_stretch_level].clip_black, stretch_linear_lut[conf.guider_stretch_level].clip_white);
 		break;
 	default:
 		break;
