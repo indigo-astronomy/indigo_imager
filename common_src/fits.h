@@ -31,6 +31,7 @@ extern "C" {
 typedef enum fits_error {
 	FITS_OK = 0,
 	FITS_INVALIDDATA = -1,
+	FITS_INVALIDPARAM = -2
 } fits_error;
 
 
