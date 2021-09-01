@@ -28,6 +28,7 @@ SOURCES += \
 	../common_src/fits.c \
 	../common_src/raw_to_fits.c \
 	../common_src/debayer.c \
+	../common_src/stretcher.cpp
 
 RESOURCES += \
 	../qdarkstyle/style.qrc \
@@ -70,7 +71,8 @@ HEADERS += \
 	../common_src/raw_to_fits.h \
 	../common_src/debayer.h \
 	../common_src/pixelformat.h \
-	../common_src/coordconv.h
+	../common_src/coordconv.h \
+	../common_src/stretcher.h
 
 #unix:!mac {
 #    CONFIG += link_pkgconfig

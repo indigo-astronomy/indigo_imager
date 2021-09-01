@@ -25,6 +25,7 @@
 #include <pixelformat.h>
 #include <image_preview_lut.h>
 #include <coordconv.h>
+#include <stretcher.h>
 
 #if !defined(INDIGO_WINDOWS)
 #define USE_LIBJPEG
@@ -110,8 +111,14 @@ public:
 
 		m_raw_data = (char*)malloc(size);
 		memcpy(m_raw_data, image.m_raw_data, size);
-		m_histogram = (int*)malloc(hist_size * sizeof(int));
-		memcpy(m_histogram, image.m_histogram, hist_size * sizeof(int));
+
+		if (image.m_histogram) {
+			m_histogram = (int*)malloc(hist_size * sizeof(int));
+			memcpy(m_histogram, image.m_histogram, hist_size * sizeof(int));
+		} else {
+			m_histogram = nullptr;
+			return;
+		}
 	};
 
 	preview_image& operator=(preview_image &image) {
@@ -160,8 +167,12 @@ public:
 
 		m_raw_data = (char*)malloc(size);
 		memcpy(m_raw_data, image.m_raw_data, size);
-		m_histogram = (int*)malloc(hist_size * sizeof(int));
-		memcpy(m_histogram, image.m_histogram, hist_size * sizeof(int));
+		if (image.m_histogram) {
+			m_histogram = (int*)malloc(hist_size * sizeof(int));
+			memcpy(m_histogram, image.m_histogram, hist_size * sizeof(int));
+		} else {
+			m_histogram = nullptr;
+		}
 		return *this;
 	}
 

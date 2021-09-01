@@ -1,5 +1,5 @@
 QT += core gui widgets network printsupport concurrent
-CONFIG += c++11 release
+CONFIG += c++11 debug
 #QMAKE_CXXFLAGS += -O3
 #QMAKE_CXXFLAGS_RELEASE += -O3
 
@@ -41,6 +41,7 @@ SOURCES += \
 	../common_src/imageviewer.cpp \
 	../common_src/fits.c \
 	../common_src/debayer.c \
+	../common_src/stretcher.cpp \
 	../external/qcustomplot/qcustomplot.cpp
 
 
@@ -110,7 +111,8 @@ HEADERS += \
 	../common_src/debayer.h \
 	../common_src/pixelformat.h \
 	../external/qcustomplot/qcustomplot.h \
-	../common_src/coordconv.h
+	../common_src/coordconv.h \
+	../common_src/stretcher.h
 
 
 
