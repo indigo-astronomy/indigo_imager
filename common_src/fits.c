@@ -209,7 +209,7 @@ static int fits_header_parse_line(fits_header *header, const uint8_t line[80]) {
 
 int fits_read_header(const uint8_t *fits_data, int fits_size, fits_header *header) {
 	const uint8_t *ptr8 = fits_data;
-	int lines_read, i, ret;
+	int lines_read, ret = 0;
 	size_t size;
 
 	if (fits_size < 2880) return FITS_INVALIDDATA;
@@ -237,7 +237,7 @@ int fits_read_header(const uint8_t *fits_data, int fits_size, fits_header *heade
 	}
 
 	size = abs(header->bitpix) >> 3;
-	for (i = 0; i < header->naxis; i++) {
+	for (int i = 0; i < header->naxis; i++) {
 		if (size && header->naxisn[i] > SIZE_MAX / size) {
 			indigo_error("unsupported size of FITS image");
 			return FITS_INVALIDDATA;
