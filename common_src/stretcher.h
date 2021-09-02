@@ -6,11 +6,6 @@
 #include <QImage>
 #include <pixelformat.h>
 
-//#define TBYTE        11 /* codes for FITS table data types */
-//#define TSBYTE       12
-//#define TUSHORT      20
-//#define TSHORT       21
-
 struct StretchParams1Channel {
  	// Stretch algorithm parameters
  	float shadows;;
@@ -54,7 +49,6 @@ public:
  private:
 	 int image_width;
 	 int image_height;
-	 //int image_channels;
 	 int input_range;
 	 uint32_t dataType;
 

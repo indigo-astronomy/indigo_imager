@@ -251,31 +251,36 @@ void computeParamsThreeChannels(
 ) {
 	constexpr int maxSamples = 50000;
 	const int sampleBy = width * height < maxSamples ? 1 : width * height / maxSamples;
+	const int sampleBy3 = sampleBy * 3;
 
-	T medianSampleR = median(buffer, width * height * 3, sampleBy * 3);
-	T medianSampleG = median(buffer+1, width * height * 3, sampleBy * 3);
-	T medianSampleB = median(buffer+2, width * height * 3, sampleBy * 3);
+	T medianSampleR = median(buffer, width * height * 3, sampleBy3);
+	T medianSampleG = median(buffer+1, width * height * 3, sampleBy3);
+	T medianSampleB = median(buffer+2, width * height * 3, sampleBy3);
 
 	// Find the Median deviation: 1.4826 * median of abs(sample[i] - median).
 	const int numSamples = width * height / sampleBy;
 	std::vector<T> deviationsR(numSamples);
 	std::vector<T> deviationsG(numSamples);
 	std::vector<T> deviationsB(numSamples);
-	for (int index = 0, i = 0; i < numSamples; ++i, index += sampleBy * 3) {
-		if (medianSampleR > buffer[index])
-			deviationsR[i] = medianSampleR - buffer[index];
-		else
-			deviationsR[i] = buffer[index] - medianSampleR;
 
-		if (medianSampleG > buffer[index+1])
-			deviationsG[i] = medianSampleG - buffer[index+1];
+	for (int index = 0, i = 0; i < numSamples; ++i, index += sampleBy3) {
+		T value = buffer[index];
+		if (medianSampleR > value)
+			deviationsR[i] = medianSampleR - value;
 		else
-			deviationsG[i] = buffer[index+1] - medianSampleG;
+			deviationsR[i] = value - medianSampleR;
 
-		if (medianSampleB > buffer[index+2])
-			deviationsB[i] = medianSampleB - buffer[index+2];
+		value = buffer[index+1];
+		if (medianSampleG > value)
+			deviationsG[i] = medianSampleG - value;
 		else
-			deviationsB[i] = buffer[index+2] - medianSampleB;
+			deviationsG[i] = value - medianSampleG;
+
+		value = buffer[index+2];
+		if (medianSampleB > value)
+			deviationsB[i] = medianSampleB - value;
+		else
+			deviationsB[i] = value - medianSampleB;
 	}
 
 	// Shift everything to 0 -> 1.0.
@@ -381,18 +386,20 @@ void computeParamsThreeChannelsUnbalanced(
 ) {
 	constexpr int maxSamples = 50000;
 	const int sampleBy = width * height < maxSamples ? 1 : width * height / maxSamples;
+	const int sampleBy3 = sampleBy * 3;
 
-	T medianSample = median(buffer + refChannel, width * height * 3, sampleBy * 3);
+	T medianSample = median(buffer + refChannel, width * height * 3, sampleBy3);
 
 	// Find the Median deviation: 1.4826 * median of abs(sample[i] - median).
 	const int numSamples = width * height / sampleBy;
 	std::vector<T> deviations(numSamples);
 
-	for (int index = 0, i = 0; i < numSamples; ++i, index += sampleBy * 3) {
-		if (medianSample > buffer[index + refChannel])
-			deviations[i] = medianSample - buffer[index + refChannel];
+	for (int index = 0, i = 0; i < numSamples; ++i, index += sampleBy3) {
+		T value = buffer[index + refChannel];
+		if (medianSample > value)
+			deviations[i] = medianSample - value;
 		else
-			deviations[i] = buffer[index + refChannel] - medianSample;
+			deviations[i] = value - medianSample;
 	}
 
 	// Shift everything to 0 -> 1.0.

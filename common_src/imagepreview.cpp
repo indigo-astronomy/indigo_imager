@@ -134,7 +134,6 @@ preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_
 
 preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long fits_size, const stretch_config_t sconfig) {
 	fits_header header;
-	int *hist;
 	unsigned int pix_format = 0;
 
 	int res = fits_read_header(raw_fits_buffer, fits_size, &header);
@@ -144,16 +143,12 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 	}
 
 	if ((header.bitpix==16) && (header.naxis == 2)){
-		hist = (int*)malloc(65536*sizeof(int));
 		pix_format = PIX_FMT_Y16;
 	} else if ((header.bitpix==16) && (header.naxis == 3)){
-		hist = (int*)malloc(65536*sizeof(int));
 		pix_format = PIX_FMT_3RGB48;
 	} else if ((header.bitpix==8) && (header.naxis == 2)){
-		hist = (int*)malloc(256*sizeof(int));
 		pix_format = PIX_FMT_Y8;
 	} else if ((header.bitpix==8) && (header.naxis == 3)){
-		hist = (int*)malloc(256*sizeof(int));
 		pix_format = PIX_FMT_3RGB24;
 	} else {
 		indigo_error("FITS: Unsupported bitpix (BITPIX= %d)", header.bitpix);
@@ -163,7 +158,7 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 	char *fits_data = (char*)malloc(fits_get_buffer_size(&header));
 	indigo_error("FITS1: fits_data = %p", fits_data);
 
-	res = fits_process_data_with_hist(raw_fits_buffer, fits_size, &header, fits_data, hist);
+	res = fits_process_data(raw_fits_buffer, fits_size, &header, fits_data);
 	if (res != FITS_OK) {
 		indigo_error("FITS: Error processing data");
 		return nullptr;
@@ -190,7 +185,7 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 	}
 
 	preview_image *img = create_preview(header.naxisn[0], header.naxisn[1],
-	        pix_format, fits_data, hist, sconfig);
+	        pix_format, fits_data, sconfig);
 
 	indigo_error("FITS2: fits_data = %p", fits_data);
 	free(fits_data);
@@ -199,7 +194,6 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 
 
 preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size, const stretch_config_t sconfig) {
-	int *hist = nullptr;
 	unsigned int pix_format;
 	int bitpix;
 
@@ -236,19 +230,18 @@ preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long
 	}
 
 	preview_image *img = create_preview(header->width, header->height,
-	        pix_format, raw_data, hist, sconfig);
+	        pix_format, raw_data, sconfig);
 
 	return img;
 }
 
-preview_image* create_preview(int width, int height, int pix_format, char *image_data, int *hist, const stretch_config_t sconfig) {
+preview_image* create_preview(int width, int height, int pix_format, char *image_data, const stretch_config_t sconfig) {
 	preview_image* img = new preview_image(width, height, QImage::Format_RGB888);
 	if (pix_format == PIX_FMT_Y8) {
 		uint8_t* buf = (uint8_t*)image_data;
 		uint8_t* pixmap_data = (uint8_t*)malloc(sizeof(uint8_t) * height * width);
 		memcpy(pixmap_data, buf, sizeof(uint8_t) * height * width);
 		img->m_raw_data = (char*)pixmap_data;
-		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_Y8;
 		img->m_height = height;
 		img->m_width = width;
@@ -259,7 +252,6 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		uint16_t* pixmap_data = (uint16_t*)malloc(sizeof(uint16_t) * height * width);
 		memcpy(pixmap_data, buf, sizeof(uint16_t) * height * width);
 		img->m_raw_data = (char*)pixmap_data;
-		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_Y16;
 		img->m_height = height;
 		img->m_width = width;
@@ -282,7 +274,6 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 			}
 		}
 		img->m_raw_data = (char*)pixmap_data;
-		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_RGB24;
 		img->m_height = height;
 		img->m_width = width;
@@ -305,7 +296,6 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 			}
 		}
 		img->m_raw_data = (char*)pixmap_data;
-		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_RGB48;
 		img->m_height = height;
 		img->m_width = width;
@@ -318,7 +308,6 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		memcpy(pixmap_data, buf, sizeof(uint8_t) * height * width * 3);
 
 		img->m_raw_data = (char*)pixmap_data;
-		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_RGB24;
 		img->m_height = height;
 		img->m_width = width;
@@ -331,7 +320,6 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		memcpy(pixmap_data, buf, sizeof(uint16_t) * height * width * 3);
 
 		img->m_raw_data = (char*)pixmap_data;
-		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_RGB48;
 		img->m_height = height;
 		img->m_width = width;
@@ -343,7 +331,6 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		bayer_to_rgb24((unsigned char*)image_data, rgb_data, width, height, pix_format);
 
 		img->m_raw_data = (char*)rgb_data;
-		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_RGB24;
 		img->m_height = height;
 		img->m_width = width;
@@ -355,7 +342,6 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		bayer_to_rgb48((const uint16_t*)image_data, rgb_data, width, height, pix_format);
 
 		img->m_raw_data = (char*)rgb_data;
-		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_RGB48;
 		img->m_height = height;
 		img->m_width = width;

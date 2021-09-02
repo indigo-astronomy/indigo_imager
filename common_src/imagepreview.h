@@ -271,7 +271,7 @@ preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_
 preview_image* create_fits_preview(unsigned char *fits_buffer, unsigned long fits_size, const stretch_config_t sconfig);
 preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size, const stretch_config_t sconfig);
 preview_image* create_preview(unsigned char *data, size_t size, const char* format, const stretch_config_t sconfig);
-preview_image* create_preview(int width, int height, int pixel_format, char *image_data, int *hist, const stretch_config_t sconfig);
+preview_image* create_preview(int width, int height, int pixel_format, char *image_data, const stretch_config_t sconfig);
 preview_image* create_preview(indigo_property *property, indigo_item *item, const stretch_config_t sconfig);
 preview_image* create_preview(indigo_item *item, const stretch_config_t sconfig);
 void stretch_preview(preview_image *img, const stretch_config_t sconfig);

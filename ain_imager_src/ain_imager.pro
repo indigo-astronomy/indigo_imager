@@ -1,7 +1,7 @@
 QT += core gui widgets network printsupport concurrent
-CONFIG += c++11 debug
-#QMAKE_CXXFLAGS += -O3
-#QMAKE_CXXFLAGS_RELEASE += -O3
+CONFIG += c++11 release
+QMAKE_CXXFLAGS += -O3
+QMAKE_CXXFLAGS_RELEASE += -O3
 
 OBJECTS_DIR=object
 MOC_DIR=moc
