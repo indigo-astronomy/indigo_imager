@@ -4,11 +4,12 @@
 
 #include <memory>
 #include <QImage>
+#include <pixelformat.h>
 
-#define TBYTE        11 /* codes for FITS table data types */
-#define TSBYTE       12
-#define TUSHORT      20
-#define TSHORT       21
+//#define TBYTE        11 /* codes for FITS table data types */
+//#define TSBYTE       12
+//#define TUSHORT      20
+//#define TSHORT       21
 
 struct StretchParams1Channel {
  	// Stretch algorithm parameters
@@ -30,14 +31,19 @@ struct StretchParams1Channel {
 };
 
 struct StretchParams {
+	StretchParams1Channel *refChannel;
  	StretchParams1Channel grey_red;
  	StretchParams1Channel green;
  	StretchParams1Channel blue;
+
+	StretchParams() {
+		refChannel = nullptr;
+	}
 };
 
 class Stretcher {
 public:
-	explicit Stretcher(int width, int height, int channels, int data_type);
+	explicit Stretcher(int width, int height, int data_type);
 	~Stretcher() {}
 
 	void setParams(StretchParams input_params) { params = input_params; }
@@ -48,9 +54,9 @@ public:
  private:
 	 int image_width;
 	 int image_height;
-	 int image_channels;
+	 //int image_channels;
 	 int input_range;
-	 int dataType;
+	 uint32_t dataType;
 
 	 StretchParams params;
 };

@@ -651,7 +651,8 @@ void ImageViewer::showEvent(QShowEvent *event) {
 void ImageViewer::stretchNone() {
 	m_stretch_level = PREVIEW_STRETCH_NONE;
 	preview_image &image = (preview_image&)m_pixmap->image();
-	stretch_preview(&image, &stretch_luts[m_stf][m_stretch_level]);
+	StretchParams sp;
+	stretch_preview(&image, sp);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
@@ -659,7 +660,8 @@ void ImageViewer::stretchNone() {
 void ImageViewer::stretchSlight() {
 	m_stretch_level = PREVIEW_STRETCH_SLIGHT;
 	preview_image &image = (preview_image&)m_pixmap->image();
-	stretch_preview(&image, &stretch_luts[m_stf][m_stretch_level]);
+	StretchParams sp;
+	stretch_preview(&image, sp);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
@@ -667,7 +669,8 @@ void ImageViewer::stretchSlight() {
 void ImageViewer::stretchModerate() {
 	m_stretch_level = PREVIEW_STRETCH_MODERATE;
 	preview_image &image = (preview_image&)m_pixmap->image();
-	stretch_preview(&image, &stretch_luts[m_stf][m_stretch_level]);
+	StretchParams sp;
+	stretch_preview(&image, sp);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
@@ -675,7 +678,8 @@ void ImageViewer::stretchModerate() {
 void ImageViewer::stretchNormal() {
 	m_stretch_level = PREVIEW_STRETCH_NORMAL;
 	preview_image &image = (preview_image&)m_pixmap->image();
-	stretch_preview(&image, &stretch_luts[m_stf][m_stretch_level]);
+	StretchParams sp;
+	stretch_preview(&image, sp);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
@@ -683,7 +687,8 @@ void ImageViewer::stretchNormal() {
 void ImageViewer::stretchHard() {
 	m_stretch_level = PREVIEW_STRETCH_HARD;
 	preview_image &image = (preview_image&)m_pixmap->image();
-	stretch_preview(&image, &stretch_luts[m_stf][m_stretch_level]);
+	StretchParams sp;
+	stretch_preview(&image, sp);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
@@ -691,7 +696,8 @@ void ImageViewer::stretchHard() {
 void ImageViewer::onSTFLinear() {
 	m_stf = PREVIEW_CURVE_LINEAR;
 	preview_image &image = (preview_image&)m_pixmap->image();
-	stretch_preview(&image, &stretch_luts[m_stf][m_stretch_level]);
+	StretchParams sp;
+	stretch_preview(&image, sp);
 	setImage(image);
 	emit STFChanged(m_stf);
 }
@@ -699,7 +705,8 @@ void ImageViewer::onSTFLinear() {
 void ImageViewer::onSTFLog() {
 	m_stf = PREVIEW_CURVE_LOG;
 	preview_image &image = (preview_image&)m_pixmap->image();
-	stretch_preview(&image, &stretch_luts[m_stf][m_stretch_level]);
+	StretchParams sp;
+	stretch_preview(&image, sp);
 	setImage(image);
 	emit STFChanged(m_stf);
 }

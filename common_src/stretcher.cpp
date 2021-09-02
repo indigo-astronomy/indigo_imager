@@ -3,7 +3,6 @@
 #include "stretcher.h"
 
 #include <math.h>
-#include <QtConcurrent>
 
 // Returns the median value of the vector.
 // The vector is modified in an undefined way.
@@ -85,15 +84,27 @@ void stretchThreeChannels(
 	// Maximum possible input value (e.g. 1024*64 - 1 for a 16 bit unsigned int).
 	const float maxInput = inputRange > 1 ? inputRange - 1 : inputRange;
 
-	const float midtonesR   = stretchParams.grey_red.midtones;
-	const float highlightsR = stretchParams.grey_red.highlights;
-	const float shadowsR    = stretchParams.grey_red.shadows;
-	const float midtonesG   = stretchParams.green.midtones;
-	const float highlightsG = stretchParams.green.highlights;
-	const float shadowsG    = stretchParams.green.shadows;
-	const float midtonesB   = stretchParams.blue.midtones;
-	const float highlightsB = stretchParams.blue.highlights;
-	const float shadowsB    = stretchParams.blue.shadows;
+	float midtonesR   = stretchParams.grey_red.midtones;
+	float highlightsR = stretchParams.grey_red.highlights;
+	float shadowsR    = stretchParams.grey_red.shadows;
+	float midtonesG   = stretchParams.green.midtones;
+	float highlightsG = stretchParams.green.highlights;
+	float shadowsG    = stretchParams.green.shadows;
+	float midtonesB   = stretchParams.blue.midtones;
+	float highlightsB = stretchParams.blue.highlights;
+	float shadowsB    = stretchParams.blue.shadows;
+
+	if (stretchParams.refChannel) {
+		midtonesR   = stretchParams.refChannel->midtones;
+		highlightsR = stretchParams.refChannel->highlights;
+		shadowsR    = stretchParams.refChannel->shadows;
+		midtonesG   = stretchParams.refChannel->midtones;
+		highlightsG = stretchParams.refChannel->highlights;
+		shadowsG    = stretchParams.refChannel->shadows;
+		midtonesB   = stretchParams.refChannel->midtones;
+		highlightsB = stretchParams.refChannel->highlights;
+		shadowsB    = stretchParams.refChannel->shadows;
+	}
 
 	// Precomputed expressions moved out of the loop.
 	// highlights - shadows, protecting for divide-by-0, in a 0->1.0 scale.
@@ -169,7 +180,7 @@ void stretchChannels(
 		                  image_height, image_width, sampling);
 	} else if (num_channels == 3) {
 		stretchThreeChannels(input_buffer, output_image, stretch_params, input_range,
-		                     image_height, image_width, sampling);
+		                  image_height, image_width, sampling);
 	}
 }
 
@@ -231,7 +242,7 @@ void computeParamsOneChannel(
 }
 
 template <typename T>
-void computeParams3Channel(
+void computeParamsThreeChannels(
 	T const *buffer,
 	StretchParams *params,
 	int inputRange,
@@ -342,9 +353,9 @@ void computeParams3Channel(
 	else midtonesB = ((M - 1) * X) / ((2 * M - 1) * X - M);
 
 	// Store the params.
-	params->grey_red.shadows = shadowsG;
-	params->grey_red.highlights = highlightsG;
-	params->grey_red.midtones = midtonesG;
+	params->grey_red.shadows = shadowsR;
+	params->grey_red.highlights = highlightsR;
+	params->grey_red.midtones = midtonesR;
 	params->grey_red.shadows_expansion = 0.0;
 	params->grey_red.highlights_expansion = 1.0;
 	params->green.shadows = shadowsG;
@@ -352,13 +363,71 @@ void computeParams3Channel(
 	params->green.midtones = midtonesG;
 	params->green.shadows_expansion = 0.0;
 	params->green.highlights_expansion = 1.0;
-	params->blue.shadows = shadowsG;
-	params->blue.highlights = highlightsG;
-	params->blue.midtones = midtonesG;
+	params->blue.shadows = shadowsB;
+	params->blue.highlights = highlightsB;
+	params->blue.midtones = midtonesB;
 	params->blue.shadows_expansion = 0.0;
 	params->blue.highlights_expansion = 1.0;
 }
 
+template <typename T>
+void computeParamsThreeChannelsUnbalanced(
+	T const *buffer,
+	StretchParams *params,
+	int inputRange,
+	int height,
+	int width,
+	int refChannel = 1  // Use green as default reference
+) {
+	constexpr int maxSamples = 50000;
+	const int sampleBy = width * height < maxSamples ? 1 : width * height / maxSamples;
+
+	T medianSample = median(buffer + refChannel, width * height * 3, sampleBy * 3);
+
+	// Find the Median deviation: 1.4826 * median of abs(sample[i] - median).
+	const int numSamples = width * height / sampleBy;
+	std::vector<T> deviations(numSamples);
+
+	for (int index = 0, i = 0; i < numSamples; ++i, index += sampleBy * 3) {
+		if (medianSample > buffer[index + refChannel])
+			deviations[i] = medianSample - buffer[index + refChannel];
+		else
+			deviations[i] = buffer[index + refChannel] - medianSample;
+	}
+
+	// Shift everything to 0 -> 1.0.
+	float medDev = median(deviations);
+	float normalizedMedian = medianSample / static_cast<float>(inputRange);
+	float MADN = 1.4826 * medDev / static_cast<float>(inputRange);
+
+	bool upperHalf = normalizedMedian > 0.5;
+
+	float shadows = (upperHalf || MADN == 0) ? 0.0 : fmin(1.0, fmax(0.0, (normalizedMedian + -2.8 * MADN)));
+
+	float highlights = (!upperHalf || MADN == 0) ? 1.0 : fmin(1.0, fmax(0.0, (normalizedMedian - -2.8 * MADN)));
+
+	float X, M;
+	constexpr float B = 0.25;
+	if (!upperHalf) {
+		X = normalizedMedian - shadows;
+		M = B;
+	} else {
+		X = B;
+		M = highlights - normalizedMedian;
+	}
+	float midtones;
+	if (X == 0) midtones = 0.0f;
+	else if (X == M) midtones = 0.5f;
+	else if (X == 1) midtones = 1.0f;
+	else midtones = ((M - 1) * X) / ((2 * M - 1) * X - M);
+
+	// Store the params.
+	params->grey_red.shadows = params->green.shadows = params->blue.shadows = shadows;
+	params->grey_red.highlights = params->green.highlights = params->blue.highlights = highlights;
+	params->grey_red.midtones = params->green.midtones = params->blue.midtones = midtones;
+	params->grey_red.shadows_expansion = params->green.shadows_expansion = params->blue.shadows_expansion = 0.0;
+	params->grey_red.highlights_expansion = params->green.highlights_expansion = params->blue.highlights_expansion = 1.0;
+}
 
 // Need to know the possible range of input values.
 // Using the type of the sample and guessing.
@@ -366,17 +435,17 @@ void computeParams3Channel(
 // (e.g. look at maximum value and extrapolate from that).
 int getRange(int data_type) {
 	switch (data_type) {
-		case TBYTE:
+		case PIX_FMT_Y8:
+		case PIX_FMT_RGB24:
 			return 256;
 		default:
 			return 64 * 1024;
 	}
 }
 
-Stretcher::Stretcher(int width, int height, int channels, int data_type) {
+Stretcher::Stretcher(int width, int height, int data_type) {
 	image_width = width;
 	image_height = height;
-	image_channels = channels;
 	dataType = data_type;
 	input_range = getRange(dataType);
 }
@@ -386,17 +455,21 @@ void Stretcher::stretch(uint8_t const *input, QImage *outputImage, int sampling)
 	Q_ASSERT(outputImage->height() == (image_height + sampling - 1) / sampling);
 
 	switch (dataType) {
-		case TBYTE:
+		case PIX_FMT_Y8:
 			stretchChannels(reinterpret_cast<uint8_t const*>(input), outputImage, params,
-			                input_range, image_height, image_width, image_channels, sampling);
+			                input_range, image_height, image_width, 1, sampling);
 		break;
-		case TSHORT:
-			stretchChannels(reinterpret_cast<int16_t const*>(input), outputImage, params,
-			                input_range, image_height, image_width, image_channels, sampling);
-			break;
-		case TUSHORT:
+		case PIX_FMT_Y16:
 			stretchChannels(reinterpret_cast<uint16_t const*>(input), outputImage, params,
-			                input_range, image_height, image_width, image_channels, sampling);
+			                input_range, image_height, image_width, 1, sampling);
+			break;
+		case PIX_FMT_RGB24:
+			stretchChannels(reinterpret_cast<uint8_t const*>(input), outputImage, params,
+			                input_range, image_height, image_width, 3, sampling);
+			break;
+		case PIX_FMT_RGB48:
+			stretchChannels(reinterpret_cast<uint16_t const*>(input), outputImage, params,
+			                input_range, image_height, image_width, 3, sampling);
 			break;
 		default:
 			break;
@@ -406,47 +479,30 @@ void Stretcher::stretch(uint8_t const *input, QImage *outputImage, int sampling)
 StretchParams Stretcher::computeParams(uint8_t const *input) {
 	StretchParams result;
 
-	if (image_channels  == 1) {
-		StretchParams1Channel *params = &result.grey_red;
-		switch (dataType) {
-			case TBYTE: {
-				auto buffer = reinterpret_cast<uint8_t const*>(input);
-				computeParamsOneChannel(buffer, params, input_range, image_height, image_width);
-				break;
-			}
-			case TSHORT: {
-				auto buffer = reinterpret_cast<int16_t const*>(input);
-				computeParamsOneChannel(buffer, params, input_range, image_height, image_width);
-				break;
-			}
-			case TUSHORT: {
-				auto buffer = reinterpret_cast<uint16_t const*>(input);
-				computeParamsOneChannel(buffer, params, input_range, image_height, image_width);
-				break;
-			}
-			default:
-				break;
+	StretchParams1Channel *params = &result.grey_red;
+	switch (dataType) {
+		case PIX_FMT_Y8: {
+			auto buffer = reinterpret_cast<uint8_t const*>(input);
+			computeParamsOneChannel(buffer, params, input_range, image_height, image_width);
+			break;
 		}
-	} else {
-		switch (dataType) {
-			case TBYTE:{
-				auto buffer = reinterpret_cast<uint8_t const*>(input);
-				computeParams3Channel(buffer, &result, input_range, image_height, image_width);
-				break;
-			}
-			case TSHORT: {
-				auto buffer = reinterpret_cast<int16_t const*>(input);
-				computeParams3Channel(buffer, &result, input_range, image_height, image_width);
-				break;
-			}
-			case TUSHORT: {
-				auto buffer = reinterpret_cast<uint16_t const*>(input);
-				computeParams3Channel(buffer, &result, input_range, image_height, image_width);
-				break;
-			}
-			default:
-				break;
+		case PIX_FMT_Y16: {
+			auto buffer = reinterpret_cast<uint16_t const*>(input);
+			computeParamsOneChannel(buffer, params, input_range, image_height, image_width);
+			break;
 		}
+		case PIX_FMT_RGB24:{
+			auto buffer = reinterpret_cast<uint8_t const*>(input);
+			computeParamsThreeChannels(buffer, &result, input_range, image_height, image_width);
+			break;
+		}
+		case PIX_FMT_RGB48: {
+			auto buffer = reinterpret_cast<uint16_t const*>(input);
+			computeParamsThreeChannels(buffer, &result, input_range, image_height, image_width);
+			break;
+		}
+		default:
+			break;
 	}
 	return result;
 }
