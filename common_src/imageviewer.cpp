@@ -199,13 +199,13 @@ void ImageViewer::makeToolbar(bool prev_next) {
 
 	QActionGroup *cb_group = new QActionGroup(this);
 	cb_group->setExclusive(true);
-	act = menu->addAction("Background Balance: &Auto");
+	act = menu->addAction("Background Neutralization: O&N");
 	act->setCheckable(true);
 	connect(act, &QAction::triggered, this, &ImageViewer::onAutoBalance);
 	cb_group->addAction(act);
 	m_color_reference_act[COLOR_BALANCE_AUTO] = act;
 
-	act = menu->addAction("Backhround Balance: &N&one");
+	act = menu->addAction("Backhround Neutralization: O&FF");
 	act->setCheckable(true);
 	connect(act, &QAction::triggered, this, &ImageViewer::onNoBalance);
 	cb_group->addAction(act);
