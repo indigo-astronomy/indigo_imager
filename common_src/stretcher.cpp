@@ -3,6 +3,7 @@
 #include "stretcher.h"
 
 #include <math.h>
+#include <QtConcurrent>
 
 // Returns the median value of the vector.
 // The vector is modified in an undefined way.
@@ -130,38 +131,82 @@ void stretchThreeChannels(
 
 	int skip = sampling * 3;
 	int imageWidth3 = imageWidth * 3;
-	int index = 0;
-	for (int j = 0, jout = 0; j < imageHeight; j += sampling, jout++) {
-		for (int i = 0, iout = 0; i < imageWidth3; i += skip, iout++) {
-			const T inputR = inputBuffer[index++];
-			const T inputG = inputBuffer[index++];
-			const T inputB = inputBuffer[index++];
+	int HalfImageHeight = imageHeight / 2;
 
-			uint8_t red, green, blue;
+	QVector<QFuture<void>> futures;
 
-			if (inputR < nativeShadowsR) red = 0;
-			else if (inputR >= nativeHighlightsR) red = maxOutput;
-			else {
-				const T inputFloored = (inputR - nativeShadowsR);
-				red = (inputFloored * k1R) / (inputFloored * k2R - midtonesR);
+	futures.append(QtConcurrent::run([ = ]() {
+		int index = 0;
+		for (int j = 0, jout = 0; j < HalfImageHeight; j += sampling, jout++) {
+			for (int i = 0, iout = 0; i < imageWidth3; i += skip, iout++) {
+				const T inputR = inputBuffer[index++];
+				const T inputG = inputBuffer[index++];
+				const T inputB = inputBuffer[index++];
+
+				uint8_t red, green, blue;
+
+				if (inputR < nativeShadowsR) red = 0;
+				else if (inputR >= nativeHighlightsR) red = maxOutput;
+				else {
+					const T inputFloored = (inputR - nativeShadowsR);
+					red = (inputFloored * k1R) / (inputFloored * k2R - midtonesR);
+				}
+
+				if (inputG < nativeShadowsG) green = 0;
+				else if (inputG >= nativeHighlightsG) green = maxOutput;
+				else {
+					const T inputFloored = (inputG - nativeShadowsG);
+					green = (inputFloored * k1G) / (inputFloored * k2G - midtonesG);
+				}
+
+				if (inputB < nativeShadowsB) blue = 0;
+				else if (inputB >= nativeHighlightsB) blue = maxOutput;
+				else {
+					const T inputFloored = (inputB - nativeShadowsB);
+					blue = (inputFloored * k1B) / (inputFloored * k2B - midtonesB);
+				}
+				outputImage->setPixel(iout, jout, qRgb(red, green, blue));
 			}
-
-			if (inputG < nativeShadowsG) green = 0;
-			else if (inputG >= nativeHighlightsG) green = maxOutput;
-			else {
-				const T inputFloored = (inputG - nativeShadowsG);
-				green = (inputFloored * k1G) / (inputFloored * k2G - midtonesG);
-			}
-
-			if (inputB < nativeShadowsB) blue = 0;
-			else if (inputB >= nativeHighlightsB) blue = maxOutput;
-			else {
-				const T inputFloored = (inputB - nativeShadowsB);
-				blue = (inputFloored * k1B) / (inputFloored * k2B - midtonesB);
-			}
-			outputImage->setPixel(iout, jout, qRgb(red, green, blue));
 		}
-	}
+	}));
+
+	futures.append(QtConcurrent::run([ = ]() {
+		int index = HalfImageHeight * imageWidth3;
+		for (int j = HalfImageHeight, jout = HalfImageHeight; j < imageHeight; j += sampling, jout++) {
+			for (int i = 0, iout = 0; i < imageWidth3; i += skip, iout++) {
+				const T inputR = inputBuffer[index++];
+				const T inputG = inputBuffer[index++];
+				const T inputB = inputBuffer[index++];
+
+				uint8_t red, green, blue;
+
+				if (inputR < nativeShadowsR) red = 0;
+				else if (inputR >= nativeHighlightsR) red = maxOutput;
+				else {
+					const T inputFloored = (inputR - nativeShadowsR);
+					red = (inputFloored * k1R) / (inputFloored * k2R - midtonesR);
+				}
+
+				if (inputG < nativeShadowsG) green = 0;
+				else if (inputG >= nativeHighlightsG) green = maxOutput;
+				else {
+					const T inputFloored = (inputG - nativeShadowsG);
+					green = (inputFloored * k1G) / (inputFloored * k2G - midtonesG);
+				}
+
+				if (inputB < nativeShadowsB) blue = 0;
+				else if (inputB >= nativeHighlightsB) blue = maxOutput;
+				else {
+					const T inputFloored = (inputB - nativeShadowsB);
+					blue = (inputFloored * k1B) / (inputFloored * k2B - midtonesB);
+				}
+				outputImage->setPixel(iout, jout, qRgb(red, green, blue));
+			}
+		}
+	}));
+
+	for(QFuture<void> future : futures) future.waitForFinished();
+
 }
 
 template <typename T>
