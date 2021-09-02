@@ -84,13 +84,12 @@ bool blob_preview_cache::obsolete(indigo_property *property, indigo_item *item) 
 }
 
 
-bool blob_preview_cache::create(indigo_property *property, indigo_item *item, const preview_stretch_t *stretch) {
+bool blob_preview_cache::create(indigo_property *property, indigo_item *item, const stretch_config_t sconfig) {
 	pthread_mutex_lock(&preview_mutex);
 	QString key = create_key(property, item);
 	_remove(property, item);
-	StretchParams sp;
-	preview_image *preview = create_preview(property, item, sp);
-	indigo_debug("preview: %s(%s) == %p, %.5f\n", __FUNCTION__, key.toUtf8().constData(), stretch->clip_white);
+	preview_image *preview = create_preview(property, item, sconfig);
+	//indigo_debug("preview: %s(%s) == %p, %.5f\n", __FUNCTION__, key.toUtf8().constData(), stretch->clip_white);
 	if (preview != nullptr) {
 		insert(key, preview);
 		pthread_mutex_unlock(&preview_mutex);
@@ -100,14 +99,13 @@ bool blob_preview_cache::create(indigo_property *property, indigo_item *item, co
 	return false;
 }
 
-bool blob_preview_cache::recreate(QString &key, indigo_item *item, const preview_stretch_t *stretch) {
+bool blob_preview_cache::recreate(QString &key, indigo_item *item, const stretch_config_t sconfig) {
 	pthread_mutex_lock(&preview_mutex);
 	preview_image *preview = _get(key);
 	if (preview != nullptr) {
-		indigo_debug("recreate preview: %s(%s) == %p, %.5f\n", __FUNCTION__, key.toUtf8().constData(), stretch->clip_white);
+		//indigo_debug("recreate preview: %s(%s) == %p, %.5f\n", __FUNCTION__, key.toUtf8().constData(), stretch->clip_white);
 		int *hist = (int*)malloc(65536*sizeof(int));
-		StretchParams sp;
-		preview_image *new_preview = create_preview(item, sp);
+		preview_image *new_preview = create_preview(item, sconfig);
 		_remove(key);
 		free(hist);
 		insert(key, new_preview);

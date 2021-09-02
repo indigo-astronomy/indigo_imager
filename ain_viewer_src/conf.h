@@ -55,9 +55,9 @@ typedef enum {
 } guider_display_data;
 
 typedef enum {
-	PREVIEW_LINEAR_CURVE = 0,
-	PREVIEW_LOG_CURVE
-} preview_curve;
+	CB_AUTO = 0,
+	CD_NONE
+} color_balance;
 
 typedef enum {
 	AIN_ALERT_STATE = INDIGO_ALERT_STATE,
@@ -71,7 +71,7 @@ typedef struct {
 	bool use_system_locale;
 	bool antialiasing_enabled;
 	preview_stretch preview_stretch_level;
-	preview_curve preview_curve_type;
+	color_balance preview_color_balance;
 	char file_open[PATH_LEN];
 	char unused[100];
 } conf_t;

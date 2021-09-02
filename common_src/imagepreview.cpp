@@ -132,7 +132,7 @@ preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_
 }
 
 
-preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long fits_size, const StretchParams sparams) {
+preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long fits_size, const stretch_config_t sconfig) {
 	fits_header header;
 	int *hist;
 	unsigned int pix_format = 0;
@@ -190,7 +190,7 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 	}
 
 	preview_image *img = create_preview(header.naxisn[0], header.naxisn[1],
-	        pix_format, fits_data, hist, sparams);
+	        pix_format, fits_data, hist, sconfig);
 
 	indigo_error("FITS2: fits_data = %p", fits_data);
 	free(fits_data);
@@ -198,7 +198,7 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 }
 
 
-preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size, const StretchParams sparams) {
+preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size, const stretch_config_t sconfig) {
 	int *hist = nullptr;
 	unsigned int pix_format;
 	int bitpix;
@@ -236,12 +236,12 @@ preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long
 	}
 
 	preview_image *img = create_preview(header->width, header->height,
-	        pix_format, raw_data, hist, sparams);
+	        pix_format, raw_data, hist, sconfig);
 
 	return img;
 }
 
-preview_image* create_preview(int width, int height, int pix_format, char *image_data, int *hist, const StretchParams sparams) {
+preview_image* create_preview(int width, int height, int pix_format, char *image_data, int *hist, const stretch_config_t sconfig) {
 	preview_image* img = new preview_image(width, height, QImage::Format_RGB888);
 	if (pix_format == PIX_FMT_Y8) {
 		uint8_t* buf = (uint8_t*)image_data;
@@ -253,9 +253,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		img->m_height = height;
 		img->m_width = width;
 
-		Stretcher s(img->m_width, img->m_height, img->m_pix_format);
-		auto sparams = s.computeParams((const uint8_t*)img->m_raw_data);
-		stretch_preview(img, sparams);
+		stretch_preview(img, sconfig);
 	} else if (pix_format == PIX_FMT_Y16) {
 		uint16_t* buf = (uint16_t*)image_data;
 		uint16_t* pixmap_data = (uint16_t*)malloc(sizeof(uint16_t) * height * width);
@@ -266,9 +264,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		img->m_height = height;
 		img->m_width = width;
 
-		Stretcher s(img->m_width, img->m_height, img->m_pix_format);
-		auto sparams = s.computeParams((const uint8_t*)img->m_raw_data);
-		stretch_preview(img, sparams);
+		stretch_preview(img, sconfig);
 	} else if (pix_format == PIX_FMT_3RGB24) {
 		int channel_offest = width * height;
 		uint8_t* buf = (uint8_t*)image_data;
@@ -291,9 +287,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		img->m_height = height;
 		img->m_width = width;
 
-		Stretcher s(img->m_width, img->m_height, img->m_pix_format);
-		auto sparams = s.computeParams((const uint8_t*)img->m_raw_data);
-		stretch_preview(img, sparams);
+		stretch_preview(img, sconfig);
 	} else if (pix_format == PIX_FMT_3RGB48) {
 		int channel_offest = width * height;
 		uint16_t* buf = (uint16_t*)image_data;
@@ -316,9 +310,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		img->m_height = height;
 		img->m_width = width;
 
-		Stretcher s(img->m_width, img->m_height, img->m_pix_format);
-		auto sparams = s.computeParams((const uint8_t*)img->m_raw_data);
-		stretch_preview(img, sparams);
+		stretch_preview(img, sconfig);
 	} else if (pix_format == PIX_FMT_RGB24) {
 		uint8_t* buf = (uint8_t*)image_data;
 		uint8_t* pixmap_data = (uint8_t*)malloc(sizeof(uint8_t) * height * width * 3);
@@ -331,9 +323,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		img->m_height = height;
 		img->m_width = width;
 
-		Stretcher s(img->m_width, img->m_height, img->m_pix_format);
-		auto sparams = s.computeParams((const uint8_t*)img->m_raw_data);
-		stretch_preview(img, sparams);
+		stretch_preview(img, sconfig);
 	} else if (pix_format == PIX_FMT_RGB48) {
 		uint16_t* buf = (uint16_t*)image_data;
 		uint16_t* pixmap_data = (uint16_t*)malloc(sizeof(uint16_t) * height * width * 3);
@@ -346,9 +336,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		img->m_height = height;
 		img->m_width = width;
 
-		Stretcher s(img->m_width, img->m_height, img->m_pix_format);
-		auto sparams = s.computeParams((const uint8_t*)img->m_raw_data);
-		stretch_preview(img, sparams);
+		stretch_preview(img, sconfig);
 	} else if ((pix_format == PIX_FMT_SBGGR8) || (pix_format == PIX_FMT_SGBRG8) ||
 		       (pix_format == PIX_FMT_SGRBG8) || (pix_format == PIX_FMT_SRGGB8)) {
 		uint8_t* rgb_data = (uint8_t*)malloc(width*height*3);
@@ -360,9 +348,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		img->m_height = height;
 		img->m_width = width;
 
-		Stretcher s(img->m_width, img->m_height, img->m_pix_format);
-		auto sparams = s.computeParams((const uint8_t*)img->m_raw_data);
-		stretch_preview(img, sparams);
+		stretch_preview(img, sconfig);
 	} else if ((pix_format == PIX_FMT_SBGGR16) || (pix_format == PIX_FMT_SGBRG16) ||
 		       (pix_format == PIX_FMT_SGRBG16) || (pix_format == PIX_FMT_SRGGB16)) {
 		uint16_t* rgb_data = (uint16_t*)malloc(width*height*6);
@@ -374,10 +360,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		img->m_height = height;
 		img->m_width = width;
 
-		Stretcher s(img->m_width, img->m_height, img->m_pix_format);
-		auto sparams = s.computeParams((const uint8_t*)img->m_raw_data);
-		sparams.refChannel = &sparams.green;
-		stretch_preview(img, sparams);
+		stretch_preview(img, sconfig);
 	} else {
 		indigo_error("%s(): Unsupported pixel format (%d)", __FUNCTION__, pix_format);
 		delete img;
@@ -386,7 +369,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 	return img;
 }
 
-void stretch_preview(preview_image *img, const StretchParams sparams) {
+void stretch_preview(preview_image *img, const stretch_config_t sconfig) {
 	if (
 		img->m_pix_format == PIX_FMT_Y8 ||
 		img->m_pix_format == PIX_FMT_Y16 ||
@@ -394,26 +377,33 @@ void stretch_preview(preview_image *img, const StretchParams sparams) {
 		img->m_pix_format == PIX_FMT_RGB48
 	) {
 		Stretcher s(img->m_width, img->m_height, img->m_pix_format);
-		s.setParams(sparams);
+		StretchParams sp;
+		if (sconfig.stretch_level) {
+			sp = s.computeParams((const uint8_t*)img->m_raw_data);
+		}
+		if (sconfig.balance) {
+			sp.refChannel = &sp.green;
+		}
+		s.setParams(sp);
 		s.stretch((const uint8_t*)img->m_raw_data, img, 1);
 	} else {
 		indigo_error("%s(): Unsupported pixel format (%d)", __FUNCTION__, img->m_pix_format);
 	}
 }
 
-preview_image* create_preview(indigo_property *property, indigo_item *item, const StretchParams sparams) {
+preview_image* create_preview(indigo_property *property, indigo_item *item, const stretch_config_t sconfig) {
 	preview_image *preview = nullptr;
 	if (property->type == INDIGO_BLOB_VECTOR && property->state == INDIGO_OK_STATE) {
-		preview = create_preview(item, sparams);
+		preview = create_preview(item, sconfig);
 	}
 	return preview;
 }
 
-preview_image* create_preview(indigo_item *item, const StretchParams sparams) {
-	return create_preview((unsigned char*)item->blob.value, item->blob.size, item->blob.format, sparams);
+preview_image* create_preview(indigo_item *item, const stretch_config_t sconfig) {
+	return create_preview((unsigned char*)item->blob.value, item->blob.size, item->blob.format, sconfig);
 }
 
-preview_image* create_preview(unsigned char *data, size_t size, const char* format, const StretchParams sparams) {
+preview_image* create_preview(unsigned char *data, size_t size, const char* format, const stretch_config_t sconfig) {
 	preview_image *preview = nullptr;
 	if (data != NULL && format != NULL) {
 		if (!strcmp(format, ".jpeg") ||
@@ -430,12 +420,12 @@ preview_image* create_preview(unsigned char *data, size_t size, const char* form
 			!strcmp(format, ".FIT")  ||
 			!strcmp(format, ".FTS")
 		) {
-			preview = create_fits_preview(data, size, sparams);
+			preview = create_fits_preview(data, size, sconfig);
 		} else if (
 			!strcmp(format, ".raw") ||
 			!strcmp(format, ".RAW")
 		) {
-			preview = create_raw_preview(data, size, sparams);
+			preview = create_raw_preview(data, size, sconfig);
 		} else if (
 			!strcmp(format, ".tif")  ||
 			!strcmp(format, ".tiff") ||

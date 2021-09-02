@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
 	conf.use_system_locale = false;
 	conf.indigo_log_level = INDIGO_LOG_INFO;
 	conf.preview_stretch_level = STRETCH_NORMAL;
-	conf.preview_curve_type = PREVIEW_LINEAR_CURVE;
+	conf.preview_color_balance = CB_AUTO;
 	conf.antialiasing_enabled = false;
 	read_conf();
 	conf.file_open[0] = '\0';

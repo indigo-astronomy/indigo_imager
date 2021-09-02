@@ -46,9 +46,9 @@ typedef enum {
 } preview_stretch;
 
 typedef enum {
-	PREVIEW_LINEAR_CURVE = 0,
-	PREVIEW_LOG_CURVE
-} preview_curve;
+	CB_AUTO = 0,
+	CB_NONE
+} color_balance;
 
 typedef enum {
 	SHOW_FWHM = 0,
@@ -90,8 +90,8 @@ typedef struct {
 	char solver_image_source2[INDIGO_NAME_SIZE];
 	bool save_noname_images;
 	char data_dir_prefix[PATH_LEN];
-	preview_curve preview_curve_type;
-	preview_curve guider_preview_curve_type;
+	color_balance preview_color_balance;
+	color_balance guider_color_balance;
 	char unused[100];
 } conf_t;
 

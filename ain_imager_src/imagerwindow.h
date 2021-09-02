@@ -208,9 +208,9 @@ public slots:
 	void on_exit_act();
 	void on_about_act();
 
-	void on_imager_stf_changed(int stf);
+	void on_imager_cb_changed(int balance);
 	void on_imager_stretch_changed(int level);
-	void on_guider_stf_changed(int stf);
+	void on_guider_cb_changed(int balance);
 	void on_guider_stretch_changed(int level);
 
 	void on_focus_show_fwhm();

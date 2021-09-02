@@ -317,7 +317,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	form_layout->addWidget((QWidget*)m_imager_viewer);
 	m_imager_viewer->setMinimumWidth(PROPERTY_AREA_MIN_WIDTH);
 	m_imager_viewer->setStretch(conf.preview_stretch_level);
-	m_imager_viewer->setSTF(conf.preview_curve_type);
+	m_imager_viewer->setBalance(conf.preview_color_balance);
 	m_visible_viewer = m_imager_viewer;
 
 	// Image guide viewer
@@ -325,7 +325,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_guider_viewer->setText("Guider Image");
 	m_guider_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
 	m_guider_viewer->setStretch(conf.guider_stretch_level);
-	m_guider_viewer->setSTF(conf.guider_preview_curve_type);
+	m_guider_viewer->setBalance(conf.guider_color_balance);
 	m_guider_viewer->setVisible(false);
 
 	QSplitter* hSplitter = new QSplitter;
@@ -344,9 +344,9 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	mServiceModel->enable_auto_connect(conf.auto_connect);
 
 	connect(m_imager_viewer, &ImageViewer::stretchChanged, this, &ImagerWindow::on_imager_stretch_changed);
-	connect(m_imager_viewer, &ImageViewer::STFChanged, this, &ImagerWindow::on_imager_stf_changed);
+	connect(m_imager_viewer, &ImageViewer::BalanceChanged, this, &ImagerWindow::on_imager_cb_changed);
 	connect(m_guider_viewer, &ImageViewer::stretchChanged, this, &ImagerWindow::on_guider_stretch_changed);
-	connect(m_guider_viewer, &ImageViewer::STFChanged, this, &ImagerWindow::on_guider_stf_changed);
+	connect(m_guider_viewer, &ImageViewer::BalanceChanged, this, &ImagerWindow::on_guider_cb_changed);
 
 	connect(this, &ImagerWindow::move_resize_focuser_selection, m_imager_viewer, &ImageViewer::moveResizeSelection);
 	connect(this, &ImagerWindow::show_focuser_selection, m_imager_viewer, &ImageViewer::showSelection);
@@ -540,7 +540,8 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 			m_indigo_item = nullptr;
 		}
 		m_indigo_item = item;
-		preview_cache.create(property, m_indigo_item, &stretch_luts[conf.preview_curve_type][conf.preview_stretch_level]);
+		const stretch_config_t sconfig = {conf.preview_stretch_level, conf.preview_color_balance};
+		preview_cache.create(property, m_indigo_item, sconfig);
 		QString key = preview_cache.create_key(property, m_indigo_item);
 		//preview_image *image = preview_cache.get(m_image_key);
 		if (show_preview_in_imager_viewer(key)) {
@@ -552,7 +553,8 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 	} else if (get_selected_guider_agent(selected_agent)) {
 		if ((client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME) && conf.guider_save_bandwidth == 0) ||
 			(client_match_device_property(property, selected_agent, CCD_PREVIEW_IMAGE_PROPERTY_NAME) && conf.guider_save_bandwidth > 0)) {
-			preview_cache.create(property, item, &stretch_luts[conf.guider_preview_curve_type][conf.guider_stretch_level]);
+			const stretch_config_t sconfig = {conf.guider_stretch_level, conf.guider_color_balance};
+			preview_cache.create(property, item, sconfig);
 			QString key = preview_cache.create_key(property, item);
 			preview_image *image = preview_cache.get(key);
 			if (show_preview_in_guider_viewer(key)) {
@@ -784,8 +786,8 @@ void ImagerWindow::on_imager_stretch_changed(int level) {
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
-void ImagerWindow::on_imager_stf_changed(int stf) {
-	conf.preview_curve_type = (preview_curve)stf;
+void ImagerWindow::on_imager_cb_changed(int balance) {
+	conf.preview_color_balance = (color_balance)balance;
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
@@ -801,8 +803,8 @@ void ImagerWindow::on_guider_stretch_changed(int level) {
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
-void ImagerWindow::on_guider_stf_changed(int stf) {
-	conf.guider_preview_curve_type = (preview_curve)stf;
+void ImagerWindow::on_guider_cb_changed(int balance) {
+	conf.guider_color_balance = (color_balance)balance;
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }

@@ -49,8 +49,8 @@ private:
 
 public:
 	QString create_key(indigo_property *property, indigo_item *item);
-	bool create(indigo_property *property, indigo_item *item, const preview_stretch_t *stretch);
-	bool recreate(QString &key, indigo_item *item, const preview_stretch_t *stretch);
+	bool create(indigo_property *property, indigo_item *item, const stretch_config_t sconfig);
+	bool recreate(QString &key, indigo_item *item, const stretch_config_t sconfig);
 	bool obsolete(indigo_property *property, indigo_item *item);
 	preview_image* get(indigo_property *property, indigo_item *item);
 	preview_image* get(QString &key);

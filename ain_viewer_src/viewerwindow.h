@@ -69,7 +69,7 @@ public slots:
 	void on_about_act();
 
 	void on_stretch_changed(int level);
-	void on_stf_changed(int stf);
+	void on_cb_changed(int balance);
 	void on_antialias_view(bool status);
 
 private:

@@ -66,9 +66,9 @@ int main(int argc, char *argv[]) {
 	conf.use_system_locale = false;
 	conf.indigo_log_level = INDIGO_LOG_INFO;
 	conf.preview_stretch_level = STRETCH_NORMAL;
-	conf.preview_curve_type = PREVIEW_LINEAR_CURVE;
+	conf.preview_color_balance = CB_AUTO;
 	conf.guider_stretch_level = STRETCH_MODERATE;
-	conf.guider_preview_curve_type = PREVIEW_LINEAR_CURVE;
+	conf.guider_color_balance = CB_AUTO;
 	conf.antialiasing_enabled = false;
 	conf.guider_antialiasing_enabled = false;
 	conf.focus_mode = 0;

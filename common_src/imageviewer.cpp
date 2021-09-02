@@ -67,7 +67,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
 	: QFrame(parent)
 	, m_zoom_level(0)
 	, m_stretch_level(PREVIEW_STRETCH_NONE)
-	, m_stf(PREVIEW_CURVE_LINEAR)
+	, m_color_reference(COLOR_BALANCE_AUTO)
 	, m_fit(true)
 	, m_bar_mode(ToolBarMode::Visible)
 {
@@ -197,19 +197,19 @@ void ImageViewer::makeToolbar(bool prev_next) {
 
 	menu->addSeparator();
 
-	QActionGroup *stf_group = new QActionGroup(this);
-	stf_group->setExclusive(true);
-	act = menu->addAction("STF: L&inear");
+	QActionGroup *cb_group = new QActionGroup(this);
+	cb_group->setExclusive(true);
+	act = menu->addAction("Background Balance: &Auto");
 	act->setCheckable(true);
-	connect(act, &QAction::triggered, this, &ImageViewer::onSTFLinear);
-	stf_group->addAction(act);
-	m_stf_act[PREVIEW_CURVE_LINEAR] = act;
+	connect(act, &QAction::triggered, this, &ImageViewer::onAutoBalance);
+	cb_group->addAction(act);
+	m_color_reference_act[COLOR_BALANCE_AUTO] = act;
 
-	act = menu->addAction("STF: &Log");
+	act = menu->addAction("Backhround Balance: &N&one");
 	act->setCheckable(true);
-	connect(act, &QAction::triggered, this, &ImageViewer::onSTFLog);
-	stf_group->addAction(act);
-	m_stf_act[PREVIEW_CURVE_LOG] = act;
+	connect(act, &QAction::triggered, this, &ImageViewer::onNoBalance);
+	cb_group->addAction(act);
+	m_color_reference_act[COLOR_BALANCE_NONE] = act;
 
 	auto stretch = new QToolButton(this);
 	stretch->setToolTip(tr("Histogram Stretch"));
@@ -651,8 +651,8 @@ void ImageViewer::showEvent(QShowEvent *event) {
 void ImageViewer::stretchNone() {
 	m_stretch_level = PREVIEW_STRETCH_NONE;
 	preview_image &image = (preview_image&)m_pixmap->image();
-	StretchParams sp;
-	stretch_preview(&image, sp);
+	const stretch_config_t sc = {m_stretch_level, m_color_reference};
+	stretch_preview(&image, sc);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
@@ -660,8 +660,8 @@ void ImageViewer::stretchNone() {
 void ImageViewer::stretchSlight() {
 	m_stretch_level = PREVIEW_STRETCH_SLIGHT;
 	preview_image &image = (preview_image&)m_pixmap->image();
-	StretchParams sp;
-	stretch_preview(&image, sp);
+	const stretch_config_t sc = {m_stretch_level, m_color_reference};
+	stretch_preview(&image, sc);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
@@ -669,8 +669,8 @@ void ImageViewer::stretchSlight() {
 void ImageViewer::stretchModerate() {
 	m_stretch_level = PREVIEW_STRETCH_MODERATE;
 	preview_image &image = (preview_image&)m_pixmap->image();
-	StretchParams sp;
-	stretch_preview(&image, sp);
+	const stretch_config_t sc = {m_stretch_level, m_color_reference};
+	stretch_preview(&image, sc);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
@@ -678,8 +678,8 @@ void ImageViewer::stretchModerate() {
 void ImageViewer::stretchNormal() {
 	m_stretch_level = PREVIEW_STRETCH_NORMAL;
 	preview_image &image = (preview_image&)m_pixmap->image();
-	StretchParams sp;
-	stretch_preview(&image, sp);
+	const stretch_config_t sc = {m_stretch_level, m_color_reference};
+	stretch_preview(&image, sc);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
@@ -687,28 +687,28 @@ void ImageViewer::stretchNormal() {
 void ImageViewer::stretchHard() {
 	m_stretch_level = PREVIEW_STRETCH_HARD;
 	preview_image &image = (preview_image&)m_pixmap->image();
-	StretchParams sp;
-	stretch_preview(&image, sp);
+	const stretch_config_t sc = {m_stretch_level, m_color_reference};
+	stretch_preview(&image, sc);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
 
-void ImageViewer::onSTFLinear() {
-	m_stf = PREVIEW_CURVE_LINEAR;
+void ImageViewer::onAutoBalance() {
+	m_color_reference = COLOR_BALANCE_AUTO;
 	preview_image &image = (preview_image&)m_pixmap->image();
-	StretchParams sp;
-	stretch_preview(&image, sp);
+	const stretch_config_t sc = {m_stretch_level, m_color_reference};
+	stretch_preview(&image, sc);
 	setImage(image);
-	emit STFChanged(m_stf);
+	emit BalanceChanged(m_color_reference);
 }
 
-void ImageViewer::onSTFLog() {
-	m_stf = PREVIEW_CURVE_LOG;
+void ImageViewer::onNoBalance() {
+	m_color_reference = COLOR_BALANCE_NONE;
 	preview_image &image = (preview_image&)m_pixmap->image();
-	StretchParams sp;
-	stretch_preview(&image, sp);
+	const stretch_config_t sc = {m_stretch_level, m_color_reference};
+	stretch_preview(&image, sc);
 	setImage(image);
-	emit STFChanged(m_stf);
+	emit BalanceChanged(m_color_reference);
 }
 
 void ImageViewer::onPrevious() {
@@ -747,19 +747,19 @@ void ImageViewer::setStretch(int level) {
 	}
 }
 
-void ImageViewer::setSTF(int stf) {
-	switch (stf) {
-		case PREVIEW_CURVE_LINEAR:
-			m_stf_act[PREVIEW_CURVE_LINEAR]->setChecked(true);
-			onSTFLinear();
+void ImageViewer::setBalance(int balance) {
+	switch (balance) {
+		case COLOR_BALANCE_AUTO:
+			m_color_reference_act[COLOR_BALANCE_AUTO]->setChecked(true);
+			onAutoBalance();
 			break;
-		case PREVIEW_CURVE_LOG:
-			m_stf_act[PREVIEW_CURVE_LOG]->setChecked(true);
-			onSTFLog();
+		case COLOR_BALANCE_NONE:
+			m_color_reference_act[COLOR_BALANCE_NONE]->setChecked(true);
+			onNoBalance();
 			break;
 		default:
-			m_stf_act[PREVIEW_CURVE_LINEAR]->setChecked(true);
-			onSTFLinear();
+			m_color_reference_act[COLOR_BALANCE_AUTO]->setChecked(true);
+			onAutoBalance();
 	}
 }
 
