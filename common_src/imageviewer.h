@@ -116,7 +116,6 @@ private:
 	void makeToolbar(bool prev_next);
 
 private:
-	pthread_mutex_t image_mutex;
 	int m_zoom_level;
 	QLabel *m_text_label;
 	QLabel *m_pixel_value;

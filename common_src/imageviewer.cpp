@@ -65,19 +65,12 @@ private:
 
 ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
 	: QFrame(parent)
-	, image_mutex(PTHREAD_MUTEX_INITIALIZER)
 	, m_zoom_level(0)
 	, m_stretch_level(PREVIEW_STRETCH_NONE)
 	, m_color_reference(COLOR_BALANCE_AUTO)
 	, m_fit(true)
 	, m_bar_mode(ToolBarMode::Visible)
 {
-	pthread_mutexattr_t attr;
-
-	pthread_mutexattr_init(&attr);
-	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-	pthread_mutex_init(&image_mutex, &attr);
-
 	auto scene = new QGraphicsScene(this);
 	m_view = new GraphicsView(this);
 	m_view->setScene(scene);
@@ -445,7 +438,6 @@ const preview_image &ImageViewer::image() const {
 }
 
 void ImageViewer::onSetImage(preview_image &im) {
-	pthread_mutex_lock(&image_mutex);
 	m_pixmap->setImage(im);
 	if (!m_pixmap->pixmap().isNull()) {
 		if (m_selection_visible && !m_selection_p.isNull()) {
@@ -481,7 +473,6 @@ void ImageViewer::onSetImage(preview_image &im) {
 	m_view->scene()->setSceneRect(0, 0, im.width(), im.height());
 
 	if (m_fit) zoomFit();
-	pthread_mutex_unlock(&image_mutex);
 
 	emit imageChanged();
 }
@@ -661,77 +652,63 @@ void ImageViewer::showEvent(QShowEvent *event) {
 
 void ImageViewer::stretchNone() {
 	m_stretch_level = PREVIEW_STRETCH_NONE;
-	pthread_mutex_lock(&image_mutex);
 	preview_image &image = (preview_image&)m_pixmap->image();
 	const stretch_config_t sc = {m_stretch_level, m_color_reference};
 	stretch_preview(&image, sc);
-	pthread_mutex_unlock(&image_mutex);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
 
 void ImageViewer::stretchSlight() {
 	m_stretch_level = PREVIEW_STRETCH_SLIGHT;
-	pthread_mutex_lock(&image_mutex);
 	preview_image &image = (preview_image&)m_pixmap->image();
 	const stretch_config_t sc = {m_stretch_level, m_color_reference};
 	stretch_preview(&image, sc);
-	pthread_mutex_unlock(&image_mutex);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
 
 void ImageViewer::stretchModerate() {
 	m_stretch_level = PREVIEW_STRETCH_MODERATE;
-	pthread_mutex_lock(&image_mutex);
 	preview_image &image = (preview_image&)m_pixmap->image();
 	const stretch_config_t sc = {m_stretch_level, m_color_reference};
 	stretch_preview(&image, sc);
-	pthread_mutex_unlock(&image_mutex);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
 
 void ImageViewer::stretchNormal() {
 	m_stretch_level = PREVIEW_STRETCH_NORMAL;
-	pthread_mutex_lock(&image_mutex);
 	preview_image &image = (preview_image&)m_pixmap->image();
 	const stretch_config_t sc = {m_stretch_level, m_color_reference};
 	stretch_preview(&image, sc);
-	pthread_mutex_unlock(&image_mutex);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
 
 void ImageViewer::stretchHard() {
 	m_stretch_level = PREVIEW_STRETCH_HARD;
-	pthread_mutex_lock(&image_mutex);
 	preview_image &image = (preview_image&)m_pixmap->image();
 	const stretch_config_t sc = {m_stretch_level, m_color_reference};
 	stretch_preview(&image, sc);
-	pthread_mutex_unlock(&image_mutex);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
 
 void ImageViewer::onAutoBalance() {
 	m_color_reference = COLOR_BALANCE_AUTO;
-	pthread_mutex_lock(&image_mutex);
 	preview_image &image = (preview_image&)m_pixmap->image();
 	const stretch_config_t sc = {m_stretch_level, m_color_reference};
 	stretch_preview(&image, sc);
-	pthread_mutex_unlock(&image_mutex);
 	setImage(image);
 	emit BalanceChanged(m_color_reference);
 }
 
 void ImageViewer::onNoBalance() {
 	m_color_reference = COLOR_BALANCE_NONE;
-	pthread_mutex_lock(&image_mutex);
 	preview_image &image = (preview_image&)m_pixmap->image();
 	const stretch_config_t sc = {m_stretch_level, m_color_reference};
 	stretch_preview(&image, sc);
-	pthread_mutex_unlock(&image_mutex);
 	setImage(image);
 	emit BalanceChanged(m_color_reference);
 }
