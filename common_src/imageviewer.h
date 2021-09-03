@@ -59,7 +59,7 @@ public:
 public slots:
 	void setText(const QString &txt);
 	void setToolTip(const QString &txt);
-	void setImage(preview_image &im);
+	void onSetImage(preview_image &im);
 
 	void showSelection(bool show);
 	void moveSelection(double x, double y);
@@ -96,6 +96,7 @@ public slots:
 
 signals:
 	void imageChanged();
+	void setImage(preview_image &im);
 	void mouseRightPress(double x, double y);
 	void mouseRightPressRADec(double ra, double dec);
 	void zoomChanged(double scale);
@@ -115,6 +116,7 @@ private:
 	void makeToolbar(bool prev_next);
 
 private:
+	pthread_mutex_t image_mutex;
 	int m_zoom_level;
 	QLabel *m_text_label;
 	QLabel *m_pixel_value;

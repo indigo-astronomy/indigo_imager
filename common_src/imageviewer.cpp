@@ -65,6 +65,7 @@ private:
 
 ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
 	: QFrame(parent)
+	, image_mutex(PTHREAD_MUTEX_INITIALIZER)
 	, m_zoom_level(0)
 	, m_stretch_level(PREVIEW_STRETCH_NONE)
 	, m_color_reference(COLOR_BALANCE_AUTO)
@@ -131,6 +132,8 @@ ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
 	setLayout(box);
 
 	m_extra_selections_visible = false;
+
+	connect(this, &ImageViewer::setImage, this, &ImageViewer::onSetImage);
 }
 
 // toolbar with a few quick actions and display information
@@ -435,7 +438,8 @@ const preview_image &ImageViewer::image() const {
 	return m_pixmap->image();
 }
 
-void ImageViewer::setImage(preview_image &im) {
+void ImageViewer::onSetImage(preview_image &im) {
+	pthread_mutex_lock(&image_mutex);
 	m_pixmap->setImage(im);
 	if (!m_pixmap->pixmap().isNull()) {
 		if (m_selection_visible && !m_selection_p.isNull()) {
@@ -471,6 +475,7 @@ void ImageViewer::setImage(preview_image &im) {
 	m_view->scene()->setSceneRect(0, 0, im.width(), im.height());
 
 	if (m_fit) zoomFit();
+	pthread_mutex_unlock(&image_mutex);
 
 	emit imageChanged();
 }
@@ -650,45 +655,55 @@ void ImageViewer::showEvent(QShowEvent *event) {
 
 void ImageViewer::stretchNone() {
 	m_stretch_level = PREVIEW_STRETCH_NONE;
+	pthread_mutex_lock(&image_mutex);
 	preview_image &image = (preview_image&)m_pixmap->image();
 	const stretch_config_t sc = {m_stretch_level, m_color_reference};
 	stretch_preview(&image, sc);
+	pthread_mutex_unlock(&image_mutex);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
 
 void ImageViewer::stretchSlight() {
 	m_stretch_level = PREVIEW_STRETCH_SLIGHT;
+	pthread_mutex_lock(&image_mutex);
 	preview_image &image = (preview_image&)m_pixmap->image();
 	const stretch_config_t sc = {m_stretch_level, m_color_reference};
 	stretch_preview(&image, sc);
+	pthread_mutex_unlock(&image_mutex);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
 
 void ImageViewer::stretchModerate() {
 	m_stretch_level = PREVIEW_STRETCH_MODERATE;
+	pthread_mutex_lock(&image_mutex);
 	preview_image &image = (preview_image&)m_pixmap->image();
 	const stretch_config_t sc = {m_stretch_level, m_color_reference};
 	stretch_preview(&image, sc);
+	pthread_mutex_unlock(&image_mutex);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
 
 void ImageViewer::stretchNormal() {
 	m_stretch_level = PREVIEW_STRETCH_NORMAL;
+	pthread_mutex_lock(&image_mutex);
 	preview_image &image = (preview_image&)m_pixmap->image();
 	const stretch_config_t sc = {m_stretch_level, m_color_reference};
 	stretch_preview(&image, sc);
+	pthread_mutex_unlock(&image_mutex);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
 
 void ImageViewer::stretchHard() {
 	m_stretch_level = PREVIEW_STRETCH_HARD;
+	pthread_mutex_lock(&image_mutex);
 	preview_image &image = (preview_image&)m_pixmap->image();
 	const stretch_config_t sc = {m_stretch_level, m_color_reference};
 	stretch_preview(&image, sc);
+	pthread_mutex_unlock(&image_mutex);
 	setImage(image);
 	emit stretchChanged(m_stretch_level);
 }
