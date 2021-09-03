@@ -72,6 +72,12 @@ ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
 	, m_fit(true)
 	, m_bar_mode(ToolBarMode::Visible)
 {
+	pthread_mutexattr_t attr;
+
+	pthread_mutexattr_init(&attr);
+	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+	pthread_mutex_init(&image_mutex, &attr);
+
 	auto scene = new QGraphicsScene(this);
 	m_view = new GraphicsView(this);
 	m_view->setScene(scene);
@@ -710,18 +716,22 @@ void ImageViewer::stretchHard() {
 
 void ImageViewer::onAutoBalance() {
 	m_color_reference = COLOR_BALANCE_AUTO;
+	pthread_mutex_lock(&image_mutex);
 	preview_image &image = (preview_image&)m_pixmap->image();
 	const stretch_config_t sc = {m_stretch_level, m_color_reference};
 	stretch_preview(&image, sc);
+	pthread_mutex_unlock(&image_mutex);
 	setImage(image);
 	emit BalanceChanged(m_color_reference);
 }
 
 void ImageViewer::onNoBalance() {
 	m_color_reference = COLOR_BALANCE_NONE;
+	pthread_mutex_lock(&image_mutex);
 	preview_image &image = (preview_image&)m_pixmap->image();
 	const stretch_config_t sc = {m_stretch_level, m_color_reference};
 	stretch_preview(&image, sc);
+	pthread_mutex_unlock(&image_mutex);
 	setImage(image);
 	emit BalanceChanged(m_color_reference);
 }
