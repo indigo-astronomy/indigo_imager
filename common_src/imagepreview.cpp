@@ -236,7 +236,7 @@ preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long
 }
 
 preview_image* create_preview(int width, int height, int pix_format, char *image_data, const stretch_config_t sconfig) {
-	preview_image* img = new preview_image(width, height, QImage::Format_RGB888);
+	preview_image* img = new preview_image(width, height, QImage::Format_RGB32);
 	if (pix_format == PIX_FMT_Y8) {
 		uint8_t* buf = (uint8_t*)image_data;
 		uint8_t* pixmap_data = (uint8_t*)malloc(sizeof(uint8_t) * height * width);

@@ -3,7 +3,7 @@
 #include "stretcher.h"
 
 #include <math.h>
-#include <QtConcurrent>
+#include <QCoreApplication>
 
 // Returns the median value of the vector.
 // The vector is modified in an undefined way.
@@ -55,44 +55,21 @@ void stretchOneChannel(
 	const float k1 = (midtones - 1) * hsRangeFactor * maxOutput / maxInput;
 	const float k2 = ((2 * midtones) - 1) * hsRangeFactor / maxInput;
 
-	// Increment the input index by the sampling, the output index increments by 1.
-	int HalfImageHeight = image_height / 2;
-
-	QVector<QFuture<void>> futures;
-	// Render image in 2 threads
-	futures.append(QtConcurrent::run([ = ]() {
-		for (int j = 0, jout = 0; j < HalfImageHeight; j += sampling, jout++) {
-			T * inputLine  = input_buffer + j * image_width;
-			QCoreApplication::processEvents();
-			for (int i = 0, iout = 0; i < image_width; i += sampling, iout++) {
-				const T input = inputLine[i];
-				if (input < nativeShadows) output_image->setPixel(iout, jout, qRgb(0, 0, 0));
-				else if (input >= nativeHighlights) output_image->setPixel(iout, jout, qRgb(maxOutput,maxOutput,maxOutput));
-				else {
-					const T inputFloored = (input - nativeShadows);
-					int val = (inputFloored * k1) / (inputFloored * k2 - midtones);
-					output_image->setPixel(iout, jout, qRgb(val, val, val));
-				}
+	for (int j = 0, jout = 0; j < image_height; j += sampling, jout++) {
+		T * inputLine  = input_buffer + j * image_width;
+		auto * scanLine = reinterpret_cast<QRgb*>(output_image->scanLine(jout));
+		QCoreApplication::processEvents();
+		for (int i = 0, iout = 0; i < image_width; i += sampling, iout++) {
+			const T input = inputLine[i];
+			if (input < nativeShadows) output_image->setPixel(iout, jout, qRgb(0, 0, 0));
+			else if (input >= nativeHighlights) output_image->setPixel(iout, jout, qRgb(maxOutput,maxOutput,maxOutput));
+			else {
+				const T inputFloored = (input - nativeShadows);
+				int val = (inputFloored * k1) / (inputFloored * k2 - midtones);
+				scanLine[iout] = qRgb(val, val, val);
 			}
 		}
-	}));
-	futures.append(QtConcurrent::run([ = ]() {
-		for (int j = HalfImageHeight, jout = HalfImageHeight; j < image_height; j += sampling, jout++) {
-			T * inputLine  = input_buffer + j * image_width;
-			QCoreApplication::processEvents();
-			for (int i = 0, iout = 0; i < image_width; i += sampling, iout++) {
-				const T input = inputLine[i];
-				if (input < nativeShadows) output_image->setPixel(iout, jout, qRgb(0, 0, 0));
-				else if (input >= nativeHighlights) output_image->setPixel(iout, jout, qRgb(maxOutput,maxOutput,maxOutput));
-				else {
-					const T inputFloored = (input - nativeShadows);
-					int val = (inputFloored * k1) / (inputFloored * k2 - midtones);
-					output_image->setPixel(iout, jout, qRgb(val, val, val));
-				}
-			}
-		}
-	}));
-	for(QFuture<void> future : futures) future.waitForFinished();
+	}
 }
 
 template <typename T>
@@ -153,83 +130,43 @@ void stretchThreeChannels(
 
 	const int size = imageWidth * imageHeight;
 
-	int skip = sampling * 3;
-	int imageWidth3 = imageWidth * 3;
-	int HalfImageHeight = imageHeight / 2;
+	const int skip = sampling * 3;
+	const int imageWidth3 = imageWidth * 3;
 
-	QVector<QFuture<void>> futures;
-	// Render image in 2 threads
-	futures.append(QtConcurrent::run([ = ]() {
-		int index = 0;
-		for (int j = 0, jout = 0; j < HalfImageHeight; j += sampling, jout++) {
-			QCoreApplication::processEvents();
-			for (int i = 0, iout = 0; i < imageWidth3; i += skip, iout++) {
-				const T inputR = inputBuffer[index++];
-				const T inputG = inputBuffer[index++];
-				const T inputB = inputBuffer[index++];
+	int index = 0;
+	for (int j = 0, jout = 0; j < imageHeight; j += sampling, jout++) {
+		QCoreApplication::processEvents();
+		auto * scanLine = reinterpret_cast<QRgb*>(outputImage->scanLine(jout));
+		for (int i = 0, iout = 0; i < imageWidth3; i += skip, iout++) {
+			const T inputR = inputBuffer[index++];
+			const T inputG = inputBuffer[index++];
+			const T inputB = inputBuffer[index++];
 
-				uint8_t red, green, blue;
+			uint8_t red, green, blue;
 
-				if (inputR < nativeShadowsR) red = 0;
-				else if (inputR >= nativeHighlightsR) red = maxOutput;
-				else {
-					const T inputFloored = (inputR - nativeShadowsR);
-					red = (inputFloored * k1R) / (inputFloored * k2R - midtonesR);
-				}
-
-				if (inputG < nativeShadowsG) green = 0;
-				else if (inputG >= nativeHighlightsG) green = maxOutput;
-				else {
-					const T inputFloored = (inputG - nativeShadowsG);
-					green = (inputFloored * k1G) / (inputFloored * k2G - midtonesG);
-				}
-
-				if (inputB < nativeShadowsB) blue = 0;
-				else if (inputB >= nativeHighlightsB) blue = maxOutput;
-				else {
-					const T inputFloored = (inputB - nativeShadowsB);
-					blue = (inputFloored * k1B) / (inputFloored * k2B - midtonesB);
-				}
-				outputImage->setPixel(iout, jout, qRgb(red, green, blue));
+			if (inputR < nativeShadowsR) red = 0;
+			else if (inputR >= nativeHighlightsR) red = maxOutput;
+			else {
+				const T inputFloored = (inputR - nativeShadowsR);
+				red = (inputFloored * k1R) / (inputFloored * k2R - midtonesR);
 			}
-		}
-	}));
-	futures.append(QtConcurrent::run([ = ]() {
-		int index = HalfImageHeight * imageWidth3;
-		for (int j = HalfImageHeight, jout = HalfImageHeight; j < imageHeight; j += sampling, jout++) {
-			QCoreApplication::processEvents();
-			for (int i = 0, iout = 0; i < imageWidth3; i += skip, iout++) {
-				const T inputR = inputBuffer[index++];
-				const T inputG = inputBuffer[index++];
-				const T inputB = inputBuffer[index++];
 
-				uint8_t red, green, blue;
-
-				if (inputR < nativeShadowsR) red = 0;
-				else if (inputR >= nativeHighlightsR) red = maxOutput;
-				else {
-					const T inputFloored = (inputR - nativeShadowsR);
-					red = (inputFloored * k1R) / (inputFloored * k2R - midtonesR);
-				}
-
-				if (inputG < nativeShadowsG) green = 0;
-				else if (inputG >= nativeHighlightsG) green = maxOutput;
-				else {
-					const T inputFloored = (inputG - nativeShadowsG);
-					green = (inputFloored * k1G) / (inputFloored * k2G - midtonesG);
-				}
-
-				if (inputB < nativeShadowsB) blue = 0;
-				else if (inputB >= nativeHighlightsB) blue = maxOutput;
-				else {
-					const T inputFloored = (inputB - nativeShadowsB);
-					blue = (inputFloored * k1B) / (inputFloored * k2B - midtonesB);
-				}
-				outputImage->setPixel(iout, jout, qRgb(red, green, blue));
+			if (inputG < nativeShadowsG) green = 0;
+			else if (inputG >= nativeHighlightsG) green = maxOutput;
+			else {
+				const T inputFloored = (inputG - nativeShadowsG);
+				green = (inputFloored * k1G) / (inputFloored * k2G - midtonesG);
 			}
+
+			if (inputB < nativeShadowsB) blue = 0;
+			else if (inputB >= nativeHighlightsB) blue = maxOutput;
+			else {
+				const T inputFloored = (inputB - nativeShadowsB);
+				blue = (inputFloored * k1B) / (inputFloored * k2B - midtonesB);
+			}
+			scanLine[iout] = qRgb(red, green, blue);
 		}
-	}));
-	for(QFuture<void> future : futures) future.waitForFinished();
+	}
 }
 
 template <typename T>
