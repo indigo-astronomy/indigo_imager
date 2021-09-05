@@ -116,6 +116,18 @@ bool blob_preview_cache::recreate(QString &key, indigo_item *item, const stretch
 	return false;
 }
 
+bool blob_preview_cache::stretch(QString &key, const stretch_config_t sconfig) {
+	pthread_mutex_lock(&preview_mutex);
+	preview_image *preview = _get(key);
+	if (preview != nullptr) {
+		stretch_preview(preview, sconfig);
+		pthread_mutex_unlock(&preview_mutex);
+		return true;
+	}
+	pthread_mutex_unlock(&preview_mutex);
+	return false;
+}
+
 preview_image* blob_preview_cache::get(indigo_property *property, indigo_item *item) {
 	pthread_mutex_lock(&preview_mutex);
 	QString key = create_key(property, item);

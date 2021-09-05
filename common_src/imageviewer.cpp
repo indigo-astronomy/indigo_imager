@@ -66,8 +66,6 @@ private:
 ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
 	: QFrame(parent)
 	, m_zoom_level(0)
-	, m_stretch_level(PREVIEW_STRETCH_NONE)
-	, m_color_reference(COLOR_BALANCE_AUTO)
 	, m_fit(true)
 	, m_bar_mode(ToolBarMode::Visible)
 {
@@ -651,66 +649,31 @@ void ImageViewer::showEvent(QShowEvent *event) {
 }
 
 void ImageViewer::stretchNone() {
-	m_stretch_level = PREVIEW_STRETCH_NONE;
-	preview_image &image = (preview_image&)m_pixmap->image();
-	const stretch_config_t sc = {m_stretch_level, m_color_reference};
-	stretch_preview(&image, sc);
-	setImage(image);
-	emit stretchChanged(m_stretch_level);
+	emit stretchChanged(PREVIEW_STRETCH_NONE);
 }
 
 void ImageViewer::stretchSlight() {
-	m_stretch_level = PREVIEW_STRETCH_SLIGHT;
-	preview_image &image = (preview_image&)m_pixmap->image();
-	const stretch_config_t sc = {m_stretch_level, m_color_reference};
-	stretch_preview(&image, sc);
-	setImage(image);
-	emit stretchChanged(m_stretch_level);
+	emit stretchChanged(PREVIEW_STRETCH_SLIGHT);
 }
 
 void ImageViewer::stretchModerate() {
-	m_stretch_level = PREVIEW_STRETCH_MODERATE;
-	preview_image &image = (preview_image&)m_pixmap->image();
-	const stretch_config_t sc = {m_stretch_level, m_color_reference};
-	stretch_preview(&image, sc);
-	setImage(image);
-	emit stretchChanged(m_stretch_level);
+	emit stretchChanged(PREVIEW_STRETCH_MODERATE);
 }
 
 void ImageViewer::stretchNormal() {
-	m_stretch_level = PREVIEW_STRETCH_NORMAL;
-	preview_image &image = (preview_image&)m_pixmap->image();
-	const stretch_config_t sc = {m_stretch_level, m_color_reference};
-	stretch_preview(&image, sc);
-	setImage(image);
-	emit stretchChanged(m_stretch_level);
+	emit stretchChanged(PREVIEW_STRETCH_NORMAL);
 }
 
 void ImageViewer::stretchHard() {
-	m_stretch_level = PREVIEW_STRETCH_HARD;
-	preview_image &image = (preview_image&)m_pixmap->image();
-	const stretch_config_t sc = {m_stretch_level, m_color_reference};
-	stretch_preview(&image, sc);
-	setImage(image);
-	emit stretchChanged(m_stretch_level);
+	emit stretchChanged(PREVIEW_STRETCH_HARD);
 }
 
 void ImageViewer::onAutoBalance() {
-	m_color_reference = COLOR_BALANCE_AUTO;
-	preview_image &image = (preview_image&)m_pixmap->image();
-	const stretch_config_t sc = {m_stretch_level, m_color_reference};
-	stretch_preview(&image, sc);
-	setImage(image);
-	emit BalanceChanged(m_color_reference);
+	emit BalanceChanged(COLOR_BALANCE_AUTO);
 }
 
 void ImageViewer::onNoBalance() {
-	m_color_reference = COLOR_BALANCE_NONE;
-	preview_image &image = (preview_image&)m_pixmap->image();
-	const stretch_config_t sc = {m_stretch_level, m_color_reference};
-	stretch_preview(&image, sc);
-	setImage(image);
-	emit BalanceChanged(m_color_reference);
+	emit BalanceChanged(COLOR_BALANCE_NONE);
 }
 
 void ImageViewer::onPrevious() {

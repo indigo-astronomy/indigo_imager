@@ -58,7 +58,6 @@ void stretchOneChannel(
 	for (int j = 0, jout = 0; j < image_height; j += sampling, jout++) {
 		T * inputLine  = input_buffer + j * image_width;
 		auto * scanLine = reinterpret_cast<QRgb*>(output_image->scanLine(jout));
-		QCoreApplication::processEvents();
 		for (int i = 0, iout = 0; i < image_width; i += sampling, iout++) {
 			const T input = inputLine[i];
 			if (input < nativeShadows) output_image->setPixel(iout, jout, qRgb(0, 0, 0));
@@ -135,7 +134,6 @@ void stretchThreeChannels(
 
 	int index = 0;
 	for (int j = 0, jout = 0; j < imageHeight; j += sampling, jout++) {
-		QCoreApplication::processEvents();
 		auto * scanLine = reinterpret_cast<QRgb*>(outputImage->scanLine(jout));
 		for (int i = 0, iout = 0; i < imageWidth3; i += skip, iout++) {
 			const T inputR = inputBuffer[index++];

@@ -421,11 +421,21 @@ void ViewerWindow::on_antialias_view(bool status) {
 
 void ViewerWindow::on_stretch_changed(int level) {
 	conf.preview_stretch_level = (preview_stretch)level;
+	if (m_preview_image) {
+		const stretch_config_t sc = {conf.preview_stretch_level, conf.preview_color_balance};
+		stretch_preview(m_preview_image, sc);
+		m_imager_viewer->setImage(*m_preview_image);
+	}
 	write_conf();
 }
 
 void ViewerWindow::on_cb_changed(int balance) {
 	conf.preview_color_balance = (color_balance)balance;
+	if (m_preview_image) {
+		const stretch_config_t sc = {conf.preview_stretch_level, conf.preview_color_balance};
+		stretch_preview(m_preview_image, sc);
+		m_imager_viewer->setImage(*m_preview_image);
+	}
 	write_conf();
 }
 

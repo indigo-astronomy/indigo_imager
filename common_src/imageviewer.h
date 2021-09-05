@@ -128,8 +128,6 @@ private:
 	QPoint m_selection_p;
 	QPoint m_ref_p;
 	double m_edge_clipping_v;
-	preview_stretch_level m_stretch_level;
-	color_balance_t m_color_reference;
 	QList<QGraphicsEllipseItem*> m_extra_selections;
 	bool m_extra_selections_visible;
 
