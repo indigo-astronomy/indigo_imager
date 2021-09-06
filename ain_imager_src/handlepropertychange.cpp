@@ -937,8 +937,11 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	if (start_p && start_p->state == INDIGO_BUSY_STATE ) {
 		for (int i = 0; i < start_p->count; i++) {
 			if (!strcmp(start_p->items[i].name, AGENT_IMAGER_START_EXPOSURE_ITEM_NAME)) {
-				exposure_running = start_p->items[i].sw.value;
-				w->save_blob = exposure_running;
+				indigo_property *pause_p = properties.get(property->device, AGENT_PAUSE_PROCESS_PROPERTY_NAME);
+				bool paused = false;
+				if (pause_p && pause_p->state == INDIGO_BUSY_STATE) paused = true;
+				exposure_running = start_p->items[i].sw.value && !paused;
+				w->save_blob = exposure_running ;
 			} else if (!strcmp(start_p->items[i].name, AGENT_IMAGER_START_FOCUSING_ITEM_NAME)) {
 				focusing_running = start_p->items[i].sw.value;
 			} else if (!strcmp(start_p->items[i].name, AGENT_IMAGER_START_PREVIEW_ITEM_NAME)) {
