@@ -44,12 +44,30 @@ typedef struct {
 	uint8_t balance; /* 0 = AWB, 1 = red, 2 = green, 3 = blue; */
 } stretch_config_t;
 
+typedef struct stretch_multiplier {
+ 	// Stretch algorithm parameter multipliers
+ 	float shadows;
+ 	float highlights;
+ 	float midtones;
+ 	// The extension parameters are not used.
+ 	float shadows_expansion;
+ 	float highlights_expansion;
+} stretch_multiplier_t;
+
 static const preview_stretch_t stretch_linear_lut[] = {
 	{0.01, 0.001},
 	{0.01, 0.07},
 	{0.01, 0.25},
 	{0.01, 0.75},
 	{0.01, 1.30},
+};
+
+static const stretch_multiplier_t stretch_multiplier_lut[] = {
+	{1.00, 1.00, 0.80, 1.00, 1.00},
+	{0.80, 1.20, 1.00, 1.00, 1.00},
+	{1.00, 1.00, 1.00, 1.00, 1.00},
+	{1.05, 0.95, 0.80, 1.00, 1.00},
+	{1.20, 0.90, 0.50, 1.00, 1.00}
 };
 
 #endif /* _IMAGE_PREVIEW_LUT_H */
