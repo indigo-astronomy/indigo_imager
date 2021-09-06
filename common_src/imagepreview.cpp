@@ -364,8 +364,55 @@ void stretch_preview(preview_image *img, const stretch_config_t sconfig) {
 	) {
 		Stretcher s(img->m_width, img->m_height, img->m_pix_format);
 		StretchParams sp;
-		if (sconfig.stretch_level) {
+		if (sconfig.stretch_level == 1) {
 			sp = s.computeParams((const uint8_t*)img->m_raw_data);
+			float mul_midtones = 1.1;
+			float mul_shadows = 0.9;
+			float mul_highlights = 2;
+			sp.grey_red.shadows *= mul_shadows;
+			sp.green.shadows *= mul_shadows;
+			sp.blue.shadows *= mul_shadows;
+			sp.grey_red.midtones *= mul_midtones;
+			sp.green.midtones *= mul_midtones;
+			sp.blue.midtones *= mul_midtones;
+			sp.grey_red.highlights *= mul_highlights;
+			sp.green.highlights *= mul_highlights;
+			sp.blue.highlights *= mul_highlights;
+			printf("SP2: %f %f %f\n", sp.grey_red.shadows, sp.grey_red.midtones, sp.grey_red.highlights);
+		} else if (sconfig.stretch_level == 2) {
+			sp = s.computeParams((const uint8_t*)img->m_raw_data);
+			//printf("SP: %f %f %f\n", sp.green.shadows, sp.green.midtones, sp.green.highlights);
+			printf("SP1: %f %f %f\n", sp.grey_red.shadows, sp.grey_red.midtones, sp.grey_red.highlights);
+		} else if (sconfig.stretch_level == 3) {
+			sp = s.computeParams((const uint8_t*)img->m_raw_data);
+			float mul_midtones = 0.95;
+			float mul_shadows = 1.05;
+			float mul_highlights = 1;
+			sp.grey_red.shadows *= mul_shadows;
+			sp.green.shadows *= mul_shadows;
+			sp.blue.shadows *= mul_shadows;
+			sp.grey_red.midtones *= mul_midtones;
+			sp.green.midtones *= mul_midtones;
+			sp.blue.midtones *= mul_midtones;
+			sp.grey_red.highlights *= mul_highlights;
+			sp.green.highlights *= mul_highlights;
+			sp.blue.highlights *= mul_highlights;
+			printf("SP2: %f %f %f\n", sp.grey_red.shadows, sp.grey_red.midtones, sp.grey_red.highlights);
+		} else if (sconfig.stretch_level == 4) {
+			sp = s.computeParams((const uint8_t*)img->m_raw_data);
+			float mul_midtones = 0.9;
+			float mul_shadows = 1.1;
+			float mul_highlights = 0.8;
+			sp.grey_red.shadows *= mul_shadows;
+			sp.green.shadows *= mul_shadows;
+			sp.blue.shadows *= mul_shadows;
+			sp.grey_red.midtones *= mul_midtones;
+			sp.green.midtones *= mul_midtones;
+			sp.blue.midtones *= mul_midtones;
+			sp.grey_red.highlights *= mul_highlights;
+			sp.green.highlights *= mul_highlights;
+			sp.blue.highlights *= mul_highlights;
+			printf("SP2: %f %f %f\n", sp.grey_red.shadows, sp.grey_red.midtones, sp.grey_red.highlights);
 		}
 		if (sconfig.balance) {
 			sp.refChannel = &sp.green;

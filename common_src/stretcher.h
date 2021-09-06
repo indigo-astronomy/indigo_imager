@@ -8,9 +8,9 @@
 
 struct StretchParams1Channel {
  	// Stretch algorithm parameters
- 	float shadows;;
- 	float highlights;
+ 	float shadows;
  	float midtones;
+	float highlights;
  	// The extension parameters are not used.
  	float shadows_expansion;
  	float highlights_expansion;
@@ -18,8 +18,8 @@ struct StretchParams1Channel {
  	// The default parameters result in no stretch at all.
  	StretchParams1Channel() {
 		shadows = 0.0;
-		highlights = 1.0;
 		midtones = 0.5;
+		highlights = 1.0;
 		shadows_expansion = 0.0;
 		highlights_expansion = 1.0;
  	}
