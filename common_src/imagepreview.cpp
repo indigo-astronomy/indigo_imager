@@ -387,7 +387,7 @@ void stretch_preview(preview_image *img, const stretch_config_t sconfig) {
 			sp = s.computeParams((const uint8_t*)img->m_raw_data);
 			float mul_midtones = 0.95;
 			float mul_shadows = 1.05;
-			float mul_highlights = 1;
+			float mul_highlights = 0.8;
 			sp.grey_red.shadows *= mul_shadows;
 			sp.green.shadows *= mul_shadows;
 			sp.blue.shadows *= mul_shadows;
@@ -402,7 +402,7 @@ void stretch_preview(preview_image *img, const stretch_config_t sconfig) {
 			sp = s.computeParams((const uint8_t*)img->m_raw_data);
 			float mul_midtones = 0.9;
 			float mul_shadows = 1.1;
-			float mul_highlights = 0.8;
+			float mul_highlights = 0.5;
 			sp.grey_red.shadows *= mul_shadows;
 			sp.green.shadows *= mul_shadows;
 			sp.blue.shadows *= mul_shadows;
