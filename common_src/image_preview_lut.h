@@ -64,10 +64,10 @@ static const preview_stretch_t stretch_linear_lut[] = {
 
 static const stretch_multiplier_t stretch_multiplier_lut[] = {
 	{1.00, 1.00, 0.80, 1.00, 1.00},
-	{0.80, 1.20, 1.00, 1.00, 1.00},
+	{0.80, 1.00, 0.90, 1.00, 1.00},
 	{1.00, 1.00, 1.00, 1.00, 1.00},
 	{1.05, 0.95, 0.80, 1.00, 1.00},
-	{1.20, 0.90, 0.50, 1.00, 1.00}
+	{1.10, 0.90, 0.50, 1.00, 1.00}
 };
 
 #endif /* _IMAGE_PREVIEW_LUT_H */
