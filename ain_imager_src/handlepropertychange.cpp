@@ -1229,6 +1229,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 			}
 		}
 		if (p->state == INDIGO_BUSY_STATE) {
+			w->guider_running = true;
 			w->move_guider_reference(ref_x, ref_y);
 			if (w->m_guider_process && w->m_guide_log && conf.guider_save_log && frame_count > 1) {
 				char time_str[255];
@@ -1238,6 +1239,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 			}
 		} else {
 			w->move_guider_reference(0, 0);
+			w->guider_running = false;
 		}
 	}
 
@@ -1385,6 +1387,7 @@ void log_guide_header(ImagerWindow *w, char *device_name) {
 void agent_guider_start_process_change(ImagerWindow *w, indigo_property *property) {
 	char time_str[255];
 	if (property->state==INDIGO_BUSY_STATE) {
+		w->guider_running = true;
 		for (int i = 0; i < property->count; i++) {
 			indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
 			if (client_match_item(&property->items[i], AGENT_GUIDER_START_CALIBRATION_ITEM_NAME) && property->items[i].sw.value) {
@@ -1442,6 +1445,7 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 		w->set_enabled(w->m_guider_calibrate_button, true);
 		w->set_enabled(w->m_guider_guide_button, true);
 		w->move_guider_reference(0, 0);
+		w->guider_running = false;
 	}
 }
 
@@ -2272,6 +2276,12 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_guider_agent)) {
 		set_enabled(m_guider_save_bw_select, false);
 	}
+
+	if (client_match_device_property(property, selected_guider_agent, AGENT_START_PROCESS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
+		guider_running = false;
+	}
+
 	if (client_match_device_property(property, selected_guider_agent, CCD_GAIN_PROPERTY_NAME) ||
 	    client_match_device_property(property, selected_guider_agent, CCD_OFFSET_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {

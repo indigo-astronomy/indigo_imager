@@ -137,6 +137,7 @@ public:
 	friend void define_ccd_exposure_property(ImagerWindow *w, indigo_property *property);
 
 	bool save_blob;
+	bool guider_running;
 
 signals:
 	void enable_blobs(bool on);
