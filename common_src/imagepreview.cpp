@@ -136,6 +136,7 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 	fits_header header;
 	unsigned int pix_format = 0;
 
+	indigo_error("FITS_START");
 	int res = fits_read_header(raw_fits_buffer, fits_size, &header);
 	if (res != FITS_OK) {
 		indigo_error("FITS: Error parsing header");
@@ -156,7 +157,6 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 	}
 
 	char *fits_data = (char*)malloc(fits_get_buffer_size(&header));
-	indigo_error("FITS1: fits_data = %p", fits_data);
 
 	res = fits_process_data(raw_fits_buffer, fits_size, &header, fits_data);
 	if (res != FITS_OK) {
@@ -187,8 +187,8 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 	preview_image *img = create_preview(header.naxisn[0], header.naxisn[1],
 	        pix_format, fits_data, sconfig);
 
-	indigo_error("FITS2: fits_data = %p", fits_data);
 	free(fits_data);
+	indigo_error("FITS_END: fits_data = %p", fits_data);
 	return img;
 }
 
@@ -202,6 +202,7 @@ preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long
 		return nullptr;
 	}
 
+	indigo_error("RAW_START");
 	indigo_raw_header *header = (indigo_raw_header*)raw_image_buffer;
 	char *raw_data = (char*)raw_image_buffer + sizeof(indigo_raw_header);
 
@@ -232,6 +233,7 @@ preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long
 	preview_image *img = create_preview(header->width, header->height,
 	        pix_format, raw_data, sconfig);
 
+	indigo_error("RAW_END: raw_data = %p", raw_data);
 	return img;
 }
 
@@ -368,7 +370,7 @@ void stretch_preview(preview_image *img, const stretch_config_t sconfig) {
 		if (sconfig.stretch_level > 0) {
 			sp = s.computeParams((const uint8_t*)img->m_raw_data, stretch_params_lut[sconfig.stretch_level].brightness, stretch_params_lut[sconfig.stretch_level].contrast);
 		}
-		indigo_error("SP %d: %f %f %f\n", sconfig.stretch_level, sp.grey_red.shadows, sp.grey_red.midtones, sp.grey_red.highlights);
+		indigo_debug("Stretch level: %d, params %f %f %f\n", sconfig.stretch_level, sp.grey_red.shadows, sp.grey_red.midtones, sp.grey_red.highlights);
 
 		if (sconfig.balance) {
 			sp.refChannel = &sp.green;
