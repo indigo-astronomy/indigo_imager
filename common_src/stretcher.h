@@ -6,11 +6,14 @@
 #include <QImage>
 #include <pixelformat.h>
 
+#define DEFAULT_B (0.25)
+#define DEFAULT_C (-2.8)
+
 struct StretchParams1Channel {
  	// Stretch algorithm parameters
- 	float shadows;
+ 	float shadows;;
+ 	float highlights;
  	float midtones;
-	float highlights;
  	// The extension parameters are not used.
  	float shadows_expansion;
  	float highlights_expansion;
@@ -18,8 +21,8 @@ struct StretchParams1Channel {
  	// The default parameters result in no stretch at all.
  	StretchParams1Channel() {
 		shadows = 0.0;
-		midtones = 0.5;
 		highlights = 1.0;
+		midtones = 0.5;
 		shadows_expansion = 0.0;
 		highlights_expansion = 1.0;
  	}
@@ -43,7 +46,7 @@ public:
 
 	void setParams(StretchParams input_params) { params = input_params; }
 	StretchParams getParams() { return params; }
-	StretchParams computeParams(const uint8_t *input);
+	StretchParams computeParams(const uint8_t *input, const float B = DEFAULT_B, const float C = DEFAULT_C);
 	void stretch(uint8_t const *input, QImage *output_image, int sampling=1);
 
  private:
