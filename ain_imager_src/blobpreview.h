@@ -28,7 +28,6 @@ class blob_preview_cache: QHash<QString, preview_image*> {
 public:
 	blob_preview_cache(): preview_mutex(PTHREAD_MUTEX_INITIALIZER) {
 		pthread_mutexattr_t attr;
-
 		pthread_mutexattr_init(&attr);
 		pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
 		pthread_mutex_init(&preview_mutex, &attr);
