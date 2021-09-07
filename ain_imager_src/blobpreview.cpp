@@ -114,6 +114,24 @@ bool blob_preview_cache::recreate(QString &key, indigo_item *item, const stretch
 	return false;
 }
 
+bool blob_preview_cache::recreate(QString &key, const stretch_config_t sconfig) {
+	pthread_mutex_lock(&preview_mutex);
+	preview_image *preview = _get(key);
+	if (preview != nullptr) {
+		//indigo_debug("recreate preview: %s(%s) == %p, %.5f\n", __FUNCTION__, key.toUtf8().constData(), stretch->clip_white);
+		int width = preview->width();
+		int height = preview->height();
+		int pix_format = preview->m_pix_format;
+		preview_image *new_preview = create_preview(width, height, pix_format, preview->m_raw_data, sconfig);
+		_remove(key);
+		insert(key, new_preview);
+		pthread_mutex_unlock(&preview_mutex);
+		return true;
+	}
+	pthread_mutex_unlock(&preview_mutex);
+	return false;
+}
+
 bool blob_preview_cache::stretch(QString &key, const stretch_config_t sconfig) {
 	pthread_mutex_lock(&preview_mutex);
 	preview_image *preview = _get(key);

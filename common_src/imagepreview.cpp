@@ -364,24 +364,10 @@ void stretch_preview(preview_image *img, const stretch_config_t sconfig) {
 	) {
 		Stretcher s(img->m_width, img->m_height, img->m_pix_format);
 		StretchParams sp;
-		sp.grey_red.highlights = sp.green.highlights = sp.blue.highlights = 0.9; 
-		if (sconfig.stretch_level > 0)
+		sp.grey_red.highlights = sp.green.highlights = sp.blue.highlights = 0.9;
+		if (sconfig.stretch_level > 0) {
 			sp = s.computeParams((const uint8_t*)img->m_raw_data, stretch_params_lut[sconfig.stretch_level].brightness, stretch_params_lut[sconfig.stretch_level].contrast);
-
-		/*
-		float mul_shadows = stretch_multiplier_lut[sconfig.stretch_level].shadows;
-		float mul_midtones = stretch_multiplier_lut[sconfig.stretch_level].midtones;
-		float mul_highlights = stretch_multiplier_lut[sconfig.stretch_level].highlights;
-		sp.grey_red.shadows *= mul_shadows;
-		sp.green.shadows *= mul_shadows;
-		sp.blue.shadows *= mul_shadows;
-		sp.grey_red.midtones *= mul_midtones;
-		sp.green.midtones *= mul_midtones;
-		sp.blue.midtones *= mul_midtones;
-		sp.grey_red.highlights *= mul_highlights;
-		sp.green.highlights *= mul_highlights;
-		sp.blue.highlights *= mul_highlights;
-		*/
+		}
 		indigo_error("SP %d: %f %f %f\n", sconfig.stretch_level, sp.grey_red.shadows, sp.grey_red.midtones, sp.grey_red.highlights);
 
 		if (sconfig.balance) {

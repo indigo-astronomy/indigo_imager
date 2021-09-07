@@ -54,7 +54,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	mIndigoServers = new QIndigoServers(this);
 
 	save_blob = false;
-	guider_running = false;
 	m_indigo_item = nullptr;
 	m_guide_log = nullptr;
 	m_guider_process = 0;
@@ -784,7 +783,7 @@ void ImagerWindow::on_use_system_locale_changed(bool status) {
 void ImagerWindow::on_imager_stretch_changed(int level) {
 	conf.preview_stretch_level = (preview_stretch)level;
 	const stretch_config_t sc = {conf.preview_stretch_level, conf.preview_color_balance};
-	preview_cache.recreate(m_image_key, m_indigo_item, sc);
+	preview_cache.recreate(m_image_key, sc);
 	show_preview_in_imager_viewer(m_image_key);
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
@@ -793,7 +792,7 @@ void ImagerWindow::on_imager_stretch_changed(int level) {
 void ImagerWindow::on_imager_cb_changed(int balance) {
 	conf.preview_color_balance = (color_balance)balance;
 	const stretch_config_t sc = {conf.preview_stretch_level, conf.preview_color_balance};
-	preview_cache.recreate(m_image_key, m_indigo_item, sc);
+	preview_cache.recreate(m_image_key, sc);
 	show_preview_in_imager_viewer(m_image_key);
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
@@ -806,23 +805,18 @@ void ImagerWindow::on_guider_stretch_changed(int level) {
 		get_selected_guider_agent(selected_agent);
 		setup_preview(selected_agent);
 	});
-	indigo_error("GUIDER -> %d\n", guider_running);
-	if (!guider_running) {
-		const stretch_config_t sc = {conf.guider_stretch_level, conf.guider_color_balance};
-		preview_cache.stretch(m_guider_key, sc);
-		show_preview_in_guider_viewer(m_guider_key);
-	}
+	const stretch_config_t sc = {conf.guider_stretch_level, conf.guider_color_balance};
+	preview_cache.recreate(m_guider_key, sc);
+	show_preview_in_guider_viewer(m_guider_key);
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
 void ImagerWindow::on_guider_cb_changed(int balance) {
 	conf.guider_color_balance = (color_balance)balance;
-	if (!guider_running) {
-		const stretch_config_t sc = {conf.guider_stretch_level, conf.guider_color_balance};
-		preview_cache.stretch(m_guider_key, sc);
-		show_preview_in_guider_viewer(m_guider_key);
-	}
+	const stretch_config_t sc = {conf.guider_stretch_level, conf.guider_color_balance};
+	preview_cache.recreate(m_guider_key, sc);
+	show_preview_in_guider_viewer(m_guider_key);
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
