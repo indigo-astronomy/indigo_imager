@@ -266,9 +266,13 @@ void ImageViewer::setText(const QString &txt) {
 }
 
 void ImageViewer::showZoom() {
-	QString s;
-	s.sprintf("%d%%", m_zoom_level);
-	m_pixel_value->setText(QString(s));
+	if (m_pixmap->image().isNull()) {
+		m_pixel_value->setText(QString());
+	} else {
+		QString s;
+		s.sprintf("%d%%", m_zoom_level);
+		m_pixel_value->setText(s);
+	}
 }
 
 void ImageViewer::setToolTip(const QString &txt) {
