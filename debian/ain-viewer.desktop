@@ -9,3 +9,4 @@ Terminal=false
 Type=Application
 Categories=Education;Science;Astronomy;
 Keywords=astronomy
+MimeType=image/x-image-raw;image/x-image-fits
