@@ -33,7 +33,7 @@ void stretchOneChannel(
 	const StretchParams &stretch_params,
 	int input_range,
 	int image_height,
-	int image_width,
+	int m_image_width,
 	int sampling
 ) {
 	constexpr int maxOutput = 255;
@@ -56,10 +56,10 @@ void stretchOneChannel(
 	const float k2 = ((2 * midtones) - 1) * hsRangeFactor / maxInput;
 
 	for (int j = 0, jout = 0; j < image_height; j += sampling, jout++) {
-		T * inputLine  = input_buffer + j * image_width;
+		T * inputLine  = input_buffer + j * m_image_width;
 		auto * scanLine = reinterpret_cast<QRgb*>(output_image->scanLine(jout));
 		QCoreApplication::processEvents();
-		for (int i = 0, iout = 0; i < image_width; i += sampling, iout++) {
+		for (int i = 0, iout = 0; i < m_image_width; i += sampling, iout++) {
 			const T input = inputLine[i];
 			if (input < nativeShadows) output_image->setPixel(iout, jout, qRgb(0, 0, 0));
 			else if (input >= nativeHighlights) output_image->setPixel(iout, jout, qRgb(maxOutput,maxOutput,maxOutput));
@@ -127,8 +127,6 @@ void stretchThreeChannels(
 	const float k2R = ((2 * midtonesR) - 1) * hsRangeFactorR / maxInput;
 	const float k2G = ((2 * midtonesG) - 1) * hsRangeFactorG / maxInput;
 	const float k2B = ((2 * midtonesB) - 1) * hsRangeFactorB / maxInput;
-
-	const int size = imageWidth * imageHeight;
 
 	const int skip = sampling * 3;
 	const int imageWidth3 = imageWidth * 3;
@@ -397,32 +395,32 @@ int getRange(int data_type) {
 }
 
 Stretcher::Stretcher(int width, int height, int data_type) {
-	image_width = width;
-	image_height = height;
-	dataType = data_type;
-	input_range = getRange(dataType);
+	m_image_width = width;
+	m_image_height = height;
+	m_pix_fmt = data_type;
+	m_input_range = getRange(m_pix_fmt);
 }
 
 void Stretcher::stretch(uint8_t const *input, QImage *outputImage, int sampling) {
-	Q_ASSERT(outputImage->width() == (image_width + sampling - 1) / sampling);
-	Q_ASSERT(outputImage->height() == (image_height + sampling - 1) / sampling);
+	Q_ASSERT(outputImage->width() == (m_image_width + sampling - 1) / sampling);
+	Q_ASSERT(outputImage->height() == (m_image_height + sampling - 1) / sampling);
 
-	switch (dataType) {
+	switch (m_pix_fmt) {
 		case PIX_FMT_Y8:
-			stretchChannels(reinterpret_cast<uint8_t const*>(input), outputImage, params,
-			                input_range, image_height, image_width, 1, sampling);
+			stretchChannels(reinterpret_cast<uint8_t const*>(input), outputImage, m_params,
+			                m_input_range, m_image_height, m_image_width, 1, sampling);
 		break;
 		case PIX_FMT_Y16:
-			stretchChannels(reinterpret_cast<uint16_t const*>(input), outputImage, params,
-			                input_range, image_height, image_width, 1, sampling);
+			stretchChannels(reinterpret_cast<uint16_t const*>(input), outputImage, m_params,
+			                m_input_range, m_image_height, m_image_width, 1, sampling);
 			break;
 		case PIX_FMT_RGB24:
-			stretchChannels(reinterpret_cast<uint8_t const*>(input), outputImage, params,
-			                input_range, image_height, image_width, 3, sampling);
+			stretchChannels(reinterpret_cast<uint8_t const*>(input), outputImage, m_params,
+			                m_input_range, m_image_height, m_image_width, 3, sampling);
 			break;
 		case PIX_FMT_RGB48:
-			stretchChannels(reinterpret_cast<uint16_t const*>(input), outputImage, params,
-			                input_range, image_height, image_width, 3, sampling);
+			stretchChannels(reinterpret_cast<uint16_t const*>(input), outputImage, m_params,
+			                m_input_range, m_image_height, m_image_width, 3, sampling);
 			break;
 		default:
 			break;
@@ -433,25 +431,25 @@ StretchParams Stretcher::computeParams(uint8_t const *input, const float B, cons
 	StretchParams result;
 
 	StretchParams1Channel *params = &result.grey_red;
-	switch (dataType) {
+	switch (m_pix_fmt) {
 		case PIX_FMT_Y8: {
 			auto buffer = reinterpret_cast<uint8_t const*>(input);
-			computeParamsOneChannel(buffer, params, input_range, image_height, image_width, B, C);
+			computeParamsOneChannel(buffer, params, m_input_range, m_image_height, m_image_width, B, C);
 			break;
 		}
 		case PIX_FMT_Y16: {
 			auto buffer = reinterpret_cast<uint16_t const*>(input);
-			computeParamsOneChannel(buffer, params, input_range, image_height, image_width, B, C);
+			computeParamsOneChannel(buffer, params, m_input_range, m_image_height, m_image_width, B, C);
 			break;
 		}
 		case PIX_FMT_RGB24:{
 			auto buffer = reinterpret_cast<uint8_t const*>(input);
-			computeParamsThreeChannels(buffer, &result, input_range, image_height, image_width, B, C);
+			computeParamsThreeChannels(buffer, &result, m_input_range, m_image_height, m_image_width, B, C);
 			break;
 		}
 		case PIX_FMT_RGB48: {
 			auto buffer = reinterpret_cast<uint16_t const*>(input);
-			computeParamsThreeChannels(buffer, &result, input_range, image_height, image_width, B, C);
+			computeParamsThreeChannels(buffer, &result, m_input_range, m_image_height, m_image_width, B, C);
 			break;
 		}
 		default:

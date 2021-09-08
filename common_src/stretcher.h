@@ -41,19 +41,19 @@ struct StretchParams {
 
 class Stretcher {
 public:
-	explicit Stretcher(int width, int height, int data_type);
+	explicit Stretcher(int width, int height, int pix_fmt);
 	~Stretcher() {}
 
-	void setParams(StretchParams input_params) { params = input_params; }
-	StretchParams getParams() { return params; }
+	void setParams(StretchParams input_params) { m_params = input_params; }
+	StretchParams getParams() { return m_params; }
 	StretchParams computeParams(const uint8_t *input, const float B = DEFAULT_B, const float C = DEFAULT_C);
 	void stretch(uint8_t const *input, QImage *output_image, int sampling=1);
 
  private:
-	 int image_width;
-	 int image_height;
-	 int input_range;
-	 uint32_t dataType;
+	 int m_image_width;
+	 int m_image_height;
+	 int m_input_range;
+	 uint32_t m_pix_fmt;
 
-	 StretchParams params;
+	 StretchParams m_params;
 };

@@ -51,7 +51,7 @@ preview_image* create_qtsupported_preview(unsigned char *image_buffer, unsigned 
 #if defined(USE_LIBJPEG)
 static jmp_buf jpeg_error;
 static void jpeg_error_cb(j_common_ptr cinfo) {
-	cinfo;
+	Q_UNUSED(cinfo);
 	longjmp(jpeg_error, 1);
 }
 #endif
@@ -195,7 +195,6 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 
 preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size, const stretch_config_t sconfig) {
 	unsigned int pix_format;
-	int bitpix;
 
 	if (sizeof(indigo_raw_header) > raw_size) {
 		indigo_error("RAW: Image buffer is too short: can not fit the header (%dB)", raw_size);
@@ -206,24 +205,18 @@ preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long
 	indigo_raw_header *header = (indigo_raw_header*)raw_image_buffer;
 	char *raw_data = (char*)raw_image_buffer + sizeof(indigo_raw_header);
 
-	int pixel_count = header->height * header->width;
-
 	switch (header->signature) {
 	case INDIGO_RAW_MONO16:
 		pix_format = PIX_FMT_Y16;
-		bitpix = 16;
 		break;
 	case INDIGO_RAW_MONO8:
 		pix_format = PIX_FMT_Y8;
-		bitpix = 8;
 		break;
 	case INDIGO_RAW_RGB24:
 		pix_format = PIX_FMT_RGB24;
-		bitpix = 8;
 		break;
 	case INDIGO_RAW_RGB48:
 		pix_format = PIX_FMT_RGB48;
-		bitpix = 16;
 		break;
 	default:
 		indigo_error("RAW: Unsupported image format (%d)", header->signature);

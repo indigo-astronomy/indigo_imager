@@ -73,9 +73,6 @@ void gn_radec2xy(double ra, double dec, double ra0, double dec0, double x0, doub
 	double sin_dec0 = sin(dec0 * DEG2RAD);
 	double cos_dec0 = cos(dec0 * DEG2RAD);
 
-	double sin_ra = sin(ra * DEG2RAD);
-	double cos_ra = cos(ra * DEG2RAD);
-
 	double sin_dec = sin(dec * DEG2RAD);
 	double cos_dec = cos(dec * DEG2RAD);
 
