@@ -136,7 +136,7 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 	fits_header header;
 	unsigned int pix_format = 0;
 
-	indigo_error("FITS_START");
+	indigo_debug("FITS_START");
 	int res = fits_read_header(raw_fits_buffer, fits_size, &header);
 	if (res != FITS_OK) {
 		indigo_error("FITS: Error parsing header");
@@ -188,7 +188,7 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 	        pix_format, fits_data, sconfig);
 
 	free(fits_data);
-	indigo_error("FITS_END: fits_data = %p", fits_data);
+	indigo_debug("FITS_END: fits_data = %p", fits_data);
 	return img;
 }
 
@@ -201,7 +201,7 @@ preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long
 		return nullptr;
 	}
 
-	indigo_error("RAW_START");
+	indigo_debug("RAW_START");
 	indigo_raw_header *header = (indigo_raw_header*)raw_image_buffer;
 	char *raw_data = (char*)raw_image_buffer + sizeof(indigo_raw_header);
 
@@ -226,7 +226,7 @@ preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long
 	preview_image *img = create_preview(header->width, header->height,
 	        pix_format, raw_data, sconfig);
 
-	indigo_error("RAW_END: raw_data = %p", raw_data);
+	indigo_debug("RAW_END: raw_data = %p", raw_data);
 	return img;
 }
 
