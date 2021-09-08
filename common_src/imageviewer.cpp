@@ -265,6 +265,12 @@ void ImageViewer::setText(const QString &txt) {
 	m_text_label->setText(txt);
 }
 
+void ImageViewer::showZoom() {
+	QString s;
+	s.sprintf("%d%%", m_zoom_level);
+	m_pixel_value->setText(QString(s));
+}
+
 void ImageViewer::setToolTip(const QString &txt) {
 	m_text_label->setToolTip(txt);
 }
@@ -527,6 +533,7 @@ void ImageViewer::setMatrix() {
 void ImageViewer::zoomFit() {
 	m_view->fitInView(m_pixmap, Qt::KeepAspectRatio);
 	m_zoom_level = 100.0 * m_view->matrix().m11();
+	showZoom();
 	indigo_debug("Zoom FIT = %d", m_zoom_level);
 	m_fit = true;
 	emit zoomChanged(m_view->matrix().m11());
@@ -534,6 +541,7 @@ void ImageViewer::zoomFit() {
 
 void ImageViewer::zoomOriginal() {
 	m_zoom_level = 100;
+	showZoom();
 	indigo_debug("Zoom 1:1 = %d", m_zoom_level);
 	m_fit = false;
 	setMatrix();
@@ -554,6 +562,7 @@ void ImageViewer::zoomIn() {
 	if (m_zoom_level > 5000) {
 		m_zoom_level = 5000;
 	}
+	showZoom();
 	indigo_debug("Zoom IN = %d", m_zoom_level);
 	m_fit = false;
 	setMatrix();
@@ -571,13 +580,14 @@ void ImageViewer::zoomOut() {
 	} else {
 		m_zoom_level = 1;
 	}
+	showZoom();
 	indigo_debug("Zoom OUT = %d", m_zoom_level);
 	m_fit = false;
 	setMatrix();
 }
 
 void ImageViewer::mouseAt(double x, double y) {
-	if (m_pixmap->image().valid(x,y)) {
+	if (m_pixmap && m_pixmap->image().valid(x,y)) {
 		int r,g,b;
 		double ra, dec;
 		int pix_format = m_pixmap->image().pixel_value(x, y, r, g, b);
@@ -601,7 +611,7 @@ void ImageViewer::mouseAt(double x, double y) {
 		}
 		m_pixel_value->setText(s);
 	} else {
-		m_pixel_value->setText(QString());
+		showZoom();
 	}
 }
 

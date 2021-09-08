@@ -116,6 +116,7 @@ private:
 	void makeToolbar(bool prev_next);
 
 private:
+	void showZoom();
 	int m_zoom_level;
 	QLabel *m_text_label;
 	QLabel *m_pixel_value;
