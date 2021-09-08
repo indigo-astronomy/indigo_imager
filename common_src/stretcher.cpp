@@ -6,7 +6,7 @@
 #include <QCoreApplication>
 
 // Returns the median value of the vector.
-// The vector is modified in an undefined way.
+// The values is modified
 template <typename T>
 T median(std::vector<T> &values) {
 	const int middle = values.size() / 2;
@@ -15,7 +15,7 @@ T median(std::vector<T> &values) {
 }
 
 // Returns the median of the sample values.
-// The values are not modified.
+// The values not modified
 template <typename T>
 T median(T const *values, int size, int sampleBy) {
 	const int downsampled_size = size / sampleBy;
@@ -38,20 +38,17 @@ void stretchOneChannel(
 ) {
 	constexpr int maxOutput = 255;
 
-	// Maximum possible input value (e.g. 1024*64 - 1 for a 16 bit unsigned int).
 	const float maxInput = input_range > 1 ? input_range - 1 : input_range;
 
 	const float midtones   = stretch_params.grey_red.midtones;
 	const float highlights = stretch_params.grey_red.highlights;
 	const float shadows    = stretch_params.grey_red.shadows;
 
-	// Precomputed expressions moved out of the loop.
-	// highlights - shadows, protecting for divide-by-0, in a 0->1.0 scale.
 	const float hsRangeFactor = highlights == shadows ? 1.0f : 1.0f / (highlights - shadows);
-	// Shadow and highlight values translated to the ADU scale.
+
 	const T nativeShadows = shadows * maxInput;
 	const T nativeHighlights = highlights * maxInput;
-	// Constants based on above needed for the stretch calculations.
+
 	const float k1 = (midtones - 1) * hsRangeFactor * maxOutput / maxInput;
 	const float k2 = ((2 * midtones) - 1) * hsRangeFactor / maxInput;
 
@@ -83,7 +80,6 @@ void stretchThreeChannels(
 ) {
 	constexpr int maxOutput = 255;
 
-	// Maximum possible input value (e.g. 1024*64 - 1 for a 16 bit unsigned int).
 	const float maxInput = inputRange > 1 ? inputRange - 1 : inputRange;
 
 	float midtonesR   = stretchParams.grey_red.midtones;
@@ -108,19 +104,17 @@ void stretchThreeChannels(
 		shadowsB    = stretchParams.refChannel->shadows;
 	}
 
-	// Precomputed expressions moved out of the loop.
-	// highlights - shadows, protecting for divide-by-0, in a 0->1.0 scale.
 	const float hsRangeFactorR = highlightsR == shadowsR ? 1.0f : 1.0f / (highlightsR - shadowsR);
 	const float hsRangeFactorG = highlightsG == shadowsG ? 1.0f : 1.0f / (highlightsG - shadowsG);
 	const float hsRangeFactorB = highlightsB == shadowsB ? 1.0f : 1.0f / (highlightsB - shadowsB);
-	// Shadow and highlight values translated to the ADU scale.
+
 	const T nativeShadowsR = shadowsR * maxInput;
 	const T nativeShadowsG = shadowsG * maxInput;
 	const T nativeShadowsB = shadowsB * maxInput;
 	const T nativeHighlightsR = highlightsR * maxInput;
 	const T nativeHighlightsG = highlightsG * maxInput;
 	const T nativeHighlightsB = highlightsB * maxInput;
-	// Constants based on above needed for the stretch calculations.
+
 	const float k1R = (midtonesR - 1) * hsRangeFactorR * maxOutput / maxInput;
 	const float k1G = (midtonesG - 1) * hsRangeFactorG * maxOutput / maxInput;
 	const float k1B = (midtonesB - 1) * hsRangeFactorB * maxOutput / maxInput;
@@ -168,27 +162,6 @@ void stretchThreeChannels(
 }
 
 template <typename T>
-void stretchChannels(
-	T *input_buffer,
-	QImage *output_image,
-	const StretchParams &stretch_params,
-	int input_range,
-	int image_height,
-	int image_width,
-	int num_channels,
-	int sampling
-) {
-	if (num_channels == 1) {
-		stretchOneChannel(input_buffer, output_image, stretch_params, input_range,
-		                  image_height, image_width, sampling);
-	} else if (num_channels == 3) {
-		stretchThreeChannels(input_buffer, output_image, stretch_params, input_range,
-		                  image_height, image_width, sampling);
-	}
-}
-
-
-template <typename T>
 void computeParamsOneChannel(
 	T const *buffer,
 	StretchParams1Channel *params,
@@ -212,7 +185,7 @@ void computeParamsOneChannel(
 			deviations[i] = buffer[index] - medianSample;
 	}
 
-	// Shift everything to 0 -> 1.0.
+	// scale to 0 -> 1.0.
 	const float medDev = median(deviations);
 	const float normalizedMedian = medianSample / static_cast<float>(inputRange);
 	const float MADN = 1.4826 * medDev / static_cast<float>(inputRange);
@@ -237,7 +210,6 @@ void computeParamsOneChannel(
 	else if (X == 1) midtones = 1.0f;
 	else midtones = ((M - 1) * X) / ((2 * M - 1) * X - M);
 
-	// Store the params.
 	params->shadows = shadows;
 	params->highlights = highlights;
 	params->midtones = midtones;
@@ -289,7 +261,7 @@ void computeParamsThreeChannels(
 			deviationsB[i] = value - medianSampleB;
 	}
 
-	// Shift everything to 0 -> 1.0.
+	// scale to 0 -> 1.0.
 	float medDev = median(deviationsR);
 	float normalizedMedian = medianSampleR / static_cast<float>(inputRange);
 	float MADN = 1.4826 * medDev / static_cast<float>(inputRange);
@@ -362,7 +334,6 @@ void computeParamsThreeChannels(
 	else if (X == 1) midtonesB = 1.0f;
 	else midtonesB = ((M - 1) * X) / ((2 * M - 1) * X - M);
 
-	// Store the params.
 	params->grey_red.shadows = shadowsR;
 	params->grey_red.highlights = highlightsR;
 	params->grey_red.midtones = midtonesR;
@@ -380,10 +351,6 @@ void computeParamsThreeChannels(
 	params->blue.highlights_expansion = 1.0;
 }
 
-// Need to know the possible range of input values.
-// Using the type of the sample and guessing.
-// Perhaps we should examine the contents for the file
-// (e.g. look at maximum value and extrapolate from that).
 int getRange(int data_type) {
 	switch (data_type) {
 		case PIX_FMT_Y8:
@@ -407,20 +374,20 @@ void Stretcher::stretch(uint8_t const *input, QImage *outputImage, int sampling)
 
 	switch (m_pix_fmt) {
 		case PIX_FMT_Y8:
-			stretchChannels(reinterpret_cast<uint8_t const*>(input), outputImage, m_params,
-			                m_input_range, m_image_height, m_image_width, 1, sampling);
+			stretchOneChannel(reinterpret_cast<uint8_t const*>(input), outputImage, m_params,
+			                m_input_range, m_image_height, m_image_width, sampling);
 		break;
 		case PIX_FMT_Y16:
-			stretchChannels(reinterpret_cast<uint16_t const*>(input), outputImage, m_params,
-			                m_input_range, m_image_height, m_image_width, 1, sampling);
+			stretchOneChannel(reinterpret_cast<uint16_t const*>(input), outputImage, m_params,
+			                m_input_range, m_image_height, m_image_width, sampling);
 			break;
 		case PIX_FMT_RGB24:
-			stretchChannels(reinterpret_cast<uint8_t const*>(input), outputImage, m_params,
-			                m_input_range, m_image_height, m_image_width, 3, sampling);
+			stretchThreeChannels(reinterpret_cast<uint8_t const*>(input), outputImage, m_params,
+			                m_input_range, m_image_height, m_image_width, sampling);
 			break;
 		case PIX_FMT_RGB48:
-			stretchChannels(reinterpret_cast<uint16_t const*>(input), outputImage, m_params,
-			                m_input_range, m_image_height, m_image_width, 3, sampling);
+			stretchThreeChannels(reinterpret_cast<uint16_t const*>(input), outputImage, m_params,
+			                m_input_range, m_image_height, m_image_width, sampling);
 			break;
 		default:
 			break;
