@@ -57,15 +57,18 @@ int main(int argc, char *argv[]) {
 
 	memset(&conf,0,sizeof(conf_t));
 	conf.use_state_icons = false;
-	conf.use_system_locale = false;
+	conf.reopen_file_at_start = false;
 	conf.indigo_log_level = INDIGO_LOG_INFO;
 	conf.preview_stretch_level = STRETCH_NORMAL;
 	conf.preview_color_balance = CB_AUTO;
 	conf.antialiasing_enabled = false;
 	read_conf();
-	conf.file_open[0] = '\0';
 
-	if (!conf.use_system_locale) qunsetenv("LC_NUMERIC");
+	if (!conf.reopen_file_at_start) {
+		conf.file_open[0] = '\0';
+	}
+
+	qunsetenv("LC_NUMERIC");
 
 	if (argc > 1) {
 		strncpy(conf.file_open, argv[argc-1], PATH_MAX);

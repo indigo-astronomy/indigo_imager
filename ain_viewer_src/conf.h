@@ -68,7 +68,7 @@ typedef enum {
 typedef struct {
 	indigo_log_levels indigo_log_level;
 	bool use_state_icons;
-	bool use_system_locale;
+	bool reopen_file_at_start;
 	bool antialiasing_enabled;
 	preview_stretch preview_stretch_level;
 	color_balance preview_color_balance;

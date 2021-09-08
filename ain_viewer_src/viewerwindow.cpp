@@ -113,10 +113,10 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu = new QMenu("&Settings");
 
-	act = menu->addAction(tr("Use &locale specific decimal separator"));
+	act = menu->addAction(tr("Open &last file at startup"));
 	act->setCheckable(true);
-	act->setChecked(conf.use_system_locale);
-	connect(act, &QAction::toggled, this, &ViewerWindow::on_use_system_locale_changed);
+	act->setChecked(conf.reopen_file_at_start);
+	connect(act, &QAction::toggled, this, &ViewerWindow::on_reopen_file_changed);
 
 	menu->addSeparator();
 
@@ -156,12 +156,6 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(m_imager_viewer, &ImageViewer::previousRequested, this, &ViewerWindow::on_image_prev_act);
 	connect(m_imager_viewer, &ImageViewer::nextRequested, this, &ViewerWindow::on_image_next_act);
 
-	//QShortcut *next_sc = new QShortcut(QKeySequence(Qt::Key_Right), this);
-	//QShortcut *prev_sc = new QShortcut(QKeySequence(Qt::Key_Left), this);
-
-	//QObject::connect(next_sc, &QShortcut::activated, this, &ViewerWindow::on_image_next_act);
-	//QObject::connect(prev_sc, &QShortcut::activated, this, &ViewerWindow::on_image_prev_act);
-
 	m_imager_viewer->enableAntialiasing(conf.antialiasing_enabled);
 	if (conf.file_open[0] != '\0') open_image(conf.file_open);
 }
@@ -172,6 +166,7 @@ ViewerWindow::~ViewerWindow () {
 	delete m_preview_image;
 	delete m_imager_viewer;
 	delete m_header_info;
+	write_conf();
 }
 
 /* C++ looks for method close - maybe name collision so... */
@@ -185,6 +180,7 @@ void ViewerWindow::open_image(QString file_name) {
 	FILE *file;
 	block_scrolling(true);
 	strncpy(m_image_path, file_name.toUtf8().data(), PATH_LEN);
+	strncpy(conf.file_open, file_name.toUtf8().data(), PATH_LEN);
 	file = fopen(m_image_path, "rb");
 	if (file) {
 		fseek(file, 0, SEEK_END);
@@ -402,15 +398,9 @@ void ViewerWindow::on_exit_act() {
 	QApplication::quit();
 }
 
-void ViewerWindow::on_use_system_locale_changed(bool status) {
-	conf.use_system_locale = status;
+void ViewerWindow::on_reopen_file_changed(bool status) {
+	conf.reopen_file_at_start = status;
 	write_conf();
-	if (conf.use_system_locale){
-		//on_window_log(nullptr, "Locale specific decimal separator will be used on next application start");
-	} else {
-		//on_window_log(nullptr, "Dot decimal separator will be used on next application start");
-	}
-	//indigo_debug("%s\n", __FUNCTION__);
 }
 
 void ViewerWindow::on_antialias_view(bool status) {
