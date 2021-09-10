@@ -4,6 +4,9 @@
 
 #include <math.h>
 #include <QCoreApplication>
+#include <QtConcurrent>
+
+#define MAX_THREADS 4
 
 // Returns the median value of the vector.
 // The values is modified
@@ -33,7 +36,7 @@ void stretchOneChannel(
 	const StretchParams &stretch_params,
 	int input_range,
 	int image_height,
-	int m_image_width,
+	int image_width,
 	int sampling
 ) {
 	constexpr int maxOutput = 255;
@@ -52,21 +55,31 @@ void stretchOneChannel(
 	const float k1 = (midtones - 1) * hsRangeFactor * maxOutput / maxInput;
 	const float k2 = ((2 * midtones) - 1) * hsRangeFactor / maxInput;
 
-	for (int j = 0, jout = 0; j < image_height; j += sampling, jout++) {
-		T * inputLine  = input_buffer + j * m_image_width;
-		auto * scanLine = reinterpret_cast<QRgb*>(output_image->scanLine(jout));
-		QCoreApplication::processEvents();
-		for (int i = 0, iout = 0; i < m_image_width; i += sampling, iout++) {
-			const T input = inputLine[i];
-			if (input < nativeShadows) output_image->setPixel(iout, jout, qRgb(0, 0, 0));
-			else if (input >= nativeHighlights) output_image->setPixel(iout, jout, qRgb(maxOutput,maxOutput,maxOutput));
-			else {
-				const T inputFloored = (input - nativeShadows);
-				int val = (inputFloored * k1) / (inputFloored * k2 - midtones);
-				scanLine[iout] = qRgb(val, val, val);
+	QVector<QFuture<void>> futures;
+	for (int rank = 0; rank < MAX_THREADS; rank++) {
+		const int chunk = image_height / MAX_THREADS;
+		futures.append(QtConcurrent::run([ = ]() {
+			int start_row = chunk * rank;
+			int end_row = start_row + chunk;
+			end_row = (end_row > image_height) ? image_height : end_row;
+			for (int j = start_row, jout = start_row; j < end_row; j += sampling, jout++) {
+				T * inputLine  = input_buffer + j * image_width;
+				auto * scanLine = reinterpret_cast<QRgb*>(output_image->scanLine(jout));
+				QCoreApplication::processEvents();
+				for (int i = 0, iout = 0; i < image_width; i += sampling, iout++) {
+					const T input = inputLine[i];
+					if (input < nativeShadows) output_image->setPixel(iout, jout, qRgb(0, 0, 0));
+					else if (input >= nativeHighlights) output_image->setPixel(iout, jout, qRgb(maxOutput,maxOutput,maxOutput));
+					else {
+						const T inputFloored = (input - nativeShadows);
+						int val = (inputFloored * k1) / (inputFloored * k2 - midtones);
+						scanLine[iout] = qRgb(val, val, val);
+					}
+				}
 			}
-		}
+		}));
 	}
+	for(QFuture<void> future : futures) future.waitForFinished();
 }
 
 template <typename T>
@@ -125,40 +138,50 @@ void stretchThreeChannels(
 	const int skip = sampling * 3;
 	const int imageWidth3 = imageWidth * 3;
 
-	int index = 0;
-	for (int j = 0, jout = 0; j < imageHeight; j += sampling, jout++) {
-		QCoreApplication::processEvents();
-		auto * scanLine = reinterpret_cast<QRgb*>(outputImage->scanLine(jout));
-		for (int i = 0, iout = 0; i < imageWidth3; i += skip, iout++) {
-			const T inputR = inputBuffer[index++];
-			const T inputG = inputBuffer[index++];
-			const T inputB = inputBuffer[index++];
+	QVector<QFuture<void>> futures;
+	for (int rank = 0; rank < MAX_THREADS; rank++) {
+		const int chunk = imageHeight / MAX_THREADS;
+		futures.append(QtConcurrent::run([ = ]() {
+			int start_row = chunk * rank;
+			int end_row = start_row + chunk;
+			end_row = (end_row > imageHeight) ? imageHeight : end_row;
+			int index = start_row * imageWidth3;
+			for (int j = start_row, jout = start_row; j < end_row; j += sampling, jout++) {
+				QCoreApplication::processEvents();
+				auto * scanLine = reinterpret_cast<QRgb*>(outputImage->scanLine(jout));
+				for (int i = 0, iout = 0; i < imageWidth3; i += skip, iout++) {
+					const T inputR = inputBuffer[index++];
+					const T inputG = inputBuffer[index++];
+					const T inputB = inputBuffer[index++];
 
-			uint8_t red, green, blue;
+					uint8_t red, green, blue;
 
-			if (inputR < nativeShadowsR) red = 0;
-			else if (inputR >= nativeHighlightsR) red = maxOutput;
-			else {
-				const T inputFloored = (inputR - nativeShadowsR);
-				red = (inputFloored * k1R) / (inputFloored * k2R - midtonesR);
+					if (inputR < nativeShadowsR) red = 0;
+					else if (inputR >= nativeHighlightsR) red = maxOutput;
+					else {
+						const T inputFloored = (inputR - nativeShadowsR);
+						red = (inputFloored * k1R) / (inputFloored * k2R - midtonesR);
+					}
+
+					if (inputG < nativeShadowsG) green = 0;
+					else if (inputG >= nativeHighlightsG) green = maxOutput;
+					else {
+						const T inputFloored = (inputG - nativeShadowsG);
+						green = (inputFloored * k1G) / (inputFloored * k2G - midtonesG);
+					}
+
+					if (inputB < nativeShadowsB) blue = 0;
+					else if (inputB >= nativeHighlightsB) blue = maxOutput;
+					else {
+						const T inputFloored = (inputB - nativeShadowsB);
+						blue = (inputFloored * k1B) / (inputFloored * k2B - midtonesB);
+					}
+					scanLine[iout] = qRgb(red, green, blue);
+				}
 			}
-
-			if (inputG < nativeShadowsG) green = 0;
-			else if (inputG >= nativeHighlightsG) green = maxOutput;
-			else {
-				const T inputFloored = (inputG - nativeShadowsG);
-				green = (inputFloored * k1G) / (inputFloored * k2G - midtonesG);
-			}
-
-			if (inputB < nativeShadowsB) blue = 0;
-			else if (inputB >= nativeHighlightsB) blue = maxOutput;
-			else {
-				const T inputFloored = (inputB - nativeShadowsB);
-				blue = (inputFloored * k1B) / (inputFloored * k2B - midtonesB);
-			}
-			scanLine[iout] = qRgb(red, green, blue);
-		}
+		}));
 	}
+	for(QFuture<void> future : futures) future.waitForFinished();
 }
 
 template <typename T>
