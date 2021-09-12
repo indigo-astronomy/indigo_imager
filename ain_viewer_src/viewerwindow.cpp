@@ -412,6 +412,7 @@ void ViewerWindow::on_antialias_view(bool status) {
 void ViewerWindow::on_stretch_changed(int level) {
 	conf.preview_stretch_level = (preview_stretch)level;
 	if (m_preview_image) {
+		block_scrolling(true);
 		int width = m_preview_image->width();
 		int height = m_preview_image->height();
 		int pix_format = m_preview_image->m_pix_format;
@@ -420,6 +421,7 @@ void ViewerWindow::on_stretch_changed(int level) {
 		delete m_preview_image;
 		m_preview_image = new_preview;
 		m_imager_viewer->setImage(*m_preview_image);
+		block_scrolling(false);
 	}
 	write_conf();
 }
@@ -427,6 +429,7 @@ void ViewerWindow::on_stretch_changed(int level) {
 void ViewerWindow::on_cb_changed(int balance) {
 	conf.preview_color_balance = (color_balance)balance;
 	if (m_preview_image) {
+		block_scrolling(true);
 		int width = m_preview_image->width();
 		int height = m_preview_image->height();
 		int pix_format = m_preview_image->m_pix_format;
@@ -435,6 +438,7 @@ void ViewerWindow::on_cb_changed(int balance) {
 		delete m_preview_image;
 		m_preview_image = new_preview;
 		m_imager_viewer->setImage(*m_preview_image);
+		block_scrolling(false);
 	}
 	write_conf();
 }
