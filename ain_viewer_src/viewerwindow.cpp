@@ -34,7 +34,11 @@ void write_conf();
 
 ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	setWindowTitle(tr("Ain Viewer"));
-	resize(1024, 768);
+	if (!conf.restore_window_size || conf.window_width == 0 || conf.window_height == 0) {
+		resize(1024, 768);
+	} else {
+		resize(conf.window_width, conf.window_height);
+	}
 
 	m_image_data = nullptr;
 	m_image_size = 0;
@@ -118,6 +122,11 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setChecked(conf.reopen_file_at_start);
 	connect(act, &QAction::toggled, this, &ViewerWindow::on_reopen_file_changed);
 
+	act = menu->addAction(tr("&Restore window size at start"));
+	act->setCheckable(true);
+	act->setChecked(conf.restore_window_size);
+	connect(act, &QAction::toggled, this, &ViewerWindow::on_restore_window_size_changed);
+
 	menu->addSeparator();
 
 	act = menu->addAction(tr("Enable &antialiasing"));
@@ -162,11 +171,14 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 
 ViewerWindow::~ViewerWindow () {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
+	QSize wsize = size();
+	conf.window_width = wsize.width();
+	conf.window_height = wsize.height();
+	write_conf();
 	if (m_image_data) free(m_image_data);
 	delete m_preview_image;
 	delete m_imager_viewer;
 	delete m_header_info;
-	write_conf();
 }
 
 /* C++ looks for method close - maybe name collision so... */
@@ -401,6 +413,12 @@ void ViewerWindow::on_exit_act() {
 void ViewerWindow::on_reopen_file_changed(bool status) {
 	conf.reopen_file_at_start = status;
 	write_conf();
+}
+
+void ViewerWindow::on_restore_window_size_changed(bool status) {
+	conf.restore_window_size = status;
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
 }
 
 void ViewerWindow::on_antialias_view(bool status) {

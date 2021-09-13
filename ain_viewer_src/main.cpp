@@ -62,6 +62,9 @@ int main(int argc, char *argv[]) {
 	conf.preview_stretch_level = STRETCH_NORMAL;
 	conf.preview_color_balance = CB_AUTO;
 	conf.antialiasing_enabled = false;
+	conf.window_width = 0;
+	conf.window_height = 0;
+	conf.restore_window_size = true;
 	read_conf();
 
 	if (!conf.reopen_file_at_start) {

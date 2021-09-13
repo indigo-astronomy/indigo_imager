@@ -81,6 +81,9 @@ int main(int argc, char *argv[]) {
 	conf.indigo_save_log = false;
 	conf.save_noname_images = false;
 	conf.data_dir_prefix[0] = '\0';
+	conf.window_width = 0;
+	conf.window_height = 0;
+	conf.restore_window_size = true;
 	read_conf();
 
 	if (!conf.use_system_locale) qunsetenv("LC_NUMERIC");

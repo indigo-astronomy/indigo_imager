@@ -59,6 +59,7 @@ public:
 
 public slots:
 	void on_reopen_file_changed(bool status);
+	void on_restore_window_size_changed(bool status);
 	void on_image_open_act();
 	void on_image_next_act();
 	void on_image_prev_act();

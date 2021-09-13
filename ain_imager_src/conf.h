@@ -92,6 +92,9 @@ typedef struct {
 	char data_dir_prefix[PATH_LEN];
 	color_balance preview_color_balance;
 	color_balance guider_color_balance;
+	int window_width;
+	int window_height;
+	bool restore_window_size;
 	char unused[100];
 } conf_t;
 

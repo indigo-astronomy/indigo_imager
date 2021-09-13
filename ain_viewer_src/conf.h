@@ -73,6 +73,9 @@ typedef struct {
 	preview_stretch preview_stretch_level;
 	color_balance preview_color_balance;
 	char file_open[PATH_LEN];
+	int window_width;
+	int window_height;
+	bool restore_window_size;
 	char unused[100];
 } conf_t;
 

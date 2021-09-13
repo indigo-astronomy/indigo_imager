@@ -40,7 +40,11 @@ void write_conf();
 
 ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	setWindowTitle(tr("Ain INDIGO Imager"));
-	resize(1200, 768);
+	if (!conf.restore_window_size || conf.window_width == 0 || conf.window_height == 0) {
+		resize(1200, 768);
+	} else {
+		resize(conf.window_width, conf.window_height);
+	}
 
 	QIcon icon(":resource/appicon.png");
 	this->setWindowIcon(icon);
@@ -129,15 +133,20 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setChecked(conf.blobs_enabled);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_blobs_changed);
 
+	act = menu->addAction(tr("&Auto connect new services"));
+	act->setCheckable(true);
+	act->setChecked(conf.auto_connect);
+	connect(act, &QAction::toggled, this, &ImagerWindow::on_bonjour_changed);
+
 	act = menu->addAction(tr("Save &noname images"));
 	act->setCheckable(true);
 	act->setChecked(conf.save_noname_images);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_save_noname_images_changed);
 
-	act = menu->addAction(tr("&Auto connect new services"));
+	act = menu->addAction(tr("&Restore window size at start"));
 	act->setCheckable(true);
-	act->setChecked(conf.auto_connect);
-	connect(act, &QAction::toggled, this, &ImagerWindow::on_bonjour_changed);
+	act->setChecked(conf.restore_window_size);
+	connect(act, &QAction::toggled, this, &ImagerWindow::on_restore_window_size_changed);
 
 	act = menu->addAction(tr("&Use host suffix"));
 	act->setCheckable(true);
@@ -424,6 +433,10 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 ImagerWindow::~ImagerWindow () {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
+	QSize wsize = size();
+	conf.window_width = wsize.width();
+	conf.window_height = wsize.height();
+	write_conf();
 	delete mLog;
 	delete mIndigoServers;
 	delete mServiceModel;
@@ -746,6 +759,11 @@ void ImagerWindow::on_save_noname_images_changed(bool status) {
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
+void ImagerWindow::on_restore_window_size_changed(bool status) {
+	conf.restore_window_size = status;
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
 
 void ImagerWindow::on_bonjour_changed(bool status) {
 	conf.auto_connect = status;
