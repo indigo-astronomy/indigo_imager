@@ -45,13 +45,13 @@ typedef struct {
 } stretch_config_t;
 
 typedef struct {
- 	// Stretch algorithm parameter multipliers
- 	float shadows;
- 	float highlights;
- 	float midtones;
- 	// The extension parameters are not used.
- 	float shadows_expansion;
- 	float highlights_expansion;
+	// Stretch algorithm parameter multipliers
+	float shadows;
+	float highlights;
+	float midtones;
+	// The extension parameters are not used.
+	float shadows_expansion;
+	float highlights_expansion;
 } stretch_multiplier_t;
 
 typedef struct {
