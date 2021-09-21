@@ -762,7 +762,7 @@ void update_imager_selection_property(ImagerWindow *w, indigo_property *property
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_SELECTION_RADIUS_ITEM_NAME)) {
 			double max = property->items[i].number.value * 2 + 2;
 			size = (int)round(property->items[i].number.value * 2 + 1);
-			w->m_focus_graph->set_yaxis_range(0, max);
+			//w->m_focus_graph->set_yaxis_range(0, max);
 			configure_spinbox(w, &property->items[i], property->perm, w->m_focus_star_radius);
 		}
 	}
@@ -917,7 +917,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	static bool focusing_running = false;
 	static bool preview_running = false;
 	static int prev_frame = -1;
-	double FWHM = 0, HFD = 0;
+	double FWHM = 0, HFD = 0, contrast = 0;
 
 	indigo_item *exposure_item = properties.get_item(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME, AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME);
 	if (exposure_item) exp_time = exposure_item->number.target;
@@ -970,6 +970,11 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			char peak_str[50];
 			snprintf(peak_str, 50, "%d", peak);
 			w->set_text(w->m_peak_label, peak_str);
+		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_RMS_CONTRAST_ITEM_NAME)) {
+			 contrast = stats_p->items[i].number.value;
+			 //char hfd_str[50];
+			 //snprintf(hfd_str, 50, "%.2f", HFD);
+			 //w->set_text(w->m_HFD_label, hfd_str);
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_DRIFT_X_ITEM_NAME)) {
 			drift_x = stats_p->items[i].number.value;
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_DRIFT_Y_ITEM_NAME)) {
@@ -1044,13 +1049,22 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			if (frames_complete == 0) {
 				w->m_focus_fwhm_data.clear();
 				w->m_focus_hfd_data.clear();
+				w->m_focus_contrast_data.clear();
 			}
 			w->m_focus_fwhm_data.append(FWHM);
 			if (w->m_focus_fwhm_data.size() > 100) w->m_focus_fwhm_data.removeFirst();
 			w->m_focus_hfd_data.append(HFD);
 			if (w->m_focus_hfd_data.size() > 100) w->m_focus_hfd_data.removeFirst();
+			if (contrast != 0) w->m_focus_contrast_data.append(contrast * 100);
+			if (w->m_focus_contrast_data.size() > 100) w->m_focus_contrast_data.removeFirst();
 
-			if (w->m_focus_display_data) w->m_focus_graph->redraw_data(*(w->m_focus_display_data));
+			//w->m_focus_display_data = &w->m_focus_contrast_data;
+			if (w->m_focus_display_data) {
+				double max = *std::max_element(w->m_focus_display_data->constBegin(), w->m_focus_display_data->constEnd()) * 1.01;
+				double min = *std::min_element(w->m_focus_display_data->constBegin(), w->m_focus_display_data->constEnd()) * 0.99;
+				w->m_focus_graph->set_yaxis_range(min, max);
+				w->m_focus_graph->redraw_data(*(w->m_focus_display_data));
+			}
 			prev_frame = frames_complete;
 		}
 		w->set_widget_state(w->m_preview_button, INDIGO_OK_STATE);

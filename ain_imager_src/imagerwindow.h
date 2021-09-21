@@ -523,6 +523,7 @@ private:
 	QLabel     *m_focus_graph_label;
 	QVector<double> m_focus_fwhm_data;
 	QVector<double> m_focus_hfd_data;
+	QVector<double> m_focus_contrast_data;
 	QVector<double> *m_focus_display_data;
 
 	// Guider tab
