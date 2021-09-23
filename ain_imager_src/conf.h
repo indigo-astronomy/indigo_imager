@@ -53,6 +53,7 @@ typedef enum {
 typedef enum {
 	SHOW_FWHM = 0,
 	SHOW_HFD = 1,
+	SHOW_CONTRAST = 2,
 } focuser_display_data;
 
 typedef enum {

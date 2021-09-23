@@ -842,18 +842,17 @@ void update_focus_estimator_property(ImagerWindow *w, indigo_property *property)
 				w->select_focuser_data(conf.focuser_display);
 				w->m_focus_fwhm_data.clear();
 				w->m_focus_hfd_data.clear();
-				w->show_widget(w->m_hfd_stats_frame, true);
 				w->show_widget(w->m_contrast_stats_frame, false);
+				w->show_widget(w->m_hfd_stats_frame, true);
 				w->m_focus_graph->redraw_data(*(w->m_focus_display_data));
 			}
 
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_ESTIMATOR_RMS_CONTRAST_ITEM_NAME)) {
 			if (property->items[i].sw.value) {
-				w->set_text(w->m_focus_graph_label, "RMS Contrast (x100):");
+				w->select_focuser_data(SHOW_CONTRAST);
 				w->m_focus_contrast_data.clear();
 				w->show_widget(w->m_hfd_stats_frame, false);
 				w->show_widget(w->m_contrast_stats_frame, true);
-				w->m_focus_display_data = &w->m_focus_contrast_data;
 				w->m_focus_graph->redraw_data(*(w->m_focus_display_data));
 			}
 		}
