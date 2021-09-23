@@ -321,13 +321,17 @@ void ImagerWindow::change_agent_focus_params_property(const char *agent) const {
 	static const char *items[] = {
 		AGENT_IMAGER_FOCUS_INITIAL_ITEM_NAME,
 		AGENT_IMAGER_FOCUS_FINAL_ITEM_NAME,
-		AGENT_IMAGER_FOCUS_STACK_ITEM_NAME
+		AGENT_IMAGER_FOCUS_STACK_ITEM_NAME,
+		AGENT_IMAGER_FOCUS_REPEAT_ITEM_NAME,
+		AGENT_IMAGER_FOCUS_DELAY_ITEM_NAME
 	};
-	static double values[3];
+	static double values[5];
 	values[0] = (double)m_initial_step->value();
 	values[1] = (double)m_final_step->value();
 	values[2] = (double)m_focus_stack->value();
-	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME, 3, items, values);
+	values[3] = 0;
+	values[4] = 0;
+	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME, 5, items, values);
 }
 
 void ImagerWindow::change_agent_focuser_backlash(const char *agent) const {
