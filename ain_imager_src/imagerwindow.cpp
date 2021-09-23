@@ -346,9 +346,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	propertyLayout->addWidget(hSplitter, 85);
 	propertyLayout->addWidget(mLog, 15);
 
-	select_focuser_data(conf.focuser_display);
-	select_guider_data(conf.guider_display);
-
 	mServiceModel = new QServiceModel("_indigo._tcp");
 	mServiceModel->enable_auto_connect(conf.auto_connect);
 
@@ -387,6 +384,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(this, QOverload<QLineEdit*, QString>::of(&ImagerWindow::set_text), this, QOverload<QLineEdit*, QString>::of(&ImagerWindow::on_set_text));
 	connect(this, QOverload<QPushButton*, QString>::of(&ImagerWindow::set_text), this, QOverload<QPushButton*, QString>::of(&ImagerWindow::on_set_text));
 	connect(this, QOverload<QCheckBox*, QString>::of(&ImagerWindow::set_text), this, QOverload<QCheckBox*, QString>::of(&ImagerWindow::on_set_text));
+
+	connect(this, &ImagerWindow::show_widget, this, &ImagerWindow::on_show);
 	connect(this, &ImagerWindow::set_checkbox_checked, this, &ImagerWindow::on_set_checkbox_checked);
 	connect(this, &ImagerWindow::set_checkbox_state, this, &ImagerWindow::on_set_checkbox_state);
 
@@ -420,6 +419,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(m_imager_viewer, &ImageViewer::mouseRightPressRADec, this, &ImagerWindow::on_image_right_click_ra_dec);
 	connect(m_guider_viewer, &ImageViewer::mouseRightPress, this, &ImagerWindow::on_guider_image_right_click);
 
+	select_focuser_data(conf.focuser_display);
+	select_guider_data(conf.guider_display);
 	m_imager_viewer->enableAntialiasing(conf.antialiasing_enabled);
 	m_guider_viewer->enableAntialiasing(conf.guider_antialiasing_enabled);
 

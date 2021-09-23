@@ -835,6 +835,31 @@ void update_focus_setup_property(ImagerWindow *w, indigo_property *property) {
 	}
 }
 
+void update_focus_estimator_property(ImagerWindow *w, indigo_property *property) {
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_ESTIMATOR_HFD_PEAK_ITEM_NAME)) {
+			if (property->items[i].sw.value) {
+				w->select_focuser_data(conf.focuser_display);
+				w->m_focus_fwhm_data.clear();
+				w->m_focus_hfd_data.clear();
+				w->show_widget(w->m_hfd_stats_frame, true);
+				w->show_widget(w->m_contrast_stats_frame, false);
+				w->m_focus_graph->redraw_data(*(w->m_focus_display_data));
+			}
+
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_ESTIMATOR_RMS_CONTRAST_ITEM_NAME)) {
+			if (property->items[i].sw.value) {
+				w->set_text(w->m_focus_graph_label, "RMS Contrast (x100):");
+				w->m_focus_contrast_data.clear();
+				w->show_widget(w->m_hfd_stats_frame, false);
+				w->show_widget(w->m_contrast_stats_frame, true);
+				w->m_focus_display_data = &w->m_focus_contrast_data;
+				w->m_focus_graph->redraw_data(*(w->m_focus_display_data));
+			}
+		}
+	}
+}
+
 void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("Set %s", property->name);
 	for (int i = 0; i < property->count; i++) {
@@ -971,10 +996,10 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			snprintf(peak_str, 50, "%d", peak);
 			w->set_text(w->m_peak_label, peak_str);
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_RMS_CONTRAST_ITEM_NAME)) {
-			 contrast = stats_p->items[i].number.value;
-			 //char hfd_str[50];
-			 //snprintf(hfd_str, 50, "%.2f", HFD);
-			 //w->set_text(w->m_HFD_label, hfd_str);
+			contrast = stats_p->items[i].number.value;
+			char contrast_str[50];
+			snprintf(contrast_str, 50, "%.4f", contrast * 100);
+			w->set_text(w->m_contrast_label, contrast_str);
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_DRIFT_X_ITEM_NAME)) {
 			drift_x = stats_p->items[i].number.value;
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_DRIFT_Y_ITEM_NAME)) {
@@ -1051,9 +1076,9 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 				w->m_focus_hfd_data.clear();
 				w->m_focus_contrast_data.clear();
 			}
-			w->m_focus_fwhm_data.append(FWHM);
+			if (FWHM != 0) w->m_focus_fwhm_data.append(FWHM);
 			if (w->m_focus_fwhm_data.size() > 100) w->m_focus_fwhm_data.removeFirst();
-			w->m_focus_hfd_data.append(HFD);
+			if (HFD != 0) w->m_focus_hfd_data.append(HFD);
 			if (w->m_focus_hfd_data.size() > 100) w->m_focus_hfd_data.removeFirst();
 			if (contrast != 0) w->m_focus_contrast_data.append(contrast * 100);
 			if (w->m_focus_contrast_data.size() > 100) w->m_focus_contrast_data.removeFirst();
@@ -1659,6 +1684,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME)) {
 		update_focus_setup_property(this, property);
 	}
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_ESTIMATOR_PROPERTY_NAME)) {
+		update_focus_estimator_property(this, property);
+	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME)) {
 		/* do not update controls if AGENT_IMAGER_BATCH_PROPERTY is already defned */
 		indigo_property *p = properties.get(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME);
@@ -1915,6 +1943,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME)) {
 		update_focus_setup_property(this, property);
 	}
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_ESTIMATOR_PROPERTY_NAME)) {
+		update_focus_estimator_property(this, property);
+	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME)) {
 		//update_agent_imager_batch_property(this, property);
 	}
@@ -2113,6 +2144,13 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		clear_combobox(m_dither_agent_select);
+	}
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_ESTIMATOR_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		select_focuser_data(conf.focuser_display);
+		show_widget(m_hfd_stats_frame, true);
+		show_widget(m_contrast_stats_frame, false);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_DITHERING_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {

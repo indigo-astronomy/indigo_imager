@@ -149,34 +149,63 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	stats_row++;
 	m_focus_graph = new FocusGraph();
 	m_focus_graph->redraw_data(m_focus_fwhm_data);
-	m_focus_graph->setMinimumHeight(200);
+	m_focus_graph->setMinimumHeight(250);
 	stats_frame_layout->addWidget(m_focus_graph, stats_row, 0, 1, 4);
 
 	stats_row++;
+	m_contrast_stats_frame = new QFrame();
+	QGridLayout *contrast_stats_frame_layout = new QGridLayout();
+	contrast_stats_frame_layout->setAlignment(Qt::AlignTop);
+	m_contrast_stats_frame->setLayout(contrast_stats_frame_layout);
+	m_contrast_stats_frame->setFrameShape(QFrame::StyledPanel);
+	//stats_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
+	m_contrast_stats_frame->setContentsMargins(0, 0, 0, 0);
+	stats_frame_layout->addWidget(m_contrast_stats_frame, stats_row, 0, 1, 4);
+
+	int contrast_stats_row = 0;
+	label = new QLabel("Contrast (x100):");
+	contrast_stats_frame_layout->addWidget(label, contrast_stats_row, 0);
+	m_contrast_label = new QLabel();
+	m_contrast_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	contrast_stats_frame_layout->addWidget(m_contrast_label, contrast_stats_row, 1);
+	m_contrast_stats_frame->hide();
+
+	//put it over contrast;
+	m_hfd_stats_frame = new QFrame();
+	QGridLayout *hfd_stats_frame_layout = new QGridLayout();
+	hfd_stats_frame_layout->setAlignment(Qt::AlignTop);
+	m_hfd_stats_frame->setLayout(hfd_stats_frame_layout);
+	m_hfd_stats_frame->setFrameShape(QFrame::StyledPanel);
+	//stats_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
+	m_hfd_stats_frame->setContentsMargins(0, 0, 0, 0);
+	stats_frame_layout->addWidget(m_hfd_stats_frame, stats_row, 0, 1, 4);
+
+	int hfd_stats_row = 0;
 	label = new QLabel("FWHM:");
-	stats_frame_layout->addWidget(label, stats_row, 0);
+	hfd_stats_frame_layout->addWidget(label, hfd_stats_row, 0);
 	m_FWHM_label = new QLabel();
 	m_FWHM_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	stats_frame_layout->addWidget(m_FWHM_label, stats_row, 1);
+	hfd_stats_frame_layout->addWidget(m_FWHM_label, hfd_stats_row, 1);
 
 	label = new QLabel("HFD:");
-	stats_frame_layout->addWidget(label, stats_row, 2);
+	hfd_stats_frame_layout->addWidget(label, hfd_stats_row, 2);
 	m_HFD_label = new QLabel();
 	m_HFD_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	stats_frame_layout->addWidget(m_HFD_label, stats_row, 3);
+	hfd_stats_frame_layout->addWidget(m_HFD_label, hfd_stats_row, 3);
 
-	stats_row++;
+	hfd_stats_row++;
 	label = new QLabel("Drift (X, Y):");
-	stats_frame_layout->addWidget(label, stats_row, 0);
+	hfd_stats_frame_layout->addWidget(label, hfd_stats_row, 0);
 	m_drift_label = new QLabel();
 	m_drift_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	stats_frame_layout->addWidget(m_drift_label, stats_row, 1);
+	hfd_stats_frame_layout->addWidget(m_drift_label, hfd_stats_row, 1);
 
 	label = new QLabel("Peak:");
-	stats_frame_layout->addWidget(label, stats_row, 2);
+	hfd_stats_frame_layout->addWidget(label, hfd_stats_row, 2);
 	m_peak_label = new QLabel();
 	m_peak_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	stats_frame_layout->addWidget(m_peak_label, stats_row, 3);
+	hfd_stats_frame_layout->addWidget(m_peak_label, hfd_stats_row, 3);
+	//m_hfd_stats_frame->hide();
 
 	// Settings tab
 	QFrame *settings_frame = new QFrame;
@@ -323,11 +352,11 @@ void ImagerWindow::select_focuser_data(focuser_display_data show) {
 	switch (show) {
 		case SHOW_FWHM:
 			m_focus_display_data = &m_focus_fwhm_data;
-			m_focus_graph_label->setText("Focus FWHM (px):");
+			set_text(m_focus_graph_label, "Focus FWHM (px):");
 			break;
 		case SHOW_HFD:
 			m_focus_display_data = &m_focus_hfd_data;
-			m_focus_graph_label->setText("Focus HFD (px):");
+			set_text(m_focus_graph_label, "Focus HFD (px):");
 			break;
 		default:
 			m_focus_display_data = nullptr;

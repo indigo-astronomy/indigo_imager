@@ -108,6 +108,7 @@ public:
 	friend void update_agent_imager_gain_offset_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_guider_gain_offset_property(ImagerWindow *w, indigo_property *property);
 	friend void update_focus_setup_property(ImagerWindow *w, indigo_property *property);
+	friend void update_focus_estimator_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *property);
 	friend void update_ccd_frame_property(ImagerWindow *w, indigo_property *property);
 	friend void update_wheel_slot_property(ImagerWindow *w, indigo_property *property);
@@ -155,6 +156,7 @@ signals:
 	void set_text(QLineEdit *widget, QString text);
 	void set_text(QPushButton *widget, QString text);
 	void set_text(QCheckBox *widget, QString text);
+	void show_widget(QWidget *widget, bool show);
 
 	void set_lcd(QLCDNumber *widget, QString text, int state);
 
@@ -327,6 +329,14 @@ public slots:
 
 	void on_set_enabled(QWidget *widget, bool enabled) {
 		widget->setEnabled(enabled);
+	};
+
+	void on_show(QWidget *widget, bool show) {
+		if(show) {
+			widget->show();
+		} else {
+			widget->hide();
+		}
 	};
 
 	void on_set_text(QLabel *widget, QString text) {
@@ -514,6 +524,7 @@ private:
 	QLabel    *m_FWHM_label;
 	QLabel    *m_HFD_label;
 	QLabel    *m_peak_label;
+	QLabel    *m_contrast_label;
 	QLabel    *m_drift_label;
 	QDoubleSpinBox *m_focuser_exposure_time;
 	QPushButton *m_focusing_button;
@@ -521,6 +532,8 @@ private:
 	QProgressBar *m_focusing_progress;
 	FocusGraph *m_focus_graph;
 	QLabel     *m_focus_graph_label;
+	QFrame     *m_hfd_stats_frame;
+	QFrame     *m_contrast_stats_frame;
 	QVector<double> m_focus_fwhm_data;
 	QVector<double> m_focus_hfd_data;
 	QVector<double> m_focus_contrast_data;
