@@ -239,6 +239,13 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	connect(m_focus_mode_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focus_mode_selected);
 
 	settings_row++;
+	label = new QLabel("Focus estimator:");
+	settings_frame_layout->addWidget(label, settings_row, 0, 1 ,2);
+	m_focus_estimator_select = new QComboBox();
+	settings_frame_layout->addWidget(m_focus_estimator_select, settings_row, 2, 1, 2);
+	connect(m_focus_estimator_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focus_estimator_selected);
+
+	settings_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	settings_frame_layout->addItem(spacer, settings_row, 0);
 
@@ -329,23 +336,47 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	settings_frame_layout->addItem(spacer, settings_row, 0);
 
-	settings_row++;
+	//settings_row++;
+	//label = new QLabel("Misc settings:");
+	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	//settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
+
+	// Misc tab
+	QFrame *misc_frame = new QFrame;
+	focuser_tabbar->addTab(misc_frame, "Misc");
+
+	QGridLayout *misc_frame_layout = new QGridLayout();
+	misc_frame_layout->setAlignment(Qt::AlignTop);
+	misc_frame->setLayout(misc_frame_layout);
+	misc_frame->setFrameShape(QFrame::StyledPanel);
+	misc_frame->setContentsMargins(0, 0, 0, 0);
+
+	int misc_row = 0;
 	label = new QLabel("Misc settings:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 4);
 
-	settings_row++;
+	misc_row++;
 	label = new QLabel("Use subframe:");
-	settings_frame_layout->addWidget(label, settings_row, 0, 1 ,2);
+	misc_frame_layout->addWidget(label, misc_row, 0, 1 ,2);
 	m_focuser_subframe_select = new QComboBox();
 	m_focuser_subframe_select->addItem("Off");
 	m_focuser_subframe_select->addItem("10 radii");
 	m_focuser_subframe_select->addItem("20 radii");
-	settings_frame_layout->addWidget(m_focuser_subframe_select, settings_row, 2, 1, 2);
+	misc_frame_layout->addWidget(m_focuser_subframe_select, misc_row, 2, 1, 2);
 	m_focuser_subframe_select->setCurrentIndex(conf.focuser_subframe);
 	connect(m_focuser_subframe_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focuser_subframe_changed);
+
 }
 
+void ImagerWindow::on_focus_estimator_selected(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_focus_estimator_property(selected_agent);
+	});
+}
 
 void ImagerWindow::select_focuser_data(focuser_display_data show) {
 	switch (show) {
@@ -365,7 +396,6 @@ void ImagerWindow::select_focuser_data(focuser_display_data show) {
 			m_focus_display_data = nullptr;
 	}
 }
-
 
 void ImagerWindow::on_focuser_selected(int index) {
 	QtConcurrent::run([=]() {

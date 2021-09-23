@@ -243,6 +243,7 @@ public slots:
 	void on_focus_start_stop(bool clicked);
 	void on_focus_preview_start_stop(bool clicked);
 	void on_focus_mode_selected(int index);
+	void on_focus_estimator_selected(int index);
 	void on_selection_changed(double value);
 	void on_focuser_selection_radius_changed(int value);
 	void on_focuser_position_changed(int value);
@@ -511,6 +512,7 @@ private:
 	// Focuser tabbar
 	QComboBox *m_focuser_select;
 	QComboBox *m_focus_mode_select;
+	QComboBox *m_focus_estimator_select;
 	QDoubleSpinBox  *m_star_x;
 	QDoubleSpinBox  *m_star_y;
 	QSpinBox  *m_focus_star_radius;
@@ -729,6 +731,7 @@ private:
 	void change_focuser_focus_in_property(const char *agent) const;
 	void change_focuser_focus_out_property(const char *agent) const;
 	void change_focuser_subframe(const char *agent) const;
+	void change_focus_estimator_property(const char *agent) const;
 
 	void select_focuser_data(focuser_display_data show);
 

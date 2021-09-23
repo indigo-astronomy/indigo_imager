@@ -281,6 +281,18 @@ void ImagerWindow::change_jpeg_settings_property(const char *agent, const int jp
 	indigo_change_number_property(nullptr, agent, CCD_JPEG_SETTINGS_PROPERTY_NAME, 5, items, values);
 }
 
+void ImagerWindow::change_focus_estimator_property(const char *agent) const {
+	static char selected_estimator[INDIGO_NAME_SIZE];
+	strncpy(selected_estimator, m_focus_estimator_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	static const char * items[] = {
+		selected_estimator
+	};
+	static bool values[] = {
+		true
+	};
+	indigo_change_switch_property(nullptr, agent, AGENT_IMAGER_FOCUS_ESTIMATOR_PROPERTY_NAME, 1, items, values);
+}
+
 void ImagerWindow::change_detection_mode_property(const char *agent) const {
 	static char selected_mode[INDIGO_NAME_SIZE];
 	strncpy(selected_mode, m_detection_mode_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);

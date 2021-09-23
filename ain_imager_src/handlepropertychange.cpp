@@ -1684,6 +1684,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_focus_setup_property(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_ESTIMATOR_PROPERTY_NAME)) {
+		add_items_to_combobox(this, property, m_focus_estimator_select);
 		update_focus_estimator_property(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME)) {
@@ -1943,6 +1944,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		update_focus_setup_property(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_ESTIMATOR_PROPERTY_NAME)) {
+		change_combobox_selection(this, property, m_focus_estimator_select);
 		update_focus_estimator_property(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME)) {
@@ -2150,6 +2152,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		select_focuser_data(conf.focuser_display);
 		show_widget(m_hfd_stats_frame, true);
 		show_widget(m_contrast_stats_frame, false);
+		clear_combobox(m_focus_estimator_select);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_DITHERING_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
