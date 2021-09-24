@@ -172,7 +172,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu->addSeparator();
 
-	sub_menu = menu->addMenu("&Focuser Graph");
+	sub_menu = menu->addMenu("Peak/HFD &Focuser Graph");
 
 	QActionGroup *graph_group = new QActionGroup(this);
 	graph_group->setExclusive(true);
@@ -856,17 +856,20 @@ void ImagerWindow::on_antialias_guide_view(bool status) {
 
 void ImagerWindow::on_focus_show_fwhm() {
 	conf.focuser_display = SHOW_FWHM;
-	select_focuser_data(conf.focuser_display);
-	if (m_focus_display_data) m_focus_graph->redraw_data(*m_focus_display_data);
+	if (m_focus_display_data != &m_focus_contrast_data) {
+		select_focuser_data(conf.focuser_display);
+		if (m_focus_display_data) m_focus_graph->redraw_data(*m_focus_display_data);
+	}
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
-
 void ImagerWindow::on_focus_show_hfd() {
 	conf.focuser_display = SHOW_HFD;
-	select_focuser_data(conf.focuser_display);
-	if (m_focus_display_data) m_focus_graph->redraw_data(*m_focus_display_data);
+	if (m_focus_display_data != &m_focus_contrast_data) {
+		select_focuser_data(conf.focuser_display);
+		if (m_focus_display_data) m_focus_graph->redraw_data(*m_focus_display_data);
+	}
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
