@@ -160,6 +160,9 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_contrast_stats_frame->setFrameShape(QFrame::StyledPanel);
 	//stats_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
 	m_contrast_stats_frame->setContentsMargins(0, 0, 0, 0);
+	contrast_stats_frame_layout->setColumnStretch(0, 1);
+	contrast_stats_frame_layout->setColumnStretch(1, 1);
+	contrast_stats_frame_layout->setColumnStretch(2, 2);
 	stats_frame_layout->addWidget(m_contrast_stats_frame, stats_row, 0);
 
 	int contrast_stats_row = 0;
