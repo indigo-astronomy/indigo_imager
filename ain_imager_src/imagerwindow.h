@@ -99,6 +99,7 @@ public:
 	void property_delete(indigo_property* property, char *message);
 	void property_define(indigo_property* property, char *message);
 
+	friend void update_focus_failreturn(ImagerWindow *w, indigo_property *property);
 	friend void set_filter_selected(ImagerWindow *w, indigo_property *property);
 	friend void reset_filter_names(ImagerWindow *w, indigo_property *property);
 	friend void update_cooler_onoff(ImagerWindow *w, indigo_property *property);
@@ -253,6 +254,7 @@ public slots:
 	void on_focus_out(bool clicked);
 	void on_focuser_subframe_changed(int index);
 	void on_focuser_backlash_changed(int value);
+	void on_focuser_failreturn_changed(int state);
 
 	void on_guider_agent_selected(int index);
 	void on_guider_camera_selected(int index);
@@ -528,6 +530,7 @@ private:
 	QLabel    *m_peak_label;
 	QLabel    *m_contrast_label;
 	QLabel    *m_drift_label;
+	QCheckBox *m_focuser_failreturn_cbox;
 	QDoubleSpinBox *m_focuser_exposure_time;
 	QPushButton *m_focusing_button;
 	QPushButton *m_focusing_preview_button;

@@ -188,6 +188,16 @@ void set_filter_selected(ImagerWindow *w, indigo_property *property) {
 	}
 }
 
+void update_focus_failreturn(ImagerWindow *w, indigo_property *property) {
+	w->set_enabled(w->m_focuser_failreturn_cbox, true);
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_FAILURE_RESTORE_ITEM_NAME)) {
+			w->set_checkbox_checked(w->m_focuser_failreturn_cbox, property->items[i].sw.value);
+			break;
+		}
+	}
+}
+
 void update_cooler_onoff(ImagerWindow *w, indigo_property *property) {
 	w->set_enabled(w->m_cooler_onoff, true);
 	for (int i = 0; i < property->count; i++) {
@@ -1687,6 +1697,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		add_items_to_combobox(this, property, m_focus_estimator_select);
 		update_focus_estimator_property(this, property);
 	}
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_FAILURE_PROPERTY_NAME)) {
+		update_focus_failreturn(this, property);
+	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME)) {
 		/* do not update controls if AGENT_IMAGER_BATCH_PROPERTY is already defned */
 		indigo_property *p = properties.get(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME);
@@ -1947,6 +1960,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		change_combobox_selection(this, property, m_focus_estimator_select);
 		update_focus_estimator_property(this, property);
 	}
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_FAILURE_PROPERTY_NAME)) {
+		update_focus_failreturn(this, property);
+	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME)) {
 		//update_agent_imager_batch_property(this, property);
 	}
@@ -2153,6 +2169,12 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		show_widget(m_hfd_stats_frame, true);
 		show_widget(m_contrast_stats_frame, false);
 		clear_combobox(m_focus_estimator_select);
+	}
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_FAILURE_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		set_checkbox_state(m_focuser_failreturn_cbox, false);
+		set_enabled(m_focuser_failreturn_cbox, false);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_DITHERING_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {

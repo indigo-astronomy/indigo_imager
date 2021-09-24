@@ -250,7 +250,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	settings_frame_layout->addItem(spacer, settings_row, 0);
 
 	settings_row++;
-	label = new QLabel("Selection:");
+	label = new QLabel("Selection (Peak/HFD):");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
 
@@ -332,15 +332,6 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	//m_focus_stack->setEnabled(false);
 	settings_frame_layout->addWidget(m_focus_stack, settings_row, 3);
 
-	settings_row++;
-	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
-	settings_frame_layout->addItem(spacer, settings_row, 0);
-
-	//settings_row++;
-	//label = new QLabel("Misc settings:");
-	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	//settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
-
 	// Misc tab
 	QFrame *misc_frame = new QFrame;
 	focuser_tabbar->addTab(misc_frame, "Misc");
@@ -352,7 +343,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	misc_frame->setContentsMargins(0, 0, 0, 0);
 
 	int misc_row = 0;
-	label = new QLabel("Misc settings:");
+	label = new QLabel("Save bandwidth:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	misc_frame_layout->addWidget(label, misc_row, 0, 1, 4);
 
@@ -366,6 +357,21 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	misc_frame_layout->addWidget(m_focuser_subframe_select, misc_row, 2, 1, 2);
 	m_focuser_subframe_select->setCurrentIndex(conf.focuser_subframe);
 	connect(m_focuser_subframe_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focuser_subframe_changed);
+
+	misc_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	misc_frame_layout->addItem(spacer, misc_row, 0);
+
+	misc_row++;
+	label = new QLabel("On focus failed (Peak/HFD):");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 4);
+
+	misc_row++;
+	m_focuser_failreturn_cbox = new QCheckBox("Return to the initial position");
+	m_focuser_failreturn_cbox->setEnabled(false);
+	misc_frame_layout->addWidget(m_focuser_failreturn_cbox, misc_row, 0, 1, 4);
+	connect(m_focuser_failreturn_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_focuser_failreturn_changed);
 
 }
 
@@ -555,5 +561,21 @@ void ImagerWindow::on_focuser_subframe_changed(int index) {
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_focuser_subframe(selected_agent);
+	});
+}
+
+void ImagerWindow::on_focuser_failreturn_changed(int state) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		bool checked = m_focuser_failreturn_cbox->checkState();
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+
+		if (checked) {
+			indigo_change_switch_property_1(nullptr, selected_agent, AGENT_IMAGER_FOCUS_FAILURE_PROPERTY_NAME, AGENT_IMAGER_FOCUS_FAILURE_RESTORE_ITEM_NAME, true);
+		} else {
+			indigo_change_switch_property_1(nullptr, selected_agent, AGENT_IMAGER_FOCUS_FAILURE_PROPERTY_NAME, AGENT_IMAGER_FOCUS_FAILURE_STOP_ITEM_NAME, true);
+		}
 	});
 }
