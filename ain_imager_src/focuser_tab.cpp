@@ -170,6 +170,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	label->setToolTip("RMS contrast x100 (current/best)");
 	contrast_stats_frame_layout->addWidget(label, contrast_stats_row, 0);
 	m_contrast_label = new QLabel();
+	m_contrast_label->setToolTip("RMS contrast x100 (current/best)");
 	m_contrast_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	contrast_stats_frame_layout->addWidget(m_contrast_label, contrast_stats_row, 1);
 	m_contrast_stats_frame->hide();
