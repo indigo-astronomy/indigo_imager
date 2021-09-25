@@ -951,6 +951,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	static bool focusing_running = false;
 	static bool preview_running = false;
 	static int prev_frame = -1;
+	static double best_hfd = 0, best_contrast = 0;
 	double FWHM = 0, HFD = 0, contrast = 0;
 
 	indigo_item *exposure_item = properties.get_item(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME, AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME);
@@ -997,7 +998,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_HFD_ITEM_NAME)) {
 			 HFD = stats_p->items[i].number.value;
 			 char hfd_str[50];
-			 snprintf(hfd_str, 50, "%.2f", HFD);
+			 snprintf(hfd_str, 50, "%.2f / %.2f", HFD, best_hfd);
 			 w->set_text(w->m_HFD_label, hfd_str);
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_PEAK_ITEM_NAME)) {
 			int peak = (int)stats_p->items[i].number.value;
@@ -1007,7 +1008,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_RMS_CONTRAST_ITEM_NAME)) {
 			contrast = stats_p->items[i].number.value;
 			char contrast_str[50];
-			snprintf(contrast_str, 50, "%.4f", contrast * 100);
+			snprintf(contrast_str, 50, "%.4f / %.4f", contrast * 100, best_contrast * 100);
 			w->set_text(w->m_contrast_label, contrast_str);
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_DRIFT_X_ITEM_NAME)) {
 			drift_x = stats_p->items[i].number.value;
@@ -1084,12 +1085,20 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 				w->m_focus_fwhm_data.clear();
 				w->m_focus_hfd_data.clear();
 				w->m_focus_contrast_data.clear();
+				best_hfd = 0;
+				best_contrast = 0;
 			}
 			if (FWHM != 0) w->m_focus_fwhm_data.append(FWHM);
 			if (w->m_focus_fwhm_data.size() > 100) w->m_focus_fwhm_data.removeFirst();
-			if (HFD != 0) w->m_focus_hfd_data.append(HFD);
+			if (HFD != 0) {
+				w->m_focus_hfd_data.append(HFD);
+				if (HFD < best_hfd || best_hfd == 0) best_hfd = HFD;
+			}
 			if (w->m_focus_hfd_data.size() > 100) w->m_focus_hfd_data.removeFirst();
-			if (contrast != 0) w->m_focus_contrast_data.append(contrast * 100);
+			if (contrast != 0) {
+				w->m_focus_contrast_data.append(contrast * 100);
+				if (contrast > best_contrast) best_contrast = contrast;
+			}
 			if (w->m_focus_contrast_data.size() > 100) w->m_focus_contrast_data.removeFirst();
 
 			//w->m_focus_display_data = &w->m_focus_contrast_data;

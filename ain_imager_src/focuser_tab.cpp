@@ -166,7 +166,8 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	stats_frame_layout->addWidget(m_contrast_stats_frame, stats_row, 0);
 
 	int contrast_stats_row = 0;
-	label = new QLabel("Contrast (x100):");
+	label = new QLabel("Contrast x100 (c/b):");
+	label->setToolTip("RMS contrast x100 (current/best)");
 	contrast_stats_frame_layout->addWidget(label, contrast_stats_row, 0);
 	m_contrast_label = new QLabel();
 	m_contrast_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
@@ -184,17 +185,19 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	stats_frame_layout->addWidget(m_hfd_stats_frame, stats_row, 0);
 
 	int hfd_stats_row = 0;
-	label = new QLabel("FWHM:");
+	label = new QLabel("HFD (c/b):");
+	label->setToolTip("Half Flux Diameter (current/best)");
 	hfd_stats_frame_layout->addWidget(label, hfd_stats_row, 0);
+	m_HFD_label = new QLabel();
+	m_HFD_label->setToolTip("Half Flux Diameter (current/best)");
+	m_HFD_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	hfd_stats_frame_layout->addWidget(m_HFD_label, hfd_stats_row, 1);
+
+	label = new QLabel("FWHM:");
+	hfd_stats_frame_layout->addWidget(label, hfd_stats_row, 2);
 	m_FWHM_label = new QLabel();
 	m_FWHM_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	hfd_stats_frame_layout->addWidget(m_FWHM_label, hfd_stats_row, 1);
-
-	label = new QLabel("HFD:");
-	hfd_stats_frame_layout->addWidget(label, hfd_stats_row, 2);
-	m_HFD_label = new QLabel();
-	m_HFD_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	hfd_stats_frame_layout->addWidget(m_HFD_label, hfd_stats_row, 3);
+	hfd_stats_frame_layout->addWidget(m_FWHM_label, hfd_stats_row, 3);
 
 	hfd_stats_row++;
 	label = new QLabel("Drift (X, Y):");
