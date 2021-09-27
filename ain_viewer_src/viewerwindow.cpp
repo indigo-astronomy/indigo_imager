@@ -436,9 +436,11 @@ void ViewerWindow::on_stretch_changed(int level) {
 		int pix_format = m_preview_image->m_pix_format;
 		const stretch_config_t sc = {conf.preview_stretch_level, conf.preview_color_balance};
 		preview_image *new_preview = create_preview(width, height, pix_format, m_preview_image->m_raw_data, sc);
-		delete m_preview_image;
-		m_preview_image = new_preview;
-		m_imager_viewer->setImage(*m_preview_image);
+		if (new_preview) {
+			delete m_preview_image;
+			m_preview_image = new_preview;
+			m_imager_viewer->setImage(*m_preview_image);
+		}
 		block_scrolling(false);
 	}
 	write_conf();
@@ -453,9 +455,11 @@ void ViewerWindow::on_cb_changed(int balance) {
 		int pix_format = m_preview_image->m_pix_format;
 		const stretch_config_t sc = {conf.preview_stretch_level, conf.preview_color_balance};
 		preview_image *new_preview = create_preview(width, height, pix_format, m_preview_image->m_raw_data, sc);
-		delete m_preview_image;
-		m_preview_image = new_preview;
-		m_imager_viewer->setImage(*m_preview_image);
+		if (new_preview) {
+			delete m_preview_image;
+			m_preview_image = new_preview;
+			m_imager_viewer->setImage(*m_preview_image);
+		}
 		block_scrolling(false);
 	}
 	write_conf();

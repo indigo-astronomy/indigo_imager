@@ -403,8 +403,8 @@ void Stretcher::stretch(uint8_t const *input, QImage *outputImage, int sampling)
 			                m_input_range, m_image_height, m_image_width, sampling);
 		break;
 		case PIX_FMT_Y16:
-			//double contrast = indigo_stddev_16((uint16_t*)input, m_image_height * m_image_width);
-			//indigo_error("frame contrast = %f", contrast);
+			//{double contrast = indigo_stddev_16((uint16_t*)input, m_image_height * m_image_width);
+			//indigo_error("frame contrast = %f", contrast);}
 			stretchOneChannel(reinterpret_cast<uint16_t const*>(input), outputImage, m_params,
 			                m_input_range, m_image_height, m_image_width, sampling);
 			break;
