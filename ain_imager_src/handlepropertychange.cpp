@@ -2267,8 +2267,22 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+
 		set_spinbox_value(m_focus_bl_overshoot, 0);
 		set_enabled(m_focus_bl_overshoot, false);
+
+		set_spinbox_value(m_initial_step, 0);
+		set_enabled(m_initial_step, false);
+
+		set_spinbox_value(m_final_step, 0);
+		set_enabled(m_final_step, false);
+
+		set_spinbox_value(m_focus_backlash, 0);
+		set_enabled(m_focus_backlash, false);
+
+		set_spinbox_value(m_focus_stack, 0);
+		set_enabled(m_focus_stack, false);
+
 	}
 	if (client_match_device_property(property, selected_guider_agent, FILTER_GUIDER_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {

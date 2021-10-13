@@ -269,7 +269,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_star_x->setMaximum(100000);
 	m_star_x->setMinimum(0);
 	m_star_x->setValue(0);
-	//m_star_x->setEnabled(false);
+	m_star_x->setEnabled(false);
 	settings_frame_layout->addWidget(m_star_x , settings_row, 2);
 	connect(m_star_x, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_selection_changed);
 
@@ -277,7 +277,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_star_y->setMaximum(100000);
 	m_star_y->setMinimum(0);
 	m_star_y->setValue(0);
-	//m_star_y->setEnabled(false);
+	m_star_y->setEnabled(false);
 	settings_frame_layout->addWidget(m_star_y, settings_row, 3);
 	connect(m_star_y, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_selection_changed);
 
@@ -288,6 +288,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_star_radius->setMaximum(100000);
 	m_focus_star_radius->setMinimum(0);
 	m_focus_star_radius->setValue(0);
+	m_focus_star_radius->setEnabled(false);
 	settings_frame_layout->addWidget(m_focus_star_radius, settings_row, 3);
 	connect(m_focus_star_radius, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_focuser_selection_radius_changed);
 
@@ -307,7 +308,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_initial_step->setMaximum(1000000);
 	m_initial_step->setMinimum(0);
 	m_initial_step->setValue(0);
-	//m_initial_step->setEnabled(false);
+	m_initial_step->setEnabled(false);
 	settings_frame_layout->addWidget(m_initial_step , settings_row, 1);
 
 	label = new QLabel("Final step:");
@@ -316,7 +317,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_final_step->setMaximum(100000);
 	m_final_step->setMinimum(0);
 	m_final_step->setValue(0);
-	//m_final_step->setEnabled(false);
+	m_final_step->setEnabled(false);
 	settings_frame_layout->addWidget(m_final_step, settings_row, 3);
 
 	settings_row++;
@@ -326,7 +327,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_backlash->setMaximum(1000000);
 	m_focus_backlash->setMinimum(0);
 	m_focus_backlash->setValue(0);
-	//m_focus_backlash->setEnabled(false);
+	m_focus_backlash->setEnabled(false);
 	settings_frame_layout->addWidget(m_focus_backlash, settings_row, 1);
 	connect(m_focus_backlash, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_focuser_backlash_changed);
 
@@ -336,7 +337,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_stack->setMaximum(100000);
 	m_focus_stack->setMinimum(0);
 	m_focus_stack->setValue(0);
-	//m_focus_stack->setEnabled(false);
+	m_focus_stack->setEnabled(false);
 	settings_frame_layout->addWidget(m_focus_stack, settings_row, 3);
 
 	settings_row++;
