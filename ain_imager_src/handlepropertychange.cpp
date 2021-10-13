@@ -839,6 +839,8 @@ void update_focus_setup_property(ImagerWindow *w, indigo_property *property) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_final_step);
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_BACKLASH_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_focus_backlash);
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_BACKLASH_OVERSHOOT_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_focus_bl_overshoot);
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_STACK_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_focus_stack);
 		}
@@ -2261,6 +2263,12 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_guider_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		clear_combobox(m_guider_camera_select);
+	}
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		set_spinbox_value(m_focus_bl_overshoot, 0);
+		set_enabled(m_focus_bl_overshoot, false);
 	}
 	if (client_match_device_property(property, selected_guider_agent, FILTER_GUIDER_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {

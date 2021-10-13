@@ -254,6 +254,7 @@ public slots:
 	void on_focus_out(bool clicked);
 	void on_focuser_subframe_changed(int index);
 	void on_focuser_backlash_changed(int value);
+	void on_focuser_bl_overshoot_changed(double value);
 	void on_focuser_failreturn_changed(int state);
 
 	void on_guider_agent_selected(int index);
@@ -522,6 +523,7 @@ private:
 	QSpinBox  *m_initial_step;
 	QSpinBox  *m_final_step;
 	QSpinBox  *m_focus_backlash;
+	QDoubleSpinBox  *m_focus_bl_overshoot;
 	QSpinBox  *m_focus_stack;
 	QSpinBox  *m_focus_position;
 	QSpinBox  *m_focus_steps;
@@ -729,6 +731,7 @@ private:
 	void change_agent_star_selection(const char *agent) const;
 	void change_agent_focus_params_property(const char *agent) const;
 	void change_agent_focuser_backlash(const char *agent) const;
+	void change_agent_focuser_bl_overshoot(const char *agent) const;
 	void change_focuser_steps_property(const char *agent) const;
 	void change_focuser_position_property(const char *agent) const;
 	void change_focuser_focus_in_property(const char *agent) const;

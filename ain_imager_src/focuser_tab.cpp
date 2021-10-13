@@ -339,6 +339,18 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	//m_focus_stack->setEnabled(false);
 	settings_frame_layout->addWidget(m_focus_stack, settings_row, 3);
 
+	settings_row++;
+	label = new QLabel("Backlash overshoot factor:");
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
+	m_focus_bl_overshoot = new QDoubleSpinBox();
+	m_focus_bl_overshoot->setMaximum(1000000);
+	m_focus_bl_overshoot->setMinimum(0);
+	m_focus_bl_overshoot->setValue(1);
+	m_focus_bl_overshoot->setEnabled(false);
+	settings_frame_layout->addWidget(m_focus_bl_overshoot, settings_row, 3);
+	connect(m_focus_bl_overshoot, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_focuser_bl_overshoot_changed);
+
+
 	// Misc tab
 	QFrame *misc_frame = new QFrame;
 	focuser_tabbar->addTab(misc_frame, "Misc");
@@ -434,6 +446,15 @@ void ImagerWindow::on_focuser_backlash_changed(int value) {
 		get_selected_imager_agent(selected_agent);
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_agent_focuser_backlash(selected_agent);
+	});
+}
+
+void ImagerWindow::on_focuser_bl_overshoot_changed(double value) {
+	QtConcurrent::run([=]() {
+		char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_agent_focuser_bl_overshoot(selected_agent);
 	});
 }
 
