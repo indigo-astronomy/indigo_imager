@@ -1948,7 +1948,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		change_combobox_selection(this, property, m_frame_size_select);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_IMAGE_FORMAT_PROPERTY_NAME)) {
-		add_items_to_combobox(this, property, m_frame_format_select);
+		change_combobox_selection(this, property, m_frame_format_select);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_TYPE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_frame_type_select);
