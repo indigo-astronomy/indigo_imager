@@ -66,6 +66,18 @@ void ImagerWindow::change_ccd_mode_property(const char *agent, QComboBox *frame_
 	indigo_change_switch_property(nullptr, agent, CCD_MODE_PROPERTY_NAME, 1, items, values);
 }
 
+void ImagerWindow::change_focuser_reverse_property(const char *agent) const {
+	static char selected_mode[INDIGO_NAME_SIZE];
+	strncpy(selected_mode, m_focuser_reverse_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	static const char * items[] = {
+		selected_mode
+	};
+	static bool values[] = {
+		true
+	};
+	indigo_change_switch_property(nullptr, agent, FOCUSER_REVERSE_MOTION_PROPERTY_NAME, 1, items, values);
+}
+
 void ImagerWindow::change_ccd_image_format_property(const char *agent) const {
 	static char selected_format[INDIGO_NAME_SIZE];
 	strncpy(selected_format, m_frame_format_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);

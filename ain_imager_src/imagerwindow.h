@@ -256,6 +256,7 @@ public slots:
 	void on_focuser_backlash_changed(int value);
 	void on_focuser_bl_overshoot_changed(double value);
 	void on_focuser_failreturn_changed(int state);
+	void on_focuser_reverse_changed(int index);
 
 	void on_guider_agent_selected(int index);
 	void on_guider_camera_selected(int index);
@@ -520,6 +521,7 @@ private:
 	QDoubleSpinBox  *m_star_y;
 	QSpinBox  *m_focus_star_radius;
 	QComboBox *m_focuser_subframe_select;
+	QComboBox *m_focuser_reverse_select;
 	QSpinBox  *m_initial_step;
 	QSpinBox  *m_final_step;
 	QSpinBox  *m_focus_backlash;
@@ -738,6 +740,7 @@ private:
 	void change_focuser_focus_out_property(const char *agent) const;
 	void change_focuser_subframe(const char *agent) const;
 	void change_focus_estimator_property(const char *agent) const;
+	void change_focuser_reverse_property(const char *agent) const;
 
 	void select_focuser_data(focuser_display_data show);
 

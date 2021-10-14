@@ -1694,6 +1694,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, FOCUSER_STEPS_PROPERTY_NAME)) {
 		update_focuser_poition(this, property, m_focus_steps);
 	}
+	if (client_match_device_property(property, selected_agent, FOCUSER_REVERSE_MOTION_PROPERTY_NAME)) {
+		add_items_to_combobox(this, property, m_focuser_reverse_select);
+	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME)) {
 		update_imager_selection_property(this, property);
 		set_enabled(m_focuser_subframe_select, true);
@@ -1938,6 +1941,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_agent, FOCUSER_STEPS_PROPERTY_NAME)) {
 		update_focuser_poition(this, property, m_focus_steps);
 	}
+	if (client_match_device_property(property, selected_agent, FOCUSER_REVERSE_MOTION_PROPERTY_NAME)) {
+		change_combobox_selection(this, property, m_focuser_reverse_select);
+	}
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_frame_size_select);
 	}
@@ -2180,6 +2186,11 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		show_widget(m_hfd_stats_frame, true);
 		show_widget(m_contrast_stats_frame, false);
 		clear_combobox(m_focus_estimator_select);
+	}
+	if (client_match_device_property(property, selected_agent, FOCUSER_REVERSE_MOTION_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		clear_combobox(m_focuser_reverse_select);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_FAILURE_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {

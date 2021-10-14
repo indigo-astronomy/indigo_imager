@@ -393,6 +393,22 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	misc_frame_layout->addWidget(m_focuser_failreturn_cbox, misc_row, 0, 1, 4);
 	connect(m_focuser_failreturn_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_focuser_failreturn_changed);
 
+	misc_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	misc_frame_layout->addItem(spacer, misc_row, 0);
+
+	misc_row++;
+	label = new QLabel("Miscellaneous settings:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 4);
+
+	misc_row++;
+	label = new QLabel("Invert IN and OUT motion:");
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 2);
+
+	m_focuser_reverse_select = new QComboBox();
+	misc_frame_layout->addWidget(m_focuser_reverse_select, misc_row, 2, 1, 2);
+	connect(m_focuser_reverse_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focuser_reverse_changed);
 }
 
 void ImagerWindow::on_focus_estimator_selected(int index) {
@@ -606,5 +622,16 @@ void ImagerWindow::on_focuser_failreturn_changed(int state) {
 		} else {
 			indigo_change_switch_property_1(nullptr, selected_agent, AGENT_IMAGER_FOCUS_FAILURE_PROPERTY_NAME, AGENT_IMAGER_FOCUS_FAILURE_STOP_ITEM_NAME, true);
 		}
+	});
+}
+
+void ImagerWindow::on_focuser_reverse_changed(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_imager_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_focuser_reverse_property(selected_agent);
 	});
 }

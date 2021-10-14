@@ -12,11 +12,12 @@ monitor the progress (use Imager Agent's unattended operation capabilities)
 
 ## Viewer
 - add Histogram
-- add better level stretching
+- **DONE** add better level stretching
 - display MRW, CR2 and other raw files
 
 ## Solver
 - **DONE** show coordinates of each pixel after the image is solved
+- **DONE** click on image to center on coordinates
 - show grid and scale on image
 - index handling from the app
 
