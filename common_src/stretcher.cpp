@@ -399,12 +399,20 @@ void Stretcher::stretch(uint8_t const *input, QImage *outputImage, int sampling)
 
 	switch (m_pix_fmt) {
 		case PIX_FMT_Y8:
+			/*{
+				bool saturated = false;
+				double contrast = indigo_stddev_8((uint8_t*)input, m_image_height * m_image_width, &saturated);
+				indigo_error("frame contrast = %f %s", contrast, saturated ? "(saturated)" : "");
+			}*/
 			stretchOneChannel(reinterpret_cast<uint8_t const*>(input), outputImage, m_params,
 			                m_input_range, m_image_height, m_image_width, sampling);
 		break;
 		case PIX_FMT_Y16:
-			//{double contrast = indigo_stddev_16((uint16_t*)input, m_image_height * m_image_width);
-			//indigo_error("frame contrast = %f", contrast);}
+			/*{
+				bool saturated = false;
+				double contrast = indigo_stddev_16((uint16_t*)input, m_image_height * m_image_width, &saturated);
+				indigo_error("frame contrast = %f %s", contrast, saturated ? "(saturated)" : "");
+			}*/
 			stretchOneChannel(reinterpret_cast<uint16_t const*>(input), outputImage, m_params,
 			                m_input_range, m_image_height, m_image_width, sampling);
 			break;
