@@ -1105,9 +1105,10 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 
 			//w->m_focus_display_data = &w->m_focus_contrast_data;
 			if (w->m_focus_display_data) {
-				double max = *std::max_element(w->m_focus_display_data->constBegin(), w->m_focus_display_data->constEnd()) * 1.01;
-				double min = *std::min_element(w->m_focus_display_data->constBegin(), w->m_focus_display_data->constEnd()) * 0.99;
-				w->m_focus_graph->set_yaxis_range(min, max);
+				double max = *std::max_element(w->m_focus_display_data->constBegin(), w->m_focus_display_data->constEnd());
+				double min = *std::min_element(w->m_focus_display_data->constBegin(), w->m_focus_display_data->constEnd());
+				double margin = (max - min) * 0.05;
+				w->m_focus_graph->set_yaxis_range(min - margin, max + margin);
 				w->m_focus_graph->redraw_data(*(w->m_focus_display_data));
 			}
 			prev_frame = frames_complete;
