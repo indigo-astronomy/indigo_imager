@@ -329,26 +329,27 @@ void ImagerWindow::change_dec_guiding_property(const char *agent) const {
 	indigo_change_switch_property(nullptr, agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME, 1, items, values);
 }
 
-void ImagerWindow::change_agent_focus_params_property(const char *agent) const {
+void ImagerWindow::change_agent_focus_params_property(const char *agent, bool set_backlash) const {
 	static const char *items[] = {
 		AGENT_IMAGER_FOCUS_INITIAL_ITEM_NAME,
 		AGENT_IMAGER_FOCUS_FINAL_ITEM_NAME,
 		AGENT_IMAGER_FOCUS_STACK_ITEM_NAME,
 		AGENT_IMAGER_FOCUS_REPEAT_ITEM_NAME,
-		AGENT_IMAGER_FOCUS_DELAY_ITEM_NAME
+		AGENT_IMAGER_FOCUS_DELAY_ITEM_NAME,
+		AGENT_IMAGER_FOCUS_BACKLASH_ITEM_NAME
 	};
-	static double values[5];
+	static double values[6];
 	values[0] = (double)m_initial_step->value();
 	values[1] = (double)m_final_step->value();
 	values[2] = (double)m_focus_stack->value();
 	values[3] = 0;
 	values[4] = 0;
-	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME, 5, items, values);
-}
-
-void ImagerWindow::change_agent_focuser_backlash(const char *agent) const {
-	double value = (double)m_focus_backlash->value();
-	indigo_change_number_property_1(nullptr, agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME, AGENT_IMAGER_FOCUS_BACKLASH_ITEM_NAME, value);
+	values[5] = (double)m_focus_backlash->value();
+	if (set_backlash) {
+		indigo_change_number_property(nullptr, agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME, 6, items, values);
+	} else {
+		indigo_change_number_property(nullptr, agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME, 5, items, values);
+	}
 }
 
 void ImagerWindow::change_agent_focuser_bl_overshoot(const char *agent) const {

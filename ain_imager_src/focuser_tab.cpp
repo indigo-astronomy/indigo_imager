@@ -54,7 +54,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	focuser_frame_layout->addWidget(label, row, 0, 1, 4);
 
 	row++;
-	label = new QLabel("Absoute Position:");
+	label = new QLabel("Absolute Position:");
 	focuser_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_focus_position = new QSpinBox();
 	m_focus_position->setMaximum(1000000);
@@ -329,6 +329,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_backlash->setValue(0);
 	m_focus_backlash->setEnabled(false);
 	settings_frame_layout->addWidget(m_focus_backlash, settings_row, 1);
+	m_focus_backlash->setKeyboardTracking(false);
 	connect(m_focus_backlash, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_focuser_backlash_changed);
 
 	label = new QLabel("Stacking:");
@@ -462,7 +463,7 @@ void ImagerWindow::on_focuser_backlash_changed(int value) {
 		char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-		change_agent_focuser_backlash(selected_agent);
+		change_agent_focus_params_property(selected_agent, true);
 	});
 }
 
@@ -562,7 +563,7 @@ void ImagerWindow::on_focus_start_stop(bool clicked) {
 			change_agent_star_selection(selected_agent);
 			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			change_agent_batch_property_for_focus(selected_agent);
-			change_agent_focus_params_property(selected_agent);
+			change_agent_focus_params_property(selected_agent, false);
 			change_ccd_frame_property(selected_agent);
 			if(m_focus_mode_select->currentIndex() == 0) {
 				change_agent_start_preview_property(selected_agent);

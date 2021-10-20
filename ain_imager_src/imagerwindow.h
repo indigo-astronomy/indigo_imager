@@ -731,8 +731,7 @@ private:
 	void change_agent_start_preview_property(const char *agent) const;
 	void change_agent_start_focusing_property(const char *agent) const;
 	void change_agent_star_selection(const char *agent) const;
-	void change_agent_focus_params_property(const char *agent) const;
-	void change_agent_focuser_backlash(const char *agent) const;
+	void change_agent_focus_params_property(const char *agent, bool set_backlash) const;
 	void change_agent_focuser_bl_overshoot(const char *agent) const;
 	void change_focuser_steps_property(const char *agent) const;
 	void change_focuser_position_property(const char *agent) const;
