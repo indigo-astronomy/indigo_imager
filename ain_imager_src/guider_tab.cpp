@@ -267,6 +267,8 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	button->setStyleSheet("min-width: 30px");
 	settings_frame_layout->addWidget(button, settings_row, 0, 1, 4);
 	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_guider_clear_selection);
+	QShortcut *shortcut = new QShortcut(QKeySequence("Ctrl+Backspace"), this);
+	connect(shortcut, &QShortcut::activated, this, [this](){this->on_guider_clear_selection(true);});
 
 	settings_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
