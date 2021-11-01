@@ -717,6 +717,53 @@ void update_cooler_power(ImagerWindow *w, indigo_property *property) {
 	}
 }
 
+void update_focuser_temperature(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], FOCUSER_TEMPERATURE_ITEM_NAME)) {
+			indigo_debug("change %s = %f", property->items[i].name, property->items[i].number.value);
+			char temperature[INDIGO_VALUE_SIZE];
+			snprintf(temperature, INDIGO_VALUE_SIZE, "%.2f%", property->items[i].number.value);
+			w->set_text(w->m_focuser_temp, temperature);
+			w->set_text(w->m_focuser_temp, temperature);
+			w->set_widget_state(w->m_focuser_temp, property->state);
+		}
+	}
+}
+
+void update_focuser_mode(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	bool automatic = false;
+	bool manual = false;
+
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], FOCUSER_MODE_AUTOMATIC_ITEM_NAME)) {
+			automatic = property->items[i].sw.value;
+		} else if (client_match_item(&property->items[i], FOCUSER_MODE_MANUAL_ITEM_NAME)) {
+			manual = property->items[i].sw.value;
+		}
+	}
+	w->set_enabled(w->m_temperature_compensation_cbox, true);
+	w->set_widget_state(w->m_temperature_compensation_cbox, property->state);
+	if (property->state == INDIGO_BUSY_STATE) {
+		w->set_checkbox_state(w->m_temperature_compensation_cbox, Qt::PartiallyChecked);
+	} else {
+		if (automatic) {
+			w->set_checkbox_state(w->m_temperature_compensation_cbox, Qt::Checked);
+			char selected_agent[INDIGO_VALUE_SIZE] = {0};
+			w->get_selected_imager_agent(selected_agent);
+			indigo_item *temperature_item = properties.get_item(selected_agent, FOCUSER_TEMPERATURE_PROPERTY_NAME, FOCUSER_TEMPERATURE_ITEM_NAME);
+			char on_temperature[INDIGO_VALUE_SIZE];
+			double temp_on = 0.00;
+			if (temperature_item) temp_on = temperature_item->number.value;
+			snprintf(on_temperature, INDIGO_VALUE_SIZE, "%.2f%", temp_on);
+			w->set_text(w->m_focuser_temp_enabled_on, on_temperature);
+		} else {
+			w->set_checkbox_state(w->m_temperature_compensation_cbox, Qt::Unchecked);
+		}
+	}
+}
+
 void update_agent_imager_dithering_property(ImagerWindow *w, indigo_property *property) {
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_IMAGER_DITHERING_AGGRESSIVITY_ITEM_NAME)) {
@@ -1698,6 +1745,12 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, FOCUSER_REVERSE_MOTION_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_focuser_reverse_select);
 	}
+	if (client_match_device_property(property, selected_agent, FOCUSER_TEMPERATURE_PROPERTY_NAME)) {
+		update_focuser_temperature(this, property);
+	}
+	if (client_match_device_property(property, selected_agent, FOCUSER_MODE_PROPERTY_NAME)) {
+		update_focuser_mode(this, property);
+	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME)) {
 		update_imager_selection_property(this, property);
 		set_enabled(m_focuser_subframe_select, true);
@@ -1945,6 +1998,12 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_agent, FOCUSER_REVERSE_MOTION_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_focuser_reverse_select);
 	}
+	if (client_match_device_property(property, selected_agent, FOCUSER_TEMPERATURE_PROPERTY_NAME)) {
+		update_focuser_temperature(this, property);
+	}
+	if (client_match_device_property(property, selected_agent, FOCUSER_MODE_PROPERTY_NAME)) {
+		update_focuser_mode(this, property);
+	}
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_frame_size_select);
 	}
@@ -2144,6 +2203,21 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		return;
 	}
 	indigo_debug("[REMOVE REMOVE REMOVE REMOVE] %s.%s\n", property->device, property->name);
+
+	if (client_match_device_property(property, selected_agent, FOCUSER_TEMPERATURE_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		indigo_debug("REMOVE %s", property->name);
+		set_text(m_focuser_temp, "");
+	}
+
+	if (client_match_device_property(property, selected_agent, FOCUSER_MODE_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		set_checkbox_state(m_temperature_compensation_cbox, Qt::Unchecked);
+		//set_text(m_temperature_compensation_cbox, "");
+		set_enabled(m_temperature_compensation_cbox, false);
+		set_text(m_focuser_temp_enabled_on, "");
+	}
 
 	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
