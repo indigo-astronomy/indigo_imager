@@ -84,6 +84,7 @@ int main(int argc, char *argv[]) {
 	conf.window_width = 0;
 	conf.window_height = 0;
 	conf.restore_window_size = true;
+	conf.imager_show_reference = false;
 	read_conf();
 
 	if (!conf.use_system_locale) qunsetenv("LC_NUMERIC");

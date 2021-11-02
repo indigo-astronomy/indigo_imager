@@ -70,6 +70,7 @@ public slots:
 
 	void showReference(bool show);
 	void moveReference(double x, double y);
+	void centerReference();
 
 	void showWCS(bool show);
 

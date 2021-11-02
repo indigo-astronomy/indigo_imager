@@ -160,6 +160,11 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu->addSeparator();
 
+	act = menu->addAction(tr("Show image &center"));
+	act->setCheckable(true);
+	act->setChecked(conf.imager_show_reference);
+	connect(act, &QAction::toggled, this, &ImagerWindow::on_imager_show_reference);
+
 	act = menu->addAction(tr("Enable image &antialiasing"));
 	act->setCheckable(true);
 	act->setChecked(conf.antialiasing_enabled);
@@ -422,6 +427,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	select_focuser_data(conf.focuser_display);
 	select_guider_data(conf.guider_display);
 	m_imager_viewer->enableAntialiasing(conf.antialiasing_enabled);
+	m_imager_viewer->showReference(conf.imager_show_reference);
 	m_guider_viewer->enableAntialiasing(conf.guider_antialiasing_enabled);
 
 	//  Start up the client
@@ -483,6 +489,7 @@ bool ImagerWindow::show_preview_in_imager_viewer(QString &key) {
 	preview_image *image = preview_cache.get(key);
 	if (image) {
 		m_imager_viewer->setImage(*image);
+		m_imager_viewer->centerReference();
 		m_image_key = key;
 		indigo_debug("IMAGER PREVIEW: %s\n", key.toUtf8().constData());
 		return true;
@@ -524,22 +531,31 @@ void ImagerWindow::on_tab_changed(int index) {
 			m_imager_viewer->setVisible(true);
 			m_guider_viewer->setVisible(false);
 		}
+
 		if (index == 3) m_visible_viewer->showWCS(true);
 		else m_visible_viewer->showWCS(false);
+
+		if (index == 1) {
+			m_imager_viewer->showSelection(true);
+			m_visible_viewer->showReference(false);
+		} else {
+			m_imager_viewer->showSelection(false);
+			m_visible_viewer->showReference(conf.imager_show_reference);
+		}
 	} else if (index == 2) {
 		if (m_visible_viewer != m_guider_viewer) {
 			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_guider_viewer);
 			m_visible_viewer = m_guider_viewer;
 			m_guider_viewer->setVisible(true);
 			m_imager_viewer->setVisible(false);
+			m_imager_viewer->showReference(false);
 		}
 		m_visible_viewer->showWCS(false);
 	} else if (index == 4) {
 		QString solver_source = m_solver_source_select1->currentText();
 		show_selected_preview_in_solver_tab(solver_source);
+		m_imager_viewer->showReference(conf.imager_show_reference);
 	}
-	if (index == 1) m_imager_viewer->showSelection(true);
-	else m_imager_viewer->showSelection(false);
 }
 
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){
@@ -570,7 +586,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 			const stretch_config_t sconfig = {conf.guider_stretch_level, conf.guider_color_balance};
 			preview_cache.create(property, item, sconfig);
 			QString key = preview_cache.create_key(property, item);
-			preview_image *image = preview_cache.get(key);
+			//preview_image *image = preview_cache.get(key);
 			if (show_preview_in_guider_viewer(key)) {
 				indigo_debug("m_guider_viewer = %p", m_guider_viewer);
 				//m_guider_viewer->setText(QString("Guider: image") + QString(item->blob.format));
@@ -843,6 +859,14 @@ void ImagerWindow::on_guider_cb_changed(int balance) {
 void ImagerWindow::on_antialias_view(bool status) {
 	conf.antialiasing_enabled = status;
 	m_imager_viewer->enableAntialiasing(status);
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_imager_show_reference(bool status) {
+	conf.imager_show_reference = status;
+	on_tab_changed(m_tools_tabbar->currentIndex());
+	//m_imager_viewer->showReference(status);
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
