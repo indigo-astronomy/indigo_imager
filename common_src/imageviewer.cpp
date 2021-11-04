@@ -379,6 +379,29 @@ void ImageViewer::showReference(bool show) {
 	}
 }
 
+void ImageViewer::centerReference() {
+	double x_len = m_pixmap->pixmap().width();
+	double y_len = m_pixmap->pixmap().height();
+	double x = x_len / 2;
+	double y = y_len / 2;
+	if (m_pixmap->pixmap().isNull()) {
+		return;
+	}
+	indigo_debug("X = %.2f, Y = %.2f, X_len = %.2f, y_len = %.2f", x, y, x_len, y_len);
+
+	m_ref_p.setX(x);
+	m_ref_p.setY(y);
+	if (m_ref_p.isNull()) {
+		m_ref_x->setVisible(false);
+		m_ref_y->setVisible(false);
+	} else if (m_ref_visible){
+		m_ref_x->setVisible(true);
+		m_ref_y->setVisible(true);
+	}
+	m_ref_x->setLine(x, 0, x, y_len);
+	m_ref_y->setLine(0, y, x_len, y);
+}
+
 void ImageViewer::moveReference(double x, double y) {
 	double cor_x = x;
 	double cor_y = y;

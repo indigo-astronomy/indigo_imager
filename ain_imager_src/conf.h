@@ -96,6 +96,7 @@ typedef struct {
 	int window_width;
 	int window_height;
 	bool restore_window_size;
+	bool imager_show_reference;
 	char unused[100];
 } conf_t;
 

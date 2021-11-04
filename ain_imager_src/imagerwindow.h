@@ -224,6 +224,7 @@ public slots:
 	void on_focus_show_hfd();
 
 	void on_antialias_view(bool status);
+	void on_imager_show_reference(bool status);
 	void on_antialias_guide_view(bool status);
 	void on_create_preview(indigo_property *property, indigo_item *item);
 	void on_obsolete_preview(indigo_property *property, indigo_item *item);
