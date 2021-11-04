@@ -1749,14 +1749,17 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, FOCUSER_TEMPERATURE_PROPERTY_NAME)) {
 		update_focuser_temperature(this, property);
 		m_temperature_compensation_frame->setHidden(false);
+		m_temperature_compensation_steps_frame->setHidden(false);
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_MODE_PROPERTY_NAME)) {
 		update_focuser_mode(this, property);
 		m_temperature_compensation_frame->setHidden(false);
+		m_temperature_compensation_steps_frame->setHidden(false);
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_COMPENSATION_PROPERTY_NAME)) {
 		update_focuser_temperature_compensation_steps(this, property);
 		m_temperature_compensation_frame->setHidden(false);
+		m_temperature_compensation_steps_frame->setHidden(false);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME)) {
 		update_imager_selection_property(this, property);
@@ -2008,14 +2011,17 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_agent, FOCUSER_TEMPERATURE_PROPERTY_NAME)) {
 		update_focuser_temperature(this, property);
 		m_temperature_compensation_frame->setHidden(false);
+		m_temperature_compensation_steps_frame->setHidden(false);
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_MODE_PROPERTY_NAME)) {
 		update_focuser_mode(this, property);
 		m_temperature_compensation_frame->setHidden(false);
+		m_temperature_compensation_steps_frame->setHidden(false);
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_COMPENSATION_PROPERTY_NAME)) {
 		update_focuser_temperature_compensation_steps(this, property);
 		m_temperature_compensation_frame->setHidden(false);
+		m_temperature_compensation_steps_frame->setHidden(false);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_frame_size_select);
@@ -2222,12 +2228,14 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("REMOVE %s", property->name);
 		set_text(m_focuser_temp, "");
 		m_temperature_compensation_frame->setHidden(true);
+		m_temperature_compensation_steps_frame->setHidden(true);
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_COMPENSATION_PROPERTY_NAME) ||
 		client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("REMOVE %s", property->name);
 		set_spinbox_value(m_focuser_temperature_compensation_steps, 0);
 		m_temperature_compensation_frame->setHidden(true);
+		m_temperature_compensation_steps_frame->setHidden(true);
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_MODE_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
@@ -2236,6 +2244,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		//set_text(m_temperature_compensation_cbox, "");
 		set_enabled(m_temperature_compensation_cbox, false);
 		m_temperature_compensation_frame->setHidden(true);
+		m_temperature_compensation_steps_frame->setHidden(true);
 	}
 	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {

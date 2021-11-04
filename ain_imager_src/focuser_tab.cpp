@@ -130,7 +130,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_temperature_compensation_frame->setLayout(temperature_compensation_frame_layout);
 	m_temperature_compensation_frame->setFrameShape(QFrame::StyledPanel);
 	m_temperature_compensation_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
-	m_temperature_compensation_frame->setContentsMargins(0, 0, 8, 0);
+	m_temperature_compensation_frame->setContentsMargins(0, 0, 15, 0);
 	focuser_frame_layout->addWidget(m_temperature_compensation_frame, row, 0, 1, 4);
 
 	int temp_comp_row = 0;
@@ -142,7 +142,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focuser_temp->setEnabled(false);
 	temperature_compensation_frame_layout->addWidget(m_focuser_temp, temp_comp_row, 1, 1, 1, Qt::AlignRight);
 
-	m_temperature_compensation_cbox = new QCheckBox("Temperature Compensation");
+	m_temperature_compensation_cbox = new QCheckBox("Temp. Compensation");
 	m_temperature_compensation_cbox->setEnabled(true);
 	set_ok(m_temperature_compensation_cbox);
 	temperature_compensation_frame_layout->addWidget(m_temperature_compensation_cbox, temp_comp_row, 2, 1, 1, Qt::AlignRight);
@@ -406,21 +406,16 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	//----------------------
 	misc_row++;
 	m_temperature_compensation_steps_frame = new QFrame();
-//  m_temperature_compensation_steps_frame->setHidden(true);
+	m_temperature_compensation_steps_frame->setHidden(true);
 
 	QGridLayout *temperature_compensation_steps_frame_layout = new QGridLayout();
 	temperature_compensation_steps_frame_layout->setAlignment(Qt::AlignTop);
-//	temperature_compensation_steps_frame_layout->setColumnStretch(0, 1);
-//	temperature_compensation_steps_frame_layout->setColumnStretch(1, 1);
-//	temperature_compensation_steps_frame_layout->setColumnStretch(2, 1);
-//	temperature_compensation_steps_frame_layout->setColumnStretch(3, 1);
-//	temperature_compensation_steps_frame_layout->setColumnStretch(4, 1);
 	temperature_compensation_steps_frame_layout->setMargin(0);
 
 	m_temperature_compensation_steps_frame->setLayout(temperature_compensation_steps_frame_layout);
 	m_temperature_compensation_steps_frame->setFrameShape(QFrame::StyledPanel);
 	m_temperature_compensation_steps_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
-	m_temperature_compensation_steps_frame->setContentsMargins(0, 0, 30, 0);
+	m_temperature_compensation_steps_frame->setContentsMargins(0, 0, 45, 0);
 	misc_frame_layout->addWidget(m_temperature_compensation_steps_frame, misc_row, 0, 1, 4);
 
 	int temp_comp_steps_row = 0;
@@ -439,6 +434,10 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	temperature_compensation_steps_frame_layout->addWidget(m_focuser_temperature_compensation_steps, temp_comp_steps_row, 3, 1, 1);
 	m_focuser_temperature_compensation_steps->setKeyboardTracking(false);
 	connect(m_focuser_temperature_compensation_steps, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_temperature_compensation_steps);
+
+	misc_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	misc_frame_layout->addItem(spacer, misc_row, 0);
 
 	misc_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
