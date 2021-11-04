@@ -105,8 +105,8 @@ public:
 	friend void update_cooler_onoff(ImagerWindow *w, indigo_property *property);
 	friend void update_cooler_power(ImagerWindow *w, indigo_property *property);
 	friend void update_focuser_temperature(ImagerWindow *w, indigo_property *property);
+	friend void update_focuser_temperature_compensation_steps(ImagerWindow *w, indigo_property *property);
 	friend void update_focuser_mode(ImagerWindow *w, indigo_property *property);
-	friend void get_focuser_temperature_compensation_enabled_on(ImagerWindow *w, indigo_property *property);
 	friend void update_imager_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_gain_offset_property(ImagerWindow *w, indigo_property *property);
@@ -261,6 +261,7 @@ public slots:
 	void on_focuser_failreturn_changed(int state);
 	void on_focuser_reverse_changed(int index);
 	void on_temperature_compensation(int state);
+	void on_temperature_compensation_steps(int value);
 	void on_guider_agent_selected(int index);
 	void on_guider_camera_selected(int index);
 	void on_guider_selected(int index);
@@ -553,8 +554,8 @@ private:
 	QLineEdit *m_focuser_temp;
 	QCheckBox *m_temperature_compensation_cbox;
 	QFrame    *m_temperature_compensation_frame;
+	QFrame	  *m_temperature_compensation_steps_frame;
 	QSpinBox  *m_focuser_temperature_compensation_steps;
-	QLineEdit *m_focuser_temp_enabled_on;
 
 	// Guider tab
 	QComboBox *m_agent_guider_select;
@@ -742,6 +743,7 @@ private:
 	void change_agent_focus_params_property(const char *agent, bool set_backlash) const;
 	void change_agent_focuser_bl_overshoot(const char *agent) const;
 	void change_focuser_steps_property(const char *agent) const;
+	void change_agent_temperature_compensation_steps(const char *agent) const;
 	void change_focuser_position_property(const char *agent) const;
 	void change_focuser_focus_in_property(const char *agent) const;
 	void change_focuser_focus_out_property(const char *agent) const;
