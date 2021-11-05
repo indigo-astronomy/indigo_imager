@@ -49,11 +49,6 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	connect(m_focuser_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focuser_selected);
 
 	row++;
-	label = new QLabel("Focuser control:");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	focuser_frame_layout->addWidget(label, row, 0, 1, 4);
-
-	row++;
 	label = new QLabel("Absolute Position:");
 	focuser_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_focus_position = new QSpinBox();
@@ -123,8 +118,35 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focusing_progress->setFormat("Focusing: Idle");
 
 	row++;
-	spacer = new QSpacerItem(1, 5, QSizePolicy::Expanding, QSizePolicy::Maximum);
-	focuser_frame_layout->addItem(spacer, row, 0);
+	m_temperature_compensation_frame = new QFrame();
+	m_temperature_compensation_frame->setHidden(true);
+	QGridLayout *temperature_compensation_frame_layout = new QGridLayout();
+	temperature_compensation_frame_layout->setAlignment(Qt::AlignTop);
+	temperature_compensation_frame_layout->setColumnStretch(0, 1);
+	temperature_compensation_frame_layout->setColumnStretch(1, 0);
+	temperature_compensation_frame_layout->setColumnStretch(2, 0);
+	temperature_compensation_frame_layout->setMargin(0);
+
+	m_temperature_compensation_frame->setLayout(temperature_compensation_frame_layout);
+	m_temperature_compensation_frame->setFrameShape(QFrame::StyledPanel);
+	//m_temperature_compensation_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
+	m_temperature_compensation_frame->setContentsMargins(0, 0, 0, 0);
+	focuser_frame_layout->addWidget(m_temperature_compensation_frame, row, 0, 1, 4);
+
+	int temp_comp_row = 0;
+	label = new QLabel("Current Temp. °C:");
+	temperature_compensation_frame_layout->addWidget(label, temp_comp_row, 0, 1, 1, Qt::AlignRight);
+
+	m_focuser_temp = new QLineEdit();
+	m_focuser_temp->setText("");
+	m_focuser_temp->setEnabled(false);
+	temperature_compensation_frame_layout->addWidget(m_focuser_temp, temp_comp_row, 1, 1, 1, Qt::AlignRight);
+
+	m_temperature_compensation_cbox = new QCheckBox("Temp. Compensation");
+	m_temperature_compensation_cbox->setEnabled(true);
+	set_ok(m_temperature_compensation_cbox);
+	temperature_compensation_frame_layout->addWidget(m_temperature_compensation_cbox, temp_comp_row, 2, 1, 1, Qt::AlignRight);
+	connect(m_temperature_compensation_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_temperature_compensation);
 
 	row++;
 	// Tools tabbar
@@ -352,7 +374,6 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	settings_frame_layout->addWidget(m_focus_bl_overshoot, settings_row, 3);
 	connect(m_focus_bl_overshoot, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_focuser_bl_overshoot_changed);
 
-
 	// Misc tab
 	QFrame *misc_frame = new QFrame;
 	focuser_tabbar->addTab(misc_frame, "Misc");
@@ -382,6 +403,44 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	misc_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	misc_frame_layout->addItem(spacer, misc_row, 0);
+
+	misc_row++;
+	m_temperature_compensation_steps_frame = new QFrame();
+	m_temperature_compensation_steps_frame->setHidden(true);
+
+	QGridLayout *temperature_compensation_steps_frame_layout = new QGridLayout();
+	temperature_compensation_steps_frame_layout->setAlignment(Qt::AlignTop);
+	temperature_compensation_steps_frame_layout->setColumnStretch(0, 1);
+	temperature_compensation_steps_frame_layout->setColumnStretch(1, 1);
+	temperature_compensation_steps_frame_layout->setColumnStretch(2, 1);
+	temperature_compensation_steps_frame_layout->setColumnStretch(3, 0);
+	m_temperature_compensation_steps_frame->setLayout(temperature_compensation_steps_frame_layout);
+	m_temperature_compensation_steps_frame->setFrameShape(QFrame::StyledPanel);
+	m_temperature_compensation_steps_frame->setContentsMargins(0, 0, 0, 0);
+	temperature_compensation_steps_frame_layout->setMargin(0);
+
+	misc_frame_layout->addWidget(m_temperature_compensation_steps_frame, misc_row, 0, 1, 4);
+
+	int temp_comp_steps_row = 0;
+	label = new QLabel("Temperature compensantion:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	temperature_compensation_steps_frame_layout->addWidget(label, temp_comp_steps_row, 0, 1, 4);
+	temp_comp_steps_row++;
+	label = new QLabel("Steps per degree:");
+	temperature_compensation_steps_frame_layout->addWidget(label, temp_comp_steps_row, 0, 1, 3);
+	m_focuser_temperature_compensation_steps = new QSpinBox();
+	m_focuser_temperature_compensation_steps->setMaximum(10000);
+	m_focuser_temperature_compensation_steps->setMinimum(-10000);
+	m_focuser_temperature_compensation_steps->setValue(0);
+	m_focuser_temperature_compensation_steps->setEnabled(false);
+	m_focuser_temperature_compensation_steps->setKeyboardTracking(false);
+	temperature_compensation_steps_frame_layout->addWidget(m_focuser_temperature_compensation_steps, temp_comp_steps_row, 3);
+
+	connect(m_focuser_temperature_compensation_steps, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_temperature_compensation_steps);
+
+	temp_comp_steps_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	temperature_compensation_steps_frame_layout->addItem(spacer, misc_row, 0);
 
 	misc_row++;
 	label = new QLabel("On focus failed (Peak/HFD):");
@@ -476,6 +535,29 @@ void ImagerWindow::on_focuser_bl_overshoot_changed(double value) {
 	});
 }
 
+void ImagerWindow::on_temperature_compensation(int state) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		bool checked = m_temperature_compensation_cbox->checkState();
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		if (checked) {
+			indigo_change_switch_property_1(nullptr, selected_agent, FOCUSER_MODE_PROPERTY_NAME, FOCUSER_MODE_AUTOMATIC_ITEM_NAME, true);
+		} else {
+			indigo_change_switch_property_1(nullptr, selected_agent, FOCUSER_MODE_PROPERTY_NAME, FOCUSER_MODE_MANUAL_ITEM_NAME, true);
+		}
+	});
+}
+
+void ImagerWindow::on_temperature_compensation_steps(int value) {
+	QtConcurrent::run([=]() {
+		char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_focuser_temperature_compensation_steps(selected_agent, m_focuser_temperature_compensation_steps);
+	});
+}
+
 void ImagerWindow::on_selection_changed(double value) {
 	int x = m_star_x->value();
 	int y = m_star_y->value();
@@ -517,7 +599,6 @@ void ImagerWindow::on_image_right_click(double x, double y) {
 	});
 }
 
-
 void ImagerWindow::on_focuser_position_changed(int value) {
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -526,7 +607,6 @@ void ImagerWindow::on_focuser_position_changed(int value) {
 		change_focuser_position_property(selected_agent);
 	});
 }
-
 
 void ImagerWindow::on_focus_preview_start_stop(bool clicked) {
 	QtConcurrent::run([=]() {
@@ -546,7 +626,6 @@ void ImagerWindow::on_focus_preview_start_stop(bool clicked) {
 		}
 	});
 }
-
 
 void ImagerWindow::on_focus_start_stop(bool clicked) {
 	QtConcurrent::run([=]() {
@@ -595,7 +674,6 @@ void ImagerWindow::on_focus_out(bool clicked) {
 		change_focuser_steps_property(selected_agent);
 	});
 }
-
 
 void ImagerWindow::on_focuser_subframe_changed(int index) {
 	conf.focuser_subframe = index;

@@ -104,6 +104,9 @@ public:
 	friend void reset_filter_names(ImagerWindow *w, indigo_property *property);
 	friend void update_cooler_onoff(ImagerWindow *w, indigo_property *property);
 	friend void update_cooler_power(ImagerWindow *w, indigo_property *property);
+	friend void update_focuser_temperature(ImagerWindow *w, indigo_property *property);
+	friend void update_focuser_temperature_compensation_steps(ImagerWindow *w, indigo_property *property);
+	friend void update_focuser_mode(ImagerWindow *w, indigo_property *property);
 	friend void update_imager_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_gain_offset_property(ImagerWindow *w, indigo_property *property);
@@ -258,7 +261,8 @@ public slots:
 	void on_focuser_bl_overshoot_changed(double value);
 	void on_focuser_failreturn_changed(int state);
 	void on_focuser_reverse_changed(int index);
-
+	void on_temperature_compensation(int state);
+	void on_temperature_compensation_steps(int value);
 	void on_guider_agent_selected(int index);
 	void on_guider_camera_selected(int index);
 	void on_guider_selected(int index);
@@ -548,6 +552,11 @@ private:
 	QVector<double> m_focus_hfd_data;
 	QVector<double> m_focus_contrast_data;
 	QVector<double> *m_focus_display_data;
+	QLineEdit *m_focuser_temp;
+	QCheckBox *m_temperature_compensation_cbox;
+	QFrame    *m_temperature_compensation_frame;
+	QFrame    *m_temperature_compensation_steps_frame;
+	QSpinBox  *m_focuser_temperature_compensation_steps;
 
 	// Guider tab
 	QComboBox *m_agent_guider_select;
@@ -728,6 +737,7 @@ private:
 	void change_agent_imager_dithering_property(const char *agent) const;
 	void change_agent_gain_property(const char *agent, QSpinBox *ccd_gain) const;
 	void change_agent_offset_property(const char *agent, QSpinBox *ccd_offset) const;
+	void change_focuser_temperature_compensation_steps(const char *agent, QSpinBox *temp_comp_step) const;
 
 	void change_agent_start_preview_property(const char *agent) const;
 	void change_agent_start_focusing_property(const char *agent) const;
