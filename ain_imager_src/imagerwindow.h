@@ -554,8 +554,8 @@ private:
 	QVector<double> *m_focus_display_data;
 	QLineEdit *m_focuser_temp;
 	QCheckBox *m_temperature_compensation_cbox;
-	QFrame	  *m_temperature_compensation_frame;
-	QFrame	  *m_temperature_compensation_steps_frame;
+	QFrame    *m_temperature_compensation_frame;
+	QFrame    *m_temperature_compensation_steps_frame;
 	QSpinBox  *m_focuser_temperature_compensation_steps;
 
 	// Guider tab
