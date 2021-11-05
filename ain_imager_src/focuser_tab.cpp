@@ -98,17 +98,19 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	set_ok(button);
 	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
 
-	button = new QPushButton("|");
-	button->setStyleSheet("min-width: 15px");
-	button->setIcon(QIcon(":resource/focus_in.png"));
-	toolbox->addWidget(button);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_focus_in);
+	m_focusing_in_button = new QPushButton("|");
+	m_focusing_in_button->setStyleSheet("min-width: 15px");
+	m_focusing_in_button->setIcon(QIcon(":resource/focus_in.png"));
+	m_focusing_in_button->setToolTip("Focus IN");
+	toolbox->addWidget(m_focusing_in_button);
+	connect(m_focusing_in_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_in);
 
-	button = new QPushButton("|");
-	button->setStyleSheet("min-width: 15px");
-	button->setIcon(QIcon(":resource/focus_out.png"));
-	toolbox->addWidget(button);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_focus_out);
+	m_focusing_out_button = new QPushButton("|");
+	m_focusing_out_button->setStyleSheet("min-width: 15px");
+	m_focusing_out_button->setIcon(QIcon(":resource/focus_out.png"));
+	m_focusing_out_button->setToolTip("Focus OUT");
+	toolbox->addWidget(m_focusing_out_button);
+	connect(m_focusing_out_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_out);
 
 	row++;
 	m_focusing_progress = new QProgressBar();

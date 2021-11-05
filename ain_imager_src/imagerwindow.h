@@ -542,6 +542,8 @@ private:
 	QCheckBox *m_focuser_failreturn_cbox;
 	QDoubleSpinBox *m_focuser_exposure_time;
 	QPushButton *m_focusing_button;
+	QPushButton *m_focusing_in_button;
+	QPushButton *m_focusing_out_button;
 	QPushButton *m_focusing_preview_button;
 	QProgressBar *m_focusing_progress;
 	FocusGraph *m_focus_graph;
