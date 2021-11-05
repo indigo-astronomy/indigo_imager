@@ -130,7 +130,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_temperature_compensation_frame->setLayout(temperature_compensation_frame_layout);
 	m_temperature_compensation_frame->setFrameShape(QFrame::StyledPanel);
 	//m_temperature_compensation_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
-	m_temperature_compensation_frame->setContentsMargins(0, 0, 15, 0);
+	m_temperature_compensation_frame->setContentsMargins(0, 0, 0, 0);
 	focuser_frame_layout->addWidget(m_temperature_compensation_frame, row, 0, 1, 4);
 
 	int temp_comp_row = 0;
