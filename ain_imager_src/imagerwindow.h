@@ -261,8 +261,8 @@ public slots:
 	void on_focuser_bl_overshoot_changed(double value);
 	void on_focuser_failreturn_changed(int state);
 	void on_focuser_reverse_changed(int index);
-	void on_temperature_compensation(int state);
-	void on_temperature_compensation_steps(int value);
+	void on_focuser_temp_compensation_changed(int state);
+	void on_focuser_temp_compensation_steps_changed(int value);
 	void on_guider_agent_selected(int index);
 	void on_guider_camera_selected(int index);
 	void on_guider_selected(int index);
@@ -555,7 +555,6 @@ private:
 	QLineEdit *m_focuser_temp;
 	QCheckBox *m_temperature_compensation_cbox;
 	QFrame    *m_temperature_compensation_frame;
-	QFrame    *m_temperature_compensation_steps_frame;
 	QSpinBox  *m_focuser_temperature_compensation_steps;
 
 	// Guider tab
@@ -737,7 +736,6 @@ private:
 	void change_agent_imager_dithering_property(const char *agent) const;
 	void change_agent_gain_property(const char *agent, QSpinBox *ccd_gain) const;
 	void change_agent_offset_property(const char *agent, QSpinBox *ccd_offset) const;
-	void change_focuser_temperature_compensation_steps(const char *agent, QSpinBox *temp_comp_step) const;
 
 	void change_agent_start_preview_property(const char *agent) const;
 	void change_agent_start_focusing_property(const char *agent) const;
@@ -751,6 +749,7 @@ private:
 	void change_focuser_subframe(const char *agent) const;
 	void change_focus_estimator_property(const char *agent) const;
 	void change_focuser_reverse_property(const char *agent) const;
+	void change_focuser_temperature_compensation_steps(const char *agent) const;
 
 	void select_focuser_data(focuser_display_data show);
 
