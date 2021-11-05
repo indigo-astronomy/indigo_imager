@@ -725,7 +725,6 @@ void update_focuser_temperature(ImagerWindow *w, indigo_property *property) {
 			char temperature[INDIGO_VALUE_SIZE];
 			snprintf(temperature, INDIGO_VALUE_SIZE, "%.2f%", property->items[i].number.value);
 			w->set_text(w->m_focuser_temp, temperature);
-			w->set_text(w->m_focuser_temp, temperature);
 			w->set_widget_state(w->m_focuser_temp, property->state);
 		}
 	}

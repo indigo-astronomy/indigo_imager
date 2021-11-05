@@ -132,18 +132,14 @@ void ImagerWindow::change_agent_imager_dithering_property(const char *agent) con
 	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_DITHERING_PROPERTY_NAME, 2, items, values);
 }
 
+void ImagerWindow::change_focuser_temperature_compensation_steps(const char *agent, QSpinBox *temp_comp_step) const {
+	double value = (double)temp_comp_step->value();
+	indigo_change_number_property_1(nullptr, agent, FOCUSER_COMPENSATION_PROPERTY_NAME, FOCUSER_COMPENSATION_ITEM_NAME, value);
+}
+
 void ImagerWindow::change_agent_gain_property(const char *agent, QSpinBox *ccd_gain) const {
 	double value = (double)ccd_gain->value();
 	indigo_change_number_property_1(nullptr, agent, CCD_GAIN_PROPERTY_NAME, CCD_GAIN_ITEM_NAME, value);
-}
-
-void ImagerWindow::change_agent_temperature_compensation_steps(const char *agent) const {
-	static const char *items[] = {
-		FOCUSER_COMPENSATION_ITEM_NAME
-		};
-	static double values[1];
-	values[0] = (double)m_focuser_temperature_compensation_steps->value();
-	indigo_change_number_property(nullptr, agent, FOCUSER_COMPENSATION_PROPERTY_NAME, 1, items, values);
 }
 
 void ImagerWindow::change_agent_offset_property(const char *agent, QSpinBox *ccd_offset) const {

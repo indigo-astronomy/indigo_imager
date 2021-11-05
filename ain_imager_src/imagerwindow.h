@@ -737,6 +737,7 @@ private:
 	void change_agent_imager_dithering_property(const char *agent) const;
 	void change_agent_gain_property(const char *agent, QSpinBox *ccd_gain) const;
 	void change_agent_offset_property(const char *agent, QSpinBox *ccd_offset) const;
+	void change_focuser_temperature_compensation_steps(const char *agent, QSpinBox *temp_comp_step) const;
 
 	void change_agent_start_preview_property(const char *agent) const;
 	void change_agent_start_focusing_property(const char *agent) const;
@@ -744,7 +745,6 @@ private:
 	void change_agent_focus_params_property(const char *agent, bool set_backlash) const;
 	void change_agent_focuser_bl_overshoot(const char *agent) const;
 	void change_focuser_steps_property(const char *agent) const;
-	void change_agent_temperature_compensation_steps(const char *agent) const;
 	void change_focuser_position_property(const char *agent) const;
 	void change_focuser_focus_in_property(const char *agent) const;
 	void change_focuser_focus_out_property(const char *agent) const;

@@ -425,7 +425,6 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	label = new QLabel("Temperature compensantion:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	temperature_compensation_steps_frame_layout->addWidget(label, temp_comp_steps_row, 0, 1, 4);
-
 	temp_comp_steps_row++;
 	label = new QLabel("Steps per degree:");
 	temperature_compensation_steps_frame_layout->addWidget(label, temp_comp_steps_row, 0, 1, 3);
@@ -555,7 +554,7 @@ void ImagerWindow::on_temperature_compensation_steps(int value) {
 		char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-		change_agent_temperature_compensation_steps(selected_agent);
+		change_focuser_temperature_compensation_steps(selected_agent, m_focuser_temperature_compensation_steps);
 	});
 }
 
