@@ -140,8 +140,9 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	temperature_compensation_frame_layout->addWidget(label, temp_comp_row, 0, 1, 1, Qt::AlignRight);
 
 	m_focuser_temperature = new QLineEdit();
+	m_focuser_temperature->setStyleSheet("width: 30px");
 	m_focuser_temperature->setText("");
-	m_focuser_temperature->setEnabled(false);
+	m_focuser_temperature->setReadOnly(true);
 	m_focuser_temperature->setToolTip("Reference temperature used by the focuser");
 	temperature_compensation_frame_layout->addWidget(m_focuser_temperature, temp_comp_row, 1, 1, 1, Qt::AlignRight);
 

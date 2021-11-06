@@ -711,7 +711,6 @@ void update_cooler_power(ImagerWindow *w, indigo_property *property) {
 			char power[INDIGO_VALUE_SIZE];
 			snprintf(power, INDIGO_VALUE_SIZE, "%.1f%%", property->items[i].number.value);
 			w->set_text(w->m_cooler_pwr, power);
-			w->set_text(w->m_cooler_pwr, power);
 			w->set_widget_state(w->m_cooler_pwr, property->state);
 		}
 	}
@@ -723,7 +722,7 @@ void update_focuser_temperature(ImagerWindow *w, indigo_property *property) {
 		if (client_match_item(&property->items[i], FOCUSER_TEMPERATURE_ITEM_NAME)) {
 			indigo_debug("change %s = %f", property->items[i].name, property->items[i].number.value);
 			char temperature[INDIGO_VALUE_SIZE];
-			snprintf(temperature, INDIGO_VALUE_SIZE, "%.2f%", property->items[i].number.value);
+			snprintf(temperature, INDIGO_VALUE_SIZE, "%.1f%", property->items[i].number.value);
 			w->set_text(w->m_focuser_temperature, temperature);
 			w->set_widget_state(w->m_focuser_temperature, property->state);
 		}

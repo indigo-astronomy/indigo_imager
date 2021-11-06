@@ -190,7 +190,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	cooler_box->addWidget(m_current_temp);
 	m_current_temp->setStyleSheet("width: 30px");
 	m_current_temp->setText("");
-	m_current_temp->setEnabled(false);
+	m_current_temp->setReadOnly(true);
 
 	label = new QLabel("P:");
 	cooler_box->addWidget(label);
@@ -200,7 +200,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	cooler_box->addWidget(m_cooler_pwr);
 	m_cooler_pwr->setStyleSheet("width: 30px");
 	m_cooler_pwr->setText("");
-	m_cooler_pwr->setEnabled(false);
+	m_cooler_pwr->setReadOnly(true);
 
 	m_cooler_onoff = new QCheckBox();
 	m_cooler_onoff->setToolTip("Turn CCD Cooler ON/OFF");
