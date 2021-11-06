@@ -554,7 +554,7 @@ private:
 	QVector<double> m_focus_hfd_data;
 	QVector<double> m_focus_contrast_data;
 	QVector<double> *m_focus_display_data;
-	QLineEdit *m_focuser_temp;
+	QLineEdit *m_focuser_temperature;
 	QCheckBox *m_temperature_compensation_cbox;
 	QFrame    *m_temperature_compensation_frame;
 	QSpinBox  *m_focuser_temperature_compensation_steps;

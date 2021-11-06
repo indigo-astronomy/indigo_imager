@@ -135,16 +135,19 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	focuser_frame_layout->addWidget(m_temperature_compensation_frame, row, 0, 1, 4);
 
 	int temp_comp_row = 0;
-	label = new QLabel("Focuser Temp. (°C):");
+	label = new QLabel("Reference T (°C):");
+	label->setToolTip("Reference temperature used by the focuser");
 	temperature_compensation_frame_layout->addWidget(label, temp_comp_row, 0, 1, 1, Qt::AlignRight);
 
-	m_focuser_temp = new QLineEdit();
-	m_focuser_temp->setText("");
-	m_focuser_temp->setEnabled(false);
-	temperature_compensation_frame_layout->addWidget(m_focuser_temp, temp_comp_row, 1, 1, 1, Qt::AlignRight);
+	m_focuser_temperature = new QLineEdit();
+	m_focuser_temperature->setText("");
+	m_focuser_temperature->setEnabled(false);
+	m_focuser_temperature->setToolTip("Reference temperature used by the focuser");
+	temperature_compensation_frame_layout->addWidget(m_focuser_temperature, temp_comp_row, 1, 1, 1, Qt::AlignRight);
 
 	m_temperature_compensation_cbox = new QCheckBox("Auto compensation");
-	m_temperature_compensation_cbox->setEnabled(true);
+	m_temperature_compensation_cbox->setEnabled(false);
+	m_temperature_compensation_cbox->setToolTip("Turn ON/OFF automatic focus compensation");
 	temperature_compensation_frame_layout->addWidget(m_temperature_compensation_cbox, temp_comp_row, 2, 1, 1, Qt::AlignRight);
 	connect(m_temperature_compensation_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_focuser_temp_compensation_changed);
 

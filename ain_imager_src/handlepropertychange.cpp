@@ -724,8 +724,8 @@ void update_focuser_temperature(ImagerWindow *w, indigo_property *property) {
 			indigo_debug("change %s = %f", property->items[i].name, property->items[i].number.value);
 			char temperature[INDIGO_VALUE_SIZE];
 			snprintf(temperature, INDIGO_VALUE_SIZE, "%.2f%", property->items[i].number.value);
-			w->set_text(w->m_focuser_temp, temperature);
-			w->set_widget_state(w->m_focuser_temp, property->state);
+			w->set_text(w->m_focuser_temperature, temperature);
+			w->set_widget_state(w->m_focuser_temperature, property->state);
 		}
 	}
 }
@@ -2224,7 +2224,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, FOCUSER_TEMPERATURE_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("REMOVE %s", property->name);
-		set_text(m_focuser_temp, "");
+		set_text(m_focuser_temperature, "");
 		m_temperature_compensation_frame->setHidden(true);
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_COMPENSATION_PROPERTY_NAME) ||
