@@ -18,6 +18,7 @@
 
 
 #include "qindigoservers.h"
+#include <QRegularExpressionValidator>;
 
 QIndigoServers::QIndigoServers(QWidget *parent): QDialog(parent)
 {
@@ -34,7 +35,7 @@ QIndigoServers::QIndigoServers(QWidget *parent): QDialog(parent)
 		"        hostname:port\n"
 		"        hostname\n"
 		"\nservice can be any user defined name,\n"
-		"if ommited hostname will be used."
+		"if omitted hostname will be used."
 	);
 	//m_add_button = m_button_box->addButton(tr("Add service"), QDialogButtonBox::ActionRole);
 	m_add_button = new QPushButton(" &Add ");
@@ -152,7 +153,19 @@ void QIndigoServers::onAddManualService() {
 		service = parts2.at(0);
 		int index = service.indexOf(QChar('.'));
 		if (index > 0) {
-			service.truncate(index);
+			// if IP address is provided use the whole IP as a service name
+			QString ip_range = "(?:[0-1]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])";
+			QRegularExpression ip_regex (
+				"^" + ip_range
+				+ "(\\." + ip_range + ")"
+				+ "(\\." + ip_range + ")"
+				+ "(\\." + ip_range + ")$"
+			);
+			QRegularExpressionValidator ip_validator(ip_regex);
+			int pos = 0;
+			if(QValidator::Acceptable != ip_validator.validate(service, pos)) {
+				service.truncate(index);
+			}
 		}
 	}
 
