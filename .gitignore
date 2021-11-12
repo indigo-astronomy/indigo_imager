@@ -1,9 +1,9 @@
 .qmake.stash
 Makefile
 
-/external/libjpeg/*.o
-/external/libjpeg/*.lo
-/external/libjpeg/*.la
+external/libjpeg/*.o
+external/libjpeg/*.lo
+external/libjpeg/*.la
 external/libjpeg/.deps/*
 external/libjpeg/.libs/*
 external/libjpeg/Makefile
@@ -48,5 +48,6 @@ ain_viewer_src/qrc_style.cpp
 
 indigo
 indigo/*
+*.deb
 
 
