@@ -396,23 +396,60 @@ Stretcher::Stretcher(int width, int height, int data_type) {
 void Stretcher::stretch(uint8_t const *input, QImage *outputImage, int sampling) {
 	Q_ASSERT(outputImage->width() == (m_image_width + sampling - 1) / sampling);
 	Q_ASSERT(outputImage->height() == (m_image_height + sampling - 1) / sampling);
-
+	/*
+	{
+		indigo_raw_type rt = INDIGO_RAW_MONO8;
+		double mul = 255;
+		switch (m_pix_fmt) {
+			case PIX_FMT_Y8:
+				rt = INDIGO_RAW_MONO8;
+				mul = 255;
+			break;
+			case PIX_FMT_Y16:
+				rt = INDIGO_RAW_MONO16;
+				mul = 65535;
+				break;
+			case PIX_FMT_RGB24:
+				rt = INDIGO_RAW_RGB24;
+				mul = 255;
+				break;
+			case PIX_FMT_RGB48:
+				rt = INDIGO_RAW_RGB48;
+				mul = 65535;
+				break;
+			default:
+				break;
+		}
+		bool saturated = false;
+		static unsigned char *mask = NULL;
+		if (mask == NULL) indigo_init_saturation_mask(m_image_width, m_image_height, &mask);
+		if (mask == NULL) indigo_error("alloc failed");
+		double contrast = indigo_contrast(rt, input, mask, m_image_width, m_image_height, &saturated);
+		if (saturated) {
+			indigo_update_saturation_mask(rt, input, m_image_width, m_image_height, mask);
+			indigo_raw_header *rh = (indigo_raw_header*)indigo_safe_malloc(sizeof(indigo_raw_header) + m_image_height * m_image_width);
+			rh->signature = INDIGO_RAW_MONO8;
+			rh->width = m_image_width;
+			rh->height = m_image_height;
+			memcpy((char*)rh + sizeof(indigo_raw_header), mask,  m_image_height * m_image_width);
+			FILE * file= fopen("/home/rumen/mask.raw", "wb");
+			if (file != nullptr) {
+				indigo_error("write frame");
+				fwrite(rh, sizeof(indigo_raw_header) + m_image_height * m_image_width, 1, file);
+				fclose(file);
+			}
+			free(rh);
+		}
+		//free(mask);
+		indigo_error("frame contrast = %f %s", contrast * mul, saturated ? "(saturated)" : "");
+	}
+	*/
 	switch (m_pix_fmt) {
 		case PIX_FMT_Y8:
-			/*{
-				bool saturated = false;
-				double contrast = indigo_stddev_8((uint8_t*)input, m_image_height * m_image_width, &saturated);
-				indigo_error("frame contrast = %f %s", contrast, saturated ? "(saturated)" : "");
-			}*/
 			stretchOneChannel(reinterpret_cast<uint8_t const*>(input), outputImage, m_params,
 			                m_input_range, m_image_height, m_image_width, sampling);
 		break;
 		case PIX_FMT_Y16:
-			/*{
-				bool saturated = false;
-				double contrast = indigo_stddev_16((uint16_t*)input, m_image_height * m_image_width, &saturated);
-				indigo_error("frame contrast = %f %s", contrast, saturated ? "(saturated)" : "");
-			}*/
 			stretchOneChannel(reinterpret_cast<uint16_t const*>(input), outputImage, m_params,
 			                m_input_range, m_image_height, m_image_width, sampling);
 			break;
