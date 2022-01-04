@@ -739,26 +739,17 @@ void update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 
 void update_solver_agent_pa_settings(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("change %s", property->name);
-	double ha_move = 0;
-	double dec_move = 0;
-	bool ar_correction = false;
 
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_SETTINGS_HA_MOVE_ITEM_NAME)) {
-			ha_move = property->items[i].number.value;
+			configure_spinbox(w, &property->items[i], property->perm, w->m_pa_move_ha);
 		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_SETTINGS_DEC_MOVE_ITEM_NAME)) {
-			dec_move = property->items[i].number.value;
+			configure_spinbox(w, &property->items[i], property->perm, w->m_pa_move_dec);
 		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_SETTINGS_COMPENSATE_REFRACTION_ITEM_NAME)) {
-			ar_correction = (bool)property->items[i].number.value;
+			w->set_enabled(w->m_pa_refraction_cbox, true);
+			w->set_checkbox_checked(w->m_pa_refraction_cbox, (bool)property->items[i].number.value);
 		}
 	}
-
-	w->set_enabled(w->m_pa_move_ha, true);
-	w->set_enabled(w->m_pa_move_dec, true);
-	w->set_enabled(w->m_pa_refraction_cbox, true);
-	w->set_spinbox_value(w->m_pa_move_ha, ha_move);
-	w->set_spinbox_value(w->m_pa_move_dec, dec_move);
-	w->set_checkbox_checked(w->m_pa_refraction_cbox, ar_correction);
 }
 
 static void update_ccd_temperature(ImagerWindow *w, indigo_property *property, QLineEdit *current_temp, QDoubleSpinBox *set_temp, bool update_value = false) {
