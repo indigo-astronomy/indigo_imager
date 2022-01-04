@@ -588,6 +588,8 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 		w->m_last_solver_source = "";
 		w->set_enabled(w->m_mount_solve_and_center_button, true);
 		w->set_enabled(w->m_mount_solve_and_sync_button, true);
+		w->set_enabled(w->m_mount_start_pa_button, true);
+		w->set_enabled(w->m_mount_recalculate_pe_button, true);
 		//w->set_enabled(w->m_solve_button, true);
 		w->m_solve_button->setIcon(QIcon(":resource/play.png"));
 		if (scale == 0) {
@@ -688,6 +690,51 @@ void update_solver_agent_hints(ImagerWindow *w, indigo_property *property) {
 	QString dec_str(indigo_dtos(dec, "%d:%02d:%04.1f"));
 	w->set_lineedit_text(w->m_solver_dec_hint, dec_str);
 	w->set_widget_state(w->m_solver_dec_hint, property->state);
+}
+
+void update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	double ha_error = 0;
+	double dec_error = 0;
+	double alt_error = 0;
+	double az_error = 0;
+	double total_error = 0;
+	bool alt_correction_up = false;
+	bool az_correction_cw = false;
+
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_ERROR_HA_ITEM_NAME)) {
+			ha_error = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_ERROR_DEC_ITEM_NAME)) {
+			dec_error = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_ERROR_ALT_ITEM_NAME)) {
+			alt_error = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_ERROR_AZ_ITEM_NAME)) {
+			az_error = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_ERROR_ITEM_NAME)) {
+			total_error = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_ERROR_ALT_CORRECTION_UP_ITEM_NAME)) {
+			alt_correction_up = (bool)property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_ERROR_AZ_CORRECTION_CW_ITEM_NAME)) {
+			az_correction_cw = (bool)property->items[i].number.value;
+		}
+	}
+
+	char alt_error_str[50] = "Error";
+	char az_error_str[50] = "Error";
+	char total_error_str[50] = "Error";
+	if (property->state == INDIGO_OK_STATE) {
+		sprintf(alt_error_str, "%+.2f' (move %s)", alt_error * 60, alt_correction_up ? "Up" : "Down");
+		sprintf(az_error_str, "%+.2f' (move %s)", az_error * 60, az_correction_cw ? "C.W." : "C.C.W.");
+		sprintf(total_error_str, "%.2f'", total_error * 60);
+	} else if (property->state == INDIGO_IDLE_STATE) {
+		sprintf(alt_error_str, "N/A");
+		sprintf(az_error_str, "N/A");
+		sprintf(total_error_str, "N/A");
+	}
+	w->set_text(w->m_pa_error_az_label, az_error_str);
+	w->set_text(w->m_pa_error_alt_label, alt_error_str);
+	w->set_text(w->m_pa_error_label, total_error_str);
 }
 
 static void update_ccd_temperature(ImagerWindow *w, indigo_property *property, QLineEdit *current_temp, QDoubleSpinBox *set_temp, bool update_value = false) {
@@ -1979,6 +2026,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_HINTS_PROPERTY_NAME)) {
 		update_solver_agent_hints(this, property);
 	}
+	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_ERROR_PROPERTY_NAME)) {
+		update_solver_agent_pa_error(this, property);
+	}
 }
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
@@ -2210,6 +2260,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_HINTS_PROPERTY_NAME)) {
 		update_solver_agent_hints(this, property);
+	}
+	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_ERROR_PROPERTY_NAME)) {
+		update_solver_agent_pa_error(this, property);
 	}
 
 	properties.create(property);
@@ -2705,6 +2758,12 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		set_spinbox_value(m_solver_tlimit_hint, 0);
 		set_enabled(m_solver_tlimit_hint, false);
+	}
+	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_ERROR_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_solver_agent)) {
+		set_text(m_pa_error_az_label, "");
+		set_text(m_pa_error_alt_label, "");
+		set_text(m_pa_error_label, "");
 	}
 }
 
