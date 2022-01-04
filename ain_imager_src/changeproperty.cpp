@@ -705,6 +705,7 @@ void ImagerWindow::trigger_solve() {
 	indigo_log("[SELECTED] %s domain_name = '%s'\n", __FUNCTION__, domain_name);
 
 	QtConcurrent::run([&]() {
+		m_property_mutex.lock();
 		indigo_property *agent_wcs_property = properties.get(selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME);
 		if (agent_wcs_property && agent_wcs_property->state == INDIGO_BUSY_STATE ) {
 			change_solver_agent_abort(selected_solver_agent);
@@ -718,6 +719,7 @@ void ImagerWindow::trigger_solve() {
 
 			update_solver_widgets_at_start(selected_image_agent, selected_solver_agent);
 		}
+		m_property_mutex.unlock();
 	});
 }
 
@@ -751,6 +753,7 @@ void ImagerWindow::trigger_solve_and_sync(bool recenter) {
 	indigo_log("[SELECTED] %s domain_name = '%s'\n", __FUNCTION__, domain_name);
 
 	QtConcurrent::run([&]() {
+		m_property_mutex.lock();
 		if (recenter_cache) {
 			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_CENTER_ITEM_NAME);
 		} else {
@@ -763,6 +766,7 @@ void ImagerWindow::trigger_solve_and_sync(bool recenter) {
 		change_ccd_exposure_property(selected_image_agent, m_solver_exposure2);
 
 		update_solver_widgets_at_start(selected_image_agent, selected_solver_agent);
+		m_property_mutex.unlock();
 	});
 }
 
@@ -778,7 +782,6 @@ void ImagerWindow::trigger_polar_alignment(bool recalculate) {
 	get_selected_solver_agent(selected_solver_agent);
 	get_indigo_device_domain(domain_name, selected_solver_agent);
 	// if() do checks
-
 	QString solver_source = m_solver_source_select3->currentText();
 	if (solver_source == "None" || solver_source == "") return;
 	strncpy(selected_image_agent, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
@@ -789,6 +792,7 @@ void ImagerWindow::trigger_polar_alignment(bool recalculate) {
 	get_selected_mount_agent(selected_mount_agent);
 	remove_indigo_device_domain(selected_mount_agent, 1);
 
+	indigo_log("[RECALCULATE] %s recalculate_cache = %d\n", __FUNCTION__, recalculate_cache);
 	indigo_log("[SELECTED] %s image_agent = '%s'\n", __FUNCTION__, selected_image_agent);
 	indigo_log("[SELECTED] %s solver_source = '%s'\n", __FUNCTION__, selected_solver_source);
 	indigo_log("[SELECTED] %s mount_agent = '%s'\n", __FUNCTION__, selected_mount_agent);
@@ -796,6 +800,7 @@ void ImagerWindow::trigger_polar_alignment(bool recalculate) {
 	indigo_log("[SELECTED] %s domain_name = '%s'\n", __FUNCTION__, domain_name);
 
 	QtConcurrent::run([&]() {
+		m_property_mutex.lock();
 		if (recalculate_cache) {
 			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_CALCULATE_PA_ERROR_ITEM_NAME);
 		} else {
@@ -808,5 +813,6 @@ void ImagerWindow::trigger_polar_alignment(bool recalculate) {
 		change_ccd_exposure_property(selected_image_agent, m_solver_exposure3);
 
 		update_solver_widgets_at_start(selected_image_agent, selected_solver_agent);
+		m_property_mutex.unlock();
 	});
 }

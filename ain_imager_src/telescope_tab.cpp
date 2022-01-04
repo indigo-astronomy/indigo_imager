@@ -617,6 +617,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_mount_start_pa_button->setStyleSheet("min-width: 30px");
 	m_mount_start_pa_button->setIcon(QIcon(":resource/play.png"));
 	toolbox->addWidget(m_mount_start_pa_button);
+	m_pa_error_eval_requested = false;
 	connect(m_mount_start_pa_button, &QPushButton::clicked, this, &ImagerWindow::on_mount_polar_align);
 
 	m_mount_recalculate_pe_button = new QPushButton("Recalculate error");
@@ -898,10 +899,12 @@ void ImagerWindow::on_mount_solve_and_sync() {
 }
 
 void ImagerWindow::on_mount_polar_align() {
+	m_pa_error_eval_requested = true;
 	trigger_polar_alignment(false);
 }
 
 void ImagerWindow::on_mount_recalculate_polar_error() {
+	m_pa_error_eval_requested = false;
 	trigger_polar_alignment(true);
 }
 

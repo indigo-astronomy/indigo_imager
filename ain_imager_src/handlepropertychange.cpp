@@ -2018,9 +2018,15 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_solver_agent_wcs(this, property);
 		if (property->state == INDIGO_OK_STATE || property->state == INDIGO_ALERT_STATE) {
 			QtConcurrent::run([=]() {
+				m_property_mutex.lock();
 				clear_solver_agent_releated_agents(selected_solver_agent);
 				set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME);
+				m_property_mutex.unlock();
 			});
+		}
+		if (property->state == INDIGO_OK_STATE && m_pa_error_eval_requested) {
+			m_pa_error_eval_requested = false;
+			trigger_polar_alignment(true);
 		}
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_HINTS_PROPERTY_NAME)) {
@@ -2253,9 +2259,15 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		update_solver_agent_wcs(this, property);
 		if (property->state == INDIGO_OK_STATE || property->state == INDIGO_ALERT_STATE) {
 			QtConcurrent::run([=]() {
+				m_property_mutex.lock();
 				clear_solver_agent_releated_agents(selected_solver_agent);
 				set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME);
+				m_property_mutex.unlock();
 			});
+		}
+		if (property->state == INDIGO_OK_STATE && m_pa_error_eval_requested) {
+			m_pa_error_eval_requested = false;
+			trigger_polar_alignment(true);
 		}
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_HINTS_PROPERTY_NAME)) {

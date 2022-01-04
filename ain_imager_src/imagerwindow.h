@@ -707,6 +707,8 @@ private:
 	QLabel *m_pa_error_az_label;
 	QLabel *m_pa_error_alt_label;
 	QLabel *m_pa_error_label;
+	bool m_pa_error_eval_requested;
+	QMutex m_property_mutex;
 
 	int m_stderr;
 
