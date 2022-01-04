@@ -65,6 +65,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	m_solver_exposure1->setMaximum(10000);
 	m_solver_exposure1->setMinimum(0);
 	m_solver_exposure1->setValue(1);
+	m_solver_exposure1->setEnabled(false);
 	solver_frame_layout->addWidget(m_solver_exposure1, row, 2);
 
 	m_solve_button = new QPushButton("Solve");
@@ -249,6 +250,8 @@ void ImagerWindow::update_solver_widgets_at_start(const char *imager_agent, cons
 	set_text(m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Waiting for image");
 	set_widget_state(m_mount_solve_and_sync_button, INDIGO_BUSY_STATE);
 	set_widget_state(m_mount_solve_and_center_button, INDIGO_BUSY_STATE);
+	set_widget_state(m_mount_start_pa_button, INDIGO_BUSY_STATE);
+	set_widget_state(m_mount_recalculate_pe_button, INDIGO_BUSY_STATE);
 	set_widget_state(m_solve_button, INDIGO_BUSY_STATE);
 	do {
 		indigo_property *exp = properties.get((char*)imager_agent, CCD_EXPOSURE_PROPERTY_NAME);
@@ -267,6 +270,8 @@ void ImagerWindow::update_solver_widgets_at_start(const char *imager_agent, cons
 			if (wcs && wcs->state != INDIGO_BUSY_STATE) {
 				set_widget_state(m_mount_solve_and_sync_button, INDIGO_OK_STATE);
 				set_widget_state(m_mount_solve_and_center_button, INDIGO_OK_STATE);
+				set_widget_state(m_mount_start_pa_button, INDIGO_OK_STATE);
+				set_widget_state(m_mount_recalculate_pe_button, INDIGO_OK_STATE);
 				set_widget_state(m_solve_button, INDIGO_OK_STATE);
 				set_text(m_solver_status_label1, "<img src=\":resource/led-red.png\"> No image");
 				set_text(m_solver_status_label2, "<img src=\":resource/led-red.png\"> No image");

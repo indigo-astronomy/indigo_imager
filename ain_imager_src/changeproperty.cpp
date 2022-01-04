@@ -765,3 +765,48 @@ void ImagerWindow::trigger_solve_and_sync(bool recenter) {
 		update_solver_widgets_at_start(selected_image_agent, selected_solver_agent);
 	});
 }
+
+void ImagerWindow::trigger_polar_alignment(bool recalculate) {
+	static char selected_image_agent[INDIGO_NAME_SIZE];
+	static char selected_mount_agent[INDIGO_NAME_SIZE];
+	static char selected_solver_agent[INDIGO_NAME_SIZE];
+	static char selected_solver_source[INDIGO_NAME_SIZE];
+	static bool recalculate_cache;
+	char domain_name[INDIGO_NAME_SIZE];
+
+	recalculate_cache = recalculate;
+	get_selected_solver_agent(selected_solver_agent);
+	get_indigo_device_domain(domain_name, selected_solver_agent);
+	// if() do checks
+
+	QString solver_source = m_solver_source_select3->currentText();
+	if (solver_source == "None" || solver_source == "") return;
+	strncpy(selected_image_agent, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
+	strncpy(selected_solver_source, selected_image_agent, INDIGO_NAME_SIZE);
+	add_indigo_device_domain(selected_image_agent, domain_name);
+	m_last_solver_source = QString(selected_solver_source);
+
+	get_selected_mount_agent(selected_mount_agent);
+	remove_indigo_device_domain(selected_mount_agent, 1);
+
+	indigo_log("[SELECTED] %s image_agent = '%s'\n", __FUNCTION__, selected_image_agent);
+	indigo_log("[SELECTED] %s solver_source = '%s'\n", __FUNCTION__, selected_solver_source);
+	indigo_log("[SELECTED] %s mount_agent = '%s'\n", __FUNCTION__, selected_mount_agent);
+	indigo_log("[SELECTED] %s solver_agent = '%s'\n", __FUNCTION__, selected_solver_agent);
+	indigo_log("[SELECTED] %s domain_name = '%s'\n", __FUNCTION__, domain_name);
+
+	QtConcurrent::run([&]() {
+		if (recalculate_cache) {
+			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_CALCULATE_PA_ERROR_ITEM_NAME);
+		} else {
+			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_SET_PA_REFERENCE_AND_MOVE_ITEM_NAME);
+		}
+
+		set_agent_releated_agent(selected_solver_agent, selected_mount_agent, true);
+		set_agent_releated_agent(selected_solver_agent, selected_solver_source, true);
+
+		change_ccd_exposure_property(selected_image_agent, m_solver_exposure3);
+
+		update_solver_widgets_at_start(selected_image_agent, selected_solver_agent);
+	});
+}

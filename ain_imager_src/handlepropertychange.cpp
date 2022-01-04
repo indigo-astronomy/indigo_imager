@@ -566,6 +566,8 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 
 	w->set_widget_state(w->m_mount_solve_and_center_button, property->state);
 	w->set_widget_state(w->m_mount_solve_and_sync_button, property->state);
+	w->set_widget_state(w->m_mount_start_pa_button, property->state);
+	w->set_widget_state(w->m_mount_recalculate_pe_button, property->state);
 	w->set_widget_state(w->m_solve_button, property->state);
 	if (property->state == INDIGO_OK_STATE) {
 		w->m_last_solver_source = "";
@@ -578,6 +580,8 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 		}
 		w->set_enabled(w->m_mount_solve_and_center_button, true);
 		w->set_enabled(w->m_mount_solve_and_sync_button, true);
+		w->set_enabled(w->m_mount_start_pa_button, true);
+		w->set_enabled(w->m_mount_recalculate_pe_button, true);
 		//w->set_enabled(w->m_solve_button, true);
 		w->m_solve_button->setIcon(QIcon(":resource/play.png"));
 	} else if (property->state == INDIGO_ALERT_STATE) {
@@ -596,6 +600,8 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 	} else if (property->state == INDIGO_BUSY_STATE) {
 		w->set_enabled(w->m_mount_solve_and_center_button, false);
 		w->set_enabled(w->m_mount_solve_and_sync_button, false);
+		w->set_enabled(w->m_mount_start_pa_button, false);
+		w->set_enabled(w->m_mount_recalculate_pe_button, false);
 		//w->set_enabled(w->m_solve_button, false);
 		w->m_solve_button->setIcon(QIcon(":resource/stop.png"));
 		if (scale == 0) {
@@ -1944,16 +1950,22 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_solver_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
 		m_solver_source_select1->blockSignals(true);
 		m_solver_source_select2->blockSignals(true);
+		m_solver_source_select3->blockSignals(true);
 		add_items_to_combobox_filtered(this, property, "Imager Agent", m_solver_source_select1);
 		add_items_to_combobox_filtered(this, property, "Guider Agent", m_solver_source_select1, true);
 		add_items_to_combobox_filtered(this, property, "Imager Agent", m_solver_source_select2);
 		add_items_to_combobox_filtered(this, property, "Guider Agent", m_solver_source_select2, true);
+		add_items_to_combobox_filtered(this, property, "Imager Agent", m_solver_source_select3);
+		add_items_to_combobox_filtered(this, property, "Guider Agent", m_solver_source_select3, true);
 		set_combobox_current_text(m_solver_source_select1, conf.solver_image_source1);
 		set_combobox_current_text(m_solver_source_select2, conf.solver_image_source2);
+		set_combobox_current_text(m_solver_source_select3, conf.solver_image_source3);
 		m_solver_source_select1->blockSignals(false);
 		m_solver_source_select2->blockSignals(false);
+		m_solver_source_select3->blockSignals(false);
 		set_enabled(m_solver_exposure1, true);
 		set_enabled(m_solver_exposure2, true);
+		set_enabled(m_solver_exposure3, true);
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME)) {
 		update_solver_agent_wcs(this, property);
@@ -2644,8 +2656,10 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		clear_combobox(m_solver_source_select1);
 		clear_combobox(m_solver_source_select2);
+		clear_combobox(m_solver_source_select3);
 		set_enabled(m_solver_exposure1, false);
 		set_enabled(m_solver_exposure2, false);
+		set_enabled(m_solver_exposure3, false);
 		//set_enabled(m_mount_use_solver_cbox, false);
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME) ||

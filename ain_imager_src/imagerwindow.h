@@ -323,7 +323,10 @@ public slots:
 	void on_mount_solve_and_sync();
 	void on_mount_guider_agent_selected(int index);
 	void on_trigger_solve();
+	void on_mount_polar_align();
+	void on_mount_recalculate_polar_error();
 	void on_image_source2_selected(int index);
+	void on_image_source3_selected(int index);
 
 	void on_solver_agent_selected(int index);
 	void on_solver_ra_dec_hints_changed(bool clicked);
@@ -688,6 +691,22 @@ private:
 	QSpinBox *m_solver_tlimit_hint;
 	QString m_last_solver_source;
 
+	QComboBox *m_solver_source_select3;
+	QDoubleSpinBox *m_solver_exposure3;
+	QDoubleSpinBox *m_pa_move_ha;
+	QDoubleSpinBox *m_pa_move_dec;
+	/*
+	QCheckBox *m_pa_use_initial_cbox;
+	QLineEdit *m_pa_dec_input;
+	QLineEdit *m_pa_ha_input;
+	*/
+	QPushButton *m_mount_start_pa_button;
+	QPushButton *m_mount_recalculate_pe_button;
+	QCheckBox *m_pa_refraction_cbox;
+	QLabel *m_pa_error_az_label;
+	QLabel *m_pa_error_alt_label;
+	QLabel *m_pa_error_label;
+
 	int m_stderr;
 
 	// Image viewer
@@ -788,6 +807,7 @@ private:
 
 	void trigger_solve_and_sync(bool recenter);
 	void trigger_solve();
+	void trigger_polar_alignment(bool recalculate);
 
 	void select_guider_data(guider_display_data show);
 
