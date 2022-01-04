@@ -737,6 +737,30 @@ void update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 	w->set_text(w->m_pa_error_label, total_error_str);
 }
 
+void update_solver_agent_pa_settings(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	double ha_move = 0;
+	double dec_move = 0;
+	bool ar_correction = false;
+
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_SETTINGS_HA_MOVE_ITEM_NAME)) {
+			ha_move = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_SETTINGS_DEC_MOVE_ITEM_NAME)) {
+			dec_move = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_SETTINGS_COMPENSATE_REFRACTION_ITEM_NAME)) {
+			ar_correction = (bool)property->items[i].number.value;
+		}
+	}
+
+	w->set_enabled(w->m_pa_move_ha, true);
+	w->set_enabled(w->m_pa_move_dec, true);
+	w->set_enabled(w->m_pa_refraction_cbox, true);
+	w->set_spinbox_value(w->m_pa_move_ha, ha_move);
+	w->set_spinbox_value(w->m_pa_move_dec, dec_move);
+	w->set_checkbox_checked(w->m_pa_refraction_cbox, ar_correction);
+}
+
 static void update_ccd_temperature(ImagerWindow *w, indigo_property *property, QLineEdit *current_temp, QDoubleSpinBox *set_temp, bool update_value = false) {
 	indigo_debug("change %s", property->name);
 	for (int i = 0; i < property->count; i++) {
@@ -2032,6 +2056,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_HINTS_PROPERTY_NAME)) {
 		update_solver_agent_hints(this, property);
 	}
+	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_SETTINGS_PROPERTY_NAME)) {
+		update_solver_agent_pa_settings(this, property);
+	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_ERROR_PROPERTY_NAME)) {
 		update_solver_agent_pa_error(this, property);
 	}
@@ -2276,7 +2303,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_ERROR_PROPERTY_NAME)) {
 		update_solver_agent_pa_error(this, property);
 	}
-
+	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_SETTINGS_PROPERTY_NAME)) {
+		update_solver_agent_pa_settings(this, property);
+	}
 	properties.create(property);
 }
 
@@ -2776,6 +2805,15 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_text(m_pa_error_az_label, "");
 		set_text(m_pa_error_alt_label, "");
 		set_text(m_pa_error_label, "");
+	}
+	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_SETTINGS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_solver_agent)) {
+		set_enabled(m_pa_move_ha, false);
+		set_enabled(m_pa_move_dec, false);
+		set_enabled(m_pa_refraction_cbox, false);
+		set_spinbox_value(m_pa_move_ha, 0);
+		set_spinbox_value(m_pa_move_dec, 0);
+		set_checkbox_checked(m_pa_refraction_cbox, 0);
 	}
 }
 

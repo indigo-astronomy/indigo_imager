@@ -141,6 +141,7 @@ public:
 	friend void update_solver_agent_hints(ImagerWindow *w, indigo_property *property);
 	friend void define_ccd_exposure_property(ImagerWindow *w, indigo_property *property);
 	friend void update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property);
+	friend void update_solver_agent_pa_settings(ImagerWindow *w, indigo_property *property);
 
 	bool save_blob;
 
