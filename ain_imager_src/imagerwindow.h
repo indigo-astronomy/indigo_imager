@@ -339,6 +339,8 @@ public slots:
 	void on_object_clicked(QListWidgetItem *item);
 	void on_object_search_changed(const QString &obj_name);
 	void on_object_search_entered();
+	void on_guider_agent_set_pa_move(double value);
+	void on_guider_agent_set_pa_refraction(bool clicked);
 
 	void on_tab_changed(int index);
 
@@ -812,6 +814,7 @@ private:
 	void trigger_solve_and_sync(bool recenter);
 	void trigger_solve();
 	void trigger_polar_alignment(bool recalculate);
+	void change_solver_agent_pa_settings(const char *agent) const;
 
 	void select_guider_data(guider_display_data show);
 

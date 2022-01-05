@@ -573,17 +573,19 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 
 	m_pa_refraction_cbox = new QCheckBox("Comp. AR");
 	m_pa_refraction_cbox->setToolTip("Compensate for atmospheric refraction.\nSome mounts do it automatically, in this case it should be off.");
-	//m_pa_refraction_cbox->setEnabled(false);
+	m_pa_refraction_cbox->setEnabled(false);
 	palign_frame_layout->addWidget(m_pa_refraction_cbox, palign_row, 3, 1, 1);
-	//connect(m_mount_sync_time_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_sync_time);
+	connect(m_pa_refraction_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_guider_agent_set_pa_refraction);
 
 	palign_row++;
 	label = new QLabel("HA / Dec move (°):");
 	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
 	m_pa_move_ha = new QDoubleSpinBox();
+	connect(m_pa_move_ha, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_set_pa_move);
 	palign_frame_layout->addWidget(m_pa_move_ha, palign_row, 2, 1, 1);
 	m_pa_move_dec = new QDoubleSpinBox();
 	palign_frame_layout->addWidget(m_pa_move_dec, palign_row, 3, 1, 1);
+	connect(m_pa_move_dec, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_set_pa_move);
 
 	/*
 	palign_row++;
@@ -631,21 +633,21 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	palign_frame_layout->addItem(spacer, palign_row, 0, 1, 4);
 
 	palign_row++;
-	label = new QLabel("Azimuth error:");
+	label = new QLabel("Azimuth correction:");
 	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
 	m_pa_error_az_label = new QLabel();
 	m_pa_error_az_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	palign_frame_layout->addWidget(m_pa_error_az_label, palign_row, 2, 1, 2);
 
 	palign_row++;
-	label = new QLabel("Altitude error:");
+	label = new QLabel("Altitude correction:");
 	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
 	m_pa_error_alt_label = new QLabel();
 	m_pa_error_alt_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	palign_frame_layout->addWidget(m_pa_error_alt_label, palign_row, 2, 1, 2);
 
 	palign_row++;
-	label = new QLabel("Total polar error:");
+	label = new QLabel("Total correction:");
 	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
 	m_pa_error_label = new QLabel();
 	m_pa_error_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
@@ -729,6 +731,28 @@ void ImagerWindow::on_mount_sync(int index) {
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 
 		change_mount_agent_equatorial(selected_agent, true);
+	});
+}
+
+void ImagerWindow::on_guider_agent_set_pa_move(double value) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_solver_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+
+		change_solver_agent_pa_settings(selected_agent);
+	});
+}
+
+void ImagerWindow::on_guider_agent_set_pa_refraction(bool clicked) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_solver_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+
+		change_solver_agent_pa_settings(selected_agent);
 	});
 }
 

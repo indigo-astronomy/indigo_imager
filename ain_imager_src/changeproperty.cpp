@@ -816,3 +816,16 @@ void ImagerWindow::trigger_polar_alignment(bool recalculate) {
 		m_property_mutex.unlock();
 	});
 }
+
+void ImagerWindow::change_solver_agent_pa_settings(const char *agent) const {
+	static const char *items[] = {
+		AGENT_PLATESOLVER_PA_SETTINGS_HA_MOVE_ITEM_NAME,
+		AGENT_PLATESOLVER_PA_SETTINGS_DEC_MOVE_ITEM_NAME,
+		AGENT_PLATESOLVER_PA_SETTINGS_COMPENSATE_REFRACTION_ITEM_NAME
+	};
+	static double values[3];
+	values[0] = (double)m_pa_move_ha->value();
+	values[1] = (double)m_pa_move_dec->value();
+	values[2] = (double)m_pa_refraction_cbox->isChecked();
+	indigo_change_number_property(nullptr, agent, AGENT_PLATESOLVER_PA_SETTINGS_PROPERTY_NAME, 3, items, values);
+}
