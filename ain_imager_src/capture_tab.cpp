@@ -340,6 +340,17 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	dither_frame_layout->addWidget(m_dither_to, dither_row, 3);
 	connect(m_dither_to, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_imager_dithering_changed);
 
+	dither_row++;
+	label = new QLabel("Skip frames:");
+	dither_frame_layout->addWidget(label, dither_row, 0, 1, 3);
+	m_dither_skip = new QSpinBox();
+	m_dither_skip->setMaximum(100);
+	m_dither_skip->setMinimum(0);
+	m_dither_skip->setValue(0);
+	m_dither_skip->setEnabled(false);
+	dither_frame_layout->addWidget(m_dither_skip, dither_row, 3);
+	connect(m_dither_skip, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_imager_dithering_changed);
+
 	// settings
 	QFrame *camera_frame = new QFrame();
 	capture_tabbar->addTab(camera_frame, "Camera");

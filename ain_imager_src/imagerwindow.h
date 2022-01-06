@@ -506,6 +506,7 @@ private:
 	QSpinBox  *m_roi_y, *m_roi_h;
 	QSpinBox  *m_dither_aggr;
 	QSpinBox  *m_dither_to;
+	QSpinBox  *m_dither_skip;
 	QSpinBox  *m_imager_gain;
 	QSpinBox  *m_imager_offset;
 	QDoubleSpinBox *m_exposure_time;

@@ -842,6 +842,8 @@ void update_agent_imager_dithering_property(ImagerWindow *w, indigo_property *pr
 			configure_spinbox(w, &property->items[i], property->perm, w->m_dither_aggr);
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_DITHERING_TIME_LIMIT_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_dither_to);
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_DITHERING_SKIP_FRAMES_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_dither_skip);
 		}
 	}
 }
@@ -2400,6 +2402,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_enabled(m_dither_aggr, false);
 		set_spinbox_value(m_dither_to, 0);
 		set_enabled(m_dither_to, false);
+		set_spinbox_value(m_dither_skip, 0);
+		set_enabled(m_dither_skip, false);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {

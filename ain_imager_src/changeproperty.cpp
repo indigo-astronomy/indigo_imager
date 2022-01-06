@@ -124,12 +124,17 @@ void ImagerWindow::change_related_agent(const char *agent, const char *old_agent
 void ImagerWindow::change_agent_imager_dithering_property(const char *agent) const {
 	static const char *items[] = {
 		AGENT_IMAGER_DITHERING_AGGRESSIVITY_ITEM_NAME,
-		AGENT_IMAGER_DITHERING_TIME_LIMIT_ITEM_NAME
+		AGENT_IMAGER_DITHERING_TIME_LIMIT_ITEM_NAME,
+		AGENT_IMAGER_DITHERING_SKIP_FRAMES_ITEM_NAME
 	};
-	static double values[2];
+	static double values[3];
 	values[0] = (double)m_dither_aggr->value();
 	values[1] = (double)m_dither_to->value();
-	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_DITHERING_PROPERTY_NAME, 2, items, values);
+	values[2] = (double)m_dither_skip->value();
+
+	int count = 2;
+	if (m_dither_skip->isEnabled()) count = 3;
+	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_DITHERING_PROPERTY_NAME, count, items, values);
 }
 
 void ImagerWindow::change_focuser_temperature_compensation_steps(const char *agent) const {
