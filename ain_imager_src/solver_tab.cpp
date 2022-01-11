@@ -255,8 +255,9 @@ void ImagerWindow::update_solver_widgets_at_start(const char *imager_agent, cons
 	set_widget_state(m_solve_button, INDIGO_BUSY_STATE);
 	do {
 		indigo_property *exp = properties.get((char*)imager_agent, CCD_EXPOSURE_PROPERTY_NAME);
+		indigo_property *wcs = properties.get((char*)solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME);
 		if (wait_busy) {
-			if (exp && exp->state == INDIGO_BUSY_STATE) {
+			if ((exp && exp->state == INDIGO_BUSY_STATE) || (wcs && wcs->state == INDIGO_BUSY_STATE)){
 				done = true;
 			} else {
 				indigo_usleep(100000);
@@ -280,6 +281,47 @@ void ImagerWindow::update_solver_widgets_at_start(const char *imager_agent, cons
 		}
 	} while (!done);
 	indigo_debug("%s(): DONE", __FUNCTION__);
+}
+
+bool ImagerWindow::open_image(QString file_name, int *image_size, unsigned char **image_data) {
+	char msg[PATH_LEN];
+	if (file_name == "") return false;
+	FILE *file;
+	strncpy(m_image_path, file_name.toUtf8().data(), PATH_LEN);
+	file = fopen(m_image_path, "rb");
+	if (file) {
+		fseek(file, 0, SEEK_END);
+		*image_size = (size_t)ftell(file);
+		fseek(file, 0, SEEK_SET);
+		if (*image_data == nullptr) {
+			*image_data = (unsigned char *)malloc(*image_size + 1);
+		} else {
+			*image_data = (unsigned char *)realloc(*image_data, *image_size + 1);
+		}
+		fread(*image_data, *image_size, 1, file);
+		fclose(file);
+	} else {
+		snprintf(msg, PATH_LEN, "File '%s'\nCan not be open for reading.", QDir::toNativeSeparators(m_image_path).toUtf8().data());
+		show_message("Error!", msg);
+		return false;
+	}
+
+	char *image_formrat = strrchr(m_image_path, '.');
+	const stretch_config_t sc = {conf.preview_stretch_level, conf.preview_color_balance };
+	preview_image *image = create_preview(*image_data, *image_size, (const char*)image_formrat, sc);
+	if (image) {
+		QString key = QString(AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME);
+		preview_cache.add(key, image);
+		if (show_preview_in_imager_viewer(key)) {
+			m_imager_viewer->setText(file_name);
+			m_imager_viewer->setToolTip(file_name);
+		}
+	} else {
+		snprintf(msg, PATH_LEN, "File: '%s'\nDoes not seem to be a supported image format.", QDir::toNativeSeparators(m_image_path).toUtf8().data());
+		show_message("Error!", msg);
+		return false;
+	}
+	return true;
 }
 
 void ImagerWindow::on_solver_agent_selected(int index) {

@@ -20,6 +20,7 @@
 #include <imagerwindow.h>
 #include <propertycache.h>
 #include <utils.h>
+#include <logger.h>
 
 void ImagerWindow::change_ccd_frame_property(const char *agent) const {
 	static const char *items[] = {
@@ -688,14 +689,17 @@ void ImagerWindow::trigger_solve() {
 	static char selected_mount_agent[INDIGO_NAME_SIZE];
 	static char selected_solver_agent[INDIGO_NAME_SIZE];
 	static char selected_solver_source[INDIGO_NAME_SIZE];
-	static QString file_name;
+	static int image_size = 0;
+	static unsigned char *image_data = nullptr;
+	static QString solver_source;
+	QString file_name;
 	char domain_name[INDIGO_NAME_SIZE];
 
 	get_selected_solver_agent(selected_solver_agent);
 	get_indigo_device_domain(domain_name, selected_solver_agent);
 	// if() do checks
 
-	QString solver_source = m_solver_source_select1->currentData().toString();
+	solver_source = m_solver_source_select1->currentData().toString();
 	indigo_log("[SELECTED] %s solver_source = '%s'\n", __FUNCTION__, solver_source.toUtf8().constData());
 	if (solver_source == "None" || solver_source == "") return;
 	strncpy(selected_image_agent, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
@@ -712,6 +716,16 @@ void ImagerWindow::trigger_solve() {
 	indigo_log("[SELECTED] %s solver_agent = '%s'\n", __FUNCTION__, selected_solver_agent);
 	indigo_log("[SELECTED] %s domain_name = '%s'\n", __FUNCTION__, domain_name);
 
+	indigo_property *p = properties.get(selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME);
+	if (p && p->state == INDIGO_BUSY_STATE ) {
+		QtConcurrent::run([&]() {
+			m_property_mutex.lock();
+			change_solver_agent_abort(selected_solver_agent);
+			m_property_mutex.unlock();
+		});
+		return;
+	}
+
 	if (solver_source == AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME) {
 		char path[PATH_LEN];
 		strncpy(path, m_image_path, PATH_LEN);
@@ -719,36 +733,55 @@ void ImagerWindow::trigger_solve() {
 		if (m_image_path[0] == '\0') qlocation = QDir::toNativeSeparators(QDir::homePath());
 		file_name = QFileDialog::getOpenFileName(
 			this,
-			tr("Open Image"),
+			tr("Upload Image"),
 			qlocation,
-			QString("FITS (*.fit *.FIT *.fits *.FITS *.fts *.FTS );;Indigo RAW (*.raw *.RAW);;FITS / Indigo RAW (*.fit *FIT *.fits *.FITS *.fts *.FTS *.raw *.RAW);;JPEG / TIFF / PNG (*.jpg *.JPG *.jpeg *.JPEG *.jpe *.JPE *.tif *.TIF *.tiff *.TIFF *.png *.PNG);;All Files (*)"),
+			QString("FITS (*.fit *.FIT *.fits *.FITS *.fts *.FTS );;Indigo RAW (*.raw *.RAW);;FITS / Indigo RAW (*.fit *FIT *.fits *.FITS *.fts *.FTS *.raw *.RAW);;JPEG / (*.jpg *.JPG *.jpeg *.JPEG *.jpe *.JPE);;All Files (*)"),
 			&m_selected_filter
 		);
+		if(file_name.isNull()) {
+			return;
+		} else {
+			if(!open_image(file_name, &image_size, &image_data)) {
+				return;
+			}
+		}
 	}
 
 	QtConcurrent::run([&]() {
 		m_property_mutex.lock();
-		indigo_property *agent_wcs_property = properties.get(selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME);
-		if (agent_wcs_property && agent_wcs_property->state == INDIGO_BUSY_STATE ) {
-			change_solver_agent_abort(selected_solver_agent);
-		} else {
-			if (solver_source == AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME) {
-				if(file_name.isNull()) {
+		if (solver_source == AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME) {
+			indigo_property *p = properties.get(selected_solver_agent, AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME);
+			indigo_item *image_item = indigo_get_item(p, AGENT_PLATESOLVER_IMAGE_ITEM_NAME);
+			if (image_item) {
+				indigo_result res = indigo_change_blob_property_1(
+					nullptr,
+					selected_solver_agent,
+					AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME,
+					AGENT_PLATESOLVER_IMAGE_ITEM_NAME,
+					image_data,
+					image_size,
+					"",
+					image_item->blob.url
+				);
+				if (res != INDIGO_OK) {
+					Logger::instance().log(nullptr, "Failed to upload file for solving");
 				} else {
-					// trigger solve here
+					Logger::instance().log(nullptr, "File uploaded for solving");
 					update_solver_widgets_at_start(selected_image_agent, selected_solver_agent);
 				}
-			} else {
-				set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME);
-
-				set_agent_releated_agent(selected_solver_agent, selected_mount_agent, true);
-				set_agent_releated_agent(selected_solver_agent, selected_solver_source, true);
-
-				change_ccd_exposure_property(selected_image_agent, m_solver_exposure1);
-
-				update_solver_widgets_at_start(selected_image_agent, selected_solver_agent);
 			}
+		} else {
+			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME);
+
+			set_agent_releated_agent(selected_solver_agent, selected_mount_agent, true);
+			set_agent_releated_agent(selected_solver_agent, selected_solver_source, true);
+
+			change_ccd_exposure_property(selected_image_agent, m_solver_exposure1);
+			update_solver_widgets_at_start(selected_image_agent, selected_solver_agent);
 		}
+		indigo_safe_free(image_data);
+		image_data = nullptr;
+		image_size = 0;
 		m_property_mutex.unlock();
 	});
 }

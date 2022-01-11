@@ -99,6 +99,19 @@ bool blob_preview_cache::create(indigo_property *property, indigo_item *item, co
 	return false;
 }
 
+bool blob_preview_cache::add(QString &key, preview_image *preview) {
+	pthread_mutex_lock(&preview_mutex);
+	_remove(key);
+	//indigo_debug("preview: %s(%s) == %p, %.5f\n", __FUNCTION__, key.toUtf8().constData(), stretch->clip_white);
+	if (preview != nullptr) {
+		insert(key, preview);
+		pthread_mutex_unlock(&preview_mutex);
+		return true;
+	}
+	pthread_mutex_unlock(&preview_mutex);
+	return false;
+}
+
 bool blob_preview_cache::recreate(QString &key, indigo_item *item, const stretch_config_t sconfig) {
 	pthread_mutex_lock(&preview_mutex);
 	preview_image *preview = _get(key);
@@ -185,6 +198,13 @@ preview_image* blob_preview_cache::_get(QString &key) {
 bool blob_preview_cache::remove(indigo_property *property, indigo_item *item) {
 	pthread_mutex_lock(&preview_mutex);
 	bool success = _remove(property, item);
+	pthread_mutex_unlock(&preview_mutex);
+	return success;
+}
+
+bool blob_preview_cache::remove(QString &key) {
+	pthread_mutex_lock(&preview_mutex);
+	bool success = _remove(key);
 	pthread_mutex_unlock(&preview_mutex);
 	return success;
 }

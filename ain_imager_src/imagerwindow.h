@@ -824,6 +824,7 @@ private:
 	void select_guider_data(guider_display_data show);
 
 	void setup_preview(const char *agent);
+	bool open_image(QString file_name, int *image_size, unsigned char **image_data);
 
 	bool show_preview_in_imager_viewer(QString &key);
 	bool show_preview_in_guider_viewer(QString &key);
@@ -831,6 +832,15 @@ private:
 	bool save_blob_item_with_prefix(indigo_item *item, const char *prefix, char *file_name);
 	bool save_blob_item(indigo_item *item, char *file_name);
 	void save_blob_item(indigo_item *item);
+
+	void show_message(const char *title, const char *message, QMessageBox::Icon icon = QMessageBox::Warning) {
+		QMessageBox msgBox(this);
+		indigo_error(message);
+		msgBox.setWindowTitle(title);
+		msgBox.setIcon(icon);
+		msgBox.setText(message);
+		msgBox.exec();
+	};
 };
 
 #endif // IMAGERWINDOW_H

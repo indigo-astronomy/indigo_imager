@@ -2018,7 +2018,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		add_items_to_combobox_filtered(this, property, "Imager Agent", m_solver_source_select1);
 		add_items_to_combobox_filtered(this, property, "Guider Agent", m_solver_source_select1, true);
 		if (properties.get(property->device, AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME))
-			add_combobox_item(m_solver_source_select1, "Local file...", AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME);
+			add_combobox_item(m_solver_source_select1, "Upload File", AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME);
 		add_items_to_combobox_filtered(this, property, "Imager Agent", m_solver_source_select2);
 		add_items_to_combobox_filtered(this, property, "Guider Agent", m_solver_source_select2, true);
 		add_items_to_combobox_filtered(this, property, "Imager Agent", m_solver_source_select3);
@@ -2035,7 +2035,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME)) {
 		m_solver_source_select1->blockSignals(true);
-		add_combobox_item(m_solver_source_select1, "Local file...", AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME);
+		add_combobox_item(m_solver_source_select1, "Upload File", AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME);
 		set_combobox_current_text(m_solver_source_select1, conf.solver_image_source1);
 		m_solver_source_select1->blockSignals(false);
 		set_enabled(m_solver_exposure1, true);

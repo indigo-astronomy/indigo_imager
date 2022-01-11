@@ -53,6 +53,7 @@ private:
 
 public:
 	QString create_key(indigo_property *property, indigo_item *item);
+	bool add(QString &key, preview_image *preview);
 	bool create(indigo_property *property, indigo_item *item, const stretch_config_t sconfig);
 	bool recreate(QString &key, indigo_item *item, const stretch_config_t sconfig);
 	bool recreate(QString &key, const stretch_config_t sconfig);
@@ -61,6 +62,7 @@ public:
 	preview_image* get(indigo_property *property, indigo_item *item);
 	preview_image* get(QString &key);
 	bool remove(indigo_property *property, indigo_item *item);
+	bool remove(QString &key);
 };
 
 extern blob_preview_cache preview_cache;
