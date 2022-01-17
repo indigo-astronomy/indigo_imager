@@ -633,6 +633,17 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	palign_frame_layout->addItem(spacer, palign_row, 0, 1, 4);
 
 	palign_row++;
+	label = new QLabel("Polar error at start:");
+	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
+	m_pa_error_label = new QLabel();
+	m_pa_error_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	palign_frame_layout->addWidget(m_pa_error_label, palign_row, 2, 1, 2);
+
+	palign_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	palign_frame_layout->addItem(spacer, palign_row, 0, 1, 4);
+
+	palign_row++;
 	label = new QLabel("Azimuth correction:");
 	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
 	m_pa_error_az_label = new QLabel();
@@ -645,13 +656,6 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_pa_error_alt_label = new QLabel();
 	m_pa_error_alt_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	palign_frame_layout->addWidget(m_pa_error_alt_label, palign_row, 2, 1, 2);
-
-	palign_row++;
-	label = new QLabel("Total correction:");
-	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
-	m_pa_error_label = new QLabel();
-	m_pa_error_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	palign_frame_layout->addWidget(m_pa_error_label, palign_row, 2, 1, 2);
 }
 
 
