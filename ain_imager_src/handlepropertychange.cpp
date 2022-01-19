@@ -703,19 +703,19 @@ void update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 	bool az_correction_cw = false;
 
 	for (int i = 0; i < property->count; i++) {
-		if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_ERROR_HA_ITEM_NAME)) {
+		if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_HA_DRIFT_ITEM_NAME)) {
 			ha_error = property->items[i].number.value;
-		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_ERROR_DEC_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_DEC_DRIFT_ITEM_NAME)) {
 			dec_error = property->items[i].number.value;
-		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_ERROR_ALT_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_ALT_ERROR_ITEM_NAME)) {
 			alt_error = property->items[i].number.value;
-		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_ERROR_AZ_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_AZ_ERROR_ITEM_NAME)) {
 			az_error = property->items[i].number.value;
-		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_ERROR_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_TOTAL_ERROR_ITEM_NAME)) {
 			total_error = property->items[i].number.value;
-		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_ERROR_ALT_CORRECTION_UP_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_ALT_CORRECTION_UP_ITEM_NAME)) {
 			alt_correction_up = (bool)property->items[i].number.value;
-		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_ERROR_AZ_CORRECTION_CW_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_AZ_CORRECTION_CW_ITEM_NAME)) {
 			az_correction_cw = (bool)property->items[i].number.value;
 		}
 	}
@@ -2061,7 +2061,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_SETTINGS_PROPERTY_NAME)) {
 		update_solver_agent_pa_settings(this, property);
 	}
-	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_ERROR_PROPERTY_NAME)) {
+	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_STATE_PROPERTY_NAME)) {
 		update_solver_agent_pa_error(this, property);
 	}
 }
@@ -2302,7 +2302,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_HINTS_PROPERTY_NAME)) {
 		update_solver_agent_hints(this, property);
 	}
-	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_ERROR_PROPERTY_NAME)) {
+	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_STATE_PROPERTY_NAME)) {
 		update_solver_agent_pa_error(this, property);
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_SETTINGS_PROPERTY_NAME)) {
@@ -2804,7 +2804,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_spinbox_value(m_solver_tlimit_hint, 0);
 		set_enabled(m_solver_tlimit_hint, false);
 	}
-	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_ERROR_PROPERTY_NAME) ||
+	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_STATE_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_solver_agent)) {
 		set_text(m_pa_error_az_label, "");
 		set_text(m_pa_error_alt_label, "");
