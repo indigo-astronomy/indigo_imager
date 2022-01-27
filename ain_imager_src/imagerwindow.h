@@ -140,7 +140,7 @@ public:
 	friend void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property);
 	friend void update_solver_agent_hints(ImagerWindow *w, indigo_property *property);
 	friend void define_ccd_exposure_property(ImagerWindow *w, indigo_property *property);
-	friend void update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property);
+	friend int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property);
 	friend void update_solver_agent_pa_settings(ImagerWindow *w, indigo_property *property);
 
 	bool save_blob;
@@ -711,7 +711,6 @@ private:
 	QLabel *m_pa_error_az_label;
 	QLabel *m_pa_error_alt_label;
 	QLabel *m_pa_error_label;
-	bool m_pa_error_eval_requested;
 	QMutex m_property_mutex;
 
 	int m_stderr;

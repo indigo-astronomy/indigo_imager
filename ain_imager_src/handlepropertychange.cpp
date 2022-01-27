@@ -692,7 +692,7 @@ void update_solver_agent_hints(ImagerWindow *w, indigo_property *property) {
 	w->set_widget_state(w->m_solver_dec_hint, property->state);
 }
 
-void update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
+int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("change %s", property->name);
 	double ha_error = 0;
 	double dec_error = 0;
@@ -701,10 +701,13 @@ void update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 	double total_error = 0;
 	bool alt_correction_up = false;
 	bool az_correction_cw = false;
+	int state = -1;
 
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_HA_DRIFT_ITEM_NAME)) {
 			ha_error = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_ITEM_NAME)) {
+			state = (int)property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_DEC_DRIFT_ITEM_NAME)) {
 			dec_error = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_ALT_ERROR_ITEM_NAME)) {
@@ -727,7 +730,7 @@ void update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 		sprintf(alt_error_str, "%+.2f' (move %s)", alt_error * 60, alt_correction_up ? "Up" : "Down");
 		sprintf(az_error_str, "%+.2f' (move %s)", az_error * 60, az_correction_cw ? "C.W." : "C.C.W.");
 		sprintf(total_error_str, "%.2f'", total_error * 60);
-	} else if (property->state == INDIGO_IDLE_STATE) {
+	} else if (property->state == INDIGO_IDLE_STATE || property->state == INDIGO_BUSY_STATE) {
 		sprintf(alt_error_str, "N/A");
 		sprintf(az_error_str, "N/A");
 		sprintf(total_error_str, "N/A");
@@ -735,6 +738,7 @@ void update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 	w->set_text(w->m_pa_error_az_label, az_error_str);
 	w->set_text(w->m_pa_error_alt_label, alt_error_str);
 	w->set_text(w->m_pa_error_label, total_error_str);
+	return state;
 }
 
 void update_solver_agent_pa_settings(ImagerWindow *w, indigo_property *property) {
@@ -2042,17 +2046,13 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME)) {
 		update_solver_agent_wcs(this, property);
-		if ((property->state == INDIGO_OK_STATE || property->state == INDIGO_ALERT_STATE) && (!m_pa_error_eval_requested)) {
+		if (property->state == INDIGO_ALERT_STATE) {
 			QtConcurrent::run([=]() {
 				m_property_mutex.lock();
 				clear_solver_agent_releated_agents(selected_solver_agent);
 				set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME);
 				m_property_mutex.unlock();
 			});
-		}
-		if (property->state == INDIGO_OK_STATE && m_pa_error_eval_requested) {
-			m_pa_error_eval_requested = false;
-			trigger_polar_alignment(true);
 		}
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_HINTS_PROPERTY_NAME)) {
@@ -2062,7 +2062,15 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_solver_agent_pa_settings(this, property);
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_STATE_PROPERTY_NAME)) {
-		update_solver_agent_pa_error(this, property);
+		int state = update_solver_agent_pa_error(this, property);
+		if (property->state == INDIGO_OK_STATE && state == 0) {
+			QtConcurrent::run([=]() {
+				m_property_mutex.lock();
+				clear_solver_agent_releated_agents(selected_solver_agent);
+				set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME);
+				m_property_mutex.unlock();
+			});
+		}
 	}
 }
 
@@ -2286,7 +2294,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	// Solver Agent
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME)) {
 		update_solver_agent_wcs(this, property);
-		if ((property->state == INDIGO_OK_STATE || property->state == INDIGO_ALERT_STATE) && (!m_pa_error_eval_requested)) {
+		if (property->state == INDIGO_ALERT_STATE) {
 			QtConcurrent::run([=]() {
 				m_property_mutex.lock();
 				clear_solver_agent_releated_agents(selected_solver_agent);
@@ -2294,16 +2302,20 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 				m_property_mutex.unlock();
 			});
 		}
-		if (property->state == INDIGO_OK_STATE && m_pa_error_eval_requested) {
-			m_pa_error_eval_requested = false;
-			trigger_polar_alignment(true);
-		}
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_HINTS_PROPERTY_NAME)) {
 		update_solver_agent_hints(this, property);
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_STATE_PROPERTY_NAME)) {
-		update_solver_agent_pa_error(this, property);
+		int state = update_solver_agent_pa_error(this, property);
+		if (property->state == INDIGO_OK_STATE && state == 0) {
+			QtConcurrent::run([=]() {
+				m_property_mutex.lock();
+				clear_solver_agent_releated_agents(selected_solver_agent);
+				set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME);
+				m_property_mutex.unlock();
+			});
+		}
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_SETTINGS_PROPERTY_NAME)) {
 		update_solver_agent_pa_settings(this, property);

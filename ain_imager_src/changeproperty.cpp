@@ -865,9 +865,9 @@ void ImagerWindow::trigger_polar_alignment(bool recalculate) {
 	QtConcurrent::run([&]() {
 		m_property_mutex.lock();
 		if (recalculate_cache) {
-			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_CALCULATE_PA_ERROR_ITEM_NAME);
+			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_RECALCULATE_PA_ERROR_ITEM_NAME);
 		} else {
-			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_SET_PA_REFERENCE_AND_MOVE_ITEM_NAME);
+			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_CALCULATE_PA_ERROR_ITEM_NAME);
 		}
 
 		set_agent_releated_agent(selected_solver_agent, selected_mount_agent, true);
