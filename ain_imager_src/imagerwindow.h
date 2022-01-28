@@ -68,28 +68,28 @@ public:
 	virtual ~ImagerWindow();
 	void property_define_delete(indigo_property* property, char *message, bool action_deleted);
 
-	bool get_selected_imager_agent(char * selected_agent) {
+	bool get_selected_imager_agent(char * selected_agent) const {
 		if (!selected_agent || !m_agent_imager_select) return false;
 		strncpy(selected_agent, m_agent_imager_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
 		indigo_debug("SELECTED IMAGER AGENT = %s", selected_agent);
 		return true;
 	};
 
-	bool get_selected_guider_agent(char * selected_agent) {
+	bool get_selected_guider_agent(char * selected_agent) const {
 		if (!selected_agent || !m_agent_guider_select) return false;
 		strncpy(selected_agent, m_agent_guider_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
 		indigo_debug("SELECTED GUIDER AGENT = %s", selected_agent);
 		return true;
 	};
 
-	bool get_selected_mount_agent(char * selected_agent) {
+	bool get_selected_mount_agent(char * selected_agent) const {
 		if (!selected_agent || !m_agent_mount_select) return false;
 		strncpy(selected_agent, m_agent_mount_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
 		indigo_debug("SELECTED GUIDER AGENT = %s", selected_agent);
 		return true;
 	};
 
-	bool get_selected_solver_agent(char * selected_agent) {
+	bool get_selected_solver_agent(char * selected_agent) const {
 		if (!selected_agent || !m_agent_solver_select) return false;
 		strncpy(selected_agent, m_agent_solver_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
 		indigo_debug("SELECTED SOLVER AGENT = %s", selected_agent);
@@ -186,7 +186,6 @@ signals:
 	void resize_guider_edge_clipping(double edge_clipping);
 
 public slots:
-	void on_start(bool clicked);
 	void on_exposure_start_stop(bool clicked);
 	void on_preview_start_stop(bool clicked);
 	void on_abort(bool clicked);
@@ -764,6 +763,7 @@ private:
 	void change_ccd_temperature_property(const char *agent) const;
 	void change_ccd_upload_property(const char *agent, const char *item_name) const;
 	void change_related_agent(const char *agent, const char *old_agent, const char *new_agent) const;
+	void set_mount_agent_selected_imager_agent() const;
 	void change_agent_imager_dithering_property(const char *agent) const;
 	void change_agent_gain_property(const char *agent, QSpinBox *ccd_gain) const;
 	void change_agent_offset_property(const char *agent, QSpinBox *ccd_offset) const;
