@@ -338,8 +338,8 @@ public slots:
 	void on_object_clicked(QListWidgetItem *item);
 	void on_object_search_changed(const QString &obj_name);
 	void on_object_search_entered();
-	void on_guider_agent_set_pa_move(double value);
-	void on_guider_agent_set_pa_refraction(bool clicked);
+	void on_mount_agent_set_pa_settings(double value);
+	void on_mount_agent_set_pa_refraction(bool clicked);
 
 	void on_tab_changed(int index);
 

@@ -570,22 +570,23 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_solver_exposure3->setValue(1);
 	m_solver_exposure3->setEnabled(false);
 	palign_frame_layout->addWidget(m_solver_exposure3, palign_row, 2, 1, 1);
+	connect(m_solver_exposure3, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_mount_agent_set_pa_settings);
 
 	m_pa_refraction_cbox = new QCheckBox("Comp. AR");
 	m_pa_refraction_cbox->setToolTip("Compensate for atmospheric refraction.\nSome mounts do it automatically, in this case it should be off.");
 	m_pa_refraction_cbox->setEnabled(false);
 	palign_frame_layout->addWidget(m_pa_refraction_cbox, palign_row, 3, 1, 1);
-	connect(m_pa_refraction_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_guider_agent_set_pa_refraction);
+	connect(m_pa_refraction_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_agent_set_pa_refraction);
 
 	palign_row++;
 	label = new QLabel("HA / Dec move (°):");
 	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
 	m_pa_move_ha = new QDoubleSpinBox();
-	connect(m_pa_move_ha, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_set_pa_move);
+	connect(m_pa_move_ha, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_mount_agent_set_pa_settings);
 	palign_frame_layout->addWidget(m_pa_move_ha, palign_row, 2, 1, 1);
 	m_pa_move_dec = new QDoubleSpinBox();
 	palign_frame_layout->addWidget(m_pa_move_dec, palign_row, 3, 1, 1);
-	connect(m_pa_move_dec, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_set_pa_move);
+	connect(m_pa_move_dec, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_mount_agent_set_pa_settings);
 
 	/*
 	palign_row++;
@@ -733,7 +734,7 @@ void ImagerWindow::on_mount_sync(int index) {
 	});
 }
 
-void ImagerWindow::on_guider_agent_set_pa_move(double value) {
+void ImagerWindow::on_mount_agent_set_pa_settings(double value) {
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_solver_agent(selected_agent);
@@ -744,7 +745,7 @@ void ImagerWindow::on_guider_agent_set_pa_move(double value) {
 	});
 }
 
-void ImagerWindow::on_guider_agent_set_pa_refraction(bool clicked) {
+void ImagerWindow::on_mount_agent_set_pa_refraction(bool clicked) {
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_solver_agent(selected_agent);

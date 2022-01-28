@@ -745,7 +745,9 @@ void update_solver_agent_pa_settings(ImagerWindow *w, indigo_property *property)
 	indigo_debug("change %s", property->name);
 
 	for (int i = 0; i < property->count; i++) {
-		if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_SETTINGS_HA_MOVE_ITEM_NAME)) {
+		if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_SETTINGS_EXPOSURE_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_solver_exposure3);
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_SETTINGS_HA_MOVE_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_pa_move_ha);
 		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_SETTINGS_DEC_MOVE_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_pa_move_dec);
