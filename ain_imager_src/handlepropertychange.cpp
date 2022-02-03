@@ -697,10 +697,7 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 
 	w->set_widget_state(w->m_mount_start_pa_button, property->state);
 	w->set_widget_state(w->m_mount_recalculate_pe_button, property->state);
-	if (property->state == INDIGO_OK_STATE) {
-		w->set_enabled(w->m_mount_start_pa_button, true);
-		w->set_enabled(w->m_mount_recalculate_pe_button, true);
-	} else if (property->state == INDIGO_ALERT_STATE) {
+	if (property->state == INDIGO_OK_STATE || property->state == INDIGO_IDLE_STATE || property->state == INDIGO_ALERT_STATE) {
 		w->set_enabled(w->m_mount_start_pa_button, true);
 		w->set_enabled(w->m_mount_recalculate_pe_button, true);
 	} else if (property->state == INDIGO_BUSY_STATE) {
@@ -758,6 +755,8 @@ void update_solver_agent_pa_settings(ImagerWindow *w, indigo_property *property)
 			configure_spinbox(w, &property->items[i], property->perm, w->m_pa_move_dec);
 		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_SETTINGS_COMPENSATE_REFRACTION_ITEM_NAME)) {
 			w->set_enabled(w->m_pa_refraction_cbox, true);
+			w->set_enabled(w->m_mount_start_pa_button, false);
+			w->set_enabled(w->m_mount_recalculate_pe_button, false);
 			w->set_checkbox_checked(w->m_pa_refraction_cbox, (bool)property->items[i].number.value);
 		}
 	}
@@ -2042,7 +2041,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		m_solver_source_select3->blockSignals(false);
 		set_enabled(m_solver_exposure1, true);
 		set_enabled(m_solver_exposure2, true);
-		set_enabled(m_solver_exposure3, true);
+		//set_enabled(m_solver_exposure3, true);
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME)) {
 		m_solver_source_select1->blockSignals(true);
@@ -2776,7 +2775,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		clear_combobox(m_solver_source_select3);
 		set_enabled(m_solver_exposure1, false);
 		set_enabled(m_solver_exposure2, false);
-		set_enabled(m_solver_exposure3, false);
+		//set_enabled(m_solver_exposure3, false);
 		//set_enabled(m_mount_use_solver_cbox, false);
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME) ||
@@ -2831,8 +2830,11 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_SETTINGS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_solver_agent)) {
+		set_enabled(m_solver_exposure3, false);
 		set_enabled(m_pa_move_ha, false);
 		set_enabled(m_pa_move_dec, false);
+		set_enabled(m_mount_start_pa_button, false);
+		set_enabled(m_mount_recalculate_pe_button, false);
 		set_enabled(m_pa_refraction_cbox, false);
 		set_spinbox_value(m_pa_move_ha, 0);
 		set_spinbox_value(m_pa_move_dec, 0);

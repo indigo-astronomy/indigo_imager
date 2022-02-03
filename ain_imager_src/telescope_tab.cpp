@@ -582,9 +582,11 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	label = new QLabel("HA / Dec move (°):");
 	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
 	m_pa_move_ha = new QDoubleSpinBox();
+	m_pa_move_ha->setEnabled(false);
 	connect(m_pa_move_ha, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_mount_agent_set_pa_settings);
 	palign_frame_layout->addWidget(m_pa_move_ha, palign_row, 2, 1, 1);
 	m_pa_move_dec = new QDoubleSpinBox();
+	m_pa_move_dec->setEnabled(false);
 	palign_frame_layout->addWidget(m_pa_move_dec, palign_row, 3, 1, 1);
 	connect(m_pa_move_dec, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_mount_agent_set_pa_settings);
 
@@ -617,12 +619,14 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	palign_frame_layout->addWidget(toolbar, palign_row, 0, 1, 4);
 
 	m_mount_start_pa_button = new QPushButton("Start alignment");
+	m_mount_start_pa_button->setEnabled(false);
 	m_mount_start_pa_button->setStyleSheet("min-width: 30px");
 	m_mount_start_pa_button->setIcon(QIcon(":resource/play.png"));
 	toolbox->addWidget(m_mount_start_pa_button);
 	connect(m_mount_start_pa_button, &QPushButton::clicked, this, &ImagerWindow::on_mount_polar_align);
 
 	m_mount_recalculate_pe_button = new QPushButton("Recalculate error");
+	m_mount_recalculate_pe_button->setEnabled(false);
 	m_mount_recalculate_pe_button->setStyleSheet("min-width: 30px");
 	m_mount_recalculate_pe_button->setIcon(QIcon(":resource/calibrate.png"));
 	toolbox->addWidget(m_mount_recalculate_pe_button);
