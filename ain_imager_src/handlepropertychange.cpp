@@ -706,17 +706,17 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 	}
 
 	for (int i = 0; i < property->count; i++) {
-		if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_HA_DRIFT_ITEM_NAME)) {
+		if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_DEC_DRIFT_2_ITEM_NAME)) {
 			ha_error = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_ITEM_NAME)) {
 			state = (int)property->items[i].number.value;
-		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_DEC_DRIFT_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_DEC_DRIFT_3_ITEM_NAME)) {
 			dec_error = property->items[i].number.value;
-		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_ALT_ERROR_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_NS_OFFSET_ITEM_NAME)) {
 			alt_error = property->items[i].number.value;
-		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_AZ_ERROR_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_EW_OFFSET_ITEM_NAME)) {
 			az_error = property->items[i].number.value;
-		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_TOTAL_ERROR_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_POLAR_ERROR_ITEM_NAME)) {
 			total_error = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_ALT_CORRECTION_UP_ITEM_NAME)) {
 			alt_correction_up = (bool)property->items[i].number.value;
