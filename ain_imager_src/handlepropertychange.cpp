@@ -755,8 +755,8 @@ void update_solver_agent_pa_settings(ImagerWindow *w, indigo_property *property)
 			configure_spinbox(w, &property->items[i], property->perm, w->m_pa_move_dec);
 		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_SETTINGS_COMPENSATE_REFRACTION_ITEM_NAME)) {
 			w->set_enabled(w->m_pa_refraction_cbox, true);
-			w->set_enabled(w->m_mount_start_pa_button, false);
-			w->set_enabled(w->m_mount_recalculate_pe_button, false);
+			w->set_enabled(w->m_mount_start_pa_button, true);
+			w->set_enabled(w->m_mount_recalculate_pe_button, true);
 			w->set_checkbox_checked(w->m_pa_refraction_cbox, (bool)property->items[i].number.value);
 		}
 	}
