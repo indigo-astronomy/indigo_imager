@@ -651,7 +651,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	palign_frame_layout->addWidget(m_pa_error_alt_label, palign_row, 2, 1, 2);
 
 	palign_row++;
-	label = new QLabel("Total correction:");
+	label = new QLabel("Polar error:");
 	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
 	m_pa_error_label = new QLabel();
 	m_pa_error_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
