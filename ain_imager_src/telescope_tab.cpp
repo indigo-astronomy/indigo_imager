@@ -579,33 +579,12 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	connect(m_pa_refraction_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_agent_set_pa_refraction);
 
 	palign_row++;
-	label = new QLabel("HA / Dec move (°):");
+	label = new QLabel("Hour Angle move (°):");
 	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
 	m_pa_move_ha = new QDoubleSpinBox();
 	m_pa_move_ha->setEnabled(false);
 	connect(m_pa_move_ha, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_mount_agent_set_pa_settings);
 	palign_frame_layout->addWidget(m_pa_move_ha, palign_row, 2, 1, 1);
-	m_pa_move_dec = new QDoubleSpinBox();
-	m_pa_move_dec->setEnabled(false);
-	palign_frame_layout->addWidget(m_pa_move_dec, palign_row, 3, 1, 1);
-	connect(m_pa_move_dec, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_mount_agent_set_pa_settings);
-
-	/*
-	palign_row++;
-	m_pa_use_initial_cbox = new QCheckBox("Initial HA / Dec:");
-	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	palign_frame_layout->addWidget(m_pa_use_initial_cbox, palign_row, 0, 1, 2);
-
-	m_pa_ha_input = new QLineEdit();
-	m_pa_ha_input->setPlaceholderText("hh:mm:ss");
-	m_pa_ha_input->setToolTip("Initial Hour angle in format hh:mm:ss");
-	palign_frame_layout->addWidget(m_pa_ha_input, palign_row, 2);
-
-	m_pa_dec_input = new QLineEdit();
-	m_pa_dec_input->setPlaceholderText("dd:mm:ss");
-	m_pa_dec_input->setToolTip("Initial Declination in format dd:mm:ss");
-	palign_frame_layout->addWidget(m_pa_dec_input, palign_row, 3);
-	*/
 
 	palign_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -637,6 +616,13 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	palign_frame_layout->addItem(spacer, palign_row, 0, 1, 4);
 
 	palign_row++;
+	label = new QLabel("Polar error:");
+	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
+	m_pa_error_label = new QLabel();
+	m_pa_error_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	palign_frame_layout->addWidget(m_pa_error_label, palign_row, 2, 1, 2);
+
+	palign_row++;
 	label = new QLabel("Azimuth correction:");
 	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
 	m_pa_error_az_label = new QLabel();
@@ -649,13 +635,6 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_pa_error_alt_label = new QLabel();
 	m_pa_error_alt_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	palign_frame_layout->addWidget(m_pa_error_alt_label, palign_row, 2, 1, 2);
-
-	palign_row++;
-	label = new QLabel("Polar error:");
-	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
-	m_pa_error_label = new QLabel();
-	m_pa_error_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	palign_frame_layout->addWidget(m_pa_error_label, palign_row, 2, 1, 2);
 }
 
 

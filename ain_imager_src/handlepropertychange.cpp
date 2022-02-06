@@ -737,7 +737,7 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 	if (property->state == INDIGO_OK_STATE) {
 		sprintf(alt_correction_str, "%+.2f' (move %s)", alt_correction * 60, alt_correction_up ? "Up" : "Down");
 		sprintf(az_correction_str, "%+.2f' (move %s)", az_correction * 60, az_correction_cw ? "C.W." : "C.C.W.");
-		sprintf(total_error_str, "%.1f' (%.1f' %.1f')", total_error * 60, ns_error * 60, ew_error * 60);
+		sprintf(total_error_str, "%+.1f' (%+.1f' %+.1f')", total_error * 60, ns_error * 60, ew_error * 60);
 	} else if (property->state == INDIGO_IDLE_STATE || property->state == INDIGO_BUSY_STATE) {
 		sprintf(alt_correction_str, "N/A");
 		sprintf(az_correction_str, "N/A");
@@ -757,8 +757,6 @@ void update_solver_agent_pa_settings(ImagerWindow *w, indigo_property *property)
 			configure_spinbox(w, &property->items[i], property->perm, w->m_solver_exposure3);
 		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_SETTINGS_HA_MOVE_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_pa_move_ha);
-		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_SETTINGS_DEC_MOVE_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, w->m_pa_move_dec);
 		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_SETTINGS_COMPENSATE_REFRACTION_ITEM_NAME)) {
 			w->set_enabled(w->m_pa_refraction_cbox, true);
 			w->set_enabled(w->m_mount_start_pa_button, true);
@@ -2838,12 +2836,10 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_solver_agent)) {
 		set_enabled(m_solver_exposure3, false);
 		set_enabled(m_pa_move_ha, false);
-		set_enabled(m_pa_move_dec, false);
 		set_enabled(m_mount_start_pa_button, false);
 		set_enabled(m_mount_recalculate_pe_button, false);
 		set_enabled(m_pa_refraction_cbox, false);
 		set_spinbox_value(m_pa_move_ha, 0);
-		set_spinbox_value(m_pa_move_dec, 0);
 		set_checkbox_checked(m_pa_refraction_cbox, 0);
 	}
 }

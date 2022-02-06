@@ -698,7 +698,6 @@ private:
 	QComboBox *m_solver_source_select3;
 	QDoubleSpinBox *m_solver_exposure3;
 	QDoubleSpinBox *m_pa_move_ha;
-	QDoubleSpinBox *m_pa_move_dec;
 	/*
 	QCheckBox *m_pa_use_initial_cbox;
 	QLineEdit *m_pa_dec_input;
