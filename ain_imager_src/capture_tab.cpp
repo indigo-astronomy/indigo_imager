@@ -554,9 +554,13 @@ void ImagerWindow::on_frame_type_selected(int index) {
 
 void ImagerWindow::on_dither_agent_selected(int index) {
 	QtConcurrent::run([=]() {
-		static char selected_agent[INDIGO_NAME_SIZE] = {0};
-		static char old_agent[INDIGO_NAME_SIZE] = {0};
-		static char new_agent[INDIGO_NAME_SIZE] = {0};
+		static char selected_agent[INDIGO_NAME_SIZE];
+		static char old_agent[INDIGO_NAME_SIZE];
+		static char new_agent[INDIGO_NAME_SIZE];
+
+		selected_agent[0] = '\0';
+		old_agent[0] = '\0';
+		new_agent[0] = '\0';
 
 		get_selected_imager_agent(selected_agent);
 

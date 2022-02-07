@@ -38,68 +38,37 @@ void ImagerWindow::change_ccd_frame_property(const char *agent) const {
 }
 
 void ImagerWindow::change_ccd_exposure_property(const char *agent, QDoubleSpinBox *exp_time) const {
-	static const char *items[] = {
-		CCD_EXPOSURE_ITEM_NAME,
-	};
-	static double values[1];
-	values[0] = (double)exp_time->value();
-	indigo_change_number_property(nullptr, agent, CCD_EXPOSURE_PROPERTY_NAME, 1, items, values);
+	static double value;
+	value = (double)exp_time->value();
+	indigo_change_number_property_1(nullptr, agent, CCD_EXPOSURE_PROPERTY_NAME, CCD_EXPOSURE_ITEM_NAME, value);
 }
 
 void ImagerWindow::change_ccd_abort_exposure_property(const char *agent) const {
-	static const char *items[] = {
-		CCD_ABORT_EXPOSURE_ITEM_NAME
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, CCD_ABORT_EXPOSURE_PROPERTY_NAME, 1, items, values);
+	indigo_change_switch_property_1(nullptr, agent, CCD_ABORT_EXPOSURE_PROPERTY_NAME, CCD_ABORT_EXPOSURE_ITEM_NAME, true);
 }
 
 void ImagerWindow::change_ccd_mode_property(const char *agent, QComboBox *frame_size_select) const {
 	static char selected_mode[INDIGO_NAME_SIZE];
 	strncpy(selected_mode, frame_size_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
-	static const char * items[] = {
-		selected_mode
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, CCD_MODE_PROPERTY_NAME, 1, items, values);
+	indigo_change_switch_property_1(nullptr, agent, CCD_MODE_PROPERTY_NAME, selected_mode, true);
 }
 
 void ImagerWindow::change_focuser_reverse_property(const char *agent) const {
 	static char selected_mode[INDIGO_NAME_SIZE];
 	strncpy(selected_mode, m_focuser_reverse_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
-	static const char * items[] = {
-		selected_mode
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, FOCUSER_REVERSE_MOTION_PROPERTY_NAME, 1, items, values);
+	indigo_change_switch_property_1(nullptr, agent, FOCUSER_REVERSE_MOTION_PROPERTY_NAME, selected_mode, true);
 }
 
 void ImagerWindow::change_ccd_image_format_property(const char *agent) const {
 	static char selected_format[INDIGO_NAME_SIZE];
 	strncpy(selected_format, m_frame_format_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
-	static const char * items[] = {
-		selected_format
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, CCD_IMAGE_FORMAT_PROPERTY_NAME, 1, items, values);
+	indigo_change_switch_property_1(nullptr, agent, CCD_IMAGE_FORMAT_PROPERTY_NAME, selected_format, true);
 }
 
 void ImagerWindow::change_ccd_upload_property(const char *agent, const char *item_name) const {
-	static const char * items[] = {
-		item_name
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, CCD_UPLOAD_MODE_PROPERTY_NAME, 1, items, values);
+	static char item[INDIGO_NAME_SIZE];
+	strncpy(item, item_name, INDIGO_NAME_SIZE);
+	indigo_change_switch_property_1(nullptr, agent, CCD_UPLOAD_MODE_PROPERTY_NAME, item, true);
 }
 
 void ImagerWindow::set_mount_agent_selected_imager_agent() const {
@@ -110,6 +79,7 @@ void ImagerWindow::set_mount_agent_selected_imager_agent() const {
 
 	get_selected_mount_agent(selected_agent);
 	get_selected_imager_agent(new_agent);
+
 	char *service1 = strrchr(new_agent, '@');
 	char *service2 = strrchr(selected_agent, '@');
 	if (service1 != nullptr && service2 != nullptr && !strcmp(service1, service2)) {
@@ -132,23 +102,12 @@ void ImagerWindow::set_mount_agent_selected_imager_agent() const {
 }
 
 void ImagerWindow::change_related_agent(const char *agent, const char *old_agent, const char *new_agent) const {
+	indigo_log("[RELATED AGENT] %s '%s': %s -> %s\n", __FUNCTION__, agent, old_agent, new_agent);
 	if (old_agent[0] != '\0') {
-		static const char * items[] = {
-			old_agent
-		};
-		static bool values[] = {
-			false
-		};
-		indigo_change_switch_property(nullptr, agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME, 1, items, values);
+		indigo_change_switch_property_1(nullptr, agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME, old_agent, false);
 	}
 	if (new_agent[0] != '\0') {
-		static const char * items[] = {
-			new_agent
-		};
-		static bool values[] = {
-			true
-		};
-		indigo_change_switch_property(nullptr, agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME, 1, items, values);
+		indigo_change_switch_property_1(nullptr, agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME, new_agent, true);
 	}
 }
 
@@ -186,13 +145,7 @@ void ImagerWindow::change_agent_offset_property(const char *agent, QSpinBox *ccd
 void ImagerWindow::change_ccd_frame_type_property(const char *agent) const {
 	static char selected_type[INDIGO_NAME_SIZE];
 	strncpy(selected_type, m_frame_type_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
-	static const char * items[] = {
-		selected_type
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, CCD_FRAME_TYPE_PROPERTY_NAME, 1, items, values);
+	indigo_change_switch_property_1(nullptr, agent, CCD_FRAME_TYPE_PROPERTY_NAME, selected_type, true);
 }
 
 void ImagerWindow::change_agent_batch_property(const char *agent) const {
@@ -337,37 +290,19 @@ void ImagerWindow::change_jpeg_settings_property(const char *agent, const int jp
 void ImagerWindow::change_focus_estimator_property(const char *agent) const {
 	static char selected_estimator[INDIGO_NAME_SIZE];
 	strncpy(selected_estimator, m_focus_estimator_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
-	static const char * items[] = {
-		selected_estimator
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, AGENT_IMAGER_FOCUS_ESTIMATOR_PROPERTY_NAME, 1, items, values);
+	indigo_change_switch_property_1(nullptr, agent, AGENT_IMAGER_FOCUS_ESTIMATOR_PROPERTY_NAME, selected_estimator, true);
 }
 
 void ImagerWindow::change_detection_mode_property(const char *agent) const {
 	static char selected_mode[INDIGO_NAME_SIZE];
 	strncpy(selected_mode, m_detection_mode_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
-	static const char * items[] = {
-		selected_mode
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME, 1, items, values);
+	indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME, selected_mode, true);
 }
 
 void ImagerWindow::change_dec_guiding_property(const char *agent) const {
 	static char selected_mode[INDIGO_NAME_SIZE];
 	strncpy(selected_mode, m_dec_guiding_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
-	static const char * items[] = {
-		selected_mode
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME, 1, items, values);
+	indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME, selected_mode, true);
 }
 
 void ImagerWindow::change_agent_focus_params_property(const char *agent, bool set_backlash) const {

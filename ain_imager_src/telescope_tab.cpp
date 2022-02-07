@@ -640,9 +640,13 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 
 void ImagerWindow::on_mount_guider_agent_selected(int index) {
 	QtConcurrent::run([=]() {
-		static char selected_agent[INDIGO_NAME_SIZE] = {0};
-		static char old_agent[INDIGO_NAME_SIZE] = {0};
-		static char new_agent[INDIGO_NAME_SIZE] = {0};
+		static char selected_agent[INDIGO_NAME_SIZE];
+		static char old_agent[INDIGO_NAME_SIZE];
+		static char new_agent[INDIGO_NAME_SIZE];
+
+		selected_agent[0] = '\0';
+		old_agent[0] = '\0';
+		new_agent[0] = '\0';
 
 		get_selected_mount_agent(selected_agent);
 
