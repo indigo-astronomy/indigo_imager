@@ -2056,7 +2056,8 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME)) {
 		update_solver_agent_wcs(this, property);
-		if (property->state == INDIGO_ALERT_STATE) {
+		indigo_property *p = properties.get(property->device, AGENT_PLATESOLVER_PA_STATE_PROPERTY_NAME);
+		if ((property->state == INDIGO_ALERT_STATE || property->state == INDIGO_OK_STATE) && (p == nullptr || p->state != INDIGO_BUSY_STATE)) {
 			QtConcurrent::run([=]() {
 				m_property_mutex.lock();
 				clear_solver_agent_releated_agents(selected_solver_agent);
@@ -2304,7 +2305,8 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	// Solver Agent
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME)) {
 		update_solver_agent_wcs(this, property);
-		if (property->state == INDIGO_ALERT_STATE) {
+		indigo_property *p = properties.get(property->device, AGENT_PLATESOLVER_PA_STATE_PROPERTY_NAME);
+		if ((property->state == INDIGO_ALERT_STATE || property->state == INDIGO_OK_STATE) && (p == nullptr || p->state != INDIGO_BUSY_STATE)) {
 			QtConcurrent::run([=]() {
 				m_property_mutex.lock();
 				clear_solver_agent_releated_agents(selected_solver_agent);
