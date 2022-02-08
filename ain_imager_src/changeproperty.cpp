@@ -592,7 +592,7 @@ void ImagerWindow::change_mount_agent_abort(const char *agent) const {
 }
 
 void ImagerWindow::change_solver_agent_abort(const char *agent) const {
-	indigo_change_switch_property_1(nullptr, agent, AGENT_PLATESOLVER_ABORT_PROPERTY_NAME, AGENT_PLATESOLVER_ABORT_PROPERTY_NAME, true);
+	indigo_change_switch_property_1(nullptr, agent, AGENT_PLATESOLVER_ABORT_PROPERTY_NAME, AGENT_PLATESOLVER_ABORT_ITEM_NAME, true);
 }
 
 void ImagerWindow::change_solver_agent_hints_property(const char *agent) const {
