@@ -617,24 +617,24 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 
 	palign_row++;
 	label = new QLabel("Polar error:");
-	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
+	palign_frame_layout->addWidget(label, palign_row, 0, 1, 1);
 	m_pa_error_label = new QLabel();
 	m_pa_error_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	palign_frame_layout->addWidget(m_pa_error_label, palign_row, 2, 1, 2);
+	palign_frame_layout->addWidget(m_pa_error_label, palign_row, 1, 1, 3);
 
 	palign_row++;
 	label = new QLabel("Azimuth error:");
-	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
+	palign_frame_layout->addWidget(label, palign_row, 0, 1, 1);
 	m_pa_error_az_label = new QLabel();
 	m_pa_error_az_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	palign_frame_layout->addWidget(m_pa_error_az_label, palign_row, 2, 1, 2);
+	palign_frame_layout->addWidget(m_pa_error_az_label, palign_row, 1, 1, 3);
 
 	palign_row++;
 	label = new QLabel("Altitude error:");
-	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
+	palign_frame_layout->addWidget(label, palign_row, 0, 1, 1);
 	m_pa_error_alt_label = new QLabel();
 	m_pa_error_alt_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	palign_frame_layout->addWidget(m_pa_error_alt_label, palign_row, 2, 1, 2);
+	palign_frame_layout->addWidget(m_pa_error_alt_label, palign_row, 1, 1, 3);
 }
 
 
