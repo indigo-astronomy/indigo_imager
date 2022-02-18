@@ -729,8 +729,8 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 	char az_correction_str[50] = "Error";
 	char total_error_str[50] = "Error";
 	if (property->state == INDIGO_OK_STATE) {
-		sprintf(alt_correction_str, "%+.2f' (move %s)", alt_error * 60, alt_correction_up ? "Up 🠕" : "Down 🠗");
-		sprintf(az_correction_str, "%+.2f' (move %s)", az_error * 60, az_correction_cw ? "C.W. 🠖" : "C.C.W. 🠔");
+		sprintf(alt_correction_str, "%+.2f'  move %s", alt_error * 60, alt_correction_up ? "Up 🠕" : "Down 🠗");
+		sprintf(az_correction_str, "%+.2f'  move %s", az_error * 60, az_correction_cw ? "C.W. ↻" : "C.C.W. ↺");
 		sprintf(total_error_str, "%.2f'", total_error * 60);
 	} else if (property->state == INDIGO_IDLE_STATE || property->state == INDIGO_BUSY_STATE) {
 		sprintf(alt_correction_str, "N/A");
