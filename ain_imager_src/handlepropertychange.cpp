@@ -548,7 +548,23 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 			index_used = property->items[i].number.value;
 		}
 	}
-
+	bool update_pa_buttons = true;
+	indigo_property *sp = properties.get(property->device, AGENT_PLATESOLVER_SYNC_PROPERTY_NAME);
+	if (sp) {
+		for (int i = 0; i < sp->count; i++) {
+			if (
+				(
+					client_match_item(&sp->items[i], AGENT_PLATESOLVER_SYNC_CALCULATE_PA_ERROR_ITEM_NAME) ||
+					client_match_item(&sp->items[i], AGENT_PLATESOLVER_SYNC_RECALCULATE_PA_ERROR_ITEM_NAME)
+				) && (
+					sp->items[i].sw.value
+				)
+			) {
+				update_pa_buttons = false;
+				break;
+			}
+		}
+	}
 	// Set WCS data to the appropriate image
 	if (w->m_last_solver_source.startsWith("Imager Agent")) {
 		auto im = (preview_image &)w->m_imager_viewer->pixmapItem()->image();
@@ -567,6 +583,10 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 	w->set_widget_state(w->m_mount_solve_and_center_button, property->state);
 	w->set_widget_state(w->m_mount_solve_and_sync_button, property->state);
 	w->set_widget_state(w->m_solve_button, property->state);
+	if (update_pa_buttons) {
+		w->set_widget_state(w->m_mount_start_pa_button, property->state);
+		w->set_widget_state(w->m_mount_recalculate_pe_button, property->state);
+	}
 	if (property->state == INDIGO_OK_STATE) {
 		w->m_last_solver_source = "";
 		if (scale != 0) {
