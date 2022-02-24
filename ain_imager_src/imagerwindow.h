@@ -671,6 +671,7 @@ private:
 	QComboBox *m_solver_source_select2;
 	QDoubleSpinBox *m_solver_exposure2;
 	QLabel *m_solver_status_label2;
+	QLabel *m_pa_status_label;
 
 	//Solver agent
 	QComboBox *m_agent_solver_select;

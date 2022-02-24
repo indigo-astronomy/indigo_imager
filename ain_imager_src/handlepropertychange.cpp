@@ -757,6 +757,42 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 		sprintf(az_correction_str, "N/A");
 		sprintf(total_error_str, "N/A");
 	}
+
+	char message[50] = "Idle";
+	switch (state) {
+	case 0:
+		break;
+	case 1:
+		strcpy(message, "Slewing to initial position");
+		break;
+	case 2:
+		strcpy(message, "Measuring point 1");
+		break;
+	case 3:
+		strcpy(message, "Measuring point 2");
+		break;
+	case 4:
+		strcpy(message, "Measuring point 3");
+		break;
+	case 5:
+		strcpy(message, "Recalculating");
+		break;
+	case 6:
+		strcpy(message, "In progress");
+		break;
+	}
+	char label_str[100];
+	if (property->state == INDIGO_OK_STATE) {
+		snprintf(label_str, 100, "<img src=\":resource/led-green.png\"> %s", message);
+	} else if (property->state == INDIGO_BUSY_STATE) {
+		snprintf(label_str, 100, "<img src=\":resource/led-orange.png\"> %s", message);
+	} else if (property->state == INDIGO_ALERT_STATE) {
+		snprintf(label_str, 100, "<img src=\":resource/led-red.png\"> %s", message);
+	} else {
+		snprintf(label_str, 100, "<img src=\":resource/led-grey.png\"> %s", message);
+	}
+	w->set_text(w->m_pa_status_label, label_str);
+
 	w->set_text(w->m_pa_error_az_label, az_correction_str);
 	w->set_text(w->m_pa_error_alt_label, alt_correction_str);
 	w->set_text(w->m_pa_error_label, total_error_str);

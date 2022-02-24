@@ -554,6 +554,12 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	palign_frame->setContentsMargins(0, 0, 0, 0);
 
 	int palign_row = 0;
+	m_pa_status_label = new QLabel("");
+	m_pa_status_label->setTextFormat(Qt::RichText);
+	m_pa_status_label->setText("<img src=\":resource/led-grey.png\"> Idle");
+	palign_frame_layout->addWidget(m_pa_status_label, palign_row, 0, 1, 4);
+
+	palign_row++;
 	label = new QLabel("Image source:");
 	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
 	m_solver_source_select3 = new QComboBox();
