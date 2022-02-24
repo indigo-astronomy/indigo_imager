@@ -71,7 +71,7 @@ static indigo_result client_attach(indigo_client *client) {
 
 
 static void handle_blob_property(indigo_property *property) {
-	if (property->state == INDIGO_OK_STATE) {
+	if (property->state == INDIGO_OK_STATE && property->perm != INDIGO_WO_PERM) {
 		if (!strncmp(property->device, "Guider Agent", 12)) {
 			if ((!strncmp(property->name, CCD_PREVIEW_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) && (conf.guider_save_bandwidth == 0)) {
 				return;
@@ -94,7 +94,7 @@ static void handle_blob_property(indigo_property *property) {
 				free(blob_item);
 			}
 		}
-	} else if(property->state == INDIGO_BUSY_STATE) {
+	} else if(property->state == INDIGO_BUSY_STATE && property->perm != INDIGO_WO_PERM) {
 		for (int row = 0; row < property->count; row++) {
 			emit(IndigoClient::instance().obsolete_preview(property, &property->items[row]));
 		}
