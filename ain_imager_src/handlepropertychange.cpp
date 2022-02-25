@@ -2883,6 +2883,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_text(m_pa_error_az_label, "");
 		set_text(m_pa_error_alt_label, "");
 		set_text(m_pa_error_label, "");
+		set_text(m_pa_status_label, "<img src=\":resource/led-grey.png\"> Idle");
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_SETTINGS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_solver_agent)) {
