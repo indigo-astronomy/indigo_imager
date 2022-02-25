@@ -617,6 +617,13 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	toolbox->addWidget(m_mount_recalculate_pe_button);
 	connect(m_mount_recalculate_pe_button , &QPushButton::clicked, this, &ImagerWindow::on_mount_recalculate_polar_error);
 
+	m_mount_pa_stop_button = new QPushButton("Stop");
+	m_mount_pa_stop_button->setEnabled(false);
+	m_mount_pa_stop_button->setStyleSheet("min-width: 15px");
+	m_mount_pa_stop_button->setIcon(QIcon(":resource/stop.png"));
+	toolbox->addWidget(m_mount_pa_stop_button);
+	connect(m_mount_pa_stop_button , &QPushButton::clicked, this, &ImagerWindow::on_mount_polar_align_stop);
+
 	palign_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	palign_frame_layout->addItem(spacer, palign_row, 0, 1, 4);
@@ -643,6 +650,16 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	palign_frame_layout->addWidget(m_pa_error_alt_label, palign_row, 1, 1, 3);
 }
 
+void ImagerWindow::on_mount_polar_align_stop() {
+	QtConcurrent::run([&]() {
+		m_property_mutex.lock();
+		static char selected_solver_agent[INDIGO_NAME_SIZE];
+		if (get_selected_solver_agent(selected_solver_agent)) {
+			change_solver_agent_abort(selected_solver_agent);
+		}
+		m_property_mutex.unlock();
+	});
+}
 
 void ImagerWindow::on_mount_guider_agent_selected(int index) {
 	QtConcurrent::run([=]() {

@@ -325,6 +325,7 @@ public slots:
 	void on_mount_guider_agent_selected(int index);
 	void on_trigger_solve();
 	void on_mount_polar_align();
+	void on_mount_polar_align_stop();
 	void on_mount_recalculate_polar_error();
 	void on_image_source2_selected(int index);
 	void on_image_source3_selected(int index);
@@ -706,6 +707,7 @@ private:
 	*/
 	QPushButton *m_mount_start_pa_button;
 	QPushButton *m_mount_recalculate_pe_button;
+	QPushButton *m_mount_pa_stop_button;
 	QCheckBox *m_pa_refraction_cbox;
 	QLabel *m_pa_error_az_label;
 	QLabel *m_pa_error_alt_label;

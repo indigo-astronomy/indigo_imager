@@ -2123,6 +2123,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_solver_agent_pa_settings(this, property);
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_STATE_PROPERTY_NAME)) {
+		set_enabled(m_mount_pa_stop_button, true);
 		int state = update_solver_agent_pa_error(this, property);
 		if (property->state == INDIGO_OK_STATE && state == 0) {
 			QtConcurrent::run([=]() {
@@ -2369,6 +2370,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		update_solver_agent_hints(this, property);
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_STATE_PROPERTY_NAME)) {
+		set_enabled(m_mount_pa_stop_button, true);
 		int state = update_solver_agent_pa_error(this, property);
 		if (property->state == INDIGO_OK_STATE && state == 0) {
 			QtConcurrent::run([=]() {
@@ -2891,6 +2893,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_enabled(m_pa_move_ha, false);
 		set_enabled(m_mount_start_pa_button, false);
 		set_enabled(m_mount_recalculate_pe_button, false);
+		set_enabled(m_mount_pa_stop_button, false);
 		set_enabled(m_pa_refraction_cbox, false);
 		set_spinbox_value(m_pa_move_ha, 0);
 		set_checkbox_checked(m_pa_refraction_cbox, 0);
