@@ -761,6 +761,9 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 	char message[50] = "Idle";
 	switch (state) {
 	case 0:
+		if (property->state == INDIGO_BUSY_STATE) {
+			strcpy(message, "Preparing");
+		}
 		break;
 	case 1:
 		strcpy(message, "Slewing to initial position");
@@ -778,7 +781,11 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 		strcpy(message, "Recalculating");
 		break;
 	case 6:
-		strcpy(message, "In progress");
+		if (property->state == INDIGO_BUSY_STATE) {
+			strcpy(message, "Preparing");
+		} else {
+			strcpy(message, "In progress");
+		}
 		break;
 	}
 	char label_str[100];
@@ -2125,7 +2132,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_STATE_PROPERTY_NAME)) {
 		set_enabled(m_mount_pa_stop_button, true);
 		int state = update_solver_agent_pa_error(this, property);
-		if (property->state == INDIGO_OK_STATE && state == 0) {
+		if (property->state != INDIGO_BUSY_STATE && state == 0) {
 			QtConcurrent::run([=]() {
 				m_property_mutex.lock();
 				clear_solver_agent_releated_agents(selected_solver_agent);
@@ -2372,7 +2379,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_STATE_PROPERTY_NAME)) {
 		set_enabled(m_mount_pa_stop_button, true);
 		int state = update_solver_agent_pa_error(this, property);
-		if (property->state == INDIGO_OK_STATE && state == 0) {
+		if (property->state != INDIGO_BUSY_STATE && state == 0) {
 			QtConcurrent::run([=]() {
 				m_property_mutex.lock();
 				clear_solver_agent_releated_agents(selected_solver_agent);
