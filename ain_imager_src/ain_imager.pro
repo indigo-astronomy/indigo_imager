@@ -158,5 +158,6 @@ win32 {
             ../indigo/indigo_libs/indigo/indigo_version.h \
             ../indigo/indigo_libs/indigo/indigo_xml.h \
             ../indigo/indigo_libs/indigo/indigo_token.h \
-            ../indigo/indigo_libs/indigo/indigo_names.h
+            ../indigo/indigo_libs/indigo/indigo_names.h \
+            ../indigo/indigo_libs/indigo/indigo_platesolver.h
 }

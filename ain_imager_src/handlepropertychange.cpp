@@ -22,6 +22,7 @@
 #include "propertycache.h"
 #include "conf.h"
 #include "widget_state.h"
+#include <indigo/indigo_platesolver.h>
 
 template<typename W>
 static void configure_spinbox(ImagerWindow *w, indigo_item *item, int perm, W *widget) {
@@ -748,11 +749,11 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 	char alt_correction_str[50] = "Error";
 	char az_correction_str[50] = "Error";
 	char total_error_str[50] = "Error";
-	if (property->state == INDIGO_OK_STATE) {
+	if (property->state == INDIGO_OK_STATE || state == POLAR_ALIGN_RECALCULATE) {
 		sprintf(alt_correction_str, "%+.2f'  move %s", alt_error * 60, alt_correction_up ? "Up ↑" : "Down ↓");
 		sprintf(az_correction_str, "%+.2f'  move %s", az_error * 60, az_correction_cw ? "C.W. ↻" : "C.C.W. ↺");
 		sprintf(total_error_str, "%.2f'", total_error * 60);
-	} else if (property->state == INDIGO_IDLE_STATE || property->state == INDIGO_BUSY_STATE) {
+	} else if (state == POLAR_ALIGN_IDLE || property->state == INDIGO_BUSY_STATE) {
 		sprintf(alt_correction_str, "N/A");
 		sprintf(az_correction_str, "N/A");
 		sprintf(total_error_str, "N/A");
@@ -760,32 +761,25 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 
 	char message[50] = "Idle";
 	switch (state) {
-	case 0:
-		if (property->state == INDIGO_BUSY_STATE) {
-			strcpy(message, "Preparing");
-		}
+	case POLAR_ALIGN_IDLE:
 		break;
-	case 1:
+	case POLAR_ALIGN_START:
 		strcpy(message, "Slewing to initial position");
 		break;
-	case 2:
+	case POLAR_ALIGN_REFERENCE_1:
 		strcpy(message, "Measuring point 1");
 		break;
-	case 3:
+	case POLAR_ALIGN_REFERENCE_2:
 		strcpy(message, "Measuring point 2");
 		break;
-	case 4:
+	case POLAR_ALIGN_REFERENCE_3:
 		strcpy(message, "Measuring point 3");
 		break;
-	case 5:
+	case POLAR_ALIGN_RECALCULATE:
 		strcpy(message, "Recalculating");
 		break;
-	case 6:
-		if (property->state == INDIGO_BUSY_STATE) {
-			strcpy(message, "Preparing");
-		} else {
-			strcpy(message, "In progress");
-		}
+	case POLAR_ALIGN_IN_PROGRESS:
+		strcpy(message, "In progress");
 		break;
 	}
 	char label_str[100];
