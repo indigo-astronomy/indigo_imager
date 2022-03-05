@@ -784,7 +784,11 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 	}
 	char label_str[100];
 	if (property->state == INDIGO_OK_STATE) {
-		snprintf(label_str, 100, "<img src=\":resource/led-green.png\"> %s", message);
+		if (state == POLAR_ALIGN_IDLE) {
+			snprintf(label_str, 100, "<img src=\":resource/led-grey.png\"> %s", message);
+		} else {
+			snprintf(label_str, 100, "<img src=\":resource/led-green.png\"> %s", message);
+		}
 	} else if (property->state == INDIGO_BUSY_STATE) {
 		snprintf(label_str, 100, "<img src=\":resource/led-orange.png\"> %s", message);
 	} else if (property->state == INDIGO_ALERT_STATE) {
