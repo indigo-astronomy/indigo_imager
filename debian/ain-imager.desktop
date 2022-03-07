@@ -8,5 +8,5 @@ Icon=ain-imager.png
 Terminal=false
 Type=Application
 StartupWMClass=ain_imager
-Categories=Astronomy
+Categories=Astronomy;Education;Science
 Keywords=astronomy

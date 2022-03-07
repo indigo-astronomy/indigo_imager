@@ -8,6 +8,6 @@ Icon=ain-viewer.png
 Terminal=false
 Type=Application
 StartupWMClass=ain_viewer
-Categories=Astronomy
+Categories=Astronomy;Education;Science
 Keywords=astronomy
 MimeType=image/x-image-raw;image/x-image-fits;image/x-fits
