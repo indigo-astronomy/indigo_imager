@@ -475,9 +475,15 @@ void ImagerWindow::window_log(char *message, int state) {
 	case INDIGO_BUSY_STATE:
 		mLog->setTextColor(QColor::fromRgb(255, 165, 0));
 		break;
-	default:
-		mLog->setTextColor(Qt::white);
-		break;
+	default: {
+			QString msg(message);
+			if (msg.contains("failed", Qt::CaseInsensitive) || msg.contains("error", Qt::CaseInsensitive)) {
+				mLog->setTextColor(QColor::fromRgb(224, 0, 0));
+			} else {
+				mLog->setTextColor(Qt::white);
+			}
+			break;
+		}
 	}
 	snprintf(log_line, 512, "%s %s", timestamp, message);
 	indigo_log("[message] %s\n", log_line);
