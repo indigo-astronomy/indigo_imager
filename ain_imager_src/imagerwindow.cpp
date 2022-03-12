@@ -477,8 +477,10 @@ void ImagerWindow::window_log(char *message, int state) {
 		break;
 	default: {
 			QString msg(message);
-			if (msg.contains("failed", Qt::CaseInsensitive) || msg.contains("error", Qt::CaseInsensitive)) {
+			if (msg.contains("fail", Qt::CaseInsensitive) || msg.contains("error", Qt::CaseInsensitive)) {
 				mLog->setTextColor(QColor::fromRgb(224, 0, 0));
+			} else if (msg.contains("warn", Qt::CaseInsensitive)) {
+				mLog->setTextColor(QColor::fromRgb(255, 165, 0));
 			} else {
 				mLog->setTextColor(Qt::white);
 			}
