@@ -532,7 +532,9 @@ bool ImagerWindow::show_preview_in_guider_viewer(QString &key) {
 }
 
 void ImagerWindow::play_sound(const char *sound_file) {
-	if (conf.sound_notifications_enabled) QSound::play(sound_file);
+	if (conf.sound_notifications_enabled) {
+		QSound::play(sound_file);
+	}
 }
 
 void ImagerWindow::show_selected_preview_in_solver_tab(QString &solver_source) {
