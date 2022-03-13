@@ -96,6 +96,8 @@ public:
 		return true;
 	};
 
+	void play_sound(const char *sound_file);
+
 	void property_delete(indigo_property* property, char *message);
 	void property_define(indigo_property* property, char *message);
 
@@ -197,6 +199,7 @@ public slots:
 	void on_message_sent(indigo_property* property, char *message);
 	void on_blobs_changed(bool status);
 	void on_save_noname_images_changed(bool status);
+	void on_sound_notifications_changed(bool status);
 	void on_restore_window_size_changed(bool status);
 	void on_bonjour_changed(bool status);
 	void on_use_suffix_changed(bool status);

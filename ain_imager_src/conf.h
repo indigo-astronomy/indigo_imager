@@ -98,6 +98,7 @@ typedef struct {
 	bool restore_window_size;
 	bool imager_show_reference;
 	char solver_image_source3[INDIGO_NAME_SIZE];
+	bool sound_notifications_enabled;
 	char unused[100];
 } conf_t;
 

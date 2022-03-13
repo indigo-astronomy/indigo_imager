@@ -1,7 +1,7 @@
 # indigo_imager
 
 ## Configuring build
-Install Qt and and build tools: gcc, g++, make etc.
+Install Qt (with qtmultimedia5-dev) and and build tools: gcc, g++, make etc.
 
 1. To build this code on Linux where you do not have INDIGO installed, it is necessary to create a symlink to the location of your indigo source tree (INDIGO should be built there):
 ```

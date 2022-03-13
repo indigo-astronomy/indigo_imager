@@ -1,4 +1,4 @@
-QT += core gui widgets network printsupport concurrent
+QT += core gui widgets network printsupport concurrent multimedia
 CONFIG += c++11 debug
 QMAKE_CXXFLAGS += -O3
 QMAKE_CXXFLAGS_RELEASE += -O3
@@ -75,7 +75,10 @@ RESOURCES += \
 	../resource/next.png \
 	../resource/zoom-in.png \
 	../resource/zoom-out.png \
-	../resource/histogram.png
+	../resource/histogram.png \
+	../resource/error.wav \
+	../resource/ok.wav \
+	../resource/warning.wav
 
 
 # Additional import path used to resolve QML modules in Qt Creator\'s code model

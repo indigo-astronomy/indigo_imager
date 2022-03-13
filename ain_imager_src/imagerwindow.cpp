@@ -33,6 +33,7 @@
 #include "conf.h"
 #include "version.h"
 #include <imageviewer.h>
+#include <QSound>
 
 void write_conf();
 
@@ -142,6 +143,11 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setCheckable(true);
 	act->setChecked(conf.save_noname_images);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_save_noname_images_changed);
+
+	act = menu->addAction(tr("&Play sound notifications"));
+	act->setCheckable(true);
+	act->setChecked(conf.sound_notifications_enabled);
+	connect(act, &QAction::toggled, this, &ImagerWindow::on_sound_notifications_changed);
 
 	act = menu->addAction(tr("&Restore window size at start"));
 	act->setCheckable(true);
@@ -468,20 +474,29 @@ void ImagerWindow::window_log(char *message, int state) {
 
 	get_time(timestamp);
 
+	QString msg(message);
 	switch (state) {
 	case INDIGO_ALERT_STATE:
 		mLog->setTextColor(QColor::fromRgb(224, 0, 0));
+		play_sound(":/resource/error.wav");
 		break;
 	case INDIGO_BUSY_STATE:
 		mLog->setTextColor(QColor::fromRgb(255, 165, 0));
+		if (msg.contains("warn", Qt::CaseInsensitive)) {
+			play_sound(":/resource/warning.wav");
+		}
 		break;
 	default: {
-			QString msg(message);
 			if (msg.contains("fail", Qt::CaseInsensitive) || msg.contains("error", Qt::CaseInsensitive)) {
 				mLog->setTextColor(QColor::fromRgb(224, 0, 0));
+				play_sound(":/resource/error.wav");
 			} else if (msg.contains("warn", Qt::CaseInsensitive)) {
 				mLog->setTextColor(QColor::fromRgb(255, 165, 0));
+				play_sound(":/resource/warning.wav");
 			} else {
+				if (msg.contains("finish", Qt::CaseInsensitive) || msg.contains("complete", Qt::CaseInsensitive)) {
+					play_sound(":/resource/ok.wav");
+				}
 				mLog->setTextColor(Qt::white);
 			}
 			break;
@@ -514,6 +529,10 @@ bool ImagerWindow::show_preview_in_guider_viewer(QString &key) {
 		return true;
 	}
 	return false;
+}
+
+void ImagerWindow::play_sound(const char *sound_file) {
+	if (conf.sound_notifications_enabled) QSound::play(sound_file);
 }
 
 void ImagerWindow::show_selected_preview_in_solver_tab(QString &solver_source) {
@@ -633,7 +652,7 @@ void ImagerWindow::save_blob_item(indigo_item *item) {
 		char location[PATH_LEN];
 
 		if (m_object_name->text().trimmed() == "" && !conf.save_noname_images) {
-			snprintf(message, sizeof(message), "Image not saved, provide object name");
+			snprintf(message, sizeof(message), "Warning: image not saved, provide object name");
 			window_log(message, INDIGO_BUSY_STATE);
 			return;
 		}
@@ -644,7 +663,7 @@ void ImagerWindow::save_blob_item(indigo_item *item) {
 			snprintf(message, sizeof(message), "Image saved to '%s'", file_name);
 			window_log(message);
 		} else {
-			snprintf(message, sizeof(message), "Can not save '%s'", file_name);
+			snprintf(message, sizeof(message), "Error: can not save '%s'", file_name);
 			window_log(message, INDIGO_ALERT_STATE);
 		}
 	}
@@ -776,10 +795,14 @@ void ImagerWindow::on_blobs_changed(bool status) {
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
-
 void ImagerWindow::on_save_noname_images_changed(bool status) {
 	conf.save_noname_images = status;
-	mServiceModel->enable_auto_connect(conf.save_noname_images);
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_sound_notifications_changed(bool status) {
+	conf.sound_notifications_enabled = status;
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
@@ -992,7 +1015,6 @@ void ImagerWindow::on_log_error() {
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
-
 void ImagerWindow::on_log_info() {
 	indigo_debug("%s\n", __FUNCTION__);
 	conf.indigo_log_level = INDIGO_LOG_INFO;
@@ -1000,14 +1022,12 @@ void ImagerWindow::on_log_info() {
 	write_conf();
 }
 
-
 void ImagerWindow::on_log_debug() {
 	indigo_debug("%s\n", __FUNCTION__);
 	conf.indigo_log_level = INDIGO_LOG_DEBUG;
 	indigo_set_log_level(conf.indigo_log_level);
 	write_conf();
 }
-
 
 void ImagerWindow::on_log_trace() {
 	indigo_debug("%s\n", __FUNCTION__);
