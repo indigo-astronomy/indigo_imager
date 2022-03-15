@@ -2416,7 +2416,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		m_temperature_compensation_frame->setHidden(true);
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_COMPENSATION_PROPERTY_NAME) ||
-		client_match_device_no_property(property, selected_agent)) {
+	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("REMOVE %s", property->name);
 		set_spinbox_value(m_focuser_temperature_compensation_steps, 0);
 		m_temperature_compensation_frame->setHidden(true);
@@ -2427,9 +2427,9 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_checkbox_state(m_temperature_compensation_cbox, Qt::Unchecked);
 		set_enabled(m_temperature_compensation_cbox, false);
 		m_temperature_compensation_frame->setHidden(true);
-		set_enabled(m_focusing_button, true);
-		set_enabled(m_focusing_in_button, true);
-		set_enabled(m_focusing_out_button, true);
+		set_enabled(m_focusing_button, false);
+		set_enabled(m_focusing_in_button, false);
+		set_enabled(m_focusing_out_button, false);
 	}
 	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
