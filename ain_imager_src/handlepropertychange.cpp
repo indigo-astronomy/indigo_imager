@@ -883,14 +883,14 @@ void update_focuser_mode(ImagerWindow *w, indigo_property *property) {
 	} else {
 		if (automatic) {
 			w->set_checkbox_state(w->m_temperature_compensation_cbox, Qt::Checked);
-			w->set_enabled(w->m_focusing_button, false);
-			w->set_enabled(w->m_focusing_in_button, false);
-			w->set_enabled(w->m_focusing_out_button, false);
+			//w->set_enabled(w->m_focusing_button, false);
+			//w->set_enabled(w->m_focusing_in_button, false);
+			//w->set_enabled(w->m_focusing_out_button, false);
 		} else {
 			w->set_checkbox_state(w->m_temperature_compensation_cbox, Qt::Unchecked);
-			w->set_enabled(w->m_focusing_button, true);
-			w->set_enabled(w->m_focusing_in_button, true);
-			w->set_enabled(w->m_focusing_out_button, true);
+			//w->set_enabled(w->m_focusing_button, true);
+			//w->set_enabled(w->m_focusing_in_button, true);
+			//w->set_enabled(w->m_focusing_out_button, true);
 		}
 	}
 }
@@ -2427,9 +2427,9 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_checkbox_state(m_temperature_compensation_cbox, Qt::Unchecked);
 		set_enabled(m_temperature_compensation_cbox, false);
 		m_temperature_compensation_frame->setHidden(true);
-		set_enabled(m_focusing_button, false);
-		set_enabled(m_focusing_in_button, false);
-		set_enabled(m_focusing_out_button, false);
+		//set_enabled(m_focusing_button, false);
+		//set_enabled(m_focusing_in_button, false);
+		//set_enabled(m_focusing_out_button, false);
 	}
 	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
