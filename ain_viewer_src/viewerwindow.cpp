@@ -218,7 +218,7 @@ void ViewerWindow::open_image(QString file_name) {
 	}
 
 	m_image_formrat = strrchr(m_image_path, '.');
-	const stretch_config_t sc = {conf.preview_stretch_level, conf.preview_color_balance };
+	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance };
 	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat, sc);
 
 	if (m_preview_image) {
@@ -434,7 +434,7 @@ void ViewerWindow::on_stretch_changed(int level) {
 		int width = m_preview_image->width();
 		int height = m_preview_image->height();
 		int pix_format = m_preview_image->m_pix_format;
-		const stretch_config_t sc = {conf.preview_stretch_level, conf.preview_color_balance};
+		const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance};
 		preview_image *new_preview = create_preview(width, height, pix_format, m_preview_image->m_raw_data, sc);
 		if (new_preview) {
 			delete m_preview_image;
@@ -453,7 +453,7 @@ void ViewerWindow::on_cb_changed(int balance) {
 		int width = m_preview_image->width();
 		int height = m_preview_image->height();
 		int pix_format = m_preview_image->m_pix_format;
-		const stretch_config_t sc = {conf.preview_stretch_level, conf.preview_color_balance};
+		const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance};
 		preview_image *new_preview = create_preview(width, height, pix_format, m_preview_image->m_raw_data, sc);
 		if (new_preview) {
 			delete m_preview_image;

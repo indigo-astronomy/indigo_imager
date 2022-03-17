@@ -81,10 +81,16 @@ HEADERS += \
 
 INCLUDEPATH += "../indigo/indigo_libs" + "../external" + "../external/qtzeroconf/" + "../common_src" + "../ain_viewer_src"
 
-unix {
+unix:!mac {
 	INCLUDEPATH += "../external/libjpeg"
 	LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -l:libindigo.a -lz -ljpeg
 	#LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -lindigo -ljpeg
+}
+
+unix:mac {
+	INCLUDEPATH += "../external/libjpeg"
+	#LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -l:libindigo.a -lz -ljpeg
+	LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -lindigo -ljpeg
 }
 
 DISTFILES += \

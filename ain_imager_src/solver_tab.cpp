@@ -307,7 +307,7 @@ bool ImagerWindow::open_image(QString file_name, int *image_size, unsigned char 
 	}
 
 	char *image_formrat = strrchr(m_image_path, '.');
-	const stretch_config_t sc = {conf.preview_stretch_level, conf.preview_color_balance };
+	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance };
 	preview_image *image = create_preview(*image_data, *image_size, (const char*)image_formrat, sc);
 	if (image) {
 		QString key = QString(AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME);
