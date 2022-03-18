@@ -25,10 +25,12 @@
 int derotate_xy(double xr, double yr, double angle, int parity, double *x, double *y) {
 	double angler = angle;
 	if (parity == -1) {
+		yr *= -1;
 		angler += 180;
 	} else if (parity == 0) {
 		return -1;
 	}
+
 	angler *= DEG2RAD;
 	double sin_a = sin(angler);
 	double cos_a = cos(angler);

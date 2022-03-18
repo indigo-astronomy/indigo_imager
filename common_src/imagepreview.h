@@ -238,7 +238,7 @@ public:
 		double center_x = width() / 2.0;
 		double center_y = height() / 2.0;
 		double dxr = (x - center_x);
-		double dyr = (center_y - y);
+		double dyr = (y - center_y);
 		double dx, dy;
 
 		if (derotate_xy(dxr, dyr, m_rotation_angle, m_parity, &dx, &dy)) return -1;
