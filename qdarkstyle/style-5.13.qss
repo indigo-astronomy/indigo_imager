@@ -1269,6 +1269,10 @@ QTabWidget {
     selection-background-color: #404040;
 }
 
+QTabWidget::tab-bar {
+    alignment: left;
+}
+
 QTabWidget QFrame{
     border: 0;
 }
