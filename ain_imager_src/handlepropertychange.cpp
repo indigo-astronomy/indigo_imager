@@ -1543,6 +1543,19 @@ void update_guider_settings(ImagerWindow *w, indigo_property *property) {
 	}
 }
 
+void update_guider_apply_dec_backlash(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+
+	w->set_enabled(w->m_guider_apply_backlash_cbox, true);
+	w->set_checkbox_state(w->m_guider_apply_backlash_cbox, Qt::Unchecked);
+
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], AGENT_GUIDER_APPLY_DEC_BACKLASH_ENABLED_ITEM_NAME)) {
+			if (property->items[i].sw.value) w->set_checkbox_state(w->m_guider_apply_backlash_cbox, Qt::Checked);
+		}
+	}
+}
+
 void log_guide_header(ImagerWindow *w, char *device_name) {
 	char time_str[255];
 	if (w->m_guide_log == nullptr || device_name == nullptr) return;
@@ -2008,6 +2021,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME)) {
 		update_guider_settings(this, property);
 	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_APPLY_DEC_BACKLASH_PROPERTY_NAME)) {
+		update_guider_apply_dec_backlash(this, property);
+	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_START_PROCESS_PROPERTY_NAME)) {
 		agent_guider_start_process_change(this, property);
 	}
@@ -2286,6 +2302,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME)) {
 		update_guider_settings(this, property);
+	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_APPLY_DEC_BACKLASH_PROPERTY_NAME)) {
+		update_guider_apply_dec_backlash(this, property);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_START_PROCESS_PROPERTY_NAME)) {
 		agent_guider_start_process_change(this, property);
@@ -2612,6 +2631,9 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		set_spinbox_value(m_guide_dec_backlash, 0);
 		set_enabled(m_guide_dec_backlash, false);
+
+		set_checkbox_state(m_guider_apply_backlash_cbox, Qt::Unchecked);
+		set_enabled(m_guider_apply_backlash_cbox, false);
 
 		set_spinbox_value(m_guide_rotation, 0);
 		set_enabled(m_guide_rotation, false);

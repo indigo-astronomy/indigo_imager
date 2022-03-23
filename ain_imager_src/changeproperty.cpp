@@ -555,6 +555,15 @@ void ImagerWindow::change_guider_agent_i(const char *agent) const {
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 3, items, values);
 }
 
+
+void ImagerWindow::change_guider_agent_apply_dec_backlash(const char *agent) const {
+	if (m_guider_apply_backlash_cbox->isChecked()) {
+		indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_APPLY_DEC_BACKLASH_PROPERTY_NAME, AGENT_GUIDER_APPLY_DEC_BACKLASH_ENABLED_ITEM_NAME, true);
+	} else {
+		indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_APPLY_DEC_BACKLASH_PROPERTY_NAME, AGENT_GUIDER_APPLY_DEC_BACKLASH_DISABLED_ITEM_NAME, true);
+	}
+}
+
 void ImagerWindow::change_mount_agent_equatorial(const char *agent, bool sync) const {
 	if (sync) {
 		indigo_change_switch_property_1(nullptr, agent, MOUNT_ON_COORDINATES_SET_PROPERTY_NAME, MOUNT_ON_COORDINATES_SET_SYNC_ITEM_NAME, true);

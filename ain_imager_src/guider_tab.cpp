@@ -405,7 +405,14 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 
 	advanced_row++;
 	label = new QLabel("Dec Backlash (px):");
-	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
+	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 2);
+
+	m_guider_apply_backlash_cbox = new QCheckBox("");
+	m_guider_apply_backlash_cbox->setToolTip("Compensate declination backlash while guiding");
+	m_guider_apply_backlash_cbox->setEnabled(false);
+	advanced_frame_layout->addWidget(m_guider_apply_backlash_cbox, advanced_row, 2, Qt::AlignRight);
+	connect(m_guider_apply_backlash_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_guider_apply_backlash_changed);
+
 	m_guide_dec_backlash = new QDoubleSpinBox();
 	m_guide_dec_backlash->setMaximum(1);
 	m_guide_dec_backlash->setMinimum(0);
@@ -811,6 +818,17 @@ void ImagerWindow::on_guider_agent_callibration_changed(double value) {
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_guider_agent_callibration(selected_agent);
+	});
+}
+
+void ImagerWindow::on_guider_apply_backlash_changed(int state) {
+	QtConcurrent::run([=]() {
+		char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_guider_agent_apply_dec_backlash(selected_agent);
 	});
 }
 

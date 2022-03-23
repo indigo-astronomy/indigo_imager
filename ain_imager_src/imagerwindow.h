@@ -122,6 +122,7 @@ public:
 	friend void update_ccd_exposure(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_stats(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_settings(ImagerWindow *w, indigo_property *property);
+	friend void update_guider_apply_dec_backlash(ImagerWindow *w, indigo_property *property);
 	friend void agent_guider_start_process_change(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_ra_dec(ImagerWindow *w, indigo_property *property, bool update_input);
 	friend void update_mount_az_alt(ImagerWindow *w, indigo_property *property);
@@ -289,6 +290,7 @@ public slots:
 
 	void on_guider_agent_exposure_changed(double value);
 	void on_guider_agent_callibration_changed(double value);
+	void on_guider_apply_backlash_changed(int state);
 	void on_guider_agent_pulse_changed(double value);
 	void on_guider_agent_aggressivity_changed(int value);
 	void on_change_guider_agent_i_gain_changed(double value);
@@ -592,6 +594,7 @@ private:
 	QDoubleSpinBox  *m_guide_ra_speed;
 	QDoubleSpinBox  *m_guide_dec_speed;
 	QDoubleSpinBox  *m_guide_dec_backlash;
+	QCheckBox *m_guider_apply_backlash_cbox;
 	QDoubleSpinBox  *m_guide_min_error;
 	QDoubleSpinBox  *m_guide_min_pulse;
 	QDoubleSpinBox  *m_guide_max_pulse;
@@ -799,6 +802,7 @@ private:
 	void change_dec_guiding_property(const char *agent) const;
 	void change_guider_agent_exposure(const char *agent) const;
 	void change_guider_agent_callibration(const char *agent) const;
+	void change_guider_agent_apply_dec_backlash(const char *agent) const;
 	void change_guider_agent_pulse_min_max(const char *agent) const;
 	void change_guider_agent_aggressivity(const char *agent) const;
 	void change_guider_agent_i(const char *agent) const;
