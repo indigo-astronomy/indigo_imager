@@ -487,14 +487,25 @@ void ImagerWindow::window_log(char *message, int state) {
 		}
 		break;
 	default: {
-			if (msg.contains("fail", Qt::CaseInsensitive) || msg.contains("error", Qt::CaseInsensitive)) {
+			if (
+				(
+					msg.contains("fail", Qt::CaseInsensitive)
+				) || ( /* match "error" but not polar alignment error messages */
+					msg.contains("error", Qt::CaseInsensitive) &&
+					!msg.contains("Polar error:") &&
+					!msg.contains("adjustment knob", Qt::CaseInsensitive)
+				)
+			) {
 				mLog->setTextColor(QColor::fromRgb(224, 0, 0));
 				play_sound(":/resource/error.wav");
 			} else if (msg.contains("warn", Qt::CaseInsensitive)) {
 				mLog->setTextColor(QColor::fromRgb(255, 165, 0));
 				play_sound(":/resource/warning.wav");
 			} else {
-				if (msg.contains("finish", Qt::CaseInsensitive) || msg.contains("complete", Qt::CaseInsensitive)) {
+				if (
+					msg.contains("finish", Qt::CaseInsensitive) ||
+					msg.contains("complete", Qt::CaseInsensitive)
+				) {
 					play_sound(":/resource/ok.wav");
 				}
 				mLog->setTextColor(Qt::white);
