@@ -95,6 +95,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_frame_count = new QSpinBox();
 	m_frame_count->setMaximum(100000);
 	m_frame_count->setMinimum(-1);
+	m_frame_count->setSpecialValueText("∞");
 	m_frame_count->setValue(1);
 	capture_frame_layout->addWidget(m_frame_count, row, 1);
 
