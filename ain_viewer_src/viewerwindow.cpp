@@ -482,7 +482,7 @@ void ViewerWindow::on_about_act() {
 		"Author:<br>"
 		"Rumen G.Bogdanovski<br>"
 		"You can use this software under the terms of <b>INDIGO Astronomy open-source license</b><br><br>"
-		"Copyright ©2020-2021, The INDIGO Initiative.<br>"
+		"Copyright ©2020-" + YEAR_NOW + ", The INDIGO Initiative.<br>"
 		"<a href='http://www.indigo-astronomy.org'>http://www.indigo-astronomy.org</a>"
 	);
 	msgBox.exec();
