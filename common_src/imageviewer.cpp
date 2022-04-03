@@ -559,7 +559,7 @@ void ImageViewer::setMatrix() {
 
 void ImageViewer::zoomFit() {
 	m_view->fitInView(m_pixmap, Qt::KeepAspectRatio);
-	m_zoom_level = 100.0 * m_view->matrix().m11();
+	m_zoom_level = (int)(100.0 * m_view->matrix().m11());
 	showZoom();
 	indigo_debug("Zoom FIT = %d", m_zoom_level);
 	m_fit = true;
@@ -607,8 +607,13 @@ void ImageViewer::zoomOut() {
 	} else {
 		m_zoom_level = 1;
 	}
+	// do not zoom image bellow fit in window or 100% if zoom fit is bigger than 100%
+	m_view->fitInView(m_pixmap, Qt::KeepAspectRatio);
+	int zoom_min = (int)(100.0 * m_view->matrix().m11());
+	zoom_min = (zoom_min < 100) ? zoom_min : 100;
+	m_zoom_level = (zoom_min > m_zoom_level) ? zoom_min : m_zoom_level;
 	showZoom();
-	indigo_debug("Zoom OUT = %d", m_zoom_level);
+	indigo_debug("Zoom OUT = %d (fit = %d)", m_zoom_level, zoom_min);
 	m_fit = false;
 	setMatrix();
 }
