@@ -576,11 +576,11 @@ void ImageViewer::zoomOriginal() {
 
 void ImageViewer::zoomIn() {
 	if (m_zoom_level >= 1000) {
-		m_zoom_level = (int)(m_zoom_level / 500) * 500 + 500;
+		m_zoom_level = (int)(m_zoom_level / 500.0) * 500 + 500;
 	} else if (m_zoom_level >= 100) {
-		m_zoom_level = (int)(m_zoom_level / 50) * 50 + 50;
+		m_zoom_level = (int)(m_zoom_level / 50.0) * 50 + 50;
 	} else if (m_zoom_level >= 10) {
-		m_zoom_level = (int)(m_zoom_level / 10) * 10 + 10;
+		m_zoom_level = (int)(m_zoom_level / 10.0) * 10 + 10;
 	} else if (m_zoom_level >= 1) {
 		m_zoom_level += 1;
 	} else {
