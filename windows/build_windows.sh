@@ -7,6 +7,7 @@ SAVE_PATH=$PATH:/c/Program\ Files\ \(x86\)/Inno\ Setup\ 6/
 
 export PATH=/c/Qt/5.12.10/mingw73_32/bin:/c/Qt/Tools/mingw730_32/bin/:$SAVE_PATH
 
+./build_libs_win32.sh
 pushd .
 [ ! -d "${APP}_32" ] && mkdir ${APP}_32
 cd ${APP}_32
@@ -29,6 +30,7 @@ cp release/${VIEWER}.exe ../${APP}_32/${APP}
 popd
 
 
+./build_libs_win64.sh
 pushd .
 export PATH=/c/Qt/5.12.10/mingw73_64/bin:/c/Qt/Tools/mingw730_64/bin/:$SAVE_PATH
 [ ! -d "${APP}_64" ] && mkdir ${APP}_64

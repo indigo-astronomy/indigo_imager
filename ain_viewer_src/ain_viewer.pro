@@ -82,7 +82,7 @@ HEADERS += \
 #}
 
 INCLUDEPATH += "../indigo/indigo_libs" + "../external" + "../external/qtzeroconf/" + "../external/libraw/" + "../common_src" + "../ain_viewer_src"
-LIBS += -L../external/libraw/lib -lraw
+LIBS += -L"../external/libraw/lib" -L"../../external/libraw/lib" -lraw
 
 unix:!mac {
 	INCLUDEPATH += "../external/libjpeg"
