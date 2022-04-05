@@ -126,7 +126,8 @@ include(../external/qtzeroconf/qtzeroconf.pri)
 #    PKGCONFIG += indigo
 #}
 
-INCLUDEPATH += "../indigo/indigo_libs" + "../external" + "../external/qtzeroconf/" + "../common_src" + "../object_data" + "../ain_imager_src"
+INCLUDEPATH += "../indigo/indigo_libs" + "../external" + "../external/qtzeroconf/" + "../external/libraw/" + "../common_src" + "../object_data" + "../ain_imager_src"
+LIBS += -L../external/libraw/lib -lraw
 
 unix {
 	INCLUDEPATH += "../external/libjpeg"

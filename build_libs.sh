@@ -5,7 +5,7 @@ autoreconf -fiv
 make
 cd ../..
 
-cd external/LibRaw-0.20.2
+cd external/libraw
 mkdir lib/
 make -f Makefile.mingw library
 cd ../..
