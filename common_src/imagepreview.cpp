@@ -390,32 +390,13 @@ preview_image* create_preview(indigo_item *item, const stretch_config_t sconfig)
 preview_image* create_preview(unsigned char *data, size_t size, const char* format, const stretch_config_t sconfig) {
 	preview_image *preview = nullptr;
 	if (data != NULL && format != NULL) {
-		if (!strcmp(format, ".jpeg") ||
-			!strcmp(format, ".jpg")  ||
-			!strcmp(format, ".JPG")  ||
-			!strcmp(format, ".JPEG")
-		) {
+		if ((((uint8_t *)data)[0] == 0xFF && ((uint8_t *)data)[1] == 0xD8 && ((uint8_t *)data)[2] == 0xFF)) {
 			preview = create_jpeg_preview(data, size);
-		} else if (
-			!strcmp(format, ".fits") ||
-			!strcmp(format, ".fit")  ||
-			!strcmp(format, ".fts")  ||
-			!strcmp(format, ".FITS") ||
-			!strcmp(format, ".FIT")  ||
-			!strcmp(format, ".FTS")
-		) {
+		} else if (!strncmp((const char*)data, "SIMPLE", 6)) {
 			preview = create_fits_preview(data, size, sconfig);
-		} else if (
-			!strcmp(format, ".raw") ||
-			!strcmp(format, ".RAW")
-		) {
+		} else if (!strncmp((const char*)data, "RAW", 3)) {
 			preview = create_raw_preview(data, size, sconfig);
-		} else if (
-			!strcmp(format, ".tif")  ||
-			!strcmp(format, ".tiff") ||
-			!strcmp(format, ".TIF")  ||
-			!strcmp(format, ".TIFF")
-		) {
+		} else if (!strncmp((const char*)data, "II*", 3) || !strncmp((const char*)data, "MM*", 3)) {
 			preview = create_tiff_preview(data, size);
 		} else if (format[0] != '\0') {
 			/* DUMMY TEST CODE */
