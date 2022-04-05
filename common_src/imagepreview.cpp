@@ -437,21 +437,6 @@ preview_image* create_preview(unsigned char *data, size_t size, const char* form
 		//	preview = create_tiff_preview(data, size);
 		} else if (format[0] != '\0') {
 			preview = create_dslr_raw_preview(data, size, sconfig);
-			/* DUMMY TEST CODE */
-			/*
-			FILE *file;
-			char *buffer;
-			unsigned long fileLen;
-			char name[100] = "/home/rumen/test.png";
-			file = fopen(name, "rb");
-			fseek(file, 0, SEEK_END);
-			fileLen=ftell(file);
-			fseek(file, 0, SEEK_SET);
-			buffer=(char *)malloc(fileLen+1);
-			fread(buffer, fileLen, 1, file);
-			fclose(file);
-			preview = create_qt_preview((unsigned char*)buffer, fileLen);
-			*/
 			if (preview == nullptr) {
 				preview = create_qtsupported_preview(data, size);
 			}

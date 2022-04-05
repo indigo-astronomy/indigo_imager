@@ -273,7 +273,19 @@ void ViewerWindow::on_image_open_act() {
 		this,
 		tr("Open Image"),
 		qlocation,
-		QString("FITS (*.fit *.FIT *.fits *.FITS *.fts *.FTS );;Indigo RAW (*.raw *.RAW);;FITS / Indigo RAW (*.fit *FIT *.fits *.FITS *.fts *.FTS *.raw *.RAW);;JPEG / TIFF / PNG (*.jpg *.JPG *.jpeg *.JPEG *.jpe *.JPE *.tif *.TIF *.tiff *.TIFF *.png *.PNG);;All Files (*)"),
+		QString(
+			"FITS (*.fit *.FIT *.fits *.FITS *.fts *.FTS );;"
+			"Indigo RAW (*.raw *.RAW);;"
+			"FITS / Indigo RAW (*.fit *FIT *.fits *.FITS *.fts *.FTS *.raw *.RAW);;"
+			"Nikon NEF / NRW (*.NEF *.NRW);;"
+			"Canon CRW / CR2 (*.CRW *.CR2);;"
+			"Sony ARW / SR2 (*.ARW *.SR2);;"
+			"Pentax PEF (*.PEF);;"
+			"Panasonic RW2 / RAW (*.RW2 *.RAW);;"
+			"Olympus ORF (*.ORF);;"
+			"JPEG / TIFF / PNG (*.jpg *.JPG *.jpeg *.JPEG *.jpe *.JPE *.tif *.TIF *.tiff *.TIFF *.png *.PNG);;"
+			"All Files (*)"
+		),
 		&m_selected_filter
 	);
 	open_image(file_name);
