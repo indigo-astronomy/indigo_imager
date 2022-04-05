@@ -270,7 +270,7 @@ void ImageViewer::showZoom() {
 		m_pixel_value->setText(QString());
 	} else {
 		QString s;
-		s.sprintf("%d%%", m_zoom_level);
+		s.sprintf("%.0f%%", m_zoom_level);
 		m_pixel_value->setText(s);
 	}
 }
@@ -559,9 +559,9 @@ void ImageViewer::setMatrix() {
 
 void ImageViewer::zoomFit() {
 	m_view->fitInView(m_pixmap, Qt::KeepAspectRatio);
-	m_zoom_level = (int)(100.0 * m_view->matrix().m11());
+	m_zoom_level = (100.0 * m_view->matrix().m11());
 	showZoom();
-	indigo_debug("Zoom FIT = %d", m_zoom_level);
+	indigo_debug("Zoom FIT = %.2f", m_zoom_level);
 	m_fit = true;
 	emit zoomChanged(m_view->matrix().m11());
 }
@@ -569,12 +569,14 @@ void ImageViewer::zoomFit() {
 void ImageViewer::zoomOriginal() {
 	m_zoom_level = 100;
 	showZoom();
-	indigo_debug("Zoom 1:1 = %d", m_zoom_level);
+	indigo_debug("Zoom 1:1 = %.2f", m_zoom_level);
 	m_fit = false;
 	setMatrix();
 }
 
 void ImageViewer::zoomIn() {
+	if (!(m_pixmap && m_pixmap->image().valid(1,1))) return;
+
 	if (m_zoom_level >= 1000) {
 		m_zoom_level = (int)(m_zoom_level / 500.0) * 500 + 500;
 	} else if (m_zoom_level >= 100) {
@@ -590,12 +592,14 @@ void ImageViewer::zoomIn() {
 		m_zoom_level = 5000;
 	}
 	showZoom();
-	indigo_debug("Zoom IN = %d", m_zoom_level);
+	indigo_debug("Zoom IN = %.2f", m_zoom_level);
 	m_fit = false;
 	setMatrix();
 }
 
 void ImageViewer::zoomOut() {
+	if (!(m_pixmap && m_pixmap->image().valid(1,1))) return;
+
 	if (m_zoom_level > 1000) {
 		m_zoom_level = (int)(round(m_zoom_level / 500.0)) * 500 - 500;
 	} else if (m_zoom_level > 100) {
@@ -608,12 +612,14 @@ void ImageViewer::zoomOut() {
 		m_zoom_level = 1;
 	}
 	// do not zoom image bellow fit in window or 100% if zoom fit is bigger than 100%
-	m_view->fitInView(m_pixmap, Qt::KeepAspectRatio);
-	int zoom_min = (int)(100.0 * m_view->matrix().m11());
+	QRectF rect = m_view->viewport()->geometry();
+	double scale_x = rect.width() / m_pixmap->image().width() * 100;
+	double scale_y = rect.height() / m_pixmap->image().height() * 100;
+	double zoom_min = (scale_x < scale_y) ? scale_x : scale_y;
 	zoom_min = (zoom_min < 100) ? zoom_min : 100;
 	m_zoom_level = (zoom_min > m_zoom_level) ? zoom_min : m_zoom_level;
 	showZoom();
-	indigo_debug("Zoom OUT = %d (fit = %d)", m_zoom_level, zoom_min);
+	indigo_debug("Zoom OUT = %.2f (fit = %.2f)", m_zoom_level, zoom_min);
 	m_fit = false;
 	setMatrix();
 }
@@ -626,18 +632,18 @@ void ImageViewer::mouseAt(double x, double y) {
 		int res = m_pixmap->image().wcs_data(x, y, &ra, &dec);
 		QString s;
 		if (res != -1 && m_show_wcs) {
-			s.sprintf("%d%% [%5.1f, %5.1f] (%s, %s) ", m_zoom_level, x, y, indigo_dtos(ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(dec, "%+d° %02d' %04.1f\""));
-			//s.sprintf("%d%% [%5.1f, %5.1f] α = %s δ = %s ", m_zoom_level, x, y, indigo_dtos(ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(dec, "%+d° %02d' %04.1f\""));
+			s.sprintf("%.0f%% [%5.1f, %5.1f] (%s, %s) ", m_zoom_level, x, y, indigo_dtos(ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(dec, "%+d° %02d' %04.1f\""));
+			//s.sprintf("%.0f%% [%5.1f, %5.1f] α = %s δ = %s ", m_zoom_level, x, y, indigo_dtos(ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(dec, "%+d° %02d' %04.1f\""));
 		} else {
 			if (pix_format == PIX_FMT_INDEX) {
-				s.sprintf("%d%% [%5.1f, %5.1f]", m_zoom_level, x, y);
+				s.sprintf("%.0f%% [%5.1f, %5.1f]", m_zoom_level, x, y);
 			} else {
 				if (g == -1) {
 					//s = QString("%1% [%2, %3] (%4)").arg(scale).arg(x).arg(y).arg(r);
-					s.sprintf("%d%% [%5.1f, %5.1f] (%5d)", m_zoom_level, x, y, r);
+					s.sprintf("%.0f%% [%5.1f, %5.1f] (%5d)", m_zoom_level, x, y, r);
 				} else {
 					//s = QString("%1% [%2, %3] (%4, %5, %6)").arg(scale).arg(x).arg(y).arg(r).arg(g).arg(b);
-					s.sprintf("%d%% [%5.1f, %5.1f] (%5d, %5d, %5d)", m_zoom_level, x, y, r, g, b);
+					s.sprintf("%.0f%% [%5.1f, %5.1f] (%5d, %5d, %5d)", m_zoom_level, x, y, r, g, b);
 				}
 			}
 		}

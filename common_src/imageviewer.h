@@ -118,7 +118,7 @@ private:
 
 private:
 	void showZoom();
-	int m_zoom_level;
+	double m_zoom_level;
 	QLabel *m_text_label;
 	QLabel *m_pixel_value;
 	GraphicsView *m_view;
