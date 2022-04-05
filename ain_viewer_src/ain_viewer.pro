@@ -28,6 +28,7 @@ SOURCES += \
 	../common_src/fits.c \
 	../common_src/raw_to_fits.c \
 	../common_src/debayer.c \
+	../common_src/dslr_raw.c \
 	../common_src/stretcher.cpp
 
 RESOURCES += \
@@ -72,6 +73,7 @@ HEADERS += \
 	../common_src/debayer.h \
 	../common_src/pixelformat.h \
 	../common_src/coordconv.h \
+	../common_src/dslr_raw.h \
 	../common_src/stretcher.h
 
 #unix:!mac {

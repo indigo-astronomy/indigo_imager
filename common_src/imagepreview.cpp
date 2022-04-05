@@ -25,6 +25,7 @@
 #include <QPainter>
 #include <QCoreApplication>
 #include <image_preview_lut.h>
+#include <dslr_raw.h>
 
 // Related Functions
 
@@ -129,6 +130,42 @@ preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_
 	free(bmp_buffer);
 	return img;
 #endif
+}
+
+
+preview_image* create_dslr_raw_preview(unsigned char *raw_buffer, unsigned long raw_size, const stretch_config_t sconfig) {
+	libraw_image_s libraw_image;
+	unsigned int pix_format = 0;
+
+	int rc = process_dslr_raw_image((void *)raw_buffer, raw_size, &libraw_image);
+	if (rc != LIBRAW_SUCCESS) {
+		if (libraw_image.data != nullptr) free(libraw_image.data);
+		return nullptr;
+	}
+
+	if (!strncmp(libraw_image.bayer_pattern, "BGGR", 4) && (libraw_image.bits == 8)) {
+		pix_format = PIX_FMT_SBGGR8;
+	} else if (!strncmp(libraw_image.bayer_pattern, "GBRG", 4) && (libraw_image.bits == 8)) {
+		pix_format = PIX_FMT_SGBRG8;
+	} else if (!strncmp(libraw_image.bayer_pattern, "GRBG", 4) && (libraw_image.bits == 8)) {
+		pix_format = PIX_FMT_SGRBG8;
+	} else if (!strncmp(libraw_image.bayer_pattern, "RGGB", 4) && (libraw_image.bits == 8)) {
+		pix_format = PIX_FMT_SRGGB8;
+	} else if (!strncmp(libraw_image.bayer_pattern, "BGGR", 4) && (libraw_image.bits == 16)) {
+		pix_format = PIX_FMT_SBGGR16;
+	} else if (!strncmp(libraw_image.bayer_pattern, "GBRG", 4) && (libraw_image.bits == 16)) {
+		pix_format = PIX_FMT_SGBRG16;
+	} else if (!strncmp(libraw_image.bayer_pattern, "GRBG", 4) && (libraw_image.bits == 16)) {
+		pix_format = PIX_FMT_SGRBG16;
+	} else if (!strncmp(libraw_image.bayer_pattern, "RGGB", 4) && (libraw_image.bits == 16)) {
+		pix_format = PIX_FMT_SRGGB16;
+	}
+
+	preview_image *img = create_preview(libraw_image.width, libraw_image.height,
+	        pix_format, (char*)libraw_image.data, sconfig);
+
+	if (libraw_image.data != nullptr) free(libraw_image.data);
+	return img;
 }
 
 
@@ -396,9 +433,10 @@ preview_image* create_preview(unsigned char *data, size_t size, const char* form
 			preview = create_fits_preview(data, size, sconfig);
 		} else if (!strncmp((const char*)data, "RAW", 3)) {
 			preview = create_raw_preview(data, size, sconfig);
-		} else if (!strncmp((const char*)data, "II*", 3) || !strncmp((const char*)data, "MM*", 3)) {
-			preview = create_tiff_preview(data, size);
+		//} else if (!strncmp((const char*)data, "II*", 3) || !strncmp((const char*)data, "MM*", 3)) {
+		//	preview = create_tiff_preview(data, size);
 		} else if (format[0] != '\0') {
+			preview = create_dslr_raw_preview(data, size, sconfig);
 			/* DUMMY TEST CODE */
 			/*
 			FILE *file;
@@ -414,7 +452,9 @@ preview_image* create_preview(unsigned char *data, size_t size, const char* form
 			fclose(file);
 			preview = create_qt_preview((unsigned char*)buffer, fileLen);
 			*/
-			preview = create_qtsupported_preview(data, size);
+			if (preview == nullptr) {
+				preview = create_qtsupported_preview(data, size);
+			}
 		}
 	}
 	return preview;
