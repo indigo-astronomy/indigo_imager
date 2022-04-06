@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * Copyright 2019-2020 LibRaw LLC (info@libraw.org)
+ * Copyright 2019-2021 LibRaw LLC (info@libraw.org)
  *
  LibRaw uses code from dcraw.c -- Dave Coffin's raw photo decoder,
  dcraw.c is copyright 1997-2018 by Dave Coffin, dcoffin a cybercom o net.
@@ -71,7 +71,7 @@ int LibRaw::minolta_z2()
   int i, nz;
   char tail[424];
 
-  fseek(ifp, -sizeof tail, SEEK_END);
+  fseek(ifp, -int(sizeof tail), SEEK_END);
   fread(tail, 1, sizeof tail, ifp);
   for (nz = i = 0; i < int(sizeof tail); i++)
     if (tail[i])
@@ -92,6 +92,7 @@ int LibRaw::canon_s2is()
   return 0;
 }
 
+#ifdef LIBRAW_OLD_VIDEO_SUPPORT
 void LibRaw::parse_redcine()
 {
   unsigned i, len, rdvo;
@@ -123,6 +124,7 @@ void LibRaw::parse_redcine()
     data_offset = get4();
   }
 }
+#endif
 
 void LibRaw::parse_cine()
 {
@@ -304,6 +306,7 @@ void LibRaw::parse_rollei()
     line[0] = 0;
     if (!fgets(line, 128, ifp))
       break;
+    line[127] = 0;
     if(!line[0]) break; // zero-length
     if ((val = strchr(line, '=')))
       *val++ = 0;
@@ -345,10 +348,10 @@ void LibRaw::parse_rollei()
       }
     if (!strcmp(line, "CUTRECT")) {
       sscanf(val, "%hu %hu %hu %hu",
-             &imgdata.sizes.raw_inset_crop.cleft,
-             &imgdata.sizes.raw_inset_crop.ctop,
-             &imgdata.sizes.raw_inset_crop.cwidth,
-             &imgdata.sizes.raw_inset_crop.cheight);
+             &imgdata.sizes.raw_inset_crops[0].cleft,
+             &imgdata.sizes.raw_inset_crops[0].ctop,
+             &imgdata.sizes.raw_inset_crops[0].cwidth,
+             &imgdata.sizes.raw_inset_crops[0].cheight);
     }
   } while (strncmp(line, "EOHD", 4));
   data_offset = thumb_offset + thumb_width * thumb_height * 2;
@@ -504,8 +507,7 @@ void LibRaw::parse_broadcom()
   header.bayer_order = 0;
   fseek(ifp, 0xb0 - 0x20, SEEK_CUR);
   fread(&header, 1, sizeof(header), ifp);
-  /* load_flags is not used in broadcom loader, so reuse it for raw_stride */
-  load_flags =
+  raw_stride =
       ((((((header.uwidth + header.padding_right) * 5) + 3) >> 2) + 0x1f) &
        (~0x1f));
   raw_width = width = header.uwidth;
@@ -598,6 +600,14 @@ void LibRaw::parse_raspberrypi()
 	struct brcm_raw_header header;
 	uint8_t brcm_tag[4];
 
+    if (ftell(ifp) > 22LL) // 22 bytes is minimum jpeg size
+    {
+        thumb_length = ftell(ifp);
+        thumb_offset = 0;
+        thumb_width = thumb_height = 0;
+        load_flags |= 0x4000; // flag: we have JPEG from beginning to meta_offset
+    }
+
 	// Sanity check that the caller has found a BRCM header
 	if (!fread(brcm_tag, 1, sizeof(brcm_tag), ifp) ||
 		memcmp(brcm_tag, "BRCM", sizeof(brcm_tag)))
@@ -606,7 +616,7 @@ void LibRaw::parse_raspberrypi()
 	width = raw_width;
 	data_offset = ftell(ifp) + 0x8000 - sizeof(brcm_tag);
 
-	if (!fseek(ifp, 0xB0 - sizeof(brcm_tag), SEEK_CUR) &&
+	if (!fseek(ifp, 0xB0 - int(sizeof(brcm_tag)), SEEK_CUR) &&
 		fread(&header, 1, sizeof(header), ifp)) {
 		switch (header.bayer_order) {
 		case 0: //RGGB

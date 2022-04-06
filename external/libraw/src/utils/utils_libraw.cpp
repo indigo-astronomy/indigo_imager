@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * Copyright 2019-2020 LibRaw LLC (info@libraw.org)
+ * Copyright 2019-2021 LibRaw LLC (info@libraw.org)
  *
 
  LibRaw is free software; you can redistribute it and/or modify
@@ -211,6 +211,12 @@ unsigned LibRaw::capabilities()
 #endif
 #ifdef USE_6BY9RPI
   ret |= LIBRAW_CAPS_RPI6BY9;
+#endif
+#ifdef USE_ZLIB
+  ret |= LIBRAW_CAPS_ZLIB;
+#endif
+#ifdef USE_JPEG
+  ret |= LIBRAW_CAPS_JPEG;
 #endif
   return ret;
 }
@@ -604,4 +610,59 @@ short LibRaw::tiff_sget (unsigned save, uchar *buf, unsigned buf_len, INT64 *tag
   } else *tag_dataoffset = *tag_offset + 8;
   *tag_offset += 12;
   return 0;
+}
+
+#define rICC  imgdata.sizes.raw_inset_crops
+#define S imgdata.sizes
+#define RS imgdata.rawdata.sizes
+int LibRaw::adjust_to_raw_inset_crop(unsigned mask, float maxcrop)
+
+{
+    int adjindex = -1;
+	int limwidth = S.width * maxcrop;
+	int limheight = S.height * maxcrop;
+
+    for(int i = 1; i >= 0; i--)
+        if (mask & (1<<i))
+            if (rICC[i].ctop < 0xffff && rICC[i].cleft < 0xffff
+                && rICC[i].cleft + rICC[i].cwidth <= S.raw_width
+                && rICC[i].ctop + rICC[i].cheight <= S.raw_height
+				&& rICC[i].cwidth >= limwidth && rICC[i].cheight >= limheight)
+            {
+                adjindex = i;
+                break;
+            }
+
+    if (adjindex >= 0)
+    {
+        RS.left_margin = S.left_margin = rICC[adjindex].cleft;
+        RS.top_margin = S.top_margin = rICC[adjindex].ctop;
+        RS.width = S.width = MIN(rICC[adjindex].cwidth, int(S.raw_width) - int(S.left_margin));
+        RS.height = S.height = MIN(rICC[adjindex].cheight, int(S.raw_height) - int(S.top_margin));
+    }
+    return adjindex + 1;
+}
+
+char** LibRaw::malloc_omp_buffers(int buffer_count, size_t buffer_size, const char* where)
+{
+    char** buffers = (char**)malloc(sizeof(char*) * buffer_count);
+    merror(buffers, where);
+
+    for (int i = 0; i < buffer_count; i++)
+    {
+        buffers[i] = (char*)malloc(buffer_size);
+        if (buffers[i] == NULL)
+        {
+            free_omp_buffers(buffers, i);
+            merror(NULL, where);
+        }
+    }
+    return buffers;
+}
+
+void LibRaw::free_omp_buffers(char** buffers, int buffer_count)
+{
+    for (int i = 0; i < buffer_count; i++)
+        free(buffers[i]);
+    free(buffers);
 }

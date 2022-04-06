@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * Copyright 2019-2020 LibRaw LLC (info@libraw.org)
+ * Copyright 2019-2021 LibRaw LLC (info@libraw.org)
  *
  LibRaw is free software; you can redistribute it and/or modify
  it under the terms of the one of two licenses as you choose:
@@ -14,6 +14,48 @@
 
 #include "../../internal/dcraw_defs.h"
 
+void LibRaw::sony_ljpeg_load_raw()
+{
+  unsigned trow = 0, tcol = 0, jrow, jcol, row, col;
+  INT64 save;
+  struct jhead jh;
+
+  while (trow < raw_height)
+  {
+    checkCancel();
+    save = ftell(ifp); // We're at
+    if (tile_length < INT_MAX)
+      fseek(ifp, get4(), SEEK_SET);
+    if (!ljpeg_start(&jh, 0))
+      break;
+    try
+    {
+      for (row = jrow = 0; jrow < (unsigned)jh.high; jrow++, row += 2)
+      {
+        checkCancel();
+        ushort(*rowp)[4] = (ushort(*)[4])ljpeg_row(jrow, &jh);
+        for (col = jcol = 0; jcol < (unsigned)jh.wide; jcol++, col += 2)
+        {
+          RAW(trow + row, tcol + col) = rowp[jcol][0];
+          RAW(trow + row, tcol + col + 1) = rowp[jcol][1];
+          RAW(trow + row + 1, tcol + col) = rowp[jcol][2];
+          RAW(trow + row + 1, tcol + col + 1) = rowp[jcol][3];
+        }
+      }
+    }
+    catch (...)
+    {
+      ljpeg_end(&jh);
+      throw;
+    }
+    fseek(ifp, save + 4, SEEK_SET);
+    if ((tcol += tile_width) >= raw_width)
+      trow += tile_length + (tcol = 0);
+    ljpeg_end(&jh);
+  }
+}
+
+
 void LibRaw::nikon_coolscan_load_raw()
 {
   if (!image)
@@ -25,9 +67,9 @@ void LibRaw::nikon_coolscan_load_raw()
   unsigned short *ubuf = (unsigned short *)buf;
 
   if (tiff_bps <= 8)
-    gamma_curve(1.0 / imgdata.params.coolscan_nef_gamma, 0., 1, 255);
+    gamma_curve(1.0 / imgdata.rawparams.coolscan_nef_gamma, 0., 1, 255);
   else
-    gamma_curve(1.0 / imgdata.params.coolscan_nef_gamma, 0., 1, 65535);
+    gamma_curve(1.0 / imgdata.rawparams.coolscan_nef_gamma, 0., 1, 65535);
   fseek(ifp, data_offset, SEEK_SET);
   for (int row = 0; row < raw_height; row++)
   {
@@ -72,23 +114,19 @@ void LibRaw::nikon_coolscan_load_raw()
 
 void LibRaw::broadcom_load_raw()
 {
-
-  uchar *data, *dp;
+  uchar *dp;
   int rev, row, col, c;
-  ushort _raw_stride = (ushort)load_flags;
   rev = 3 * (order == 0x4949);
-  data = (uchar *)malloc(raw_stride * 2);
-  merror(data, "broadcom_load_raw()");
+  std::vector<uchar> data(raw_stride * 2);
 
   for (row = 0; row < raw_height; row++)
   {
-    if (fread(data + _raw_stride, 1, _raw_stride, ifp) < _raw_stride)
+    if (fread(data.data() + raw_stride, 1, raw_stride, ifp) < raw_stride)
       derror();
-    FORC(_raw_stride) data[c] = data[_raw_stride + (c ^ rev)];
-    for (dp = data, col = 0; col < raw_width; dp += 5, col += 4)
+    FORC(raw_stride) data[c] = data[raw_stride + (c ^ rev)];
+    for (dp = data.data(), col = 0; col < raw_width; dp += 5, col += 4)
       FORC4 RAW(row, col + c) = (dp[c] << 2) | (dp[4] >> (c << 1) & 3);
   }
-  free(data);
 }
 
 void LibRaw::android_tight_load_raw()

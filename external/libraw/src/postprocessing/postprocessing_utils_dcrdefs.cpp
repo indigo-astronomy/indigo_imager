@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * Copyright 2019-2020 LibRaw LLC (info@libraw.org)
+ * Copyright 2019-2021 LibRaw LLC (info@libraw.org)
  *
  LibRaw uses code from dcraw.c -- Dave Coffin's raw photo decoder,
  dcraw.c is copyright 1997-2018 by Dave Coffin, dcoffin a cybercom o net.
@@ -21,17 +21,17 @@
 void LibRaw::convert_to_rgb()
 {
   int i, j, k;
-  size_t prof_desc_len;
-  char *prof_desc;
   float out_cam[3][4];
   double num, inverse[3][3];
   static const double(*out_rgb[])[3] = {
       LibRaw_constants::rgb_rgb,  LibRaw_constants::adobe_rgb,
       LibRaw_constants::wide_rgb, LibRaw_constants::prophoto_rgb,
-      LibRaw_constants::xyz_rgb,  LibRaw_constants::aces_rgb};
+      LibRaw_constants::xyz_rgb,  LibRaw_constants::aces_rgb,
+      LibRaw_constants::dcip3d65_rgb,  LibRaw_constants::rec2020_rgb};
   static const char *name[] = {"sRGB",          "Adobe RGB (1998)",
                                "WideGamut D65", "ProPhoto D65",
-                               "XYZ",           "ACES"};
+                               "XYZ",           "ACES",
+                               "DCI-P3 D65",    "Rec. 2020"};
   static const unsigned phead[] = {
       1024, 0, 0x2100000,  0x6d6e7472, 0x52474220, 0x58595a20, 0,
       0,    0, 0x61637370, 0,          0,          0x6e6f6e65, 0,
@@ -51,15 +51,17 @@ void LibRaw::convert_to_rgb()
 
   RUN_CALLBACK(LIBRAW_PROGRESS_CONVERT_RGB, 0, 2);
 
-  prof_desc_len = snprintf(NULL, 0, "%s gamma %g toe slope %g", name[output_color - 1], floorf(1000.f/gamm[0]+.5f)/1000.f, floorf(gamm[1]*1000.0f+.5f)/1000.f) + 1;
-  prof_desc = (char *)malloc(prof_desc_len);
-  sprintf(prof_desc, "%s gamma %g toe slope %g", name[output_color - 1], floorf(1000.f/gamm[0]+.5f)/1000.f, floorf(gamm[1]*1000.0f+.5f)/1000.f);
 
   gamma_curve(gamm[0], gamm[1], 0, 0);
   memcpy(out_cam, rgb_cam, sizeof out_cam);
-  raw_color |= colors == 1 || output_color < 1 || output_color > 6;
+  raw_color |= colors == 1 || output_color < 1 || output_color > 8;
   if (!raw_color)
   {
+    size_t prof_desc_len;
+    char *prof_desc;
+    prof_desc_len = snprintf(NULL, 0, "%s gamma %g toe slope %g", name[output_color - 1], floorf(1000.f/gamm[0]+.5f)/1000.f, floorf(gamm[1]*1000.0f+.5f)/1000.f) + 1;
+    prof_desc = (char *)malloc(prof_desc_len);
+    sprintf(prof_desc, "%s gamma %g toe slope %g", name[output_color - 1], floorf(1000.f/gamm[0]+.5f)/1000.f, floorf(gamm[1]*1000.0f+.5f)/1000.f);
     oprof = (unsigned *)calloc(phead[0], 1);
     merror(oprof, "convert_to_rgb()");
     memcpy(oprof, phead, sizeof phead);
@@ -118,7 +120,7 @@ void LibRaw::scale_colors()
   if (use_auto_wb || (use_camera_wb && 
       (cam_mul[0] < -0.5  // LibRaw 0.19 and older: fallback to auto only if cam_mul[0] is set to -1
           || (cam_mul[0] <= 0.00001f  // New default: fallback to auto if no cam_mul parsed from metadata
-              && !(imgdata.params.raw_processing_options & LIBRAW_PROCESSING_CAMERAWB_FALLBACK_TO_DAYLIGHT))
+              && !(imgdata.rawparams.options & LIBRAW_RAWOPTIONS_CAMERAWB_FALLBACK_TO_DAYLIGHT))
           )))
   {
     memset(dsum, 0, sizeof dsum);
