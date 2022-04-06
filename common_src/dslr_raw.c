@@ -6,10 +6,66 @@
 #include <indigo/indigo_bus.h>
 #include <dslr_raw.h>
 
-static int progress_cb(void *callback_data, enum LibRaw_progress stage, int iteration, int expected) {
-	(void)callback_data;
-	indigo_debug("libraw: %s, step %i/%i",libraw_strprogress(stage), iteration + 1, expected);
-	return 0;
+static int image_debayered_data(libraw_data_t *raw_data, libraw_image_s *libraw_image) {
+	int rc;
+	libraw_processed_image_t *processed_image = NULL;
+
+	rc = libraw_raw2image(raw_data);
+	if (rc != LIBRAW_SUCCESS) {
+		indigo_error("[rc:%d] libraw_raw2image failed: '%s'", rc, libraw_strerror(rc));
+		goto cleanup;
+	}
+
+	rc = libraw_dcraw_process(raw_data);
+	if (rc != LIBRAW_SUCCESS) {
+		indigo_error("[rc:%d] libraw_dcraw_process failed: '%s'", rc, libraw_strerror(rc));
+		goto cleanup;
+	}
+
+	processed_image = libraw_dcraw_make_mem_image(raw_data, &rc);
+	if (!processed_image) {
+		indigo_error("[rc:%d] libraw_dcraw_make_mem_image failed: '%s'", rc, libraw_strerror(rc));
+		goto cleanup;
+	}
+
+	if (processed_image->type != LIBRAW_IMAGE_BITMAP) {
+		indigo_error("input data is not of type LIBRAW_IMAGE_BITMAP");
+		rc = LIBRAW_UNSPECIFIED_ERROR;
+		goto cleanup;
+	}
+
+	if (processed_image->colors != 3) {
+		indigo_error("debayered data has not 3 colors");
+		rc = LIBRAW_UNSPECIFIED_ERROR;
+		goto cleanup;
+	}
+
+	if (processed_image->bits != 16) {
+		indigo_error("16 bit is supported only");
+		rc = LIBRAW_UNSPECIFIED_ERROR;
+		goto cleanup;
+	}
+
+	libraw_image->width = processed_image->width;
+	libraw_image->height = processed_image->height;
+	libraw_image->size = processed_image->data_size;
+	libraw_image->colors = processed_image->colors;
+
+	if (libraw_image->data)
+		free(libraw_image->data);
+
+	libraw_image->data = malloc(libraw_image->size);
+	if (!libraw_image->data) {
+		indigo_error("%s", strerror(errno));
+		rc = errno;
+		goto cleanup;
+	}
+
+	memcpy(libraw_image->data, processed_image->data, libraw_image->size);
+
+cleanup:
+	libraw_dcraw_clear_mem(processed_image);
+	return rc;
 }
 
 static int image_bayered_data(libraw_data_t *raw_data, libraw_image_s *libraw_image, const bool binning) {
@@ -86,11 +142,11 @@ int process_dslr_raw_image(void *buffer, size_t buffer_size, libraw_image_s *lib
 	/* Linear 16-bit output. */
 	raw_data->params.output_bps = 16;
 	/* Do not debayer. */
-	raw_data->params.user_qual = 254;
+	raw_data->params.user_qual = 0;
 	/* Disable four color space. */
 	raw_data->params.four_color_rgb = 0;
 	/* Disable LibRaw's default histogram transformation. */
-	raw_data->params.no_auto_bright = 1;
+	raw_data->params.no_auto_bright = 0;
 	/* Disable LibRaw's default gamma curve transformation, */
 	raw_data->params.gamm[0] = raw_data->params.gamm[1] = 1.0;
 	/* Do not apply an embedded color profile, enabled by LibRaw by default. */
@@ -99,8 +155,6 @@ int process_dslr_raw_image(void *buffer, size_t buffer_size, libraw_image_s *lib
 	raw_data->params.use_auto_wb = 0;
 	/* Disable white balance from the camera (if possible). */
 	raw_data->params.use_camera_wb = 0;
-
-	libraw_set_progress_handler(raw_data, &progress_cb, NULL);
 
 	rc = libraw_open_buffer(raw_data, buffer, buffer_size);
 	if (rc != LIBRAW_SUCCESS) {
@@ -114,16 +168,27 @@ int process_dslr_raw_image(void *buffer, size_t buffer_size, libraw_image_s *lib
 		goto cleanup;
 	}
 
-	libraw_image->bayer_pattern[0] = raw_data->idata.cdesc[libraw_COLOR(raw_data, 0, 0)];
-	libraw_image->bayer_pattern[1] = raw_data->idata.cdesc[libraw_COLOR(raw_data, 0, 1)];
-	libraw_image->bayer_pattern[2] = raw_data->idata.cdesc[libraw_COLOR(raw_data, 1, 0)];
-	libraw_image->bayer_pattern[3] = raw_data->idata.cdesc[libraw_COLOR(raw_data, 1, 1)];
+	libraw_image->bayer_pattern[0] = raw_data->idata.cdesc[libraw_COLOR(raw_data, 2, 2)];
+	libraw_image->bayer_pattern[1] = raw_data->idata.cdesc[libraw_COLOR(raw_data, 2, 3)];
+	libraw_image->bayer_pattern[2] = raw_data->idata.cdesc[libraw_COLOR(raw_data, 3, 2)];
+	libraw_image->bayer_pattern[3] = raw_data->idata.cdesc[libraw_COLOR(raw_data, 3, 3)];
 
-	rc = image_bayered_data(raw_data, libraw_image, false);
+	indigo_error("Maker       : %s, Model      : %s", raw_data->idata.make, raw_data->idata.model);
+	indigo_error("Norm Maker  : %s, Norm Model : %s", raw_data->idata.normalized_make, raw_data->idata.normalized_model);
+	indigo_error("width       = %d, height     = %d", raw_data->sizes.width, raw_data->sizes.height);
+	indigo_error("iwidth      = %d, iheight    = %d", raw_data->sizes.iwidth, raw_data->sizes.iheight);
+	indigo_error("raw_width   = %d, raw_height = %d", raw_data->sizes.raw_width, raw_data->sizes.raw_height);
+	indigo_error("left_margin = %d, top_margin = %d", raw_data->sizes.left_margin, raw_data->sizes.top_margin);
+	indigo_error("bayerpat    : %s, cdesc      : %s", libraw_image->bayer_pattern, raw_data->idata.cdesc);
+
+	//rc = image_bayered_data(raw_data, libraw_image, false);
+	//if (rc) goto cleanup;
+
+	rc = image_debayered_data(raw_data, libraw_image);
 	if (rc) goto cleanup;
 
 	/*
-	indigo_debug(
+	indigo_error(
 		"libraw conversion in %gs, input size: "
 		"%d bytes, unpacked + (de)bayered output size: "
 		"%d bytes, bayer pattern '%s', "
@@ -137,6 +202,7 @@ int process_dslr_raw_image(void *buffer, size_t buffer_size, libraw_image_s *lib
 		libraw_image->bits, libraw_image->colors
 	);
 	*/
+
 cleanup:
 	libraw_free_image(raw_data);
 	libraw_recycle(raw_data);
