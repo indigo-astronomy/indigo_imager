@@ -162,6 +162,7 @@ preview_image* create_dslr_raw_preview(unsigned char *raw_buffer, unsigned long 
 		pix_format = PIX_FMT_SRGGB16;
 	}
 	*/
+
 	pix_format = PIX_FMT_RGB48;
 
 	preview_image *img = create_preview(libraw_image.width, libraw_image.height,

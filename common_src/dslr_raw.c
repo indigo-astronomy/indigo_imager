@@ -136,7 +136,10 @@ int process_dslr_raw_image(void *buffer, size_t buffer_size, libraw_image_s *lib
 	libraw_image->size = 0;
 	libraw_image->data = NULL;
 
-	//clock_t start = clock();
+#if !defined(INDIGO_WINDOWS)
+	clock_t start = clock();
+#endif
+
 	raw_data = libraw_init(0);
 
 	/* Linear 16-bit output. */
@@ -187,7 +190,7 @@ int process_dslr_raw_image(void *buffer, size_t buffer_size, libraw_image_s *lib
 	rc = image_debayered_data(raw_data, libraw_image);
 	if (rc) goto cleanup;
 
-	/*
+#if !defined(INDIGO_WINDOWS)
 	indigo_error(
 		"libraw conversion in %gs, input size: "
 		"%d bytes, unpacked + (de)bayered output size: "
@@ -201,7 +204,7 @@ int process_dslr_raw_image(void *buffer, size_t buffer_size, libraw_image_s *lib
 		libraw_image->width, libraw_image->height,
 		libraw_image->bits, libraw_image->colors
 	);
-	*/
+#endif
 
 cleanup:
 	libraw_free_image(raw_data);
