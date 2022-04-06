@@ -148,6 +148,7 @@ int process_dslr_raw_image(void *buffer, size_t buffer_size, libraw_image_s *lib
 
 	raw_data = libraw_init(0);
 
+	/* his works best for astro */
 	/* Linear 16-bit output. */
 	raw_data->params.output_bps = 16;
 	/* Use simple interpolation (0) to debayer. > 20 will not debyer */
@@ -155,15 +156,17 @@ int process_dslr_raw_image(void *buffer, size_t buffer_size, libraw_image_s *lib
 	/* Disable four color space. */
 	raw_data->params.four_color_rgb = 0;
 	/* Disable LibRaw's default histogram transformation. */
-	raw_data->params.no_auto_bright = 0;
+	raw_data->params.no_auto_bright = 1;
 	/* Disable LibRaw's default gamma curve transformation, */
 	raw_data->params.gamm[0] = raw_data->params.gamm[1] = 1.0;
-	/* Do not apply an embedded color profile, enabled by LibRaw by default. */
-	raw_data->params.use_camera_matrix = 0;
+	/* Apply an embedded color profile, enabled by LibRaw by default. */
+	raw_data->params.use_camera_matrix = 1;
 	/* Disable automatic white balance obtained after averaging over the entire image. */
 	raw_data->params.use_auto_wb = 0;
-	/* Disable white balance from the camera (if possible). */
-	raw_data->params.use_camera_wb = 0;
+	/* Enable white balance from the camera (if possible). */
+	raw_data->params.use_camera_wb = 1;
+	/* Output colorspace raw*/
+	raw_data->params.output_color = 0;
 
 	rc = libraw_open_buffer(raw_data, buffer, buffer_size);
 	if (rc != LIBRAW_SUCCESS) {
