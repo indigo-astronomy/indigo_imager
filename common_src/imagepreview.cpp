@@ -143,27 +143,31 @@ preview_image* create_dslr_raw_preview(unsigned char *raw_buffer, unsigned long 
 		return nullptr;
 	}
 
-	/*
-	if (!strncmp(libraw_image.bayer_pattern, "BGGR", 4) && (libraw_image.bits == 8)) {
-		pix_format = PIX_FMT_SBGGR8;
-	} else if (!strncmp(libraw_image.bayer_pattern, "GBRG", 4) && (libraw_image.bits == 8)) {
-		pix_format = PIX_FMT_SGBRG8;
-	} else if (!strncmp(libraw_image.bayer_pattern, "GRBG", 4) && (libraw_image.bits == 8)) {
-		pix_format = PIX_FMT_SGRBG8;
-	} else if (!strncmp(libraw_image.bayer_pattern, "RGGB", 4) && (libraw_image.bits == 8)) {
-		pix_format = PIX_FMT_SRGGB8;
-	} else if (!strncmp(libraw_image.bayer_pattern, "BGGR", 4) && (libraw_image.bits == 16)) {
-		pix_format = PIX_FMT_SBGGR16;
-	} else if (!strncmp(libraw_image.bayer_pattern, "GBRG", 4) && (libraw_image.bits == 16)) {
-		pix_format = PIX_FMT_SGBRG16;
-	} else if (!strncmp(libraw_image.bayer_pattern, "GRBG", 4) && (libraw_image.bits == 16)) {
-		pix_format = PIX_FMT_SGRBG16;
-	} else if (!strncmp(libraw_image.bayer_pattern, "RGGB", 4) && (libraw_image.bits == 16)) {
-		pix_format = PIX_FMT_SRGGB16;
+	if (libraw_image.debayered) {
+		if (libraw_image.bits == 8) {
+			pix_format = PIX_FMT_RGB24;
+		} else {
+			pix_format = PIX_FMT_RGB48;
+		}
+	} else {
+		if (!strncmp(libraw_image.bayer_pattern, "BGGR", 4) && (libraw_image.bits == 8)) {
+			pix_format = PIX_FMT_SBGGR8;
+		} else if (!strncmp(libraw_image.bayer_pattern, "GBRG", 4) && (libraw_image.bits == 8)) {
+			pix_format = PIX_FMT_SGBRG8;
+		} else if (!strncmp(libraw_image.bayer_pattern, "GRBG", 4) && (libraw_image.bits == 8)) {
+			pix_format = PIX_FMT_SGRBG8;
+		} else if (!strncmp(libraw_image.bayer_pattern, "RGGB", 4) && (libraw_image.bits == 8)) {
+			pix_format = PIX_FMT_SRGGB8;
+		} else if (!strncmp(libraw_image.bayer_pattern, "BGGR", 4) && (libraw_image.bits == 16)) {
+			pix_format = PIX_FMT_SBGGR16;
+		} else if (!strncmp(libraw_image.bayer_pattern, "GBRG", 4) && (libraw_image.bits == 16)) {
+			pix_format = PIX_FMT_SGBRG16;
+		} else if (!strncmp(libraw_image.bayer_pattern, "GRBG", 4) && (libraw_image.bits == 16)) {
+			pix_format = PIX_FMT_SGRBG16;
+		} else if (!strncmp(libraw_image.bayer_pattern, "RGGB", 4) && (libraw_image.bits == 16)) {
+			pix_format = PIX_FMT_SRGGB16;
+		}
 	}
-	*/
-
-	pix_format = PIX_FMT_RGB48;
 
 	preview_image *img = create_preview(libraw_image.width, libraw_image.height,
 	        pix_format, (char*)libraw_image.data, sconfig);

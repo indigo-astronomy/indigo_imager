@@ -23,6 +23,7 @@
 #define _DSLR_RAW_H
 
 #include <libraw/libraw.h>
+#include <stdbool.h>
 
 typedef struct {
 	uint16_t width;
@@ -31,6 +32,7 @@ typedef struct {
 	void *data;
 	uint8_t bits;
 	uint8_t colors;
+	bool debayered;
 	char bayer_pattern[5];
 } libraw_image_s;
 

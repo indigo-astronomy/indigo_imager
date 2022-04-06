@@ -76,6 +76,11 @@ static int image_bayered_data(libraw_data_t *raw_data, libraw_image_s *libraw_im
 	size_t size;
 	uint32_t i = 0;
 
+	if (raw_data->sizes.iheight > raw_data->sizes.raw_height) {
+		indigo_error("Images with raw_height < image_height are not supported");
+		return LIBRAW_UNSPECIFIED_ERROR;
+	}
+
 	if (binning) {
 		width = raw_data->sizes.iwidth % 2 == 0 ? raw_data->sizes.iwidth : raw_data->sizes.iwidth - 1;
 		height = raw_data->sizes.iheight % 2 == 0 ? raw_data->sizes.iheight : raw_data->sizes.iheight - 1;
@@ -132,6 +137,7 @@ int process_dslr_raw_image(void *buffer, size_t buffer_size, libraw_image_s *lib
 	libraw_image->height = 0;
 	libraw_image->bits = 16;
 	libraw_image->colors = 0;
+	libraw_image->colors = false;
 	memset(libraw_image->bayer_pattern, 0, sizeof(libraw_image->bayer_pattern));
 	libraw_image->size = 0;
 	libraw_image->data = NULL;
@@ -144,7 +150,7 @@ int process_dslr_raw_image(void *buffer, size_t buffer_size, libraw_image_s *lib
 
 	/* Linear 16-bit output. */
 	raw_data->params.output_bps = 16;
-	/* Do not debayer. */
+	/* Use simple interpolation (0) to debayer. > 20 will not debyer */
 	raw_data->params.user_qual = 0;
 	/* Disable four color space. */
 	raw_data->params.four_color_rgb = 0;
@@ -184,11 +190,15 @@ int process_dslr_raw_image(void *buffer, size_t buffer_size, libraw_image_s *lib
 	indigo_error("left_margin = %d, top_margin = %d", raw_data->sizes.left_margin, raw_data->sizes.top_margin);
 	indigo_error("bayerpat    : %s, cdesc      : %s", libraw_image->bayer_pattern, raw_data->idata.cdesc);
 
-	//rc = image_bayered_data(raw_data, libraw_image, false);
-	//if (rc) goto cleanup;
-
-	rc = image_debayered_data(raw_data, libraw_image);
-	if (rc) goto cleanup;
+	if (raw_data->params.user_qual > 20) {
+		rc = image_bayered_data(raw_data, libraw_image, false);
+		if (rc) goto cleanup;
+		libraw_image->debayered = false;
+	} else {
+		rc = image_debayered_data(raw_data, libraw_image);
+		if (rc) goto cleanup;
+		libraw_image->debayered = true;
+	}
 
 #if !defined(INDIGO_WINDOWS)
 	indigo_error(
