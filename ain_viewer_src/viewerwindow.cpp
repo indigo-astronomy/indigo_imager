@@ -283,6 +283,8 @@ void ViewerWindow::on_image_open_act() {
 			"Pentax PEF (*.PEF);;"
 			"Panasonic RW2 / RAW (*.RW2 *.RAW);;"
 			"Olympus ORF (*.ORF);;"
+			"Digital negative (*.DNG);;"
+			"Other RAW formats (*.3FR *.MEF *.MRW);;"
 			"JPEG / TIFF / PNG (*.jpg *.JPG *.jpeg *.JPEG *.jpe *.JPE *.tif *.TIF *.tiff *.TIFF *.png *.PNG);;"
 			"All Files (*)"
 		),
