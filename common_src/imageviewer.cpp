@@ -611,11 +611,11 @@ void ImageViewer::zoomOut() {
 	} else {
 		m_zoom_level = 1;
 	}
-	// do not zoom image bellow 50% of the viewport or 100% if zoom fit is bigger than 100%
+	// Do not zoom out bellow zoom fit or 100% if zoom fit is bigger than 100%
 	QRectF rect = m_view->viewport()->geometry();
 	double scale_x = rect.width() / m_pixmap->image().width() * 100;
 	double scale_y = rect.height() / m_pixmap->image().height() * 100;
-	double zoom_min = (scale_x < scale_y) ? scale_x/2 : scale_y/2;
+	double zoom_min = (scale_x < scale_y) ? scale_x : scale_y;
 	zoom_min = (zoom_min < 100) ? zoom_min : 100;
 	m_zoom_level = (zoom_min > m_zoom_level) ? zoom_min : m_zoom_level;
 	showZoom();
