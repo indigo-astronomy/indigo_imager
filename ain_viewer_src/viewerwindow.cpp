@@ -95,8 +95,6 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	//act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_prev_act);
 
-	menu->addSeparator();
-
 	act = menu->addAction(tr("&Close Image"));
 	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_C));
 	//act->setShortcutVisibleInContextMenu(true);
@@ -108,6 +106,13 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_R));
 	//act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_raw_to_fits);
+
+	menu->addSeparator();
+
+	act = menu->addAction(tr("&Delete File"));
+	act->setShortcut(QKeySequence(Qt::Key_Delete));
+	//act->setShortcutVisibleInContextMenu(true);
+	connect(act, &QAction::triggered, this, &ViewerWindow::on_delete_current_image_act);
 
 	menu->addSeparator();
 
@@ -291,6 +296,37 @@ void ViewerWindow::on_image_open_act() {
 		&m_selected_filter
 	);
 	open_image(file_name);
+}
+
+void ViewerWindow::on_delete_current_image_act() {
+	char path[PATH_LEN];
+
+	if (m_image_path[0] == '\0') return;
+	strncpy(path, m_image_path, PATH_LEN);
+
+	QMessageBox msgBox;
+	msgBox.setWindowTitle("Delete file");
+	msgBox.setText(QString("Do you want to delete '") + basename(m_image_path) + "' ?");
+	msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+	msgBox.setDefaultButton(QMessageBox::No);
+	int ret = msgBox.exec();
+
+	if (ret == QMessageBox::Yes) {
+		indigo_debug("Removing file");
+		on_image_next_act();
+
+		QFile::remove(path);
+
+		QDir directory(dirname(path));
+		QString pattern = "*" + QString(m_image_formrat);
+		m_image_list = directory.entryList(QStringList() << pattern, QDir::Files);
+
+		if (0 == m_image_list.size()) {
+			on_image_close_act();
+		}
+	} else {
+		indigo_debug("File not removed");
+	}
 }
 
 void ViewerWindow::on_image_next_act() {

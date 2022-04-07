@@ -63,6 +63,7 @@ public slots:
 	void on_image_open_act();
 	void on_image_next_act();
 	void on_image_prev_act();
+	void on_delete_current_image_act();
 	void on_image_close_act();
 	void on_image_raw_to_fits();
 	void on_image_info_act();
