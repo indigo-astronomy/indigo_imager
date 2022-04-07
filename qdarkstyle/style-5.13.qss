@@ -107,6 +107,12 @@ QToolTip {
     opacity: 220; /*reducing transparency to read better*/
 }
 
+/* QDialogButtonBox ------------------------------------------------------------- */
+
+QDialogButtonBox {
+    dialogbuttonbox-buttons-have-icons: 0;
+}
+
 /* QStatusBar ------------------------------------------------------------- */
 
 QStatusBar {
