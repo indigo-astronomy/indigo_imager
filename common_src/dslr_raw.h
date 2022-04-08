@@ -34,7 +34,29 @@ typedef struct {
 	uint8_t colors;
 	bool debayered;
 	char bayer_pattern[5];
-} libraw_image_s;
+} dslr_raw_image_s;
+
+typedef struct {
+	char camera_make[64];
+	char camera_model[64];
+	char normalized_camera_make[64];
+	char normalized_camera_model[64];
+	char lens_make[64];
+	char lens[64];
+	ushort raw_height;
+	ushort raw_width;
+	ushort iheight;
+	ushort iwidth;
+	ushort top_margin;
+	ushort left_margin;
+	float iso_speed;
+	float shutter;
+	float aperture;
+	float focal_len;
+	time_t timestamp;
+	char desc[512];
+	char artist[64];
+} dslr_raw_image_info_s;
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,7 +64,8 @@ extern "C" {
 
 #define FIT_FORMAT_AMATEUR_CCD
 
-int process_dslr_raw_image(void *buffer, size_t buffer_size, libraw_image_s *libraw_image);
+int dslr_raw_process_image(void *buffer, size_t buffer_size, dslr_raw_image_s *output_image);
+int dslr_raw_image_info(void *buffer, size_t buffer_size, dslr_raw_image_info_s *image_info);
 
 #ifdef __cplusplus
 }

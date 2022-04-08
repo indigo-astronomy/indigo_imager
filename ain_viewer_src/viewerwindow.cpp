@@ -28,6 +28,7 @@
 #include "version.h"
 #include <imageviewer.h>
 #include <raw_to_fits.h>
+#include <dslr_raw.h>
 
 
 void write_conf();
@@ -55,7 +56,7 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	this->setStyleSheet(ts.readAll());
 	f.close();
 
-	m_header_info = new TextDialog("FITS Header", this);
+	m_image_info_dlg = new TextDialog("Image Info", this);
 
 	//  Set central widget of window
 	QWidget *central = new QWidget;
@@ -78,8 +79,8 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	//act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_open_act);
 
-	act = menu->addAction(tr("FITS &Header"));
-	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_H));
+	act = menu->addAction(tr("&Image Info"));
+	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_I));
 	//act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_info_act);
 
@@ -183,7 +184,7 @@ ViewerWindow::~ViewerWindow () {
 	if (m_image_data) free(m_image_data);
 	delete m_preview_image;
 	delete m_imager_viewer;
-	delete m_header_info;
+	delete m_image_info_dlg;
 }
 
 /* C++ looks for method close - maybe name collision so... */
@@ -248,10 +249,11 @@ void ViewerWindow::open_image(QString file_name) {
 void ViewerWindow::on_image_info_act() {
 	char *card = (char*)m_image_data;
 	char *end = card + m_image_size;
-	if (m_image_size < 2880 || m_image_data == nullptr) return;
+	if (m_image_data == nullptr) return;
 	if (!strncmp(card, "SIMPLE", 6)) {
-		m_header_info->setWindowTitle(QString("FITS Header: ") + QString(basename(m_image_path)));
-		auto text = m_header_info->textWidget();
+		if (m_image_size < 2880) return;
+		m_image_info_dlg->setWindowTitle(QString("FITS Header: ") + QString(basename(m_image_path)));
+		auto text = m_image_info_dlg->textWidget();
 		text->clear();
  		while (card <= end) {
 			char card_line[81];
@@ -262,10 +264,53 @@ void ViewerWindow::on_image_info_act() {
 			if (!strncmp(card, "END", 3)) break;
 			card+=80;
 		}
-		m_header_info->show();
-		m_header_info->scrollTop();
+		m_image_info_dlg->show();
+		m_image_info_dlg->scrollTop();
 	} else {
-		show_message("Error!", "Not a FITS file!");
+		dslr_raw_image_info_s image_info;
+		int rc = dslr_raw_image_info((void *)m_image_data, m_image_size, &image_info);
+		if (rc == LIBRAW_SUCCESS) {
+			m_image_info_dlg->setWindowTitle(QString("Image Info: ") + QString(basename(m_image_path)));
+			auto text = m_image_info_dlg->textWidget();
+			text->clear();
+			text->append(QString("<b>Camera Model:</b> ") + image_info.camera_make + " " + image_info.camera_model);
+			if (
+				strncmp(image_info.camera_make, image_info.normalized_camera_make, sizeof(image_info.camera_make)) ||
+				strncmp(image_info.camera_model, image_info.normalized_camera_model, sizeof(image_info.camera_model))
+			) {
+				text->append(QString("<b>Camera Model (real):</b> ") + image_info.normalized_camera_make + " " + image_info.normalized_camera_model);
+			}
+			if (image_info.lens_make[0] != '\0' || image_info.lens[0] != '\0') {
+				text->append(QString("<b>Lens Model:</b> ") + image_info.lens_make + " " + image_info.lens);
+			}
+			if (image_info.focal_len != 0) {
+				text->append(QString("<b>Focal length:</b> ") + QString::number(image_info.focal_len, 'f', 0) + " mm");
+			}
+			if (image_info.aperture != 0) {
+				text->append(QString("<b>Aperture:</b> ") + QString::number(image_info.aperture, 'f',2));
+			}
+			text->append(QString("<b>Shutter speed:</b> ") + QString::number(image_info.shutter, 'f', 4) + " sec");
+			text->append(QString("<b>ISO Speed:</b> ") + QString::number(image_info.iso_speed, 'f', 0));
+			text->append(QString("<b>Image Dimensions:</b> ") + QString::number(image_info.iwidth) + " x " + QString::number(image_info.iheight));
+			if (image_info.timestamp != 0) {
+				char time_str[64];
+				struct tm tm;
+				localtime_r(&image_info.timestamp, &tm);
+				strftime(time_str, sizeof(time_str), "%d-%m-%Y %H:%M:%S", &tm);
+				text->append(QString("<b>Acquisition time:</b> ") + time_str);
+				text->append("");
+			}
+			if (image_info.artist[0] != '\0') {
+					text->append(QString("<b>Artist:</b> ") + image_info.artist);
+			}
+			if (image_info.desc[0] != '\0') {
+				text->append(QString("<b>Description:</b> ") + image_info.desc);
+			}
+			m_image_info_dlg->show();
+			m_image_info_dlg->scrollTop();
+		} else {
+			show_message("Error!", "Not a FITS file or camera raw!");
+		}
 	}
 }
 

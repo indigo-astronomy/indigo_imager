@@ -134,45 +134,45 @@ preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_
 
 
 preview_image* create_dslr_raw_preview(unsigned char *raw_buffer, unsigned long raw_size, const stretch_config_t sconfig) {
-	libraw_image_s libraw_image;
+	dslr_raw_image_s outout_image;
 	unsigned int pix_format = 0;
 
-	int rc = process_dslr_raw_image((void *)raw_buffer, raw_size, &libraw_image);
+	int rc = dslr_raw_process_image((void *)raw_buffer, raw_size, &outout_image);
 	if (rc != LIBRAW_SUCCESS) {
-		if (libraw_image.data != nullptr) free(libraw_image.data);
+		if (outout_image.data != nullptr) free(outout_image.data);
 		return nullptr;
 	}
 
-	if (libraw_image.debayered) {
-		if (libraw_image.bits == 8) {
+	if (outout_image.debayered) {
+		if (outout_image.bits == 8) {
 			pix_format = PIX_FMT_RGB24;
 		} else {
 			pix_format = PIX_FMT_RGB48;
 		}
 	} else {
-		if (!strncmp(libraw_image.bayer_pattern, "BGGR", 4) && (libraw_image.bits == 8)) {
+		if (!strncmp(outout_image.bayer_pattern, "BGGR", 4) && (outout_image.bits == 8)) {
 			pix_format = PIX_FMT_SBGGR8;
-		} else if (!strncmp(libraw_image.bayer_pattern, "GBRG", 4) && (libraw_image.bits == 8)) {
+		} else if (!strncmp(outout_image.bayer_pattern, "GBRG", 4) && (outout_image.bits == 8)) {
 			pix_format = PIX_FMT_SGBRG8;
-		} else if (!strncmp(libraw_image.bayer_pattern, "GRBG", 4) && (libraw_image.bits == 8)) {
+		} else if (!strncmp(outout_image.bayer_pattern, "GRBG", 4) && (outout_image.bits == 8)) {
 			pix_format = PIX_FMT_SGRBG8;
-		} else if (!strncmp(libraw_image.bayer_pattern, "RGGB", 4) && (libraw_image.bits == 8)) {
+		} else if (!strncmp(outout_image.bayer_pattern, "RGGB", 4) && (outout_image.bits == 8)) {
 			pix_format = PIX_FMT_SRGGB8;
-		} else if (!strncmp(libraw_image.bayer_pattern, "BGGR", 4) && (libraw_image.bits == 16)) {
+		} else if (!strncmp(outout_image.bayer_pattern, "BGGR", 4) && (outout_image.bits == 16)) {
 			pix_format = PIX_FMT_SBGGR16;
-		} else if (!strncmp(libraw_image.bayer_pattern, "GBRG", 4) && (libraw_image.bits == 16)) {
+		} else if (!strncmp(outout_image.bayer_pattern, "GBRG", 4) && (outout_image.bits == 16)) {
 			pix_format = PIX_FMT_SGBRG16;
-		} else if (!strncmp(libraw_image.bayer_pattern, "GRBG", 4) && (libraw_image.bits == 16)) {
+		} else if (!strncmp(outout_image.bayer_pattern, "GRBG", 4) && (outout_image.bits == 16)) {
 			pix_format = PIX_FMT_SGRBG16;
-		} else if (!strncmp(libraw_image.bayer_pattern, "RGGB", 4) && (libraw_image.bits == 16)) {
+		} else if (!strncmp(outout_image.bayer_pattern, "RGGB", 4) && (outout_image.bits == 16)) {
 			pix_format = PIX_FMT_SRGGB16;
 		}
 	}
 
-	preview_image *img = create_preview(libraw_image.width, libraw_image.height,
-	        pix_format, (char*)libraw_image.data, sconfig);
+	preview_image *img = create_preview(outout_image.width, outout_image.height,
+	        pix_format, (char*)outout_image.data, sconfig);
 
-	if (libraw_image.data != nullptr) free(libraw_image.data);
+	if (outout_image.data != nullptr) free(outout_image.data);
 	return img;
 }
 

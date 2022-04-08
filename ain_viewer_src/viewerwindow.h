@@ -76,7 +76,7 @@ public slots:
 
 private:
 	// Image viewer
-	TextDialog *m_header_info;
+	TextDialog *m_image_info_dlg;
 	ImageViewer *m_imager_viewer;
 	preview_image *m_preview_image;
 	unsigned char *m_image_data;

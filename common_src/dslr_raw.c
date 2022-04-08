@@ -6,7 +6,7 @@
 #include <indigo/indigo_bus.h>
 #include <dslr_raw.h>
 
-static int image_debayered_data(libraw_data_t *raw_data, libraw_image_s *libraw_image) {
+static int image_debayered_data(libraw_data_t *raw_data, dslr_raw_image_s *outout_image) {
 	int rc;
 	libraw_processed_image_t *processed_image = NULL;
 
@@ -46,29 +46,29 @@ static int image_debayered_data(libraw_data_t *raw_data, libraw_image_s *libraw_
 		goto cleanup;
 	}
 
-	libraw_image->width = processed_image->width;
-	libraw_image->height = processed_image->height;
-	libraw_image->size = processed_image->data_size;
-	libraw_image->colors = processed_image->colors;
+	outout_image->width = processed_image->width;
+	outout_image->height = processed_image->height;
+	outout_image->size = processed_image->data_size;
+	outout_image->colors = processed_image->colors;
 
-	if (libraw_image->data)
-		free(libraw_image->data);
+	if (outout_image->data)
+		free(outout_image->data);
 
-	libraw_image->data = malloc(libraw_image->size);
-	if (!libraw_image->data) {
+	outout_image->data = malloc(outout_image->size);
+	if (!outout_image->data) {
 		indigo_error("%s", strerror(errno));
 		rc = errno;
 		goto cleanup;
 	}
 
-	memcpy(libraw_image->data, processed_image->data, libraw_image->size);
+	memcpy(outout_image->data, processed_image->data, outout_image->size);
 
 cleanup:
 	libraw_dcraw_clear_mem(processed_image);
 	return rc;
 }
 
-static int image_bayered_data(libraw_data_t *raw_data, libraw_image_s *libraw_image, const bool binning) {
+static int image_bayered_data(libraw_data_t *raw_data, dslr_raw_image_s *outout_image, const bool binning) {
 	uint16_t *data;
 	uint16_t width, height, raw_width;
 	uint32_t npixels;
@@ -99,9 +99,9 @@ static int image_bayered_data(libraw_data_t *raw_data, libraw_image_s *libraw_im
 		indigo_error("%s", strerror(errno));
 		return -errno;
 	}
-	libraw_image->width = binning ? width / 2 : width;
-	libraw_image->height = binning ? height / 2 : height;
-	libraw_image->size = size;
+	outout_image->width = binning ? width / 2 : width;
+	outout_image->height = binning ? height / 2 : height;
+	outout_image->size = size;
 
 	int c = binning ? 2 : 1;
 #ifdef FIT_FORMAT_AMATEUR_CCD
@@ -123,24 +123,24 @@ static int image_bayered_data(libraw_data_t *raw_data, libraw_image_s *libraw_im
 		}
 	}
 
-	libraw_image->data = data;
-	libraw_image->colors = 1;
+	outout_image->data = data;
+	outout_image->colors = 1;
 
 	return 0;
 }
 
-int process_dslr_raw_image(void *buffer, size_t buffer_size, libraw_image_s *libraw_image) {
+int dslr_raw_process_image(void *buffer, size_t buffer_size, dslr_raw_image_s *outout_image) {
 	int rc;
 	libraw_data_t *raw_data;
 
-	libraw_image->width = 0;
-	libraw_image->height = 0;
-	libraw_image->bits = 16;
-	libraw_image->colors = 0;
-	libraw_image->colors = false;
-	memset(libraw_image->bayer_pattern, 0, sizeof(libraw_image->bayer_pattern));
-	libraw_image->size = 0;
-	libraw_image->data = NULL;
+	outout_image->width = 0;
+	outout_image->height = 0;
+	outout_image->bits = 16;
+	outout_image->colors = 0;
+	outout_image->colors = false;
+	memset(outout_image->bayer_pattern, 0, sizeof(outout_image->bayer_pattern));
+	outout_image->size = 0;
+	outout_image->data = NULL;
 
 #if !defined(INDIGO_WINDOWS)
 	clock_t start = clock();
@@ -148,7 +148,7 @@ int process_dslr_raw_image(void *buffer, size_t buffer_size, libraw_image_s *lib
 
 	raw_data = libraw_init(0);
 
-	/* his works best for astro */
+	/* These work fine for astro - change with caution */
 	/* Linear 16-bit output. */
 	raw_data->params.output_bps = 16;
 	/* Use simple interpolation (0) to debayer. > 20 will not debyer */
@@ -180,42 +180,97 @@ int process_dslr_raw_image(void *buffer, size_t buffer_size, libraw_image_s *lib
 		goto cleanup;
 	}
 
-	libraw_image->bayer_pattern[0] = raw_data->idata.cdesc[libraw_COLOR(raw_data, 2, 2)];
-	libraw_image->bayer_pattern[1] = raw_data->idata.cdesc[libraw_COLOR(raw_data, 2, 3)];
-	libraw_image->bayer_pattern[2] = raw_data->idata.cdesc[libraw_COLOR(raw_data, 3, 2)];
-	libraw_image->bayer_pattern[3] = raw_data->idata.cdesc[libraw_COLOR(raw_data, 3, 3)];
+	outout_image->bayer_pattern[0] = raw_data->idata.cdesc[libraw_COLOR(raw_data, 2, 2)];
+	outout_image->bayer_pattern[1] = raw_data->idata.cdesc[libraw_COLOR(raw_data, 2, 3)];
+	outout_image->bayer_pattern[2] = raw_data->idata.cdesc[libraw_COLOR(raw_data, 3, 2)];
+	outout_image->bayer_pattern[3] = raw_data->idata.cdesc[libraw_COLOR(raw_data, 3, 3)];
 
-	indigo_error("Maker       : %s, Model      : %s", raw_data->idata.make, raw_data->idata.model);
-	indigo_error("Norm Maker  : %s, Norm Model : %s", raw_data->idata.normalized_make, raw_data->idata.normalized_model);
-	indigo_error("width       = %d, height     = %d", raw_data->sizes.width, raw_data->sizes.height);
-	indigo_error("iwidth      = %d, iheight    = %d", raw_data->sizes.iwidth, raw_data->sizes.iheight);
-	indigo_error("raw_width   = %d, raw_height = %d", raw_data->sizes.raw_width, raw_data->sizes.raw_height);
-	indigo_error("left_margin = %d, top_margin = %d", raw_data->sizes.left_margin, raw_data->sizes.top_margin);
-	indigo_error("bayerpat    : %s, cdesc      : %s", libraw_image->bayer_pattern, raw_data->idata.cdesc);
+	indigo_debug("Maker       : %s, Model      : %s", raw_data->idata.make, raw_data->idata.model);
+	indigo_debug("Norm Maker  : %s, Norm Model : %s", raw_data->idata.normalized_make, raw_data->idata.normalized_model);
+	indigo_debug("width       = %d, height     = %d", raw_data->sizes.width, raw_data->sizes.height);
+	indigo_debug("iwidth      = %d, iheight    = %d", raw_data->sizes.iwidth, raw_data->sizes.iheight);
+	indigo_debug("raw_width   = %d, raw_height = %d", raw_data->sizes.raw_width, raw_data->sizes.raw_height);
+	indigo_debug("left_margin = %d, top_margin = %d", raw_data->sizes.left_margin, raw_data->sizes.top_margin);
+	indigo_debug("bayerpat    : %s, cdesc      : %s", outout_image->bayer_pattern, raw_data->idata.cdesc);
 
 	if (raw_data->params.user_qual > 20) {
-		rc = image_bayered_data(raw_data, libraw_image, false);
+		rc = image_bayered_data(raw_data, outout_image, false);
 		if (rc) goto cleanup;
-		libraw_image->debayered = false;
+		outout_image->debayered = false;
 	} else {
-		rc = image_debayered_data(raw_data, libraw_image);
+		rc = image_debayered_data(raw_data, outout_image);
 		if (rc) goto cleanup;
-		libraw_image->debayered = true;
+		outout_image->debayered = true;
 	}
 
 #if !defined(INDIGO_WINDOWS)
-	indigo_error(
-		"libraw conversion in %gs, input size: "
+	indigo_debug(
+		"libraw conversion in %g sec, input size: "
 		"%d bytes, unpacked + (de)bayered output size: "
 		"%d bytes, bayer pattern '%s', "
 		"dimension: %d x %d, "
 		"bits: %d, colors: %d",
 		(clock() - start) / (double)CLOCKS_PER_SEC,
 		buffer_size,
-		libraw_image->size,
-		libraw_image->bayer_pattern,
-		libraw_image->width, libraw_image->height,
-		libraw_image->bits, libraw_image->colors
+		outout_image->size,
+		outout_image->bayer_pattern,
+		outout_image->width, outout_image->height,
+		outout_image->bits, outout_image->colors
+	);
+#endif
+
+cleanup:
+	libraw_free_image(raw_data);
+	libraw_recycle(raw_data);
+	libraw_close(raw_data);
+
+	return rc;
+}
+
+int dslr_raw_image_info(void *buffer, size_t buffer_size, dslr_raw_image_info_s *image_info) {
+	int rc;
+	libraw_data_t *raw_data;
+
+	if (image_info == NULL) {
+		indigo_error("No output data structure provided");
+		return LIBRAW_UNSPECIFIED_ERROR;
+	}
+
+#if !defined(INDIGO_WINDOWS)
+	clock_t start = clock();
+#endif
+	raw_data = libraw_init(0);
+
+	rc = libraw_open_buffer(raw_data, buffer, buffer_size);
+	if (rc != LIBRAW_SUCCESS) {
+		indigo_error("[rc:%d] libraw_open_buffer failed: '%s'", rc, libraw_strerror(rc));
+		goto cleanup;
+	}
+
+	strncpy(image_info->camera_make, raw_data->idata.make, sizeof(image_info->camera_make));
+	strncpy(image_info->camera_model, raw_data->idata.model, sizeof(image_info->camera_model));
+	strncpy(image_info->normalized_camera_make, raw_data->idata.normalized_make, sizeof(image_info->normalized_camera_make));
+	strncpy(image_info->normalized_camera_model, raw_data->idata.normalized_model, sizeof(image_info->normalized_camera_model));
+	strncpy(image_info->lens, raw_data->lens.Lens, sizeof(image_info->lens));
+	strncpy(image_info->lens_make, raw_data->lens.LensMake, sizeof(image_info->lens_make));
+	image_info->raw_height = raw_data->sizes.raw_height;
+	image_info->raw_width = raw_data->sizes.raw_width;
+	image_info->iheight = raw_data->sizes.iheight;
+	image_info->iwidth = raw_data->sizes.iwidth;
+	image_info->top_margin = raw_data->sizes.top_margin;
+	image_info->left_margin = raw_data->sizes.left_margin;
+	image_info->iso_speed = raw_data->other.iso_speed;
+	image_info->shutter = raw_data->other.shutter;
+	image_info->aperture = raw_data->other.aperture;
+	image_info->focal_len = raw_data->other.focal_len;
+	image_info->timestamp = raw_data->other.timestamp;
+	strncpy(image_info->desc, raw_data->other.desc, sizeof(image_info->desc));
+	strncpy(image_info->artist, raw_data->other.artist, sizeof(image_info->artist));
+
+#if !defined(INDIGO_WINDOWS)
+	indigo_debug(
+		"libraw got image info in %g sec",
+		(clock() - start) / (double)CLOCKS_PER_SEC
 	);
 #endif
 
