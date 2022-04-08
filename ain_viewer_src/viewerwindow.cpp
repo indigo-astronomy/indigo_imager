@@ -289,7 +289,13 @@ void ViewerWindow::on_image_info_act() {
 			if (image_info.aperture != 0) {
 				text->append(QString("<b>Aperture:</b> ") + QString::number(image_info.aperture, 'f',2));
 			}
-			text->append(QString("<b>Shutter speed:</b> ") + QString::number(image_info.shutter, 'f', 4) + " sec");
+			int demonimator = 1;
+			if (image_info.shutter > 0 && image_info.shutter < 1) {
+				int demon = rint(1 / image_info.shutter);
+				text->append(QString("<b>Shutter speed:</b> ") + "1/" + QString::number(demon) + " (" + QString::number(image_info.shutter, 'f', 4) + ") sec");
+			} else {
+				text->append(QString("<b>Shutter speed:</b> ") + QString::number(image_info.shutter, 'f', 4) + " sec");
+			}
 			text->append(QString("<b>ISO Speed:</b> ") + QString::number(image_info.iso_speed, 'f', 0));
 			text->append(QString("<b>Image Dimensions:</b> ") + QString::number(image_info.iwidth) + " x " + QString::number(image_info.iheight));
 			if (image_info.timestamp != 0) {
