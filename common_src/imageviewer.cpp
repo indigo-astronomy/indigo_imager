@@ -578,13 +578,13 @@ void ImageViewer::zoomIn() {
 	if (!(m_pixmap && m_pixmap->image().valid(1,1))) return;
 
 	if (m_zoom_level >= 1000) {
-		m_zoom_level = (int)(m_zoom_level / 500.0) * 500 + 500;
+		m_zoom_level = floor(m_zoom_level / 500.0) * 500 + 500;
 	} else if (m_zoom_level >= 100) {
-		m_zoom_level = (int)(m_zoom_level / 50.0) * 50 + 50;
+		m_zoom_level = floor(m_zoom_level / 50.0) * 50 + 50;
 	} else if (m_zoom_level >= 10) {
-		m_zoom_level = (int)(m_zoom_level / 10.0) * 10 + 10;
+		m_zoom_level = floor(m_zoom_level / 10.0) * 10 + 10;
 	} else if (m_zoom_level >= 1) {
-		m_zoom_level += 1;
+		m_zoom_level = floor(m_zoom_level) + 1;
 	} else {
 		m_zoom_level = 1;
 	}
@@ -601,13 +601,13 @@ void ImageViewer::zoomOut() {
 	if (!(m_pixmap && m_pixmap->image().valid(1,1))) return;
 
 	if (m_zoom_level > 1000) {
-		m_zoom_level = (int)(round(m_zoom_level / 500.0)) * 500 - 500;
+		m_zoom_level = ceil(m_zoom_level / 500.0) * 500 - 500;
 	} else if (m_zoom_level > 100) {
-		m_zoom_level = (int)(round(m_zoom_level / 50.0)) * 50 - 50;
+		m_zoom_level = ceil(m_zoom_level / 50.0) * 50 - 50;
 	} else if (m_zoom_level > 10) {
-		m_zoom_level = (int)(round(m_zoom_level / 10.0)) * 10 - 10;
+		m_zoom_level = ceil(m_zoom_level / 10.0) * 10 - 10;
 	} else if (m_zoom_level > 1) {
-		m_zoom_level -= 1;
+		m_zoom_level = ceil(m_zoom_level) - 1;
 	} else {
 		m_zoom_level = 1;
 	}
