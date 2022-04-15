@@ -29,6 +29,27 @@
 
 // Related Functions
 
+static unsigned int bayer_to_pix_format(const char *bayerpat, const char bitpix) {
+	if ((!strcmp(bayerpat, "BGGR") || !strcmp(bayerpat, "BGRG")) && (bitpix == 8)) {
+		return PIX_FMT_SBGGR8;
+	} else if ((!strcmp(bayerpat, "GBRG") || !strcmp(bayerpat, "GBGR")) && (bitpix == 8)) {
+		return PIX_FMT_SGBRG8;
+	} else if ((!strcmp(bayerpat, "GRBG") || !strcmp(bayerpat, "GRGB")) && (bitpix == 8)) {
+		return PIX_FMT_SGRBG8;
+	} else if ((!strcmp(bayerpat, "RGGB") || !strcmp(bayerpat, "RGBG")) && (bitpix == 8)) {
+		return PIX_FMT_SRGGB8;
+	} else if ((!strcmp(bayerpat, "BGGR") || !strcmp(bayerpat, "BGRG")) && (bitpix == 16)) {
+		return PIX_FMT_SBGGR16;
+	} else if ((!strcmp(bayerpat, "GBRG") || !strcmp(bayerpat, "GBGR")) && (bitpix == 16)) {
+		return PIX_FMT_SGBRG16;
+	} else if ((!strcmp(bayerpat, "GRBG") || !strcmp(bayerpat, "GRGB")) && (bitpix == 16)) {
+		return PIX_FMT_SGRBG16;
+	} else if ((!strcmp(bayerpat, "RGGB") || !strcmp(bayerpat, "RGBG")) && (bitpix == 16)) {
+		return PIX_FMT_SRGGB16;
+	}
+	return 0;
+}
+
 preview_image* create_tiff_preview(unsigned char *tiff_image_buffer, unsigned long tiff_size) {
 	indigo_error("PREVIEW: %s(): not implemented!", __FUNCTION__);
 	preview_image* img = new preview_image();
@@ -150,23 +171,7 @@ preview_image* create_dslr_raw_preview(unsigned char *raw_buffer, unsigned long 
 			pix_format = PIX_FMT_RGB48;
 		}
 	} else {
-		if (!strncmp(outout_image.bayer_pattern, "BGGR", 4) && (outout_image.bits == 8)) {
-			pix_format = PIX_FMT_SBGGR8;
-		} else if (!strncmp(outout_image.bayer_pattern, "GBRG", 4) && (outout_image.bits == 8)) {
-			pix_format = PIX_FMT_SGBRG8;
-		} else if (!strncmp(outout_image.bayer_pattern, "GRBG", 4) && (outout_image.bits == 8)) {
-			pix_format = PIX_FMT_SGRBG8;
-		} else if (!strncmp(outout_image.bayer_pattern, "RGGB", 4) && (outout_image.bits == 8)) {
-			pix_format = PIX_FMT_SRGGB8;
-		} else if (!strncmp(outout_image.bayer_pattern, "BGGR", 4) && (outout_image.bits == 16)) {
-			pix_format = PIX_FMT_SBGGR16;
-		} else if (!strncmp(outout_image.bayer_pattern, "GBRG", 4) && (outout_image.bits == 16)) {
-			pix_format = PIX_FMT_SGBRG16;
-		} else if (!strncmp(outout_image.bayer_pattern, "GRBG", 4) && (outout_image.bits == 16)) {
-			pix_format = PIX_FMT_SGRBG16;
-		} else if (!strncmp(outout_image.bayer_pattern, "RGGB", 4) && (outout_image.bits == 16)) {
-			pix_format = PIX_FMT_SRGGB16;
-		}
+		pix_format = bayer_to_pix_format(outout_image.bayer_pattern, outout_image.bits);
 	}
 
 	preview_image *img = create_preview(outout_image.width, outout_image.height,
@@ -210,23 +215,7 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 	}
 
 	if (header.naxis == 2) {
-		if (!strcmp(header.bayerpat, "BGGR") && (header.bitpix == 8)) {
-			pix_format = PIX_FMT_SBGGR8;
-		} else if (!strcmp(header.bayerpat, "GBRG") && (header.bitpix == 8)) {
-			pix_format = PIX_FMT_SGBRG8;
-		} else if (!strcmp(header.bayerpat, "GRBG") && (header.bitpix == 8)) {
-			pix_format = PIX_FMT_SGRBG8;
-		} else if (!strcmp(header.bayerpat, "RGGB") && (header.bitpix == 8)) {
-			pix_format = PIX_FMT_SRGGB8;
-		} else if (!strcmp(header.bayerpat, "BGGR") && (header.bitpix == 16)) {
-			pix_format = PIX_FMT_SBGGR16;
-		} else if (!strcmp(header.bayerpat, "GBRG") && (header.bitpix == 16)) {
-			pix_format = PIX_FMT_SGBRG16;
-		} else if (!strcmp(header.bayerpat, "GRBG") && (header.bitpix == 16)) {
-			pix_format = PIX_FMT_SGRBG16;
-		} else if (!strcmp(header.bayerpat, "RGGB") && (header.bitpix == 16)) {
-			pix_format = PIX_FMT_SRGGB16;
-		}
+		pix_format = bayer_to_pix_format(header.bayerpat, header.bitpix);
 	}
 
 	preview_image *img = create_preview(header.naxisn[0], header.naxisn[1],
