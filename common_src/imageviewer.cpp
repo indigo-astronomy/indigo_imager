@@ -205,7 +205,7 @@ void ImageViewer::makeToolbar(bool prev_next) {
 	cb_group->addAction(act);
 	m_color_reference_act[COLOR_BALANCE_AUTO] = act;
 
-	act = menu->addAction("Backhround Neutralization: O&FF");
+	act = menu->addAction("Background Neutralization: O&FF");
 	act->setCheckable(true);
 	connect(act, &QAction::triggered, this, &ImageViewer::onNoBalance);
 	cb_group->addAction(act);
