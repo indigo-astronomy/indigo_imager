@@ -171,7 +171,9 @@ preview_image* create_dslr_raw_preview(unsigned char *raw_buffer, unsigned long 
 			pix_format = PIX_FMT_RGB48;
 		}
 	} else {
-		pix_format = bayer_to_pix_format(outout_image.bayer_pattern, outout_image.bits);
+		int bayer_pix_fmt = bayer_to_pix_format(outout_image.bayer_pattern, outout_image.bits);
+		if (bayer_pix_fmt != 0) pix_format = bayer_pix_fmt;
+
 	}
 
 	preview_image *img = create_preview(outout_image.width, outout_image.height,
@@ -215,7 +217,8 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 	}
 
 	if (header.naxis == 2) {
-		pix_format = bayer_to_pix_format(header.bayerpat, header.bitpix);
+		int bayer_pix_fmt = bayer_to_pix_format(header.bayerpat, header.bitpix);
+		if (bayer_pix_fmt != 0) pix_format = bayer_pix_fmt;
 	}
 
 	preview_image *img = create_preview(header.naxisn[0], header.naxisn[1],
