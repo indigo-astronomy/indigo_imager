@@ -382,13 +382,15 @@ double getRange(int data_type) {
 		case PIX_FMT_RGB24:
 			return (double)0xFF;
 		case PIX_FMT_Y16:
+		case PIX_FMT_RGB48:
 			return (double)0xFFFF;
 		case PIX_FMT_Y32:
-			return (double)0xFFFFFFFF;
 		case PIX_FMT_F32:
+		case PIX_FMT_RGB96:
+		case PIX_FMT_RGBF:
 			return (double)0xFFFFFFFF;
 		default:
-			return (double)0xFFFF;
+			return 1.0;
 	}
 }
 
