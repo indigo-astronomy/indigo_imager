@@ -212,8 +212,8 @@ void computeParamsOneChannel(
 
 	// scale to 0 -> 1.0.
 	const float medDev = median(deviations);
-	const float normalizedMedian = medianSample / static_cast<float>(inputRange);
-	const float MADN = 1.4826 * medDev / static_cast<float>(inputRange);
+	const float normalizedMedian = medianSample / inputRange;
+	const float MADN = 1.4826 * medDev / inputRange;
 
 	const bool upperHalf = normalizedMedian > 0.5;
 
@@ -246,7 +246,7 @@ template <typename T>
 void computeParamsThreeChannels(
 	T const *buffer,
 	StretchParams *params,
-	float inputRange,
+	double inputRange,
 	int height,
 	int width,
 	const float B = 0.25,
@@ -288,8 +288,8 @@ void computeParamsThreeChannels(
 
 	// scale to 0 -> 1.0.
 	float medDev = median(deviationsR);
-	float normalizedMedian = medianSampleR / static_cast<float>(inputRange);
-	float MADN = 1.4826 * medDev / static_cast<float>(inputRange);
+	float normalizedMedian = medianSampleR / inputRange;
+	float MADN = 1.4826 * medDev / inputRange;
 
 	bool upperHalf = normalizedMedian > 0.5;
 
@@ -313,8 +313,8 @@ void computeParamsThreeChannels(
 
 	// Green
 	medDev = median(deviationsG);
-	normalizedMedian = medianSampleG / static_cast<float>(inputRange);
-	MADN = 1.4826 * medDev / static_cast<float>(inputRange);
+	normalizedMedian = medianSampleG / inputRange;
+	MADN = 1.4826 * medDev / inputRange;
 
 	upperHalf = normalizedMedian > 0.5;
 
@@ -337,8 +337,8 @@ void computeParamsThreeChannels(
 
 	// Blue
 	medDev = median(deviationsB);
-	normalizedMedian = medianSampleB / static_cast<float>(inputRange);
-	MADN = 1.4826 * medDev / static_cast<float>(inputRange);
+	normalizedMedian = medianSampleB / inputRange;
+	MADN = 1.4826 * medDev / inputRange;
 
 	upperHalf = normalizedMedian > 0.5;
 
