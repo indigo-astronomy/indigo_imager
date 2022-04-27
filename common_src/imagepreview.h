@@ -95,11 +95,23 @@ public:
 		} else if (m_pix_format == PIX_FMT_Y16) {
 			size = m_width * m_height * 2;
 			hist_size = 65536;
+		} else if (m_pix_format == PIX_FMT_Y32) {
+			size = m_width * m_height * 4;
+			hist_size = 65536;
+		} else if (m_pix_format == PIX_FMT_F32) {
+			size = m_width * m_height * 4;
+			hist_size = 65536;
 		} else if (m_pix_format == PIX_FMT_RGB24) {
 			size = m_width * m_height * 3;
 			hist_size = 256;
 		} else if (m_pix_format == PIX_FMT_RGB48) {
 			size = m_width * m_height * 6;
+			hist_size = 65536;
+		} else if (m_pix_format == PIX_FMT_RGB96) {
+			size = m_width * m_height * 12;
+			hist_size = 65536;
+		} else if (m_pix_format == PIX_FMT_RGBF) {
+			size = m_width * m_height * 12;
 			hist_size = 65536;
 		}
 
@@ -148,11 +160,23 @@ public:
 		} else if (m_pix_format == PIX_FMT_Y16) {
 			size = m_width * m_height * 2;
 			hist_size = 65536;
+		} else if (m_pix_format == PIX_FMT_Y32) {
+			size = m_width * m_height * 4;
+			hist_size = 65536;
+		} else if (m_pix_format == PIX_FMT_F32) {
+			size = m_width * m_height * 4;
+			hist_size = 65536;
 		} else if (m_pix_format == PIX_FMT_RGB24) {
 			size = m_width * m_height * 3;
 			hist_size = 256;
 		} else if (m_pix_format == PIX_FMT_RGB48) {
 			size = m_width * m_height * 6;
+			hist_size = 65536;
+		} else if (m_pix_format == PIX_FMT_RGB96) {
+			size = m_width * m_height * 12;
+			hist_size = 65536;
+		} else if (m_pix_format == PIX_FMT_RGBF) {
+			size = m_width * m_height * 12;
 			hist_size = 65536;
 		}
 
@@ -187,7 +211,7 @@ public:
 		}
 	};
 
-	int pixel_value(int x, int y, int &r, int &g, int &b) const {
+	int pixel_value(int x, int y, double &r, double &g, double &b) const {
 		if (m_raw_data == nullptr) {
 			if (pixelFormat().colorModel() == 2) {
 				r = g = b = -1;
@@ -211,6 +235,16 @@ public:
 			r = pixels[y * m_width + x];
 			g = -1;
 			b = -1;
+		} else if (m_pix_format == PIX_FMT_Y32) {
+			uint32_t* pixels = (uint32_t*) m_raw_data;
+			r = pixels[y * m_width + x];
+			g = -1;
+			b = -1;
+		} else if (m_pix_format == PIX_FMT_F32) {
+			float* pixels = (float*) m_raw_data;
+			r = pixels[y * m_width + x];
+			g = -1;
+			b = -1;
 		} else if (m_pix_format == PIX_FMT_RGB24) {
 			uint8_t* pixels = (uint8_t*) m_raw_data;
 			r = pixels[3 * (y * m_width + x)];
@@ -218,6 +252,16 @@ public:
 			b = pixels[3 * (y * m_width + x) + 2];
 		} else if (m_pix_format == PIX_FMT_RGB48) {
 			uint16_t* pixels = (uint16_t*) m_raw_data;
+			r = pixels[3 * (y * m_width + x)];
+			g = pixels[3 * (y * m_width + x) + 1];
+			b = pixels[3 * (y * m_width + x) + 2];
+		} else if (m_pix_format == PIX_FMT_RGB96) {
+			uint32_t* pixels = (uint32_t*) m_raw_data;
+			r = pixels[3 * (y * m_width + x)];
+			g = pixels[3 * (y * m_width + x) + 1];
+			b = pixels[3 * (y * m_width + x) + 2];
+		} else if (m_pix_format == PIX_FMT_RGBF) {
+			float* pixels = (float*) m_raw_data;
 			r = pixels[3 * (y * m_width + x)];
 			g = pixels[3 * (y * m_width + x) + 1];
 			b = pixels[3 * (y * m_width + x) + 2];

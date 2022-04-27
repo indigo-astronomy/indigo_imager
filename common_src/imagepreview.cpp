@@ -195,13 +195,21 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 		return nullptr;
 	}
 
-	if ((header.bitpix==16) && (header.naxis == 2)){
+	if ((header.bitpix == -32) && (header.naxis == 2)){
+		pix_format = PIX_FMT_F32;
+	} else if ((header.bitpix == 32) && (header.naxis == 2)){
+		pix_format = PIX_FMT_Y32;
+	} else if ((header.bitpix == 16) && (header.naxis == 2)){
 		pix_format = PIX_FMT_Y16;
-	} else if ((header.bitpix==16) && (header.naxis == 3)){
-		pix_format = PIX_FMT_3RGB48;
-	} else if ((header.bitpix==8) && (header.naxis == 2)){
+	} else if ((header.bitpix == 8) && (header.naxis == 2)){
 		pix_format = PIX_FMT_Y8;
-	} else if ((header.bitpix==8) && (header.naxis == 3)){
+	} else if ((header.bitpix == -32) && (header.naxis == 3)){
+		pix_format = PIX_FMT_3RGBF;
+	} else if ((header.bitpix == 32) && (header.naxis == 3)){
+		pix_format = PIX_FMT_3RGB96;
+	} else if ((header.bitpix == 16) && (header.naxis == 3)){
+		pix_format = PIX_FMT_3RGB48;
+	} else if ((header.bitpix == 8) && (header.naxis == 3)){
 		pix_format = PIX_FMT_3RGB24;
 	} else {
 		indigo_error("FITS: Unsupported bitpix (BITPIX= %d)", header.bitpix);
@@ -289,6 +297,26 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		img->m_width = width;
 
 		stretch_preview(img, sconfig);
+	} else if (pix_format == PIX_FMT_Y32) {
+		uint32_t* buf = (uint32_t*)image_data;
+		uint32_t* pixmap_data = (uint32_t*)malloc(sizeof(uint32_t) * height * width);
+		memcpy(pixmap_data, buf, sizeof(uint32_t) * height * width);
+		img->m_raw_data = (char*)pixmap_data;
+		img->m_pix_format = PIX_FMT_Y32;
+		img->m_height = height;
+		img->m_width = width;
+
+		stretch_preview(img, sconfig);
+	} else if (pix_format == PIX_FMT_F32) {
+		float* buf = (float*)image_data;
+		float* pixmap_data = (float*)malloc(sizeof(float) * height * width);
+		memcpy(pixmap_data, buf, sizeof(float) * height * width);
+		img->m_raw_data = (char*)pixmap_data;
+		img->m_pix_format = PIX_FMT_F32;
+		img->m_height = height;
+		img->m_width = width;
+
+		stretch_preview(img, sconfig);
 	} else if (pix_format == PIX_FMT_3RGB24) {
 		int channel_offest = width * height;
 		uint8_t* buf = (uint8_t*)image_data;
@@ -333,12 +361,54 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		img->m_width = width;
 
 		stretch_preview(img, sconfig);
+	} else if (pix_format == PIX_FMT_3RGB96) {
+		int channel_offest = width * height;
+		uint32_t* buf = (uint32_t*)image_data;
+		uint32_t* pixmap_data = (uint32_t*)malloc(sizeof(uint32_t) * height * width * 3);
+		int index = 0;
+		int index2 = 0;
+		for (int y = 0; y < height; ++y) {
+			QCoreApplication::processEvents();
+			for (int x = 0; x < width; ++x) {
+				pixmap_data[index2 + 0] = buf[index];
+				pixmap_data[index2 + 1] = buf[index + channel_offest];
+				pixmap_data[index2 + 2] = buf[index + 2 * channel_offest];
+				index++;
+				index2 += 3;
+			}
+		}
+		img->m_raw_data = (char*)pixmap_data;
+		img->m_pix_format = PIX_FMT_RGB96;
+		img->m_height = height;
+		img->m_width = width;
+
+		stretch_preview(img, sconfig);
+	} else if (pix_format == PIX_FMT_3RGBF) {
+		int channel_offest = width * height;
+		float* buf = (float*)image_data;
+		float* pixmap_data = (float*)malloc(sizeof(float) * height * width * 3);
+		int index = 0;
+		int index2 = 0;
+		for (int y = 0; y < height; ++y) {
+			QCoreApplication::processEvents();
+			for (int x = 0; x < width; ++x) {
+				pixmap_data[index2 + 0] = buf[index];
+				pixmap_data[index2 + 1] = buf[index + channel_offest];
+				pixmap_data[index2 + 2] = buf[index + 2 * channel_offest];
+				index++;
+				index2 += 3;
+			}
+		}
+		img->m_raw_data = (char*)pixmap_data;
+		img->m_pix_format = PIX_FMT_RGBF;
+		img->m_height = height;
+		img->m_width = width;
+
+		stretch_preview(img, sconfig);
 	} else if (pix_format == PIX_FMT_RGB24) {
 		uint8_t* buf = (uint8_t*)image_data;
 		uint8_t* pixmap_data = (uint8_t*)malloc(sizeof(uint8_t) * height * width * 3);
-
 		memcpy(pixmap_data, buf, sizeof(uint8_t) * height * width * 3);
-
 		img->m_raw_data = (char*)pixmap_data;
 		img->m_pix_format = PIX_FMT_RGB24;
 		img->m_height = height;
@@ -348,11 +418,29 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 	} else if (pix_format == PIX_FMT_RGB48) {
 		uint16_t* buf = (uint16_t*)image_data;
 		uint16_t* pixmap_data = (uint16_t*)malloc(sizeof(uint16_t) * height * width * 3);
-
 		memcpy(pixmap_data, buf, sizeof(uint16_t) * height * width * 3);
-
 		img->m_raw_data = (char*)pixmap_data;
 		img->m_pix_format = PIX_FMT_RGB48;
+		img->m_height = height;
+		img->m_width = width;
+
+		stretch_preview(img, sconfig);
+	} else if (pix_format == PIX_FMT_RGB96) {
+		uint32_t* buf = (uint32_t*)image_data;
+		uint32_t* pixmap_data = (uint32_t*)malloc(sizeof(uint32_t) * height * width * 3);
+		memcpy(pixmap_data, buf, sizeof(uint32_t) * height * width * 3);
+		img->m_raw_data = (char*)pixmap_data;
+		img->m_pix_format = PIX_FMT_RGB96;
+		img->m_height = height;
+		img->m_width = width;
+
+		stretch_preview(img, sconfig);
+	} else if (pix_format == PIX_FMT_RGBF) {
+		float* buf = (float*)image_data;
+		float* pixmap_data = (float*)malloc(sizeof(float) * height * width * 3);
+		memcpy(pixmap_data, buf, sizeof(float) * height * width * 3);
+		img->m_raw_data = (char*)pixmap_data;
+		img->m_pix_format = PIX_FMT_RGBF;
 		img->m_height = height;
 		img->m_width = width;
 
@@ -380,7 +468,8 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 
 		stretch_preview(img, sconfig);
 	} else {
-		indigo_error("%s(): Unsupported pixel format (%d)", __FUNCTION__, pix_format);
+		char *c = (char*)&pix_format;
+		indigo_error("%s(): Unsupported pixel format (%c%c%c%c)", __FUNCTION__, c[0], c[1], c[2], c[3]);
 		delete img;
 		img = nullptr;
 	}
@@ -391,8 +480,12 @@ void stretch_preview(preview_image *img, const stretch_config_t sconfig) {
 	if (
 		img->m_pix_format == PIX_FMT_Y8 ||
 		img->m_pix_format == PIX_FMT_Y16 ||
+		img->m_pix_format == PIX_FMT_Y32 ||
+		img->m_pix_format == PIX_FMT_F32 ||
 		img->m_pix_format == PIX_FMT_RGB24 ||
-		img->m_pix_format == PIX_FMT_RGB48
+		img->m_pix_format == PIX_FMT_RGB48 ||
+		img->m_pix_format == PIX_FMT_RGB96 ||
+		img->m_pix_format == PIX_FMT_RGBF
 	) {
 		Stretcher s(img->m_width, img->m_height, img->m_pix_format);
 		StretchParams sp;
@@ -408,7 +501,8 @@ void stretch_preview(preview_image *img, const stretch_config_t sconfig) {
 		s.setParams(sp);
 		s.stretch((const uint8_t*)img->m_raw_data, img, 1);
 	} else {
-		indigo_error("%s(): Unsupported pixel format (%d)", __FUNCTION__, img->m_pix_format);
+		char *c = (char*)&img->m_pix_format;
+		indigo_error("%s(): Unsupported pixel format (%c%c%c%c)", __FUNCTION__, c[0], c[1], c[2], c[3]);
 	}
 }
 

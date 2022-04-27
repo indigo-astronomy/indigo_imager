@@ -52,7 +52,7 @@ public:
 private:
 	int m_image_width;
 	int m_image_height;
-	int m_input_range;
+	double m_input_range;
 	uint32_t m_pix_fmt;
 
 	StretchParams m_params;

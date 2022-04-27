@@ -267,7 +267,51 @@ int fits_process_data(const uint8_t *fits_data, int fits_size, fits_header *head
 		return FITS_INVALIDDATA;
 	}
 
-	if (header->bitpix == 16 && header->naxis > 0) {
+	if (header->bitpix == -32 && header->naxis > 0) {
+		float *raw = (float *)(fits_data + header->data_offset);
+		float *native = (float *)native_data;
+		if (little_endian) {
+			for (int i = 0; i < size; i++) {
+				char *rawc = ( char* ) raw;
+				char *nativec = ( char* ) native;
+				// swap bytes
+				nativec[0] = rawc[3];
+				nativec[1] = rawc[2];
+				nativec[2] = rawc[1];
+				nativec[3] = rawc[0];
+				*native = (*native + header->bzero) * header->bscale;
+				native++;
+				raw++;
+			}
+		} else {
+			for (int i = 0; i < size; i++) {
+				*native++ = (*raw++ + header->bzero) * header->bscale;
+			}
+		}
+		return FITS_OK;
+	} else if (header->bitpix == 32 && header->naxis > 0) {
+		int32_t *raw = (int32_t *)(fits_data + header->data_offset);
+		int32_t *native = (int32_t *)native_data;
+		if (little_endian) {
+			for (int i = 0; i < size; i++) {
+				char *rawc = ( char* ) raw;
+				char *nativec = ( char* ) native;
+				// swap bytes
+				nativec[0] = rawc[3];
+				nativec[1] = rawc[2];
+				nativec[2] = rawc[1];
+				nativec[3] = rawc[0];
+				*native = (uint32_t)(*native + header->bzero) * header->bscale;
+				native++;
+				raw++;
+			}
+		} else {
+			for (int i = 0; i < size; i++) {
+				*native++ = (*raw++ + header->bzero) * header->bscale;
+			}
+		}
+		return FITS_OK;
+	} else if (header->bitpix == 16 && header->naxis > 0) {
 		short *raw = (short *)(fits_data + header->data_offset);
 		short *native = (short *)native_data;
 		if (little_endian) {
@@ -294,7 +338,7 @@ int fits_process_data(const uint8_t *fits_data, int fits_size, fits_header *head
 	return FITS_INVALIDDATA;
 }
 
-
+/*
 int fits_process_data_with_hist(const uint8_t *fits_data, int fits_size, fits_header *header, char *native_data, int *hist) {
 	int little_endian = 1;
 	int size = 1;
@@ -343,3 +387,4 @@ int fits_process_data_with_hist(const uint8_t *fits_data, int fits_size, fits_he
 	}
 	return FITS_INVALIDDATA;
 }
+*/

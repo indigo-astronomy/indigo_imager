@@ -626,24 +626,27 @@ void ImageViewer::zoomOut() {
 
 void ImageViewer::mouseAt(double x, double y) {
 	if (m_pixmap && m_pixmap->image().valid(x,y)) {
-		int r,g,b;
+		double r,g,b;
 		double ra, dec;
 		int pix_format = m_pixmap->image().pixel_value(x, y, r, g, b);
 		int res = m_pixmap->image().wcs_data(x, y, &ra, &dec);
 		QString s;
 		if (res != -1 && m_show_wcs) {
 			s.sprintf("%.0f%% [%5.1f, %5.1f] (%s, %s) ", m_zoom_level, x, y, indigo_dtos(ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(dec, "%+d° %02d' %04.1f\""));
-			//s.sprintf("%.0f%% [%5.1f, %5.1f] α = %s δ = %s ", m_zoom_level, x, y, indigo_dtos(ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(dec, "%+d° %02d' %04.1f\""));
 		} else {
 			if (pix_format == PIX_FMT_INDEX) {
 				s.sprintf("%.0f%% [%5.1f, %5.1f]", m_zoom_level, x, y);
+			} else if (pix_format == PIX_FMT_F32 || pix_format == PIX_FMT_RGBF){
+				if (g == -1) {
+					s.sprintf("%.0f%% [%5.1f, %5.1f] (%.6f)", m_zoom_level, x, y, r);
+				} else {
+					s.sprintf("%.0f%% [%5.1f, %5.1f] (%.6f, %.6f, %.6f)", m_zoom_level, x, y, r, g, b);
+				}
 			} else {
 				if (g == -1) {
-					//s = QString("%1% [%2, %3] (%4)").arg(scale).arg(x).arg(y).arg(r);
-					s.sprintf("%.0f%% [%5.1f, %5.1f] (%5d)", m_zoom_level, x, y, r);
+					s.sprintf("%.0f%% [%5.1f, %5.1f] (%5.0f)", m_zoom_level, x, y, r);
 				} else {
-					//s = QString("%1% [%2, %3] (%4, %5, %6)").arg(scale).arg(x).arg(y).arg(r).arg(g).arg(b);
-					s.sprintf("%.0f%% [%5.1f, %5.1f] (%5d, %5d, %5d)", m_zoom_level, x, y, r, g, b);
+					s.sprintf("%.0f%% [%5.1f, %5.1f] (%5.0f, %5.0f, %5.0f)", m_zoom_level, x, y, r, g, b);
 				}
 			}
 		}
