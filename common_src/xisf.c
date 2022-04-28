@@ -78,6 +78,7 @@ int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadat
 		char* content = calloc(xml_string_length(attr_content) + 1, sizeof(uint8_t));
 		xml_string_copy(attr_content, content, xml_string_length(attr_content));
 
+		indigo_debug("XISF %s: %s\n", name, content);
 		if (!strncmp(name, "geometry", strlen(name))) {
 			int width = 0, height = 0, channels = 0;
 			int scanned = sscanf(content, "%d:%d:%d", &width, &height, &channels);
@@ -129,56 +130,12 @@ int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadat
 			metadata->data_size = data_size;
 		} else if (!strncmp(name, "compression", strlen(name))) {
 			xml_document_free(document, false);
+			indigo_error("Unsupported XISF compression: %s", content);
 			return XISF_UNSUPPORTED;
 		}
-		//printf("%s %s\n", name, content);
 		free(name);
 		free(content);
 	}
 	xml_document_free(document, false);
 	return XISF_OK;
 }
-
-/*
-int main(int argc, char** argv) {
-	xisf_metadata metadata = {0};
-
-	unsigned char* image_data;
-	FILE *file;
-
-	file = fopen("m31_rgb.xisf", "rb");
-	if (!file) {
-		printf("can not read file\n");
-		exit(1);
-	}
-
-	fseek(file, 0, SEEK_END);
-	size_t image_size = (size_t)ftell(file);
-	fseek(file, 0, SEEK_SET);
-	image_data = (unsigned char *)malloc(image_size + 1);
-	fread(image_data, image_size, 1, file);
-	fclose(file);
-
-	int res = xisf_read_metadata(image_data, image_size, &metadata);
-
-	printf ("\n\n"
-		"result = %d\n"
-		"naxis = %d\n"
-		"naxis1 = %d\n"
-		"naxis2 = %d\n"
-		"naxis3 = %d\n"
-		"bitpix = %d\n"
-		"data_offset = %d\n"
-		"data_size = %d\n",
-		res,
-		metadata.naxis,
-		metadata.naxisn[0],
-		metadata.naxisn[1],
-		metadata.naxisn[2],
-		metadata.bitpix,
-		metadata.data_offset,
-		metadata.data_size
-	);
-	free(image_data);
-}
-*/
