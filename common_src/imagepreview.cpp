@@ -19,6 +19,7 @@
 #include <setjmp.h>
 #include <math.h>
 #include <fits.h>
+#include <xisf.h>
 #include <debayer.h>
 #include <pixelformat.h>
 #include <imagepreview.h>
@@ -237,6 +238,44 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 	return img;
 }
 
+preview_image* create_xisf_preview(unsigned char *xisf_buffer, unsigned long xisf_size, const stretch_config_t sconfig) {
+	xisf_metadata header;
+	unsigned int pix_format = 0;
+
+	indigo_debug("XISF_START");
+	int res = xisf_read_metadata(xisf_buffer, xisf_size, &header);
+	if (res != XISF_OK) {
+		indigo_error("XISF: Error parsing header");
+		return nullptr;
+	}
+
+	if ((header.bitpix == -32) && (header.naxis == 2)){
+		pix_format = PIX_FMT_F32;
+	} else if ((header.bitpix == 32) && (header.naxis == 2)){
+		pix_format = PIX_FMT_Y32;
+	} else if ((header.bitpix == 16) && (header.naxis == 2)){
+		pix_format = PIX_FMT_Y16;
+	} else if ((header.bitpix == 8) && (header.naxis == 2)){
+		pix_format = PIX_FMT_Y8;
+	} else if ((header.bitpix == -32) && (header.naxis == 3)){
+		pix_format = PIX_FMT_3RGBF;
+	} else if ((header.bitpix == 32) && (header.naxis == 3)){
+		pix_format = PIX_FMT_3RGB96;
+	} else if ((header.bitpix == 16) && (header.naxis == 3)){
+		pix_format = PIX_FMT_3RGB48;
+	} else if ((header.bitpix == 8) && (header.naxis == 3)){
+		pix_format = PIX_FMT_3RGB24;
+	} else {
+		indigo_error("XISF: Unsupported bitpix (BITPIX= %d)", header.bitpix);
+		return nullptr;
+	}
+
+	preview_image *img = create_preview(header.naxisn[0], header.naxisn[1],
+	        pix_format, (char*)xisf_buffer + header.data_offset, sconfig);
+
+	indigo_debug("XISF_END");
+	return img;
+}
 
 preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size, const stretch_config_t sconfig) {
 	unsigned int pix_format;
@@ -527,6 +566,8 @@ preview_image* create_preview(unsigned char *data, size_t size, const char* form
 			preview = create_fits_preview(data, size, sconfig);
 		} else if (!strncmp((const char*)data, "RAW", 3)) {
 			preview = create_raw_preview(data, size, sconfig);
+		} else if (!strncmp((const char*)data, "XISF", 4)) {
+			preview = create_xisf_preview(data, size, sconfig);
 		//} else if (!strncmp((const char*)data, "II*", 3) || !strncmp((const char*)data, "MM*", 3)) {
 		//	preview = create_tiff_preview(data, size);
 		} else if (format[0] != '\0') {

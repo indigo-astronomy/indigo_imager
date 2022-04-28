@@ -313,6 +313,7 @@ public:
 
 preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_size);
 preview_image* create_fits_preview(unsigned char *fits_buffer, unsigned long fits_size, const stretch_config_t sconfig);
+preview_image* create_xisf_preview(unsigned char *xisf_buffer, unsigned long xisf_size, const stretch_config_t sconfig);
 preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size, const stretch_config_t sconfig);
 preview_image* create_preview(unsigned char *data, size_t size, const char* format, const stretch_config_t sconfig);
 preview_image* create_preview(int width, int height, int pixel_format, char *image_data, const stretch_config_t sconfig);
