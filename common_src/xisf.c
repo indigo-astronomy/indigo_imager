@@ -21,11 +21,26 @@
 #include <stdlib.h>
 #include <xml.h>
 #include <xisf.h>
+#include <zlib.h>
+
+static int xisf_metadata_init(xisf_metadata *metadata) {
+	metadata->bitpix = 0;
+	metadata->width = 0;
+	metadata->height = 0;
+	metadata->channels = 0;
+	metadata->data_offset = 0;
+	metadata->data_size = 0;
+	metadata->uncompressed_data_size = 0;
+	metadata->compression[0] = '\0';
+	metadata->colourspace[0] = '\0';
+}
 
 int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadata) {
 	if (!xisf_data || !xisf_size || !metadata) {
 		return XISF_INVALIDPARAM;
 	}
+
+	xisf_metadata_init(metadata);
 
 	xisf_header *header = (xisf_header*)xisf_data;
 
@@ -78,7 +93,7 @@ int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadat
 		char* content = calloc(xml_string_length(attr_content) + 1, sizeof(uint8_t));
 		xml_string_copy(attr_content, content, xml_string_length(attr_content));
 
-		indigo_debug("XISF %s: %s\n", name, content);
+		indigo_error("XISF %s: %s\n", name, content);
 		if (!strncmp(name, "geometry", strlen(name))) {
 			int width = 0, height = 0, channels = 0;
 			int scanned = sscanf(content, "%d:%d:%d", &width, &height, &channels);
@@ -90,15 +105,9 @@ int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadat
 				xml_document_free(document, false);
 				return XISF_UNSUPPORTED;
 			}
-			metadata->naxisn[0] = width;
-			metadata->naxisn[1] = height;
-			if (channels == 1) {
-				metadata->naxis = 2;
-				metadata->naxisn[2] = 0;
-			} else {
-				metadata->naxis = 3;
-				metadata->naxisn[2] = 3;
-			}
+			metadata->width = width;
+			metadata->height = height;
+			metadata->channels = channels;
 		} else if (!strncmp(name, "sampleFormat", strlen(name))) {
 			if (!strncmp(name, "UInt8", strlen(name))) {
 				metadata->bitpix = 8;
@@ -129,13 +138,31 @@ int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadat
 			metadata->data_offset = data_offset;
 			metadata->data_size = data_size;
 		} else if (!strncmp(name, "compression", strlen(name))) {
-			xml_document_free(document, false);
-			indigo_error("Unsupported XISF compression: %s", content);
-			return XISF_UNSUPPORTED;
+			char compression[30] = {0};
+			int data_size = 0;
+			int scanned = sscanf(content, "%30[^:]:%d", compression, &data_size);
+			if (scanned != 2) {
+				xml_document_free(document, false);
+				return XISF_INVALIDDATA;
+			}
+			strncpy(metadata->compression, compression, sizeof(metadata->compression));
+			metadata->uncompressed_data_size = data_size;
 		}
 		free(name);
 		free(content);
 	}
 	xml_document_free(document, false);
 	return XISF_OK;
+}
+
+int xisf_decompress(uint8_t *xisf_data, xisf_metadata *metadata, uint8_t *decompressed_data) {
+	if (!strncmp(metadata->compression, "zlib", 4)) {
+		int err = uncompress(decompressed_data, &metadata->uncompressed_data_size, xisf_data + metadata->data_offset, metadata->data_size);
+		if (err == Z_OK) {
+			return XISF_OK;
+		} else {
+			return XISF_INVALIDDATA;
+		}
+	}
+	return XISF_UNSUPPORTED;
 }

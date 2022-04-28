@@ -39,11 +39,14 @@ typedef enum xisf_error {
  */
 typedef struct xisf_metadata {
 	int bitpix;
-	int naxis;
-	int naxisn[99];
+	int width;
+	int height;
+	int channels;
 	int data_offset;
 	int data_size;
-	char colourspace[100];
+	int uncompressed_data_size;
+	char compression[50];
+	char colourspace[50];
 } xisf_metadata;
 
 /**
@@ -56,6 +59,7 @@ typedef struct xsif_header {
 } xisf_header;
 
 int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadata);
+int xisf_decompress(uint8_t *xisf_data, xisf_metadata *metadata, uint8_t *decompressed_data);
 
 #ifdef __cplusplus
 }

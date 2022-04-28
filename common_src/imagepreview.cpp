@@ -241,6 +241,7 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 preview_image* create_xisf_preview(unsigned char *xisf_buffer, unsigned long xisf_size, const stretch_config_t sconfig) {
 	xisf_metadata header;
 	unsigned int pix_format = 0;
+	preview_image *img = nullptr;
 
 	indigo_debug("XISF_START");
 	int res = xisf_read_metadata(xisf_buffer, xisf_size, &header);
@@ -249,35 +250,48 @@ preview_image* create_xisf_preview(unsigned char *xisf_buffer, unsigned long xis
 		return nullptr;
 	}
 
-	if ((header.bitpix == -32) && (header.naxis == 2)){
+	if ((header.bitpix == -32) && (header.channels == 1)){
 		pix_format = PIX_FMT_F32;
-	} else if ((header.bitpix == 32) && (header.naxis == 2)){
+	} else if ((header.bitpix == 32) && (header.channels == 1)){
 		pix_format = PIX_FMT_Y32;
-	} else if ((header.bitpix == 16) && (header.naxis == 2)){
+	} else if ((header.bitpix == 16) && (header.channels == 1)){
 		pix_format = PIX_FMT_Y16;
-	} else if ((header.bitpix == 8) && (header.naxis == 2)){
+	} else if ((header.bitpix == 8) && (header.channels == 1)){
 		pix_format = PIX_FMT_Y8;
-	} else if ((header.bitpix == -32) && (header.naxis == 3)){
+	} else if ((header.bitpix == -32) && (header.channels == 3)){
 		pix_format = PIX_FMT_3RGBF;
-	} else if ((header.bitpix == 32) && (header.naxis == 3)){
+	} else if ((header.bitpix == 32) && (header.channels == 3)){
 		pix_format = PIX_FMT_3RGB96;
-	} else if ((header.bitpix == 16) && (header.naxis == 3)){
+	} else if ((header.bitpix == 16) && (header.channels == 3)){
 		pix_format = PIX_FMT_3RGB48;
-	} else if ((header.bitpix == 8) && (header.naxis == 3)){
+	} else if ((header.bitpix == 8) && (header.channels == 3)){
 		pix_format = PIX_FMT_3RGB24;
 	} else {
 		indigo_error("XISF: Unsupported bitpix (BITPIX= %d)", header.bitpix);
 		return nullptr;
 	}
 
-	indigo_debug("XISF: file_size = %d, required_size = %d", xisf_size, header.data_offset + header.data_size);
-	if (header.data_offset + header.data_size > xisf_size) {
-		indigo_error("XISF: Wrong size (file_size = %d, required_size = %d)", xisf_size, header.data_offset + header.data_size);
+	if (header.compression[0] == '\0') {
+		indigo_debug("XISF: file_size = %d, required_size = %d", xisf_size, header.data_offset + header.data_size);
+		if (header.data_offset + header.data_size > xisf_size) {
+			indigo_error("XISF: Wrong size (file_size = %d, required_size = %d)", xisf_size, header.data_offset + header.data_size);
+			return nullptr;
+		}
+		img = create_preview(header.width, header.height, pix_format, (char*)xisf_buffer + header.data_offset, sconfig);
+	} else if (!strcmp(header.compression, "zlib")) {
+		char *xisf_data = (char*)malloc(header.uncompressed_data_size);
+		int res = xisf_decompress(xisf_buffer, &header, (uint8_t*)xisf_data);
+		if (res != XISF_OK) {
+			indigo_error("XISF: Decompression failed res = %d", res);
+			free(xisf_data);
+			return nullptr;
+		}
+		img = create_preview(header.width, header.height, pix_format, (char*)xisf_data, sconfig);
+		free(xisf_data);
+	} else {
+		indigo_error("Unsupported XISF compression: %s", header.compression);
 		return nullptr;
 	}
-
-	preview_image *img = create_preview(header.naxisn[0], header.naxisn[1],
-	        pix_format, (char*)xisf_buffer + header.data_offset, sconfig);
 
 	indigo_debug("XISF_END");
 	return img;
@@ -572,7 +586,7 @@ preview_image* create_preview(unsigned char *data, size_t size, const char* form
 			preview = create_fits_preview(data, size, sconfig);
 		} else if (!strncmp((const char*)data, "RAW", 3)) {
 			preview = create_raw_preview(data, size, sconfig);
-		} else if (!strncmp((const char*)data, "XISF", 4)) {
+		} else if (!strncmp((const char*)data, "XISF0100", 8)) {
 			preview = create_xisf_preview(data, size, sconfig);
 		//} else if (!strncmp((const char*)data, "II*", 3) || !strncmp((const char*)data, "MM*", 3)) {
 		//	preview = create_tiff_preview(data, size);
