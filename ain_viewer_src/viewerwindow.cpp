@@ -332,7 +332,8 @@ void ViewerWindow::on_image_open_act() {
 		QString(
 			"FITS (*.fit *.FIT *.fits *.FITS *.fts *.FTS );;"
 			"Indigo RAW (*.raw *.RAW);;"
-			"FITS / Indigo RAW (*.fit *FIT *.fits *.FITS *.fts *.FTS *.raw *.RAW);;"
+			"XISF (*.xisf *.XISF);;"
+			"FITS / Indigo RAW / XISF (*.fit *FIT *.fits *.FITS *.fts *.FTS *.raw *.RAW *.raw *.RAW);;"
 			"Nikon NEF / NRW (*.nef *.NEF *.nrw *.NRW);;"
 			"Canon CRW / CR2 (*.crw *.CRW *.cr2 *.CR2);;"
 			"Sony ARW / SR2 (*.arw *.ARW *.sr2 *.SR2);;"
