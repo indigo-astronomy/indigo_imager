@@ -245,7 +245,7 @@ preview_image* create_xisf_preview(unsigned char *xisf_buffer, unsigned long xis
 	indigo_debug("XISF_START");
 	int res = xisf_read_metadata(xisf_buffer, xisf_size, &header);
 	if (res != XISF_OK) {
-		indigo_error("XISF: Error parsing header");
+		indigo_error("XISF: Error parsing header res=%d", res);
 		return nullptr;
 	}
 
@@ -267,6 +267,12 @@ preview_image* create_xisf_preview(unsigned char *xisf_buffer, unsigned long xis
 		pix_format = PIX_FMT_3RGB24;
 	} else {
 		indigo_error("XISF: Unsupported bitpix (BITPIX= %d)", header.bitpix);
+		return nullptr;
+	}
+
+	indigo_debug("XISF: file_size = %d, required_size = %d", xisf_size, header.data_offset + header.data_size);
+	if (header.data_offset + header.data_size > xisf_size) {
+		indigo_error("XISF: Wrong size (file_size = %d, required_size = %d)", xisf_size, header.data_offset + header.data_size);
 		return nullptr;
 	}
 

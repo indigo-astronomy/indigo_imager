@@ -41,7 +41,7 @@ int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadat
 		}
 	}
 
-	struct xml_document* document = xml_parse_document(xisf_data+xml_offset, header->xml_length);
+	struct xml_document* document = xml_parse_document(xisf_data + xml_offset, header->xml_length);
 
 	if (!document) {
 		return XISF_INVALIDDATA;
