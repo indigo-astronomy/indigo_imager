@@ -32,8 +32,29 @@ static int xisf_metadata_init(xisf_metadata *metadata) {
 	metadata->data_offset = 0;
 	metadata->data_size = 0;
 	metadata->uncompressed_data_size = 0;
+	metadata->shuffle_size = 0;
 	metadata->compression[0] = '\0';
 	metadata->colourspace[0] = '\0';
+}
+
+static void un_shuffle(uint8_t *output, const uint8_t *input, size_t size, size_t item_size) {
+	if (size > 0) {
+		if (item_size > 0) {
+			if (input != NULL) {
+				if (output != NULL) {
+					size_t items = size / item_size;
+					const uint8_t* s = input;
+					for (size_t j = 0; j < item_size; ++j) {
+						uint8_t* u = output + j;
+						for (size_t i = 0; i < items; ++i, ++s, u += item_size) {
+							*u = *s;
+						}
+					}
+					memcpy(output + items * item_size, s, size % item_size);
+				}
+			}
+		}
+	}
 }
 
 int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadata) {
@@ -141,13 +162,15 @@ int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadat
 		} else if (!strncmp(name, "compression", strlen(name))) {
 			char compression[30] = {0};
 			int data_size = 0;
-			int scanned = sscanf(content, "%30[^:]:%d", compression, &data_size);
-			if (scanned != 2) {
+			int shuffle_size = 0;
+			int scanned = sscanf(content, "%30[^:]:%d:%d", compression, &data_size, &shuffle_size);
+			if (scanned != 2 && scanned != 3) {
 				xml_document_free(document, false);
 				return XISF_INVALIDDATA;
 			}
 			strncpy(metadata->compression, compression, sizeof(metadata->compression));
 			metadata->uncompressed_data_size = data_size;
+			metadata->shuffle_size = shuffle_size;
 		}
 		free(name);
 		free(content);
@@ -157,20 +180,42 @@ int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadat
 }
 
 int xisf_decompress(uint8_t *xisf_data, xisf_metadata *metadata, uint8_t *decompressed_data) {
+	indigo_error("XISF decompress: %s %d %d", metadata->compression, metadata->uncompressed_data_size, metadata->shuffle_size);
+	size_t uncompressed_data_size = metadata->uncompressed_data_size;
 	if (!strcmp(metadata->compression, "zlib")) {
-		int err = uncompress(decompressed_data, &metadata->uncompressed_data_size, xisf_data + metadata->data_offset, metadata->data_size);
+		int err = uncompress(decompressed_data, &uncompressed_data_size, xisf_data + metadata->data_offset, metadata->data_size);
 		if (err == Z_OK) {
 			return XISF_OK;
 		} else {
 			return XISF_INVALIDDATA;
 		}
+	} else if (!strcmp(metadata->compression, "zlib+sh")) {
+		char *shuffled_data = (char*)malloc(uncompressed_data_size);
+		int err = uncompress(shuffled_data, &uncompressed_data_size, xisf_data + metadata->data_offset, metadata->data_size);
+		if (err != Z_OK) {
+			free(shuffled_data);
+			return XISF_INVALIDDATA;
+		}
+		un_shuffle(decompressed_data, shuffled_data, uncompressed_data_size, metadata->shuffle_size);
+		free(shuffled_data);
+		return XISF_OK;
 	} else if (!strcmp(metadata->compression, "lz4") || !strcmp(metadata->compression, "lz4hc")) {
-		int result = LZ4_decompress_safe(xisf_data + metadata->data_offset, decompressed_data, metadata->data_size, metadata->uncompressed_data_size);
+		int result = LZ4_decompress_safe(xisf_data + metadata->data_offset, decompressed_data, metadata->data_size, uncompressed_data_size);
 		if (result > 0) {
 			return XISF_OK;
 		} else {
 			return XISF_INVALIDDATA;
 		}
+	} else if (!strcmp(metadata->compression, "lz4+sh") || !strcmp(metadata->compression, "lz4hc+sh")) {
+		char *shuffled_data = (char*)malloc(uncompressed_data_size);
+		int result = LZ4_decompress_safe(xisf_data + metadata->data_offset, shuffled_data, metadata->data_size, uncompressed_data_size);
+		if (result <= 0) {
+			free(shuffled_data);
+			return XISF_INVALIDDATA;
+		}
+		un_shuffle(decompressed_data, shuffled_data, uncompressed_data_size, metadata->shuffle_size);
+		free(shuffled_data);
+		return XISF_OK;
 	}
 	return XISF_UNSUPPORTED;
 }

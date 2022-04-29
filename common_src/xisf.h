@@ -45,6 +45,7 @@ typedef struct xisf_metadata {
 	int data_offset;
 	int data_size;
 	int uncompressed_data_size;
+	int shuffle_size;
 	char compression[50];
 	char colourspace[50];
 } xisf_metadata;
