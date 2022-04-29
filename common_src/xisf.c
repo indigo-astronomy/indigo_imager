@@ -22,6 +22,7 @@
 #include <xml.h>
 #include <xisf.h>
 #include <zlib.h>
+#include <lz4.h>
 
 static int xisf_metadata_init(xisf_metadata *metadata) {
 	metadata->bitpix = 0;
@@ -156,9 +157,16 @@ int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadat
 }
 
 int xisf_decompress(uint8_t *xisf_data, xisf_metadata *metadata, uint8_t *decompressed_data) {
-	if (!strncmp(metadata->compression, "zlib", 4)) {
+	if (!strcmp(metadata->compression, "zlib")) {
 		int err = uncompress(decompressed_data, &metadata->uncompressed_data_size, xisf_data + metadata->data_offset, metadata->data_size);
 		if (err == Z_OK) {
+			return XISF_OK;
+		} else {
+			return XISF_INVALIDDATA;
+		}
+	} else if (!strcmp(metadata->compression, "lz4") || !strcmp(metadata->compression, "lz4hc")) {
+		int result = LZ4_decompress_safe(xisf_data + metadata->data_offset, decompressed_data, metadata->data_size, metadata->uncompressed_data_size);
+		if (result > 0) {
 			return XISF_OK;
 		} else {
 			return XISF_INVALIDDATA;

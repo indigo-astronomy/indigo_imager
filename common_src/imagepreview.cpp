@@ -278,7 +278,7 @@ preview_image* create_xisf_preview(unsigned char *xisf_buffer, unsigned long xis
 			return nullptr;
 		}
 		img = create_preview(header.width, header.height, pix_format, (char*)xisf_buffer + header.data_offset, sconfig);
-	} else if (!strcmp(header.compression, "zlib")) {
+	} else if (!strcmp(header.compression, "zlib") || !strcmp(header.compression, "lz4") || !strcmp(header.compression, "lz4hc")) {
 		char *xisf_data = (char*)malloc(header.uncompressed_data_size);
 		int res = xisf_decompress(xisf_buffer, &header, (uint8_t*)xisf_data);
 		if (res != XISF_OK) {

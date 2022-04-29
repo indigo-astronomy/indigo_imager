@@ -133,7 +133,7 @@ include(../external/qtzeroconf/qtzeroconf.pri)
 #}
 
 INCLUDEPATH += "../indigo/indigo_libs" + "../external" + "../external/qtzeroconf/" + "../external/libraw/" + "../common_src" + "../object_data" + "../ain_imager_src"
-LIBS += -L"../external/libraw/lib" -L"../../external/libraw/lib" -lraw -lz
+LIBS += -L"../external/libraw/lib" -L"../../external/libraw/lib" -lraw -lz -llz4
 
 unix {
 	INCLUDEPATH += "../external/libjpeg"
