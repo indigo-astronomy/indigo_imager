@@ -29,6 +29,8 @@ static int xisf_metadata_init(xisf_metadata *metadata) {
 	metadata->width = 0;
 	metadata->height = 0;
 	metadata->channels = 0;
+	metadata->big_endian = false;            // default is little endian
+	metadata->normal_pixel_storage = false;  // planar is default
 	metadata->data_offset = 0;
 	metadata->data_size = 0;
 	metadata->uncompressed_data_size = 0;
@@ -141,6 +143,18 @@ int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadat
 				metadata->bitpix = -32;
 			} else if (!strncmp(content, "Float64", strlen(name))) {
 				metadata->bitpix = -64;
+			}
+		} else if (!strncmp(name, "pixelStorage", strlen(name))) {
+			if (!strncmp(name, "Normal", strlen(name))) {
+				metadata->normal_pixel_storage = true;
+			} else if (!strncmp(content, "Planar", strlen(name))) {
+				metadata->normal_pixel_storage = false;
+			}
+		} else if (!strncmp(name, "byteOrder", strlen(name))) {
+			if (!strncmp(name, "big", strlen(name))) {
+				metadata->big_endian = true;
+			} else if (!strncmp(content, "little", strlen(name))) {
+				metadata->big_endian = false;
 			}
 		} else if (!strncmp(name, "colorSpace", strlen(name))) {
 			strncpy(metadata->colourspace, content, sizeof(metadata->colourspace));

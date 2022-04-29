@@ -300,9 +300,21 @@ void ViewerWindow::on_image_info_act() {
 			text->append(QString("<b>Pixel Format:</b> 64-bit IEEE 754 floating point"));
 			break;
 		}
+		if (metadata.big_endian) {
+			text->append(QString("<b>Byte Order:</b> Big endian"));
+		} else {
+			text->append(QString("<b>Byte Order:</b> Little endian"));
+		}
 		text->append(QString("<b>Image Dimensions:</b> ") + QString::number(metadata.width) + " x " + QString::number(metadata.height));
 		text->append(QString("<b>Channels:</b> ") + QString::number(metadata.channels));
 		text->append(QString("<b>Color space:</b> ") + metadata.colourspace);
+		if (!strcmp(metadata.colourspace, "RGB")) {
+			if (metadata.normal_pixel_storage) {
+				text->append(QString("<b>Pixel Storage:</b> Normal (One RGB channel)"));
+			} else {
+				text->append(QString("<b>Pixel Storage:</b> Planar (R, G and B channels)"));
+			}
+		}
 		text->append(QString("<b>Data offset:</b> ") + QString::number(metadata.data_offset));
 		if(metadata.compression[0] == '\0') {
 			text->append(QString("<b>Data size:</b> ") + QString::number(metadata.data_size) + " (" + QString::number(metadata.data_size/(1024.0*1024)) + " MB)");

@@ -42,11 +42,13 @@ typedef struct xisf_metadata {
 	int width;
 	int height;
 	int channels;
-	int data_offset;
+	bool big_endian;            // true for big endian
+	bool normal_pixel_storage;  // true for normal "rgbrgb..." pixek storage false for 3 plane rgb
+	int data_offset;            // offset where data starts
 	int data_size;
 	int uncompressed_data_size;
 	int shuffle_size;
-	char compression[50];
+	char compression[50];       // compression mthod
 	char colourspace[50];
 } xisf_metadata;
 
