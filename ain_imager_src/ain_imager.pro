@@ -133,11 +133,11 @@ include(../external/qtzeroconf/qtzeroconf.pri)
 #}
 
 INCLUDEPATH += "../indigo/indigo_libs" + "../external" + "../external/qtzeroconf/" + "../external/libraw/" + "../external/lz4/" + "../common_src" + "../object_data" + "../ain_imager_src"
-LIBS += -L"../external/libraw/lib" -L"../../external/libraw/lib" -L"../external/lz4" -L"../../external/lz4" -lraw -lz -l:liblz4.a
+LIBS += -L"../external/libraw/lib" -L"../../external/libraw/lib" -L"../external/lz4" -L"../../external/lz4" -lraw -lz
 
 unix {
 	INCLUDEPATH += "../external/libjpeg"
-	LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -lindigo -ljpeg
+	LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -lindigo -ljpeg -l:liblz4.a
 }
 
 DISTFILES += \
@@ -146,6 +146,7 @@ DISTFILES += \
 
 win32 {
         DEFINES += INDIGO_WINDOWS
+		LIBS += -llz4
 
         SOURCES += \
             ../indigo/indigo_libs/indigo_base64.c \

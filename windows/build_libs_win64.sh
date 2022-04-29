@@ -7,7 +7,7 @@ mingw32-make -f Makefile.mingw library
 cd ../../windows
 
 cd ../external/lz4
+mkdir dll/
 mingw32-make clean
-mingw32-make
+mingw32-make CC=gcc
 cd ../../windows
-

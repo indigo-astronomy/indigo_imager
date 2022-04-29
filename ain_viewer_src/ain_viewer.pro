@@ -86,18 +86,18 @@ HEADERS += \
 #}
 
 INCLUDEPATH += "../indigo/indigo_libs" + "../external" + "../external/qtzeroconf/" + "../external/libraw/" + "../external/lz4/" + "../common_src" + "../ain_viewer_src"
-LIBS += -L"../external/libraw/lib" -L"../../external/libraw/lib" -L"../../external/lz4" -L"../external/lz4" -lraw -lz -l:liblz4.a
+LIBS += -L"../external/libraw/lib" -L"../../external/libraw/lib" -L"../../external/lz4" -L"../external/lz4" -lraw -lz
 
 unix:!mac {
 	INCLUDEPATH += "../external/libjpeg"
-	LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -l:libindigo.a -lz -ljpeg
-	#LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -lindigo -ljpeg
+	LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -l:libindigo.a -lz -ljpeg -l:liblz4.a
+	#LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -lindigo -ljpeg -l:liblz4.a
 }
 
 unix:mac {
 	INCLUDEPATH += "../external/libjpeg"
-	#LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -l:libindigo.a -lz -ljpeg
-	LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -lindigo -ljpeg
+	#LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -l:libindigo.a -lz -ljpeg -l:liblz4.a
+	LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -lindigo -ljpeg -l:liblz4.a
 }
 
 DISTFILES += \
@@ -105,8 +105,8 @@ DISTFILES += \
 	LICENCE.md \
 
 win32 {
-	LIBS += -lws2_32
-        DEFINES += INDIGO_WINDOWS
+	LIBS += -lws2_32 -llz4
+	DEFINES += INDIGO_WINDOWS
 
 	SOURCES += \
 	    ../indigo/indigo_libs/indigo_base64.c \
