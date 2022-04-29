@@ -29,6 +29,7 @@
 #include <imageviewer.h>
 #include <raw_to_fits.h>
 #include <dslr_raw.h>
+#include <xisf.h>
 
 
 void write_conf();
@@ -266,6 +267,57 @@ void ViewerWindow::on_image_info_act() {
 		}
 		m_image_info_dlg->show();
 		m_image_info_dlg->scrollTop();
+	} else if (!strncmp(card, "XISF0100", 8)) {
+		/*
+
+			int data_size;
+			int uncompressed_data_size;
+			int shuffle_size;
+			char compression[50];
+
+		*/
+		xisf_metadata metadata;
+		xisf_read_metadata((uint8_t *)m_image_data, m_image_size, &metadata);
+
+		m_image_info_dlg->setWindowTitle(QString("Image Info: ") + QString(basename(m_image_path)));
+		auto text = m_image_info_dlg->textWidget();
+		text->clear();
+
+		switch (metadata.bitpix) {
+		case 8:
+			text->append(QString("<b>Pixel Format:</b> 8-bit unsigned integer"));
+			break;
+		case 16:
+			text->append(QString("<b>Pixel Format:</b> 16-bit unsigned integer"));
+			break;
+		case 32:
+			text->append(QString("<b>Pixel Format:</b> 32-bit unsigned integer"));
+			break;
+		case -32:
+			text->append(QString("<b>Pixel Format:</b> 32-bit IEEE 754 floating point"));
+			break;
+		case -64:
+			text->append(QString("<b>Pixel Format:</b> 64-bit IEEE 754 floating point"));
+			break;
+		}
+		text->append(QString("<b>Image Dimensions:</b> ") + QString::number(metadata.width) + " x " + QString::number(metadata.height));
+		text->append(QString("<b>Channels:</b> ") + QString::number(metadata.channels));
+		text->append(QString("<b>Color space:</b> ") + metadata.colourspace);
+		text->append(QString("<b>Data offset:</b> ") + QString::number(metadata.data_offset));
+		if(metadata.compression[0] == '\0') {
+			text->append(QString("<b>Data size:</b> ") + QString::number(metadata.data_size) + " (" + QString::number(metadata.data_size/(1024.0*1024)) + " MB)");
+		} else {
+			text->append(QString("<b>Compression:</b> ") + metadata.compression);
+			if (metadata.shuffle_size) {
+				text->append(QString("<b>Shuffle:</b> ") + QString::number(metadata.shuffle_size));
+			}
+			text->append(QString("<b>Data size:</b> ") + QString::number(metadata.uncompressed_data_size) + " (" + QString::number(metadata.uncompressed_data_size/(1024.0*1024)) + " MB)");
+			text->append(QString("<b>Compressed size:</b> ") + QString::number(metadata.data_size) + " (" + QString::number(metadata.data_size/(1024.0*1024)) + " MB)");
+			text->append(QString("<b>Compression rate:</b> ") + QString::number((float)metadata.data_size/metadata.uncompressed_data_size * 100, 'f', 0) + "%");
+		}
+
+		m_image_info_dlg->show();
+		m_image_info_dlg->scrollTop();
 	} else {
 		dslr_raw_image_info_s image_info;
 		int rc = dslr_raw_image_info((void *)m_image_data, m_image_size, &image_info);
@@ -315,7 +367,7 @@ void ViewerWindow::on_image_info_act() {
 			m_image_info_dlg->show();
 			m_image_info_dlg->scrollTop();
 		} else {
-			show_message("Error!", "Not a FITS file or camera raw!");
+			show_message("Error!", "Not FITS, XISF or camera raw file!");
 		}
 	}
 }
