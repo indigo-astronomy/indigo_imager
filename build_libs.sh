@@ -10,3 +10,7 @@ mkdir lib/
 make -f Makefile.mingw library
 cd ../..
 
+cd external/lz4
+make
+cd ../..
+

@@ -85,8 +85,8 @@ HEADERS += \
 #    PKGCONFIG += indigo
 #}
 
-INCLUDEPATH += "../indigo/indigo_libs" + "../external" + "../external/qtzeroconf/" + "../external/libraw/" + "../common_src" + "../ain_viewer_src"
-LIBS += -L"../external/libraw/lib" -L"../../external/libraw/lib" -lraw -lz -llz4
+INCLUDEPATH += "../indigo/indigo_libs" + "../external" + "../external/qtzeroconf/" + "../external/libraw/" + "../external/lz4/" + "../common_src" + "../ain_viewer_src"
+LIBS += -L"../external/libraw/lib" -L"../../external/libraw/lib" -L"../../external/lz4" -L"../external/lz4" -lraw -lz -l:liblz4.a
 
 unix:!mac {
 	INCLUDEPATH += "../external/libjpeg"
