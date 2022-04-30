@@ -259,13 +259,13 @@ preview_image* create_xisf_preview(unsigned char *xisf_buffer, unsigned long xis
 	} else if ((header.bitpix == 8) && (header.channels == 1)){
 		pix_format = PIX_FMT_Y8;
 	} else if ((header.bitpix == -32) && (header.channels == 3)){
-		pix_format = PIX_FMT_3RGBF;
+		pix_format = (header.normal_pixel_storage) ? PIX_FMT_RGBF : PIX_FMT_3RGBF;
 	} else if ((header.bitpix == 32) && (header.channels == 3)){
-		pix_format = PIX_FMT_3RGB96;
+		pix_format = (header.normal_pixel_storage) ? PIX_FMT_RGB96 : PIX_FMT_3RGB96;
 	} else if ((header.bitpix == 16) && (header.channels == 3)){
-		pix_format = PIX_FMT_3RGB48;
+		pix_format = (header.normal_pixel_storage) ? PIX_FMT_RGB48 : PIX_FMT_3RGB48;
 	} else if ((header.bitpix == 8) && (header.channels == 3)){
-		pix_format = PIX_FMT_3RGB24;
+		pix_format = (header.normal_pixel_storage) ? PIX_FMT_RGB24 : PIX_FMT_3RGB24;
 	} else {
 		indigo_error("XISF: Unsupported bitpix (BITPIX= %d)", header.bitpix);
 		return nullptr;
