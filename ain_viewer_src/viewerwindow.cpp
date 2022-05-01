@@ -327,7 +327,9 @@ void ViewerWindow::on_image_info_act() {
 			text->append(QString("<b>Bayer Pattern:</b> ") + metadata.bayer_pattern);
 		}
 
-		text->append(QString("<b>Image Type:</b> ") + metadata.image_type);
+		if (metadata.image_type[0] != '\0') {
+			text->append(QString("<b>Image Type:</b> ") + metadata.image_type);
+		}
 
 		if (metadata.exposure_time >= 0) {
 			text->append(QString("<b>Exposure Time:</b> ") + QString::number(metadata.exposure_time) + " sec");
