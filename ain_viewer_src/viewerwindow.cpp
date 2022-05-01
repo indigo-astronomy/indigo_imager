@@ -337,6 +337,12 @@ void ViewerWindow::on_image_info_act() {
 			text->append(QString("<b>Seensor Temperature:</b> ") + QString::number(metadata.sensor_temperature) + "°C");
 		}
 
+		if (metadata.observation_time[0] != '\0') {
+			text->append(QString("<b>Observation time:</b> ") + metadata.observation_time);
+		}
+
+		text->append("");
+
 		text->append(QString("<b>Data offset:</b> ") + QString::number(metadata.data_offset));
 
 		if(metadata.compression[0] == '\0') {

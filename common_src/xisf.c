@@ -40,6 +40,7 @@ static int xisf_metadata_init(xisf_metadata *metadata) {
 	metadata->bayer_pattern[0] = '\0';
 	metadata->camera_name[0] = '\0';
 	metadata->image_type[0] = '\0';
+	metadata->observation_time[0] = '\0';
 	metadata->exposure_time = -1;
 	metadata->sensor_temperature = -1;
 }
@@ -255,6 +256,8 @@ int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadat
 					metadata->exposure_time = atof(value);
 				} else if (!strcmp(id, "Instrument:Sensor:Temperature")) {
 					metadata->sensor_temperature = atof(value);
+				} else if (!strcmp(id, "Observation:Time:Start")) {
+					strncpy(metadata->observation_time, value, sizeof(metadata->observation_time));
 				}
 
 				free(node_content);

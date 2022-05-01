@@ -50,6 +50,7 @@ typedef struct xisf_metadata {
 	int shuffle_size;
 	float exposure_time;
 	float sensor_temperature;
+	char observation_time[50];
 	char compression[50];       // compression mthod
 	char color_space[50];
 	char bayer_pattern[10];
