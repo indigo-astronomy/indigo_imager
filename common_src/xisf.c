@@ -258,6 +258,9 @@ int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadat
 					metadata->sensor_temperature = atof(value);
 				} else if (!strcmp(id, "Observation:Time:Start")) {
 					strncpy(metadata->observation_time, value, sizeof(metadata->observation_time));
+				} else if (!strcmp(id, "PCL:CFASourcePattern") && (metadata->bayer_pattern[0] == '\0') && !strcmp(metadata->color_space, "Gray")) {
+					// Pixinsight does not follow its own specs. It writes PCL:CFASourcePattern. It writes it even with debayered images!!!
+					strncpy(metadata->bayer_pattern, node_content, sizeof(metadata->bayer_pattern));
 				}
 
 				free(node_content);
