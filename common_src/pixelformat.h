@@ -50,9 +50,14 @@
 #define PIX_FMT_SGRBG12 pack('B', 'A', '1', '2') /* 12  GRGR.. BGBG.. */
 #define PIX_FMT_SRGGB12 pack('R', 'G', '1', '2') /* 12  RGRG.. GBGB.. */
 
-#define PIX_FMT_SBGGR16 pack('B', 'Y', 'R', '2') /* 16  BGBG.. GRGR.. */
+#define PIX_FMT_SBGGR16 pack('B', 'G', '1', '6') /* 16  BGBG.. GRGR.. */
 #define PIX_FMT_SGBRG16 pack('G', 'B', '1', '6') /* 16  GBGB.. RGRG.. */
 #define PIX_FMT_SGRBG16 pack('G', 'R', '1', '6') /* 16  GRGR.. BGBG.. */
 #define PIX_FMT_SRGGB16 pack('R', 'G', '1', '6') /* 16  RGRG.. GBGB.. */
+
+#define PIX_FMT_SBGGR32 pack('B', 'G', '3', '2') /* 16  BGBG.. GRGR.. */
+#define PIX_FMT_SGBRG32 pack('G', 'B', '3', '2') /* 16  GBGB.. RGRG.. */
+#define PIX_FMT_SGRBG32 pack('G', 'R', '3', '2') /* 16  GRGR.. BGBG.. */
+#define PIX_FMT_SRGGB32 pack('R', 'G', '3', '2') /* 16  RGRG.. GBGB.. */
 
 #endif /* _PIXELFORMAT_H */
