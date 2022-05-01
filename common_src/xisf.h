@@ -48,8 +48,13 @@ typedef struct xisf_metadata {
 	int data_size;
 	int uncompressed_data_size;
 	int shuffle_size;
+	float exposure_time;
+	float sensor_temperature;
 	char compression[50];       // compression mthod
-	char colourspace[50];
+	char color_space[50];
+	char bayer_pattern[10];
+	char camera_name[256];
+	char image_type[256];
 } xisf_metadata;
 
 /**

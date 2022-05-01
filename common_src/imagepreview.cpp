@@ -277,6 +277,12 @@ preview_image* create_xisf_preview(unsigned char *xisf_buffer, unsigned long xis
 			indigo_error("XISF: Wrong size (file_size = %d, required_size = %d)", xisf_size, header.data_offset + header.data_size);
 			return nullptr;
 		}
+
+		if (header.channels == 1) {
+			int bayer_pix_fmt = bayer_to_pix_format(header.bayer_pattern, header.bitpix);
+			if (bayer_pix_fmt != 0) pix_format = bayer_pix_fmt;
+		}
+
 		img = create_preview(header.width, header.height, pix_format, (char*)xisf_buffer + header.data_offset, sconfig);
 	} else {
 		char *xisf_data = (char*)malloc(header.uncompressed_data_size);
@@ -286,6 +292,12 @@ preview_image* create_xisf_preview(unsigned char *xisf_buffer, unsigned long xis
 			free(xisf_data);
 			return nullptr;
 		}
+
+		if (header.channels == 1) {
+			int bayer_pix_fmt = bayer_to_pix_format(header.bayer_pattern, header.bitpix);
+			if (bayer_pix_fmt != 0) pix_format = bayer_pix_fmt;
+		}
+
 		img = create_preview(header.width, header.height, pix_format, (char*)xisf_data, sconfig);
 		free(xisf_data);
 	}

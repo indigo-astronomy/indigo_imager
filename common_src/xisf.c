@@ -36,7 +36,12 @@ static int xisf_metadata_init(xisf_metadata *metadata) {
 	metadata->uncompressed_data_size = 0;
 	metadata->shuffle_size = 0;
 	metadata->compression[0] = '\0';
-	metadata->colourspace[0] = '\0';
+	metadata->color_space[0] = '\0';
+	metadata->bayer_pattern[0] = '\0';
+	metadata->camera_name[0] = '\0';
+	metadata->image_type[0] = '\0';
+	metadata->exposure_time = -1;
+	metadata->sensor_temperature = -1;
 }
 
 static void un_shuffle(uint8_t *output, const uint8_t *input, size_t size, size_t item_size) {
@@ -92,15 +97,15 @@ int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadat
 	int nodes = xml_node_children(xisf_root);
 	for (int i = 0; i < nodes; i++) {
 		struct xml_node* child = xml_node_child(xisf_root, i);
-		struct xml_string* node_name = xml_node_name(child);
-		char *name = calloc(xml_string_length(node_name) + 1, sizeof(uint8_t));
-		xml_string_copy(node_name, name, xml_string_length(node_name));
-		if (!strncmp(name, "Image", strlen(name))) {
+		struct xml_string* node_name_s = xml_node_name(child);
+		char *node_name = calloc(xml_string_length(node_name_s) + 1, sizeof(uint8_t));
+		xml_string_copy(node_name_s, node_name, xml_string_length(node_name_s));
+		if (!strcmp(node_name, "Image")) {
 			node_image = child;
-			free(name);
+			free(node_name);
 			break;
 		}
-		free(name);
+		free(node_name);
 	}
 	if (node_image == NULL) {
 		xml_document_free(document, false);
@@ -109,15 +114,15 @@ int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadat
 
 	int attr = xml_node_attributes(node_image);
 	for (int i = 0; i < attr; i++) {
-		struct xml_string* attr_name = xml_node_attribute_name(node_image, i);
-		char* name = calloc(xml_string_length(attr_name) + 1, sizeof(uint8_t));
-		xml_string_copy(attr_name, name, xml_string_length(attr_name));
+		struct xml_string* attr_name_s = xml_node_attribute_name(node_image, i);
+		char* name = calloc(xml_string_length(attr_name_s) + 1, sizeof(uint8_t));
+		xml_string_copy(attr_name_s, name, xml_string_length(attr_name_s));
 
-		struct xml_string* attr_content = xml_node_attribute_content(node_image, i);
-		char* content = calloc(xml_string_length(attr_content) + 1, sizeof(uint8_t));
-		xml_string_copy(attr_content, content, xml_string_length(attr_content));
+		struct xml_string* attr_content_s = xml_node_attribute_content(node_image, i);
+		char* content = calloc(xml_string_length(attr_content_s) + 1, sizeof(uint8_t));
+		xml_string_copy(attr_content_s, content, xml_string_length(attr_content_s));
 
-		indigo_error("XISF %s: %s\n", name, content);
+		indigo_error("XISF Image %s: %s\n", name, content);
 		if (!strncmp(name, "geometry", strlen(name))) {
 			int width = 0, height = 0, channels = 0;
 			int scanned = sscanf(content, "%d:%d:%d", &width, &height, &channels);
@@ -133,31 +138,33 @@ int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadat
 			metadata->height = height;
 			metadata->channels = channels;
 		} else if (!strncmp(name, "sampleFormat", strlen(name))) {
-			if (!strncmp(name, "UInt8", strlen(name))) {
+			if (!strncmp(content, "UInt8", strlen(content))) {
 				metadata->bitpix = 8;
-			} else if (!strncmp(content, "UInt16", strlen(name))) {
+			} else if (!strncmp(content, "UInt16", strlen(content))) {
 				metadata->bitpix = 16;
-			} else if (!strncmp(content, "UInt32", strlen(name))) {
+			} else if (!strncmp(content, "UInt32", strlen(content))) {
 				metadata->bitpix = 32;
-			} else if (!strncmp(content, "Float32", strlen(name))) {
+			} else if (!strncmp(content, "Float32", strlen(content))) {
 				metadata->bitpix = -32;
-			} else if (!strncmp(content, "Float64", strlen(name))) {
+			} else if (!strncmp(content, "Float64", strlen(content))) {
 				metadata->bitpix = -64;
 			}
 		} else if (!strncmp(name, "pixelStorage", strlen(name))) {
-			if (!strncmp(name, "Normal", strlen(name))) {
+			if (!strncmp(content, "Normal", strlen(content))) {
 				metadata->normal_pixel_storage = true;
-			} else if (!strncmp(content, "Planar", strlen(name))) {
+			} else if (!strncmp(content, "Planar", strlen(content))) {
 				metadata->normal_pixel_storage = false;
 			}
 		} else if (!strncmp(name, "byteOrder", strlen(name))) {
-			if (!strncmp(name, "big", strlen(name))) {
+			if (!strncmp(content, "big", strlen(content))) {
 				metadata->big_endian = true;
-			} else if (!strncmp(content, "little", strlen(name))) {
+			} else if (!strncmp(content, "little", strlen(content))) {
 				metadata->big_endian = false;
 			}
 		} else if (!strncmp(name, "colorSpace", strlen(name))) {
-			strncpy(metadata->colourspace, content, sizeof(metadata->colourspace));
+			strncpy(metadata->color_space, content, sizeof(metadata->color_space));
+		} else if (!strncmp(name, "imageType", strlen(name))) {
+			strncpy(metadata->image_type, content, sizeof(metadata->image_type));
 		} else if (!strncmp(name, "location", strlen(name))) {
 			char location[100] = {0};
 			int data_offset = 0;
@@ -188,6 +195,72 @@ int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadat
 		}
 		free(name);
 		free(content);
+
+		nodes = xml_node_children(node_image);
+		for (int j = 0; j < nodes; j++) {
+			struct xml_node* child = xml_node_child(node_image, j);
+			struct xml_string* node_name_s = xml_node_name(child);
+			char *node_name = calloc(xml_string_length(node_name_s) + 1, sizeof(uint8_t));
+			xml_string_copy(node_name_s, node_name, xml_string_length(node_name_s));
+
+			if (!strcmp(node_name, "ColorFilterArray")) {
+				int attr = xml_node_attributes(child);
+				for (int i = 0; i < attr; i++) {
+					struct xml_string* attr_name_s = xml_node_attribute_name(child, i);
+					char* attr_name = calloc(xml_string_length(attr_name_s) + 1, sizeof(uint8_t));
+					xml_string_copy(attr_name_s, attr_name, xml_string_length(attr_name_s));
+
+					struct xml_string* attr_content_s = xml_node_attribute_content(child, i);
+					char* attr_content = calloc(xml_string_length(attr_content_s) + 1, sizeof(uint8_t));
+					xml_string_copy(attr_content_s, attr_content, xml_string_length(attr_content_s));
+
+					if (!strcmp(attr_name, "pattern")) {
+						strncpy(metadata->bayer_pattern, attr_content, sizeof(metadata->bayer_pattern));
+					}
+
+					free(attr_name);
+					free(attr_content);
+				}
+			} else if (!strcmp(node_name, "Property")) {
+				int attr = xml_node_attributes(child);
+				char id[255];
+				char value[255];
+				for (int i = 0; i < attr; i++) {
+					struct xml_string* attr_name_s = xml_node_attribute_name(child, i);
+					char* attr_name = calloc(xml_string_length(attr_name_s) + 1, sizeof(uint8_t));
+					xml_string_copy(attr_name_s, attr_name, xml_string_length(attr_name_s));
+
+					struct xml_string* attr_content_s = xml_node_attribute_content(child, i);
+					char* attr_content = calloc(xml_string_length(attr_content_s) + 1, sizeof(uint8_t));
+					xml_string_copy(attr_content_s, attr_content, xml_string_length(attr_content_s));
+
+					if (!strcmp(attr_name, "id")) {
+						strncpy(id, attr_content, sizeof(id));
+					}
+					if (!strcmp(attr_name, "value")) {
+						strncpy(value, attr_content, sizeof(value));
+					}
+
+					free(attr_name);
+					free(attr_content);
+				}
+
+				struct xml_string* node_content_s = xml_node_content(child);
+				char* node_content = calloc(xml_string_length(node_content_s) + 1, sizeof(uint8_t));
+				xml_string_copy(node_content_s, node_content, xml_string_length(node_content_s));
+
+				if (!strcmp(id, "Instrument:Camera:Name")) {
+					strncpy(metadata->camera_name, node_content, sizeof(metadata->camera_name));
+				} else if (!strcmp(id, "Instrument:ExposureTime")) {
+					metadata->exposure_time = atof(value);
+				} else if (!strcmp(id, "Instrument:Sensor:Temperature")) {
+					metadata->sensor_temperature = atof(value);
+				}
+
+				free(node_content);
+			}
+			free(node_name);
+		}
 	}
 	xml_document_free(document, false);
 	return XISF_OK;

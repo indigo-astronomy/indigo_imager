@@ -283,6 +283,13 @@ void ViewerWindow::on_image_info_act() {
 		auto text = m_image_info_dlg->textWidget();
 		text->clear();
 
+		if (metadata.camera_name[0] != '\0') {
+			text->append(QString("<b>Camera:</b> ") + metadata.camera_name);
+		}
+
+		text->append(QString("<b>Image Dimensions:</b> ") + QString::number(metadata.width) + " x " + QString::number(metadata.height));
+		text->append(QString("<b>Channels:</b> ") + QString::number(metadata.channels));
+
 		switch (metadata.bitpix) {
 		case 8:
 			text->append(QString("<b>Pixel Format:</b> 8-bit unsigned integer"));
@@ -300,22 +307,38 @@ void ViewerWindow::on_image_info_act() {
 			text->append(QString("<b>Pixel Format:</b> 64-bit IEEE 754 floating point"));
 			break;
 		}
+
 		if (metadata.big_endian) {
 			text->append(QString("<b>Byte Order:</b> Big endian"));
 		} else {
 			text->append(QString("<b>Byte Order:</b> Little endian"));
 		}
-		text->append(QString("<b>Image Dimensions:</b> ") + QString::number(metadata.width) + " x " + QString::number(metadata.height));
-		text->append(QString("<b>Channels:</b> ") + QString::number(metadata.channels));
-		text->append(QString("<b>Color space:</b> ") + metadata.colourspace);
-		if (!strcmp(metadata.colourspace, "RGB")) {
+
+		text->append(QString("<b>Color space:</b> ") + metadata.color_space);
+		if (!strcmp(metadata.color_space, "RGB")) {
 			if (metadata.normal_pixel_storage) {
 				text->append(QString("<b>Pixel Storage:</b> Normal (One RGB channel)"));
 			} else {
 				text->append(QString("<b>Pixel Storage:</b> Planar (R, G and B channels)"));
 			}
 		}
+
+		if (metadata.bayer_pattern[0] != '\0') {
+			text->append(QString("<b>Bayer Pattern:</b> ") + metadata.bayer_pattern);
+		}
+
+		text->append(QString("<b>Image Type:</b> ") + metadata.image_type);
+
+		if (metadata.exposure_time >= 0) {
+			text->append(QString("<b>Exposure Time:</b> ") + QString::number(metadata.exposure_time) + " sec");
+		}
+
+		if (metadata.sensor_temperature >= 0) {
+			text->append(QString("<b>Seensor Temperature:</b> ") + QString::number(metadata.sensor_temperature) + "°C");
+		}
+
 		text->append(QString("<b>Data offset:</b> ") + QString::number(metadata.data_offset));
+
 		if(metadata.compression[0] == '\0') {
 			text->append(QString("<b>Data size:</b> ") + QString::number(metadata.data_size) + " (" + QString::number(metadata.data_size/(1024.0*1024)) + " MB)");
 		} else {
