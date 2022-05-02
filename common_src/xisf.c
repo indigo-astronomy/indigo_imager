@@ -123,7 +123,7 @@ int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadat
 		char* content = calloc(xml_string_length(attr_content_s) + 1, sizeof(uint8_t));
 		xml_string_copy(attr_content_s, content, xml_string_length(attr_content_s));
 
-		indigo_error("XISF Image %s: %s\n", name, content);
+		//indigo_error("XISF Image %s: %s\n", name, content);
 		if (!strncmp(name, "geometry", strlen(name))) {
 			int width = 0, height = 0, channels = 0;
 			int scanned = sscanf(content, "%d:%d:%d", &width, &height, &channels);
@@ -264,6 +264,39 @@ int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadat
 				}
 
 				free(node_content);
+			} else if (!strcmp(node_name, "FITSKeyword")) {
+				int attr = xml_node_attributes(child);
+				char name[255];
+				char value[255];
+				for (int i = 0; i < attr; i++) {
+					struct xml_string* attr_name_s = xml_node_attribute_name(child, i);
+					char* attr_name = calloc(xml_string_length(attr_name_s) + 1, sizeof(uint8_t));
+					xml_string_copy(attr_name_s, attr_name, xml_string_length(attr_name_s));
+
+					struct xml_string* attr_content_s = xml_node_attribute_content(child, i);
+					char* attr_content = calloc(xml_string_length(attr_content_s) + 1, sizeof(uint8_t));
+					xml_string_copy(attr_content_s, attr_content, xml_string_length(attr_content_s));
+
+					if (!strcmp(attr_name, "name")) {
+						strncpy(name, attr_content, sizeof(name));
+					}
+					if (!strcmp(attr_name, "value")) {
+						strncpy(value, attr_content, sizeof(value));
+					}
+
+					free(attr_name);
+					free(attr_content);
+				}
+				if (!strcmp(name, "BAYERPAT") && (metadata->bayer_pattern[0] == '\0') && !strcmp(metadata->color_space, "Gray")) {
+					// Pixinsight does not copy this from FITS so if not found, copy it from fits header.
+					// Vablue is written like "'RGGB    '" so remove single quotes and spaces first
+					char *start = value;
+					while (*start == '\'' || *start == ' ' || *start == '\0') start++;
+					char *end = start;
+					while (*end != '\'' && *end != ' ' && *end != '\0') end++;
+					*end = '\0';
+					strncpy(metadata->bayer_pattern, start, sizeof(metadata->bayer_pattern));
+				}
 			}
 			free(node_name);
 		}
@@ -273,7 +306,7 @@ int xisf_read_metadata(uint8_t *xisf_data, int xisf_size, xisf_metadata *metadat
 }
 
 int xisf_decompress(uint8_t *xisf_data, xisf_metadata *metadata, uint8_t *decompressed_data) {
-	indigo_error("XISF decompress: %s %d %d", metadata->compression, metadata->uncompressed_data_size, metadata->shuffle_size);
+	//indigo_error("XISF decompress: %s %d %d", metadata->compression, metadata->uncompressed_data_size, metadata->shuffle_size);
 	size_t uncompressed_data_size = metadata->uncompressed_data_size;
 	if (!strcmp(metadata->compression, "zlib")) {
 		int err = uncompress(decompressed_data, &uncompressed_data_size, xisf_data + metadata->data_offset, metadata->data_size);
