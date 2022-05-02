@@ -55,6 +55,14 @@ static unsigned int bayer_to_pix_format(const char *bayerpat, const char bitpix)
 		return PIX_FMT_SGRBG32;
 	} else if ((!strcmp(bayerpat, "RGGB") || !strcmp(bayerpat, "RGBG")) && (bitpix == 32)) {
 		return PIX_FMT_SRGGB32;
+	} else if ((!strcmp(bayerpat, "BGGR") || !strcmp(bayerpat, "BGRG")) && (bitpix == -32)) {
+		return PIX_FMT_SBGGRF;
+	} else if ((!strcmp(bayerpat, "GBRG") || !strcmp(bayerpat, "GBGR")) && (bitpix == -32)) {
+		return PIX_FMT_SGBRGF;
+	} else if ((!strcmp(bayerpat, "GRBG") || !strcmp(bayerpat, "GRGB")) && (bitpix == -32)) {
+		return PIX_FMT_SGRBGF;
+	} else if ((!strcmp(bayerpat, "RGGB") || !strcmp(bayerpat, "RGBG")) && (bitpix == -32)) {
+		return PIX_FMT_SRGGBF;
 	}
 	return 0;
 }
@@ -550,6 +558,17 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 
 		img->m_raw_data = (char*)rgb_data;
 		img->m_pix_format = PIX_FMT_RGB96;
+		img->m_height = height;
+		img->m_width = width;
+
+		stretch_preview(img, sconfig);
+	} else if ((pix_format == PIX_FMT_SBGGRF) || (pix_format == PIX_FMT_SGBRGF) ||
+		       (pix_format == PIX_FMT_SGRBGF) || (pix_format == PIX_FMT_SRGGBF)) {
+		float* rgb_data = (float*)malloc(width*height*12);
+		bayer_to_rgbf((const float*)image_data, rgb_data, width, height, pix_format);
+
+		img->m_raw_data = (char*)rgb_data;
+		img->m_pix_format = PIX_FMT_RGBF;
 		img->m_height = height;
 		img->m_width = width;
 
