@@ -62,8 +62,8 @@ typedef struct xisf_metadata {
  * xisf binary header
  */
 typedef struct xsif_header {
-	char  signature[8];    // 'XISF0100'
-	uint32_t xml_length;          // length in bytes of the XML file header
+	char signature[8];        // 'XISF0100'
+	uint32_t xml_length;      // length in bytes of the XML file header
 	uint32_t reserved;        // reserved - must be zero
 } xisf_header;
 
