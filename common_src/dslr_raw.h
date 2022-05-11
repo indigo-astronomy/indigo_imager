@@ -72,4 +72,4 @@ int dslr_raw_image_info(void *buffer, size_t buffer_size, dslr_raw_image_info_s 
 }
 #endif
 
-#endif /* _RAW_TO_FITS_H */
+#endif /* _DSLR_RAW_H */
