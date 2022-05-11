@@ -264,6 +264,12 @@ int dslr_raw_image_info(void *buffer, size_t buffer_size, dslr_raw_image_info_s 
 	image_info->aperture = raw_data->other.aperture;
 	image_info->focal_len = raw_data->other.focal_len;
 	image_info->timestamp = raw_data->other.timestamp;
+	image_info->temperture = -273.15f;
+	if (raw_data->makernotes.common.SensorTemperature > -273.15f) {
+		 image_info->temperture = raw_data->makernotes.common.SensorTemperature;
+	} else if (raw_data->makernotes.common.CameraTemperature > -273.15f) {
+		 image_info->temperture = raw_data->makernotes.common.CameraTemperature;
+	}
 	strncpy(image_info->desc, raw_data->other.desc, sizeof(image_info->desc));
 	strncpy(image_info->artist, raw_data->other.artist, sizeof(image_info->artist));
 
