@@ -142,6 +142,18 @@ void ImagerWindow::change_agent_offset_property(const char *agent, QSpinBox *ccd
 	indigo_change_number_property_1(nullptr, agent, CCD_OFFSET_PROPERTY_NAME, CCD_OFFSET_ITEM_NAME, value);
 }
 
+void ImagerWindow::change_agent_binning_property(const char *agent) const {
+	static const char *items[] = {
+		CCD_BIN_HORIZONTAL_ITEM_NAME,
+		CCD_BIN_VERTICAL_ITEM_NAME
+	};
+	static double values[2];
+	values[0] = (double)m_imager_bin_x->value();
+	values[1] = (double)m_imager_bin_y->value();
+
+	indigo_change_number_property(nullptr, agent, CCD_BIN_PROPERTY_NAME, 2, items, values);
+}
+
 void ImagerWindow::change_ccd_frame_type_property(const char *agent) const {
 	static char selected_type[INDIGO_NAME_SIZE];
 	strncpy(selected_type, m_frame_type_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);

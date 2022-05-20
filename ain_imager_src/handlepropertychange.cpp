@@ -927,6 +927,16 @@ void update_agent_imager_gain_offset_property(ImagerWindow *w, indigo_property *
 	}
 }
 
+void update_agent_imager_binning_property(ImagerWindow *w, indigo_property *property) {
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], CCD_BIN_HORIZONTAL_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_imager_bin_x);
+		} else if (client_match_item(&property->items[i], CCD_BIN_VERTICAL_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_imager_bin_y);
+		}
+	}
+}
+
 void update_agent_guider_gain_offset_property(ImagerWindow *w, indigo_property *property) {
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], CCD_GAIN_ITEM_NAME)) {
@@ -1973,6 +1983,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	    client_match_device_property(property, selected_agent, CCD_OFFSET_PROPERTY_NAME)) {
 		update_agent_imager_gain_offset_property(this, property);
 	}
+	if (client_match_device_property(property, selected_agent, CCD_BIN_PROPERTY_NAME)) {
+		update_agent_imager_binning_property(this, property);
+	}
 
 	// Guider Agent
 	if (client_match_device_property(property, selected_guider_agent, CCD_PREVIEW_PROPERTY_NAME)) {
@@ -2276,6 +2289,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	    client_match_device_property(property, selected_agent, CCD_OFFSET_PROPERTY_NAME)) {
 		update_agent_imager_gain_offset_property(this, property);
 	}
+	if (client_match_device_property(property, selected_agent, CCD_BIN_PROPERTY_NAME)) {
+		update_agent_imager_binning_property(this, property);
+	}
 
 	// Guider Agent
 	if (client_match_device_property(property, selected_guider_agent, CCD_MODE_PROPERTY_NAME)) {
@@ -2570,6 +2586,15 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		set_spinbox_value(m_imager_offset, 0);
 		set_enabled(m_imager_offset, false);
+	}
+	if (client_match_device_property(property, selected_agent, CCD_BIN_PROPERTY_NAME) ||
+		client_match_device_no_property(property, selected_agent)) {
+
+		set_spinbox_value(m_imager_bin_x, 0);
+		set_enabled(m_imager_bin_x, false);
+
+		set_spinbox_value(m_imager_bin_y, 0);
+		set_enabled(m_imager_bin_y, false);
 	}
 
 	// Guider Agent

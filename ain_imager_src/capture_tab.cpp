@@ -377,6 +377,24 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_imager_offset->setEnabled(false);
 	camera_frame_layout->addWidget(m_imager_offset, camera_row, 3);
 	connect(m_imager_offset, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_imager_offset_changed);
+
+	camera_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	camera_frame_layout->addItem(spacer, camera_row, 0, 1, 4);
+
+	camera_row++;
+	label = new QLabel("X Binning:");
+	camera_frame_layout->addWidget(label, camera_row, 0);
+	m_imager_bin_x = new QSpinBox();
+	m_imager_bin_x->setEnabled(false);
+	camera_frame_layout->addWidget(m_imager_bin_x, camera_row, 1);
+	label = new QLabel("Y Binning:");
+	camera_frame_layout->addWidget(label, camera_row, 2);
+	m_imager_bin_y = new QSpinBox();
+	m_imager_bin_y->setEnabled(false);
+	camera_frame_layout->addWidget(m_imager_bin_y, camera_row, 3);
+	connect(m_imager_bin_x, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_imager_binning_changed);
+	connect(m_imager_bin_y, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_imager_binning_changed);
 }
 
 void ImagerWindow::on_exposure_start_stop(bool clicked) {
@@ -611,6 +629,17 @@ void ImagerWindow::on_agent_imager_offset_changed(int value) {
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_agent_offset_property(selected_agent, m_imager_offset);
+	});
+}
+
+void ImagerWindow::on_agent_imager_binning_changed(int value) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_imager_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_agent_binning_property(selected_agent);
 	});
 }
 
