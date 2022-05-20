@@ -600,6 +600,9 @@ void ImagerWindow::on_tab_changed(int index) {
 
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){
 	char selected_agent[INDIGO_VALUE_SIZE];
+	if (item == nullptr || item->blob.value == nullptr || property->state == INDIGO_ALERT_STATE ) {
+		return;
+	}
 
 	if (get_selected_imager_agent(selected_agent) && client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME)) {
 		if (m_indigo_item) {
