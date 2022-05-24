@@ -529,6 +529,7 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 	double height = 0;
 	int parity = 0;
 	int index_used = 0;
+	int wcs_state = -1;
 
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_PLATESOLVER_WCS_RA_ITEM_NAME)) {
@@ -547,6 +548,8 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 			parity = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_WCS_INDEX_ITEM_NAME)) {
 			index_used = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_WCS_STATE_ITEM_NAME)) {
+			wcs_state = (int)property->items[i].number.value;
 		}
 	}
 	bool update_pa_buttons = true;
@@ -619,12 +622,21 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 		w->set_enabled(w->m_mount_solve_and_sync_button, false);
 		//w->set_enabled(w->m_solve_button, false);
 		w->m_solve_button->setIcon(QIcon(":resource/stop.png"));
-		if (scale == 0) {
+		if (wcs_state == -1) {
 			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Solving frame");
 			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Solving frame");
-		} else {
+		} else if (wcs_state == SOLVER_WCS_SOLVING) {
+			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Solving frame");
+			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Solving frame");
+		} else if (wcs_state == SOLVER_WCS_SYNCING) {
 			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Syncing telescope");
 			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Syncing telescope");
+		} else if (wcs_state == SOLVER_WCS_CENTERING) {
+			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Centering telescope");
+			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Centering telescope");
+		} else {
+			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Waiting for image");
+			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Waiting for image");
 		}
 	}
 
@@ -749,14 +761,14 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 	char alt_correction_str[50] = "Error";
 	char az_correction_str[50] = "Error";
 	char total_error_str[50] = "Error";
-	if (property->state == INDIGO_OK_STATE || state == POLAR_ALIGN_RECALCULATE) {
-		sprintf(alt_correction_str, "%+.2f'  move %s", alt_error * 60, alt_correction_up ? "Up ↑" : "Down ↓");
-		sprintf(az_correction_str, "%+.2f'  move %s", az_error * 60, az_correction_cw ? "C.W. ↻" : "C.C.W. ↺");
-		sprintf(total_error_str, "%.2f'", total_error * 60);
-	} else if (state == POLAR_ALIGN_IDLE || property->state == INDIGO_BUSY_STATE) {
+	if (state == -1 || state == POLAR_ALIGN_IDLE || property->state == INDIGO_BUSY_STATE) {
 		sprintf(alt_correction_str, "N/A");
 		sprintf(az_correction_str, "N/A");
 		sprintf(total_error_str, "N/A");
+	} else if (state == POLAR_ALIGN_RECALCULATE || property->state == INDIGO_OK_STATE) {
+		sprintf(alt_correction_str, "%+.2f'  move %s", alt_error * 60, alt_correction_up ? "Up ↑" : "Down ↓");
+		sprintf(az_correction_str, "%+.2f'  move %s", az_error * 60, az_correction_cw ? "C.W. ↻" : "C.C.W. ↺");
+		sprintf(total_error_str, "%.2f'", total_error * 60);
 	}
 
 	char message[50] = "Idle";
