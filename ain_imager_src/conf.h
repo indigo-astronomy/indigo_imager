@@ -58,8 +58,9 @@ typedef enum {
 
 typedef enum {
 	SHOW_RA_DEC_DRIFT = 0,
-	SHOW_RA_DEC_PULSE = 1,
-	SHOW_X_Y_DRIFT = 2,
+	SHOW_RA_DEC_S_DRIFT = 1,
+	SHOW_RA_DEC_PULSE = 2,
+	SHOW_X_Y_DRIFT = 3,
 } guider_display_data;
 
 typedef enum {

@@ -124,28 +124,28 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	stats_frame_layout->addWidget(m_guider_graph, stats_row, 0, 1, 2);
 
 	stats_row++;
-	label = new QLabel("Drift RA / Dec (px):");
+	label = new QLabel("Drift RA / Dec:");
 	stats_frame_layout->addWidget(label, stats_row, 0);
 	m_guider_rd_drift_label = new QLabel();
 	m_guider_rd_drift_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	stats_frame_layout->addWidget(m_guider_rd_drift_label, stats_row, 1);
 
 	stats_row++;
-	label = new QLabel("Drift X / Y (px):");
+	label = new QLabel("Drift X / Y:");
 	stats_frame_layout->addWidget(label, stats_row, 0);
 	m_guider_xy_drift_label = new QLabel();
 	m_guider_xy_drift_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	stats_frame_layout->addWidget(m_guider_xy_drift_label, stats_row, 1);
 
 	stats_row++;
-	label = new QLabel("Correction RA / Dec (s):");
+	label = new QLabel("Correction RA / Dec:");
 	stats_frame_layout->addWidget(label, stats_row, 0);
 	m_guider_pulse_label = new QLabel();
 	m_guider_pulse_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	stats_frame_layout->addWidget(m_guider_pulse_label, stats_row, 1);
 
 	stats_row++;
-	label = new QLabel("RMSE RA / Dec (px):");
+	label = new QLabel("RMSE RA / Dec:");
 	stats_frame_layout->addWidget(label, stats_row, 0);
 	m_guider_rmse_label = new QLabel();
 	m_guider_rmse_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
@@ -546,21 +546,24 @@ void ImagerWindow::select_guider_data(guider_display_data show) {
 			m_guider_data_1 = &m_drift_data_ra;
 			m_guider_data_2 = &m_drift_data_dec;
 			m_guider_graph->set_yaxis_range(-6, 6);
-			// m_guider_graph_label->setText("Drift RA / Dec (px):");
 			m_guider_graph_label->setText("Drift <font color=\"red\">RA</font> / <font color=\"#03acf0\">Dec</font> (px):");
+			break;
+		case SHOW_RA_DEC_S_DRIFT:
+			m_guider_data_1 = &m_drift_data_ra_s;
+			m_guider_data_2 = &m_drift_data_dec_s;
+			m_guider_graph->set_yaxis_range(-6, 6);
+			m_guider_graph_label->setText("Drift <font color=\"red\">RA</font> / <font color=\"#03acf0\">Dec</font> (arcsec):");
 			break;
 		case SHOW_RA_DEC_PULSE:
 			m_guider_data_1 = &m_pulse_data_ra;
 			m_guider_data_2 = &m_pulse_data_dec;
 			m_guider_graph->set_yaxis_range(-1.5, 1.5);
-			// m_guider_graph_label->setText("Guiding Pulses RA / Dec (s):");
 			m_guider_graph_label->setText("Guiding Pulses <font color=\"red\">RA</font> / <font color=\"#03acf0\">Dec</font> (s):");
 			break;
 		case SHOW_X_Y_DRIFT:
 			m_guider_data_1 = &m_drift_data_x;
 			m_guider_data_2 = &m_drift_data_y;
 			m_guider_graph->set_yaxis_range(-6, 6);
-			// m_guider_graph_label->setText("Drift X / Y (px):");
 			m_guider_graph_label->setText("Drift <font color=\"red\">X</font> / <font color=\"#03acf0\">Y</font> (px):");
 			break;
 		default:

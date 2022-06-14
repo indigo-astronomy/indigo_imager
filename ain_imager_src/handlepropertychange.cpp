@@ -1424,8 +1424,10 @@ void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	double ref_x = 0, ref_y = 0;
 	double d_ra = 0, d_dec = 0;
+	double d_ra_s = 0, d_dec_s = 0;
 	double cor_ra = 0, cor_dec = 0;
 	double rmse_ra = 0, rmse_dec = 0, dither_rmse = 0;
+	double rmse_ra_s = 0, rmse_dec_s = 0;
 	double d_x = 0, d_y = 0;
 	int size = 0, frame_count = -1;
 	bool is_guiding_process_on = false;
@@ -1442,6 +1444,10 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 			d_ra = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_DRIFT_DEC_ITEM_NAME)) {
 			d_dec = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_DRIFT_RA_S_ITEM_NAME)) {
+			d_ra_s = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_DRIFT_DEC_S_ITEM_NAME)) {
+			d_dec_s = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_DRIFT_X_ITEM_NAME)) {
 			d_x = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_DRIFT_Y_ITEM_NAME)) {
@@ -1450,6 +1456,10 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 			rmse_ra = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_RMSE_DEC_ITEM_NAME)) {
 			rmse_dec = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_RMSE_RA_S_ITEM_NAME)) {
+			rmse_ra_s = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_RMSE_DEC_S_ITEM_NAME)) {
+			rmse_dec_s = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_CORR_RA_ITEM_NAME)) {
 			cor_ra = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_CORR_DEC_ITEM_NAME)) {
@@ -1474,6 +1484,8 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 				if (frame_count == 0) {
 					w->m_drift_data_ra.clear();
 					w->m_drift_data_dec.clear();
+					w->m_drift_data_ra_s.clear();
+					w->m_drift_data_dec_s.clear();
 					w->m_pulse_data_ra.clear();
 					w->m_pulse_data_dec.clear();
 					w->m_drift_data_x.clear();
@@ -1482,6 +1494,8 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 				} else if (frame_count > 0) {
 					w->m_drift_data_ra.append(d_ra);
 					w->m_drift_data_dec.append(d_dec);
+					w->m_drift_data_ra_s.append(d_ra_s);
+					w->m_drift_data_dec_s.append(d_dec_s);
 					w->m_pulse_data_ra.append(cor_ra);
 					w->m_pulse_data_dec.append(cor_dec);
 					w->m_drift_data_x.append(d_x);
@@ -1490,6 +1504,8 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 					if (w->m_drift_data_dec.size() > 120) {
 						w->m_drift_data_dec.removeFirst();
 						w->m_drift_data_ra.removeFirst();
+						w->m_drift_data_dec_s.removeFirst();
+						w->m_drift_data_ra_s.removeFirst();
 						w->m_pulse_data_ra.removeFirst();
 						w->m_pulse_data_dec.removeFirst();
 						w->m_drift_data_x.removeFirst();
@@ -1514,17 +1530,23 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	}
 
 	char label_str[50];
-	snprintf(label_str, 50, "%+.2f  %+.2f", d_ra, d_dec);
-	w->set_text(w->m_guider_rd_drift_label, label_str);
+	if (conf.guider_display == SHOW_RA_DEC_S_DRIFT) {
+		snprintf(label_str, 50, "%+.2f\"  %+.2f\"", d_ra_s, d_dec_s);
+		w->set_text(w->m_guider_rd_drift_label, label_str);
+		snprintf(label_str, 50, "%.2f\"  %.2f\"", rmse_ra_s, rmse_dec_s);
+		w->set_text(w->m_guider_rmse_label, label_str);
+	} else {
+		snprintf(label_str, 50, "%+.2f  %+.2f px", d_ra, d_dec);
+		w->set_text(w->m_guider_rd_drift_label, label_str);
+		snprintf(label_str, 50, "%.2f  %.2f px", rmse_ra, rmse_dec);
+		w->set_text(w->m_guider_rmse_label, label_str);
+	}
 
-	snprintf(label_str, 50, "%+.2f  %+.2f", d_x, d_y);
+	snprintf(label_str, 50, "%+.2f  %+.2f px", d_x, d_y);
 	w->set_text(w->m_guider_xy_drift_label, label_str);
 
-	snprintf(label_str, 50, "%+.2f  %+.2f", cor_ra, cor_dec);
+	snprintf(label_str, 50, "%+.2f  %+.2f s", cor_ra, cor_dec);
 	w->set_text(w->m_guider_pulse_label, label_str);
-
-	snprintf(label_str, 50, "%.2f  %.2f", rmse_ra, rmse_dec);
-	w->set_text(w->m_guider_rmse_label, label_str);
 }
 
 void update_guider_settings(ImagerWindow *w, indigo_property *property) {

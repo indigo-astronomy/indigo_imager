@@ -205,19 +205,25 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	graph_group = new QActionGroup(this);
 	graph_group->setExclusive(true);
 
-	act = sub_menu->addAction("&RA / Dec Drift");
+	act = sub_menu->addAction("&RA / Dec Drift (pixels)");
 	act->setCheckable(true);
 	if (conf.guider_display == SHOW_RA_DEC_DRIFT) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_guide_show_rd_drift);
 	graph_group->addAction(act);
 
-	act = sub_menu->addAction("RA / Dec &Pulses");
+	act = sub_menu->addAction("RA / &Dec Drift (arcsec)");
+	act->setCheckable(true);
+	if (conf.guider_display == SHOW_RA_DEC_S_DRIFT) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_guide_show_rd_s_drift);
+	graph_group->addAction(act);
+
+	act = sub_menu->addAction("RA / Dec &Pulses (sec)");
 	act->setCheckable(true);
 	if (conf.guider_display == SHOW_RA_DEC_PULSE) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_guide_show_rd_pulse);
 	graph_group->addAction(act);
 
-	act = sub_menu->addAction("&X / Y Drift");
+	act = sub_menu->addAction("&X / Y Drift (pixels)");
 	act->setCheckable(true);
 	if (conf.guider_display == SHOW_X_Y_DRIFT) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_guide_show_xy_drift);
@@ -947,6 +953,14 @@ void ImagerWindow::on_focus_show_hfd() {
 
 void ImagerWindow::on_guide_show_rd_drift() {
 	conf.guider_display = SHOW_RA_DEC_DRIFT;
+	select_guider_data(conf.guider_display);
+	if (m_guider_data_1 && m_guider_data_2) m_guider_graph->redraw_data2(*m_guider_data_1, *m_guider_data_2);
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_guide_show_rd_s_drift() {
+	conf.guider_display = SHOW_RA_DEC_S_DRIFT;
 	select_guider_data(conf.guider_display);
 	if (m_guider_data_1 && m_guider_data_2) m_guider_graph->redraw_data2(*m_guider_data_1, *m_guider_data_2);
 	write_conf();
