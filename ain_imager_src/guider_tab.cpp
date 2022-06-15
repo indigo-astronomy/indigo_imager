@@ -534,6 +534,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	misc_frame_layout->addWidget(label, misc_row, 0, 1, 2);
 	m_guider_focal_lenght = new QDoubleSpinBox();
 	m_guider_focal_lenght->setEnabled(false);
+	m_guider_focal_lenght->setSpecialValueText(" ");
 	misc_frame_layout->addWidget(m_guider_focal_lenght, misc_row, 2, 1, 2);
 	connect(m_guider_focal_lenght, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_agent_guider_focal_length_changed);
 }
