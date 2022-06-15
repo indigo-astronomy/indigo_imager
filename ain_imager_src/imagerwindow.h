@@ -130,6 +130,7 @@ public:
 	friend void update_mount_az_alt(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_lst(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_park(ImagerWindow *w, indigo_property *property);
+	friend void update_mount_home(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_track(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_slew_rates(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_side_of_pier(ImagerWindow *w, indigo_property *property);
@@ -314,6 +315,7 @@ public slots:
 	void on_mount_abort(int index);
 	void on_mount_track(int state);
 	void on_mount_park(int state);
+	void on_mount_home(int state);
 	void on_mount_move_north();
 	void on_mount_stop_north();
 	void on_mount_move_south();
@@ -659,6 +661,7 @@ private:
 	QPushButton *m_mount_abort_button;
 	QCheckBox *m_mount_track_cbox;
 	QCheckBox *m_mount_park_cbox;
+	QCheckBox *m_mount_home_cbox;
 	QCheckBox *m_mount_guide_rate_cbox;
 	QCheckBox *m_mount_center_rate_cbox;
 	QCheckBox *m_mount_find_rate_cbox;

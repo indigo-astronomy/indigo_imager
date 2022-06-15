@@ -349,6 +349,32 @@ void update_mount_park(ImagerWindow *w, indigo_property *property) {
 	}
 }
 
+void update_mount_home(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	bool at_home = false;
+
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], MOUNT_HOME_ITEM_NAME)) {
+			at_home = property->items[i].sw.value;
+		}
+	}
+
+	w->set_enabled(w->m_mount_home_cbox, true);
+	w->set_widget_state(w->m_mount_home_cbox, property->state);
+	if (property->state == INDIGO_BUSY_STATE) {
+		w->set_text(w->m_mount_home_cbox, "Going home...");
+		w->set_checkbox_state(w->m_mount_home_cbox, Qt::PartiallyChecked);
+	} else {
+		if (at_home) {
+			w->set_text(w->m_mount_home_cbox, "At home");
+			w->set_checkbox_state(w->m_mount_home_cbox, Qt::Checked);
+		} else {
+			w->set_text(w->m_mount_home_cbox, "Go home");
+			w->set_checkbox_state(w->m_mount_home_cbox, Qt::Unchecked);
+		}
+	}
+}
+
 void update_mount_track(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("change %s", property->name);
 	bool on = false;
@@ -2125,6 +2151,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_PARK_PROPERTY_NAME)) {
 		update_mount_park(this, property);
 	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_HOME_PROPERTY_NAME)) {
+		update_mount_home(this, property);
+	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_TRACKING_PROPERTY_NAME)) {
 		update_mount_track(this, property);
 	}
@@ -2414,6 +2443,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_PARK_PROPERTY_NAME)) {
 		update_mount_park(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_HOME_PROPERTY_NAME)) {
+		update_mount_home(this, property);
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_TRACKING_PROPERTY_NAME)) {
 		update_mount_track(this, property);
@@ -2865,6 +2897,13 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_checkbox_state(m_mount_park_cbox, Qt::Unchecked);
 		set_text(m_mount_park_cbox, "Park");
 		set_enabled(m_mount_park_cbox, false);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_HOME_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		set_checkbox_state(m_mount_home_cbox, Qt::Unchecked);
+		set_text(m_mount_home_cbox, "Go home");
+		set_enabled(m_mount_home_cbox, false);
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_TRACKING_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {

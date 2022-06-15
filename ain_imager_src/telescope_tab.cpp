@@ -289,6 +289,13 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	connect(m_mount_track_cbox, &QPushButton::clicked, this, &ImagerWindow::on_mount_track);
 
 	slew_row++;
+	m_mount_home_cbox = new QCheckBox("Go home");
+	m_mount_home_cbox->setEnabled(false);
+	set_ok(m_mount_home_cbox);
+	slew_frame_layout->addWidget(m_mount_home_cbox, slew_row, slew_col);
+	connect(m_mount_home_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_home);
+
+	slew_row++;
 	m_mount_park_cbox = new QCheckBox("Park");
 	m_mount_park_cbox->setEnabled(false);
 	set_ok(m_mount_park_cbox);
@@ -806,6 +813,18 @@ void ImagerWindow::on_mount_park(int state) {
 		} else {
 			indigo_change_switch_property_1(nullptr, selected_agent, MOUNT_PARK_PROPERTY_NAME, MOUNT_PARK_UNPARKED_ITEM_NAME, true);
 		}
+	});
+}
+
+void ImagerWindow::on_mount_home(int state) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+		bool checked = m_mount_home_cbox->checkState();
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+
+		indigo_change_switch_property_1(nullptr, selected_agent, MOUNT_HOME_PROPERTY_NAME, MOUNT_HOME_ITEM_NAME, checked);
 	});
 }
 
