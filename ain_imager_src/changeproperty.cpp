@@ -142,6 +142,11 @@ void ImagerWindow::change_agent_offset_property(const char *agent, QSpinBox *ccd
 	indigo_change_number_property_1(nullptr, agent, CCD_OFFSET_PROPERTY_NAME, CCD_OFFSET_ITEM_NAME, value);
 }
 
+void ImagerWindow::change_agent_lens_profile_property(const char *agent, QDoubleSpinBox *guider_focal_lenght) const {
+	double value = (double)guider_focal_lenght->value();
+	indigo_change_number_property_1(nullptr, agent, CCD_LENS_PROPERTY_NAME, CCD_LENS_FOCAL_LENGTH_ITEM_NAME, value);
+}
+
 void ImagerWindow::change_agent_binning_property(const char *agent) const {
 	static const char *items[] = {
 		CCD_BIN_HORIZONTAL_ITEM_NAME,

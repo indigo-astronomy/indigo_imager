@@ -114,6 +114,7 @@ public:
 	friend void update_agent_imager_gain_offset_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_binning_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_guider_gain_offset_property(ImagerWindow *w, indigo_property *property);
+	friend void update_agent_guider_focal_length_property(ImagerWindow *w, indigo_property *property);
 	friend void update_focus_setup_property(ImagerWindow *w, indigo_property *property);
 	friend void update_focus_estimator_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *property);
@@ -288,6 +289,7 @@ public slots:
 	void on_guider_ccd_mode_selected(int index);
 	void on_agent_guider_gain_changed(int value);
 	void on_agent_guider_offset_changed(int value);
+	void on_agent_guider_focal_length_changed(int value);
 	void on_agent_imager_binning_changed(int value);
 
 	void on_guider_agent_exposure_changed(double value);
@@ -591,6 +593,7 @@ private:
 	QComboBox *m_guider_frame_size_select;
 	QSpinBox  *m_guider_gain;
 	QSpinBox  *m_guider_offset;
+	QDoubleSpinBox  *m_guider_focal_lenght;
 	QSpinBox  *m_imager_bin_x;
 	QSpinBox  *m_imager_bin_y;
 
@@ -782,6 +785,7 @@ private:
 	void change_agent_imager_dithering_property(const char *agent) const;
 	void change_agent_gain_property(const char *agent, QSpinBox *ccd_gain) const;
 	void change_agent_offset_property(const char *agent, QSpinBox *ccd_offset) const;
+	void change_agent_lens_profile_property(const char *agent, QDoubleSpinBox *guider_focal_lenght) const;
 	void change_agent_binning_property(const char *agent) const;
 
 	void change_agent_start_preview_property(const char *agent) const;

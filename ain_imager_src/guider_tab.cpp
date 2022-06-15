@@ -519,6 +519,23 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guider_offset->setEnabled(false);
 	misc_frame_layout->addWidget(m_guider_offset, misc_row, 2, 1, 2);
 	connect(m_guider_offset, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_guider_offset_changed);
+
+	misc_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	misc_frame_layout->addItem(spacer, misc_row, 0);
+
+	misc_row++;
+	label = new QLabel("Guider Scope Profile:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 4);
+
+	misc_row++;
+	label = new QLabel("Focal length (cm):");
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 2);
+	m_guider_focal_lenght = new QDoubleSpinBox();
+	m_guider_focal_lenght->setEnabled(false);
+	misc_frame_layout->addWidget(m_guider_focal_lenght, misc_row, 2, 1, 2);
+	connect(m_guider_focal_lenght, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_agent_guider_focal_length_changed);
 }
 
 void ImagerWindow::setup_preview(const char *agent) {
@@ -901,5 +918,16 @@ void ImagerWindow::on_agent_guider_offset_changed(int value) {
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_agent_offset_property(selected_agent, m_guider_offset);
+	});
+}
+
+void ImagerWindow::on_agent_guider_focal_length_changed(int value) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_agent_lens_profile_property(selected_agent, m_guider_focal_lenght);
 	});
 }

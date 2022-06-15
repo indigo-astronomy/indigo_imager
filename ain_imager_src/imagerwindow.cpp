@@ -960,6 +960,9 @@ void ImagerWindow::on_guide_show_rd_drift() {
 }
 
 void ImagerWindow::on_guide_show_rd_s_drift() {
+	if (m_guider_focal_lenght->value() <= 0) {
+		window_log("Warning: Guider focal length not set will use pixels");
+	}
 	conf.guider_display = SHOW_RA_DEC_S_DRIFT;
 	select_guider_data(conf.guider_display);
 	if (m_guider_data_1 && m_guider_data_2) m_guider_graph->redraw_data2(*m_guider_data_1, *m_guider_data_2);

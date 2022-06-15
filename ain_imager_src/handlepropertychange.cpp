@@ -959,6 +959,15 @@ void update_agent_guider_gain_offset_property(ImagerWindow *w, indigo_property *
 	}
 }
 
+void update_agent_guider_focal_length_property(ImagerWindow *w, indigo_property *property) {
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], CCD_LENS_FOCAL_LENGTH_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guider_focal_lenght);
+			break;
+		}
+	}
+}
+
 static void update_focuser_poition(ImagerWindow *w, indigo_property *property, QSpinBox *set_position) {
 	indigo_debug("change %s", property->name);
 	for (int i = 0; i < property->count; i++) {
@@ -1469,6 +1478,19 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 		}
 	}
 
+	if(conf.guider_display == SHOW_RA_DEC_S_DRIFT) {
+		int focal_length = (int)w->m_guider_focal_lenght->value();
+		if (focal_length <= 0 && w->m_guider_data_1 == &w->m_drift_data_ra_s) {
+			indigo_log("Guider focal length not set will use pixels");
+			w->select_guider_data(SHOW_RA_DEC_DRIFT);
+			if (w->m_guider_data_1 && w->m_guider_data_2) w->m_guider_graph->redraw_data2(*(w->m_guider_data_1), *(w->m_guider_data_2));
+		} else if (focal_length > 0 && w->m_guider_data_1 != &w->m_drift_data_ra_s) {
+			indigo_log("Focal length set will use arcseconds");
+			w->select_guider_data(SHOW_RA_DEC_S_DRIFT);
+			if (w->m_guider_data_1 && w->m_guider_data_2) w->m_guider_graph->redraw_data2(*(w->m_guider_data_1), *(w->m_guider_data_2));
+		}
+	}
+
 	indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
 	if (p) {
 		for (int i = 0; i < p->count; i++) {
@@ -1530,7 +1552,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	}
 
 	char label_str[50];
-	if (conf.guider_display == SHOW_RA_DEC_S_DRIFT) {
+	if (conf.guider_display == SHOW_RA_DEC_S_DRIFT && w->m_guider_data_1 == &w->m_drift_data_ra_s)  {
 		snprintf(label_str, 50, "%+.2f\"  %+.2f\"", d_ra_s, d_dec_s);
 		w->set_text(w->m_guider_rd_drift_label, label_str);
 		snprintf(label_str, 50, "%.2f\"  %.2f\"", rmse_ra_s, rmse_dec_s);
@@ -1806,6 +1828,8 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	char selected_solver_agent[INDIGO_VALUE_SIZE] = {0};
 	static pthread_mutex_t l_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+	indigo_debug("[PROPERTY DEFINE] %s(): %s.%s\n", __FUNCTION__, property->device, property->name);
+
 	if (!strncmp(property->device, "Server", 6)) {
 		if (client_match_device_property(property, property->device, "LOAD")) {
 			if (properties.get(property->device, property->name)) return;
@@ -2030,6 +2054,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_guider_agent, CCD_MODE_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_guider_frame_size_select);
 	}
+	if (client_match_device_property(property, selected_guider_agent, CCD_LENS_PROPERTY_NAME)) {
+		update_agent_guider_focal_length_property(this, property);
+	}
 	if (client_match_device_property(property, selected_guider_agent, CCD_JPEG_SETTINGS_PROPERTY_NAME)) {
 		set_enabled(m_guider_save_bw_select, true);
 	}
@@ -2216,6 +2243,8 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	char selected_mount_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_solver_agent[INDIGO_VALUE_SIZE] = {0};
 
+	indigo_debug("[PROPERTY CHANGE] %s(): %s.%s\n", __FUNCTION__, property->device, property->name);
+
 	if (
 		(!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
 		(!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12)) &&
@@ -2330,6 +2359,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	// Guider Agent
 	if (client_match_device_property(property, selected_guider_agent, CCD_MODE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_guider_frame_size_select);
+	}
+	if (client_match_device_property(property, selected_guider_agent, CCD_LENS_PROPERTY_NAME)) {
+		update_agent_guider_focal_length_property(this, property);
 	}
 	if (client_match_device_property(property, selected_guider_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_guider_camera_select);
@@ -2636,6 +2668,12 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_guider_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		clear_combobox(m_guider_frame_size_select);
+	}
+	if (client_match_device_property(property, selected_guider_agent, CCD_LENS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		set_spinbox_value(m_guider_focal_lenght, 0);
+		set_enabled(m_guider_focal_lenght, false);
 	}
 	if (client_match_device_property(property, selected_guider_agent, FILTER_CCD_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
