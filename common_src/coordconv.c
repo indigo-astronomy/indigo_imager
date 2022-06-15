@@ -21,6 +21,9 @@
 
 #include<coordconv.h>
 
+static const double DEG2RAD = M_PI / 180.0;
+static const double RAD2DEG = 180.0 / M_PI;
+
 /* derotate xr yr on the image rotated at angle */
 int derotate_xy(double xr, double yr, double angle, int parity, double *x, double *y) {
 	double angler = angle;
