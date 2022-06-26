@@ -456,12 +456,10 @@ ImagerWindow::~ImagerWindow () {
 	conf.window_width = wsize.width();
 	conf.window_height = wsize.height();
 	write_conf();
-	delete mLog;
-	delete mIndigoServers;
-	delete mServiceModel;
 	QtConcurrent::run([=]() {
 		IndigoClient::instance().stop();
 	});
+	indigo_usleep(ONE_SECOND_DELAY);
 	delete m_imager_viewer;
 	if (m_indigo_item) {
 		if (m_indigo_item->blob.value) {
@@ -470,6 +468,9 @@ ImagerWindow::~ImagerWindow () {
 		free(m_indigo_item);
 		m_indigo_item = nullptr;
 	}
+	delete mLog;
+	delete mIndigoServers;
+	delete mServiceModel;
 }
 
 void ImagerWindow::window_log(char *message, int state) {
@@ -961,7 +962,7 @@ void ImagerWindow::on_guide_show_rd_drift() {
 
 void ImagerWindow::on_guide_show_rd_s_drift() {
 	if (m_guider_focal_lenght->value() <= 0) {
-		window_log("Warning: Guider focal length not set will use pixels");
+		window_log("Warning: Focal length of the guide scope not set, data will be displayed in pixels");
 	}
 	conf.guider_display = SHOW_RA_DEC_S_DRIFT;
 	select_guider_data(conf.guider_display);
