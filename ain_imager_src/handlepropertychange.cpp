@@ -1828,7 +1828,10 @@ void condigure_guider_overlays(ImagerWindow *w, char *device, indigo_property *p
 	}
 
 	if (p) {
-		if (indigo_get_switch(p, AGENT_GUIDER_DETECTION_SELECTION_ITEM_NAME)) {
+		if (
+			indigo_get_switch(p, AGENT_GUIDER_DETECTION_SELECTION_ITEM_NAME) ||
+			indigo_get_switch(p, AGENT_GUIDER_DETECTION_WEIGHTED_SELECTION_ITEM_NAME)
+		) {
 			w->show_guider_selection(true);
 			w->show_guider_extra_selection(true);
 			w->show_guider_reference(true);
