@@ -365,6 +365,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	label = new QLabel("Exposure time (s):");
 	solve_frame_layout->addWidget(label, solve_row, 0, 1, 2);
 	m_solver_exposure2 = new QDoubleSpinBox();
+	m_solver_exposure2->setDecimals(3);
 	m_solver_exposure2->setMaximum(10000);
 	m_solver_exposure2->setMinimum(0);
 	m_solver_exposure2->setValue(1);
@@ -578,6 +579,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	label = new QLabel("Exposure time (s):");
 	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
 	m_solver_exposure3 = new QDoubleSpinBox();
+	m_solver_exposure3->setDecimals(3);
 	m_solver_exposure3->setMaximum(10000);
 	m_solver_exposure3->setMinimum(0);
 	m_solver_exposure3->setValue(1);

@@ -73,6 +73,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	label = new QLabel("Exposure (s):");
 	capture_frame_layout->addWidget(label, row, 0);
 	m_exposure_time = new QDoubleSpinBox();
+	m_exposure_time->setDecimals(3);
 	m_exposure_time->setMaximum(10000);
 	m_exposure_time->setMinimum(0);
 	m_exposure_time->setValue(1);
@@ -82,6 +83,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	label = new QLabel("Delay (s):");
 	capture_frame_layout->addWidget(label, row, 2);
 	m_exposure_delay = new QDoubleSpinBox();
+	m_exposure_delay->setDecimals(3);
 	m_exposure_delay->setMaximum(10000);
 	m_exposure_delay->setMinimum(0);
 	m_exposure_delay->setValue(0);
@@ -242,6 +244,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	label = new QLabel("Preview exposure (s):");
 	image_frame_layout->addWidget(label, image_row, 0, 1, 3);
 	m_preview_exposure_time = new QDoubleSpinBox();
+	m_preview_exposure_time->setDecimals(3);
 	m_preview_exposure_time->setMaximum(10000);
 	m_preview_exposure_time->setMinimum(0);
 	m_preview_exposure_time->setValue(1);

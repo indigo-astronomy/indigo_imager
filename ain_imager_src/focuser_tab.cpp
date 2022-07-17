@@ -256,6 +256,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	label = new QLabel("Exposure time (s):");
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 2);
 	m_focuser_exposure_time = new QDoubleSpinBox();
+	m_focuser_exposure_time->setDecimals(3);
 	m_focuser_exposure_time->setMaximum(10000);
 	m_focuser_exposure_time->setMinimum(0);
 	m_focuser_exposure_time->setValue(1);

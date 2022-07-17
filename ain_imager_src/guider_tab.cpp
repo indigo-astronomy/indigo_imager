@@ -171,6 +171,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	label = new QLabel("Exposure time (s):");
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
 	m_guider_exposure = new QDoubleSpinBox();
+	m_guider_exposure->setDecimals(3);
 	m_guider_exposure->setMaximum(100000);
 	m_guider_exposure->setMinimum(0);
 	m_guider_exposure->setValue(0);
@@ -182,6 +183,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	label = new QLabel("Exposure delay (s):");
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
 	m_guider_delay = new QDoubleSpinBox();
+	m_guider_delay->setDecimals(3);
 	m_guider_delay->setMaximum(100000);
 	m_guider_delay->setMinimum(0);
 	m_guider_delay->setValue(0);
@@ -318,6 +320,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	label = new QLabel("Min/Max pulse (s):");
 	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 2);
 	m_guide_min_pulse = new QDoubleSpinBox();
+	m_guide_min_pulse->setDecimals(3);
 	m_guide_min_pulse->setMaximum(100000);
 	m_guide_min_pulse->setMinimum(0);
 	m_guide_min_pulse->setValue(0);
@@ -325,6 +328,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	connect(m_guide_min_pulse, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_pulse_changed);
 
 	m_guide_max_pulse = new QDoubleSpinBox();
+	m_guide_max_pulse->setDecimals(3);
 	m_guide_max_pulse->setMaximum(100000);
 	m_guide_max_pulse->setMinimum(0);
 	m_guide_max_pulse->setValue(0);

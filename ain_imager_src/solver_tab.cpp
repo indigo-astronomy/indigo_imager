@@ -62,6 +62,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	label = new QLabel("Exposure time (s):");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_solver_exposure1 = new QDoubleSpinBox();
+	m_solver_exposure1->setDecimals(3);
 	m_solver_exposure1->setMaximum(10000);
 	m_solver_exposure1->setMinimum(0);
 	m_solver_exposure1->setValue(1);
