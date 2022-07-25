@@ -246,7 +246,7 @@ void ImagerWindow::clear_guider_agent_star_selection(const char *agent) const {
 		index++;
 	}
 
-	static double values[max_stars] = {0};
+	static double values[max_stars * 2] = {0};
 
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME, count, (const char**)items, values);
 }
