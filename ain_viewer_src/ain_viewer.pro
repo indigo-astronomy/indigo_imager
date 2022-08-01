@@ -1,5 +1,11 @@
 QT += core gui widgets network printsupport concurrent
 CONFIG += c++11 debug
+
+unix:mac {
+	CONFIG += app_bundle
+	ICON=../resource/ain_viewer.icns
+}
+
 QMAKE_CXXFLAGS += -O3
 QMAKE_CXXFLAGS_RELEASE += -O3
 
@@ -96,8 +102,7 @@ unix:!mac {
 
 unix:mac {
 	INCLUDEPATH += "../external/libjpeg"
-	#LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -l:libindigo.a -lz -ljpeg -l:liblz4.a
-	LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -lindigo -ljpeg -l:liblz4.a
+	LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -lindigo -ljpeg -llz4
 }
 
 DISTFILES += \

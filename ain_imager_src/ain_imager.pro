@@ -1,5 +1,11 @@
 QT += core gui widgets network printsupport concurrent multimedia
-CONFIG += c++11 debug
+CONFIG += c++11 release app_bundle
+
+unix:mac {
+	CONFIG += app_bundle
+	ICON=../resource/appicon.icns
+}
+
 QMAKE_CXXFLAGS += -O3
 QMAKE_CXXFLAGS_RELEASE += -O3
 
@@ -133,10 +139,21 @@ include(../external/qtzeroconf/qtzeroconf.pri)
 #}
 
 INCLUDEPATH += "../indigo/indigo_libs" + "../external" + "../external/qtzeroconf/" + "../external/libraw/" + "../external/lz4/" + "../common_src" + "../object_data" + "../ain_imager_src"
-LIBS += -L"../external/libraw/lib" -L"../../external/libraw/lib" -L"../external/lz4" -L"../../external/lz4" -lraw -lz
+
+unix:!mac | win32 {
+	LIBS += -L"../external/libraw/lib" -L"../../external/libraw/lib" -L"../external/lz4" -L"../../external/lz4" -lraw -lz
+}
 
 unix {
 	INCLUDEPATH += "../external/libjpeg"
+}
+
+unix:mac {
+	LIBS += -L"../external/libraw/lib" -L"../external/lz4" -lraw -lz \
+		-L"../external/libjpeg/.libs" -L"../indigo/build/lib" -lindigo -ljpeg -llz4
+}
+
+unix:!mac {
 	LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -lindigo -ljpeg -l:liblz4.a
 }
 
