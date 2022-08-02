@@ -1221,11 +1221,25 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	if (start_p && start_p->state == INDIGO_BUSY_STATE ) {
 		for (int i = 0; i < start_p->count; i++) {
 			if (!strcmp(start_p->items[i].name, AGENT_IMAGER_START_EXPOSURE_ITEM_NAME)) {
+				bool pause_sw = false;
+				bool pause_wait_sw = false;
 				indigo_property *pause_p = properties.get(property->device, AGENT_PAUSE_PROCESS_PROPERTY_NAME);
-				bool paused = false;
-				if (pause_p && pause_p->state == INDIGO_BUSY_STATE) paused = true;
-				exposure_running = start_p->items[i].sw.value && !paused;
-				w->save_blob = exposure_running ;
+				if (pause_p) {
+					for (int i = 0; i < pause_p->count; i++) {
+						if (client_match_item(&stats_p->items[i], AGENT_PAUSE_PROCESS_WAIT_ITEM_NAME)) {
+							pause_wait_sw = start_p->items[i].sw.value;
+						} else if (client_match_item(&stats_p->items[i], AGENT_PAUSE_PROCESS_ITEM_NAME)) {
+							pause_sw = start_p->items[i].sw.value;
+						}
+					}
+					bool paused = false;
+					if (pause_wait_sw || pause_sw) paused = true;
+					exposure_running = start_p->items[i].sw.value && !paused;
+					w->save_blob = exposure_running;
+				} else {
+					exposure_running = false;
+					w->save_blob = exposure_running;
+				}
 			} else if (!strcmp(start_p->items[i].name, AGENT_IMAGER_START_FOCUSING_ITEM_NAME)) {
 				focusing_running = start_p->items[i].sw.value;
 			} else if (!strcmp(start_p->items[i].name, AGENT_IMAGER_START_PREVIEW_ITEM_NAME)) {

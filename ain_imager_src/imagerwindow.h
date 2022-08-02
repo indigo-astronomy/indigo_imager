@@ -777,7 +777,7 @@ private:
 	void change_agent_batch_property(const char *agent) const;
 	void change_agent_batch_property_for_focus(const char *agent) const;
 	void change_agent_start_exposure_property(const char *agent) const;
-	void change_agent_pause_process_property(const char *agent) const;
+	void change_agent_pause_process_property(const char *agent, bool wait_exposure) const;
 	void change_agent_abort_process_property(const char *agent) const;
 	void change_wheel_slot_property(const char *agent) const;
 	void change_cooler_onoff_property(const char *agent) const;

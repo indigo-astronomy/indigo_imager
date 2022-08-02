@@ -466,9 +466,9 @@ void ImagerWindow::on_pause(bool clicked) {
 		get_selected_imager_agent(selected_agent);
 
 		indigo_property *p = properties.get(selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME);
-		if (p == nullptr || p->count != 1) return;
+		if (p == nullptr || p->count < 1) return;
 
-		change_agent_pause_process_property(selected_agent);
+		change_agent_pause_process_property(selected_agent, false);
 	});
 }
 
