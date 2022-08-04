@@ -1583,7 +1583,18 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 			if (w->m_guider_process && w->m_guide_log && conf.guider_save_log && frame_count > 1) {
 				char time_str[255];
 				get_timestamp(time_str);
-				fprintf(w->m_guide_log, "\"%s\", %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %d\n", time_str, d_x, d_y, d_ra, d_dec, cor_ra, cor_dec, is_dithering);
+				fprintf(
+					w->m_guide_log,
+					"\"%s\", %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %d\n",
+					time_str,
+					d_x, d_y,
+					d_ra, d_dec,
+					d_ra_s, d_dec_s,
+					rmse_ra, rmse_dec,
+					rmse_ra_s, rmse_dec_s,
+					cor_ra, cor_dec,
+					is_dithering
+				);
 				fflush(w->m_guide_log);
 			}
 		} else {
@@ -1747,7 +1758,7 @@ void log_guide_header(ImagerWindow *w, char *device_name) {
 			stack
 		);
 	}
-	fprintf(w->m_guide_log, "Timestamp, X Dif, Y Dif, RA Dif, Dec Dif, Ra Correction, Dec Correction, Dithering\n");
+	fprintf(w->m_guide_log, "Timestamp, X Dif, Y Dif, RA Dif, Dec Dif, RA Dif(\"), Dec Dif(\"), RMSE RA, RMSE Dec, RMSE RA(\"), RMSE Dec(\"), Ra Correction, Dec Correction, Dithering\n");
 	fflush(w->m_guide_log);
 }
 
