@@ -3,7 +3,7 @@
 VERSION=${1}
 
 DEBFULLNAME="Rumen Bogdanovski"
-EMAIL="rumen@skyarchive.org"
+EMAIL="rumenastro@gmail.com"
 
 __check_file_exits() {
     [ ! -f ${1} ] && { echo "file '${1}' not found"; exit 1; }
