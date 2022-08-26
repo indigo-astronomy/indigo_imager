@@ -955,17 +955,16 @@ void ImagerWindow::on_image_right_click_ra_dec(double ra, double dec, double cen
 				telescope_center_dec = p->items[i].number.value;
 			}
 		}
-		indigo_error("%s: %s found telescope_center_ra = %f, telescope_center_dec = %f",__FUNCTION__, MOUNT_EQUATORIAL_COORDINATES_PROPERTY_NAME,telescope_center_ra, telescope_center_dec );
-		real_to_telescope_radec(telescope_center_ra, telescope_center_dec, center_ra, center_dec, &telescope_ra, &telescope_dec);
+		standard_to_telescope_cs(telescope_center_ra, telescope_center_dec, center_ra, center_dec, &telescope_ra, &telescope_dec);
 	}
 	set_text(m_mount_ra_input, indigo_dtos(telescope_ra / 15.0, "%d:%02d:%04.1f"));
 	set_text(m_mount_dec_input, indigo_dtos(telescope_dec, "%d:%02d:%04.1f"));
 	snprintf(
-		message, 255, "Loaded α = %s, δ = %s (Telescope α = %s, δ = %s) push Goto to center",
-		indigo_dtos(ra / 15, "%dh %02d' %04.1f\""),
-		indigo_dtos(dec, "%+d° %02d' %04.1f\""),
+		message, 255, "Push Goto to center. Telescope α = %s, δ = %s (solved α = %s, δ = %s)",
 		indigo_dtos(telescope_ra / 15, "%dh %02d' %04.1f\""),
-		indigo_dtos(telescope_dec, "%+d° %02d' %04.1f\"")
+		indigo_dtos(telescope_dec, "%+d° %02d' %04.1f\""),
+		indigo_dtos(ra / 15, "%dh %02d' %04.1f\""),
+		indigo_dtos(dec, "%+d° %02d' %04.1f\"")
 	);
 	window_log(message);
 }

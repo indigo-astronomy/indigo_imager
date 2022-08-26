@@ -24,10 +24,10 @@
 static const double DEG2RAD = M_PI / 180.0;
 static const double RAD2DEG = 180.0 / M_PI;
 
-void real_to_telescope_radec(double telescope_center_ra, double telescope_center_dec, double true_center_ra, double true_center_dec, double *ra, double *dec) {
+void standard_to_telescope_cs(double telescope_center_ra, double telescope_center_dec, double standard_center_ra, double standard_center_dec, double *ra, double *dec) {
 	// Transform coordinates
-	*ra = *ra - true_center_ra + telescope_center_ra;
-	*dec = *dec - true_center_dec + telescope_center_dec;
+	*ra = *ra - standard_center_ra + telescope_center_ra;
+	*dec = *dec - standard_center_dec + telescope_center_dec;
 
 	//**  Re-normalize coordinates to ensure they are in range
 	//  RA
