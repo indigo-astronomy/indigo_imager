@@ -261,7 +261,7 @@ public slots:
 	void on_focuser_selection_radius_changed(int value);
 	void on_focuser_position_changed(int value);
 	void on_image_right_click(double x, double y);
-	void on_image_right_click_ra_dec(double ra, double dec);
+	void on_image_right_click_ra_dec(double ra, double dec, double center_ra, double center_de);
 	void on_focus_in(bool clicked);
 	void on_focus_out(bool clicked);
 	void on_focuser_subframe_changed(int index);

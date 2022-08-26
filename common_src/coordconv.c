@@ -24,6 +24,34 @@
 static const double DEG2RAD = M_PI / 180.0;
 static const double RAD2DEG = 180.0 / M_PI;
 
+void real_to_telescope_radec(double telescope_center_ra, double telescope_center_dec, double true_center_ra, double true_center_dec, double *ra, double *dec) {
+	// Transform coordinates
+	indigo_error("tc_RA = %f, tc_Dec = %f, c_RA = %f, c_Dec = %f, ra = %f, dec = %f", telescope_center_ra, telescope_center_dec, true_center_ra, true_center_dec, *ra, *dec);
+	*ra = *ra - true_center_ra + telescope_center_ra;
+	*dec = *dec - true_center_dec + telescope_center_dec;
+
+	//**  Re-normalize coordinates to ensure they are in range
+	//  RA
+	if (*ra < 0.0)
+		*ra += 360.0;
+	if (*ra >= 360.0)
+		*ra -= 360.0;
+
+	//  DEC
+	if (*dec > 90.0) {
+		*dec = 180.0 - *dec;
+		*ra += 280.0;
+		if (*ra >= 360.0)
+			*ra -= 360.0;
+	}
+	if (*dec < -90.0) {
+		*dec = -180.0 - *dec;
+		*ra += 180.0;
+		if (*ra >= 360.0)
+			*ra -= 360.0;
+	}
+}
+
 /* derotate xr yr on the image rotated at angle */
 int derotate_xy(double xr, double yr, double angle, int parity, double *x, double *y) {
 	double angler = angle;

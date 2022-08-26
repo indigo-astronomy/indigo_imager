@@ -28,6 +28,11 @@
 extern "C" {
 #endif
 
+/* translate real coordinates to telescope coordinates
+ *ra and *dec should be real coordinates and will be overwritten with the telescope cooodinates
+*/
+void real_to_telescope_radec(double telescope_center_ra, double telescope_center_dec, double true_center_ra, double true_center_dec, double *ra, double *dec);
+
 /* derotate xr yr on the image rotated at angle */
 int derotate_xy(double xr, double yr, double angle, int parity, double *x, double *y);
 

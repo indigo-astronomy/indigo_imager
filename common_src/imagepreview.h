@@ -275,7 +275,7 @@ public:
 		m_rotation_angle = rotation_angle;
 		m_parity = parity;
 		m_pix_scale = pix_scale;
-	}
+	};
 
 	int wcs_data(double x, double y, double *ra, double *dec, double *pix_scale = nullptr) const {
 		if (m_pix_scale == 0) return -1;
@@ -296,7 +296,14 @@ public:
 		if (pix_scale) *pix_scale = m_pix_scale;
 		indigo_debug("x = %f, y = %f => RA = %s, Dec = %s", x, y, indigo_dtos(*ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(*dec, "%d° %02d' %04.1f\""));
 		return 0;
-	}
+	};
+
+	int image_center(double *ra, double *dec) const {
+		if (m_pix_scale == 0) return -1;
+		if (ra) *ra = m_center_ra;
+		if (dec) *dec = m_center_dec;
+		return 0;
+	};
 
 	char *m_raw_data;
 	int *m_histogram;

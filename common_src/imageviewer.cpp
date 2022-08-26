@@ -658,12 +658,16 @@ void ImageViewer::mouseAt(double x, double y) {
 
 void ImageViewer::mouseRightPressAt(double x, double y) {
 	indigo_debug("RIGHT CLICK COORDS: %f %f" ,x,y);
-	double ra, dec;
+	double ra, dec, center_ra, center_dec;
 	if (m_pixmap->image().valid(x,y)) {
 		moveSelection(x,y);
 		emit mouseRightPress(x, y);
-		if (m_pixmap->image().wcs_data(x, y, &ra, &dec) == 0 && m_show_wcs) {
-			emit mouseRightPressRADec(ra, dec);
+		if (
+			m_pixmap->image().wcs_data(x, y, &ra, &dec) == 0 &&
+			m_pixmap->image().image_center(&center_ra, &center_dec) == 0 &&
+			m_show_wcs
+		) {
+			emit mouseRightPressRADec(ra, dec, center_ra, center_dec);
 		}
 	}
 }
