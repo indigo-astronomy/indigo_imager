@@ -19,14 +19,13 @@
 // version history
 // 2.0 by Rumen Bogdanovski <rumenastro@gmail.com>
 
-#include<coordconv.h>
+#include <coordconv.h>
 
 static const double DEG2RAD = M_PI / 180.0;
 static const double RAD2DEG = 180.0 / M_PI;
 
 void real_to_telescope_radec(double telescope_center_ra, double telescope_center_dec, double true_center_ra, double true_center_dec, double *ra, double *dec) {
 	// Transform coordinates
-	indigo_error("tc_RA = %f, tc_Dec = %f, c_RA = %f, c_Dec = %f, ra = %f, dec = %f", telescope_center_ra, telescope_center_dec, true_center_ra, true_center_dec, *ra, *dec);
 	*ra = *ra - true_center_ra + telescope_center_ra;
 	*dec = *dec - true_center_dec + telescope_center_dec;
 
@@ -90,9 +89,9 @@ void gn_xy2radec(double x, double y, double x0, double y0, double ra0, double de
 	double dx = x - x0;
 	double dy = y - y0;
 
-	double psi = dx * sin_ra0 - dy * sin_dec0 *  cos_ra0 + R0 * cos_dec0 * cos_ra0;
-	double eta = dy * cos_dec0 + R0 *  sin_dec0;
-	double ksi = -1 * dx * cos_ra0- dy * sin_dec0 * sin_ra0 + R0 * cos_dec0 * sin_ra0;
+	double psi = dx * sin_ra0 - dy * sin_dec0 * cos_ra0 + R0 * cos_dec0 * cos_ra0;
+	double eta = dy * cos_dec0 + R0 * sin_dec0;
+	double ksi = -1 * dx * cos_ra0 - dy * sin_dec0 * sin_ra0 + R0 * cos_dec0 * sin_ra0;
 
 	double sin_dec = eta / sqrt (ksi * ksi + eta * eta + psi * psi);
 

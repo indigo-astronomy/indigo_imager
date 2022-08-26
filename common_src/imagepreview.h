@@ -289,12 +289,17 @@ public:
 
 		double radius = sqrt(dx * dx + dy * dy);
 		double gn_radius = gn_R0(radius, m_pix_scale);
-		if (gn_radius <= 0) return 0;
 
-		gn_xy2radec(dx, dy, 0, 0, m_center_ra, m_center_dec, gn_radius, ra, dec);
+		if (gn_radius > 0) {
+			gn_xy2radec(dx, dy, 0, 0, m_center_ra, m_center_dec, gn_radius, ra, dec);
+		} else {
+			*ra = m_center_ra;
+			*dec = m_center_dec;
+		}
 
 		if (pix_scale) *pix_scale = m_pix_scale;
-		indigo_debug("x = %f, y = %f => RA = %s, Dec = %s", x, y, indigo_dtos(*ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(*dec, "%d° %02d' %04.1f\""));
+		indigo_debug("%s(): x = %f, y = %f => RA = %s, Dec = %s", __FUNCTION__, x, y, indigo_dtos(*ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(*dec, "%d° %02d' %04.1f\""));
+
 		return 0;
 	};
 
