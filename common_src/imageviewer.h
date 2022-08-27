@@ -99,7 +99,7 @@ signals:
 	void imageChanged();
 	void setImage(preview_image &im);
 	void mouseRightPress(double x, double y);
-	void mouseRightPressRADec(double ra, double dec, double center_ra, double ceneter_dec);
+	void mouseRightPressRADec(double ra, double dec, double telescope_ra, double telescope_dec);
 	void zoomChanged(double scale);
 	void stretchChanged(int level);
 	void BalanceChanged(int balance);

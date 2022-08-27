@@ -595,18 +595,34 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 			}
 		}
 	}
+
+	double telescope_ra = ra;
+	double telescope_dec = dec;
+	char selected_mount_agent[INDIGO_NAME_SIZE];
+	w->get_selected_mount_agent(selected_mount_agent);
+	indigo_property *p = properties.get(selected_mount_agent, MOUNT_EQUATORIAL_COORDINATES_PROPERTY_NAME);
+	if (p) {
+		for (int i = 0; i < p->count; i++) {
+			if (client_match_item(&p->items[i], MOUNT_EQUATORIAL_COORDINATES_RA_ITEM_NAME)) {
+				telescope_ra = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], MOUNT_EQUATORIAL_COORDINATES_DEC_ITEM_NAME)) {
+				telescope_dec = p->items[i].number.value;
+			}
+		}
+	}
 	// Set WCS data to the appropriate image
 	if (w->m_last_solver_source.startsWith("Imager Agent")) {
 		auto im = (preview_image &)w->m_imager_viewer->pixmapItem()->image();
-		im.set_wcs_data(ra * 15, dec, angle, parity, scale);
+		im.set_wcs_data(ra * 15, dec, telescope_ra * 15, telescope_dec, angle, parity, scale);
 		w->m_imager_viewer->setImage(im);
 	} else if (w->m_last_solver_source.startsWith("Guider Agent")) {
 		auto im = (preview_image &)w->m_guider_viewer->pixmapItem()->image();
-		im.set_wcs_data(ra * 15, dec, angle, parity, scale);
+		im.set_wcs_data(ra * 15, dec, telescope_ra * 15, telescope_dec, angle, parity, scale);
 		w->m_guider_viewer->setImage(im);
 	} else {
 		auto im = (preview_image &)w->m_visible_viewer->pixmapItem()->image();
-		im.set_wcs_data(ra * 15, dec, angle, parity, scale);
+		// if solved from file set telescope ra and dec to solved
+		im.set_wcs_data(ra * 15, dec, ra * 15, dec, angle, parity, scale);
 		w->m_visible_viewer->setImage(im);
 	}
 

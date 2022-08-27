@@ -44,6 +44,8 @@ public:
 		m_pix_format(0),
 		m_center_ra(0),
 		m_center_dec(0),
+		m_telescope_ra(0),
+		m_telescope_dec(0),
 		m_rotation_angle(0),
 		m_parity(0),
 		m_pix_scale(0)
@@ -66,6 +68,8 @@ public:
 		m_pix_format(0),
 		m_center_ra(0),
 		m_center_dec(0),
+		m_telescope_ra(0),
+		m_telescope_dec(0),
 		m_rotation_angle(0),
 		m_parity(0),
 		m_pix_scale(0)
@@ -79,6 +83,8 @@ public:
 		m_pix_format = image.m_pix_format;
 		m_center_ra = image.m_center_ra;
 		m_center_dec = image.m_center_dec;
+		m_telescope_ra = image.m_telescope_ra;
+		m_telescope_dec = image.m_telescope_dec;
 		m_rotation_angle = image.m_rotation_angle;
 		m_parity = image.m_parity;
 		m_pix_scale = image.m_pix_scale;
@@ -142,6 +148,8 @@ public:
 		m_pix_format = image.m_pix_format;
 		m_center_ra = image.m_center_ra;
 		m_center_dec = image.m_center_dec;
+		m_telescope_ra = image.m_telescope_ra;
+		m_telescope_dec = image.m_telescope_dec;
 		m_rotation_angle = image.m_rotation_angle;
 		m_parity = image.m_parity;
 		m_pix_scale = image.m_pix_scale;
@@ -269,15 +277,17 @@ public:
 		return m_pix_format;
 	};
 
-	void set_wcs_data(double center_ra, double center_dec, double rotation_angle, int parity, double pix_scale) {
+	void set_wcs_data(double center_ra, double center_dec, double telescope_ra, double telescope_dec, double rotation_angle, int parity, double pix_scale) {
 		m_center_ra = center_ra;
 		m_center_dec = center_dec;
+		m_telescope_ra = telescope_ra;
+		m_telescope_dec = telescope_dec;
 		m_rotation_angle = rotation_angle;
 		m_parity = parity;
 		m_pix_scale = pix_scale;
 	};
 
-	int wcs_data(double x, double y, double *ra, double *dec, double *pix_scale = nullptr) const {
+	int wcs_data(double x, double y, double *ra, double *dec, double *telescope_ra = nullptr, double *telescope_dec = nullptr, double *pix_scale = nullptr) const {
 		if (m_pix_scale == 0) return -1;
 		double center_x = width() / 2.0;
 		double center_y = height() / 2.0;
@@ -292,14 +302,33 @@ public:
 
 		if (gn_radius > 0) {
 			gn_xy2radec(dx, dy, 0, 0, m_center_ra, m_center_dec, gn_radius, ra, dec);
+			if (telescope_ra && telescope_dec) {
+				gn_xy2radec(dx, dy, 0, 0, m_telescope_ra, m_telescope_dec, gn_radius, telescope_ra, telescope_dec);
+			}
 		} else {
 			*ra = m_center_ra;
 			*dec = m_center_dec;
+			if (telescope_ra && telescope_dec) {
+				*telescope_ra = m_telescope_ra;
+				*telescope_ra = m_telescope_dec;
+			}
 		}
 
 		if (pix_scale) *pix_scale = m_pix_scale;
-		indigo_debug("%s(): x = %f, y = %f => RA = %s, Dec = %s", __FUNCTION__, x, y, indigo_dtos(*ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(*dec, "%d° %02d' %04.1f\""));
-
+		if (telescope_ra && telescope_dec) {
+			indigo_debug(
+				"%s(): x = %f, y = %f => RA = %s, Dec = %s (telescope RA = %s, Dec = %s)", __FUNCTION__,
+				x, y,
+				indigo_dtos(*ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(*dec, "%d° %02d' %04.1f\""),
+				indigo_dtos(*telescope_ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(*telescope_dec, "%d° %02d' %04.1f\"")
+			);
+		} else {
+			indigo_debug(
+				"%s(): x = %f, y = %f => RA = %s, Dec = %s", __FUNCTION__,
+				x, y,
+				indigo_dtos(*ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(*dec, "%d° %02d' %04.1f\"")
+			);
+		}
 		return 0;
 	};
 
@@ -317,6 +346,8 @@ public:
 	int m_pix_format;
 	double m_center_ra;
 	double m_center_dec;
+	double m_telescope_ra;
+	double m_telescope_dec;
 	double m_rotation_angle;
 	int m_parity;
 	double m_pix_scale;

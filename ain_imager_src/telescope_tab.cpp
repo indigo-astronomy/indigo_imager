@@ -937,26 +937,9 @@ void ImagerWindow::on_mount_gps_selected(int index) {
 	});
 }
 
-void ImagerWindow::on_image_right_click_ra_dec(double ra, double dec, double center_ra, double center_dec) {
+void ImagerWindow::on_image_right_click_ra_dec(double ra, double dec, double telescope_ra, double telescope_dec) {
 	char message[255];
-	char selected_agent[INDIGO_NAME_SIZE];
-	double telescope_ra = ra;
-	double telescope_dec = dec;
-	double telescope_center_ra = 0;
-	double telescope_center_dec = 0;
 
-	get_selected_mount_agent(selected_agent);
-	indigo_property *p = properties.get(selected_agent, MOUNT_EQUATORIAL_COORDINATES_PROPERTY_NAME);
-	if (p) {
-		for (int i = 0; i < p->count; i++) {
-			if (client_match_item(&p->items[i], MOUNT_EQUATORIAL_COORDINATES_RA_ITEM_NAME)) {
-				telescope_center_ra = p->items[i].number.value * 15;
-			} else if (client_match_item(&p->items[i], MOUNT_EQUATORIAL_COORDINATES_DEC_ITEM_NAME)) {
-				telescope_center_dec = p->items[i].number.value;
-			}
-		}
-		standard_to_telescope_cs(telescope_center_ra, telescope_center_dec, center_ra, center_dec, &telescope_ra, &telescope_dec);
-	}
 	set_text(m_mount_ra_input, indigo_dtos(telescope_ra / 15.0, "%d:%02d:%04.1f"));
 	set_text(m_mount_dec_input, indigo_dtos(telescope_dec, "%d:%02d:%04.1f"));
 	snprintf(
