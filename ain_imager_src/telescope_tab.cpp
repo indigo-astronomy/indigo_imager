@@ -937,19 +937,32 @@ void ImagerWindow::on_mount_gps_selected(int index) {
 	});
 }
 
-void ImagerWindow::on_image_right_click_ra_dec(double ra, double dec, double telescope_ra, double telescope_dec) {
+void ImagerWindow::on_image_right_click_ra_dec(double ra, double dec, double telescope_ra, double telescope_dec, Qt::KeyboardModifiers modifiers) {
 	char message[255];
 
 	set_text(m_mount_ra_input, indigo_dtos(telescope_ra / 15.0, "%d:%02d:%04.1f"));
 	set_text(m_mount_dec_input, indigo_dtos(telescope_dec, "%d:%02d:%04.1f"));
-	snprintf(
-		message, 255, "Push Goto to center. Telescope α = %s, δ = %s (solved α = %s, δ = %s)",
-		indigo_dtos(telescope_ra / 15, "%dh %02d' %04.1f\""),
-		indigo_dtos(telescope_dec, "%+d° %02d' %04.1f\""),
-		indigo_dtos(ra / 15, "%dh %02d' %04.1f\""),
-		indigo_dtos(dec, "%+d° %02d' %04.1f\"")
-	);
-	window_log(message);
+	if (modifiers & Qt::ControlModifier || modifiers & Qt::AltModifier) {
+		snprintf(
+			message, 255, "Centering telescope α = %s, δ = %s (solved α = %s, δ = %s)",
+			indigo_dtos(telescope_ra / 15, "%dh %02d' %04.1f\""),
+			indigo_dtos(telescope_dec, "%+d° %02d' %04.1f\""),
+			indigo_dtos(ra / 15, "%dh %02d' %04.1f\""),
+			indigo_dtos(dec, "%+d° %02d' %04.1f\"")
+		);
+		window_log(message);
+		on_mount_goto(0);
+	} else {
+		snprintf(
+			message, 255, "Push Goto to center telescope α = %s, δ = %s (solved α = %s, δ = %s)",
+			indigo_dtos(telescope_ra / 15, "%dh %02d' %04.1f\""),
+			indigo_dtos(telescope_dec, "%+d° %02d' %04.1f\""),
+			indigo_dtos(ra / 15, "%dh %02d' %04.1f\""),
+			indigo_dtos(dec, "%+d° %02d' %04.1f\"")
+		);
+		window_log(message);
+	}
+
 }
 
 void ImagerWindow::on_mount_solve_and_center() {

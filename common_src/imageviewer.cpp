@@ -77,7 +77,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
 	m_pixmap = new PixmapItem;
 	scene->addItem(m_pixmap);
 	connect(m_pixmap, SIGNAL(mouseMoved(double,double)), SLOT(mouseAt(double,double)));
-	connect(m_pixmap, SIGNAL(mouseRightPress(double,double)), SLOT(mouseRightPressAt(double,double)));
+	connect(m_pixmap, SIGNAL(mouseRightPress(double, double, Qt::KeyboardModifiers)), SLOT(mouseRightPressAt(double, double, Qt::KeyboardModifiers)));
 
 	m_ref_x = new QGraphicsLineItem(25,0,25,50, m_pixmap);
 	QPen pen;
@@ -656,17 +656,17 @@ void ImageViewer::mouseAt(double x, double y) {
 	}
 }
 
-void ImageViewer::mouseRightPressAt(double x, double y) {
+void ImageViewer::mouseRightPressAt(double x, double y, Qt::KeyboardModifiers modifiers) {
 	indigo_debug("RIGHT CLICK COORDS: %f %f" ,x,y);
 	double ra, dec, telescope_ra, telescope_dec;
 	if (m_pixmap->image().valid(x,y)) {
 		moveSelection(x,y);
-		emit mouseRightPress(x, y);
+		emit mouseRightPress(x, y, modifiers);
 		if (
 			m_pixmap->image().wcs_data(x, y, &ra, &dec, &telescope_ra, &telescope_dec) == 0 &&
 			m_show_wcs
 		) {
-			emit mouseRightPressRADec(ra, dec, telescope_ra, telescope_dec);
+			emit mouseRightPressRADec(ra, dec, telescope_ra, telescope_dec, modifiers);
 		}
 	}
 }
@@ -807,7 +807,7 @@ void PixmapItem::setImage(preview_image im) {
 void PixmapItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
 		if(event->button() == Qt::RightButton) {
 			auto pos = event->pos();
-			emit mouseRightPress(pos.x(), pos.y());
+			emit mouseRightPress(pos.x(), pos.y(), event->modifiers());
 		}
 	QGraphicsItem::mousePressEvent(event);
 }

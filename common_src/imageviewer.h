@@ -82,7 +82,7 @@ public slots:
 	void zoomIn();
 	void zoomOut();
 	void mouseAt(double x, double y);
-	void mouseRightPressAt(double x, double y);
+	void mouseRightPressAt(double x, double y, Qt::KeyboardModifiers modifiers);
 
 	void stretchNone();
 	void stretchSlight();
@@ -98,8 +98,8 @@ public slots:
 signals:
 	void imageChanged();
 	void setImage(preview_image &im);
-	void mouseRightPress(double x, double y);
-	void mouseRightPressRADec(double ra, double dec, double telescope_ra, double telescope_dec);
+	void mouseRightPress(double x, double y, Qt::KeyboardModifiers modifiers);
+	void mouseRightPressRADec(double ra, double dec, double telescope_ra, double telescope_dec, Qt::KeyboardModifiers modifiers);
 	void zoomChanged(double scale);
 	void stretchChanged(int level);
 	void BalanceChanged(int balance);
@@ -158,7 +158,7 @@ public slots:
 signals:
 	void imageChanged(const preview_image &);
 	void sizeChanged(int w, int h);
-	void mouseRightPress(double x, double y);
+	void mouseRightPress(double x, double y, Qt::KeyboardModifiers);
 	void mouseMoved(double x, double y);
 
 protected:

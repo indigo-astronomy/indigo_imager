@@ -572,7 +572,7 @@ void ImagerWindow::on_focus_mode_selected(int index) {
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
-void ImagerWindow::on_image_right_click(double x, double y) {
+void ImagerWindow::on_image_right_click(double x, double y, Qt::KeyboardModifiers modifiers) {
 	m_star_x->blockSignals(true);
 	m_star_x->setValue(x);
 	m_star_x->blockSignals(false);
