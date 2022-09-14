@@ -252,6 +252,9 @@ public slots:
 	void on_temperature_set(double value);
 	void on_agent_imager_gain_changed(int value);
 	void on_agent_imager_offset_changed(int value);
+	void on_object_name_changed(const QString &object_name);
+	void on_save_image_on_server(int state);
+	void on_keep_image_on_server(int state);
 
 	void on_focus_start_stop(bool clicked);
 	void on_focus_preview_start_stop(bool clicked);
@@ -537,6 +540,8 @@ private:
 	QPushButton *m_exposure_button;
 	QPushButton *m_preview_button;
 	QDoubleSpinBox *m_preview_exposure_time;
+	QCheckBox *m_save_image_on_server_cbox;
+	QCheckBox *m_keep_image_on_server_cbox;
 
 	// Focuser tabbar
 	QComboBox *m_focuser_select;
@@ -783,6 +788,7 @@ private:
 	void change_cooler_onoff_property(const char *agent) const;
 	void change_ccd_temperature_property(const char *agent) const;
 	void change_ccd_upload_property(const char *agent, const char *item_name) const;
+	void change_ccd_localmode_property(const char *agent, const char *filename_template) const;
 	void change_related_agent(const char *agent, const char *old_agent, const char *new_agent) const;
 	void set_mount_agent_selected_imager_agent() const;
 	void change_agent_imager_dithering_property(const char *agent) const;

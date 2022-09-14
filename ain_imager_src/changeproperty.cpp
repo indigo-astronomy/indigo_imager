@@ -71,6 +71,11 @@ void ImagerWindow::change_ccd_upload_property(const char *agent, const char *ite
 	indigo_change_switch_property_1(nullptr, agent, CCD_UPLOAD_MODE_PROPERTY_NAME, item, true);
 }
 
+void ImagerWindow::change_ccd_localmode_property(const char *agent, const char *filename_template) const {
+	indigo_change_text_property_1_raw(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, CCD_LOCAL_MODE_PREFIX_ITEM_NAME, filename_template);
+}
+
+
 void ImagerWindow::set_mount_agent_selected_imager_agent() const {
 	// Select related imager agent
 	static char selected_agent[INDIGO_NAME_SIZE] = {0};

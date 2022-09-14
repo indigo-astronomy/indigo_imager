@@ -115,6 +115,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_object_name->setPlaceholderText("Image file prefix e.g. M16, M33 ...");
 	m_object_name->setToolTip("Object name or any text that will be used as a file name prefix.\nIf empty images will not be saved.");
 	capture_frame_layout->addWidget(m_object_name, row, 1, 1, 3);
+	connect(m_object_name, &QLineEdit::textChanged, this, &ImagerWindow::on_object_name_changed);
 
 	row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -398,6 +399,32 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	camera_frame_layout->addWidget(m_imager_bin_y, camera_row, 3);
 	connect(m_imager_bin_x, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_imager_binning_changed);
 	connect(m_imager_bin_y, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_imager_binning_changed);
+
+	// Remote files
+	QFrame *remote_files_frame = new QFrame();
+	capture_tabbar->addTab(remote_files_frame, "Remote files");
+
+	QGridLayout *remote_files_frame_layout = new QGridLayout();
+	remote_files_frame_layout->setAlignment(Qt::AlignTop);
+	remote_files_frame->setLayout(remote_files_frame_layout);
+	remote_files_frame->setFrameShape(QFrame::StyledPanel);
+	remote_files_frame->setContentsMargins(0, 0, 0, 0);
+
+	int remote_files_row = 0;
+	m_save_image_on_server_cbox = new QCheckBox("Save images on server");
+	m_save_image_on_server_cbox->setToolTip("Save images on server");
+	m_save_image_on_server_cbox->setEnabled(true);
+	m_save_image_on_server_cbox->setChecked(conf.save_images_on_server);
+	remote_files_frame_layout->addWidget(m_save_image_on_server_cbox, remote_files_row, 0, 1, 3);
+	connect(m_save_image_on_server_cbox, &QPushButton::clicked, this, &ImagerWindow::on_save_image_on_server);
+
+	remote_files_row++;
+	m_keep_image_on_server_cbox = new QCheckBox("Keep images on server");
+	m_keep_image_on_server_cbox->setToolTip("Keep downloaded images on server");
+	m_keep_image_on_server_cbox->setEnabled(true);
+	m_keep_image_on_server_cbox->setChecked(conf.keep_images_on_server);
+	remote_files_frame_layout->addWidget(m_keep_image_on_server_cbox, remote_files_row, 0, 1, 3);
+	connect(m_keep_image_on_server_cbox, &QPushButton::clicked, this, &ImagerWindow::on_keep_image_on_server);
 }
 
 void ImagerWindow::on_exposure_start_stop(bool clicked) {
@@ -413,7 +440,11 @@ void ImagerWindow::on_exposure_start_stop(bool clicked) {
 			set_mount_agent_selected_imager_agent();
 			change_agent_batch_property(selected_agent);
 			change_ccd_frame_property(selected_agent);
-			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
+			if(conf.save_images_on_server) {
+				change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_BOTH_ITEM_NAME);
+			} else {
+				change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
+			}
 			change_agent_start_exposure_property(selected_agent);
 		}
 	});
@@ -676,4 +707,32 @@ void ImagerWindow::on_temperature_set(double value) {
 
 		change_ccd_temperature_property(selected_agent);
 	});
+}
+
+void ImagerWindow::on_object_name_changed(const QString &object_name) {
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		static char filename_template[INDIGO_VALUE_SIZE];
+		get_selected_imager_agent(selected_agent);
+		strcpy(filename_template, object_name.toUtf8().constData());
+		strcat(filename_template, "_%-D_%F_%C_%M");
+		indigo_error("filename template = %s", filename_template);
+
+		change_ccd_localmode_property(selected_agent, filename_template);
+	});
+}
+
+void write_conf();
+
+void ImagerWindow::on_save_image_on_server(int state) {
+	conf.save_images_on_server = m_save_image_on_server_cbox->checkState();
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_keep_image_on_server(int state) {
+	conf.keep_images_on_server = m_keep_image_on_server_cbox->checkState();
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
 }

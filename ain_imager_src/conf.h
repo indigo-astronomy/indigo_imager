@@ -100,6 +100,8 @@ typedef struct {
 	bool imager_show_reference;
 	char solver_image_source3[INDIGO_NAME_SIZE];
 	bool sound_notifications_enabled;
+	bool save_images_on_server;
+	bool keep_images_on_server;
 	char unused[100];
 } conf_t;
 
