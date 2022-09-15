@@ -441,6 +441,7 @@ void ImagerWindow::on_exposure_start_stop(bool clicked) {
 			change_agent_batch_property(selected_agent);
 			change_ccd_frame_property(selected_agent);
 			if(conf.save_images_on_server) {
+				change_ccd_localmode_property(selected_agent, &m_object_name_str);
 				change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_BOTH_ITEM_NAME);
 			} else {
 				change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
@@ -713,13 +714,9 @@ void ImagerWindow::on_object_name_changed(const QString &object_name) {
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
-		static char filename_template[INDIGO_VALUE_SIZE];
 		get_selected_imager_agent(selected_agent);
-		strcpy(filename_template, object_name.toUtf8().constData());
-		strcat(filename_template, "_%-D_%F_%C_%M");
-		indigo_error("filename template = %s", filename_template);
 
-		change_ccd_localmode_property(selected_agent, filename_template);
+		change_ccd_localmode_property(selected_agent, &object_name);
 	});
 }
 

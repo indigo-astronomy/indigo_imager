@@ -21,6 +21,7 @@
 #include <propertycache.h>
 #include <utils.h>
 #include <logger.h>
+#include <conf.h>
 
 void ImagerWindow::change_ccd_frame_property(const char *agent) const {
 	static const char *items[] = {
@@ -71,7 +72,17 @@ void ImagerWindow::change_ccd_upload_property(const char *agent, const char *ite
 	indigo_change_switch_property_1(nullptr, agent, CCD_UPLOAD_MODE_PROPERTY_NAME, item, true);
 }
 
-void ImagerWindow::change_ccd_localmode_property(const char *agent, const char *filename_template) const {
+void ImagerWindow::change_ccd_localmode_property(const char *agent, const QString *object_name) {
+	static char filename_template[INDIGO_VALUE_SIZE];
+	if (object_name->isEmpty()) {
+		m_object_name_str = DEFAULT_OBJECT_NAME;
+	} else {
+		m_object_name_str = object_name->trimmed();
+	}
+	strcpy(filename_template, m_object_name_str.toUtf8().constData());
+	strcat(filename_template, "_%-D_%F_%C_%M");
+	indigo_error("filename template = %s", filename_template);
+
 	indigo_change_text_property_1_raw(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, CCD_LOCAL_MODE_PREFIX_ITEM_NAME, filename_template);
 }
 

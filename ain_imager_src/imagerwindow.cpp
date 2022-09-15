@@ -701,8 +701,8 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 	int fd;
 	int file_no = 0;
 
-	QString object_name = m_object_name->text().trimmed();
-	if (object_name == "") object_name = "noname";
+	QString object_name = m_object_name_str.trimmed();
+	if (object_name == "") object_name = DEFAULT_OBJECT_NAME;
 	QString filter_name = m_filter_select->currentText().trimmed();
 	QString frame_type = m_frame_type_select->currentText().trimmed();
 	QDateTime date = date.currentDateTime();

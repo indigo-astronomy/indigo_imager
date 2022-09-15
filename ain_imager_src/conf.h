@@ -36,6 +36,7 @@
 #define CONFIG_FILENAME "indigo_imager.conf"
 #define AIN_GUIDER_LOG_NAME_FORMAT "ain_guiding_%s.log"
 #define AIN_INDIGO_LOG_NAME_FORMAT "ain_indigo_%s.log"
+#define DEFAULT_OBJECT_NAME "noname"
 
 typedef enum {
 	STRETCH_NONE = 0,

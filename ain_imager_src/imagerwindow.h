@@ -542,6 +542,7 @@ private:
 	QDoubleSpinBox *m_preview_exposure_time;
 	QCheckBox *m_save_image_on_server_cbox;
 	QCheckBox *m_keep_image_on_server_cbox;
+	QString m_object_name_str;
 
 	// Focuser tabbar
 	QComboBox *m_focuser_select;
@@ -788,7 +789,7 @@ private:
 	void change_cooler_onoff_property(const char *agent) const;
 	void change_ccd_temperature_property(const char *agent) const;
 	void change_ccd_upload_property(const char *agent, const char *item_name) const;
-	void change_ccd_localmode_property(const char *agent, const char *filename_template) const;
+	void change_ccd_localmode_property(const char *agent, const QString *object_name);
 	void change_related_agent(const char *agent, const char *old_agent, const char *new_agent) const;
 	void set_mount_agent_selected_imager_agent() const;
 	void change_agent_imager_dithering_property(const char *agent) const;
