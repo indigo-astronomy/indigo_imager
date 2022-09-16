@@ -641,7 +641,8 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 				break;
 			}
 		}
-		if (!m_files_to_download.contains(file_name)) {
+		indigo_error("Received -> %s", file_name);
+		if (m_files_to_download.contains(file_name)) {
 			m_files_to_download.removeAll(file_name);
 			get_current_output_dir(location, conf.data_dir_prefix);
 			char *c = strrchr(file_name, '.');
@@ -660,8 +661,15 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 					window_log(message, INDIGO_ALERT_STATE);
 				}
 			}
+			QtConcurrent::run([=]() {
+				if (!m_files_to_download.empty()) {
+					char agent[INDIGO_VALUE_SIZE];
+					get_selected_imager_agent(agent);
+					QString next_file = m_files_to_download.at(0);
+					request_file_download(agent, next_file.toUtf8().constData());
+				}
+			});
 		}
-		indigo_error("RECEIVED -> AGENT_IMAGER_DOWNLOAD_IMAGE");
 	} else if (get_selected_guider_agent(selected_agent)) {
 		if ((client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME) && conf.guider_save_bandwidth == 0) ||
 			(client_match_device_property(property, selected_agent, CCD_PREVIEW_IMAGE_PROPERTY_NAME) && conf.guider_save_bandwidth > 0)) {

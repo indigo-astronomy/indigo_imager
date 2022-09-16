@@ -763,5 +763,9 @@ void ImagerWindow::on_sync_remote_files(bool clicked) {
 				indigo_error("%s -> %d", p->items[i].label, sutil.needs_sync(p->items[i].label));
 			}
 		}
+		if (!m_files_to_download.empty()) {
+			QString next_file = m_files_to_download.at(0);
+			request_file_download(selected_agent, next_file.toUtf8().constData());
+		}
 	});
 }
