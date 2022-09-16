@@ -40,6 +40,7 @@ SOURCES += \
 	handlepropertychange.cpp \
 	focusgraph.cpp \
 	blobpreview.cpp \
+	syncutils.cpp \
 	../common_src/coordconv.c \
 	../object_data/indigo_cat_data.c \
 	../common_src/utils.cpp \
@@ -113,6 +114,7 @@ HEADERS += \
 	conf.h \
 	widget_state.h \
 	blobpreview.h \
+	syncutils.h \
 	../common_src/version.h \
 	../object_data/indigo_cat_data.h \
 	../common_src/utils.h \
@@ -167,6 +169,7 @@ win32 {
 
         SOURCES += \
             ../indigo/indigo_libs/indigo_base64.c \
+            ../indigo/indigo_libs/indigo_md5.c \
             ../indigo/indigo_libs/indigo_bus.c \
             ../indigo/indigo_libs/indigo_client.c \
             ../indigo/indigo_libs/indigo_client_xml.c \
@@ -178,6 +181,7 @@ win32 {
         HEADERS += \
             ../indigo/indigo_libs/indigo/indigo_base64.h \
             ../indigo/indigo_libs/indigo/indigo_base64_luts.h \
+            ../indigo/indigo_libs/indigo/indigo_md5.h \
             ../indigo/indigo_libs/indigo/indigo_bus.h \
             ../indigo/indigo_libs/indigo/indigo_client.h \
             ../indigo/indigo_libs/indigo/indigo_client_xml.h \

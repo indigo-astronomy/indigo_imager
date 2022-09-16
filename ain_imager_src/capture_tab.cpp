@@ -18,7 +18,11 @@
 
 #include "imagerwindow.h"
 #include "propertycache.h"
+#include <libgen.h>
 #include <conf.h>
+#include <utils.h>
+
+void write_conf();
 
 void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	QGridLayout *capture_frame_layout = new QGridLayout();
@@ -425,6 +429,13 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_keep_image_on_server_cbox->setChecked(conf.keep_images_on_server);
 	remote_files_frame_layout->addWidget(m_keep_image_on_server_cbox, remote_files_row, 0, 1, 3);
 	connect(m_keep_image_on_server_cbox, &QPushButton::clicked, this, &ImagerWindow::on_keep_image_on_server);
+
+	remote_files_row++;
+	m_sync_files_button = new QPushButton("Sync files");
+	m_sync_files_button->setStyleSheet("min-width: 30px");
+//	m_check_files_button->setIcon(QIcon(":resource/play.png"));
+	remote_files_frame_layout->addWidget(m_sync_files_button, remote_files_row, 0, 1, 2);
+	connect(m_sync_files_button, &QPushButton::clicked, this, &ImagerWindow::on_sync_remote_files);
 }
 
 void ImagerWindow::on_exposure_start_stop(bool clicked) {
@@ -720,8 +731,6 @@ void ImagerWindow::on_object_name_changed(const QString &object_name) {
 	});
 }
 
-void write_conf();
-
 void ImagerWindow::on_save_image_on_server(int state) {
 	conf.save_images_on_server = m_save_image_on_server_cbox->checkState();
 	write_conf();
@@ -732,4 +741,24 @@ void ImagerWindow::on_keep_image_on_server(int state) {
 	conf.keep_images_on_server = m_keep_image_on_server_cbox->checkState();
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_sync_remote_files(bool clicked) {
+	QtConcurrent::run([=]() {
+		char work_dir[PATH_MAX];
+		get_current_output_dir(work_dir, conf.data_dir_prefix);
+		QString work_dir_str(dirname(work_dir));
+		SyncUtils sutil(work_dir_str);
+		sutil.rebuild();
+
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+
+		indigo_property *p = properties.get(selected_agent, AGENT_IMAGER_DOWNLOAD_FILES_PROPERTY_NAME);
+		if (p) {
+			for (int i = 0; i < p->count; i++) {
+				indigo_error("%s -> %d", p->items[i].label, sutil.needs_sync(p->items[i].label));
+			}
+		}
+	});
 }

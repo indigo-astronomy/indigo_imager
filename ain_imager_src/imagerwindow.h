@@ -59,6 +59,7 @@ class QIndigoServers;
 #include <QThread>
 #include <QtConcurrentRun>
 #include "focusgraph.h"
+#include "syncutils.h"
 
 
 class ImagerWindow : public QMainWindow {
@@ -255,6 +256,7 @@ public slots:
 	void on_object_name_changed(const QString &object_name);
 	void on_save_image_on_server(int state);
 	void on_keep_image_on_server(int state);
+	void on_sync_remote_files(bool clicked);
 
 	void on_focus_start_stop(bool clicked);
 	void on_focus_preview_start_stop(bool clicked);
@@ -542,6 +544,7 @@ private:
 	QDoubleSpinBox *m_preview_exposure_time;
 	QCheckBox *m_save_image_on_server_cbox;
 	QCheckBox *m_keep_image_on_server_cbox;
+	QPushButton *m_sync_files_button;
 	QString m_object_name_str;
 
 	// Focuser tabbar
