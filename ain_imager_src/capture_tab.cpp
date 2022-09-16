@@ -750,13 +750,16 @@ void ImagerWindow::on_sync_remote_files(bool clicked) {
 		QString work_dir_str(dirname(work_dir));
 		SyncUtils sutil(work_dir_str);
 		sutil.rebuild();
-
+		m_files_to_download.clear();
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
 
 		indigo_property *p = properties.get(selected_agent, AGENT_IMAGER_DOWNLOAD_FILES_PROPERTY_NAME);
 		if (p) {
 			for (int i = 0; i < p->count; i++) {
+				if (sutil.needs_sync(p->items[i].label)) {
+					m_files_to_download.append(p->items[i].label);
+				}
 				indigo_error("%s -> %d", p->items[i].label, sutil.needs_sync(p->items[i].label));
 			}
 		}

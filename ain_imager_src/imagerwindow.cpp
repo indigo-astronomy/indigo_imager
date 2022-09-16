@@ -630,6 +630,38 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 			m_imager_viewer->setToolTip(QString("Unsaved") + QString(m_indigo_item->blob.format));
 		}
 		if (save_blob) save_blob_item(m_indigo_item);
+	} else if (!m_files_to_download.empty() && get_selected_imager_agent(selected_agent) && client_match_device_property(property, selected_agent, AGENT_IMAGER_DOWNLOAD_IMAGE_PROPERTY_NAME)) {
+		char file_name[PATH_LEN] = {0};
+		char message[PATH_LEN+100];
+		char location[PATH_LEN];
+		indigo_property *p = properties.get(selected_agent, AGENT_IMAGER_DOWNLOAD_FILE_PROPERTY_NAME);
+		if (p) {
+			for (int i = 0; i < p->count; i++) {
+				strcpy(file_name, p->items[i].text.value);
+				break;
+			}
+		}
+		if (!m_files_to_download.contains(file_name)) {
+			m_files_to_download.removeAll(file_name);
+			get_current_output_dir(location, conf.data_dir_prefix);
+			char *c = strrchr(file_name, '.');
+			if (c) {
+				*c = '\0';
+			}
+			c = strrchr(file_name, '_');
+			if (c && strlen(c+1) == 32) {
+				*c = '\0';
+				strcat(location, file_name);
+				if (save_blob_item_with_prefix(item, location, file_name, false)) {
+					snprintf(message, sizeof(message), "Image saved to '%s'", file_name);
+					window_log(message);
+				} else {
+					snprintf(message, sizeof(message), "Error: can not save '%s'", file_name);
+					window_log(message, INDIGO_ALERT_STATE);
+				}
+			}
+		}
+		indigo_error("RECEIVED -> AGENT_IMAGER_DOWNLOAD_IMAGE");
 	} else if (get_selected_guider_agent(selected_agent)) {
 		if ((client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME) && conf.guider_save_bandwidth == 0) ||
 			(client_match_device_property(property, selected_agent, CCD_PREVIEW_IMAGE_PROPERTY_NAME) && conf.guider_save_bandwidth > 0)) {
@@ -670,7 +702,7 @@ void ImagerWindow::on_message_sent(indigo_property* property, char *message) {
 
 void ImagerWindow::save_blob_item(indigo_item *item) {
 	if (item->blob.value != NULL) {
-		char file_name[PATH_LEN];
+		char file_name[PATH_LEN] = {0};
 		char message[PATH_LEN+100];
 		char location[PATH_LEN];
 
@@ -697,29 +729,30 @@ void close_fd(int fd) {
 	close(fd);
 }
 
-bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *prefix, char *file_name) {
+bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *prefix, char *file_name, bool auto_construct) {
 	int fd;
 	int file_no = 0;
+	QString object_name("");
 
-	QString object_name = m_object_name_str.trimmed();
-	if (object_name == "") object_name = DEFAULT_OBJECT_NAME;
-	QString filter_name = m_filter_select->currentText().trimmed();
-	QString frame_type = m_frame_type_select->currentText().trimmed();
-	QDateTime date = date.currentDateTime();
-	QString date_str = date.toString("yyyy-MM-dd");
-	if ((filter_name !=  "") && ((frame_type == "Light") || (frame_type == "Flat"))) {
-		object_name = object_name + "_" + date_str + "_" + frame_type + "_" + filter_name;
-	} else {
-		object_name = object_name + "_" + date_str + "_" + frame_type;
+	if (auto_construct) {
+		object_name = m_object_name_str.trimmed();
+		if (object_name == "") object_name = DEFAULT_OBJECT_NAME;
+		QString filter_name = m_filter_select->currentText().trimmed();
+		QString frame_type = m_frame_type_select->currentText().trimmed();
+		QDateTime date = date.currentDateTime();
+		QString date_str = date.toString("yyyy-MM-dd");
+		if ((filter_name !=  "") && ((frame_type == "Light") || (frame_type == "Flat"))) {
+			object_name = object_name + "_" + date_str + "_" + frame_type + "_" + filter_name;
+		} else {
+			object_name = object_name + "_" + date_str + "_" + frame_type;
+		}
 	}
 
 	do {
-
-#if defined(INDIGO_WINDOWS)
 		sprintf(file_name, "%s%s_%03d%s", prefix, object_name.toUtf8().constData(), file_no++, item->blob.format);
+#if defined(INDIGO_WINDOWS)
 		fd = open(file_name, O_CREAT | O_WRONLY | O_EXCL | O_BINARY, S_IRUSR | S_IWUSR);
 #else
-		sprintf(file_name, "%s%s_%03d%s", prefix, object_name.toUtf8().constData(), file_no++, item->blob.format);
 		fd = open(file_name, O_CREAT | O_WRONLY | O_EXCL, S_IRUSR | S_IWUSR);
 #endif
 	} while ((fd < 0) && (errno == EEXIST));
