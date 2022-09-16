@@ -87,10 +87,14 @@ void ImagerWindow::change_ccd_localmode_property(const char *agent, const QStrin
 }
 
 void ImagerWindow::request_file_download(const char *agent, const char *file_name) const {
-	indigo_error("FILE -> %s", file_name);
+	indigo_error("Requested remote: %s", file_name);
 	indigo_change_text_property_1_raw(nullptr, agent, AGENT_IMAGER_DOWNLOAD_FILE_PROPERTY_NAME, AGENT_IMAGER_DOWNLOAD_FILE_ITEM_NAME, file_name);
 }
 
+void ImagerWindow::request_file_remove(const char *agent, const char *file_name) const {
+	indigo_error("Requested delete: %s", file_name);
+	indigo_change_text_property_1_raw(nullptr, agent, AGENT_IMAGER_DELETE_FILE_PROPERTY_NAME, AGENT_IMAGER_DELETE_FILE_ITEM_NAME, file_name);
+}
 
 void ImagerWindow::set_mount_agent_selected_imager_agent() const {
 	// Select related imager agent

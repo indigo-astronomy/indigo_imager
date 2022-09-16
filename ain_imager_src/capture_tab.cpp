@@ -406,7 +406,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 
 	// Remote files
 	QFrame *remote_files_frame = new QFrame();
-	capture_tabbar->addTab(remote_files_frame, "Remote files");
+	capture_tabbar->addTab(remote_files_frame, "Remote images");
 
 	QGridLayout *remote_files_frame_layout = new QGridLayout();
 	remote_files_frame_layout->setAlignment(Qt::AlignTop);
@@ -415,26 +415,31 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	remote_files_frame->setContentsMargins(0, 0, 0, 0);
 
 	int remote_files_row = 0;
-	m_save_image_on_server_cbox = new QCheckBox("Save images on server");
-	m_save_image_on_server_cbox->setToolTip("Save images on server");
+	m_save_image_on_server_cbox = new QCheckBox("Save image copies on the server");
+	m_save_image_on_server_cbox->setToolTip("Save images copies on the server");
 	m_save_image_on_server_cbox->setEnabled(true);
 	m_save_image_on_server_cbox->setChecked(conf.save_images_on_server);
-	remote_files_frame_layout->addWidget(m_save_image_on_server_cbox, remote_files_row, 0, 1, 3);
+	remote_files_frame_layout->addWidget(m_save_image_on_server_cbox, remote_files_row, 0, 1, 4);
 	connect(m_save_image_on_server_cbox, &QPushButton::clicked, this, &ImagerWindow::on_save_image_on_server);
 
 	remote_files_row++;
-	m_keep_image_on_server_cbox = new QCheckBox("Keep images on server");
-	m_keep_image_on_server_cbox->setToolTip("Keep downloaded images on server");
+	m_keep_image_on_server_cbox = new QCheckBox("Keep downloaded images on server");
+	m_keep_image_on_server_cbox->setToolTip("Do not remove the image copies from the server on download");
 	m_keep_image_on_server_cbox->setEnabled(true);
 	m_keep_image_on_server_cbox->setChecked(conf.keep_images_on_server);
-	remote_files_frame_layout->addWidget(m_keep_image_on_server_cbox, remote_files_row, 0, 1, 3);
+	remote_files_frame_layout->addWidget(m_keep_image_on_server_cbox, remote_files_row, 0, 1, 4);
 	connect(m_keep_image_on_server_cbox, &QPushButton::clicked, this, &ImagerWindow::on_keep_image_on_server);
 
 	remote_files_row++;
-	m_sync_files_button = new QPushButton("Sync files");
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	remote_files_frame_layout->addItem(spacer, remote_files_row, 0, 1, 4);
+
+
+	remote_files_row++;
+	m_sync_files_button = new QPushButton("Download remote images");
 	m_sync_files_button->setStyleSheet("min-width: 30px");
 //	m_check_files_button->setIcon(QIcon(":resource/play.png"));
-	remote_files_frame_layout->addWidget(m_sync_files_button, remote_files_row, 0, 1, 2);
+	remote_files_frame_layout->addWidget(m_sync_files_button, remote_files_row, 0, 1, 4);
 	connect(m_sync_files_button, &QPushButton::clicked, this, &ImagerWindow::on_sync_remote_files);
 }
 
@@ -744,28 +749,39 @@ void ImagerWindow::on_keep_image_on_server(int state) {
 }
 
 void ImagerWindow::on_sync_remote_files(bool clicked) {
-	QtConcurrent::run([=]() {
-		char work_dir[PATH_MAX];
-		get_current_output_dir(work_dir, conf.data_dir_prefix);
-		QString work_dir_str(dirname(work_dir));
-		SyncUtils sutil(work_dir_str);
-		sutil.rebuild();
-		m_files_to_download.clear();
-		static char selected_agent[INDIGO_NAME_SIZE];
-		get_selected_imager_agent(selected_agent);
+	char message[PATH_LEN];
+	char work_dir[PATH_LEN];
+	get_current_output_dir(work_dir, conf.data_dir_prefix);
+	QString work_dir_str(dirname(work_dir));
+	SyncUtils sutil(work_dir_str);
+	sutil.rebuild();
+	m_files_to_download.clear();
+	static char selected_agent[INDIGO_NAME_SIZE];
+	get_selected_imager_agent(selected_agent);
 
-		indigo_property *p = properties.get(selected_agent, AGENT_IMAGER_DOWNLOAD_FILES_PROPERTY_NAME);
-		if (p) {
-			for (int i = 0; i < p->count; i++) {
-				if (sutil.needs_sync(p->items[i].label)) {
-					m_files_to_download.append(p->items[i].label);
-				}
-				indigo_error("%s -> %d", p->items[i].label, sutil.needs_sync(p->items[i].label));
+	indigo_property *p = properties.get(selected_agent, AGENT_IMAGER_DOWNLOAD_FILES_PROPERTY_NAME);
+	if (p) {
+		for (int i = 0; i < p->count; i++) {
+			if (sutil.needs_sync(p->items[i].label)) {
+				m_files_to_download.append(p->items[i].label);
+				indigo_error("Remote file: %s", p->items[i].label);
+			} else {
+				indigo_error("Downloaded:  %s", p->items[i].label);
 			}
+
 		}
-		if (!m_files_to_download.empty()) {
+	}
+	if (!m_files_to_download.empty()) {
+		snprintf(message, sizeof(message), "%d images to be downloaded", m_files_to_download.length());
+		window_log(message, INDIGO_OK_STATE);
+		QtConcurrent::run([=]() {
+			char agent[INDIGO_VALUE_SIZE];
+			get_selected_imager_agent(agent);
 			QString next_file = m_files_to_download.at(0);
-			request_file_download(selected_agent, next_file.toUtf8().constData());
-		}
-	});
+			request_file_download(agent, next_file.toUtf8().constData());
+		});
+	} else {
+		snprintf(message, sizeof(message), "No images to download");
+		window_log(message);
+	}
 }

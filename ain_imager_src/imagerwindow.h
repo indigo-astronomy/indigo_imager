@@ -795,6 +795,7 @@ private:
 	void change_ccd_upload_property(const char *agent, const char *item_name) const;
 	void change_ccd_localmode_property(const char *agent, const QString *object_name);
 	void request_file_download(const char *agent, const char *file_name) const;
+	void request_file_remove(const char *agent, const char *file_name) const;
 	void change_related_agent(const char *agent, const char *old_agent, const char *new_agent) const;
 	void set_mount_agent_selected_imager_agent() const;
 	void change_agent_imager_dithering_property(const char *agent) const;

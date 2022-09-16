@@ -632,16 +632,18 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		if (save_blob) save_blob_item(m_indigo_item);
 	} else if (!m_files_to_download.empty() && get_selected_imager_agent(selected_agent) && client_match_device_property(property, selected_agent, AGENT_IMAGER_DOWNLOAD_IMAGE_PROPERTY_NAME)) {
 		char file_name[PATH_LEN] = {0};
+		static char file_name_static[PATH_LEN];
 		char message[PATH_LEN+100];
 		char location[PATH_LEN];
 		indigo_property *p = properties.get(selected_agent, AGENT_IMAGER_DOWNLOAD_FILE_PROPERTY_NAME);
 		if (p) {
 			for (int i = 0; i < p->count; i++) {
 				strcpy(file_name, p->items[i].text.value);
+				strcpy(file_name_static, p->items[i].text.value);
 				break;
 			}
 		}
-		indigo_error("Received -> %s", file_name);
+		indigo_error("Received: %s", file_name);
 		if (m_files_to_download.contains(file_name)) {
 			m_files_to_download.removeAll(file_name);
 			get_current_output_dir(location, conf.data_dir_prefix);
@@ -654,7 +656,19 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 				*c = '\0';
 				strcat(location, file_name);
 				if (save_blob_item_with_prefix(item, location, file_name, false)) {
-					snprintf(message, sizeof(message), "Image saved to '%s'", file_name);
+					snprintf(message, sizeof(message), "Image downloaded to '%s'", file_name);
+
+					if (!conf.keep_images_on_server) {
+						snprintf(message, sizeof(message), "Image saved to '%s' and removed remotely", file_name);
+						QtConcurrent::run([=]() {
+							QString next_file = file_name_static;
+							char agent[INDIGO_VALUE_SIZE];
+							get_selected_imager_agent(agent);
+							request_file_remove(agent, next_file.toUtf8().constData());
+						});
+					} else {
+						snprintf(message, sizeof(message), "Image saved to '%s' and kept remotely", file_name);
+					}
 					window_log(message);
 				} else {
 					snprintf(message, sizeof(message), "Error: can not save '%s'", file_name);
