@@ -257,6 +257,7 @@ public slots:
 	void on_save_image_on_server(int state);
 	void on_keep_image_on_server(int state);
 	void on_sync_remote_files(bool clicked);
+	void on_remove_synced_remote_files(bool clicked);
 
 	void on_focus_start_stop(bool clicked);
 	void on_focus_preview_start_stop(bool clicked);
@@ -545,6 +546,7 @@ private:
 	QCheckBox *m_save_image_on_server_cbox;
 	QCheckBox *m_keep_image_on_server_cbox;
 	QPushButton *m_sync_files_button;
+	QPushButton *m_remove_synced_files_button;
 	QString m_object_name_str;
 	QStringList m_files_to_download;
 

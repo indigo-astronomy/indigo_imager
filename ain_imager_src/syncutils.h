@@ -38,6 +38,7 @@ public:
 
 	void rebuild();
 	bool needs_sync(QString file);
+	bool syncable(QString file);
 	void add(QString file);
 	void clear();
 };

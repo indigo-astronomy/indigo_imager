@@ -32,12 +32,21 @@ void SyncUtils::rebuild() {
 		add(file_name);
 	}
 }
+
 bool SyncUtils::needs_sync(QString file) {
 	QStringList pieces = file.split( "_" );
 	QString last = pieces.value(pieces.length() - 1);
 	pieces = last.split( "." );
 	QString hash = pieces.value(0);
 	return !m_digests.contains(hash) && (hash.length() == 32);
+}
+
+bool SyncUtils::syncable(QString file) {
+	QStringList pieces = file.split( "_" );
+	QString last = pieces.value(pieces.length() - 1);
+	pieces = last.split( "." );
+	QString hash = pieces.value(0);
+	return (hash.length() == 32);
 }
 
 void SyncUtils::add(QString file) {

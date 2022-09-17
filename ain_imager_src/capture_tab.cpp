@@ -434,13 +434,23 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	remote_files_frame_layout->addItem(spacer, remote_files_row, 0, 1, 4);
 
-
 	remote_files_row++;
 	m_sync_files_button = new QPushButton("Download remote images");
 	m_sync_files_button->setStyleSheet("min-width: 30px");
 //	m_check_files_button->setIcon(QIcon(":resource/play.png"));
 	remote_files_frame_layout->addWidget(m_sync_files_button, remote_files_row, 0, 1, 4);
 	connect(m_sync_files_button, &QPushButton::clicked, this, &ImagerWindow::on_sync_remote_files);
+
+	remote_files_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	remote_files_frame_layout->addItem(spacer, remote_files_row, 0, 1, 4);
+
+	remote_files_row++;
+	m_remove_synced_files_button = new QPushButton("Remove downloaded images from server");
+	m_remove_synced_files_button->setStyleSheet("min-width: 30px");
+//	m_check_files_button->setIcon(QIcon(":resource/play.png"));
+	remote_files_frame_layout->addWidget(m_remove_synced_files_button, remote_files_row, 0, 1, 4);
+	connect(m_remove_synced_files_button, &QPushButton::clicked, this, &ImagerWindow::on_remove_synced_remote_files);
 }
 
 void ImagerWindow::on_exposure_start_stop(bool clicked) {
@@ -784,4 +794,43 @@ void ImagerWindow::on_sync_remote_files(bool clicked) {
 		snprintf(message, sizeof(message), "No images to download");
 		window_log(message);
 	}
+}
+
+void ImagerWindow::on_remove_synced_remote_files(bool clicked) {
+	QtConcurrent::run([=]() {
+		char message[PATH_LEN];
+		char work_dir[PATH_LEN];
+		get_current_output_dir(work_dir, conf.data_dir_prefix);
+		QString work_dir_str(dirname(work_dir));
+		SyncUtils sutil(work_dir_str);
+		sutil.rebuild();
+		QStringList files_to_remove;
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+
+		indigo_property *p = properties.get(selected_agent, AGENT_IMAGER_DOWNLOAD_FILES_PROPERTY_NAME);
+		if (p) {
+			for (int i = 0; i < p->count; i++) {
+				if (!sutil.needs_sync(p->items[i].label) && sutil.syncable(p->items[i].label)) {
+					files_to_remove.append(p->items[i].label);
+					indigo_error("To remove: %s", p->items[i].label);
+				} else {
+					indigo_error("To keep:   %s", p->items[i].label);
+				}
+			}
+		}
+		if (!files_to_remove.empty()) {
+				int file_num = files_to_remove.length();
+				snprintf(message, sizeof(message), "Deleting %d images on server", file_num);
+				//window_log(message, INDIGO_OK_STATE);
+				for (int i = 0; i < file_num; i++) {
+					QString next_file = files_to_remove.at(i);
+					indigo_error("Remove:  %s", next_file.toUtf8().constData());
+					request_file_remove(selected_agent, next_file.toUtf8().constData());
+				}
+		} else {
+			snprintf(message, sizeof(message), "No images to download");
+			//window_log(message);
+		}
+	});
 }
