@@ -684,6 +684,9 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 				}
 			});
 		}
+		free(item->blob.value);
+		item->blob.value = nullptr;
+		free(item);
 	} else if (get_selected_guider_agent(selected_agent)) {
 		if ((client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME) && conf.guider_save_bandwidth == 0) ||
 			(client_match_device_property(property, selected_agent, CCD_PREVIEW_IMAGE_PROPERTY_NAME) && conf.guider_save_bandwidth > 0)) {
