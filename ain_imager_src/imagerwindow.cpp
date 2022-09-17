@@ -766,7 +766,7 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 		if ((filter_name !=  "") && ((frame_type == "Light") || (frame_type == "Flat"))) {
 			object_name = object_name + "_" + date_str + "_" + frame_type + "_" + filter_name;
 		} else {
-			object_name = object_name + "_" + date_str + "_" + frame_type;
+			object_name = object_name + "_" + date_str + "_" + frame_type + "_nofilter";
 		}
 	}
 
