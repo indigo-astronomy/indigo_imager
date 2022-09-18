@@ -675,14 +675,16 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 					window_log(message, INDIGO_ALERT_STATE);
 				}
 			}
-			QtConcurrent::run([=]() {
-				if (!m_files_to_download.empty()) {
+			if (!m_files_to_download.empty()) {
+				QtConcurrent::run([=]() {
 					char agent[INDIGO_VALUE_SIZE];
 					get_selected_imager_agent(agent);
 					QString next_file = m_files_to_download.at(0);
 					request_file_download(agent, next_file.toUtf8().constData());
-				}
-			});
+				});
+			} else {
+				window_log("Download complete");
+			}
 		}
 		free(item->blob.value);
 		item->blob.value = nullptr;

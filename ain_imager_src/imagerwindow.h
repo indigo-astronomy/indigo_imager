@@ -549,6 +549,7 @@ private:
 	QPushButton *m_remove_synced_files_button;
 	QString m_object_name_str;
 	QStringList m_files_to_download;
+	QStringList m_files_to_remove;
 
 	// Focuser tabbar
 	QComboBox *m_focuser_select;
