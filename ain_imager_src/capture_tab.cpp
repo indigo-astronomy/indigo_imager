@@ -819,19 +819,19 @@ void ImagerWindow::on_remove_synced_remote_files(bool clicked) {
 		}
 	}
 	if (!m_files_to_remove.empty()) {
-			int file_num = m_files_to_remove.length();
-			snprintf(message, sizeof(message), "Removing %d images from server", file_num);
-			window_log(message, INDIGO_OK_STATE);
-			QtConcurrent::run([=]() {
-				for (int i = 0; i < file_num; i++) {
-					static char agent[INDIGO_NAME_SIZE];
-					get_selected_imager_agent(agent);
-					QString next_file = m_files_to_remove.at(i);
-					indigo_error("Remove:  %s", next_file.toUtf8().constData());
-					request_file_remove(agent, next_file.toUtf8().constData());
-				}
-				m_files_to_remove.clear();
-			});
+		int file_num = m_files_to_remove.length();
+		snprintf(message, sizeof(message), "Removing %d images from server", file_num);
+		window_log(message, INDIGO_OK_STATE);
+		QtConcurrent::run([=]() {
+			for (int i = 0; i < file_num; i++) {
+				static char agent[INDIGO_NAME_SIZE];
+				get_selected_imager_agent(agent);
+				QString next_file = m_files_to_remove.at(i);
+				indigo_error("Remove:  %s", next_file.toUtf8().constData());
+				request_file_remove(agent, next_file.toUtf8().constData());
+			}
+			m_files_to_remove.clear();
+		});
 	} else {
 		snprintf(message, sizeof(message), "No images to remove");
 		window_log(message);
