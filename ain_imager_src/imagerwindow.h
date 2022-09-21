@@ -547,6 +547,7 @@ private:
 	QCheckBox *m_keep_image_on_server_cbox;
 	QPushButton *m_sync_files_button;
 	QPushButton *m_remove_synced_files_button;
+	QProgressBar *m_download_progress;
 	QString m_object_name_str;
 	QStringList m_files_to_download;
 	QStringList m_files_to_remove;
@@ -871,6 +872,9 @@ private:
 	bool save_blob_item_with_prefix(indigo_item *item, const char *prefix, char *file_name, bool auto_construct = true);
 	bool save_blob_item(indigo_item *item, char *file_name);
 	void save_blob_item(indigo_item *item);
+
+	void sync_remote_files();
+	void remove_synced_remote_files();
 
 	void show_message(const char *title, const char *message, QMessageBox::Icon icon = QMessageBox::Warning) {
 		QMessageBox msgBox(this);

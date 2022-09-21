@@ -459,7 +459,7 @@ ImagerWindow::~ImagerWindow () {
 	QtConcurrent::run([=]() {
 		IndigoClient::instance().stop();
 	});
-	indigo_usleep(ONE_SECOND_DELAY);
+	indigo_usleep(0.5 * ONE_SECOND_DELAY);
 	delete m_imager_viewer;
 	if (m_indigo_item) {
 		if (m_indigo_item->blob.value) {
@@ -676,6 +676,8 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 				}
 			}
 			if (!m_files_to_download.empty()) {
+				m_download_progress->setValue(m_download_progress->value() + 1);
+				m_download_progress->setFormat("Downloading %v of %m images...");
 				QtConcurrent::run([=]() {
 					char agent[INDIGO_VALUE_SIZE];
 					get_selected_imager_agent(agent);
@@ -683,6 +685,8 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 					request_file_download(agent, next_file.toUtf8().constData());
 				});
 			} else {
+				m_download_progress->setValue(m_download_progress->value() + 1);
+				m_download_progress->setFormat("Downloaded %v images");
 				window_log("Download complete");
 			}
 		}

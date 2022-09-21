@@ -416,7 +416,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 
 	int remote_files_row = 0;
 	m_save_image_on_server_cbox = new QCheckBox("Save image copies on the server");
-	m_save_image_on_server_cbox->setToolTip("Save images copies on the server");
+	m_save_image_on_server_cbox->setToolTip("Save images copies on server");
 	m_save_image_on_server_cbox->setEnabled(true);
 	m_save_image_on_server_cbox->setChecked(conf.save_images_on_server);
 	remote_files_frame_layout->addWidget(m_save_image_on_server_cbox, remote_files_row, 0, 1, 4);
@@ -424,7 +424,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 
 	remote_files_row++;
 	m_keep_image_on_server_cbox = new QCheckBox("Keep downloaded images on server");
-	m_keep_image_on_server_cbox->setToolTip("Do not remove the image copies from the server on download");
+	m_keep_image_on_server_cbox->setToolTip("Do not remove downloaded image copies from server");
 	m_keep_image_on_server_cbox->setEnabled(true);
 	m_keep_image_on_server_cbox->setChecked(conf.keep_images_on_server);
 	remote_files_frame_layout->addWidget(m_keep_image_on_server_cbox, remote_files_row, 0, 1, 4);
@@ -435,22 +435,30 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	remote_files_frame_layout->addItem(spacer, remote_files_row, 0, 1, 4);
 
 	remote_files_row++;
-	m_sync_files_button = new QPushButton("Download remote images");
+	m_sync_files_button = new QPushButton("Download images");
+	m_sync_files_button->setToolTip("Download available remote images");
 	m_sync_files_button->setStyleSheet("min-width: 30px");
 //	m_check_files_button->setIcon(QIcon(":resource/play.png"));
-	remote_files_frame_layout->addWidget(m_sync_files_button, remote_files_row, 0, 1, 4);
+	remote_files_frame_layout->addWidget(m_sync_files_button, remote_files_row, 0, 1, 2);
 	connect(m_sync_files_button, &QPushButton::clicked, this, &ImagerWindow::on_sync_remote_files);
+
+	m_remove_synced_files_button = new QPushButton("Server cleanup");
+	m_remove_synced_files_button->setToolTip("Remove downloaded image copies from server");
+	m_remove_synced_files_button->setStyleSheet("min-width: 30px");
+//	m_check_files_button->setIcon(QIcon(":resource/play.png"));
+	remote_files_frame_layout->addWidget(m_remove_synced_files_button, remote_files_row, 2, 1, 2);
+	connect(m_remove_synced_files_button, &QPushButton::clicked, this, &ImagerWindow::on_remove_synced_remote_files);
 
 	remote_files_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	remote_files_frame_layout->addItem(spacer, remote_files_row, 0, 1, 4);
 
 	remote_files_row++;
-	m_remove_synced_files_button = new QPushButton("Remove downloaded images from server");
-	m_remove_synced_files_button->setStyleSheet("min-width: 30px");
-//	m_check_files_button->setIcon(QIcon(":resource/play.png"));
-	remote_files_frame_layout->addWidget(m_remove_synced_files_button, remote_files_row, 0, 1, 4);
-	connect(m_remove_synced_files_button, &QPushButton::clicked, this, &ImagerWindow::on_remove_synced_remote_files);
+	m_download_progress = new QProgressBar();
+	remote_files_frame_layout->addWidget(m_download_progress, remote_files_row, 0, 1, 4);
+	m_download_progress->setMaximum(1);
+	m_download_progress->setValue(0);
+	m_download_progress->setFormat("Download progress");
 }
 
 void ImagerWindow::on_exposure_start_stop(bool clicked) {
@@ -759,8 +767,28 @@ void ImagerWindow::on_keep_image_on_server(int state) {
 }
 
 void ImagerWindow::on_sync_remote_files(bool clicked) {
+	if (!conf.keep_images_on_server) {
+		remove_synced_remote_files();
+	}
+	sync_remote_files();
+}
+
+void ImagerWindow::on_remove_synced_remote_files(bool clicked) {
+	if (!conf.keep_images_on_server) {
+		remove_synced_remote_files();
+	} else {
+		window_log("Error: Can not remove images if keep images is enabled");
+	}
+}
+
+
+void ImagerWindow::sync_remote_files() {
 	char message[PATH_LEN];
 	char work_dir[PATH_LEN];
+
+	m_download_progress->setFormat("Preparing download...");
+	QCoreApplication::processEvents();
+
 	get_current_output_dir(work_dir, conf.data_dir_prefix);
 	QString work_dir_str(dirname(work_dir));
 	SyncUtils sutil(work_dir_str);
@@ -781,8 +809,12 @@ void ImagerWindow::on_sync_remote_files(bool clicked) {
 
 		}
 	}
+
 	if (!m_files_to_download.empty()) {
 		snprintf(message, sizeof(message), "Downloading %d images from server", m_files_to_download.length());
+		m_download_progress->setRange(0, m_files_to_download.length());
+		m_download_progress->setValue(0);
+		m_download_progress->setFormat("Downloading %v of %m images...");
 		window_log(message, INDIGO_OK_STATE);
 		QtConcurrent::run([=]() {
 			char agent[INDIGO_VALUE_SIZE];
@@ -791,12 +823,14 @@ void ImagerWindow::on_sync_remote_files(bool clicked) {
 			request_file_download(agent, next_file.toUtf8().constData());
 		});
 	} else {
-		snprintf(message, sizeof(message), "No images to download");
-		window_log(message);
+		m_download_progress->setRange(0, 1);
+		m_download_progress->setValue(0);
+		m_download_progress->setFormat("No images to download");
+		window_log("No images to download");
 	}
 }
 
-void ImagerWindow::on_remove_synced_remote_files(bool clicked) {
+void ImagerWindow::remove_synced_remote_files() {
 	char message[PATH_LEN];
 	char work_dir[PATH_LEN];
 	get_current_output_dir(work_dir, conf.data_dir_prefix);
@@ -820,7 +854,7 @@ void ImagerWindow::on_remove_synced_remote_files(bool clicked) {
 	}
 	if (!m_files_to_remove.empty()) {
 		int file_num = m_files_to_remove.length();
-		snprintf(message, sizeof(message), "Removing %d images from server", file_num);
+		snprintf(message, sizeof(message), "Removing %d downloaded images from server", file_num);
 		window_log(message, INDIGO_OK_STATE);
 		QtConcurrent::run([=]() {
 			for (int i = 0; i < file_num; i++) {
@@ -833,7 +867,6 @@ void ImagerWindow::on_remove_synced_remote_files(bool clicked) {
 			m_files_to_remove.clear();
 		});
 	} else {
-		snprintf(message, sizeof(message), "No images to remove");
-		window_log(message);
+		window_log("No downloaded images to remove");
 	}
 }
