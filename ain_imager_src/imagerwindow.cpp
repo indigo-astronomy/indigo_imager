@@ -611,7 +611,10 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		return;
 	}
 
-	if (get_selected_imager_agent(selected_agent) && client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME)) {
+	if (
+		get_selected_imager_agent(selected_agent) &&
+		client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME)
+	) {
 		if (m_indigo_item) {
 			if (m_indigo_item->blob.value) {
 				free(m_indigo_item->blob.value);
@@ -630,7 +633,11 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 			m_imager_viewer->setToolTip(QString("Unsaved") + QString(m_indigo_item->blob.format));
 		}
 		if (save_blob) save_blob_item(m_indigo_item);
-	} else if (!m_files_to_download.empty() && get_selected_imager_agent(selected_agent) && client_match_device_property(property, selected_agent, AGENT_IMAGER_DOWNLOAD_IMAGE_PROPERTY_NAME)) {
+	} else if (
+		!m_files_to_download.empty() &&
+		get_selected_imager_agent(selected_agent) &&
+		client_match_device_property(property, selected_agent, AGENT_IMAGER_DOWNLOAD_IMAGE_PROPERTY_NAME)
+	) {
 		char file_name[PATH_LEN] = {0};
 		static char file_name_static[PATH_LEN];
 		char message[PATH_LEN+100];
@@ -643,7 +650,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 				break;
 			}
 		}
-		indigo_error("Received: %s", file_name);
+		indigo_debug("Received: %s", file_name);
 		if (m_files_to_download.contains(file_name)) {
 			m_files_to_download.removeAll(file_name);
 			get_current_output_dir(location, conf.data_dir_prefix);
@@ -656,8 +663,6 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 				*c = '\0';
 				strcat(location, file_name);
 				if (save_blob_item_with_prefix(item, location, file_name, false)) {
-					snprintf(message, sizeof(message), "Image downloaded to '%s'", file_name);
-
 					if (!conf.keep_images_on_server) {
 						snprintf(message, sizeof(message), "Image saved to '%s' and removed remotely", file_name);
 						QtConcurrent::run([=]() {

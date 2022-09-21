@@ -802,9 +802,9 @@ void ImagerWindow::sync_remote_files() {
 		for (int i = 0; i < p->count; i++) {
 			if (sutil.needs_sync(p->items[i].label)) {
 				m_files_to_download.append(p->items[i].label);
-				indigo_error("Remote file: %s", p->items[i].label);
+				indigo_debug("Remote file: %s", p->items[i].label);
 			} else {
-				indigo_error("Downloaded:  %s", p->items[i].label);
+				indigo_debug("Downloaded:  %s", p->items[i].label);
 			}
 
 		}
@@ -846,9 +846,9 @@ void ImagerWindow::remove_synced_remote_files() {
 		for (int i = 0; i < p->count; i++) {
 			if (!sutil.needs_sync(p->items[i].label) && sutil.syncable(p->items[i].label)) {
 				m_files_to_remove.append(p->items[i].label);
-				indigo_error("To remove: %s", p->items[i].label);
+				indigo_debug("To remove: %s", p->items[i].label);
 			} else {
-				indigo_error("To keep:   %s", p->items[i].label);
+				indigo_debug("To keep:   %s", p->items[i].label);
 			}
 		}
 	}
@@ -861,7 +861,7 @@ void ImagerWindow::remove_synced_remote_files() {
 				static char agent[INDIGO_NAME_SIZE];
 				get_selected_imager_agent(agent);
 				QString next_file = m_files_to_remove.at(i);
-				indigo_error("Remove:  %s", next_file.toUtf8().constData());
+				indigo_debug("Remove:  %s", next_file.toUtf8().constData());
 				request_file_remove(agent, next_file.toUtf8().constData());
 			}
 			m_files_to_remove.clear();

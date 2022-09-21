@@ -81,18 +81,18 @@ void ImagerWindow::change_ccd_localmode_property(const char *agent, const QStrin
 	}
 	strcpy(filename_template, m_object_name_str.toUtf8().constData());
 	strcat(filename_template, "_%-D_%F_%C_%M");
-	indigo_error("filename template = %s", filename_template);
+	indigo_debug("filename template = %s", filename_template);
 
 	indigo_change_text_property_1_raw(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, CCD_LOCAL_MODE_PREFIX_ITEM_NAME, filename_template);
 }
 
 void ImagerWindow::request_file_download(const char *agent, const char *file_name) const {
-	indigo_error("Requested remote: %s", file_name);
+	indigo_debug("Requested remote: %s", file_name);
 	indigo_change_text_property_1_raw(nullptr, agent, AGENT_IMAGER_DOWNLOAD_FILE_PROPERTY_NAME, AGENT_IMAGER_DOWNLOAD_FILE_ITEM_NAME, file_name);
 }
 
 void ImagerWindow::request_file_remove(const char *agent, const char *file_name) const {
-	indigo_error("Requested delete: %s", file_name);
+	indigo_debug("Requested delete: %s", file_name);
 	indigo_change_text_property_1_raw(nullptr, agent, AGENT_IMAGER_DELETE_FILE_PROPERTY_NAME, AGENT_IMAGER_DELETE_FILE_ITEM_NAME, file_name);
 }
 
