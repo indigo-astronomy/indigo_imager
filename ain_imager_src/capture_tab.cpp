@@ -786,6 +786,13 @@ void ImagerWindow::sync_remote_files() {
 	char message[PATH_LEN];
 	char work_dir[PATH_LEN];
 
+
+	if (!m_files_to_download.empty()) {
+		m_download_progress->setFormat("Download canceled %v of %m");
+		m_files_to_download.clear();
+		return;
+	}
+
 	m_download_progress->setFormat("Preparing download...");
 	QCoreApplication::processEvents();
 

@@ -634,65 +634,73 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		}
 		if (save_blob) save_blob_item(m_indigo_item);
 	} else if (
-		!m_files_to_download.empty() &&
 		get_selected_imager_agent(selected_agent) &&
 		client_match_device_property(property, selected_agent, AGENT_IMAGER_DOWNLOAD_IMAGE_PROPERTY_NAME)
 	) {
-		char file_name[PATH_LEN] = {0};
-		static char file_name_static[PATH_LEN];
-		char message[PATH_LEN+100];
-		char location[PATH_LEN];
-		indigo_property *p = properties.get(selected_agent, AGENT_IMAGER_DOWNLOAD_FILE_PROPERTY_NAME);
-		if (p) {
-			for (int i = 0; i < p->count; i++) {
-				strcpy(file_name, p->items[i].text.value);
-				strcpy(file_name_static, p->items[i].text.value);
-				break;
-			}
-		}
-		indigo_debug("Received: %s", file_name);
-		if (m_files_to_download.contains(file_name)) {
-			m_files_to_download.removeAll(file_name);
-			get_current_output_dir(location, conf.data_dir_prefix);
-			char *c = strrchr(file_name, '.');
-			if (c) {
-				*c = '\0';
-			}
-			c = strrchr(file_name, '_');
-			if (c && strlen(c+1) == 32) {
-				*c = '\0';
-				strcat(location, file_name);
-				if (save_blob_item_with_prefix(item, location, file_name, false)) {
-					if (!conf.keep_images_on_server) {
-						snprintf(message, sizeof(message), "Image saved to '%s' and removed remotely", file_name);
-						QtConcurrent::run([=]() {
-							QString next_file = file_name_static;
-							char agent[INDIGO_VALUE_SIZE];
-							get_selected_imager_agent(agent);
-							request_file_remove(agent, next_file.toUtf8().constData());
-						});
-					} else {
-						snprintf(message, sizeof(message), "Image saved to '%s' and kept remotely", file_name);
-					}
-					window_log(message);
-				} else {
-					snprintf(message, sizeof(message), "Error: can not save '%s'", file_name);
-					window_log(message, INDIGO_ALERT_STATE);
+		if (m_files_to_download.empty()) {
+			m_sync_files_button->setText("Download images");
+			set_widget_state(m_sync_files_button, INDIGO_OK_STATE);
+		} else {
+			char file_name[PATH_LEN] = {0};
+			static char file_name_static[PATH_LEN];
+			char message[PATH_LEN+100];
+			char location[PATH_LEN];
+			indigo_property *p = properties.get(selected_agent, AGENT_IMAGER_DOWNLOAD_FILE_PROPERTY_NAME);
+			if (p) {
+				for (int i = 0; i < p->count; i++) {
+					strcpy(file_name, p->items[i].text.value);
+					strcpy(file_name_static, p->items[i].text.value);
+					break;
 				}
 			}
-			if (!m_files_to_download.empty()) {
-				m_download_progress->setValue(m_download_progress->value() + 1);
-				m_download_progress->setFormat("Downloading %v of %m images...");
-				QtConcurrent::run([=]() {
-					char agent[INDIGO_VALUE_SIZE];
-					get_selected_imager_agent(agent);
-					QString next_file = m_files_to_download.at(0);
-					request_file_download(agent, next_file.toUtf8().constData());
-				});
-			} else {
-				m_download_progress->setValue(m_download_progress->value() + 1);
-				m_download_progress->setFormat("Downloaded %v images");
-				window_log("Download complete");
+			indigo_debug("Received: %s", file_name);
+			if (m_files_to_download.contains(file_name)) {
+				m_files_to_download.removeAll(file_name);
+				get_current_output_dir(location, conf.data_dir_prefix);
+				char *c = strrchr(file_name, '.');
+				if (c) {
+					*c = '\0';
+				}
+				c = strrchr(file_name, '_');
+				if (c && strlen(c+1) == 32) {
+					*c = '\0';
+					strcat(location, file_name);
+					if (save_blob_item_with_prefix(item, location, file_name, false)) {
+						if (!conf.keep_images_on_server) {
+							snprintf(message, sizeof(message), "Image saved to '%s' and removed remotely", file_name);
+							QtConcurrent::run([=]() {
+								QString next_file = file_name_static;
+								char agent[INDIGO_VALUE_SIZE];
+								get_selected_imager_agent(agent);
+								request_file_remove(agent, next_file.toUtf8().constData());
+							});
+						} else {
+							snprintf(message, sizeof(message), "Image saved to '%s' and kept remotely", file_name);
+						}
+						window_log(message);
+					} else {
+						snprintf(message, sizeof(message), "Error: can not save '%s'", file_name);
+						window_log(message, INDIGO_ALERT_STATE);
+					}
+				}
+				if (!m_files_to_download.empty()) {
+					m_sync_files_button->setText("Cancel download");
+					set_widget_state(m_sync_files_button, INDIGO_BUSY_STATE);
+					m_download_progress->setValue(m_download_progress->value() + 1);
+					m_download_progress->setFormat("Downloading %v of %m images...");
+					QtConcurrent::run([=]() {
+						char agent[INDIGO_VALUE_SIZE];
+						get_selected_imager_agent(agent);
+						QString next_file = m_files_to_download.at(0);
+						request_file_download(agent, next_file.toUtf8().constData());
+					});
+				} else {
+					m_sync_files_button->setText("Download images");
+					set_widget_state(m_sync_files_button, INDIGO_OK_STATE);
+					m_download_progress->setValue(m_download_progress->value() + 1);
+					m_download_progress->setFormat("Downloaded %v images");
+					window_log("Download complete");
+				}
 			}
 		}
 		free(item->blob.value);
