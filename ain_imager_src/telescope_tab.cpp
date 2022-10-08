@@ -282,7 +282,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	set_ok(m_mount_side_of_pier_label);
 	slew_frame_layout->addWidget(m_mount_side_of_pier_label, slew_row, slew_col);
 
-	slew_row = 2;
+	slew_row++;
 	m_mount_track_cbox = new QCheckBox("Tracking");
 	m_mount_track_cbox->setEnabled(false);
 	set_ok(m_mount_track_cbox);
@@ -303,7 +303,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	slew_frame_layout->addWidget(m_mount_park_cbox, slew_row, slew_col);
 	connect(m_mount_park_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_park);
 
-	slew_row+=2;
+	slew_row++;
 	label = new QLabel("Stop guiding on slew:");
 	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	slew_frame_layout->addWidget(label, slew_row, slew_col);
@@ -311,6 +311,15 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_mount_guider_select = new QComboBox();
 	slew_frame_layout->addWidget(m_mount_guider_select, slew_row, slew_col);
 	connect(m_mount_guider_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_mount_guider_agent_selected);
+
+	slew_row++;
+	label = new QLabel("Joystick control:");
+	slew_frame_layout->addWidget(label, slew_row, slew_col);
+	slew_row++;
+	m_mount_joystick_select = new QComboBox();
+	m_mount_joystick_select->setToolTip("Select joystick to control the telescope");
+	slew_frame_layout->addWidget(m_mount_joystick_select, slew_row, slew_col);
+	connect(m_mount_joystick_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_mount_joystick_selected);
 
 	QFrame *obj_frame = new QFrame();
 	telescope_tabbar->addTab(obj_frame, "Object");
@@ -699,6 +708,24 @@ void ImagerWindow::on_mount_guider_agent_selected(int index) {
 	});
 }
 
+void ImagerWindow::on_mount_joystick_selected(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_joystick[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
+		QString q_joystick_str = m_mount_joystick_select->currentText();
+		if (q_joystick_str.compare("No joystick") == 0) {
+			strcpy(selected_joystick, "NONE");
+		} else {
+			strncpy(selected_joystick, q_joystick_str.toUtf8().constData(), INDIGO_NAME_SIZE);
+		}
+		get_selected_mount_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_joystick);
+		static const char * items[] = { selected_joystick };
+
+		static bool values[] = { true };
+		indigo_change_switch_property(nullptr, selected_agent, FILTER_JOYSTICK_LIST_PROPERTY_NAME, 1, items, values);
+	});
+}
 
 void ImagerWindow::on_mount_agent_selected(int index) {
 	QtConcurrent::run([=]() {

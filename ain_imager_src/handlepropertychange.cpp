@@ -2210,6 +2210,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, FILTER_GPS_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_mount_gps_select);
 	}
+	if (client_match_device_property(property, selected_mount_agent, FILTER_JOYSTICK_LIST_PROPERTY_NAME)) {
+		add_items_to_combobox(this, property, m_mount_joystick_select);
+	}
 	QString geographic_coords_property = QString("GPS_") + QString(GEOGRAPHIC_COORDINATES_PROPERTY_NAME);
 	if (client_match_device_property(property, selected_mount_agent, geographic_coords_property.toUtf8().constData())) {
 		update_mount_gps_lon_lat_elev(this, property);
@@ -2502,6 +2505,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_GPS_LIST_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_mount_gps_select);
+	}
+	if (client_match_device_property(property, selected_mount_agent, FILTER_JOYSTICK_LIST_PROPERTY_NAME)) {
+		change_combobox_selection(this, property, m_mount_joystick_select);
 	}
 	QString geographic_coords_property = QString("GPS_") + QString(GEOGRAPHIC_COORDINATES_PROPERTY_NAME);
 	if (client_match_device_property(property, selected_mount_agent, geographic_coords_property.toUtf8().constData())) {
@@ -2978,6 +2984,11 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		clear_combobox(m_mount_gps_select);
+	}
+	if (client_match_device_property(property, selected_mount_agent, FILTER_JOYSTICK_LIST_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		clear_combobox(m_mount_joystick_select);
 	}
 	QString geographic_coords_property = QString("GPS_") + QString(GEOGRAPHIC_COORDINATES_PROPERTY_NAME);
 	if (client_match_device_property(property, selected_mount_agent, geographic_coords_property.toUtf8().constData()) ||

@@ -341,6 +341,7 @@ public slots:
 	void on_mount_solve_and_center();
 	void on_mount_solve_and_sync();
 	void on_mount_guider_agent_selected(int index);
+	void on_mount_joystick_selected(int index);
 	void on_trigger_solve();
 	void on_mount_polar_align();
 	void on_mount_polar_align_stop();
@@ -682,6 +683,7 @@ private:
 	QCheckBox *m_mount_max_rate_cbox;
 	QComboBox *m_mount_gps_select;
 	QComboBox *m_mount_guider_select;
+	QComboBox *m_mount_joystick_select;
 	QComboBox *m_mount_coord_source_select;
 	QLabel *m_mount_latitude;
 	QLabel *m_mount_longitude;
