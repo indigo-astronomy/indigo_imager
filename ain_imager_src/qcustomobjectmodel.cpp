@@ -21,7 +21,7 @@
 #include "qcustomobjectmodel.h"
 #include "conf.h"
 
-#define SERVICE_FILENAME "indigo_imager.objects"
+#define OBJECT_FILENAME "indigo_imager.objects"
 
 QCustomObjectModel::QCustomObjectModel() {
 	m_logger = &Logger::instance();
@@ -35,11 +35,11 @@ QCustomObjectModel::~QCustomObjectModel() {
 
 void QCustomObjectModel::saveObjects() {
 	char filename[PATH_LEN];
-	snprintf(filename, PATH_LEN, "%s/%s", config_path, SERVICE_FILENAME);
+	snprintf(filename, PATH_LEN, "%s/%s", config_path, OBJECT_FILENAME);
 	FILE *file = fopen(filename, "w");
 	if (file != NULL) {
 		for (auto i = m_objects.constBegin(); i != m_objects.constEnd(); ++i) {
-			indigo_log("Saved object: \"%s\", %f, %f, %f, %s\n", (*i)->m_name.toUtf8().constData(), (*i)->m_ra, (*i)->m_dec, (*i)->m_mag, (*i)->m_description.toUtf8().constData());
+			indigo_log("Saved object: \"%s\", %f, %f, %f, \"%s\"\n", (*i)->m_name.toUtf8().constData(), (*i)->m_ra, (*i)->m_dec, (*i)->m_mag, (*i)->m_description.toUtf8().constData());
 			fprintf(file, "\"%s\", %f, %f, %f, \"%s\"\n", (*i)->m_name.toUtf8().constData(), (*i)->m_ra, (*i)->m_dec, (*i)->m_mag, (*i)->m_description.toUtf8().constData());
 		}
 		fclose(file);
@@ -47,19 +47,33 @@ void QCustomObjectModel::saveObjects() {
 }
 
 void QCustomObjectModel::loadObjects() {
+	char raw_line[1024] = {0};
 	char filename[PATH_LEN];
-	char name[128] = {0};
-	char description[256] = {0};
+	char name[128];
+	char description[256];
 	double ra;
 	double dec;
 	double mag;
-	snprintf(filename, PATH_LEN, "%s/%s", config_path, SERVICE_FILENAME);
+	snprintf(filename, PATH_LEN, "%s/%s", config_path, OBJECT_FILENAME);
 	FILE * file = fopen(filename, "r");
 	if (file != NULL) {
-		indigo_debug("Objects file open: %s\n", filename);
-		while (fscanf(file,"%127[^,] %lf, %lf, %lf, \"%255[^\"]\n", name, &ra, &dec, &mag, description) == 5) {
-			indigo_log("Loading object: \"%s\", RA = %d, Dec = %f, mag = %d, \"%s\"\n", name, ra, dec, mag, description);
-			addObject(name, ra, dec, mag, description);
+		indigo_log("Objects file open: %s\n", filename);
+		int l_num = 0;
+		while (fgets(raw_line, 1023, file)) {
+			l_num++;
+			char *line = raw_line;
+			while(isspace((unsigned char)*line)) line++;
+			if (line[0]=='#' || line[0] == '\n' || line[0] == '\0') continue;
+			name[0] = '\0';
+			description[0] = '\0';
+			ra = dec = mag = 0;
+			int parsed = sscanf(line, "\"%[^\"]\", %lf, %lf, %lf, \"%[^\"]\"\n", name, &ra, &dec, &mag, description);
+			if (parsed == 5) {
+				indigo_log("Loading object: \"%s\", RA = %f, Dec = %f, mag = %f, \"%s\"\n", name, ra, dec, mag, description);
+				addObject(name, ra, dec, mag, description);
+			} else {
+				indigo_error("Object file error: Parse error at line %d.", l_num);
+			}
 		}
 		fclose(file);
 	}
@@ -77,7 +91,6 @@ bool QCustomObjectModel::addObject(QString name, double ra, double dec, double m
 	indigo_log("OBJECT ADDED [%s]\n", name.toUtf8().constData());
 	QCustomObject *object = new QCustomObject(name, ra, dec, mag, description);
 	m_objects.append(object);
-	saveObjects();
 	return true;
 }
 
@@ -88,7 +101,6 @@ bool QCustomObjectModel::removeObject(QString name) {
 		m_objects.removeAt(i);
 		delete object;
 		indigo_log("OBJECT REMOVED [%s]\n", name.toUtf8().constData());
-		saveObjects();
 		return true;
 	}
 	indigo_log("OBJECT DOES NOT EXIST [%s]\n", name.toUtf8().constData());
