@@ -333,18 +333,30 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	obj_frame->setContentsMargins(0, 0, 0, 0);
 
 	int obj_row = 0;
-	label = new QLabel("Search object: ");
+	label = new QLabel("Search: ");
 	obj_frame_layout->addWidget(label, obj_row, 0);
 	m_object_search_line = new QLineEdit();
 	m_object_search_line->setPlaceholderText("E.g. M42, Ain, Vega ...");
-	obj_frame_layout->addWidget(m_object_search_line, obj_row, 1);
+	obj_frame_layout->addWidget(m_object_search_line, obj_row, 1, 1, 2);
 	connect(m_object_search_line, &QLineEdit::textEdited, this, &ImagerWindow::on_object_search_changed);
 	connect(m_object_search_line, &QLineEdit::returnPressed, this, &ImagerWindow::on_object_search_entered);
+
+	m_add_object_button = new QToolButton(this);
+	m_add_object_button->setToolTip(tr("Add custom object"));
+	m_add_object_button->setIcon(QIcon(":resource/zoom-in.png"));
+	obj_frame_layout->addWidget(m_add_object_button, obj_row, 3);
+	connect(m_add_object_button, &QToolButton::clicked, this, &ImagerWindow::on_custom_object_add);
+
+	m_remove_object_button = new QToolButton(this);
+	m_remove_object_button->setToolTip(tr("Remove selected custom object"));
+	m_remove_object_button->setIcon(QIcon(":resource/zoom-out.png"));
+	obj_frame_layout->addWidget(m_remove_object_button, obj_row, 4);
+	connect(m_remove_object_button, &QToolButton::clicked, this, &ImagerWindow::on_custom_object_remove);
 
 	obj_row++;
 	m_object_list = new QListWidget();
 	m_object_list->setStyleSheet("QListWidget {border: 1px solid #404040;}");
-	obj_frame_layout->addWidget(m_object_list, obj_row, 0, 1, 2);
+	obj_frame_layout->addWidget(m_object_list, obj_row, 0, 1, 5);
 	connect(m_object_list, &QListWidget::itemSelectionChanged, this, &ImagerWindow::on_object_selected);
 	connect(m_object_list, &QListWidget::itemClicked, this, &ImagerWindow::on_object_clicked);
 
@@ -1129,4 +1141,22 @@ void ImagerWindow::on_object_selected() {
 	}
 
 	indigo_debug("%s -> %s = %s\n", __FUNCTION__, object->text().toUtf8().constData(), data.toUtf8().constData());
+}
+
+void ImagerWindow::on_custom_object_add() {
+	indigo_debug("%s -> 0\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_custom_object_remove() {
+	QList<QListWidgetItem *> selected = m_object_list->selectedItems();
+	if (selected.isEmpty()) {
+		indigo_debug("%s -> No selection\n", __FUNCTION__);
+		return;
+	}
+	QListWidgetItem *object = selected.at(0);
+	QString data = object->data(Qt::UserRole).toString();
+
+	char obj_id_c[1000];
+	strcpy(obj_id_c, data.toUtf8().data());
+	indigo_debug("%s -> %s\n", __FUNCTION__, obj_id_c);
 }

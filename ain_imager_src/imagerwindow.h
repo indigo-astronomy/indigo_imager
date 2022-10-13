@@ -358,6 +358,8 @@ public slots:
 	void on_object_clicked(QListWidgetItem *item);
 	void on_object_search_changed(const QString &obj_name);
 	void on_object_search_entered();
+	void on_custom_object_add();
+	void on_custom_object_remove();
 	void on_mount_agent_set_pa_settings(double value);
 	void on_mount_agent_set_pa_refraction(bool clicked);
 
@@ -697,8 +699,10 @@ private:
 	QLabel *m_gps_elevation;
 	QLabel *m_gps_utc;
 	QLabel *m_gps_status;
-	QListWidget* m_object_list;
-	QLineEdit* m_object_search_line;
+	QListWidget *m_object_list;
+	QLineEdit *m_object_search_line;
+	QToolButton *m_add_object_button;
+	QToolButton *m_remove_object_button;
 
 	QPushButton *m_mount_solve_and_center_button;
 	QPushButton *m_mount_solve_and_sync_button;
