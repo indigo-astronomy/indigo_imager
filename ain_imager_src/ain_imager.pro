@@ -33,6 +33,7 @@ SOURCES += \
 	telescope_tab.cpp \
 	customobject.cpp \
 	customobjectmodel.cpp \
+	qaddcustomobject.cpp \
 	solver_tab.cpp \
 	imagerwindow.cpp \
 	qindigoservice.cpp \
@@ -112,6 +113,7 @@ HEADERS += \
 	propertycache.h \
 	customobject.h \
 	customobjectmodel.h \
+	qaddcustomobject.h \
 	qindigoservers.h \
 	logger.h \
 	focusgraph.h \
