@@ -22,6 +22,7 @@
 #include <conf.h>
 #include <indigo_cat_data.h>
 #include <QLCDNumber>
+#include <qaddcustomobject.h>
 
 void write_conf();
 
@@ -1169,6 +1170,14 @@ void ImagerWindow::on_object_selected() {
 
 void ImagerWindow::on_custom_object_add() {
 	indigo_debug("%s -> 0\n", __FUNCTION__);
+	m_add_object_dialog->show();
+}
+
+void ImagerWindow::on_custom_object_added(CustomObject object) {
+	indigo_debug("%s -> %s\n", __FUNCTION__, object.m_name.toUtf8().constData());
+	if (m_custom_object_model->addObject(object.m_name, object.m_ra, object.m_dec, object.m_mag, object.m_description)) {
+		m_custom_object_model->saveObjects();
+	}
 }
 
 void ImagerWindow::on_custom_object_remove() {

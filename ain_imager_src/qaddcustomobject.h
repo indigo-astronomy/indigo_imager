@@ -20,9 +20,8 @@
 #ifndef QADDCUSTOMOBJECT_H
 #define QADDCUSTOMOBJECT_H
 
-//#include <QObject>
+#include <QObject>
 #include <QDialog>
-/*
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QPushButton>
@@ -31,21 +30,20 @@
 #include <QMessageBox>
 #include <QLineEdit>
 #include "customobject.h"
-*/
+
 class QAddCustomObject : public QDialog
 {
 	Q_OBJECT
 public:
-	QAddCustomObject(QWidget*parent = nullptr);
+	QAddCustomObject(QWidget *parent = nullptr);
 	~QAddCustomObject(){ };
 
 	signals:
-	void requestAddCustomObject();
+	void requestAddCustomObject(CustomObject object);
 
 public slots:
 
 	void onClose();
-	/*
 	void onAddCustomObject();
 
 private:
@@ -61,7 +59,6 @@ private:
 
 	QPushButton* m_add_button;
 	QPushButton* m_close_button;
-	*/
 };
 
 #endif // QADDCUSTOMOBJECT_H

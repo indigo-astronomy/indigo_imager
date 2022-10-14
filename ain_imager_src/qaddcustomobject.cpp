@@ -18,10 +18,10 @@
 
 
 #include "qaddcustomobject.h"
-//#include <indigo/indigo_bus.h>
+#include <indigo/indigo_bus.h>
 
 QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
-/*	setWindowTitle("Add Object");
+	setWindowTitle("Add Object");
 
 
 	m_view_box = new QWidget();
@@ -43,24 +43,23 @@ QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
 
 	QObject::connect(m_add_button, SIGNAL(clicked()), this, SLOT(onAddCustomObject()));
 	QObject::connect(m_close_button, SIGNAL(clicked()), this, SLOT(onClose()));
-	*/
 }
 
 void QAddCustomObject::onClose() {
 	close();
 }
 
-/*
-void QAddCustomObject::onAddCustomObject() {
-	QString service_str = m_name_line->text().trimmed();
-	if (service_str.isEmpty()) {
-		indigo_debug("Trying to add empty service!");
-		return;
-	}
 
+void QAddCustomObject::onAddCustomObject() {
+	//QString service_str = m_name_line->text().trimmed();
+	//if (service_str.isEmpty()) {
+	//	indigo_debug("Trying to add empty service!");
+	//	return;
+	//}
+
+	CustomObject object("Test", 12, 13, 5.0, "info");
 //	QIndigoService indigo_service(service.toUtf8(), hostname.toUtf8(), port);
-//	emit(requestAddManualService(indigo_service));
+	emit(requestAddCustomObject(object));
 //	m_service_line->setText("");
 //	indigo_debug("ADD: Service '%s' host '%s' port = %d\n", service.toUtf8().constData(), hostname.toUtf8().constData(), port);
 }
-*/

@@ -61,6 +61,7 @@ class QIndigoServers;
 #include "focusgraph.h"
 #include "syncutils.h"
 #include "customobjectmodel.h"
+#include "qaddcustomobject.h"
 
 
 class ImagerWindow : public QMainWindow {
@@ -360,6 +361,7 @@ public slots:
 	void on_object_search_changed(const QString &obj_name);
 	void on_object_search_entered();
 	void on_custom_object_add();
+	void on_custom_object_added(CustomObject object);
 	void on_custom_object_remove();
 	void on_mount_agent_set_pa_settings(double value);
 	void on_mount_agent_set_pa_refraction(bool clicked);
@@ -769,6 +771,7 @@ private:
 	QServiceModel *mServiceModel;
 
 	CustomObjectModel *m_custom_object_model;
+	QAddCustomObject *m_add_object_dialog;
 
 	char m_image_path[PATH_LEN];
 	//char *m_image_formrat;

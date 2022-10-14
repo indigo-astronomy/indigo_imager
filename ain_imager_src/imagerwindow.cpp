@@ -57,6 +57,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	f.close();
 
 	mIndigoServers = new QIndigoServers(this);
+	m_add_object_dialog = new QAddCustomObject(this);
 
 	save_blob = false;
 	m_indigo_item = nullptr;
@@ -416,6 +417,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(mIndigoServers, &QIndigoServers::requestRemoveManualService, mServiceModel, &QServiceModel::onRequestRemoveManualService);
 	connect(mIndigoServers, &QIndigoServers::requestSaveServices, mServiceModel, &QServiceModel::onRequestSaveServices);
 
+	connect(m_add_object_dialog, &QAddCustomObject::requestAddCustomObject, this, &ImagerWindow::on_custom_object_added);
+
 	// NOTE: logging should be before update and delete of properties as they release the copy!!!
 	connect(&IndigoClient::instance(), &IndigoClient::property_defined, this, &ImagerWindow::on_message_sent);
 	connect(&IndigoClient::instance(), &IndigoClient::property_changed, this, &ImagerWindow::on_message_sent);
@@ -475,6 +478,7 @@ ImagerWindow::~ImagerWindow () {
 	delete mIndigoServers;
 	delete mServiceModel;
 	delete m_custom_object_model;
+	delete m_add_object_dialog;
 }
 
 void ImagerWindow::window_log(char *message, int state) {
