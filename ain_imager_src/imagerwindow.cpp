@@ -448,6 +448,9 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	// load manually configured services
 	mServiceModel->loadManualServices();
+
+	m_custom_object_model = new CustomObjectModel();
+	m_custom_object_model->loadObjects();
 }
 
 ImagerWindow::~ImagerWindow () {
@@ -471,6 +474,7 @@ ImagerWindow::~ImagerWindow () {
 	delete mLog;
 	delete mIndigoServers;
 	delete mServiceModel;
+	delete m_custom_object_model;
 }
 
 void ImagerWindow::window_log(char *message, int state) {

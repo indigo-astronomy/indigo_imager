@@ -60,6 +60,7 @@ class QIndigoServers;
 #include <QtConcurrentRun>
 #include "focusgraph.h"
 #include "syncutils.h"
+#include "customobjectmodel.h"
 
 
 class ImagerWindow : public QMainWindow {
@@ -766,6 +767,8 @@ private:
 
 	QIndigoServers *mIndigoServers;
 	QServiceModel *mServiceModel;
+
+	CustomObjectModel *m_custom_object_model;
 
 	char m_image_path[PATH_LEN];
 	//char *m_image_formrat;

@@ -18,22 +18,22 @@
 
 #include <QRegularExpression>
 #include <QStandardPaths>
-#include "qcustomobjectmodel.h"
+#include "customobjectmodel.h"
 #include "conf.h"
 
 #define OBJECT_FILENAME "indigo_imager.objects"
 
-QCustomObjectModel::QCustomObjectModel() {
+CustomObjectModel::CustomObjectModel() {
 	m_logger = &Logger::instance();
 }
 
-QCustomObjectModel::~QCustomObjectModel() {
+CustomObjectModel::~CustomObjectModel() {
 	saveObjects();
 	while (!m_objects.isEmpty()) delete m_objects.takeFirst();
 }
 
 
-void QCustomObjectModel::saveObjects() {
+void CustomObjectModel::saveObjects() {
 	char filename[PATH_LEN];
 	snprintf(filename, PATH_LEN, "%s/%s", config_path, OBJECT_FILENAME);
 	FILE *file = fopen(filename, "w");
@@ -46,7 +46,7 @@ void QCustomObjectModel::saveObjects() {
 	}
 }
 
-void QCustomObjectModel::loadObjects() {
+void CustomObjectModel::loadObjects() {
 	char raw_line[1024] = {0};
 	char filename[PATH_LEN];
 	char name[128];
@@ -79,7 +79,7 @@ void QCustomObjectModel::loadObjects() {
 	}
 }
 
-bool QCustomObjectModel::addObject(QString name, double ra, double dec, double mag, QString description) {
+bool CustomObjectModel::addObject(QString name, double ra, double dec, double mag, QString description) {
 	name = name.trimmed();
 	description = description.trimmed();
 	int i = findObject(name);
@@ -89,15 +89,15 @@ bool QCustomObjectModel::addObject(QString name, double ra, double dec, double m
 	}
 
 	indigo_log("OBJECT ADDED [%s]\n", name.toUtf8().constData());
-	QCustomObject *object = new QCustomObject(name, ra, dec, mag, description);
+	CustomObject *object = new CustomObject(name, ra, dec, mag, description);
 	m_objects.append(object);
 	return true;
 }
 
-bool QCustomObjectModel::removeObject(QString name) {
+bool CustomObjectModel::removeObject(QString name) {
 	int i = findObject(name);
 	if (i != -1) {
-		QCustomObject *object = m_objects.at(i);
+		CustomObject *object = m_objects.at(i);
 		m_objects.removeAt(i);
 		delete object;
 		indigo_log("OBJECT REMOVED [%s]\n", name.toUtf8().constData());
@@ -107,7 +107,7 @@ bool QCustomObjectModel::removeObject(QString name) {
 	return false;
 }
 
-int QCustomObjectModel::findObject(const QString &name) {
+int CustomObjectModel::findObject(const QString &name) {
 	for (auto i = m_objects.constBegin(); i != m_objects.constEnd(); ++i) {
 		if ((*i)->m_name == name) {
 			return i - m_objects.constBegin();

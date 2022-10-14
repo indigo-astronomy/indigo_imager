@@ -31,8 +31,8 @@ SOURCES += \
 	focuser_tab.cpp \
 	guider_tab.cpp \
 	telescope_tab.cpp \
-	qcustomobject.cpp \
-	qcustomobjectmodel.cpp \
+	customobject.cpp \
+	customobjectmodel.cpp \
 	solver_tab.cpp \
 	imagerwindow.cpp \
 	qindigoservice.cpp \
@@ -110,8 +110,8 @@ HEADERS += \
 	qindigoservice.h \
 	indigoclient.h \
 	propertycache.h \
-	qcustomobject.h \
-	qcustomobjectmodel.h \
+	customobject.h \
+	customobjectmodel.h \
 	qindigoservers.h \
 	logger.h \
 	focusgraph.h \

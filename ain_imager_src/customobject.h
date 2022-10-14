@@ -17,27 +17,27 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-#include "qcustomobject.h"
+#ifndef CUSTOMOBJECT_H
+#define CUSTOMOBJECT_H
 
-QCustomObject::QCustomObject(QString name, double ra, double dec, double mag, QString description) :
-	m_name(name),
-	m_ra(ra),
-	m_dec(dec),
-	m_mag(mag),
-	m_description(description) {
-}
+#include <QObject>
+#include <QString>
 
-QCustomObject::~QCustomObject() {
-}
+class CustomObject {
+public:
+	QString m_name;
+	double m_ra;
+	double m_dec;
+	double m_mag;
+ 	QString m_description;
 
-bool QCustomObject::operator==(const QCustomObject &other) const {
-	return (m_name == other.m_name);
-}
+	CustomObject(QString name, double ra, double dec, double mag = 0, QString description = "");
 
-bool QCustomObject::operator!=(const QCustomObject &other) const {
-	return (m_name != other.m_name);
-}
+	virtual ~CustomObject();
 
-bool QCustomObject::matchObject(QString part_name) {
-	return m_name.contains(part_name, Qt::CaseInsensitive);
-}
+	bool operator==(const CustomObject &other) const;
+	bool operator!=(const CustomObject &other) const;
+	bool matchObject(QString part_name);
+};
+
+#endif // CUSTOMOBJECT_H

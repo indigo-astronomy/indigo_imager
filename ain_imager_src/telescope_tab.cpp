@@ -1097,6 +1097,25 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 		}
 		star++;
 	}
+	auto objects = m_custom_object_model->m_objects;
+	for (auto i = objects.constBegin(); i != objects.constEnd(); ++i) {
+		auto object = *i;
+		if (object->matchObject(obj_name_c)) {
+			QListWidgetItem *item = new QListWidgetItem(object->m_name);
+			snprintf(
+				tooltip_c,
+				INDIGO_VALUE_SIZE,
+				"<b>%s</b> (Custom object)<p>Apparent magnitude: %.1f<sup>m</sup><br><nobr>Description: %s</nobr></p>\n",
+				object->m_name.toUtf8().constData(),
+				object->m_mag,
+				object->m_description.toUtf8().constData()
+			);
+			item->setToolTip(tooltip_c);
+			item->setData(Qt::UserRole, object->m_name);
+			m_object_list->addItem(item);
+			indigo_debug("%s -> %s = %s (custom)\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
+		}
+	}
 	indigo_debug("%s -> %s\n", __FUNCTION__, obj_name.toUtf8().constData());
 }
 
@@ -1140,6 +1159,11 @@ void ImagerWindow::on_object_selected() {
 		star++;
 	}
 
+	int index = m_custom_object_model->findObject(obj_id_c);
+	if (index >= 0) {
+		set_text(m_mount_ra_input, indigo_dtos(m_custom_object_model->m_objects.at(index)->m_ra, "%d:%02d:%04.1f"));
+		set_text(m_mount_dec_input, indigo_dtos(m_custom_object_model->m_objects.at(index)->m_dec, "%d:%02d:%04.1f"));
+	}
 	indigo_debug("%s -> %s = %s\n", __FUNCTION__, object->text().toUtf8().constData(), data.toUtf8().constData());
 }
 
@@ -1154,9 +1178,30 @@ void ImagerWindow::on_custom_object_remove() {
 		return;
 	}
 	QListWidgetItem *object = selected.at(0);
-	QString data = object->data(Qt::UserRole).toString();
+	QString obj_id = object->data(Qt::UserRole).toString();
 
-	char obj_id_c[1000];
-	strcpy(obj_id_c, data.toUtf8().data());
-	indigo_debug("%s -> %s\n", __FUNCTION__, obj_id_c);
+	int index = m_custom_object_model->findObject(obj_id);
+	if (index < 0) {
+		window_log("Internal database objects ca not be removed", INDIGO_ALERT_STATE);
+		return;
+	}
+
+	int ret = QMessageBox::question(
+		this,
+		"Remove object",
+		"Object <b>" + obj_id + "</b> is about to be removed<br><br>" + "Do you want to continue?" ,
+		QMessageBox::Yes | QMessageBox::No,
+		QMessageBox::No
+	);
+
+	if (ret == QMessageBox::Yes) {
+		m_custom_object_model->removeObject(obj_id);
+		m_custom_object_model->saveObjects();
+		delete(object);
+		QString message("Object '" + obj_id + "' removed");
+		window_log(message.toUtf8().data());
+		indigo_debug("%s -> removed %s\n", __FUNCTION__, obj_id.toUtf8().constData());
+	} else {
+		indigo_debug("%s -> keep %s\n", __FUNCTION__, obj_id.toUtf8().constData());
+	}
 }

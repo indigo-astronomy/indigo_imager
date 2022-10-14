@@ -17,29 +17,29 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-#ifndef QCUSTOMOBJECTMODEL_H
-#define QCUSTOMOBJECTMODEL_H
+#ifndef CUSTOMOBJECTMODEL_H
+#define CUSTOMOBJECTMODEL_H
 
 #include <QString>
 #include <QList>
-#include <qcustomobject.h>
+#include <customobject.h>
 #include "logger.h"
 
-class QCustomObjectModel {
+class CustomObjectModel {
 
 public:
-	QCustomObjectModel();
-	~QCustomObjectModel();
+	CustomObjectModel();
+	~CustomObjectModel();
 
 	void saveObjects();
 	void loadObjects();
 	bool addObject(QString name, double ra, double dec, double mag = 0, QString description = "");
 	bool removeObject(QString name);
-	QList<QCustomObject*> m_objects;
+	QList<CustomObject*> m_objects;
+	int findObject(const QString &name);
 
 private:
-	int findObject(const QString &name);
 	Logger* m_logger;
 };
 
-#endif // QCUSTOMOBJECTMODEL_H
+#endif // CUSTOMOBJECTMODEL_H
