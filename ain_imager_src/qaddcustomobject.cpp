@@ -89,16 +89,17 @@ QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
 	mainLayout->addLayout(horizontalLayout);
 
 	setLayout(mainLayout);
-	clear();
+	onClear();
 
 	QObject::connect(m_add_button, SIGNAL(clicked()), this, SLOT(onAddCustomObject()));
 	QObject::connect(m_close_button, SIGNAL(clicked()), this, SLOT(onClose()));
 	connect(this, &QAddCustomObject::populate, this, &QAddCustomObject::onPopulate);
+	connect(this, &QAddCustomObject::clear, this, &QAddCustomObject::onClear);
 }
 
 void QAddCustomObject::onClose() {
 	close();
-	clear();
+	onClear();
 }
 
 void QAddCustomObject::onAddCustomObject() {
@@ -155,9 +156,10 @@ void QAddCustomObject::onAddCustomObject() {
 	QString description_str = m_description_line->text().trimmed();
 
 	if (!error) {
+		// set_alert() because if object exists it will remain alert, if it succeeds it should be cleared with clear()
+		set_alert(m_name_line);
 		CustomObject object(name_str, ra, dec, mag, description_str);
 		emit(requestAddCustomObject(object));
-		clear();
 		indigo_debug("ADD: Object '%s' (RA = %f, Dec = %f, Mag = %f)\n", name_str.toUtf8().constData(), ra, dec, mag);
 	}
 }
@@ -186,7 +188,7 @@ void QAddCustomObject::onRequestRADec() {
 	emit(requestPopulate());
 }
 
-void QAddCustomObject::clear() {
+void QAddCustomObject::onClear() {
 	m_name_line->setText("");
 	m_name_line->setPlaceholderText("Name");
 	set_ok(m_name_line);

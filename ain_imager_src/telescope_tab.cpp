@@ -345,13 +345,13 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	connect(m_object_search_line, &QLineEdit::returnPressed, this, &ImagerWindow::on_object_search_entered);
 
 	m_add_object_button = new QToolButton(this);
-	m_add_object_button->setToolTip(tr("Add custom object"));
+	m_add_object_button->setToolTip(tr("Add object to custom database"));
 	m_add_object_button->setIcon(QIcon(":resource/zoom-in.png"));
 	obj_frame_layout->addWidget(m_add_object_button, obj_row, 3);
 	connect(m_add_object_button, &QToolButton::clicked, this, &ImagerWindow::on_custom_object_add);
 
 	m_remove_object_button = new QToolButton(this);
-	m_remove_object_button->setToolTip(tr("Remove selected custom object"));
+	m_remove_object_button->setToolTip(tr("Remove selected custom database object"));
 	m_remove_object_button->setIcon(QIcon(":resource/zoom-out.png"));
 	obj_frame_layout->addWidget(m_remove_object_button, obj_row, 4);
 	connect(m_remove_object_button, &QToolButton::clicked, this, &ImagerWindow::on_custom_object_remove);
@@ -1062,9 +1062,11 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 			snprintf(
 				tooltip_c,
 				INDIGO_VALUE_SIZE,
-				"<b>%s</b> (%s)<p>Apparent size: %.1f' x %.1f'<br>Apparent magnitude: %.1f<sup>m</sup><br><nobr>Names: %s</nobr></p>\n",
+				"<b>%s</b> (%s)<p>α: %s<br>δ: %s<br>Apparent size: %.1f' x %.1f'<br>Apparent magnitude: %.1f<sup>m</sup><br><nobr>Names: %s</nobr></p>\n",
 				dso->id,
 				indigo_dso_type_description[dso->type],
+				indigo_dtos(dso->ra, "%d:%02d:%04.1f"),
+				indigo_dtos(dso->dec, "+%d:%02d:%04.1f"),
 				dso->r1, dso->r2,
 				dso->mag,
 				dso->name
@@ -1088,8 +1090,10 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 			snprintf(
 				tooltip_c,
 				INDIGO_VALUE_SIZE,
-				"<b>HIP%d</b> (Star)<p>Apparent magnitude: %.1f<sup>m</sup><br><nobr>Names: %s</nobr></p>\n",
+				"<b>HIP%d</b> (Star)<p>α: %s<br>δ: %s<br>Apparent magnitude: %.1f<sup>m</sup><br><nobr>Names: %s</nobr></p>\n",
 				star->hip,
+				indigo_dtos(star->ra, "%d:%02d:%04.1f"),
+				indigo_dtos(star->dec, "+%d:%02d:%04.1f"),
 				star->mag,
 				star->name
 			);
@@ -1108,8 +1112,10 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 			snprintf(
 				tooltip_c,
 				INDIGO_VALUE_SIZE,
-				"<b>%s</b> (Custom object)<p>Apparent magnitude: %.1f<sup>m</sup><br><nobr>Description: %s</nobr></p>\n",
+				"<b>%s</b> (Custom DB object)<p>α: %s<br>δ: %s<br>Apparent magnitude: %.1f<sup>m</sup><br><nobr>Description: %s</nobr></p>\n",
 				object->m_name.toUtf8().constData(),
+				indigo_dtos(object->m_ra, "%d:%02d:%04.1f"),
+				indigo_dtos(object->m_dec, "+%d:%02d:%04.1f"),
 				object->m_mag,
 				object->m_description.toUtf8().constData()
 			);
@@ -1179,10 +1185,11 @@ void ImagerWindow::on_custom_object_added(CustomObject object) {
 	indigo_debug("%s -> %s\n", __FUNCTION__, object.m_name.toUtf8().constData());
 	if (m_custom_object_model->addObject(object.m_name, object.m_ra, object.m_dec, object.m_mag, object.m_description)) {
 		m_custom_object_model->saveObjects();
-		QString message("Object '" + object.m_name + "' added to database");
+		QString message("Object '" + object.m_name + "' added to custom database");
 		window_log(message.toUtf8().data());
+		m_add_object_dialog->clear();
 	} else {
-		QString message("Object '" + object.m_name + "' already exists in database");
+		QString message("Object '" + object.m_name + "' already exists in custom database");
 		window_log(message.toUtf8().data(), INDIGO_ALERT_STATE);
 	}
 }
@@ -1198,7 +1205,7 @@ void ImagerWindow::on_custom_object_remove() {
 
 	int index = m_custom_object_model->findObject(obj_id);
 	if (index < 0) {
-		window_log("Only custom database objects can be removed", INDIGO_ALERT_STATE);
+		window_log("Only objects in custom database can be removed", INDIGO_ALERT_STATE);
 		return;
 	}
 

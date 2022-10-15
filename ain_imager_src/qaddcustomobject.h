@@ -43,12 +43,14 @@ public:
 	void requestAddCustomObject(CustomObject object);
 	void populate(QString name, QString ra, QString dec, double mag, QString description);
 	void requestPopulate();
+	void clear();
 
 public slots:
 	void onClose();
 	void onAddCustomObject();
 	void onPopulate(QString name, QString ra, QString dec, double mag, QString description);
 	void onRequestRADec();
+	void onClear();
 
 private:
 	QDialogButtonBox* m_button_box;
@@ -64,8 +66,6 @@ private:
 
 	QPushButton* m_add_button;
 	QPushButton* m_close_button;
-
-	void clear();
 };
 
 #endif // QADDCUSTOMOBJECT_H

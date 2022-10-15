@@ -6,7 +6,7 @@ unix:mac {
 	ICON=../resource/appicon.icns
 }
 
-QMAKE_CXXFLAGS += -O3
+QMAKE_CXXFLAGS += -O3 -g
 QMAKE_CXXFLAGS_RELEASE += -O3
 
 OBJECTS_DIR=object
