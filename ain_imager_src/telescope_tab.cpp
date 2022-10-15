@@ -70,6 +70,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	set_ok(m_mount_ra_label);
 	m_mount_ra_label->show();
 	telescope_frame_layout->addWidget(m_mount_ra_label, row, 2, 1, 2);
+	m_mount_ra = 0;
 
 	row++;
 	m_mount_dec_label = new QLCDNumber(13);
@@ -79,6 +80,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	set_ok(m_mount_dec_label);
 	m_mount_dec_label->show();
 	telescope_frame_layout->addWidget(m_mount_dec_label, row, 2, 1, 2);
+	m_mount_dec = 0;
 
 	row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);

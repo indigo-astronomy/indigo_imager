@@ -25,6 +25,7 @@
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QPushButton>
+#include <QToolButton>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QMessageBox>
@@ -40,10 +41,14 @@ public:
 
 	signals:
 	void requestAddCustomObject(CustomObject object);
+	void populate(QString name, QString ra, QString dec, double mag, QString description);
+	void requestPopulate();
 
 public slots:
 	void onClose();
 	void onAddCustomObject();
+	void onPopulate(QString name, QString ra, QString dec, double mag, QString description);
+	void onRequestRADec();
 
 private:
 	QDialogButtonBox* m_button_box;
@@ -53,6 +58,7 @@ private:
 	QLineEdit* m_name_line;
 	QLineEdit* m_ra_line;
 	QLineEdit* m_dec_line;
+	QToolButton *m_load_ra_de_button;
 	QDoubleSpinBox* m_mag_box;
 	QLineEdit* m_description_line;
 

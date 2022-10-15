@@ -228,6 +228,9 @@ void update_mount_ra_dec(ImagerWindow *w, indigo_property *property, bool update
 		w->set_text(w->m_mount_dec_input, indigo_dtos(dec_tgt, "%d:%02d:%04.1f"));
 	}
 
+	w->m_mount_ra = ra;
+	w->m_mount_dec = dec;
+
 	QString ra_str(indigo_dtos(ra, "%d: %02d:%04.1f"));
 	QString dec_str(indigo_dtos(dec, "%d' %02d %04.1f"));
 	w->set_lcd(w->m_mount_ra_label, ra_str, property->state);
@@ -2913,6 +2916,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		set_lcd(m_mount_ra_label, "0: 00:00.0", INDIGO_IDLE_STATE);
 		set_lcd(m_mount_dec_label, "0' 00 00.0", INDIGO_IDLE_STATE);
+		m_mount_ra = 0;
+		m_mount_dec = 0;
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_HORIZONTAL_COORDINATES_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {

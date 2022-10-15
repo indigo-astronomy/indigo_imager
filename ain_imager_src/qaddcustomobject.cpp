@@ -41,7 +41,7 @@ QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
 	m_name_line = new QLineEdit();
 	m_name_line->setMinimumWidth(200);
 	set_ok(m_name_line);
-	frame_layout->addWidget(m_name_line , row, 1);
+	frame_layout->addWidget(m_name_line , row, 1, 1, 2);
 
 	row++;
 	label = new QLabel("Right ascension:");
@@ -49,6 +49,12 @@ QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
 	frame_layout->addWidget(label, row, 0);
 	m_ra_line = new QLineEdit();
 	frame_layout->addWidget(m_ra_line , row, 1);
+
+	m_load_ra_de_button = new QToolButton(this);
+	m_load_ra_de_button->setToolTip(tr("Load telescope coordinates"));
+	m_load_ra_de_button->setIcon(QIcon(":resource/guide.png"));
+	frame_layout->addWidget(m_load_ra_de_button, row, 2, 2, 1);
+	QObject::connect(m_load_ra_de_button, SIGNAL(clicked()), this, SLOT(onRequestRADec()));
 
 	row++;
 	label = new QLabel("Declination:");
@@ -63,14 +69,14 @@ QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
 	frame_layout->addWidget(label, row, 0);
 	m_mag_box = new QDoubleSpinBox();
 	m_mag_box->setRange(-13, 30);
-	frame_layout->addWidget(m_mag_box, row, 1);
+	frame_layout->addWidget(m_mag_box, row, 1, 1, 2);
 
 	row++;
 	label = new QLabel("Description:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	frame_layout->addWidget(label, row, 0);
 	m_description_line = new QLineEdit();
-	frame_layout->addWidget(m_description_line, row, 1);
+	frame_layout->addWidget(m_description_line, row, 1, 1, 2);
 
 	QHBoxLayout* horizontalLayout = new QHBoxLayout;
 	m_button_box = new QDialogButtonBox;
@@ -87,6 +93,7 @@ QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
 
 	QObject::connect(m_add_button, SIGNAL(clicked()), this, SLOT(onAddCustomObject()));
 	QObject::connect(m_close_button, SIGNAL(clicked()), this, SLOT(onClose()));
+	connect(this, &QAddCustomObject::populate, this, &QAddCustomObject::onPopulate);
 }
 
 void QAddCustomObject::onClose() {
@@ -110,7 +117,7 @@ void QAddCustomObject::onAddCustomObject() {
 	QString ra_str = m_ra_line->text().trimmed();
 	if (ra_str.isEmpty()) {
 		indigo_debug("Right ascension is empty");
-		m_ra_line->setPlaceholderText("Right ascension is empty");
+		m_ra_line->setPlaceholderText("RA is empty");
 		set_alert(m_ra_line);
 		error = true;
 	} else {
@@ -121,7 +128,7 @@ void QAddCustomObject::onAddCustomObject() {
 	QString dec_str = m_dec_line->text().trimmed();
 	if (dec_str.isEmpty()) {
 		indigo_debug("Declination is empty");
-		m_dec_line->setPlaceholderText("Declination is empty");
+		m_dec_line->setPlaceholderText("Dec is empty");
 		set_alert(m_dec_line);
 		error = true;
 	} else {
@@ -153,6 +160,30 @@ void QAddCustomObject::onAddCustomObject() {
 		clear();
 		indigo_debug("ADD: Object '%s' (RA = %f, Dec = %f, Mag = %f)\n", name_str.toUtf8().constData(), ra, dec, mag);
 	}
+}
+
+void QAddCustomObject::onPopulate(QString name, QString ra, QString dec, double mag, QString description) {
+	indigo_debug("%s()", __FUNCTION__);
+	if (!name.isNull()) {
+		m_name_line->setText(name);
+	}
+	if (!ra.isNull()) {
+		m_ra_line->setText(ra);
+	}
+	if (!dec.isNull()) {
+		m_dec_line->setText(dec);
+	}
+	if (mag > -30) {
+		m_mag_box->setValue(mag);
+	}
+	if (!description.isNull()) {
+		m_description_line->setText(description);
+	}
+}
+
+void QAddCustomObject::onRequestRADec() {
+	indigo_debug("%s()", __FUNCTION__);
+	emit(requestPopulate());
 }
 
 void QAddCustomObject::clear() {

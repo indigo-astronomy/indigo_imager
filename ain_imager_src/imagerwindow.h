@@ -368,6 +368,12 @@ public slots:
 
 	void on_tab_changed(int index);
 
+	void on_custom_object_populate() {
+		QString ra_str(indigo_dtos(m_mount_ra, "%d:%02d:%04.1f"));
+		QString dec_str(indigo_dtos(m_mount_dec, "%d:%02d:%04.1f"));
+		m_add_object_dialog->populate(QString::null, ra_str, dec_str, -100, QString::null);
+	}
+
 	void on_set_enabled(QWidget *widget, bool enabled) {
 		widget->setEnabled(enabled);
 	};
@@ -664,6 +670,8 @@ private:
 	QComboBox *m_mount_select;
 	QLCDNumber *m_mount_ra_label;
 	QLCDNumber *m_mount_dec_label;
+	double m_mount_ra;
+	double m_mount_dec;
 #ifdef USE_LCD
 	QLCDNumber *m_mount_lst_label;
 	QLCDNumber *m_mount_az_label;
