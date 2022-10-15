@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Rumen G.Bogdanovski & David Hulse
+// Copyright (c) 2022 Rumen G.Bogdanovski
 // All rights reserved.
 //
 // You can use this software under the terms of 'INDIGO Astronomy
@@ -44,7 +44,7 @@ QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
 	frame_layout->addWidget(m_name_line , row, 1);
 
 	row++;
-	label = new QLabel("Right Ascension:");
+	label = new QLabel("Right ascension:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	frame_layout->addWidget(label, row, 0);
 	m_ra_line = new QLineEdit();
@@ -74,8 +74,8 @@ QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
 
 	QHBoxLayout* horizontalLayout = new QHBoxLayout;
 	m_button_box = new QDialogButtonBox;
-	m_add_button = m_button_box->addButton(tr("Add object"), QDialogButtonBox::ActionRole);
 	m_close_button = m_button_box->addButton(tr("Close"), QDialogButtonBox::ActionRole);
+	m_add_button = m_button_box->addButton(tr("Add object"), QDialogButtonBox::ActionRole);
 	horizontalLayout->addWidget(m_button_box);
 
 	QVBoxLayout* mainLayout = new QVBoxLayout;
@@ -132,7 +132,7 @@ void QAddCustomObject::onAddCustomObject() {
 	QRegExp ra_re("\\d*:?\\d*:?\\d*\\.?\\d*");
 	double ra = indigo_stod(ra_str.toUtf8().data());
 	if (ra < 0 || ra > 24 || !ra_re.exactMatch(ra_str)) {
-		indigo_debug("Right ascenstion out of range");
+		indigo_debug("Right ascenstion is not valid");
 		set_alert(m_ra_line);
 		error = true;
 	}
