@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Rumen G.Bogdanovski & David Hulse
+// Copyright (c) 2022 Rumen G.Bogdanovski & David Hulse
 // All rights reserved.
 //
 // You can use this software under the terms of 'INDIGO Astronomy
@@ -16,27 +16,73 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
+#include <QLabel>
 #include "qaddcustomobject.h"
 #include <indigo/indigo_bus.h>
+#include <widget_state.h>
 
 QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
 	setWindowTitle("Add Object");
 
+	QWidget *frame = new QWidget;
+	QGridLayout *frame_layout = new QGridLayout();
+	frame_layout->setAlignment(Qt::AlignTop);
+	frame->setLayout(frame_layout);
+	frame->setContentsMargins(0, 0, 0, 0);
+	frame_layout->setColumnStretch(0, 1);
+	frame_layout->setColumnStretch(1, 4);
+	//frame_layout->setColumnStretch(2, 1);
+	//frame_layout->setColumnStretch(3, 1);
 
-	m_view_box = new QWidget();
-	m_button_box = new QDialogButtonBox;
+	int row = 0;
+	QLabel *label = new QLabel("Object name:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	frame_layout->addWidget(label, row, 0);
+	m_name_line = new QLineEdit();
+	m_name_line->setPlaceholderText("Name");
+	set_ok(m_name_line);
+	frame_layout->addWidget(m_name_line , row, 1);
 
-	m_add_service_box = new QWidget();
+	row++;
+	label = new QLabel("Right Ascension:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	frame_layout->addWidget(label, row, 0);
+	m_ra_line = new QLineEdit();
+	m_ra_line->setPlaceholderText("hh:mm:ss");
+	set_alert(m_ra_line);
+	frame_layout->addWidget(m_ra_line , row, 1);
 
-	m_add_button = m_button_box->addButton(tr("Add object"), QDialogButtonBox::ActionRole);
-	m_close_button = m_button_box->addButton(tr("Close"), QDialogButtonBox::ActionRole);
+	row++;
+	label = new QLabel("Declination:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	frame_layout->addWidget(label, row, 0);
+	m_dec_line = new QLineEdit();
+	m_dec_line->setPlaceholderText("+dd:mm:ss");
+	frame_layout->addWidget(m_dec_line , row, 1);
+
+	row++;
+	label = new QLabel("Magnitude:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	frame_layout->addWidget(label, row, 0);
+	m_mag_box = new QDoubleSpinBox();
+	frame_layout->addWidget(m_mag_box, row, 1);
+
+	row++;
+	label = new QLabel("Description:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	frame_layout->addWidget(label, row, 0);
+	m_description_line = new QLineEdit();
+	m_description_line->setPlaceholderText("Onbjct description");
+	frame_layout->addWidget(m_description_line, row, 1);
 
 	QHBoxLayout* horizontalLayout = new QHBoxLayout;
+	m_button_box = new QDialogButtonBox;
+	m_add_button = m_button_box->addButton(tr("Add object"), QDialogButtonBox::ActionRole);
+	m_close_button = m_button_box->addButton(tr("Close"), QDialogButtonBox::ActionRole);
 	horizontalLayout->addWidget(m_button_box);
 
 	QVBoxLayout* mainLayout = new QVBoxLayout;
-	mainLayout->addWidget(m_view_box);
+	mainLayout->addWidget(frame);
 	mainLayout->addLayout(horizontalLayout);
 
 	setLayout(mainLayout);

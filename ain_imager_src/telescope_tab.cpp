@@ -1177,6 +1177,11 @@ void ImagerWindow::on_custom_object_added(CustomObject object) {
 	indigo_debug("%s -> %s\n", __FUNCTION__, object.m_name.toUtf8().constData());
 	if (m_custom_object_model->addObject(object.m_name, object.m_ra, object.m_dec, object.m_mag, object.m_description)) {
 		m_custom_object_model->saveObjects();
+		QString message("Object '" + object.m_name + "' added to database");
+		window_log(message.toUtf8().data());
+	} else {
+		QString message("Object '" + object.m_name + "' already exists in database");
+		window_log(message.toUtf8().data(), INDIGO_ALERT_STATE);
 	}
 }
 
@@ -1191,7 +1196,7 @@ void ImagerWindow::on_custom_object_remove() {
 
 	int index = m_custom_object_model->findObject(obj_id);
 	if (index < 0) {
-		window_log("Internal database objects ca not be removed", INDIGO_ALERT_STATE);
+		window_log("Only custom database objects can be removed", INDIGO_ALERT_STATE);
 		return;
 	}
 
