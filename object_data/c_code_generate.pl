@@ -107,7 +107,11 @@ my %extra_names = (
 	"NGC6523" => "Hourglass nebula",
 	"NGC6960" => "Filamentary nebula",
 	"NGC6992" => "Network nebula",
-	"NGC6995" => "Network nebula"
+	"NGC6995" => "Network nebula",
+	"IC1805" => "Heart Nebula, Running dog nebula, Sharpless 2-190",
+	"IC1848" => "Soul Nebula, Embryo Nebula, Westerhout 5",
+	"IC1396" => "Elephant's Trunk Nebula",
+	"IC443" => "Jellyfish Nebula, Sharpless 248"
 );
 
 
