@@ -81,7 +81,11 @@ QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
 	QHBoxLayout* horizontalLayout = new QHBoxLayout;
 	m_button_box = new QDialogButtonBox;
 	m_close_button = m_button_box->addButton(tr("Close"), QDialogButtonBox::ActionRole);
+	m_close_button->setAutoDefault(false);
+	m_close_button->setDefault(false);
 	m_add_button = m_button_box->addButton(tr("Add object"), QDialogButtonBox::ActionRole);
+	m_add_button->setAutoDefault(true);
+	m_add_button->setDefault(true);
 	horizontalLayout->addWidget(m_button_box);
 
 	QVBoxLayout* mainLayout = new QVBoxLayout;
