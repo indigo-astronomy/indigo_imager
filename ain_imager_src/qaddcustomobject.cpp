@@ -24,22 +24,21 @@
 QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
 	setWindowTitle("Add Object");
 
-	QWidget *frame = new QWidget;
+	QFrame *frame = new QFrame;
 	QGridLayout *frame_layout = new QGridLayout();
 	frame_layout->setAlignment(Qt::AlignTop);
 	frame->setLayout(frame_layout);
 	frame->setContentsMargins(0, 0, 0, 0);
+	frame_layout->setContentsMargins(0, 0, 0, 10);
 	frame_layout->setColumnStretch(0, 1);
 	frame_layout->setColumnStretch(1, 4);
-	//frame_layout->setColumnStretch(2, 1);
-	//frame_layout->setColumnStretch(3, 1);
 
 	int row = 0;
 	QLabel *label = new QLabel("Object name:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	frame_layout->addWidget(label, row, 0);
 	m_name_line = new QLineEdit();
-	m_name_line->setPlaceholderText("Name");
+	m_name_line->setMinimumWidth(200);
 	set_ok(m_name_line);
 	frame_layout->addWidget(m_name_line , row, 1);
 
@@ -48,8 +47,6 @@ QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	frame_layout->addWidget(label, row, 0);
 	m_ra_line = new QLineEdit();
-	m_ra_line->setPlaceholderText("hh:mm:ss");
-	set_alert(m_ra_line);
 	frame_layout->addWidget(m_ra_line , row, 1);
 
 	row++;
@@ -57,7 +54,6 @@ QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	frame_layout->addWidget(label, row, 0);
 	m_dec_line = new QLineEdit();
-	m_dec_line->setPlaceholderText("+dd:mm:ss");
 	frame_layout->addWidget(m_dec_line , row, 1);
 
 	row++;
@@ -65,6 +61,7 @@ QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	frame_layout->addWidget(label, row, 0);
 	m_mag_box = new QDoubleSpinBox();
+	m_mag_box->setRange(-13, 30);
 	frame_layout->addWidget(m_mag_box, row, 1);
 
 	row++;
@@ -72,7 +69,6 @@ QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	frame_layout->addWidget(label, row, 0);
 	m_description_line = new QLineEdit();
-	m_description_line->setPlaceholderText("Onbjct description");
 	frame_layout->addWidget(m_description_line, row, 1);
 
 	QHBoxLayout* horizontalLayout = new QHBoxLayout;
@@ -86,6 +82,7 @@ QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
 	mainLayout->addLayout(horizontalLayout);
 
 	setLayout(mainLayout);
+	clear();
 
 	QObject::connect(m_add_button, SIGNAL(clicked()), this, SLOT(onAddCustomObject()));
 	QObject::connect(m_close_button, SIGNAL(clicked()), this, SLOT(onClose()));
@@ -93,19 +90,82 @@ QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
 
 void QAddCustomObject::onClose() {
 	close();
+	clear();
 }
 
-
 void QAddCustomObject::onAddCustomObject() {
-	//QString service_str = m_name_line->text().trimmed();
-	//if (service_str.isEmpty()) {
-	//	indigo_debug("Trying to add empty service!");
-	//	return;
-	//}
+	bool error = false;
+	QString name_str = m_name_line->text().trimmed();
+	if (name_str.isEmpty()) {
+		indigo_debug("Object name is empty");
+		m_name_line->setPlaceholderText("Object name is empty");
+		set_alert(m_name_line);
+		error = true;
+	} else {
+		m_name_line->setPlaceholderText("Name");
+		set_ok(m_name_line);
+	}
 
-	CustomObject object("Test", 12, 13, 5.0, "info");
-//	QIndigoService indigo_service(service.toUtf8(), hostname.toUtf8(), port);
-	emit(requestAddCustomObject(object));
-//	m_service_line->setText("");
-//	indigo_debug("ADD: Service '%s' host '%s' port = %d\n", service.toUtf8().constData(), hostname.toUtf8().constData(), port);
+	QString ra_str = m_ra_line->text().trimmed();
+	if (ra_str.isEmpty()) {
+		indigo_debug("Right ascension is empty");
+		m_ra_line->setPlaceholderText("Right ascension is empty");
+		set_alert(m_ra_line);
+		error = true;
+	} else {
+		m_ra_line->setPlaceholderText("hh:mm:ss");
+		set_ok(m_ra_line);
+	}
+
+	QString dec_str = m_dec_line->text().trimmed();
+	if (dec_str.isEmpty()) {
+		indigo_debug("Declination is empty");
+		m_dec_line->setPlaceholderText("Declination is empty");
+		set_alert(m_dec_line);
+		error = true;
+	} else {
+		m_dec_line->setPlaceholderText("dd:mm:ss");
+		set_ok(m_dec_line);
+	}
+
+	double ra = indigo_stod(ra_str.toUtf8().data());
+	if (ra <= 0 || ra > 24) {
+		indigo_debug("Right ascenstion out of range");
+		set_alert(m_ra_line);
+		error = true;
+	}
+	double dec = indigo_stod(dec_str.toUtf8().data());
+	if (dec < -90 || dec > 90) {
+		indigo_debug("Declination out of range");
+		set_alert(m_dec_line);
+		error = true;
+	}
+
+	double mag = m_mag_box->value();
+	QString description_str = m_description_line->text().trimmed();
+
+	if (!error) {
+		CustomObject object(name_str, ra, dec, mag, description_str);
+		emit(requestAddCustomObject(object));
+		clear();
+		indigo_debug("ADD: Object '%s' (RA = %f, Dec = %f, Mag = %f)\n", name_str.toUtf8().constData(), ra, dec, mag);
+	}
+}
+
+void QAddCustomObject::clear() {
+	m_name_line->setText("");
+	m_name_line->setPlaceholderText("Name");
+	set_ok(m_name_line);
+
+	m_ra_line->setText("");
+	m_ra_line->setPlaceholderText("hh:mm:ss");
+	set_ok(m_ra_line);
+
+	m_dec_line->setText("");
+	m_dec_line->setPlaceholderText("dd:mm:ss");
+	set_ok(m_dec_line);
+
+	m_mag_box->setValue(0);
+	m_description_line->setText("");
+	m_description_line->setPlaceholderText("Object description");
 }

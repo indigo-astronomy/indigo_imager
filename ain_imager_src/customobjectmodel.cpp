@@ -61,6 +61,7 @@ void CustomObjectModel::loadObjects() {
 		int l_num = 0;
 		while (fgets(raw_line, 1023, file)) {
 			l_num++;
+			bool success = false;
 			char *line = raw_line;
 			while(isspace((unsigned char)*line)) line++;
 			if (line[0]=='#' || line[0] == '\n' || line[0] == '\0') continue;
@@ -69,8 +70,18 @@ void CustomObjectModel::loadObjects() {
 			ra = dec = mag = 0;
 			int parsed = sscanf(line, "\"%[^\"]\", %lf, %lf, %lf, \"%[^\"]\"\n", name, &ra, &dec, &mag, description);
 			if (parsed == 5) {
-				indigo_log("Loading object: \"%s\", RA = %f, Dec = %f, mag = %f, \"%s\"\n", name, ra, dec, mag, description);
 				addObject(name, ra, dec, mag, description);
+				success = true;
+			} else if (parsed == 4) {
+				parsed = sscanf(line, "\"%[^\"]\", %lf, %lf, %lf", name, &ra, &dec, &mag);
+				if (parsed == 4) {
+					description[0] = '\0';
+					addObject(name, ra, dec, mag, description);
+					success = true;
+				}
+			}
+			if (success) {
+				indigo_log("Loading object: \"%s\", RA = %f, Dec = %f, mag = %f, \"%s\"\n", name, ra, dec, mag, description);
 			} else {
 				indigo_error("Object file error: Parse error at line %d.", l_num);
 			}

@@ -42,7 +42,6 @@ public:
 	void requestAddCustomObject(CustomObject object);
 
 public slots:
-
 	void onClose();
 	void onAddCustomObject();
 
@@ -59,6 +58,8 @@ private:
 
 	QPushButton* m_add_button;
 	QPushButton* m_close_button;
+
+	void clear();
 };
 
 #endif // QADDCUSTOMOBJECT_H
