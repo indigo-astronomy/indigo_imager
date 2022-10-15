@@ -19,6 +19,7 @@
 #include <QLabel>
 #include "qaddcustomobject.h"
 #include <indigo/indigo_bus.h>
+#include <QRegExp>
 #include <widget_state.h>
 
 QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
@@ -128,15 +129,17 @@ void QAddCustomObject::onAddCustomObject() {
 		set_ok(m_dec_line);
 	}
 
+	QRegExp ra_re("\\d*:?\\d*:?\\d*\\.?\\d*");
 	double ra = indigo_stod(ra_str.toUtf8().data());
-	if (ra <= 0 || ra > 24) {
+	if (ra < 0 || ra > 24 || !ra_re.exactMatch(ra_str)) {
 		indigo_debug("Right ascenstion out of range");
 		set_alert(m_ra_line);
 		error = true;
 	}
+	QRegExp dec_re("[+-]?\\d*:?\\d*:?\\d*\\.?\\d*");
 	double dec = indigo_stod(dec_str.toUtf8().data());
-	if (dec < -90 || dec > 90) {
-		indigo_debug("Declination out of range");
+	if (dec < -90 || dec > 90 || !dec_re.exactMatch(dec_str)) {
+		indigo_debug("Declination is not valid");
 		set_alert(m_dec_line);
 		error = true;
 	}
