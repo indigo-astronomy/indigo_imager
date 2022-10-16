@@ -1046,6 +1046,29 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 	strncpy(obj_name_c, obj_name.toUtf8().data(), INDIGO_VALUE_SIZE);
 
 	if (obj_name_c[0] == '\0') return;
+
+	auto objects = m_custom_object_model->m_objects;
+	for (auto i = objects.constBegin(); i != objects.constEnd(); ++i) {
+		auto object = *i;
+		if (object->matchObject(obj_name_c)) {
+			QListWidgetItem *item = new QListWidgetItem(object->m_name);
+			snprintf(
+				tooltip_c,
+				INDIGO_VALUE_SIZE,
+				"<b>%s</b> (Custom DB object)<p>α: %s<br>δ: %s<br>Apparent magnitude: %.1f<sup>m</sup><br><nobr>Description: %s</nobr></p>\n",
+				object->m_name.toUtf8().constData(),
+				indigo_dtos(object->m_ra, "%d:%02d:%04.1f"),
+				indigo_dtos(object->m_dec, "+%d:%02d:%04.1f"),
+				object->m_mag,
+				object->m_description.toUtf8().constData()
+			);
+			item->setToolTip(tooltip_c);
+			item->setData(Qt::UserRole, object->m_name);
+			m_object_list->addItem(item);
+			indigo_debug("%s -> %s = %s (custom)\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
+		}
+	}
+
 	indigo_dso_entry *dso = &indigo_dso_data[0];
 	while (dso->id) {
 		if (
@@ -1078,14 +1101,22 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 		}
 		dso++;
 	}
+
 	indigo_star_entry *star = &indigo_star_data[0];
+	QRegExp hip_re("HIP\\d+");
+	hip_re.setCaseSensitivity(Qt::CaseInsensitive);
 	while (star->hip) {
+		QString star_name = "HIP" + QString::number(star->hip);
 		if (
-			star->name &&
-			QString(star->name).contains(obj_name_c, Qt::CaseInsensitive)
+			(star->name && QString(star->name).contains(obj_name_c, Qt::CaseInsensitive)) ||
+			(hip_re.exactMatch(obj_name) && star_name.contains(obj_name_c, Qt::CaseInsensitive))
 		) {
-			data = QString(star->name);
-			name = QString(star->name);
+			data = star_name;
+			if (star->name == nullptr || star->name[0] == '\0') {
+				name = star_name;
+			} else {
+				name = star_name + ", " + star->name;
+			}
 			QListWidgetItem *item = new QListWidgetItem(name);
 			snprintf(
 				tooltip_c,
@@ -1095,7 +1126,7 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 				indigo_dtos(star->ra, "%d:%02d:%04.1f"),
 				indigo_dtos(star->dec, "+%d:%02d:%04.1f"),
 				star->mag,
-				star->name
+				star->name ? star->name : ""
 			);
 			item->setToolTip(tooltip_c);
 			item->setData(Qt::UserRole, data);
@@ -1103,27 +1134,6 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 			indigo_debug("%s -> %s = %s\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
 		}
 		star++;
-	}
-	auto objects = m_custom_object_model->m_objects;
-	for (auto i = objects.constBegin(); i != objects.constEnd(); ++i) {
-		auto object = *i;
-		if (object->matchObject(obj_name_c)) {
-			QListWidgetItem *item = new QListWidgetItem(object->m_name);
-			snprintf(
-				tooltip_c,
-				INDIGO_VALUE_SIZE,
-				"<b>%s</b> (Custom DB object)<p>α: %s<br>δ: %s<br>Apparent magnitude: %.1f<sup>m</sup><br><nobr>Description: %s</nobr></p>\n",
-				object->m_name.toUtf8().constData(),
-				indigo_dtos(object->m_ra, "%d:%02d:%04.1f"),
-				indigo_dtos(object->m_dec, "+%d:%02d:%04.1f"),
-				object->m_mag,
-				object->m_description.toUtf8().constData()
-			);
-			item->setToolTip(tooltip_c);
-			item->setData(Qt::UserRole, object->m_name);
-			m_object_list->addItem(item);
-			indigo_debug("%s -> %s = %s (custom)\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
-		}
 	}
 	indigo_debug("%s -> %s\n", __FUNCTION__, obj_name.toUtf8().constData());
 }
@@ -1144,10 +1154,16 @@ void ImagerWindow::on_object_selected() {
 	QList<QListWidgetItem *> selected = m_object_list->selectedItems();
 	if (selected.isEmpty()) return;
 	QListWidgetItem *object = selected.at(0);
-	QString data = object->data(Qt::UserRole).toString();
+	QString object_id = object->data(Qt::UserRole).toString();
 
 	char obj_id_c[1000];
-	strcpy(obj_id_c, data.toUtf8().data());
+	strcpy(obj_id_c, object_id.toUtf8().data());
+
+	int index = m_custom_object_model->findObject(obj_id_c);
+	if (index >= 0) {
+		set_text(m_mount_ra_input, indigo_dtos(m_custom_object_model->m_objects.at(index)->m_ra, "%d:%02d:%04.1f"));
+		set_text(m_mount_dec_input, indigo_dtos(m_custom_object_model->m_objects.at(index)->m_dec, "%d:%02d:%04.1f"));
+	}
 
 	indigo_dso_entry *dso = &indigo_dso_data[0];
 	while (dso->id) {
@@ -1160,7 +1176,8 @@ void ImagerWindow::on_object_selected() {
 	}
 	indigo_star_entry *star = &indigo_star_data[0];
 	while (star->hip) {
-		if (star->name && !strcmp(star->name, obj_id_c)) {
+		QString star_name = "HIP" + QString::number(star->hip);
+		if (star_name == object_id) {
 			set_text(m_mount_ra_input, indigo_dtos(star->ra, "%d:%02d:%04.1f"));
 			set_text(m_mount_dec_input, indigo_dtos(star->dec, "%d:%02d:%04.1f"));
 			break;
@@ -1168,12 +1185,7 @@ void ImagerWindow::on_object_selected() {
 		star++;
 	}
 
-	int index = m_custom_object_model->findObject(obj_id_c);
-	if (index >= 0) {
-		set_text(m_mount_ra_input, indigo_dtos(m_custom_object_model->m_objects.at(index)->m_ra, "%d:%02d:%04.1f"));
-		set_text(m_mount_dec_input, indigo_dtos(m_custom_object_model->m_objects.at(index)->m_dec, "%d:%02d:%04.1f"));
-	}
-	indigo_debug("%s -> %s = %s\n", __FUNCTION__, object->text().toUtf8().constData(), data.toUtf8().constData());
+	indigo_debug("%s -> %s = %s\n", __FUNCTION__, object->text().toUtf8().constData(), object_id.toUtf8().constData());
 }
 
 void ImagerWindow::on_custom_object_add() {

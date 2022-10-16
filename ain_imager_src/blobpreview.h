@@ -34,7 +34,7 @@ public:
 	};
 
 	~blob_preview_cache() {
-		indigo_debug("preview: %s()\n", __FUNCTION__);
+		//indigo_debug("preview: %s()\n", __FUNCTION__);
 		blob_preview_cache::iterator i = begin();
 		while (i != end()) {
 			preview_image *preview = i.value();

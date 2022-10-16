@@ -28,7 +28,6 @@ CustomObjectModel::CustomObjectModel() {
 }
 
 CustomObjectModel::~CustomObjectModel() {
-	saveObjects();
 	while (!m_objects.isEmpty()) delete m_objects.takeFirst();
 }
 
