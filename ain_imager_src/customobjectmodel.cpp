@@ -80,7 +80,7 @@ void CustomObjectModel::loadObjects() {
 				}
 			}
 			if (success) {
-				indigo_log("Loading object: \"%s\", RA = %f, Dec = %f, mag = %f, \"%s\"\n", name, ra, dec, mag, description);
+				//indigo_log("Loading object: \"%s\", RA = %f, Dec = %f, mag = %f, \"%s\"\n", name, ra, dec, mag, description);
 			} else {
 				indigo_error("Object file error: Parse error at line %d.", l_num);
 			}
@@ -98,7 +98,7 @@ bool CustomObjectModel::addObject(QString name, double ra, double dec, double ma
 		return false;
 	}
 
-	indigo_log("OBJECT ADDED [%s]\n", name.toUtf8().constData());
+	//indigo_log("OBJECT ADDED [%s]\n", name.toUtf8().constData());
 	CustomObject *object = new CustomObject(name, ra, dec, mag, description);
 	m_objects.append(object);
 	return true;

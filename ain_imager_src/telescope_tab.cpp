@@ -1065,7 +1065,7 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 			item->setToolTip(tooltip_c);
 			item->setData(Qt::UserRole, object->m_name);
 			m_object_list->addItem(item);
-			indigo_debug("%s -> %s = %s (custom)\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
+			//indigo_debug("%s -> %s = %s (custom)\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
 		}
 	}
 
@@ -1097,7 +1097,7 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 			item->setToolTip(tooltip_c);
 			item->setData(Qt::UserRole, data);
 			m_object_list->addItem(item);
-			indigo_debug("%s -> %s = %s\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
+			//indigo_debug("%s -> %s = %s\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
 		}
 		dso++;
 	}
@@ -1131,7 +1131,7 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 			item->setToolTip(tooltip_c);
 			item->setData(Qt::UserRole, data);
 			m_object_list->addItem(item);
-			indigo_debug("%s -> %s = %s\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
+			//indigo_debug("%s -> %s = %s\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
 		}
 		star++;
 	}
