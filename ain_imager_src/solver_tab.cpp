@@ -196,6 +196,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	m_solver_radius_hint->setMinimum(0);
 	m_solver_radius_hint->setValue(0);
 	m_solver_radius_hint->setEnabled(false);
+	m_solver_radius_hint->setSpecialValueText("no limit");
 	solver_frame_layout->addWidget(m_solver_radius_hint, row, 3);
 	connect(m_solver_radius_hint, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, QOverload<double>::of(&ImagerWindow::on_solver_hints_changed));
 
@@ -244,6 +245,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	m_solver_depth_hint->setMinimum(0);
 	m_solver_depth_hint->setValue(0);
 	m_solver_depth_hint->setEnabled(false);
+	m_solver_depth_hint->setSpecialValueText("no limit");
 	solver_frame_layout->addWidget(m_solver_depth_hint, row, 3);
 	connect(m_solver_depth_hint, QOverload<int>::of(&QSpinBox::valueChanged), this, QOverload<int>::of(&ImagerWindow::on_solver_hints_changed));
 
