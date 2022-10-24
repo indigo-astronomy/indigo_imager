@@ -355,6 +355,7 @@ public slots:
 	void on_solver_ra_dec_hints_changed(bool clicked);
 	void on_solver_hints_changed(int value);
 	void on_solver_hints_changed(double value);
+	void on_solver_hints_changed();
 	void on_image_source1_selected(int index);
 	void on_object_selected();
 	void on_object_clicked(QListWidgetItem *item);
@@ -741,6 +742,7 @@ private:
 	QLineEdit *m_solver_ra_hint;
 	QLineEdit *m_solver_dec_hint;
 	QDoubleSpinBox *m_solver_radius_hint;
+	QDoubleSpinBox *m_solver_scale_hint;
 	QSpinBox *m_solver_ds_hint;
 	QSpinBox *m_solver_parity_hint;
 	QSpinBox *m_solver_depth_hint;

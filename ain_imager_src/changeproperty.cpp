@@ -649,6 +649,7 @@ void ImagerWindow::change_solver_agent_hints_property(const char *agent) const {
 		AGENT_PLATESOLVER_HINTS_RA_ITEM_NAME,
 		AGENT_PLATESOLVER_HINTS_DEC_ITEM_NAME,
 		AGENT_PLATESOLVER_HINTS_RADIUS_ITEM_NAME,
+		AGENT_PLATESOLVER_HINTS_SCALE_ITEM_NAME,
 		AGENT_PLATESOLVER_HINTS_PARITY_ITEM_NAME,
 		AGENT_PLATESOLVER_HINTS_DOWNSAMPLE_ITEM_NAME,
 		AGENT_PLATESOLVER_HINTS_DEPTH_ITEM_NAME,
@@ -658,12 +659,13 @@ void ImagerWindow::change_solver_agent_hints_property(const char *agent) const {
 	values[0] = indigo_stod((char*)m_solver_ra_hint->text().trimmed().toStdString().c_str());
 	values[1] = indigo_stod((char*)m_solver_dec_hint->text().trimmed().toStdString().c_str());
 	values[2] = (double)m_solver_radius_hint->value();
-	values[3] = (double)m_solver_parity_hint->value();
-	values[4] = (double)m_solver_ds_hint->value();
-	values[5] = (double)m_solver_depth_hint->value();
-	values[6] = (double)m_solver_tlimit_hint->value();
+	values[3] = (double)m_solver_scale_hint->value() / 3600.0;
+	values[4] = (double)m_solver_parity_hint->value();
+	values[5] = (double)m_solver_ds_hint->value();
+	values[6] = (double)m_solver_depth_hint->value();
+	values[7] = (double)m_solver_tlimit_hint->value();
 
-	indigo_change_number_property(nullptr, agent, AGENT_PLATESOLVER_HINTS_PROPERTY_NAME, 7, items, values);
+	indigo_change_number_property(nullptr, agent, AGENT_PLATESOLVER_HINTS_PROPERTY_NAME, 8, items, values);
 }
 
 

@@ -742,6 +742,15 @@ void update_solver_agent_hints(ImagerWindow *w, indigo_property *property) {
 			dec = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_HINTS_RADIUS_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_solver_radius_hint);
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_HINTS_SCALE_ITEM_NAME)) {
+			indigo_item item_copy;
+			memcpy(&item_copy, &property->items[i], sizeof(indigo_item));
+			item_copy.number.value *= 3600.0;
+			item_copy.number.target *= 3600.0;
+			item_copy.number.min = -0.1;
+			item_copy.number.step = 0.1;
+			item_copy.number.max *= 3600.0;
+			configure_spinbox(w, &item_copy, property->perm, w->m_solver_scale_hint);
 		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_HINTS_PARITY_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_solver_parity_hint);
 		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_HINTS_DOWNSAMPLE_ITEM_NAME)) {
@@ -3090,6 +3099,9 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		set_spinbox_value(m_solver_radius_hint, 0);
 		set_enabled(m_solver_radius_hint, false);
+
+		set_spinbox_value(m_solver_scale_hint, 0);
+		set_enabled(m_solver_scale_hint, false);
 
 		set_spinbox_value(m_solver_ds_hint, 0);
 		set_enabled(m_solver_ds_hint, false);

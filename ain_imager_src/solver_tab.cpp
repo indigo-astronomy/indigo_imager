@@ -200,8 +200,23 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	connect(m_solver_radius_hint, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, QOverload<double>::of(&ImagerWindow::on_solver_hints_changed));
 
 	row++;
-	label = new QLabel("Downsample:");
+	label = new QLabel("Pixel scale (\"/px):");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
+	m_solver_scale_hint = new QDoubleSpinBox();
+	m_solver_scale_hint->setDecimals(3);
+	m_solver_scale_hint->setMaximum(7200);
+	m_solver_scale_hint->setMinimum(-0.1);
+	m_solver_scale_hint->setSingleStep(0.1);
+	m_solver_scale_hint->setValue(0);
+	m_solver_scale_hint->setSpecialValueText("camera");
+	m_solver_scale_hint->setToolTip("Pixel scale:<br> = 0: automatic (slow)<br> &lt; 0: use pixel scale from camera<br> &gt; 0: use specified pixel scale");
+	m_solver_scale_hint->setEnabled(false);
+	solver_frame_layout->addWidget(m_solver_scale_hint, row, 3);
+	connect(m_solver_scale_hint, &QDoubleSpinBox::editingFinished, this,QOverload<>::of(&ImagerWindow::on_solver_hints_changed));
+
+	row++;
+	label = new QLabel("Downsample:");
+	solver_frame_layout->addWidget(label, row, 0, 1, 3);
 	m_solver_ds_hint = new QSpinBox();
 	m_solver_ds_hint->setMaximum(16);
 	m_solver_ds_hint->setMinimum(0);
@@ -212,7 +227,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 
 	row++;
 	label = new QLabel("Parity:");
-	solver_frame_layout->addWidget(label, row, 0, 1, 2);
+	solver_frame_layout->addWidget(label, row, 0, 1, 3);
 	m_solver_parity_hint = new QSpinBox();
 	m_solver_parity_hint->setMaximum(16);
 	m_solver_parity_hint->setMinimum(0);
@@ -338,7 +353,7 @@ void ImagerWindow::on_solver_agent_selected(int index) {
 	});
 }
 
-void ImagerWindow::on_solver_ra_dec_hints_changed(bool clicked) {
+void ImagerWindow::on_solver_hints_changed() {
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -346,26 +361,18 @@ void ImagerWindow::on_solver_ra_dec_hints_changed(bool clicked) {
 
 		change_solver_agent_hints_property(selected_agent);
 	});
+}
+
+void ImagerWindow::on_solver_ra_dec_hints_changed(bool clicked) {
+	on_solver_hints_changed();
 }
 
 void ImagerWindow::on_solver_hints_changed(int value) {
-	QtConcurrent::run([=]() {
-		indigo_debug("CALLED: %s\n", __FUNCTION__);
-		static char selected_agent[INDIGO_NAME_SIZE];
-		get_selected_solver_agent(selected_agent);
-
-		change_solver_agent_hints_property(selected_agent);
-	});
+	on_solver_hints_changed();
 }
 
 void ImagerWindow::on_solver_hints_changed(double value) {
-	QtConcurrent::run([=]() {
-		indigo_debug("CALLED: %s\n", __FUNCTION__);
-		static char selected_agent[INDIGO_NAME_SIZE];
-		get_selected_solver_agent(selected_agent);
-
-		change_solver_agent_hints_property(selected_agent);
-	});
+	on_solver_hints_changed();
 }
 
 void ImagerWindow::on_trigger_solve() {
