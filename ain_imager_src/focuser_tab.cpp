@@ -58,7 +58,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_position->setEnabled(false);
 	m_focus_position->setKeyboardTracking(false);
 	focuser_frame_layout->addWidget(m_focus_position, row, 3);
-	connect(m_focus_position, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_focuser_position_changed);
+	connect(m_focus_position, &QSpinBox::editingFinished, this, &ImagerWindow::on_focuser_position_changed);
 
 	row++;
 	label = new QLabel("Move:");
@@ -588,7 +588,7 @@ void ImagerWindow::on_image_right_click(double x, double y, Qt::KeyboardModifier
 	});
 }
 
-void ImagerWindow::on_focuser_position_changed(int value) {
+void ImagerWindow::on_focuser_position_changed() {
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);

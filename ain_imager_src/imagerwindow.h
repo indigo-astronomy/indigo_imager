@@ -267,7 +267,7 @@ public slots:
 	void on_focus_estimator_selected(int index);
 	void on_selection_changed(double value);
 	void on_focuser_selection_radius_changed(int value);
-	void on_focuser_position_changed(int value);
+	void on_focuser_position_changed();
 	void on_image_right_click(double x, double y, Qt::KeyboardModifiers modifiers);
 	void on_image_right_click_ra_dec(double ra, double dec, double telescope_ra, double telescope_dec, Qt::KeyboardModifiers mdifiers);
 	void on_focus_in(bool clicked);
