@@ -1022,7 +1022,7 @@ void update_agent_guider_focal_length_property(ImagerWindow *w, indigo_property 
 	}
 }
 
-static void update_focuser_poition(ImagerWindow *w, indigo_property *property, QSpinBox *set_position) {
+void update_focuser_poition(ImagerWindow *w, indigo_property *property, QSpinBox *set_position) {
 	indigo_debug("change %s", property->name);
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], FOCUSER_POSITION_ITEM_NAME) ||
@@ -1031,6 +1031,11 @@ static void update_focuser_poition(ImagerWindow *w, indigo_property *property, Q
 			indigo_debug("change %s = %f", property->items[i].name, property->items[i].number.value);
 			configure_spinbox(w, &property->items[i], property->perm, set_position);
 		}
+	}
+	if (property->state == INDIGO_BUSY_STATE) {
+		w->m_focus_position_button->setIcon(QIcon(":resource/stop.png"));
+	} else {
+		w->m_focus_position_button->setIcon(QIcon(":resource/play.png"));
 	}
 }
 

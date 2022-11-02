@@ -49,7 +49,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	connect(m_focuser_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focuser_selected);
 
 	row++;
-	label = new QLabel("Absolute Position:");
+	label = new QLabel("Absolute position:");
 	focuser_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_focus_position = new QSpinBox();
 	m_focus_position->setMaximum(1000000);
@@ -57,18 +57,23 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_position->setValue(0);
 	m_focus_position->setEnabled(false);
 	m_focus_position->setKeyboardTracking(false);
-	focuser_frame_layout->addWidget(m_focus_position, row, 3);
-	connect(m_focus_position, &QSpinBox::editingFinished, this, &ImagerWindow::on_focuser_position_changed);
+	focuser_frame_layout->addWidget(m_focus_position, row, 2);
+
+	m_focus_position_button = new QToolButton(this);
+	m_focus_position_button->setToolTip(tr("Go to position / Abort move"));
+	m_focus_position_button->setIcon(QIcon(":resource/play.png"));
+	focuser_frame_layout->addWidget(m_focus_position_button, row, 3);
+	QObject::connect(m_focus_position_button, &QToolButton::clicked, this, &ImagerWindow::on_focuser_position_changed);
 
 	row++;
-	label = new QLabel("Move:");
+	label = new QLabel("Relative move:");
 	focuser_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_focus_steps = new QSpinBox();
 	m_focus_steps->setMaximum(100000);
 	m_focus_steps->setMinimum(0);
 	m_focus_steps->setValue(0);
 	m_focus_steps->setEnabled(false);
-	focuser_frame_layout->addWidget(m_focus_steps, row, 3);
+	focuser_frame_layout->addWidget(m_focus_steps, row, 2);
 
 	row++;
 	QWidget *toolbar = new QWidget;
@@ -98,19 +103,19 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	set_ok(button);
 	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
 
-	m_focusing_in_button = new QPushButton("|");
-	m_focusing_in_button->setStyleSheet("min-width: 15px");
-	m_focusing_in_button->setIcon(QIcon(":resource/focus_in.png"));
-	m_focusing_in_button->setToolTip("Focus IN");
-	toolbox->addWidget(m_focusing_in_button);
-	connect(m_focusing_in_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_in);
-
-	m_focusing_out_button = new QPushButton("|");
+	m_focusing_out_button = new QToolButton(this);
 	m_focusing_out_button->setStyleSheet("min-width: 15px");
 	m_focusing_out_button->setIcon(QIcon(":resource/focus_out.png"));
 	m_focusing_out_button->setToolTip("Focus OUT");
 	toolbox->addWidget(m_focusing_out_button);
 	connect(m_focusing_out_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_out);
+
+	m_focusing_in_button = new QToolButton(this);
+	m_focusing_in_button->setStyleSheet("min-width: 15px");
+	m_focusing_in_button->setIcon(QIcon(":resource/focus_in.png"));
+	m_focusing_in_button->setToolTip("Focus IN");
+	toolbox->addWidget(m_focusing_in_button);
+	connect(m_focusing_in_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_in);
 
 	row++;
 	m_focusing_progress = new QProgressBar();
@@ -593,7 +598,13 @@ void ImagerWindow::on_focuser_position_changed() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-		change_focuser_position_property(selected_agent);
+
+		indigo_property *focuser_position = properties.get(selected_agent, FOCUSER_POSITION_PROPERTY_NAME);
+		if (focuser_position->state != INDIGO_BUSY_STATE) {
+			change_focuser_position_property(selected_agent);
+		} else {
+			indigo_change_switch_property_1(nullptr, selected_agent, FOCUSER_ABORT_MOTION_PROPERTY_NAME, FOCUSER_ABORT_MOTION_ITEM_NAME, true);
+		}
 	});
 }
 

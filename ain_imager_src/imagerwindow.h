@@ -112,6 +112,7 @@ public:
 	friend void update_focuser_temperature(ImagerWindow *w, indigo_property *property);
 	friend void update_focuser_temperature_compensation_steps(ImagerWindow *w, indigo_property *property);
 	friend void update_focuser_mode(ImagerWindow *w, indigo_property *property);
+	friend void update_focuser_poition(ImagerWindow *w, indigo_property *property, QSpinBox *set_position);
 	friend void update_imager_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_gain_offset_property(ImagerWindow *w, indigo_property *property);
@@ -580,6 +581,7 @@ private:
 	QDoubleSpinBox  *m_focus_bl_overshoot;
 	QSpinBox  *m_focus_stack;
 	QSpinBox  *m_focus_position;
+	QToolButton *m_focus_position_button;
 	QSpinBox  *m_focus_steps;
 	QLabel    *m_FWHM_label;
 	QLabel    *m_HFD_label;
@@ -589,8 +591,8 @@ private:
 	QCheckBox *m_focuser_failreturn_cbox;
 	QDoubleSpinBox *m_focuser_exposure_time;
 	QPushButton *m_focusing_button;
-	QPushButton *m_focusing_in_button;
-	QPushButton *m_focusing_out_button;
+	QToolButton *m_focusing_in_button;
+	QToolButton *m_focusing_out_button;
 	QPushButton *m_focusing_preview_button;
 	QProgressBar *m_focusing_progress;
 	FocusGraph *m_focus_graph;
