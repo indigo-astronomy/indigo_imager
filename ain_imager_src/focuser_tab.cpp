@@ -29,9 +29,10 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	QGridLayout *focuser_frame_layout = new QGridLayout();
 	focuser_frame_layout->setAlignment(Qt::AlignTop);
 	focuser_frame_layout->setColumnStretch(0, 1);
-	focuser_frame_layout->setColumnStretch(1, 1);
+	focuser_frame_layout->setColumnStretch(1, 2);
 	focuser_frame_layout->setColumnStretch(2, 1);
 	focuser_frame_layout->setColumnStretch(3, 1);
+	focuser_frame_layout->setColumnStretch(4, 1);
 
 	focuser_frame->setLayout(focuser_frame_layout);
 	focuser_frame->setFrameShape(QFrame::StyledPanel);
@@ -45,7 +46,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	focuser_frame_layout->addWidget(label, row, 0);
 	m_focuser_select = new QComboBox();
-	focuser_frame_layout->addWidget(m_focuser_select, row, 1, 1, 3);
+	focuser_frame_layout->addWidget(m_focuser_select, row, 1, 1, 4);
 	connect(m_focuser_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focuser_selected);
 
 	row++;
@@ -57,12 +58,12 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_position->setValue(0);
 	m_focus_position->setEnabled(false);
 	m_focus_position->setKeyboardTracking(false);
-	focuser_frame_layout->addWidget(m_focus_position, row, 2);
+	focuser_frame_layout->addWidget(m_focus_position, row, 2, 1, 2);
 
 	m_focus_position_button = new QToolButton(this);
-	m_focus_position_button->setToolTip(tr("Go to position / Abort move"));
+	m_focus_position_button->setToolTip(tr("Go to absolute position / Abort move"));
 	m_focus_position_button->setIcon(QIcon(":resource/play.png"));
-	focuser_frame_layout->addWidget(m_focus_position_button, row, 3);
+	focuser_frame_layout->addWidget(m_focus_position_button, row, 4);
 	QObject::connect(m_focus_position_button, &QToolButton::clicked, this, &ImagerWindow::on_focuser_position_changed);
 
 	row++;
@@ -75,21 +76,36 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_steps->setEnabled(false);
 	focuser_frame_layout->addWidget(m_focus_steps, row, 2);
 
+	m_focusing_out_button = new QToolButton(this);
+	m_focusing_out_button->setStyleSheet("min-width: 15px");
+	m_focusing_out_button->setIcon(QIcon(":resource/focus_out.png"));
+	m_focusing_out_button->setToolTip("Relative move out");
+	focuser_frame_layout->addWidget(m_focusing_out_button, row, 3);
+	connect(m_focusing_out_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_out);
+
+	m_focusing_in_button = new QToolButton(this);
+	m_focusing_in_button->setStyleSheet("min-width: 15px");
+	m_focusing_in_button->setIcon(QIcon(":resource/focus_in.png"));
+	m_focusing_in_button->setToolTip("Relative move in");
+	focuser_frame_layout->addWidget(m_focusing_in_button, row, 4);
+	connect(m_focusing_in_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_in);
+
 	row++;
 	QWidget *toolbar = new QWidget;
 	QHBoxLayout *toolbox = new QHBoxLayout(toolbar);
 	toolbar->setContentsMargins(1,1,1,1);
 	toolbox->setContentsMargins(1,1,1,1);
-	focuser_frame_layout->addWidget(toolbar, row, 0, 1, 4);
+	focuser_frame_layout->addWidget(toolbar, row, 0, 1, 5);
 
 	m_focusing_preview_button = new QPushButton("Preview");
 	m_focusing_preview_button->setStyleSheet("min-width: 30px");
 	m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
+	m_focusing_preview_button->setToolTip("Take preview exposure");
 	toolbox->addWidget(m_focusing_preview_button);
 	set_ok(m_focusing_preview_button);
 	connect(m_focusing_preview_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_preview_start_stop);
-
 	m_focusing_button = new QPushButton("Focus");
+	m_focusing_button->setToolTip("Start focusing process");
 	m_focusing_button->setStyleSheet("min-width: 30px");
 	m_focusing_button->setIcon(QIcon(":resource/focus.png"));
 	toolbox->addWidget(m_focusing_button);
@@ -99,27 +115,14 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	QPushButton *button = new QPushButton("Abort");
 	button->setStyleSheet("min-width: 30px");
 	button->setIcon(QIcon(":resource/stop.png"));
+	button->setToolTip("Abort focusing process");
 	toolbox->addWidget(button);
 	set_ok(button);
 	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
 
-	m_focusing_out_button = new QToolButton(this);
-	m_focusing_out_button->setStyleSheet("min-width: 15px");
-	m_focusing_out_button->setIcon(QIcon(":resource/focus_out.png"));
-	m_focusing_out_button->setToolTip("Focus OUT");
-	toolbox->addWidget(m_focusing_out_button);
-	connect(m_focusing_out_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_out);
-
-	m_focusing_in_button = new QToolButton(this);
-	m_focusing_in_button->setStyleSheet("min-width: 15px");
-	m_focusing_in_button->setIcon(QIcon(":resource/focus_in.png"));
-	m_focusing_in_button->setToolTip("Focus IN");
-	toolbox->addWidget(m_focusing_in_button);
-	connect(m_focusing_in_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_in);
-
 	row++;
 	m_focusing_progress = new QProgressBar();
-	focuser_frame_layout->addWidget(m_focusing_progress, row, 0, 1, 4);
+	focuser_frame_layout->addWidget(m_focusing_progress, row, 0, 1, 5);
 	m_focusing_progress->setMaximum(1);
 	m_focusing_progress->setValue(0);
 	m_focusing_progress->setFormat("Focusing: Idle");
@@ -137,7 +140,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_temperature_compensation_frame->setLayout(temperature_compensation_frame_layout);
 	m_temperature_compensation_frame->setFrameShape(QFrame::StyledPanel);
 	m_temperature_compensation_frame->setContentsMargins(0, 0, 0, 0);
-	focuser_frame_layout->addWidget(m_temperature_compensation_frame, row, 0, 1, 4);
+	focuser_frame_layout->addWidget(m_temperature_compensation_frame, row, 0, 1, 5);
 
 	int temp_comp_row = 0;
 	label = new QLabel("Reference T (°C):");
@@ -160,7 +163,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	row++;
 	// Tools tabbar
 	QTabWidget *focuser_tabbar = new QTabWidget;
-	focuser_frame_layout->addWidget(focuser_tabbar, row, 0, 1, 4);
+	focuser_frame_layout->addWidget(focuser_tabbar, row, 0, 1, 5);
 
 	QFrame *stats_frame = new QFrame();
 	focuser_tabbar->addTab(stats_frame, "Statistics");
