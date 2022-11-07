@@ -785,7 +785,7 @@ void close_fd(int fd) {
 
 bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *prefix, char *file_name, bool auto_construct) {
 	int fd;
-	int file_no = 0;
+	int file_no = 1;
 	QString object_name("");
 
 	if (auto_construct) {
