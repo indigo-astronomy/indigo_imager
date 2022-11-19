@@ -1926,6 +1926,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			bool guider_not_loaded = true;
 			bool mount_not_loaded = true;
 			bool solver_not_loaded = true;
+			bool config_not_loaded = true;
 
 			indigo_property *p = properties.get(property->device, "DRIVERS");
 			if (p) {
@@ -1933,6 +1934,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 				guider_not_loaded = !indigo_get_switch(p, "indigo_agent_guider");
 				mount_not_loaded = !indigo_get_switch(p, "indigo_agent_mount");
 				solver_not_loaded = !indigo_get_switch(p, "indigo_agent_astrometry");
+				config_not_loaded = !indigo_get_switch(p, "indigo_agent_config");
 			}
 			char *device_name = (char*)malloc(INDIGO_NAME_SIZE);
 			strncpy(device_name, property->device, INDIGO_NAME_SIZE);
@@ -1956,6 +1958,11 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 				if (solver_not_loaded) {
 					static const char *items[] = { "DRIVER" };
 					static const char *values[] = { "indigo_agent_astrometry" };
+					indigo_change_text_property(NULL, device_name, "LOAD", 1, items, values);
+				}
+				if (config_not_loaded) {
+					static const char *items[] = { "DRIVER" };
+					static const char *values[] = { "indigo_agent_config" };
 					indigo_change_text_property(NULL, device_name, "LOAD", 1, items, values);
 				}
 				pthread_mutex_unlock(&l_mutex);
@@ -1999,7 +2006,8 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		(!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
 		(!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12)) &&
 		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11)) &&
-		(!get_selected_solver_agent(selected_solver_agent) || strncmp(property->device, "Astrometry Agent", 16))
+		(!get_selected_solver_agent(selected_solver_agent) || strncmp(property->device, "Astrometry Agent", 16)) &&
+		strncmp(property->device, "Configuration Agent", 19)
 	) {
 		return;
 	}
@@ -2342,7 +2350,8 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		(!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
 		(!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12)) &&
 		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11)) &&
-		(!get_selected_solver_agent(selected_solver_agent) || strncmp(property->device, "Astrometry Agent", 16))
+		(!get_selected_solver_agent(selected_solver_agent) || strncmp(property->device, "Astrometry Agent", 16)) &&
+		strncmp(property->device, "Configuration Agent", 19)
 	) {
 		return;
 	}

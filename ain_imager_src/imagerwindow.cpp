@@ -244,6 +244,42 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu->addSeparator();
 
+	sub_menu = menu->addMenu("Service Configuration");
+
+	act = sub_menu->addAction("&Load");
+	// connect(act, &QAction::triggered, this, &ImagerWindow::on_focus_show_fwhm);
+
+	act = sub_menu->addAction("&Save");
+	// connect(act, &QAction::triggered, this, &ImagerWindow::on_focus_show_fwhm);
+
+	act = sub_menu->addAction("&Remove");
+	// connect(act, &QAction::triggered, this, &ImagerWindow::on_focus_show_fwhm);
+
+	sub_menu->addSeparator();
+
+	QActionGroup *service_group = new QActionGroup(this);
+	service_group->setExclusive(false);
+
+	act = sub_menu->addAction("&Load Config on Connect");
+	act->setCheckable(true);
+	// if (conf.focuser_display == SHOW_HFD) act->setChecked(true);
+	// connect(act, &QAction::triggered, this, &ImagerWindow::on_focus_show_hfd);
+	service_group->addAction(act);
+
+	act = sub_menu->addAction("&Save Config on Disconnect");
+	act->setCheckable(true);
+	// if (conf.focuser_display == SHOW_FWHM) act->setChecked(true);
+	// connect(act, &QAction::triggered, this, &ImagerWindow::on_focus_show_fwhm);
+	service_group->addAction(act);
+
+	act = sub_menu->addAction("&Save Device Profiles with Service Config");
+	act->setCheckable(true);
+	// if (conf.focuser_display == SHOW_HFD) act->setChecked(true);
+	// connect(act, &QAction::triggered, this, &ImagerWindow::on_focus_show_hfd);
+	service_group->addAction(act);
+
+	menu->addSeparator();
+
 	QActionGroup *log_group = new QActionGroup(this);
 	log_group->setExclusive(true);
 
