@@ -57,6 +57,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	f.close();
 
 	mIndigoServers = new QIndigoServers(this);
+	m_config_dialog = new QConfigDialog(this);
 	m_add_object_dialog = new QAddCustomObject(this);
 
 	save_blob = false;
@@ -92,26 +93,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	act = menu->addAction(tr("&Manage Services"));
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_servers_act);
 
-	sub_menu = menu->addMenu("Service Configuration");
-	act = sub_menu->addAction("&Load (Ain_default)");
-	// connect(act, &QAction::triggered, this, &ImagerWindow::on_focus_show_fwhm);
-
-	act = sub_menu->addAction("&Save (Ain_default)");
-	// connect(act, &QAction::triggered, this, &ImagerWindow::on_focus_show_fwhm);
-
-	act = sub_menu->addAction("&Remove (Ain_default)");
-	// connect(act, &QAction::triggered, this, &ImagerWindow::on_focus_show_fwhm);
-
-	sub_menu->addSeparator();
-
-	QActionGroup *service_group = new QActionGroup(this);
-	service_group->setExclusive(false);
-
-	act = sub_menu->addAction("&Save Device Profiles with Service Config");
-	act->setCheckable(true);
-	// if (conf.focuser_display == SHOW_HFD) act->setChecked(true);
-	// connect(act, &QAction::triggered, this, &ImagerWindow::on_focus_show_hfd);
-	service_group->addAction(act);
+	act = menu->addAction("Service &Configuration");
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_service_config_act);
 
 	menu->addSeparator();
 
@@ -440,6 +423,9 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	connect(m_add_object_dialog, &QAddCustomObject::requestAddCustomObject, this, &ImagerWindow::on_custom_object_added);
 
+	connect(m_config_dialog, &QConfigDialog::requestSaveConfig, this, &ImagerWindow::on_save_config);
+	connect(m_config_dialog, &QConfigDialog::requestLoadConfig, this, &ImagerWindow::on_load_config);
+
 	// NOTE: logging should be before update and delete of properties as they release the copy!!!
 	connect(&IndigoClient::instance(), &IndigoClient::property_defined, this, &ImagerWindow::on_message_sent);
 	connect(&IndigoClient::instance(), &IndigoClient::property_changed, this, &ImagerWindow::on_message_sent);
@@ -499,6 +485,7 @@ ImagerWindow::~ImagerWindow () {
 	}
 	delete mLog;
 	delete mIndigoServers;
+	delete m_config_dialog;
 	delete mServiceModel;
 	delete m_custom_object_model;
 	delete m_add_object_dialog;
@@ -862,6 +849,33 @@ bool ImagerWindow::save_blob_item(indigo_item *item, char *file_name) {
 void ImagerWindow::on_servers_act() {
 	mIndigoServers->show();
 }
+
+
+void ImagerWindow::on_service_config_act() {
+	m_config_dialog->show();
+	QList<ConfigTarget> targets;
+	ConfigTarget a;
+	a.configAgent = "Test @ service 1";
+	a.configName = "Ain";
+	a.saveDeviceConfigs = 1;
+	targets.append(a);
+	a.configAgent = "Test @ service 2";
+	a.configName = "Ain";
+	a.saveDeviceConfigs = 0;
+	targets.append(a);
+	m_config_dialog->populate(targets);
+	m_config_dialog->setActive("Test @ service 2");
+}
+
+
+void ImagerWindow::on_save_config(ConfigTarget configItem) {
+	indigo_error("[SAVE CONFIG] %s, %d", configItem.configAgent.toUtf8().constData(), configItem.saveDeviceConfigs);
+};
+
+
+void ImagerWindow::on_load_config(ConfigTarget configItem) {
+	indigo_error("[LOAD CONFIG] %s, %d", configItem.configAgent.toUtf8().constData(), configItem.saveDeviceConfigs);
+};
 
 
 void ImagerWindow::on_image_save_act() {

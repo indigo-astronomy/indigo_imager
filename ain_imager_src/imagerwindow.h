@@ -62,6 +62,7 @@ class QIndigoServers;
 #include "syncutils.h"
 #include "customobjectmodel.h"
 #include "qaddcustomobject.h"
+#include "qconfigdialog.h"
 
 
 class ImagerWindow : public QMainWindow {
@@ -218,6 +219,7 @@ public slots:
 	void on_log_debug();
 	void on_log_trace();
 	void on_image_save_act();
+	void on_service_config_act();
 	void on_data_directory_prefix_act();
 	void on_acl_load_act();
 	void on_acl_append_act();
@@ -226,6 +228,8 @@ public slots:
 	void on_servers_act();
 	void on_exit_act();
 	void on_about_act();
+	void on_save_config(ConfigTarget configItem);
+	void on_load_config(ConfigTarget configItem);
 
 	void on_imager_cb_changed(int balance);
 	void on_imager_stretch_changed(int level);
@@ -784,6 +788,7 @@ private:
 
 	CustomObjectModel *m_custom_object_model;
 	QAddCustomObject *m_add_object_dialog;
+	QConfigDialog *m_config_dialog;
 
 	char m_image_path[PATH_LEN];
 	//char *m_image_formrat;

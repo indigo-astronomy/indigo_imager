@@ -44,6 +44,7 @@ SOURCES += \
 	focusgraph.cpp \
 	blobpreview.cpp \
 	syncutils.cpp \
+	qconfigdialog.cpp \
 	../common_src/coordconv.c \
 	../object_data/indigo_cat_data.c \
 	../common_src/utils.cpp \
@@ -121,6 +122,7 @@ HEADERS += \
 	widget_state.h \
 	blobpreview.h \
 	syncutils.h \
+	qconfigdialog.h \
 	../common_src/version.h \
 	../object_data/indigo_cat_data.h \
 	../common_src/utils.h \
