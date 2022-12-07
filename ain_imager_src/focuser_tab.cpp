@@ -57,7 +57,8 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_position->setMinimum(-1000000);
 	m_focus_position->setValue(0);
 	m_focus_position->setEnabled(false);
-	m_focus_position->setKeyboardTracking(false);
+	// no idea why I had this here!!!
+	// m_focus_position->setKeyboardTracking(false);
 	focuser_frame_layout->addWidget(m_focus_position, row, 2, 1, 2);
 
 	m_focus_position_button = new QToolButton(this);
