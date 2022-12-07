@@ -853,8 +853,8 @@ void ImagerWindow::on_servers_act() {
 
 void ImagerWindow::on_service_config_act() {
 	m_config_dialog->show();
-	QList<ConfigTarget> targets;
-	ConfigTarget a;
+	QList<ConfigItem> targets;
+	ConfigItem a;
 	a.configAgent = "Test @ service 1";
 	a.configName = "Ain";
 	a.saveDeviceConfigs = 1;
@@ -868,12 +868,12 @@ void ImagerWindow::on_service_config_act() {
 }
 
 
-void ImagerWindow::on_save_config(ConfigTarget configItem) {
+void ImagerWindow::on_save_config(ConfigItem configItem) {
 	indigo_error("[SAVE CONFIG] %s, %d", configItem.configAgent.toUtf8().constData(), configItem.saveDeviceConfigs);
 };
 
 
-void ImagerWindow::on_load_config(ConfigTarget configItem) {
+void ImagerWindow::on_load_config(ConfigItem configItem) {
 	indigo_error("[LOAD CONFIG] %s, %d", configItem.configAgent.toUtf8().constData(), configItem.saveDeviceConfigs);
 };
 

@@ -228,8 +228,8 @@ public slots:
 	void on_servers_act();
 	void on_exit_act();
 	void on_about_act();
-	void on_save_config(ConfigTarget configItem);
-	void on_load_config(ConfigTarget configItem);
+	void on_save_config(ConfigItem configItem);
+	void on_load_config(ConfigItem configItem);
 
 	void on_imager_cb_changed(int balance);
 	void on_imager_stretch_changed(int level);

@@ -73,7 +73,7 @@ QConfigDialog::QConfigDialog(QWidget *parent) : QDialog(parent) {
 	QObject::connect(m_close_button, SIGNAL(clicked()), this, SLOT(onClose()));
 	connect(this, &QConfigDialog::populate, this, &QConfigDialog::onPopulate);
 	connect(this, &QConfigDialog::setActive, this, &QConfigDialog::onSetActive);
-	//connect(this, &QAddCustomObject::clear, this, &QAddCustomObject::onClear);
+	connect(this, &QConfigDialog::clear, this, &QConfigDialog::onClear);
 }
 
 void QConfigDialog::onClose() {
@@ -81,7 +81,7 @@ void QConfigDialog::onClose() {
 }
 
 void QConfigDialog::onSaveConfig() {
-	ConfigTarget configItem;
+	ConfigItem configItem;
 	configItem.configAgent = m_config_agent_select->currentText();
 	configItem.saveDeviceConfigs = m_save_devices_cbox->checkState();
 	configItem.configName = "Default_ain_config";
@@ -89,17 +89,17 @@ void QConfigDialog::onSaveConfig() {
 }
 
 void QConfigDialog::onLoadConfig() {
-	ConfigTarget configItem;
+	ConfigItem configItem;
 	configItem.configAgent = m_config_agent_select->currentText();
 	configItem.saveDeviceConfigs = m_save_devices_cbox->checkState();
 	configItem.configName = "Default_ain_config";
 	emit(requestLoadConfig(configItem));
 }
 
-void QConfigDialog::onPopulate(QList<ConfigTarget> configTargets) {
+void QConfigDialog::onPopulate(QList<ConfigItem> configTargets) {
 	m_config_agent_select->clear();
 	for (int i=0; i<configTargets.count(); i++) {
-		ConfigTarget item = configTargets[i];
+		ConfigItem item = configTargets[i];
 		if (m_config_agent_select->findText(item.configAgent) < 0) {
 			m_config_agent_select->addItem(item.configAgent, item.saveDeviceConfigs);
 			indigo_debug("[ADD] %s\n", item.configAgent.toUtf8().data());

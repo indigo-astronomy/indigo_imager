@@ -32,7 +32,7 @@
 #include <QComboBox>
 #include <QCheckBox>
 
-struct ConfigTarget {
+struct ConfigItem {
 	QString configAgent;
 	QString configName;
 	bool saveDeviceConfigs;
@@ -46,13 +46,14 @@ public:
 	~QConfigDialog(){ };
 
 signals:
-	void requestSaveConfig(ConfigTarget configTarget);
-	void requestLoadConfig(ConfigTarget configTarget);
-	void populate(QList<ConfigTarget> configTargets);
+	void requestSaveConfig(ConfigItem configItem);
+	void requestLoadConfig(ConfigItem configTarget);
+	void populate(QList<ConfigItem> configTargets);
 	void setActive(QString agentName);
+	void clear();
 
 public slots:
-	void onPopulate(QList<ConfigTarget> configTargets);
+	void onPopulate(QList<ConfigItem> configTargets);
 	void onSetActive(QString agentName);
 	void onSaveConfig();
 	void onLoadConfig();
