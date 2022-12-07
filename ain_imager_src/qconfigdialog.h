@@ -50,17 +50,17 @@ public:
 signals:
 	void requestSaveConfig(ConfigItem configItem);
 	void requestLoadConfig(ConfigItem configTarget);
-	void populate(QList<ConfigItem> configTargets);
 	void addAgent(ConfigItem item);
 	void removeAgent(QString agentName);
 	void setActive(QString agentName);
 	void clear();
 
 public slots:
-	void onPopulate(QList<ConfigItem> configTargets);
 	void onSetActive(QString agentName);
 	void onAddAgent(ConfigItem item);
 	void onRemoveAgent(QString agentName);
+
+	void onAgentChanged(int index);
 	void onSaveConfig();
 	void onLoadConfig();
 	void onClose();

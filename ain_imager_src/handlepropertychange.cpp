@@ -1908,6 +1908,18 @@ void condigure_guider_overlays(ImagerWindow *w, char *device, indigo_property *p
 	}
 }
 
+static void populateConfigItem(indigo_property *property, ConfigItem &configItem) {
+	configItem.configAgent = QString(property->device);
+	configItem.configName = QString(DEFAULT_CONFIG);
+	configItem.saveDeviceConfigs = false;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], AGENT_CONFIG_SETUP_AUTOSAVE_ITEM_NAME)) {
+			configItem.saveDeviceConfigs = property->items[i].sw.value;
+			break;
+		}
+	}
+}
+
 void ImagerWindow::property_define(indigo_property* property, char *message) {
 	char selected_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0};
@@ -2005,15 +2017,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if ((!strncmp(property->device, "Configuration agent", 19) || !strncmp(property->device, "Configuration Agent", 19)) &&
 	   (!strcmp(property->name, AGENT_CONFIG_SETUP_PROPERTY_NAME))) {
 		ConfigItem configItem;
-		configItem.configAgent = QString(property->device);
-		configItem.configName = QString(DEFAULT_CONFIG);
-		configItem.saveDeviceConfigs = false;
-		for (int i = 0; i < property->count; i++) {
-			if (client_match_item(&property->items[i], AGENT_CONFIG_SETUP_AUTOSAVE_ITEM_NAME)) {
-				configItem.saveDeviceConfigs = property->items[i].sw.value;
-				break;
-			}
-		}
+		populateConfigItem(property, configItem);
 		m_config_dialog->addAgent(configItem);
 	}
 	if (
@@ -2361,6 +2365,12 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 
 	indigo_debug("[PROPERTY CHANGE] %s(): %s.%s\n", __FUNCTION__, property->device, property->name);
 
+	if ((!strncmp(property->device, "Configuration agent", 19) || !strncmp(property->device, "Configuration Agent", 19)) &&
+	   (!strcmp(property->name, AGENT_CONFIG_SETUP_PROPERTY_NAME))) {
+		ConfigItem configItem;
+		populateConfigItem(property, configItem);
+		m_config_dialog->addAgent(configItem);
+	}
 	if (
 		(!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
 		(!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12)) &&

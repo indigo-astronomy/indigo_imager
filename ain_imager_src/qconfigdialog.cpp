@@ -38,6 +38,7 @@ QConfigDialog::QConfigDialog(QWidget *parent) : QDialog(parent) {
 	row++;
 	m_config_agent_select = new QComboBox();
 	frame_layout->addWidget(m_config_agent_select, row, 0);
+	connect(m_config_agent_select, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &QConfigDialog::onAgentChanged);
 
 	row++;
 	m_save_devices_cbox = new QCheckBox("Save device profiles");
@@ -71,11 +72,15 @@ QConfigDialog::QConfigDialog(QWidget *parent) : QDialog(parent) {
 	QObject::connect(m_save_button, SIGNAL(clicked()), this, SLOT(onSaveConfig()));
 	QObject::connect(m_load_button, SIGNAL(clicked()), this, SLOT(onLoadConfig()));
 	QObject::connect(m_close_button, SIGNAL(clicked()), this, SLOT(onClose()));
-	connect(this, &QConfigDialog::populate, this, &QConfigDialog::onPopulate);
 	connect(this, &QConfigDialog::addAgent, this, &QConfigDialog::onAddAgent);
 	connect(this, &QConfigDialog::removeAgent, this, &QConfigDialog::onRemoveAgent);
 	connect(this, &QConfigDialog::setActive, this, &QConfigDialog::onSetActive);
 	connect(this, &QConfigDialog::clear, this, &QConfigDialog::onClear);
+}
+
+void QConfigDialog::onAgentChanged(int index) {
+	bool checked = m_config_agent_select->itemData(index).toBool();
+	m_save_devices_cbox->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
 }
 
 void QConfigDialog::onClose() {
@@ -98,26 +103,15 @@ void QConfigDialog::onLoadConfig() {
 	emit(requestLoadConfig(configItem));
 }
 
-void QConfigDialog::onPopulate(QList<ConfigItem> configTargets) {
-	m_config_agent_select->clear();
-	for (int i=0; i<configTargets.count(); i++) {
-		ConfigItem item = configTargets[i];
-		if (m_config_agent_select->findText(item.configAgent) < 0) {
-			m_config_agent_select->addItem(item.configAgent, item.saveDeviceConfigs);
-			indigo_debug("[ADD] %s\n", item.configAgent.toUtf8().data());
-		} else {
-			indigo_debug("[DUPLICATE] %s\n", item.configAgent.toUtf8().data());
-		}
-	}
-	m_save_devices_cbox->setCheckState(configTargets[0].saveDeviceConfigs ? Qt::Checked : Qt::Unchecked);
-}
-
 void QConfigDialog::onAddAgent(ConfigItem item) {
-	if (m_config_agent_select->findText(item.configAgent) < 0) {
+	int index = m_config_agent_select->findText(item.configAgent);
+	if (index < 0) {
 		m_config_agent_select->addItem(item.configAgent, item.saveDeviceConfigs);
 		indigo_debug("[ADD] %s\n", item.configAgent.toUtf8().data());
 	} else {
-		indigo_debug("[DUPLICATE] %s\n", item.configAgent.toUtf8().data());
+		m_config_agent_select->setItemData(index, item.saveDeviceConfigs);
+		m_save_devices_cbox->setCheckState(item.saveDeviceConfigs ? Qt::Checked : Qt::Unchecked);
+		indigo_debug("[DUPLICATE Updating data] %s\n", item.configAgent.toUtf8().data());
 	}
 }
 

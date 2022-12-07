@@ -852,21 +852,24 @@ void ImagerWindow::on_servers_act() {
 
 
 void ImagerWindow::on_service_config_act() {
+	static char selected_agent[INDIGO_NAME_SIZE];
+	get_selected_imager_agent(selected_agent);
+	QString service(selected_agent);
+	int pos = service.indexOf('@');
+	if (pos > 0) {
+		service = service.mid(pos);
+		service = service.trimmed();
+		/* agent can be lowecace so try both */
+		QString agent = "Configuration Agent " + service;
+		m_config_dialog->setActive(agent);
+		indigo_error("CONFIG: %s", agent.toUtf8().constData());
+		agent = "Configuration agent " + service;
+		m_config_dialog->setActive(agent);
+	} else {
+		m_config_dialog->setActive("Configuration Agent");
+		m_config_dialog->setActive("Configuration agent");
+	}
 	m_config_dialog->show();
-	/*
-	QList<ConfigItem> targets;
-	ConfigItem a;
-	a.configAgent = "Test @ service 1";
-	a.configName = "Ain";
-	a.saveDeviceConfigs = 1;
-	targets.append(a);
-	a.configAgent = "Test @ service 2";
-	a.configName = "Ain";
-	a.saveDeviceConfigs = 0;
-	targets.append(a);
-	m_config_dialog->populate(targets);
-	m_config_dialog->setActive("Test @ service 2");
-	*/
 }
 
 
