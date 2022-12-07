@@ -862,7 +862,7 @@ void ImagerWindow::on_service_config_act() {
 		/* agent can be lowecace so try both */
 		QString agent = "Configuration Agent " + service;
 		m_config_dialog->setActive(agent);
-		indigo_error("CONFIG: %s", agent.toUtf8().constData());
+		indigo_debug("CONFIG: %s", agent.toUtf8().constData());
 		agent = "Configuration agent " + service;
 		m_config_dialog->setActive(agent);
 	} else {
@@ -874,12 +874,27 @@ void ImagerWindow::on_service_config_act() {
 
 
 void ImagerWindow::on_save_config(ConfigItem configItem) {
-	indigo_error("[SAVE CONFIG] %s, %d", configItem.configAgent.toUtf8().constData(), configItem.saveDeviceConfigs);
+	indigo_debug("[SAVE CONFIG] %s, %d", configItem.configAgent.toUtf8().constData(), configItem.saveDeviceConfigs);
+	static char agent[INDIGO_VALUE_SIZE];
+	static char config[INDIGO_VALUE_SIZE];
+	strncpy(agent, configItem.configAgent.toUtf8().constData(), INDIGO_VALUE_SIZE);
+	strncpy(config, configItem.configName.toUtf8().constData(), INDIGO_VALUE_SIZE);
+	static bool autosave = configItem.saveDeviceConfigs;
+	QtConcurrent::run([=]() {
+		change_config_agent_save(agent, config, autosave);
+	});
 };
 
 
 void ImagerWindow::on_load_config(ConfigItem configItem) {
-	indigo_error("[LOAD CONFIG] %s, %d", configItem.configAgent.toUtf8().constData(), configItem.saveDeviceConfigs);
+	indigo_debug("[LOAD CONFIG] %s, %d", configItem.configAgent.toUtf8().constData(), configItem.saveDeviceConfigs);
+	static char agent[INDIGO_VALUE_SIZE];
+	static char config[INDIGO_VALUE_SIZE];
+	strncpy(agent, configItem.configAgent.toUtf8().constData(), INDIGO_VALUE_SIZE);
+	strncpy(config, configItem.configName.toUtf8().constData(), INDIGO_VALUE_SIZE);
+	QtConcurrent::run([=]() {
+		change_config_agent_load(agent, config);
+	});
 };
 
 

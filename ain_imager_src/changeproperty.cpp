@@ -23,6 +23,15 @@
 #include <logger.h>
 #include <conf.h>
 
+void ImagerWindow::change_config_agent_load(const char *agent, const char *config) const {
+	indigo_change_switch_property_1(nullptr, agent, AGENT_CONFIG_LOAD_PROPERTY_NAME, config, true);
+}
+
+void ImagerWindow::change_config_agent_save(const char *agent, const char *config, bool autosave) const {
+	indigo_change_switch_property_1(nullptr, agent, AGENT_CONFIG_SETUP_PROPERTY_NAME, AGENT_CONFIG_SETUP_AUTOSAVE_ITEM_NAME, autosave);
+	indigo_change_text_property_1_raw(nullptr, agent, AGENT_CONFIG_SAVE_PROPERTY_NAME, AGENT_CONFIG_SAVE_NAME_ITEM_NAME, config);
+}
+
 void ImagerWindow::change_ccd_frame_property(const char *agent) const {
 	static const char *items[] = {
 		CCD_FRAME_LEFT_ITEM_NAME,

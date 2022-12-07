@@ -811,6 +811,9 @@ private:
 	void create_guider_tab(QFrame *guider_frame);
 	void create_telescope_tab(QFrame *solver_frame);
 	void create_solver_tab(QFrame *telescope_frame);
+
+	void change_config_agent_load(const char *agent, const char *config) const;
+	void change_config_agent_save(const char *agent, const char *config, bool autosave) const;
 	void change_ccd_frame_property(const char *agent) const;
 	void change_ccd_exposure_property(const char *agent, QDoubleSpinBox *exp_time) const;
 	void change_ccd_abort_exposure_property(const char *agent) const;
