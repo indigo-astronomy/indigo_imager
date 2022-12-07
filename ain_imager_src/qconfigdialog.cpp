@@ -72,6 +72,8 @@ QConfigDialog::QConfigDialog(QWidget *parent) : QDialog(parent) {
 	QObject::connect(m_load_button, SIGNAL(clicked()), this, SLOT(onLoadConfig()));
 	QObject::connect(m_close_button, SIGNAL(clicked()), this, SLOT(onClose()));
 	connect(this, &QConfigDialog::populate, this, &QConfigDialog::onPopulate);
+	connect(this, &QConfigDialog::addAgent, this, &QConfigDialog::onAddAgent);
+	connect(this, &QConfigDialog::removeAgent, this, &QConfigDialog::onRemoveAgent);
 	connect(this, &QConfigDialog::setActive, this, &QConfigDialog::onSetActive);
 	connect(this, &QConfigDialog::clear, this, &QConfigDialog::onClear);
 }
@@ -84,7 +86,7 @@ void QConfigDialog::onSaveConfig() {
 	ConfigItem configItem;
 	configItem.configAgent = m_config_agent_select->currentText();
 	configItem.saveDeviceConfigs = m_save_devices_cbox->checkState();
-	configItem.configName = "Default_ain_config";
+	configItem.configName = DEFAULT_CONFIG;
 	emit(requestSaveConfig(configItem));
 }
 
@@ -92,7 +94,7 @@ void QConfigDialog::onLoadConfig() {
 	ConfigItem configItem;
 	configItem.configAgent = m_config_agent_select->currentText();
 	configItem.saveDeviceConfigs = m_save_devices_cbox->checkState();
-	configItem.configName = "Default_ain_config";
+	configItem.configName = DEFAULT_CONFIG;
 	emit(requestLoadConfig(configItem));
 }
 
@@ -108,6 +110,25 @@ void QConfigDialog::onPopulate(QList<ConfigItem> configTargets) {
 		}
 	}
 	m_save_devices_cbox->setCheckState(configTargets[0].saveDeviceConfigs ? Qt::Checked : Qt::Unchecked);
+}
+
+void QConfigDialog::onAddAgent(ConfigItem item) {
+	if (m_config_agent_select->findText(item.configAgent) < 0) {
+		m_config_agent_select->addItem(item.configAgent, item.saveDeviceConfigs);
+		indigo_debug("[ADD] %s\n", item.configAgent.toUtf8().data());
+	} else {
+		indigo_debug("[DUPLICATE] %s\n", item.configAgent.toUtf8().data());
+	}
+}
+
+void QConfigDialog::onRemoveAgent(QString agentName) {
+	int index = m_config_agent_select->findText(agentName);
+	if (index >= 0) {
+		m_config_agent_select->removeItem(index);
+		indigo_debug("[REMOVE] %s\n", agentName.toUtf8().data());
+	} else {
+		indigo_debug("[NOT FOUND] %s\n", agentName.toUtf8().data());
+	}
 }
 
 void QConfigDialog::onSetActive(QString agentName) {

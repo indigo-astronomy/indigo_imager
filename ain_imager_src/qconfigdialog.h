@@ -32,6 +32,8 @@
 #include <QComboBox>
 #include <QCheckBox>
 
+#define DEFAULT_CONFIG "Ain_default"
+
 struct ConfigItem {
 	QString configAgent;
 	QString configName;
@@ -49,12 +51,16 @@ signals:
 	void requestSaveConfig(ConfigItem configItem);
 	void requestLoadConfig(ConfigItem configTarget);
 	void populate(QList<ConfigItem> configTargets);
+	void addAgent(ConfigItem item);
+	void removeAgent(QString agentName);
 	void setActive(QString agentName);
 	void clear();
 
 public slots:
 	void onPopulate(QList<ConfigItem> configTargets);
 	void onSetActive(QString agentName);
+	void onAddAgent(ConfigItem item);
+	void onRemoveAgent(QString agentName);
 	void onSaveConfig();
 	void onLoadConfig();
 	void onClose();
@@ -70,4 +76,4 @@ private:
 	QPushButton *m_close_button;
 };
 
-#endif // __QCONFOG_GIALOG_H
+#endif // __QCONFOGDIALOG_H

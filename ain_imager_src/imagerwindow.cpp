@@ -853,6 +853,7 @@ void ImagerWindow::on_servers_act() {
 
 void ImagerWindow::on_service_config_act() {
 	m_config_dialog->show();
+	/*
 	QList<ConfigItem> targets;
 	ConfigItem a;
 	a.configAgent = "Test @ service 1";
@@ -865,6 +866,7 @@ void ImagerWindow::on_service_config_act() {
 	targets.append(a);
 	m_config_dialog->populate(targets);
 	m_config_dialog->setActive("Test @ service 2");
+	*/
 }
 
 
