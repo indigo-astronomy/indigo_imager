@@ -32,6 +32,10 @@ void ImagerWindow::change_config_agent_save(const char *agent, const char *confi
 	indigo_change_text_property_1_raw(nullptr, agent, AGENT_CONFIG_SAVE_PROPERTY_NAME, AGENT_CONFIG_SAVE_NAME_ITEM_NAME, config);
 }
 
+void ImagerWindow::change_config_agent_delete(const char *agent, const char *config) const {
+	indigo_change_text_property_1_raw(nullptr, agent, AGENT_CONFIG_DELETE_PROPERTY_NAME, AGENT_CONFIG_DELETE_NAME_ITEM_NAME, config);
+}
+
 void ImagerWindow::change_ccd_frame_property(const char *agent) const {
 	static const char *items[] = {
 		CCD_FRAME_LEFT_ITEM_NAME,

@@ -64,6 +64,8 @@ RESOURCES += \
 	../resource/control_panel.qss \
 	../resource/appicon.png \
 	../resource/indigo_logo.png \
+	../resource/save.png \
+	../resource/delete.png \
 	../resource/zoom-fit-best.png \
 	../resource/zoom-original.png \
 	../resource/bonjour_service.png \

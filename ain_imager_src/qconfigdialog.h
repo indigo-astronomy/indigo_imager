@@ -28,7 +28,6 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QMessageBox>
-#include <QLineEdit>
 #include <QComboBox>
 #include <QCheckBox>
 
@@ -46,29 +45,42 @@ class QConfigDialog : public QDialog
 public:
 	QConfigDialog(QWidget *parent = nullptr);
 	~QConfigDialog(){ };
+	QString getSelectedAgent();
 
 signals:
 	void requestSaveConfig(ConfigItem configItem);
-	void requestLoadConfig(ConfigItem configTarget);
+	void requestLoadConfig(ConfigItem configItem);
+	void requestRemoveConfig(ConfigItem configItem);
 	void addAgent(ConfigItem item);
 	void removeAgent(QString agentName);
 	void setActive(QString agentName);
-	void clear();
+	void agentChanged(QString agentName);
+	void addConfig(QString configName);
+	void removeConfig(QString configName);
+	void clearAgents();
+	void clearConfigs();
 
 public slots:
 	void onSetActive(QString agentName);
 	void onAddAgent(ConfigItem item);
 	void onRemoveAgent(QString agentName);
+	void onAddConfig(QString configName);
+	void onRemoveConfig(QString configName);
+	void onClearAgents();
+	void onClearConfigs();
 
-	void onAgentChanged(int index);
-	void onSaveConfig();
-	void onLoadConfig();
-	void onClose();
-	void onClear();
+	void onAgentChangedCB(int index);
+	void onSaveConfigCB();
+	void onLoadConfigCB();
+	void onRemoveConfigCB();
+	void onCloseCB();
 
 private:
 	QComboBox *m_config_agent_select;
+	QComboBox *m_configuration_select;
 	QCheckBox *m_save_devices_cbox;
+	QToolButton *m_add_config_button;
+	QToolButton *m_remove_config_button;
 
 	QDialogButtonBox *m_button_box;
 	QPushButton *m_load_button;

@@ -425,6 +425,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	connect(m_config_dialog, &QConfigDialog::requestSaveConfig, this, &ImagerWindow::on_save_config);
 	connect(m_config_dialog, &QConfigDialog::requestLoadConfig, this, &ImagerWindow::on_load_config);
+	connect(m_config_dialog, &QConfigDialog::requestRemoveConfig, this, &ImagerWindow::on_delete_config);
+	connect(m_config_dialog, &QConfigDialog::agentChanged, this, &ImagerWindow::on_config_agent_changed);
 
 	// NOTE: logging should be before update and delete of properties as they release the copy!!!
 	connect(&IndigoClient::instance(), &IndigoClient::property_defined, this, &ImagerWindow::on_message_sent);
@@ -883,7 +885,7 @@ void ImagerWindow::on_save_config(ConfigItem configItem) {
 	QtConcurrent::run([=]() {
 		change_config_agent_save(agent, config, autosave);
 	});
-};
+}
 
 
 void ImagerWindow::on_load_config(ConfigItem configItem) {
@@ -895,8 +897,28 @@ void ImagerWindow::on_load_config(ConfigItem configItem) {
 	QtConcurrent::run([=]() {
 		change_config_agent_load(agent, config);
 	});
-};
+}
 
+void ImagerWindow::on_delete_config(ConfigItem configItem) {
+	indigo_debug("[DELETE CONFIG] %s, %d", configItem.configAgent.toUtf8().constData(), configItem.saveDeviceConfigs);
+	static char agent[INDIGO_VALUE_SIZE];
+	static char config[INDIGO_VALUE_SIZE];
+	strncpy(agent, configItem.configAgent.toUtf8().constData(), INDIGO_VALUE_SIZE);
+	strncpy(config, configItem.configName.toUtf8().constData(), INDIGO_VALUE_SIZE);
+	QtConcurrent::run([=]() {
+		change_config_agent_delete(agent, config);
+	});
+}
+
+void ImagerWindow::on_config_agent_changed(QString configAgent) {
+	static indigo_property enumerate = {0};
+	if(configAgent.isEmpty()) return;
+	strncpy(enumerate.device, configAgent.toUtf8().constData(), INDIGO_NAME_SIZE);
+	strncpy(enumerate.name, AGENT_CONFIG_LOAD_PROPERTY_NAME, INDIGO_NAME_SIZE);
+	QtConcurrent::run([=]() {
+		indigo_enumerate_properties(nullptr, &enumerate);
+	});
+}
 
 void ImagerWindow::on_image_save_act() {
 	if (!m_indigo_item) return;

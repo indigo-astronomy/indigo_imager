@@ -93,6 +93,12 @@ public:
 		return true;
 	};
 
+	bool get_selected_config_agent(char * selected_agent) const {
+		if (!m_config_dialog) return false;
+		strncpy(selected_agent, m_config_dialog->getSelectedAgent().toUtf8().constData(), INDIGO_NAME_SIZE);
+		return true;
+	}
+
 	bool get_selected_solver_agent(char * selected_agent) const {
 		if (!selected_agent || !m_agent_solver_select) return false;
 		strncpy(selected_agent, m_agent_solver_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
@@ -230,6 +236,8 @@ public slots:
 	void on_about_act();
 	void on_save_config(ConfigItem configItem);
 	void on_load_config(ConfigItem configItem);
+	void on_delete_config(ConfigItem configItem);
+	void on_config_agent_changed(QString configAgent);
 
 	void on_imager_cb_changed(int balance);
 	void on_imager_stretch_changed(int level);
@@ -814,6 +822,7 @@ private:
 
 	void change_config_agent_load(const char *agent, const char *config) const;
 	void change_config_agent_save(const char *agent, const char *config, bool autosave) const;
+	void change_config_agent_delete(const char *agent, const char *config) const;
 	void change_ccd_frame_property(const char *agent) const;
 	void change_ccd_exposure_property(const char *agent, QDoubleSpinBox *exp_time) const;
 	void change_ccd_abort_exposure_property(const char *agent) const;
