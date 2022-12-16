@@ -2032,6 +2032,19 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	) {
 		return;
 	}
+
+	// Config Agent
+	if (client_match_device_property(property, selected_config_agent, AGENT_CONFIG_LOAD_PROPERTY_NAME)) {
+		m_config_dialog->clearConfigs();
+		for (int i = 0; i < property->count; i++) {
+			m_config_dialog->addConfig(property->items[i].name);
+		}
+	}
+	if (client_match_device_property(property, selected_config_agent, AGENT_CONFIG_LAST_CONFIG_PROPERTY_NAME)) {
+		m_config_dialog->setActiveConfig(property->items[0].text.value);
+	}
+
+	// Imager Agent
 	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_camera_select);
 		if (indigo_get_switch(property, "NONE")) {
@@ -2055,14 +2068,6 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			set_widget_state(m_focusing_preview_button, INDIGO_OK_STATE);
 		}
 	}
-
-	if (client_match_device_property(property, selected_config_agent, AGENT_CONFIG_LOAD_PROPERTY_NAME)) {
-		m_config_dialog->clearConfigs();
-		for (int i = 0; i < property->count; i++) {
-			m_config_dialog->addConfig(property->items[i].name);
-		}
-	}
-
 	if (client_match_device_property(property, selected_agent, FILTER_WHEEL_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_wheel_select);
 	}
@@ -2372,6 +2377,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_mount_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_solver_agent[INDIGO_VALUE_SIZE] = {0};
+	char selected_config_agent[INDIGO_VALUE_SIZE] = {0};
 
 	indigo_debug("[PROPERTY CHANGE] %s(): %s.%s\n", __FUNCTION__, property->device, property->name);
 
@@ -2386,12 +2392,18 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		(!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12)) &&
 		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11)) &&
 		(!get_selected_solver_agent(selected_solver_agent) || strncmp(property->device, "Astrometry Agent", 16)) &&
+		!get_selected_config_agent(selected_config_agent) &&
 		strncmp(property->device, "Configuration agent", 19) &&
 		strncmp(property->device, "Configuration Agent", 19)
 	) {
 		return;
 	}
+	// Config Agent
+	if (client_match_device_property(property, selected_config_agent, AGENT_CONFIG_LAST_CONFIG_PROPERTY_NAME)) {
+		m_config_dialog->setActiveConfig(property->items[0].text.value);
+	}
 
+	// Imager Agent
 	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_camera_select);
 	}

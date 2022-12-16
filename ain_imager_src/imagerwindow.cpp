@@ -863,13 +863,12 @@ void ImagerWindow::on_service_config_act() {
 		service = service.trimmed();
 		/* agent can be lowecace so try both */
 		QString agent = "Configuration Agent " + service;
-		m_config_dialog->setActive(agent);
+		m_config_dialog->setActiveAgent(agent);
 		indigo_debug("CONFIG: %s", agent.toUtf8().constData());
 		agent = "Configuration agent " + service;
-		m_config_dialog->setActive(agent);
+		m_config_dialog->setActiveAgent(agent);
 	} else {
-		m_config_dialog->setActive("Configuration Agent");
-		m_config_dialog->setActive("Configuration agent");
+		m_config_dialog->setActiveAgent("Configuration Agent");
 	}
 	m_config_dialog->show();
 }
@@ -900,6 +899,9 @@ void ImagerWindow::on_load_config(ConfigItem configItem) {
 }
 
 void ImagerWindow::on_delete_config(ConfigItem configItem) {
+	static indigo_property enumerate_last = {0};
+	strncpy(enumerate_last.device, configItem.configAgent.toUtf8().constData(), INDIGO_NAME_SIZE);
+	strncpy(enumerate_last.name, AGENT_CONFIG_LAST_CONFIG_PROPERTY_NAME, INDIGO_NAME_SIZE);
 	indigo_debug("[DELETE CONFIG] %s, %d", configItem.configAgent.toUtf8().constData(), configItem.saveDeviceConfigs);
 	static char agent[INDIGO_VALUE_SIZE];
 	static char config[INDIGO_VALUE_SIZE];
@@ -907,16 +909,21 @@ void ImagerWindow::on_delete_config(ConfigItem configItem) {
 	strncpy(config, configItem.configName.toUtf8().constData(), INDIGO_VALUE_SIZE);
 	QtConcurrent::run([=]() {
 		change_config_agent_delete(agent, config);
+		indigo_enumerate_properties(nullptr, &enumerate_last);
 	});
 }
 
 void ImagerWindow::on_config_agent_changed(QString configAgent) {
-	static indigo_property enumerate = {0};
+	static indigo_property enumerate_config = {0};
+	static indigo_property enumerate_last = {0};
 	if(configAgent.isEmpty()) return;
-	strncpy(enumerate.device, configAgent.toUtf8().constData(), INDIGO_NAME_SIZE);
-	strncpy(enumerate.name, AGENT_CONFIG_LOAD_PROPERTY_NAME, INDIGO_NAME_SIZE);
+	strncpy(enumerate_config.device, configAgent.toUtf8().constData(), INDIGO_NAME_SIZE);
+	strncpy(enumerate_config.name, AGENT_CONFIG_LOAD_PROPERTY_NAME, INDIGO_NAME_SIZE);
+	strncpy(enumerate_last.device, configAgent.toUtf8().constData(), INDIGO_NAME_SIZE);
+	strncpy(enumerate_last.name, AGENT_CONFIG_LAST_CONFIG_PROPERTY_NAME, INDIGO_NAME_SIZE);
 	QtConcurrent::run([=]() {
-		indigo_enumerate_properties(nullptr, &enumerate);
+		indigo_enumerate_properties(nullptr, &enumerate_config);
+		indigo_enumerate_properties(nullptr, &enumerate_last);
 	});
 }
 

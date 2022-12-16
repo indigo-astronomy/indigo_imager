@@ -53,7 +53,8 @@ signals:
 	void requestRemoveConfig(ConfigItem configItem);
 	void addAgent(ConfigItem item);
 	void removeAgent(QString agentName);
-	void setActive(QString agentName);
+	void setActiveAgent(QString agentName);
+	void setActiveConfig(QString configName);
 	void agentChanged(QString agentName);
 	void addConfig(QString configName);
 	void removeConfig(QString configName);
@@ -61,7 +62,8 @@ signals:
 	void clearConfigs();
 
 public slots:
-	void onSetActive(QString agentName);
+	void onSetActiveAgent(QString agentName);
+	void onSetActiveConfig(QString configName);
 	void onAddAgent(ConfigItem item);
 	void onRemoveAgent(QString agentName);
 	void onAddConfig(QString configName);

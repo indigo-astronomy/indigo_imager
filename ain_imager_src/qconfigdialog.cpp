@@ -103,7 +103,8 @@ QConfigDialog::QConfigDialog(QWidget *parent) : QDialog(parent) {
 	connect(this, &QConfigDialog::removeAgent, this, &QConfigDialog::onRemoveAgent);
 	connect(this, &QConfigDialog::addConfig, this, &QConfigDialog::onAddConfig);
 	connect(this, &QConfigDialog::removeConfig, this, &QConfigDialog::onRemoveConfig);
-	connect(this, &QConfigDialog::setActive, this, &QConfigDialog::onSetActive);
+	connect(this, &QConfigDialog::setActiveAgent, this, &QConfigDialog::onSetActiveAgent);
+	connect(this, &QConfigDialog::setActiveConfig, this, &QConfigDialog::onSetActiveConfig);
 	connect(this, &QConfigDialog::clearAgents, this, &QConfigDialog::onClearAgents);
 	connect(this, &QConfigDialog::clearConfigs, this, &QConfigDialog::onClearConfigs);
 
@@ -204,7 +205,7 @@ void QConfigDialog::onRemoveConfig(QString configName) {
 	}
 }
 
-void QConfigDialog::onSetActive(QString agentName) {
+void QConfigDialog::onSetActiveAgent(QString agentName) {
 	int index = m_config_agent_select->findText(agentName);
 	if (index >= 0) {
 		indigo_debug("[SELECTING] %s\n", agentName.toUtf8().data());
@@ -213,6 +214,11 @@ void QConfigDialog::onSetActive(QString agentName) {
 		m_save_devices_cbox->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
 		emit(agentChanged(agentName));
 	}
+}
+
+void QConfigDialog::onSetActiveConfig(QString configName) {
+	indigo_debug("[SELECTING] %s\n", configName.toUtf8().data());
+	m_configuration_select->setCurrentText(configName);
 }
 
 void QConfigDialog::onClearAgents() {
