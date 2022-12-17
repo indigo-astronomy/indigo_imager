@@ -37,6 +37,7 @@ struct ConfigItem {
 	QString configAgent;
 	QString configName;
 	bool saveDeviceConfigs;
+	bool unloadDrivers;
 };
 
 class QConfigDialog : public QDialog
@@ -81,12 +82,12 @@ private:
 	QComboBox *m_config_agent_select;
 	QComboBox *m_configuration_select;
 	QCheckBox *m_save_devices_cbox;
+	QCheckBox *m_unload_drivers_cbox;
 	QToolButton *m_add_config_button;
 	QToolButton *m_remove_config_button;
 
 	QDialogButtonBox *m_button_box;
 	QPushButton *m_load_button;
-	QPushButton *m_save_button;
 	QPushButton *m_close_button;
 };
 

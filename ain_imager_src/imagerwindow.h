@@ -58,6 +58,7 @@ class QIndigoServers;
 #include <QFileDialog>
 #include <QThread>
 #include <QtConcurrentRun>
+#include <QProcess>
 #include "focusgraph.h"
 #include "syncutils.h"
 #include "customobjectmodel.h"
@@ -226,6 +227,7 @@ public slots:
 	void on_log_trace();
 	void on_image_save_act();
 	void on_service_config_act();
+	void on_start_control_panel_act();
 	void on_data_directory_prefix_act();
 	void on_acl_load_act();
 	void on_acl_append_act();
@@ -538,6 +540,8 @@ private:
 	QTextEdit* mLog;
 	QTabWidget *m_tools_tabbar;
 
+	bool is_control_panel_running;
+
 	// Capture tab
 	QComboBox *m_agent_imager_select;
 	QComboBox *m_camera_select;
@@ -820,7 +824,7 @@ private:
 	void create_telescope_tab(QFrame *solver_frame);
 	void create_solver_tab(QFrame *telescope_frame);
 
-	void change_config_agent_load(const char *agent, const char *config) const;
+	void change_config_agent_load(const char *agent, const char *config, bool unload) const;
 	void change_config_agent_save(const char *agent, const char *config, bool autosave) const;
 	void change_config_agent_delete(const char *agent, const char *config) const;
 	void change_ccd_frame_property(const char *agent) const;

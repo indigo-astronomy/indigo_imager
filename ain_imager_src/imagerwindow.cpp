@@ -93,8 +93,12 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	act = menu->addAction(tr("&Manage Services"));
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_servers_act);
 
-	act = menu->addAction("Service &Configuration");
+	act = menu->addAction("Manage Service &Configurations");
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_service_config_act);
+
+	act = menu->addAction("&INDIGO Control Panel");
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_start_control_panel_act);
+	is_control_panel_running = false;
 
 	menu->addSeparator();
 
@@ -874,13 +878,30 @@ void ImagerWindow::on_service_config_act() {
 }
 
 
+void ImagerWindow::on_start_control_panel_act() {
+	if (!is_control_panel_running) {
+		is_control_panel_running = true;
+		QProcess process;
+		process.start("indigo_control_panel");
+		bool success = process.waitForFinished();
+		if (!success) {
+			window_log("Error: INDIGO Control Panel could not be started");
+		}
+		is_control_panel_running = false;
+	} else {
+		indigo_debug("INDIGO Control Panel is already running!");
+	}
+}
+
+
 void ImagerWindow::on_save_config(ConfigItem configItem) {
 	indigo_debug("[SAVE CONFIG] %s, %d", configItem.configAgent.toUtf8().constData(), configItem.saveDeviceConfigs);
 	static char agent[INDIGO_VALUE_SIZE];
 	static char config[INDIGO_VALUE_SIZE];
 	strncpy(agent, configItem.configAgent.toUtf8().constData(), INDIGO_VALUE_SIZE);
 	strncpy(config, configItem.configName.toUtf8().constData(), INDIGO_VALUE_SIZE);
-	static bool autosave = configItem.saveDeviceConfigs;
+	static bool autosave;
+	autosave = configItem.saveDeviceConfigs;
 	QtConcurrent::run([=]() {
 		change_config_agent_save(agent, config, autosave);
 	});
@@ -891,10 +912,12 @@ void ImagerWindow::on_load_config(ConfigItem configItem) {
 	indigo_debug("[LOAD CONFIG] %s, %d", configItem.configAgent.toUtf8().constData(), configItem.saveDeviceConfigs);
 	static char agent[INDIGO_VALUE_SIZE];
 	static char config[INDIGO_VALUE_SIZE];
+	static bool unload;
+	unload = configItem.unloadDrivers;
 	strncpy(agent, configItem.configAgent.toUtf8().constData(), INDIGO_VALUE_SIZE);
 	strncpy(config, configItem.configName.toUtf8().constData(), INDIGO_VALUE_SIZE);
 	QtConcurrent::run([=]() {
-		change_config_agent_load(agent, config);
+		change_config_agent_load(agent, config, unload);
 	});
 }
 
@@ -916,14 +939,18 @@ void ImagerWindow::on_delete_config(ConfigItem configItem) {
 void ImagerWindow::on_config_agent_changed(QString configAgent) {
 	static indigo_property enumerate_config = {0};
 	static indigo_property enumerate_last = {0};
+	static indigo_property enumerate_settings = {0};
 	if(configAgent.isEmpty()) return;
 	strncpy(enumerate_config.device, configAgent.toUtf8().constData(), INDIGO_NAME_SIZE);
 	strncpy(enumerate_config.name, AGENT_CONFIG_LOAD_PROPERTY_NAME, INDIGO_NAME_SIZE);
 	strncpy(enumerate_last.device, configAgent.toUtf8().constData(), INDIGO_NAME_SIZE);
 	strncpy(enumerate_last.name, AGENT_CONFIG_LAST_CONFIG_PROPERTY_NAME, INDIGO_NAME_SIZE);
+	strncpy(enumerate_settings.device, configAgent.toUtf8().constData(), INDIGO_NAME_SIZE);
+	strncpy(enumerate_settings.name, AGENT_CONFIG_SETUP_PROPERTY_NAME, INDIGO_NAME_SIZE);
 	QtConcurrent::run([=]() {
 		indigo_enumerate_properties(nullptr, &enumerate_config);
 		indigo_enumerate_properties(nullptr, &enumerate_last);
+		indigo_enumerate_properties(nullptr, &enumerate_settings);
 	});
 }
 

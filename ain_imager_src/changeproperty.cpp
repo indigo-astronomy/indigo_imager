@@ -23,7 +23,8 @@
 #include <logger.h>
 #include <conf.h>
 
-void ImagerWindow::change_config_agent_load(const char *agent, const char *config) const {
+void ImagerWindow::change_config_agent_load(const char *agent, const char *config, bool unload) const {
+	indigo_change_switch_property_1(nullptr, agent, AGENT_CONFIG_SETUP_PROPERTY_NAME, AGENT_CONFIG_SETUP_UNLOAD_DRIVERS_ITEM_NAME, unload);
 	indigo_change_switch_property_1(nullptr, agent, AGENT_CONFIG_LOAD_PROPERTY_NAME, config, true);
 }
 

@@ -30,13 +30,9 @@ QConfigDialog::QConfigDialog(QWidget *parent) : QDialog(parent) {
 	frame->setContentsMargins(0, 0, 0, 0);
 	frame_layout->setContentsMargins(0, 0, 0, 0);
 
-	//int row = 0;
-	//QLabel *label = new QLabel("Ageent:");
-	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	//frame_layout->addWidget(label, row, 0, 1, 3);
-
 	int row = 0;
 	m_config_agent_select = new QComboBox();
+	m_config_agent_select->setMinimumWidth(300);
 	frame_layout->addWidget(m_config_agent_select, row, 0, 1, 3);
 	connect(m_config_agent_select, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &QConfigDialog::onAgentChangedCB);
 
@@ -72,6 +68,11 @@ QConfigDialog::QConfigDialog(QWidget *parent) : QDialog(parent) {
 	frame_layout->addWidget(m_save_devices_cbox, row, 0, 1, 3);
 
 	row++;
+	m_unload_drivers_cbox = new QCheckBox("Unload unused drivers");
+	m_unload_drivers_cbox->setToolTip("Unload drivers not needed by the the selected configuration");
+	frame_layout->addWidget(m_unload_drivers_cbox, row, 0, 1, 3);
+
+	row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	frame_layout->addItem(spacer, row, 0, 1, 3);
 
@@ -80,9 +81,6 @@ QConfigDialog::QConfigDialog(QWidget *parent) : QDialog(parent) {
 	m_load_button = m_button_box->addButton(tr("Load"), QDialogButtonBox::ActionRole);
 	m_load_button->setAutoDefault(false);
 	m_load_button->setDefault(false);
-	m_save_button = m_button_box->addButton(tr("Save"), QDialogButtonBox::ActionRole);
-	m_save_button->setAutoDefault(true);
-	m_save_button->setDefault(true);
 	horizontalLayout->addWidget(m_button_box);
 	m_close_button = m_button_box->addButton(tr("Close"), QDialogButtonBox::ActionRole);
 	m_close_button->setAutoDefault(false);
@@ -96,7 +94,6 @@ QConfigDialog::QConfigDialog(QWidget *parent) : QDialog(parent) {
 	onClearAgents();
 	onClearConfigs();
 
-	QObject::connect(m_save_button, SIGNAL(clicked()), this, SLOT(onSaveConfigCB()));
 	QObject::connect(m_load_button, SIGNAL(clicked()), this, SLOT(onLoadConfigCB()));
 	QObject::connect(m_close_button, SIGNAL(clicked()), this, SLOT(onCloseCB()));
 	connect(this, &QConfigDialog::addAgent, this, &QConfigDialog::onAddAgent);
@@ -111,8 +108,6 @@ QConfigDialog::QConfigDialog(QWidget *parent) : QDialog(parent) {
 }
 
 void QConfigDialog::onAgentChangedCB(int index) {
-	bool checked = m_config_agent_select->itemData(index).toBool();
-	m_save_devices_cbox->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
 	emit(agentChanged(m_config_agent_select->currentText()));
 }
 
@@ -128,6 +123,7 @@ void QConfigDialog::onSaveConfigCB() {
 	ConfigItem configItem;
 	configItem.configAgent = m_config_agent_select->currentText();
 	configItem.saveDeviceConfigs = m_save_devices_cbox->checkState();
+	configItem.unloadDrivers = m_unload_drivers_cbox->checkState();
 	configItem.configName = m_configuration_select->currentText();
 	emit(requestSaveConfig(configItem));
 }
@@ -136,6 +132,7 @@ void QConfigDialog::onLoadConfigCB() {
 	ConfigItem configItem;
 	configItem.configAgent = m_config_agent_select->currentText();
 	configItem.saveDeviceConfigs = m_save_devices_cbox->checkState();
+	configItem.unloadDrivers = m_unload_drivers_cbox->checkState();
 	configItem.configName = m_configuration_select->currentText();
 	emit(requestLoadConfig(configItem));
 }
@@ -144,6 +141,7 @@ void QConfigDialog::onRemoveConfigCB() {
 	ConfigItem configItem;
 	configItem.configAgent = m_config_agent_select->currentText();
 	configItem.saveDeviceConfigs = m_save_devices_cbox->checkState();
+	configItem.unloadDrivers = m_unload_drivers_cbox->checkState();
 	configItem.configName = m_configuration_select->currentText();
 
 	int ret = QMessageBox::question(
@@ -163,12 +161,12 @@ void QConfigDialog::onAddAgent(ConfigItem item) {
 	//m_config_agent_select->blockSignals(true);
 	int index = m_config_agent_select->findText(item.configAgent);
 	if (index < 0) {
-		m_config_agent_select->addItem(item.configAgent, item.saveDeviceConfigs);
+		m_config_agent_select->addItem(item.configAgent, item.configAgent);
 		indigo_debug("[ADD] %s\n", item.configAgent.toUtf8().data());
 		emit(agentChanged(m_config_agent_select->currentText()));
 	} else {
-		m_config_agent_select->setItemData(index, item.saveDeviceConfigs);
 		m_save_devices_cbox->setCheckState(item.saveDeviceConfigs ? Qt::Checked : Qt::Unchecked);
+		m_unload_drivers_cbox->setCheckState(item.unloadDrivers ? Qt::Checked : Qt::Unchecked);
 		indigo_debug("[DUPLICATE Updating data] %s\n", item.configAgent.toUtf8().data());
 	}
 	//m_config_agent_select->blockSignals(false);
@@ -210,8 +208,6 @@ void QConfigDialog::onSetActiveAgent(QString agentName) {
 	if (index >= 0) {
 		indigo_debug("[SELECTING] %s\n", agentName.toUtf8().data());
 		m_config_agent_select->setCurrentIndex(index);
-		bool checked = m_config_agent_select->currentData().toBool();
-		m_save_devices_cbox->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
 		emit(agentChanged(agentName));
 	}
 }
@@ -224,6 +220,7 @@ void QConfigDialog::onSetActiveConfig(QString configName) {
 void QConfigDialog::onClearAgents() {
 	m_config_agent_select->clear();
 	m_save_devices_cbox->setCheckState(Qt::Unchecked);
+	m_unload_drivers_cbox->setCheckState(Qt::Unchecked);
 }
 
 void QConfigDialog::onClearConfigs() {

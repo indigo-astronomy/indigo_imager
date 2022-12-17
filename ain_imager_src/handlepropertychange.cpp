@@ -1911,11 +1911,14 @@ void condigure_guider_overlays(ImagerWindow *w, char *device, indigo_property *p
 static void populateConfigItem(indigo_property *property, ConfigItem &configItem) {
 	configItem.configAgent = QString(property->device);
 	configItem.configName = QString(DEFAULT_CONFIG);
+	configItem.unloadDrivers = false;
 	configItem.saveDeviceConfigs = false;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_CONFIG_SETUP_AUTOSAVE_ITEM_NAME)) {
 			configItem.saveDeviceConfigs = property->items[i].sw.value;
-			break;
+		}
+		if (client_match_item(&property->items[i], AGENT_CONFIG_SETUP_UNLOAD_DRIVERS_ITEM_NAME)) {
+			configItem.unloadDrivers = property->items[i].sw.value;
 		}
 	}
 }
