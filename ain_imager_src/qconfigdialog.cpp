@@ -164,10 +164,12 @@ void QConfigDialog::onAddAgent(ConfigItem item) {
 		m_config_agent_select->addItem(item.configAgent, item.configAgent);
 		indigo_debug("[ADD] %s\n", item.configAgent.toUtf8().data());
 		emit(agentChanged(m_config_agent_select->currentText()));
-	} else {
+	} else if (item.configAgent == m_config_agent_select->currentText()) {
 		m_save_devices_cbox->setCheckState(item.saveDeviceConfigs ? Qt::Checked : Qt::Unchecked);
 		m_unload_drivers_cbox->setCheckState(item.unloadDrivers ? Qt::Checked : Qt::Unchecked);
-		indigo_debug("[DUPLICATE Updating data] %s\n", item.configAgent.toUtf8().data());
+		indigo_debug("[DUPLICATE SELECTED] %s\n", item.configAgent.toUtf8().data());
+	} else {
+		indigo_debug("[DUPLICATE] %s\n", item.configAgent.toUtf8().data());
 	}
 	//m_config_agent_select->blockSignals(false);
 }
