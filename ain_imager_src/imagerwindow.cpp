@@ -34,6 +34,7 @@
 #include "version.h"
 #include <imageviewer.h>
 #include <QSound>
+#include <QFileInfo>
 
 void write_conf();
 
@@ -879,18 +880,34 @@ void ImagerWindow::on_service_config_act() {
 
 
 void ImagerWindow::on_start_control_panel_act() {
-	if (!is_control_panel_running) {
-		is_control_panel_running = true;
-		QProcess process;
-		process.start("indigo_control_panel");
-		bool success = process.waitForFinished();
-		if (!success) {
-			window_log("Error: INDIGO Control Panel could not be started");
-		}
-		is_control_panel_running = false;
-	} else {
-		indigo_debug("INDIGO Control Panel is already running!");
-	}
+    if (!is_control_panel_running) {
+#ifdef INDIGO_WINDOWS
+        QtConcurrent::run([=]() {
+            is_control_panel_running = true;
+            QStringList paths = QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation);
+            QFileInfo info(paths[0] + "/INDIGO Control Panel.lnk");
+            QString fileName = info.symLinkTarget();
+            QProcess process;
+            process.start("\""+fileName+"\"");
+            bool success = process.waitForFinished();
+            if (!success) {
+                window_log("Error: INDIGO Control Panel could not be started. Is it installed?");
+            }
+            is_control_panel_running = false;
+        });
+#else
+        is_control_panel_running = true;
+        QProcess process;
+        process.start("indigo_control_panel");
+        bool success = process.waitForFinished();
+        if (!success) {
+            window_log("Error: INDIGO Control Panel could not be started. Is it in your path?");
+        }
+        is_control_panel_running = false;
+#endif
+    } else {
+        window_log("INDIGO Control Panel is already running!");
+    }
 }
 
 
