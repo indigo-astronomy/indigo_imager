@@ -885,8 +885,16 @@ void ImagerWindow::on_start_control_panel_act() {
 		QtConcurrent::run([=]() {
 			is_control_panel_running = true;
 			QStringList paths = QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation);
-			QFileInfo info(paths[0] + "/INDIGO Control Panel.lnk");
-			QString fileName = info.symLinkTarget();
+			QString fileName;
+			for (int i = 0; i < paths.length(); i++) {
+				QFileInfo info(paths[i] + "/INDIGO Control Panel.lnk");
+				fileName = info.symLinkTarget();
+				if (!fileName.isEmpty()) break;
+			}
+			if (fileName.isEmpty()) {
+				QFileInfo info("C:/ProgramData/Microsoft/Windows/Start Menu/Programs/INDIGO Control Panel.lnk");
+				fileName = info.symLinkTarget();
+			}
 			QProcess process;
 			process.start("\""+fileName+"\"");
 			bool success = process.waitForFinished();
