@@ -55,6 +55,7 @@ SOURCES += \
 	../common_src/xml.c \
 	../common_src/debayer.c \
 	../common_src/stretcher.cpp \
+	../common_src/image_stats.cpp \
 	../common_src/dslr_raw.c \
 	../external/qcustomplot/qcustomplot.cpp
 
@@ -139,6 +140,7 @@ HEADERS += \
 	../external/qcustomplot/qcustomplot.h \
 	../common_src/coordconv.h \
 	../common_src/stretcher.h \
+	../common_src/image_stats.h \
 	../common_src/dslr_raw.h
 
 

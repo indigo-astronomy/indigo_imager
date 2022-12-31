@@ -2,6 +2,7 @@
 #define IMAGEVIEWER_H
 
 #include <QFrame>
+#include <image_stats.h>
 #include <imagepreview.h>
 #include <QGraphicsPixmapItem>
 
@@ -60,6 +61,7 @@ public slots:
 	void setText(const QString &txt);
 	void setToolTip(const QString &txt);
 	void onSetImage(preview_image &im);
+	void setImageStats(const ImageStats &stats);
 
 	void showSelection(bool show);
 	void moveSelection(double x, double y);
@@ -121,6 +123,7 @@ private:
 	double m_zoom_level;
 	QLabel *m_text_label;
 	QLabel *m_pixel_value;
+	QLabel *m_image_stats;
 	GraphicsView *m_view;
 	PixmapItem *m_pixmap;
 	QGraphicsRectItem *m_selection;

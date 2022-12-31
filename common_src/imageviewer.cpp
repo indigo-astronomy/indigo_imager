@@ -128,6 +128,16 @@ ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
 	box->addWidget(m_view, 1);
 	setLayout(box);
 
+	m_image_stats = new QLabel(m_view);
+	m_image_stats->setStyleSheet("background-color: rgba(0,0,0,30%)");
+
+	// m_image_stats->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+	m_image_stats->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+	m_image_stats->raise();
+	m_image_stats->move(QPoint(20,20));
+	m_image_stats->setTextFormat(Qt::RichText);
+	m_image_stats->setVisible(false);
+
 	m_extra_selections_visible = false;
 
 	connect(this, &ImageViewer::setImage, this, &ImageViewer::onSetImage);
@@ -245,7 +255,6 @@ void ImageViewer::makeToolbar(bool prev_next) {
 		box->addWidget(pn_bar);
 	}
 
-
 	box->addWidget(m_text_label);
 	box->addStretch(1);
 	box->addWidget(m_pixel_value);
@@ -255,6 +264,25 @@ void ImageViewer::makeToolbar(bool prev_next) {
 	box->addWidget(fit);
 	box->addWidget(orig);
 	box->addWidget(stretch);
+}
+
+void ImageViewer::setImageStats(const ImageStats &stats) {
+	if (stats.channels == 0) {
+		m_image_stats->setVisible(false);
+		m_image_stats->setText("");
+	} else if (stats.channels == 1) {
+		QString stats_str = "<p><b>Statistics</b></p><p>";
+		stats_str += "<b>Min :</b>  " + QString::number(stats.grey_red.min) + "<br>";
+		stats_str += "<b>Max :</b>  " + QString::number(stats.grey_red.max) + "<br>";
+		stats_str += "<b>Mean :</b>  " + QString::number(stats.grey_red.mean) + "<br>";
+		stats_str += "<b>StdDev :</b>  " + QString::number(stats.grey_red.stddev) + "<br>";
+		stats_str += "<b>SNR :</b>  " + QString::number(stats.grey_red.SNR) + "</p>";
+		m_image_stats->setText(stats_str);
+		m_image_stats->adjustSize();
+		m_image_stats->setVisible(true);
+	} else if (stats.channels == 3) {
+		m_image_stats->setVisible(false);
+	}
 }
 
 QString ImageViewer::text() const {

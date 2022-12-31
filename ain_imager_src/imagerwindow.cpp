@@ -33,6 +33,7 @@
 #include "conf.h"
 #include "version.h"
 #include <imageviewer.h>
+#include <image_stats.h>
 #include <QSound>
 #include <QFileInfo>
 
@@ -556,6 +557,8 @@ bool ImagerWindow::show_preview_in_imager_viewer(QString &key) {
 	if (image) {
 		m_imager_viewer->setImage(*image);
 		m_imager_viewer->centerReference();
+		ImageStats stats = imageStats((const uint8_t*)(image->m_raw_data), image->m_width, image->m_height, image->m_pix_format);
+		m_imager_viewer->setImageStats(stats);
 		m_image_key = key;
 		indigo_debug("IMAGER PREVIEW: %s\n", key.toUtf8().constData());
 		return true;
