@@ -31,6 +31,7 @@ SOURCES += \
 	../common_src/utils.cpp \
 	../common_src/imagepreview.cpp \
 	../common_src/imageviewer.cpp \
+	../common_src/image_stats.cpp \
 	../common_src/fits.c \
 	../common_src/raw_to_fits.c \
 	../common_src/xisf.c \
@@ -76,6 +77,7 @@ HEADERS += \
 	../common_src/image_preview_lut.h \
 	../common_src/imagepreview.h \
 	../common_src/imageviewer.h \
+	../common_src/image_stats.h \
 	../common_src/fits.h \
 	../common_src/raw_to_fits.h \
 	../common_src/xisf.h \

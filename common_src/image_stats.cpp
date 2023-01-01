@@ -38,86 +38,93 @@ ImageStats imageStatsOneChannel(T const *buffer, int count) {
 	double mean = sum / count;
 
 	double d;
-	sum = 0;
+	double stddev_sum = 0, mad_sum = 0;
 	for (int i = 0; i < count; i++) {
 		d = buffer[i] - mean;
-		sum += d * d;
+		stddev_sum += d * d;
+		mad_sum += fabs(d);
 	}
-	double stddev = sqrt(sum / count);
+	double stddev = sqrt(stddev_sum / count);
+	double mad = mad_sum / count;
 
 	stats.channels = 1;
 	stats.grey_red.min = min;
 	stats.grey_red.max = max;
 	stats.grey_red.mean = mean;
 	stats.grey_red.stddev = stddev;
-	if (stats.grey_red.stddev != 0) {
-		stats.grey_red.SNR = mean / stats.grey_red.stddev;
-	} else {
-		stats.grey_red.SNR = INFINITY;
-	}
+	stats.grey_red.mad = mad;
 	return stats;
 }
 
 template <typename T>
-ImageStats imageStatsThreeChannels(T const *buffer, int width, int height) {
-	/*
-	double d, m, sum = 0;
-	int real_count = 0;
-	int i = 0;
-
-	if (saturated) *saturated = false;
-
-	const int end_x = width - 1;
-	const int end_y = height - 1;
-
-	for (int y = 1; y < end_y; y++) {
-		for (int x = 1; x < end_x; x++) {
-			i = (y * width + x) * 3;
-			sum += set[i];
-			sum += set[i + 1];
-			sum += set[i + 2];
-			real_count++;
-		}
-	}
-	m = sum / (real_count * 3);
-
-	const double threshold = (SATURATION_8 - m) * 0.3 + m;
-	real_count = 0;
-	sum = 0;
-
-	for (int y = 1; y < end_y; y++) {
-		for (int x = 1; x < end_x; x++) {
-			i = (y * width + x) * 3;
-			if (
-				(
-					set[i] > SATURATION_8 ||
-					set[i + 1] > SATURATION_8 ||
-					set[i + 2] > SATURATION_8
-				) && (
-					median(set[i - 3], set[i], set[i + 3]) > threshold ||
-					median(set[i - 2], set[i + 1], set[i + 4]) > threshold ||
-					median(set[i - 1], set[i + 2], set[i + 5]) > threshold
-				)
-			) {
-				if (saturated) {
-					if (!(*saturated)) INDIGO_DEBUG(indigo_debug("Saturation detected: threshold = %.2f, mean = %.2f", threshold, m));
-					*saturated = true;
-				}
-			}
-			d = set[i] - m;
-			sum += d * d;
-			d = set[i + 1] - m;
-			sum += d * d;
-			d = set[i + 2] - m;
-			sum += d * d;
-
-			real_count++;
-		}
-	}
-
-	return sqrt(sum / real_count);
-	*/
+ImageStats imageStatsThreeChannels(T const *buffer, int count) {
 	ImageStats stats;
+	if (count < 3) return stats;
+
+	double sum_r = 0, sum_g = 0, sum_b = 0;
+	double min_r = INFINITY, min_g = INFINITY, min_b = INFINITY;
+	double max_r = 0, max_g = 0, max_b = 0;
+
+	for (int i = 0; i < count * 3; i += 3) {
+		sum_r += buffer[i];
+		if (buffer[i] > max_r) max_r = buffer[i];
+		if (buffer[i] < min_r) min_r = buffer[i];
+
+		sum_g += buffer[i+1];
+		if (buffer[i + 1] > max_g) max_g = buffer[i + 1];
+		if (buffer[i + 1] < min_g) min_g = buffer[i + 1];
+
+		sum_b += buffer[i + 2];
+		if (buffer[i + 2] > max_b) max_b = buffer[i + 2];
+		if (buffer[i + 2] < min_b) min_b = buffer[i + 2];
+	}
+	double mean_r = sum_r / count;
+	double mean_g = sum_g / count;
+	double mean_b = sum_b / count;
+
+	double d;
+	double stddev_sum_r = 0, stddev_sum_g = 0, stddev_sum_b = 0;
+	double mad_sum_r = 0, mad_sum_g = 0, mad_sum_b = 0;
+	for (int i = 0; i < count * 3; i += 3) {
+		d = buffer[i] - mean_r;
+		stddev_sum_r += d * d;
+		mad_sum_r += fabs(d);
+
+		d = buffer[i + 1] - mean_g;
+		stddev_sum_g += d * d;
+		mad_sum_g += fabs(d);
+
+		d = buffer[i + 2] - mean_b;
+		stddev_sum_b += d * d;
+		mad_sum_b += fabs(d);
+	}
+	double stddev_r = sqrt(stddev_sum_r / count);
+	double stddev_g = sqrt(stddev_sum_g / count);
+	double stddev_b = sqrt(stddev_sum_b / count);
+	double mad_r = mad_sum_r / count;
+	double mad_g = mad_sum_g / count;
+	double mad_b = mad_sum_b / count;
+
+	stats.channels = 3;
+
+	stats.grey_red.min = min_r;
+	stats.grey_red.max = max_r;
+	stats.grey_red.mean = mean_r;
+	stats.grey_red.stddev = stddev_r;
+	stats.grey_red.mad = mad_r;
+
+	stats.green.min = min_g;
+	stats.green.max = max_g;
+	stats.green.mean = mean_g;
+	stats.green.stddev = stddev_g;
+	stats.green.mad = mad_g;
+
+	stats.blue.min = min_b;
+	stats.blue.max = max_b;
+	stats.blue.mean = mean_b;
+	stats.blue.stddev = stddev_b;
+	stats.blue.mad = mad_b;
+
 	return stats;
 }
 
@@ -132,13 +139,13 @@ ImageStats imageStats(uint8_t const *input, int width, int height, int pix_fmt) 
 		case PIX_FMT_F32:
 			return imageStatsOneChannel(reinterpret_cast<float const*>(input), height * width);
 		case PIX_FMT_RGB24:
-			return imageStatsThreeChannels(reinterpret_cast<uint8_t const*>(input), width, height);
+			return imageStatsThreeChannels(reinterpret_cast<uint8_t const*>(input), width * height);
 		case PIX_FMT_RGB48:
-			return imageStatsThreeChannels(reinterpret_cast<uint16_t const*>(input), width, height);
+			return imageStatsThreeChannels(reinterpret_cast<uint16_t const*>(input), width * height);
 		case PIX_FMT_RGB96:
-			return imageStatsThreeChannels(reinterpret_cast<uint32_t const*>(input), width, height);
+			return imageStatsThreeChannels(reinterpret_cast<uint32_t const*>(input), width * height);
 		case PIX_FMT_RGBF:
-			return imageStatsThreeChannels(reinterpret_cast<float const*>(input), width, height);
+			return imageStatsThreeChannels(reinterpret_cast<float const*>(input), width * height);
 		default:
 			return ImageStats();
 	}

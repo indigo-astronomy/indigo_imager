@@ -22,11 +22,11 @@
 #include <pixelformat.h>
 
 struct ImageStats1Channel {
-	float min;
-	float max;
-	float mean;
-	float stddev;
-	float SNR;
+	double min;
+	double max;
+	double mean;
+	double stddev;
+	double mad;
 
 	// The default parameters result in no stretch at all.
 	ImageStats1Channel() {
@@ -34,7 +34,7 @@ struct ImageStats1Channel {
 		max =
 		mean =
 		stddev =
-		SNR = 0;
+		mad = 0;
 	}
 };
 

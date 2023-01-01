@@ -29,6 +29,7 @@
 #include <imageviewer.h>
 #include <raw_to_fits.h>
 #include <dslr_raw.h>
+#include <image_stats.h>
 #include <xisf.h>
 
 
@@ -230,6 +231,8 @@ void ViewerWindow::open_image(QString file_name) {
 
 	if (m_preview_image) {
 		m_imager_viewer->setImage(*m_preview_image);
+		ImageStats stats = imageStats((const uint8_t*)(m_preview_image->m_raw_data), m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
+		m_imager_viewer->setImageStats(stats);
 		char info[256] = {};
 		int w = m_preview_image->width();
 		int h = m_preview_image->height();
