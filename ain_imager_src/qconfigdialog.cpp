@@ -31,6 +31,13 @@ QConfigDialog::QConfigDialog(QWidget *parent) : QDialog(parent) {
 	frame_layout->setContentsMargins(0, 0, 0, 0);
 
 	int row = 0;
+	//------ Remove when stable -------
+	QLabel *label1 = new QLabel("This feature is experimental!");
+	label1->setStyleSheet(QString("color: #E00000;"));
+	frame_layout->addWidget(label1, row, 0, 1, 3);
+	row++;
+	//---------------------------------
+
 	m_config_agent_select = new QComboBox();
 	m_config_agent_select->setMinimumWidth(300);
 	frame_layout->addWidget(m_config_agent_select, row, 0, 1, 3);
