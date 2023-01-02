@@ -277,11 +277,13 @@ void ImageViewer::makeToolbar(bool prev_next) {
 void ImageViewer::setImageStats(const ImageStats &stats) {
 	if (stats.channels == 1) {
 		QString stats_str = "<b>Statistics</b><br>";
-		stats_str += "<b><font color=\"#A0A0A0\">Min: </font></b>" + QString::number(stats.grey_red.min) + "<br>";
-		stats_str += "<b><font color=\"#A0A0A0\">Max: </font></b>" + QString::number(stats.grey_red.max) + "<br>";
-		stats_str += "<b><font color=\"#A0A0A0\">Mean: </font></b>" + QString::number(stats.grey_red.mean) + "<br>";
-		stats_str += "<b><font color=\"#A0A0A0\">StdDev: </font></b>" + QString::number(stats.grey_red.stddev) + "<br>";
-		stats_str += "<b><font color=\"#A0A0A0\">MAD: </font></b>"  + QString::number(stats.grey_red.mad) + "</br>";
+		stats_str += "<table cellspacing=1>";
+		stats_str += "<tr><td><b>Min </b></td><td align=right> " + QString::number(stats.grey_red.min) + "</td></tr>";
+		stats_str += "<tr><td><b>Max </b></td><td align=right> " + QString::number(stats.grey_red.max) + "</td></tr>";
+		stats_str += "<tr><td><b>Mean </b></td><td align=right> " + QString::number(stats.grey_red.mean) + "</td></tr>";
+		stats_str += "<tr><td><b>StdDev </b></td><td align=right> " + QString::number(stats.grey_red.stddev) + "</td></tr>";
+		stats_str += "<tr><td><b>MAD </b></td><td align=right> "  + QString::number(stats.grey_red.mad) + "</td></tr>";
+		stats_str += "</table>";
 		m_image_stats->setText(stats_str);
 		m_image_stats->adjustSize();
 		m_image_stats->setVisible(true);
@@ -292,23 +294,37 @@ void ImageViewer::setImageStats(const ImageStats &stats) {
 		m_image_histogram->setVisible(true);
 	} else if (stats.channels == 3) {
 		QString stats_str = "<b>Statistics</b><br>";
-		stats_str += "<b><font color=\"#C05050\">Min: </font></b>" + QString::number(stats.grey_red.min) + "<br>";
-		stats_str += "<b><font color=\"#C05050\">Max: </font></b>" + QString::number(stats.grey_red.max) + "<br>";
-		stats_str += "<b><font color=\"#C05050\">Mean: </font></b>" + QString::number(stats.grey_red.mean) + "<br>";
-		stats_str += "<b><font color=\"#C05050\">Stddev: </font></b>" + QString::number(stats.grey_red.stddev) + "<br>";
-		stats_str += "<b><font color=\"#C05050\">MAD: </font></b>" + QString::number(stats.grey_red.mad) + "<br>";
+		stats_str += "<table cellspacing=1>";
+		stats_str += "<tr><td><b>Min </b></td>";
+		stats_str += "<td align=right><font color=\"#C05050\"> " + QString::number(stats.grey_red.min) + " </font></td>";
+		stats_str += "<td align=right><font color=\"#50C050\"> " + QString::number(stats.green.min) + " </font></td>";
+		stats_str += "<td align=right><font color=\"#5050FF\"> " + QString::number(stats.blue.min) + " </font></td>";
+		stats_str += "</tr>";
 
-		stats_str += "<b><font color=\"#50C050\">Min: </font></b>" + QString::number(stats.green.min) + "<br>";
-		stats_str += "<b><font color=\"#50C050\">Max: </font></b>" + QString::number(stats.green.max) + "<br>";
-		stats_str += "<b><font color=\"#50C050\">Mean: </font></b>" + QString::number(stats.green.mean) + "<br>";
-		stats_str += "<b><font color=\"#50C050\">StdDev: </font></b>" + QString::number(stats.green.stddev) + "<br>";
-		stats_str += "<b><font color=\"#50C050\">Mad: </font></b>" + QString::number(stats.green.mad) + "<br>";
+		stats_str += "<tr><td><b>Max </b></td>";
+		stats_str += "<td align=right><font color=\"#C05050\"> " + QString::number(stats.grey_red.max) + " </font></td>";
+		stats_str += "<td align=right><font color=\"#50C050\"> " + QString::number(stats.green.max) + " </font></td>";
+		stats_str += "<td align=right><font color=\"#5050FF\"> " + QString::number(stats.blue.max) + " </font></td>";
+		stats_str += "</tr>";
 
-		stats_str += "<b><font color=\"#5050FF\">Min: </font></b>" + QString::number(stats.blue.min) + "<br>";
-		stats_str += "<b><font color=\"#5050FF\">Max: </font></b>" + QString::number(stats.blue.max) + "<br>";
-		stats_str += "<b><font color=\"#5050FF\">Mean: </font></b>" + QString::number(stats.blue.mean) + "<br>";
-		stats_str += "<b><font color=\"#5050FF\">StdDev: </font></b>" + QString::number(stats.blue.stddev) + "<br>";
-		stats_str += "<b><font color=\"#5050FF\">MAD: </font></b>" + QString::number(stats.blue.mad);
+		stats_str += "<tr><td><b>Mean </b></td>";
+		stats_str += "<td align=right><font color=\"#C05050\"> " + QString::number(stats.grey_red.mean) + " </font></td>";
+		stats_str += "<td align=right><font color=\"#50C050\"> " + QString::number(stats.green.mean) + " </font></td>";
+		stats_str += "<td align=right><font color=\"#5050FF\"> " + QString::number(stats.blue.mean) + " </font></td>";
+		stats_str += "</tr>";
+
+		stats_str += "<tr><td><b>StdDev </b></td>";
+		stats_str += "<td align=right><font color=\"#C05050\"> " + QString::number(stats.grey_red.stddev) + " </font></td>";
+		stats_str += "<td align=right><font color=\"#50C050\"> " + QString::number(stats.green.stddev) + " </font></td>";
+		stats_str += "<td align=right><font color=\"#5050FF\"> " + QString::number(stats.blue.stddev) + " </font></td>";
+		stats_str += "</tr>";
+
+		stats_str += "<tr><td><b>MAD </b></td>";
+		stats_str += "<td align=right><font color=\"#C05050\"> " + QString::number(stats.grey_red.mad) + " </font></td>";
+		stats_str += "<td align=right><font color=\"#50C050\"> " + QString::number(stats.green.mad) + " </font></td>";
+		stats_str += "<td align=right><font color=\"#5050FF\"> " + QString::number(stats.blue.mad) + " </font></td>";
+		stats_str += "</tr>";
+		stats_str += "</table>";
 
 		m_image_stats->setText(stats_str);
 		m_image_stats->adjustSize();
