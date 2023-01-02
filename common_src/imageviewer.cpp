@@ -129,19 +129,19 @@ ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
 	setLayout(box);
 
 	m_image_histogram = new QLabel(m_view);
-	m_image_histogram->setStyleSheet("background-color: rgba(0,0,0,35%); color: rgba(200,200,200,100%);");
+	m_image_histogram->setStyleSheet("background-color: rgba(0,0,0,40%); color: rgba(200,200,200,100%);");
 	m_image_histogram->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
 	m_image_histogram->setAttribute(Qt::WA_TransparentForMouseEvents);
-	m_image_histogram->move(QPoint(16, 16));
+	m_image_histogram->move(QPoint(12, 12));
 	m_image_histogram->setTextFormat(Qt::RichText);
 	m_image_histogram->raise();
 	m_image_histogram->setVisible(false);
 
 	m_image_stats = new QLabel(m_view);
-	m_image_stats->setStyleSheet("background-color: rgba(0,0,0,35%); color: rgba(200,200,200,100%);");
+	m_image_stats->setStyleSheet("background-color: rgba(0,0,0,40%); color: rgba(200,200,200,100%);");
 	m_image_stats->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
 	m_image_stats->setAttribute(Qt::WA_TransparentForMouseEvents);
-	m_image_stats->move(QPoint(16, 128 + 32));
+	m_image_stats->move(QPoint(12, 128 + 24));
 	m_image_stats->setTextFormat(Qt::RichText);
 	m_image_stats->raise();
 	m_image_stats->setVisible(false);
@@ -276,13 +276,12 @@ void ImageViewer::makeToolbar(bool prev_next) {
 
 void ImageViewer::setImageStats(const ImageStats &stats) {
 	if (stats.channels == 1) {
-		QString stats_str = "<p><b>Statistics</b></p>";
-		stats_str += "<p><b><font color=\"#808080\">Mono</font></b><br>";
-		stats_str += "<b>Min:</b>  " + QString::number(stats.grey_red.min) + "<br>";
-		stats_str += "<b>Max:</b>  " + QString::number(stats.grey_red.max) + "<br>";
-		stats_str += "<b>Mean:</b>  " + QString::number(stats.grey_red.mean) + "<br>";
-		stats_str += "<b>StdDev:</b>  " + QString::number(stats.grey_red.stddev) + "<br>";
-		stats_str += "<b>MAD:</b>  " + QString::number(stats.grey_red.mad) + "</p>";
+		QString stats_str = "<b>Statistics</b><br>";
+		stats_str += "<b><font color=\"#A0A0A0\">Min: </font></b>" + QString::number(stats.grey_red.min) + "<br>";
+		stats_str += "<b><font color=\"#A0A0A0\">Max: </font></b>" + QString::number(stats.grey_red.max) + "<br>";
+		stats_str += "<b><font color=\"#A0A0A0\">Mean: </font></b>" + QString::number(stats.grey_red.mean) + "<br>";
+		stats_str += "<b><font color=\"#A0A0A0\">StdDev: </font></b>" + QString::number(stats.grey_red.stddev) + "<br>";
+		stats_str += "<b><font color=\"#A0A0A0\">MAD: </font></b>"  + QString::number(stats.grey_red.mad) + "</br>";
 		m_image_stats->setText(stats_str);
 		m_image_stats->adjustSize();
 		m_image_stats->setVisible(true);
@@ -292,27 +291,24 @@ void ImageViewer::setImageStats(const ImageStats &stats) {
 		m_image_histogram->adjustSize();
 		m_image_histogram->setVisible(true);
 	} else if (stats.channels == 3) {
-		QString stats_str = "<p><b>Statistics</b></p>";
-		stats_str += "<p><b><font color=\"#C05050\">Red</font></b><br>";
-		stats_str += "<b>Min:</b>  " + QString::number(stats.grey_red.min) + "<br>";
-		stats_str += "<b>Max:</b>  " + QString::number(stats.grey_red.max) + "<br>";
-		stats_str += "<b>Mean:</b>  " + QString::number(stats.grey_red.mean) + "<br>";
-		stats_str += "<b>StdDev:</b>  " + QString::number(stats.grey_red.stddev) + "<br>";
-		stats_str += "<b>MAD:</b>  " + QString::number(stats.grey_red.mad) + "</p>";
+		QString stats_str = "<b>Statistics</b><br>";
+		stats_str += "<b><font color=\"#C05050\">Min: </font></b>" + QString::number(stats.grey_red.min) + "<br>";
+		stats_str += "<b><font color=\"#C05050\">Max: </font></b>" + QString::number(stats.grey_red.max) + "<br>";
+		stats_str += "<b><font color=\"#C05050\">Mean: </font></b>" + QString::number(stats.grey_red.mean) + "<br>";
+		stats_str += "<b><font color=\"#C05050\">Stddev: </font></b>" + QString::number(stats.grey_red.stddev) + "<br>";
+		stats_str += "<b><font color=\"#C05050\">MAD: </font></b>" + QString::number(stats.grey_red.mad) + "<br>";
 
-		stats_str += "<p><b><font color=\"#50C050\">Green</font></b><br>";
-		stats_str += "<b>Min:</b>  " + QString::number(stats.green.min) + "<br>";
-		stats_str += "<b>Max:</b>  " + QString::number(stats.green.max) + "<br>";
-		stats_str += "<b>Mean:</b>  " + QString::number(stats.green.mean) + "<br>";
-		stats_str += "<b>StdDev:</b>  " + QString::number(stats.green.stddev) + "<br>";
-		stats_str += "<b>MAD:</b>  " + QString::number(stats.green.mad) + "</p>";
+		stats_str += "<b><font color=\"#50C050\">Min: </font></b>" + QString::number(stats.green.min) + "<br>";
+		stats_str += "<b><font color=\"#50C050\">Max: </font></b>" + QString::number(stats.green.max) + "<br>";
+		stats_str += "<b><font color=\"#50C050\">Mean: </font></b>" + QString::number(stats.green.mean) + "<br>";
+		stats_str += "<b><font color=\"#50C050\">StdDev: </font></b>" + QString::number(stats.green.stddev) + "<br>";
+		stats_str += "<b><font color=\"#50C050\">Mad: </font></b>" + QString::number(stats.green.mad) + "<br>";
 
-		stats_str += "<p><b><font color=\"#5050FF\">Blue</font></b><br>";
-		stats_str += "<b>Min:</b>  " + QString::number(stats.blue.min) + "<br>";
-		stats_str += "<b>Max:</b>  " + QString::number(stats.blue.max) + "<br>";
-		stats_str += "<b>Mean:</b>  " + QString::number(stats.blue.mean) + "<br>";
-		stats_str += "<b>StdDev:</b>  " + QString::number(stats.blue.stddev) + "<br>";
-		stats_str += "<b>MAD:</b>  " + QString::number(stats.blue.mad) + "</p>";
+		stats_str += "<b><font color=\"#5050FF\">Min: </font></b>" + QString::number(stats.blue.min) + "<br>";
+		stats_str += "<b><font color=\"#5050FF\">Max: </font></b>" + QString::number(stats.blue.max) + "<br>";
+		stats_str += "<b><font color=\"#5050FF\">Mean: </font></b>" + QString::number(stats.blue.mean) + "<br>";
+		stats_str += "<b><font color=\"#5050FF\">StdDev: </font></b>" + QString::number(stats.blue.stddev) + "<br>";
+		stats_str += "<b><font color=\"#5050FF\">MAD: </font></b>" + QString::number(stats.blue.mad);
 
 		m_image_stats->setText(stats_str);
 		m_image_stats->adjustSize();
