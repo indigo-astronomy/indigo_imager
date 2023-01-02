@@ -103,6 +103,7 @@ typedef struct {
 	bool sound_notifications_enabled;
 	bool save_images_on_server;
 	bool keep_images_on_server;
+	bool statistics_enabled;
 	char unused[100];
 } conf_t;
 

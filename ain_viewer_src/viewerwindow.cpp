@@ -137,6 +137,13 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu->addSeparator();
 
+	act = menu->addAction(tr("Show image &statistics"));
+	act->setCheckable(true);
+	act->setChecked(conf.statistics_enabled);
+	connect(act, &QAction::toggled, this, &ViewerWindow::on_statistics_show);
+
+	menu->addSeparator();
+
 	act = menu->addAction(tr("Enable &antialiasing"));
 	act->setCheckable(true);
 	act->setChecked(conf.antialiasing_enabled);
@@ -231,8 +238,13 @@ void ViewerWindow::open_image(QString file_name) {
 
 	if (m_preview_image) {
 		m_imager_viewer->setImage(*m_preview_image);
-		ImageStats stats = imageStats((const uint8_t*)(m_preview_image->m_raw_data), m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
+
+		ImageStats stats;
+		if (conf.statistics_enabled) {
+			stats = imageStats((const uint8_t*)(m_preview_image->m_raw_data), m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
+		}
 		m_imager_viewer->setImageStats(stats);
+
 		char info[256] = {};
 		int w = m_preview_image->width();
 		int h = m_preview_image->height();
@@ -533,6 +545,7 @@ void ViewerWindow::on_image_close_act() {
 	if (m_preview_image) {
 		delete(m_preview_image);
 		m_preview_image = nullptr;
+		m_imager_viewer->setImageStats(ImageStats());
 	}
 	preview_image *pi = new preview_image();
 	m_imager_viewer->setImage(*pi);
@@ -627,6 +640,18 @@ void ViewerWindow::on_restore_window_size_changed(bool status) {
 void ViewerWindow::on_antialias_view(bool status) {
 	conf.antialiasing_enabled = status;
 	m_imager_viewer->enableAntialiasing(status);
+	write_conf();
+}
+
+void ViewerWindow::on_statistics_show(bool enabled) {
+	conf.statistics_enabled = enabled;
+	if (m_preview_image) {
+		ImageStats stats;
+		if (enabled) {
+			stats = imageStats((const uint8_t*)(m_preview_image->m_raw_data), m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
+		}
+		m_imager_viewer->setImageStats(stats);
+	}
 	write_conf();
 }
 

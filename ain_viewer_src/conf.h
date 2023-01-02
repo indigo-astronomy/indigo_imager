@@ -76,6 +76,7 @@ typedef struct {
 	int window_width;
 	int window_height;
 	bool restore_window_size;
+	bool statistics_enabled;
 	char unused[100];
 } conf_t;
 

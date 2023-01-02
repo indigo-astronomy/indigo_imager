@@ -65,6 +65,7 @@ int main(int argc, char *argv[]) {
 	conf.window_width = 0;
 	conf.window_height = 0;
 	conf.restore_window_size = true;
+	conf.statistics_enabled = false;
 	read_conf();
 
 	if (!conf.reopen_file_at_start) {

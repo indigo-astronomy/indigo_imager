@@ -88,6 +88,7 @@ int main(int argc, char *argv[]) {
 	conf.sound_notifications_enabled = true;
 	conf.save_images_on_server = false;
 	conf.keep_images_on_server = false;
+	conf.statistics_enabled = false;
 	read_conf();
 
 	if (!conf.use_system_locale) qunsetenv("LC_NUMERIC");

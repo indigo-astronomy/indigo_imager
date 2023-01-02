@@ -73,6 +73,7 @@ public slots:
 	void on_stretch_changed(int level);
 	void on_cb_changed(int balance);
 	void on_antialias_view(bool status);
+	void on_statistics_show(bool enabled);
 
 private:
 	// Image viewer
