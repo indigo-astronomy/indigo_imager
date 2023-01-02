@@ -293,7 +293,7 @@ void ImageViewer::setImageStats(const ImageStats &stats) {
 		stats_str += "<b>StdDev:</b>  " + QString::number(stats.green.stddev) + "<br>";
 		stats_str += "<b>MAD:</b>  " + QString::number(stats.green.mad) + "</p>";
 
-		stats_str += "<p><b><font color=\"#3030F0\">Blue</font></b><br>";
+		stats_str += "<p><b><font color=\"#5050FF\">Blue</font></b><br>";
 		stats_str += "<b>Min:</b>  " + QString::number(stats.blue.min) + "<br>";
 		stats_str += "<b>Max:</b>  " + QString::number(stats.blue.max) + "<br>";
 		stats_str += "<b>Mean:</b>  " + QString::number(stats.blue.mean) + "<br>";
