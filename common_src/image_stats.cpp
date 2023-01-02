@@ -17,6 +17,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "image_stats.h"
+#include "indigo/indigo_bus.h"
 
 #include <math.h>
 #include <QCoreApplication>
@@ -37,9 +38,21 @@ ImageStats imageStatsOneChannel(T const *buffer, int count) {
 	}
 	double mean = sum / count;
 
+	double hist_max;
+	if (typeid(T) == typeid(uint8_t)) {
+		hist_max = UCHAR_MAX;
+	} else if (typeid(T) == typeid(uint16_t)) {
+		hist_max = USHRT_MAX;
+	} else if (typeid(T) == typeid(uint32_t)) {
+		hist_max = UINT_MAX;
+	} else {
+		hist_max = max;
+	}
+
 	double d;
 	double stddev_sum = 0, mad_sum = 0;
 	for (int i = 0; i < count; i++) {
+		stats.grey_red.histogram[(int)(buffer[i] / hist_max * 255)] ++;
 		d = buffer[i] - mean;
 		stddev_sum += d * d;
 		mad_sum += fabs(d);
@@ -53,6 +66,9 @@ ImageStats imageStatsOneChannel(T const *buffer, int count) {
 	stats.grey_red.mean = mean;
 	stats.grey_red.stddev = stddev;
 	stats.grey_red.mad = mad;
+	//for (int i = 0; i < 256; i++) {
+	//	indigo_error("%d -> %d", i, stats.grey_red.histogram[i]);
+	//} 
 	return stats;
 }
 
@@ -82,18 +98,33 @@ ImageStats imageStatsThreeChannels(T const *buffer, int count) {
 	double mean_g = sum_g / count;
 	double mean_b = sum_b / count;
 
+	double hist_max;
+	if (typeid(T) == typeid(uint8_t)) {
+		hist_max = UCHAR_MAX;
+	} else if (typeid(T) == typeid(uint16_t)) {
+		hist_max = USHRT_MAX;
+	} else if (typeid(T) == typeid(uint32_t)) {
+		hist_max = UINT_MAX;
+	} else {
+		double max = (max_r > max_g) ? max_r : max_g;
+		hist_max = (max > max_b) ? max : max_b;
+	}
+
 	double d;
 	double stddev_sum_r = 0, stddev_sum_g = 0, stddev_sum_b = 0;
 	double mad_sum_r = 0, mad_sum_g = 0, mad_sum_b = 0;
 	for (int i = 0; i < count * 3; i += 3) {
+		stats.grey_red.histogram[(int)(buffer[i] / hist_max * 255)] ++;
 		d = buffer[i] - mean_r;
 		stddev_sum_r += d * d;
 		mad_sum_r += fabs(d);
 
+		stats.green.histogram[(int)(buffer[i + 1] / hist_max * 255)] ++;
 		d = buffer[i + 1] - mean_g;
 		stddev_sum_g += d * d;
 		mad_sum_g += fabs(d);
 
+		stats.blue.histogram[(int)(buffer[i + 2] / hist_max * 255)] ++;
 		d = buffer[i + 2] - mean_b;
 		stddev_sum_b += d * d;
 		mad_sum_b += fabs(d);
@@ -149,4 +180,44 @@ ImageStats imageStats(uint8_t const *input, int width, int height, int pix_fmt) 
 		default:
 			return ImageStats();
 	}
+}
+
+QImage makeHistogram(ImageStats stats) {
+	double max_well = 0;
+	double hist_r[hist_width];
+	double hist_g[hist_width];
+	double hist_b[hist_width];
+	if (stats.channels == 1) {
+		for (int i = 0; i < hist_width; i++) {
+			hist_r[i] = hist_g[i] = hist_b[i] = log(stats.grey_red.histogram[i]);
+			max_well = (hist_r[i] > max_well) ? hist_r[i] : max_well;
+		}
+	} else if (stats.channels == 3) {
+		for (int i = 0; i < hist_width; i++) {
+			hist_r[i] = log(stats.grey_red.histogram[i]);
+			hist_g[i] = log(stats.green.histogram[i]);
+			hist_b[i] = log(stats.blue.histogram[i]);
+			max_well = (hist_r[i] > max_well) ? hist_r[i] : max_well;
+			max_well = (hist_g[i] > max_well) ? hist_g[i] : max_well;
+			max_well = (hist_b[i] > max_well) ? hist_b[i] : max_well;
+		}
+	} else {
+		return QImage();
+	}
+
+	QImage image(hist_width, hist_height, QImage::Format_ARGB32);
+	for (int y = 0; y < image.height(); y++) {
+		QRgb *line = reinterpret_cast<QRgb*>(image.scanLine(y));
+		for (int x = 0; x < image.width(); x++) {
+			uint8_t r, g, b;
+			r = (hist_height - y < (hist_r[x] / max_well * hist_height)) ? 255 : 0;
+			g = (hist_height - y < (hist_g[x] / max_well * hist_height)) ? 255 : 0;
+			b = (hist_height - y < (hist_b[x] / max_well * hist_height)) ? 255 : 0;
+
+			uint8_t alpha = 100;
+			if (r == 0 && g == 0 && b == 0) alpha = 0;
+			line[x] = qRgba(r, g, b, alpha);
+		}
+	}
+	return image;
 }

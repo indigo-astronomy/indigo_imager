@@ -128,11 +128,20 @@ ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
 	box->addWidget(m_view, 1);
 	setLayout(box);
 
+	m_image_histogram = new QLabel(m_view);
+	m_image_histogram->setStyleSheet("background-color: rgba(0,0,0,35%); color: rgba(200,200,200,100%);");
+	m_image_histogram->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+	m_image_histogram->setAttribute(Qt::WA_TransparentForMouseEvents);
+	m_image_histogram->move(QPoint(16, 16));
+	m_image_histogram->setTextFormat(Qt::RichText);
+	m_image_histogram->raise();
+	m_image_histogram->setVisible(false);
+
 	m_image_stats = new QLabel(m_view);
 	m_image_stats->setStyleSheet("background-color: rgba(0,0,0,35%); color: rgba(200,200,200,100%);");
 	m_image_stats->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
 	m_image_stats->setAttribute(Qt::WA_TransparentForMouseEvents);
-	m_image_stats->move(QPoint(15, 15));
+	m_image_stats->move(QPoint(16, 128 + 32));
 	m_image_stats->setTextFormat(Qt::RichText);
 	m_image_stats->raise();
 	m_image_stats->setVisible(false);
@@ -277,6 +286,11 @@ void ImageViewer::setImageStats(const ImageStats &stats) {
 		m_image_stats->setText(stats_str);
 		m_image_stats->adjustSize();
 		m_image_stats->setVisible(true);
+
+		QImage hist = makeHistogram(stats);
+		m_image_histogram->setPixmap(QPixmap::fromImage(hist));
+		m_image_histogram->adjustSize();
+		m_image_histogram->setVisible(true);
 	} else if (stats.channels == 3) {
 		QString stats_str = "<p><b>Statistics</b></p>";
 		stats_str += "<p><b><font color=\"#C05050\">Red</font></b><br>";
@@ -303,9 +317,16 @@ void ImageViewer::setImageStats(const ImageStats &stats) {
 		m_image_stats->setText(stats_str);
 		m_image_stats->adjustSize();
 		m_image_stats->setVisible(true);
+
+		QImage hist = makeHistogram(stats);
+		m_image_histogram->setPixmap(QPixmap::fromImage(hist));
+		m_image_histogram->adjustSize();
+		m_image_histogram->setVisible(true);
 	} else {
 		m_image_stats->setVisible(false);
 		m_image_stats->setText("");
+		m_image_histogram->setVisible(false);
+		m_image_histogram->setText("");
 	}
 }
 

@@ -20,6 +20,10 @@
 
 #include <memory>
 #include <pixelformat.h>
+#include <QImage>
+
+const int hist_height = 128;
+const int hist_width = 256;
 
 struct ImageStats1Channel {
 	double min;
@@ -27,19 +31,21 @@ struct ImageStats1Channel {
 	double mean;
 	double stddev;
 	double mad;
+	uint32_t histogram[hist_width];
 
-	// The default parameters result in no stretch at all.
 	ImageStats1Channel() {
 		min =
 		max =
 		mean =
 		stddev =
 		mad = 0;
+		for (int i = 0; i < hist_width; i++) histogram[i] = 0;
 	}
 };
 
 struct ImageStats {
 	int channels;
+	int pix_fmt;
 	ImageStats1Channel grey_red;
 	ImageStats1Channel green;
 	ImageStats1Channel blue;
@@ -47,7 +53,9 @@ struct ImageStats {
 	// 0 - uninitialized, 1 - monochrome, 3 - RGB image
 	ImageStats() {
 		channels = 0;
+		pix_fmt = 0;
 	}
 };
 
 ImageStats imageStats(uint8_t const *input, int width, int height, int pix_fmt);
+QImage makeHistogram(ImageStats stats);

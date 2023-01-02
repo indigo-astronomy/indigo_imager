@@ -124,6 +124,7 @@ private:
 	QLabel *m_text_label;
 	QLabel *m_pixel_value;
 	QLabel *m_image_stats;
+	QLabel *m_image_histogram;
 	GraphicsView *m_view;
 	PixmapItem *m_pixmap;
 	QGraphicsRectItem *m_selection;
