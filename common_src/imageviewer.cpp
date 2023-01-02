@@ -279,14 +279,14 @@ void ImageViewer::setImageStats(const ImageStats &stats) {
 		m_image_stats->setVisible(true);
 	} else if (stats.channels == 3) {
 		QString stats_str = "<p><b>Statistics</b></p>";
-		stats_str += "<p><b><font color=\"#A00000\">Red</font></b><br>";
+		stats_str += "<p><b><font color=\"#C05050\">Red</font></b><br>";
 		stats_str += "<b>Min:</b>  " + QString::number(stats.grey_red.min) + "<br>";
 		stats_str += "<b>Max:</b>  " + QString::number(stats.grey_red.max) + "<br>";
 		stats_str += "<b>Mean:</b>  " + QString::number(stats.grey_red.mean) + "<br>";
 		stats_str += "<b>StdDev:</b>  " + QString::number(stats.grey_red.stddev) + "<br>";
 		stats_str += "<b>MAD:</b>  " + QString::number(stats.grey_red.mad) + "</p>";
 
-		stats_str += "<p><b><font color=\"#00A000\">Green</font></b><br>";
+		stats_str += "<p><b><font color=\"#50C050\">Green</font></b><br>";
 		stats_str += "<b>Min:</b>  " + QString::number(stats.green.min) + "<br>";
 		stats_str += "<b>Max:</b>  " + QString::number(stats.green.max) + "<br>";
 		stats_str += "<b>Mean:</b>  " + QString::number(stats.green.mean) + "<br>";
