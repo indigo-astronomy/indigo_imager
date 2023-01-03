@@ -18,6 +18,7 @@
 
 #include <QLabel>
 #include "qconfigdialog.h"
+#include "widget_state.h"
 #include <indigo/indigo_bus.h>
 
 QConfigDialog::QConfigDialog(QWidget *parent) : QDialog(parent) {
@@ -111,7 +112,7 @@ QConfigDialog::QConfigDialog(QWidget *parent) : QDialog(parent) {
 	connect(this, &QConfigDialog::setActiveConfig, this, &QConfigDialog::onSetActiveConfig);
 	connect(this, &QConfigDialog::clearAgents, this, &QConfigDialog::onClearAgents);
 	connect(this, &QConfigDialog::clearConfigs, this, &QConfigDialog::onClearConfigs);
-
+	connect(this, &QConfigDialog::setState, this, &QConfigDialog::onSetState);
 }
 
 void QConfigDialog::onAgentChangedCB(int index) {
@@ -234,4 +235,21 @@ void QConfigDialog::onClearAgents() {
 
 void QConfigDialog::onClearConfigs() {
 	m_configuration_select->clear();
+	onSetState(INDIGO_OK_STATE);
+}
+
+void QConfigDialog::onSetState(int state) {
+	switch(state) {
+		case INDIGO_OK_STATE:
+			set_ok(m_configuration_select);
+			break;
+		case INDIGO_BUSY_STATE:
+			set_busy(m_configuration_select);
+			break;
+		case INDIGO_ALERT_STATE:
+			set_alert(m_configuration_select);
+			break;
+		default:
+			set_ok(m_configuration_select);
+	}
 }

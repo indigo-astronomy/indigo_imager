@@ -61,6 +61,7 @@ signals:
 	void removeConfig(QString configName);
 	void clearAgents();
 	void clearConfigs();
+	void setState(int state);
 
 public slots:
 	void onSetActiveAgent(QString agentName);
@@ -71,6 +72,7 @@ public slots:
 	void onRemoveConfig(QString configName);
 	void onClearAgents();
 	void onClearConfigs();
+	void onSetState(int state);
 
 	void onAgentChangedCB(int index);
 	void onSaveConfigCB();

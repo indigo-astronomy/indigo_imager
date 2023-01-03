@@ -2042,6 +2042,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		for (int i = 0; i < property->count; i++) {
 			m_config_dialog->addConfig(property->items[i].name);
 		}
+		m_config_dialog->setState(property->state);
 	}
 	if (client_match_device_property(property, selected_config_agent, AGENT_CONFIG_LAST_CONFIG_PROPERTY_NAME)) {
 		m_config_dialog->setActiveConfig(property->items[0].text.value);
@@ -2402,6 +2403,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		return;
 	}
 	// Config Agent
+	if (client_match_device_property(property, selected_config_agent, AGENT_CONFIG_LOAD_PROPERTY_NAME)) {
+		m_config_dialog->setState(property->state);
+	}
 	if (client_match_device_property(property, selected_config_agent, AGENT_CONFIG_LAST_CONFIG_PROPERTY_NAME)) {
 		m_config_dialog->setActiveConfig(property->items[0].text.value);
 	}
