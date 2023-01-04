@@ -22,7 +22,7 @@
 #include <indigo/indigo_bus.h>
 
 QConfigDialog::QConfigDialog(QWidget *parent) : QDialog(parent) {
-	setWindowTitle("Manage configuration");
+	setWindowTitle("Configuration manager");
 
 	QFrame *frame = new QFrame;
 	QGridLayout *frame_layout = new QGridLayout();
@@ -33,8 +33,9 @@ QConfigDialog::QConfigDialog(QWidget *parent) : QDialog(parent) {
 
 	int row = 0;
 	//------ Remove when stable -------
-	QLabel *label1 = new QLabel("This feature is experimental!");
-	label1->setStyleSheet(QString("color: #E00000;"));
+	QLabel *label1 = new QLabel("Warning: This feature is experimental");
+	label1->setToolTip("This feature is experimental and may change.\nBackward and forward compatibility is not guaranted for the time being.");
+	label1->setStyleSheet(QString("color: #E00000; font: 8pt;"));
 	frame_layout->addWidget(label1, row, 0, 1, 3);
 	row++;
 	//---------------------------------
