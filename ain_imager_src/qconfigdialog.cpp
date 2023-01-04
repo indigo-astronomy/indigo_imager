@@ -34,7 +34,7 @@ QConfigDialog::QConfigDialog(QWidget *parent) : QDialog(parent) {
 	int row = 0;
 	//------ Remove when stable -------
 	QLabel *label1 = new QLabel("Warning: This feature is experimental");
-	label1->setToolTip("This feature is experimental and may change.\nBackward and forward compatibility is not guaranted for the time being.");
+	label1->setToolTip("<p>This feature is experimental and may change. Backward and forward compatibility is not guaranted for the time being.</p>");
 	label1->setStyleSheet(QString("color: #E00000; font: 8pt;"));
 	frame_layout->addWidget(label1, row, 0, 1, 3);
 	row++;
@@ -60,25 +60,25 @@ QConfigDialog::QConfigDialog(QWidget *parent) : QDialog(parent) {
 	frame_layout->addWidget(m_configuration_select, row, 0);
 
 	m_add_config_button = new QToolButton(this);
-	m_add_config_button->setToolTip(tr("Save configuration"));
+	m_add_config_button->setToolTip("<p>Save the current state to the selected configuration</p>");
 	m_add_config_button->setIcon(QIcon(":resource/save.png"));
 	frame_layout->addWidget(m_add_config_button, row, 1);
 	connect(m_add_config_button, &QToolButton::clicked, this, &QConfigDialog::onSaveConfigCB);
 
 	m_remove_config_button = new QToolButton(this);
-	m_remove_config_button->setToolTip(tr("Remove selected configuration"));
+	m_remove_config_button->setToolTip("<p>Remove selected configuration</p>");
 	m_remove_config_button->setIcon(QIcon(":resource/delete.png"));
 	frame_layout->addWidget(m_remove_config_button, row, 2);
 	connect(m_remove_config_button, &QToolButton::clicked, this, &QConfigDialog::onRemoveConfigCB);
 
 	row++;
 	m_save_devices_cbox = new QCheckBox("Save device profiles");
-	m_save_devices_cbox->setToolTip("Save device configurations to the selected profiles");
+	m_save_devices_cbox->setToolTip("<p>Save device specific properties to the selected profiles. If unchecked, device properties like gain, resolution etc., will not be saved.</p>");
 	frame_layout->addWidget(m_save_devices_cbox, row, 0, 1, 3);
 
 	row++;
 	m_unload_drivers_cbox = new QCheckBox("Unload unused drivers");
-	m_unload_drivers_cbox->setToolTip("Unload drivers not needed by the the selected configuration");
+	m_unload_drivers_cbox->setToolTip("<p>Unload all drivers not needed by the configuration being loaded</p>");
 	frame_layout->addWidget(m_unload_drivers_cbox, row, 0, 1, 3);
 
 	row++;
