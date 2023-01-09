@@ -751,6 +751,7 @@ void ImagerWindow::on_object_name_changed(const QString &object_name) {
 		get_selected_imager_agent(selected_agent);
 
 		change_ccd_localmode_property(selected_agent, &object_name);
+		add_fits_keyword_string(selected_agent, "OBJECT", &object_name);
 	});
 }
 

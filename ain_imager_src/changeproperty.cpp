@@ -100,6 +100,23 @@ void ImagerWindow::change_ccd_localmode_property(const char *agent, const QStrin
 	indigo_change_text_property_1_raw(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, CCD_LOCAL_MODE_PREFIX_ITEM_NAME, filename_template);
 }
 
+void ImagerWindow::add_fits_keyword_string(const char *agent, const char *keyword, const QString *object_name) const {
+	if (object_name->isEmpty()) {
+		indigo_change_text_property_1_raw(nullptr, agent, CCD_REMOVE_FITS_HEADERS_PROPERTY_NAME, CCD_REMOVE_FITS_HEADER_NAME_ITEM_NAME, keyword);
+	} else {
+		static const char *items[] = {
+			CCD_SET_FITS_HEADER_NAME_ITEM_NAME,
+			CCD_SET_FITS_HEADER_VALUE_ITEM_NAME
+		};
+		QString object = QString("'") + *object_name + QString("'");
+		char *values[] {
+			(char *)keyword,
+			object.toUtf8().data()
+		};
+		indigo_change_text_property(nullptr, agent, CCD_SET_FITS_HEADER_PROPERTY_NAME, 2, items, (const char **)values);
+	}
+}
+
 void ImagerWindow::request_file_download(const char *agent, const char *file_name) const {
 	indigo_debug("Requested remote: %s", file_name);
 	indigo_change_text_property_1_raw(nullptr, agent, AGENT_IMAGER_DOWNLOAD_FILE_PROPERTY_NAME, AGENT_IMAGER_DOWNLOAD_FILE_ITEM_NAME, file_name);
