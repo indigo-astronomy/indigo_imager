@@ -894,8 +894,8 @@ void ImagerWindow::on_service_config_act() {
 
 void ImagerWindow::on_start_control_panel_act() {
 	if (!is_control_panel_running) {
-#ifdef INDIGO_WINDOWS
 		QtConcurrent::run([=]() {
+#ifdef INDIGO_WINDOWS
 			is_control_panel_running = true;
 			QStringList paths = QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation);
 			QString fileName;
@@ -915,17 +915,17 @@ void ImagerWindow::on_start_control_panel_act() {
 				window_log("Error: INDIGO Control Panel could not be started. Is it installed?");
 			}
 			is_control_panel_running = false;
-		});
 #else
-		is_control_panel_running = true;
-		QProcess process;
-		process.start("indigo_control_panel");
-		bool success = process.waitForFinished();
-		if (!success) {
-			window_log("Error: INDIGO Control Panel could not be started. Is it in your path?");
-		}
-		is_control_panel_running = false;
+			is_control_panel_running = true;
+			QProcess process;
+			process.start("indigo_control_panel");
+			bool success = process.waitForFinished();
+			if (!success) {
+				window_log("Error: INDIGO Control Panel could not be started. Is it in your path?");
+			}
+			is_control_panel_running = false;
 #endif
+		});
 	} else {
 		window_log("INDIGO Control Panel is already running!");
 	}
