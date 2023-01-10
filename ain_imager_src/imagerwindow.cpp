@@ -908,7 +908,7 @@ void ImagerWindow::on_start_control_panel_act() {
 			fileName = info.symLinkTarget();
 		}
 		QProcess process;
-		bool success = process.start("\""+fileName+"\"");
+		bool success = process.startDetached("\""+fileName+"\"");
 		if (!success) {
 			window_log("Error: INDIGO Control Panel could not be started. Is it installed?");
 		}
