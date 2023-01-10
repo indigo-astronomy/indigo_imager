@@ -1923,6 +1923,14 @@ static void populateConfigItem(indigo_property *property, ConfigItem &configItem
 	}
 }
 
+static int getBitDepthValue(indigo_property *property) {
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], CCD_INFO_BITS_PER_PIXEL_ITEM_NAME)) {
+			return property->items[i].number.value;
+		}
+	}
+}
+
 void ImagerWindow::property_define(indigo_property* property, char *message) {
 	char selected_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0};
@@ -2184,6 +2192,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			change_agent_ccd_peview(selected_guider_agent, (bool)conf.guider_save_bandwidth);
 		});
 	}
+	if (client_match_device_property(property, selected_agent, CCD_INFO_PROPERTY_NAME)) {
+		m_image_bpp_hint = getBitDepthValue(property);
+	}
 	if (client_match_device_property(property, selected_guider_agent, CCD_MODE_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_guider_frame_size_select);
 	}
@@ -2438,6 +2449,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_agent, FOCUSER_COMPENSATION_PROPERTY_NAME)) {
 		update_focuser_temperature_compensation_steps(this, property);
 		m_temperature_compensation_frame->setHidden(false);
+	}
+	if (client_match_device_property(property, selected_agent, CCD_INFO_PROPERTY_NAME)) {
+		m_image_bpp_hint = getBitDepthValue(property);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_frame_size_select);
@@ -2721,6 +2735,11 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		clear_combobox(m_focuser_select);
+	}
+	if (client_match_device_property(property, selected_agent, CCD_INFO_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		m_image_bpp_hint = 0;
 	}
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {

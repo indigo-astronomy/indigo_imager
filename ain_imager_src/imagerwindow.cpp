@@ -65,6 +65,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	save_blob = false;
 	m_indigo_item = nullptr;
 	m_guide_log = nullptr;
+	m_image_bpp_hint = 0;
 	m_guider_process = 0;
 	m_stderr = dup(STDERR_FILENO);
 
@@ -562,10 +563,10 @@ bool ImagerWindow::show_preview_in_imager_viewer(QString &key) {
 	if (image) {
 		m_imager_viewer->setImage(*image);
 		m_imager_viewer->centerReference();
-
 		ImageStats stats;
 		if (conf.statistics_enabled) {
-			stats = imageStats((const uint8_t*)(image->m_raw_data), image->m_width, image->m_height, image->m_pix_format);
+			indigo_debug("IMAGER PREVIEW: bpp_hint = %d\n", m_image_bpp_hint);
+			stats = imageStats((const uint8_t*)(image->m_raw_data), image->m_width, image->m_height, image->m_pix_format, m_image_bpp_hint);
 		}
 		m_imager_viewer->setImageStats(stats);
 
