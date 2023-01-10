@@ -894,42 +894,32 @@ void ImagerWindow::on_service_config_act() {
 
 
 void ImagerWindow::on_start_control_panel_act() {
-	if (!is_control_panel_running) {
-		QtConcurrent::run([=]() {
+	QtConcurrent::run([=]() {
 #ifdef INDIGO_WINDOWS
-			is_control_panel_running = true;
-			QStringList paths = QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation);
-			QString fileName;
-			for (int i = 0; i < paths.length(); i++) {
-				QFileInfo info(paths[i] + "/INDIGO Control Panel.lnk");
-				fileName = info.symLinkTarget();
-				if (!fileName.isEmpty()) break;
-			}
-			if (fileName.isEmpty()) {
-				QFileInfo info("C:/ProgramData/Microsoft/Windows/Start Menu/Programs/INDIGO Control Panel.lnk");
-				fileName = info.symLinkTarget();
-			}
-			QProcess process;
-			process.start("\""+fileName+"\"");
-			bool success = process.waitForFinished();
-			if (!success) {
-				window_log("Error: INDIGO Control Panel could not be started. Is it installed?");
-			}
-			is_control_panel_running = false;
+		QStringList paths = QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation);
+		QString fileName;
+		for (int i = 0; i < paths.length(); i++) {
+			QFileInfo info(paths[i] + "/INDIGO Control Panel.lnk");
+			fileName = info.symLinkTarget();
+			if (!fileName.isEmpty()) break;
+		}
+		if (fileName.isEmpty()) {
+			QFileInfo info("C:/ProgramData/Microsoft/Windows/Start Menu/Programs/INDIGO Control Panel.lnk");
+			fileName = info.symLinkTarget();
+		}
+		QProcess process;
+		bool success = process.start("\""+fileName+"\"");
+		if (!success) {
+			window_log("Error: INDIGO Control Panel could not be started. Is it installed?");
+		}
 #else
-			is_control_panel_running = true;
-			QProcess process;
-			process.start("indigo_control_panel");
-			bool success = process.waitForFinished();
-			if (!success) {
-				window_log("Error: INDIGO Control Panel could not be started. Is it in your path?");
-			}
-			is_control_panel_running = false;
+		QProcess process;
+		bool success = process.startDetached("indigo_control_panel");
+		if (!success) {
+			window_log("Error: INDIGO Control Panel could not be started. Is it in your path?");
+		}
 #endif
-		});
-	} else {
-		window_log("INDIGO Control Panel is already running!");
-	}
+	});
 }
 
 
