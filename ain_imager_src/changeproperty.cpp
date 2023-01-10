@@ -101,6 +101,8 @@ void ImagerWindow::change_ccd_localmode_property(const char *agent, const QStrin
 }
 
 void ImagerWindow::add_fits_keyword_string(const char *agent, const char *keyword, const QString *object_name) const {
+	//commented for a build
+	/*
 	if (object_name->isEmpty()) {
 		indigo_change_text_property_1_raw(nullptr, agent, CCD_REMOVE_FITS_HEADERS_PROPERTY_NAME, CCD_REMOVE_FITS_HEADER_NAME_ITEM_NAME, keyword);
 	} else {
@@ -115,6 +117,7 @@ void ImagerWindow::add_fits_keyword_string(const char *agent, const char *keywor
 		};
 		indigo_change_text_property(nullptr, agent, CCD_SET_FITS_HEADER_PROPERTY_NAME, 2, items, (const char **)values);
 	}
+	*/
 }
 
 void ImagerWindow::request_file_download(const char *agent, const char *file_name) const {
