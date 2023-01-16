@@ -472,6 +472,8 @@ void ImagerWindow::on_exposure_start_stop(bool clicked) {
 			change_agent_abort_process_property(selected_agent);
 		} else {
 			set_mount_agent_selected_imager_agent();
+			QString obj_name = m_object_name->text();
+			add_fits_keyword_string(selected_agent, "OBJECT", &obj_name);
 			change_agent_batch_property(selected_agent);
 			change_ccd_frame_property(selected_agent);
 			if(conf.save_images_on_server) {
@@ -498,6 +500,8 @@ void ImagerWindow::on_preview_start_stop(bool clicked) {
 			change_ccd_abort_exposure_property(selected_agent);
 		} else {
 			set_mount_agent_selected_imager_agent();
+			QString obj_name = m_object_name->text();
+			add_fits_keyword_string(selected_agent, "OBJECT", &obj_name);
 			change_agent_batch_property(selected_agent);
 			change_ccd_frame_property(selected_agent);
 			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);

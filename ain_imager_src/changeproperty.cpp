@@ -108,7 +108,7 @@ void ImagerWindow::add_fits_keyword_string(const char *agent, const char *keywor
 			CCD_SET_FITS_HEADER_KEYWORD_ITEM_NAME,
 			CCD_SET_FITS_HEADER_VALUE_ITEM_NAME
 		};
-		QString object = QString("'") + *object_name + QString("'");
+		QString object = QString("'") + object_name->trimmed() + QString("'");
 		char *values[] {
 			(char *)keyword,
 			object.toUtf8().data()
