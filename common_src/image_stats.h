@@ -46,19 +46,16 @@ struct ImageStats1Channel {
 struct ImageStats {
 	int channels;
 	int pix_fmt;
-	int8_t bitdepth;
 	ImageStats1Channel grey_red;
 	ImageStats1Channel green;
 	ImageStats1Channel blue;
 
 	// 0 - uninitialized, 1 - monochrome, 3 - RGB image
 	ImageStats() {
-		channels =
-		pix_fmt =
-		bitdepth = 0;
+		channels = 0;
+		pix_fmt = 0;
 	}
 };
 
-//ImageStats imageStats(uint8_t const *input, int width, int height, int pix_fmt);
-ImageStats imageStats(uint8_t const *input, int width, int height, int pix_fmt, int8_t bitdepth_hint = 0);
+ImageStats imageStats(uint8_t const *input, int width, int height, int pix_fmt);
 QImage makeHistogram(ImageStats stats);

@@ -792,7 +792,6 @@ private:
 	ImageViewer *m_guider_viewer;
 	ImageViewer *m_visible_viewer;
 	indigo_item *m_indigo_item;
-	uint8_t m_image_bpp_hint;
 
 	QString m_image_key;
 	QString m_guider_key;

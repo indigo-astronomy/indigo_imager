@@ -26,7 +26,7 @@
 #define MAX_THREADS 4
 
 template <typename T>
-ImageStats imageStatsOneChannel(T const *buffer, int count, int8_t bitdepth_hint = 0) {
+ImageStats imageStatsOneChannel(T const *buffer, int count) {
 	ImageStats stats;
 	if (count < 1) return stats;
 
@@ -41,27 +41,12 @@ ImageStats imageStatsOneChannel(T const *buffer, int count, int8_t bitdepth_hint
 	double hist_max;
 	if (typeid(T) == typeid(uint8_t)) {
 		hist_max = UCHAR_MAX;
-		stats.bitdepth = 8;
 	} else if (typeid(T) == typeid(uint16_t)) {
-		if (bitdepth_hint == 10) {
-			hist_max = 1023;
-			stats.bitdepth = 10;
-		} else if (bitdepth_hint == 12) {
-			hist_max = 4095;
-			stats.bitdepth = 12;
-		} else if (bitdepth_hint == 14) {
-			hist_max = 16383;
-			stats.bitdepth = 14;
-		} else {
-			hist_max = USHRT_MAX;
-			stats.bitdepth = 16;
-		}
+		hist_max = USHRT_MAX;
 	} else if (typeid(T) == typeid(uint32_t)) {
 		hist_max = UINT_MAX;
-		stats.bitdepth = 32;
 	} else {
 		hist_max = max;
-		stats.bitdepth = -32;
 	}
 
 	double d;
@@ -88,7 +73,7 @@ ImageStats imageStatsOneChannel(T const *buffer, int count, int8_t bitdepth_hint
 }
 
 template <typename T>
-ImageStats imageStatsThreeChannels(T const *buffer, int count, int8_t bitdepth_hint = 0) {
+ImageStats imageStatsThreeChannels(T const *buffer, int count) {
 	ImageStats stats;
 	if (count < 3) return stats;
 
@@ -116,28 +101,13 @@ ImageStats imageStatsThreeChannels(T const *buffer, int count, int8_t bitdepth_h
 	double hist_max;
 	if (typeid(T) == typeid(uint8_t)) {
 		hist_max = UCHAR_MAX;
-		stats.bitdepth = 8;
 	} else if (typeid(T) == typeid(uint16_t)) {
-		if (bitdepth_hint == 10) {
-			hist_max = 1023;
-			stats.bitdepth = 10;
-		} else if (bitdepth_hint == 12) {
-			hist_max = 4095;
-			stats.bitdepth = 12;
-		} else if (bitdepth_hint == 14) {
-			hist_max = 16383;
-			stats.bitdepth = 14;
-		} else {
-			hist_max = USHRT_MAX;
-			stats.bitdepth = 16;
-		}
+		hist_max = USHRT_MAX;
 	} else if (typeid(T) == typeid(uint32_t)) {
 		hist_max = UINT_MAX;
-		stats.bitdepth = 32;
 	} else {
 		double max = (max_r > max_g) ? max_r : max_g;
 		hist_max = (max > max_b) ? max : max_b;
-		stats.bitdepth = -32;
 	}
 
 	double d;
@@ -189,24 +159,24 @@ ImageStats imageStatsThreeChannels(T const *buffer, int count, int8_t bitdepth_h
 	return stats;
 }
 
-ImageStats imageStats(uint8_t const *input, int width, int height, int pix_fmt, int8_t bitdepth_hint) {
+ImageStats imageStats(uint8_t const *input, int width, int height, int pix_fmt) {
 	switch (pix_fmt) {
 		case PIX_FMT_Y8:
-			return imageStatsOneChannel(reinterpret_cast<uint8_t const*>(input), width * height, bitdepth_hint);
+			return imageStatsOneChannel(reinterpret_cast<uint8_t const*>(input), width * height);
 		case PIX_FMT_Y16:
-			return imageStatsOneChannel(reinterpret_cast<uint16_t const*>(input), height * width, bitdepth_hint);
+			return imageStatsOneChannel(reinterpret_cast<uint16_t const*>(input), height * width);
 		case PIX_FMT_Y32:
-			return imageStatsOneChannel(reinterpret_cast<uint32_t const*>(input), height * width, bitdepth_hint);
+			return imageStatsOneChannel(reinterpret_cast<uint32_t const*>(input), height * width);
 		case PIX_FMT_F32:
-			return imageStatsOneChannel(reinterpret_cast<float const*>(input), height * width, bitdepth_hint);
+			return imageStatsOneChannel(reinterpret_cast<float const*>(input), height * width);
 		case PIX_FMT_RGB24:
-			return imageStatsThreeChannels(reinterpret_cast<uint8_t const*>(input), width * height, bitdepth_hint);
+			return imageStatsThreeChannels(reinterpret_cast<uint8_t const*>(input), width * height);
 		case PIX_FMT_RGB48:
-			return imageStatsThreeChannels(reinterpret_cast<uint16_t const*>(input), width * height, bitdepth_hint);
+			return imageStatsThreeChannels(reinterpret_cast<uint16_t const*>(input), width * height);
 		case PIX_FMT_RGB96:
-			return imageStatsThreeChannels(reinterpret_cast<uint32_t const*>(input), width * height, bitdepth_hint);
+			return imageStatsThreeChannels(reinterpret_cast<uint32_t const*>(input), width * height);
 		case PIX_FMT_RGBF:
-			return imageStatsThreeChannels(reinterpret_cast<float const*>(input), width * height, bitdepth_hint);
+			return imageStatsThreeChannels(reinterpret_cast<float const*>(input), width * height);
 		default:
 			return ImageStats();
 	}

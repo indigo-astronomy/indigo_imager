@@ -19,7 +19,8 @@
 
 #ifndef VERSION_H
 #define VERSION_H
-#define AIN_VERSION "0.17-2"
+
+#define AIN_VERSION "0.17-3"
 #define YEAR_NOW (__DATE__ + 7)
 
 #endif // VERSION_H
