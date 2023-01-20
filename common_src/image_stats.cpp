@@ -41,12 +41,16 @@ ImageStats imageStatsOneChannel(T const *buffer, int count) {
 	double hist_max;
 	if (typeid(T) == typeid(uint8_t)) {
 		hist_max = UCHAR_MAX;
+		stats.bitdepth = 8;
 	} else if (typeid(T) == typeid(uint16_t)) {
 		hist_max = USHRT_MAX;
+		stats.bitdepth = 16;
 	} else if (typeid(T) == typeid(uint32_t)) {
 		hist_max = UINT_MAX;
+		stats.bitdepth = 32;
 	} else {
 		hist_max = max;
+		stats.bitdepth = -32;
 	}
 
 	double d;
@@ -101,13 +105,17 @@ ImageStats imageStatsThreeChannels(T const *buffer, int count) {
 	double hist_max;
 	if (typeid(T) == typeid(uint8_t)) {
 		hist_max = UCHAR_MAX;
+		stats.bitdepth = 8;
 	} else if (typeid(T) == typeid(uint16_t)) {
 		hist_max = USHRT_MAX;
+		stats.bitdepth = 16;
 	} else if (typeid(T) == typeid(uint32_t)) {
 		hist_max = UINT_MAX;
+		stats.bitdepth = 32;
 	} else {
 		double max = (max_r > max_g) ? max_r : max_g;
 		hist_max = (max > max_b) ? max : max_b;
+		stats.bitdepth = -32;
 	}
 
 	double d;

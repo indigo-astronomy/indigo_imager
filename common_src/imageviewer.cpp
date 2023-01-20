@@ -276,7 +276,12 @@ void ImageViewer::makeToolbar(bool prev_next) {
 
 void ImageViewer::setImageStats(const ImageStats &stats) {
 	if (stats.channels == 1) {
-		QString stats_str = "<b>Statistics</b><br>";
+		QString stats_str = "<b>Statistics</b>";
+		if(stats.bitdepth == -32) {
+			stats_str += " (float)";
+		} else {
+			stats_str += " (" + QString::number(stats.bitdepth) + "bit)<br>";
+		}
 		stats_str += "<table cellspacing=1>";
 		stats_str += "<tr><td><b>Min </b></td><td align=right> " + QString::number(stats.grey_red.min) + "</td></tr>";
 		stats_str += "<tr><td><b>Max </b></td><td align=right> " + QString::number(stats.grey_red.max) + "</td></tr>";
@@ -293,7 +298,12 @@ void ImageViewer::setImageStats(const ImageStats &stats) {
 		m_image_histogram->adjustSize();
 		m_image_histogram->setVisible(true);
 	} else if (stats.channels == 3) {
-		QString stats_str = "<b>Statistics</b><br>";
+		QString stats_str = "<b>Statistics</b> ";
+		if(stats.bitdepth == -32) {
+			stats_str += " (float)";
+		} else {
+			stats_str += " (" + QString::number(stats.bitdepth) + "bit)<br>";
+		}
 		stats_str += "<table cellspacing=1>";
 		stats_str += "<tr><td><b>Min </b></td>";
 		stats_str += "<td align=right><font color=\"#C05050\"> " + QString::number(stats.grey_red.min) + " </font></td>";
