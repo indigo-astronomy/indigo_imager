@@ -28,7 +28,7 @@ e-mail: *rumenastro@gmail.com*
 
 ## Main Window
 
-The main window consists of three main area as seen on the picture below:
+The main window is divided in three main areas as seen on the picture below:
 
 ![](images/capture_main_color.png)
 
@@ -203,14 +203,36 @@ This defines what to do if the auto focus procedure fils. If **Return to the ini
 If the focuser is inverted and retracts on focus out motion the motion should be inverted. This combo box will be active if the selected focuser supports motion inversion.
 
 ## Guiding
-TBD
+*Ain* uses *Guider Agent* for guiding. The top combo box has all available Guider agents and the correct one should be selected.
 
 ![](images/guider_main.png)
+
+##### Camera
+All cameras available to the selected *Guider Agent* will be listed here. The correct one should be selected.
+
+##### Guider
+All guider devices available to the selected *Guider Agent* will be listed here. The correct one should be selected. They can be part of the mount or the ST4 port oof the guiding camera.
+
+##### Buttons
+- **Preview** button will start a loop of exposures with the guider camera.
+- **Calibrate** button will start the calibration process during which the guiding parameters will be determined automatically.
+- **Guide** button starts the Guiding
+- **Stop** button will stop each of the above processes.
 
 ### Settings tab
 ![](images/guider_settings.png)
 
-TBD
+##### Exposure
+Exposure time and delay between exposures can be specified in this section. Both are in seconds.
+
+##### Guiding
+*Guider Agent* provides several algorithms for drift detection and several options for Guiding in declination. Both can be selected here.
+
+In "Selection" guiding the primary star can be selected by **Right-Clicking** on the star or by entering the coordinates in **Star Selection X/Y** fields. The radius of the circle where the star can drift between two consecutive frames is specified in **Selection radius** field. And for multi-star "Selection" guiding the number of stars to be used can be specified in the **Star count** field.
+
+Only the first star can be selected manually or automatically. All other stars can only be auto selected. The list of the selected star can be cleared by pushing **Clear star selection** button. This will force the *Guider Agent* to make a new selection when any process is started.
+
+In "Donuts" guiding the whole frame is used to detect drift but some cameras have unusable border around the frame. This can interfere with the guiding and this area can be excluded by specifying **Edge Clipping**
 
 ### Advanced tab
 
@@ -218,10 +240,20 @@ TBD
 
 *Guder Agent* configuration is described in [INDIGO Guider Agent - PI Controller Tuning](https://github.com/indigo-astronomy/indigo/blob/master/indigo_docs/GUIDING_PI_CONTROLLER_TUNING.md) and in [Guider Agent README](https://github.com/indigo-astronomy/indigo/blob/master/indigo_drivers/agent_guider/README.md)
 
+Calibration parameters will be automatically computed during the "calibration" process but they can be fine-tuned manually.
+
 ### Misc (Miscellaneous) tab
 ![](images/guider_misc.png)
 
-TBD
+##### Save bandwidth
+There are two options to reduce network traffic. As the guiding is done on the server
+*Ain Imager* does not need a full resolution raw frames. It need basic images for visualization. This is why the user can choose to download JPEG images which can be more than 10x smaller and image sub-frames.
+
+##### Camera Settings
+Frame format, gain and offset of the guiding camera can be specified in this section.
+
+##### Guider Scope Profile
+The focal length of the guider scope should be entered in order to enable the drift to be displayed in arc seconds. Otherwise **Settings -> Guider Graph -> RA / Dec Drift (arcsec)** will have no effect and statistics and graph will be in pixels.
 
 ## Telescope control
 TBD
