@@ -174,10 +174,19 @@ The radius, in pixels, of the aperture used to estimate FWHM and HFD.
 Auto focus configuration is described in [INDIGO Imager Agent - Autofocus Tuning Guide](https://github.com/indigo-astronomy/indigo/blob/master/indigo_docs/IMAGING_AF_TUNING.md)
 
 ### Misc (Miscellaneous) tab
-TBD
-
 ![](images/focus_misc.png)
 
+##### Save bandwidth
+In order to transfer less amount of data through the network sub-frames with size of 10 or 20 radii centered around the selection can be used. This is applicable only for "Peak/HFD" estimator.
+
+##### Focus compensation
+This is the temperature compensation factor, in steps per degree celsius. This is how many steps will be applied when **Auto compensation** is ON with each degree change of the ambient temperature.
+
+##### On focus failed (Peak/HFD)
+This defines what to do if the auto focus procedure fils. If **Return to the initial position** is checked it will return to the starting position otherwise it will just stop. This applies to "Peak/HFD" estimator only. "RMS Contrast" it will always stop.
+
+##### Invert In and Out motion
+If the focuser is inverted and retracts on focus out motion the motion should be inverted. This combo box will be active if the selected focuser supports motion inversion.
 
 ## Guide tab
 TBD
