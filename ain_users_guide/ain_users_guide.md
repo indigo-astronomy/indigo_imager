@@ -32,8 +32,10 @@ The main window is divided in three main areas as seen on the picture below:
 
 ![](images/capture_main_color.png)
 
+Almost all widgets (buttons, combo boxes, spin boxes etc.) have tool-tips that provide information what the widget does. In case of the the numeric values it gives information of the valid range.
+
 ### Control area
-This the upper left area that consist of several tabs and sub-tabs. This is where all configuration is done and all processes are controlled like guiding, taking exposure etc. It will be described in detail in the following chapters.
+This is the upper left area that consist of several tabs and sub-tabs. This is where all configuration is done and all processes are controlled like guiding, taking exposure etc. It will be described in detail in the following chapters.
 
 ### Image area
 This is the upper right area of the main window. In this area the recently captured image will be displayed. It is context dependent.
@@ -203,7 +205,7 @@ This defines what to do if the auto focus procedure fils. If **Return to the ini
 If the focuser is inverted and retracts on focus out motion the motion should be inverted. This combo box will be active if the selected focuser supports motion inversion.
 
 ## Guiding
-*Ain* uses *Guider Agent* for guiding. The top combo box has all available Guider agents and the correct one should be selected.
+*Ain* uses the service *Guider Agent* for guiding. The top combo box has a list of all available guider agents and the correct one should be selected.
 
 ![](images/guider_main.png)
 
