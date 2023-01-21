@@ -1,5 +1,5 @@
 # Ain INDIGO Imager - Users Guide
-Revision: 20.01.2023 (early draft)
+Revision: 21.01.2023 (early draft)
 
 Author: **Rumen G.Bogdanovski**
 
@@ -58,44 +58,44 @@ As mentioned above Ain uses agents to operate and the top Combo box is for agent
 
 ![](images/capture_main.png)
 
-#### Camera
+##### Camera
 All available cameras to the selected *Imager Agent* Will be listed here. The selected one will be used for image acquisition.
 
-#### Wheel
+##### Wheel
 All available filter wheels to the selected *Imager Agent* Will be listed here. The user should select the one attached to the selected camera.
 
-#### Frame
+##### Frame
 All frame resolutions and pixel depths supported by the selected camera will be listed here along with the frame types like "Dark", "Light", "Flat" etc.
 
-#### Exposure
+##### Exposure
 This is the exposure time in seconds used used when **Expose** button is pressed to start single or a batch of exposures are captured.
 
-#### Delay
+##### Delay
 This is the delay in seconds between the exposures taken in a batch.
 
-#### No Frames (Number of Frames)
+##### No Frames (Number of Frames)
 This is how how many frames should be taken in a batch. Use -1 for infinite number of frames. In this case the batch will finish when **Abort** button is pressed.
 
-#### Filter
+##### Filter
 All available filters in the selected filter wheel will be listed here. The selected one is the one being used.
 
-#### Object
+##### Object
 The name of the object being photographed should be entered here. It is used for the saved file name and for the FITS header. If there is no name specified and **Settings -> Save noname images** is checked, "noname" string will be used as object name.
 
-#### Cooler
+##### Cooler
 If the selected camera can report the sensor temperature the current temperature will be shown here. If the camera supports cooling user can enable and disable cooler and set the target temperature. In this case the cooler power will also be displayed.
 
 ### Image tab
 
 ![](images/capture_image.png)
 
-#### Preview exposure
+##### Preview exposure
 This is the time, in seconds, used to get a preview frame with the **Preview** button.
 
-#### Image format
+##### Image format
 The image file formats supported by the camera driver will be listed here. They can be different for different cameras. The selected format will be used as a storage format for the saved images.
 
-#### Region of interest
+##### Region of interest
 The region of interest (ROI) can be configured by specifying **X** and **Y** of the top left corner and **Width** and **Height** of the sub-frame.
 
 ### Dithering tab
@@ -103,16 +103,16 @@ INDIGO can dither between the frames and it is configured in this tab.
 
 ![](images/capture_dithering.png)
 
-#### Target
+##### Target
 All available *Guider agents* will be listed here. The selected one should be the *Guider agent* used for guiding, as this is the agent that will perform the dithering. To disable dithering select "None".
 
-#### Aggressivity
+##### Aggressivity
 This value, in pixels, specifies at most how many pixels the frame should be shifted during dithering. The actual shift is a random value and this specifies the upper limit.
 
-#### Settle timeout
+##### Settle timeout
 The settle timeout is in seconds. It specifies how much time to wait for the guiding to settle after dithering. If it is not settled before this timeout is up, a warning will be issued and the imager agent will proceed with the next exposure.
 
-#### Skip Frames
+##### Skip Frames
 This parameter specifies how many frames to skip after dithering (0 means to dither after each frame).
 
 ### Camera tab
@@ -131,18 +131,46 @@ INDIGO services can work in the so called "clientless" or "headless" mode. This 
 
 
 ## Focus tab
-TBD
+Focusing is a feature of the *Imager Agent* and it works with the selected imager agent.
 
 ![](images/focus_main.png)
 
+##### Focuser
+All focuser devices available to the selected *Imager Agent* will be listed here. The correct one should be selected.
+
+##### Absolute position
+The current focuser position will be displayed here. Entering a new value and pushing the **[>]** button will move the focuser to the new position. It can be used to assist the focusing by going roughly to focus or to retract the focuser at the end of the imaging session.
+
+##### Relative Move
+Relative move will help achieve precise focus manually. The value represents how many steeps, relative to the current position, the focuser should move when **[>>]** (focus out) or **[<<]** (focus in) button is pushed.
+
+##### Reference T (Templerature)
+There the current temperature will be shown if the focuser has a temperature sensor. if **Auto compensation** is checked the focus will be automatically corrected with the temperature change if the compensation factor is set in the **Misc** tab.This value must be determined by the user as it is setup dependent.
+
 ### Statistics tab
-TBD
+Here the essential focusing statistics will be displayed when manual or automatic focusing is started. It is dependent on the focus estimator being used.
 
 ![](images/focus_statistics.png)
 
 ### Settings tab
 ![](images/focus_settings.png)
 
+##### Exposure time
+Exposure time in seconds used during the focusing process.
+
+##### Focus mode
+The focus mode "Manual" or "Auto".
+
+##### Focus estimators
+Currently the *Imager Agent* supports two focus estimators "Peak/HFD" and "RMS Contrast".
+
+##### Star selection X/Y
+The coordinates of the star that will be used for "Peak/HFD" focusing should be entered here. **Right-Click** on the image will load the coordinates of the cursor  here and will move the selection overlay (a green square).
+
+##### Selection radius
+The radius, in pixels, of the aperture used to estimate FWHM and HFD.
+
+##### Autofocus settings
 Auto focus configuration is described in [INDIGO Imager Agent - Autofocus Tuning Guide](https://github.com/indigo-astronomy/indigo/blob/master/indigo_docs/IMAGING_AF_TUNING.md)
 
 ### Misc (Miscellaneous) tab
