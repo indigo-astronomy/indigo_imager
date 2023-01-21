@@ -507,7 +507,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	site_frame_layout->addItem(spacer, site_row, 0, 1, 4);
 
 	site_row++;
-	m_mount_sync_time_cbox = new QCheckBox("Keep mount time sychronized");
+	m_mount_sync_time_cbox = new QCheckBox("Keep mount time synchronized");
 	m_mount_sync_time_cbox->setEnabled(false);
 	site_frame_layout->addWidget(m_mount_sync_time_cbox, site_row, 0, 1, 4);
 	connect(m_mount_sync_time_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_sync_time);
