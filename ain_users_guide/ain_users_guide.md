@@ -9,11 +9,11 @@ e-mail: *rumenastro@gmail.com*
 1. [Introduction](#introduction)
 1. [Main Window](#main-window)
 1. [Connecting to INDIGO services](#connecting-to-indigo-services)
-1. [Capture tab](#capture-tab)
-1. [Focus tab](#focus-tab)
-1. [Guide tab](#guide-tab)
-1. [Telescope tab](#telescope-tab)
-1. [Solver tab](#solver-tab)
+1. [Image capture](#image-capture)
+1. [Focusing](#focusing)
+1. [Guiding](#guiding)
+1. [Telescope control](#telescope-control)
+1. [Plate solving](#plate-solving)
 1. [Accessing advanced device and agent settings](#accessing-advanced-device-and-agent-settings)
 1. [Managing service configurations](#managing-service-configurations)
 
@@ -67,7 +67,7 @@ The auto discovered services will be listed with the "Bonjour" logo in front of 
 
 Services that are not discoverable (not announced on the network or that are on a different network, in a remote observatory for example) can be manually added by the user. The service should be specified in the form **name\@host.domain:port** or **name\@ip_address:port** in the text field below the service list. If **port** is not specified the default INDIGO port (7624) is assumed. Also **name** has only one purpose, to give some meaningful name to the service and has nothing to do with the remote service. It can be any text string. If not specified **host** will be used as a service name. Such services are displayed with a blue planet icon ("indigo_test") and can be removed manually.
 
-## Capture tab
+## Image capture
 As mentioned above *Ain Imager* uses agents to operate and the top Combo box is for agent selection. In **Capture** tab all available *Imager Agents* from all connected services will be listed. And depending on **Settings -> Use host suffix** it will show or not the service name as a suffix. *Ain* can use only one imager agent at a time. Multi agent support will come in the future.
 
 ![](images/capture_main.png)
@@ -144,7 +144,7 @@ INDIGO services can work in the so called "clientless" or "headless" mode. This 
  If the server is configured to keep the downloaded images they can still be removed when not needed. This is achieved by unchecking **Keep downloaded images on server** and press **Server cleanup**. This will remove all locally downloaded images that are kept on the server and not downloaded will be kept. This is useful when the images should be downloaded to several locations and removed once downloaded everywhere.
 
 
-## Focus tab
+## Focusing
 Focusing is a feature of the *Imager Agent* and it works with the selected imager agent.
 
 ![](images/focus_main.png)
@@ -202,7 +202,7 @@ This defines what to do if the auto focus procedure fils. If **Return to the ini
 ##### Invert In and Out motion
 If the focuser is inverted and retracts on focus out motion the motion should be inverted. This combo box will be active if the selected focuser supports motion inversion.
 
-## Guide tab
+## Guiding
 TBD
 
 ![](images/guider_main.png)
@@ -223,7 +223,7 @@ TBD
 
 TBD
 
-## Telescope tab
+## Telescope control
 TBD
 
 ![](images/telescope_main_solved.png)
@@ -268,7 +268,7 @@ TBD
 
 Performing the telescope polar alignment procedure is described in details in [INDIGO Astrometry / ASTAP Agent - Polar Alignment Guide](https://github.com/indigo-astronomy/indigo/blob/master/indigo_docs/POLAR_ALIGNMENT.md).
 
-## Solver tab
+## Plate solving
 Plate solving configuration and usage is described in [INDIGO Astrometry Agent - Plate Solving Guide](https://github.com/indigo-astronomy/indigo/blob/master/indigo_docs/PLATE_SOLVING.md) and in [Astrometry Agent README](https://github.com/indigo-astronomy/indigo/blob/master/indigo_drivers/agent_astrometry/README.md)
 
 ![](images/solver_main.png)
