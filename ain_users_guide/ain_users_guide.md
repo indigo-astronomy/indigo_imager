@@ -208,9 +208,9 @@ TBD
 ![](images/guider_main.png)
 
 ### Settings tab
-TBD
-
 ![](images/guider_settings.png)
+
+TBD
 
 ### Advanced tab
 
@@ -219,10 +219,9 @@ TBD
 *Guder Agent* configuration is described in [INDIGO Guider Agent - PI Controller Tuning](https://github.com/indigo-astronomy/indigo/blob/master/indigo_docs/GUIDING_PI_CONTROLLER_TUNING.md) and in [Guider Agent README](https://github.com/indigo-astronomy/indigo/blob/master/indigo_drivers/agent_guider/README.md)
 
 ### Misc (Miscellaneous) tab
-TBD
-
 ![](images/guider_misc.png)
 
+TBD
 
 ## Telescope tab
 TBD
@@ -230,9 +229,9 @@ TBD
 ![](images/telescope_main_solved.png)
 
 ### Main tab
-TBD
-
 ![](images/telescope_main1.png)
+
+TBD
 
 ### Object tab
 Typing in the **Search** field will update the object list as you type with the objects that match the pattern. Once the desired object is selected its coordinates will be loaded in telescope coordinate fields and clicking on **Goto** will point the telescope to the selected object.
@@ -250,19 +249,19 @@ The telescope coordinates can be loaded in the **Right ascension** and **Declina
 Pushing the **[-]** button will remove the selected custom object. Please note that standard library objects can not be removed.
 
 ### Solver tab
-TBD
-
 ![](images/telescope_solver.png)
 
-### Site (geographic location) tab
 TBD
 
+### Site (geographic location) tab
 ![](images/telescope_site.png)
 
-### GPS tab
 TBD
 
+### GPS tab
 ![](images/telescope_gps.png)
+
+TBD
 
 ### Polar align tab
 ![](images/telescope_polaralign.png)
