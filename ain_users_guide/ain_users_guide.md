@@ -5,13 +5,12 @@ Author: **Rumen G.Bogdanovski**
 
 e-mail: *rumenastro@gmail.com*
 
-
 ## Introduction
-Ain INDIGO Imager is a free and open source astronomical image acquisition software distributed under [INDIGO Astronomy open-source license](https://github.com/indigo-astronomy/indigo_imager/blob/master/LICENSE.md). Ain is designed to be easy to use and lightweight. It requires a running [INDIGO Server](https://github.com/indigo-astronomy/indigo/blob/master/indigo_docs/INDIGO_SERVER_AND_DRIVERS_GUIDE.md).
+*Ain INDIGO Imager* is a free and open source astronomical image acquisition software distributed under [INDIGO Astronomy open-source license](https://github.com/indigo-astronomy/indigo_imager/blob/master/LICENSE.md). *Ain* is designed to be easy to use and lightweight. It requires a running [INDIGO Server](https://github.com/indigo-astronomy/indigo/blob/master/indigo_docs/INDIGO_SERVER_AND_DRIVERS_GUIDE.md).
 
-Ain is supported on Linux and Windows operating systems and is available for download on the [INDIGO Astronomy](https://www.indigo-astronomy.org/downloads.html) website.
+*Ain* is supported on Linux and Windows operating systems and is available for download on the [INDIGO Astronomy](https://www.indigo-astronomy.org/downloads.html) website.
 
-Ain is designed to be simple and it has very little busyness logic embedded. It relays on [INDIGO Agents](https://github.com/indigo-astronomy/indigo/blob/master/indigo_docs/INDIGO_AGENTS.md) to operate. It is essentially a user interface for the INDIGO agents and because of that, on connect Ain will automatically load the agents it needs to operate, if they are not loaded.
+*Ain* is designed to be simple and it has very little busyness logic embedded. It relays on [INDIGO Agents](https://github.com/indigo-astronomy/indigo/blob/master/indigo_docs/INDIGO_AGENTS.md) to operate. It is essentially a user interface for the INDIGO agents and because of that, on connect *Ain* will automatically load the agents it needs to operate, if they are not loaded.
 
 ## Main Window
 
@@ -38,23 +37,23 @@ If the current image is solved and the **Solver** or **Telescope** tab is active
 Mouse wheel will zoom in or zoom out the image and **Left-Click + Drag** will pan the image.
 
 ### Log area
-Log area is the bottom part of the main window. In this area all messages from the INDIGO framework will be displayed, preceded by a timestamp. There are three types of messages: *Information* - displayed in white, *Error* - displayed in red and *Warning* - displayed in yellow. Ain does not display errors or warnings in dialog boxes, all errors, warnings and messages go to this log. In addition each message can be accompanied by an audible notification. Audible notifications are enabled by **Settings -> Play sound notifications**.
+Log area is the bottom part of the main window. In this area all messages from the INDIGO framework will be displayed, preceded by a timestamp. There are three types of messages: *Information* - displayed in white, *Error* - displayed in red and *Warning* - displayed in yellow. *Ain* does not display errors or warnings in dialog boxes, all errors, warnings and messages go to this log. In addition each message can be accompanied by an audible notification. Audible notifications are enabled by **Settings -> Play sound notifications**.
 
 ## Connecting to INDIGO services
-Ain will automatically discover all INDIGO services available on the network. And depending on **Settings -> Auto connect new services** it will connect or not to the newly discovered services.
+*Ain* will automatically discover all INDIGO services available on the network. And depending on **Settings -> Auto connect new services** it will connect or not to the newly discovered services.
 
 Services can be managed from **File -> Available Services** as shown on the screenshot.
 
 ![](images/available_services.png)
 
-All available services will be listed in the above dialog. To connect or disconnect a service the checkbox in front of the item should be checked or unchecked. The connection status of the services will be restored when Ain is restarted, provided that the service is still available. In the example above service "indigosky" is connected and "vega" and "indigo_test" are not.
+All available services will be listed in the above dialog. To connect or disconnect a service the checkbox in front of the item should be checked or unchecked. The connection status of the services will be restored when *Ain* is restarted, provided that the service is still available. In the example above service "indigosky" is connected and "vega" and "indigo_test" are not.
 
 The auto discovered services will be listed with the "Bonjour" logo in front of their name ("indigosky" and "vega") and can not be removed from the list. They will disappear when the server shuts down and reappear when it is back online.
 
 Services that are not discoverable (not announced on the network or that are on a different network, in a remote observatory for example) can be manually added by the user. The service should be specified in the form **name\@host.domain:port** or **name\@ip_address:port** in the text field below the service list. If **port** is not specified the default INDIGO port (7624) is assumed. Also **name** has only one purpose, to give some meaningful name to the service and has nothing to do with the remote service. It can be any text string. If not specified **host** will be used as a service name. Such services are displayed with a blue planet icon ("indigo_test") and can be removed manually.
 
 ## Capture tab
-As mentioned above Ain uses agents to operate and the top Combo box is for agent selection. In **Capture** tab all available *Imager Agents* from all connected services will be listed. And depending on **Settings -> Use host suffix** it will show or not the service name as a suffix. Ain can use only one imager agent at a time. Multi agent support will come in the future.
+As mentioned above *Ain Imager* uses agents to operate and the top Combo box is for agent selection. In **Capture** tab all available *Imager Agents* from all connected services will be listed. And depending on **Settings -> Use host suffix** it will show or not the service name as a suffix. *Ain* can use only one imager agent at a time. Multi agent support will come in the future.
 
 ![](images/capture_main.png)
 
@@ -262,11 +261,21 @@ Plate solving configuration and usage is described in [INDIGO Astrometry Agent -
 
 If a local file needs to be solved **Image source** should be set to "Upload file" and by pushing the **Solve** button, a file select dialog will popup to choose the file to be solved.
 
+## Accessing advanced device and agent settings
+
+*Ain Imager* provides access to a subset of the standard properties of the devices and agents. The whole set of properties can be monitored and modified with the *INDIGO Control Panel*, free and open source application available for Linux and Windows.
+
+ ![](images/ICP.png)
+
+ *Ain* provides a shortcut to it from **File -> INDIGO Control Panel**.
+
+*INDIGO Control Panel* is essential for the initial service configuration like loading the necessary drivers and initial device configuration.
+
 ## Managing service configurations
 
 Note: This feature is experimental!
 
-Ain can use *Configuration Agents* running on INDIGO services to manage the configuration of each service. It can save, load, delete and create new configurations for each INDIGO service. Configuration manager dialog can be accessed via **File -> Manage service configurations**.
+*Ain Imager* can use *Configuration Agents* running on INDIGO services to manage the configuration of each service. It can save, load, delete and create new configurations for each INDIGO service. Configuration manager dialog can be accessed from **File -> Manage service configurations**.
 
 ![](images/config_manager.png)
 
