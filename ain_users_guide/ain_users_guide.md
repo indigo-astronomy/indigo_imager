@@ -10,6 +10,12 @@ e-mail: *rumenastro@gmail.com*
 1. [Main Window](#main-window)
 1. [Connecting to INDIGO services](#connecting-to-indigo-services)
 1. [Capture tab](#capture-tab)
+1. [Focus tab](#focus-tab)
+1. [Guide tab](#guide-tab)
+1. [Telescope tab](#telescope-tab)
+1. [Solver tab](#solver-tab)
+1. [Accessing advanced device and agent settings](#accessing-advanced-device-and-agent-settings)
+1. [Managing service configurations](#managing-service-configurations)
 
 
 ## Introduction
