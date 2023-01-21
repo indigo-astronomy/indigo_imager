@@ -23,7 +23,7 @@ The main window consists of three main area as seen on the picture below:
 This the upper left area that consist of several tabs and sub-tabs. This is where all configuration is done and all processes are controlled like guiding, taking exposure etc. It will be described in detail in the following chapters.
 
 ### Image area
-This is the upper right area of the main image. In this area the recently captured image will be displayed. It is context dependent.
+This is the upper right area of the main window. In this area the recently captured image will be displayed. It is context dependent.
 
 For **Capture**, **Focus** and **Telescope** tabs the last image from the main imaging camera will be displayed. And several overlays can be turned on and off like Histogram and statistics ( controlled by **Settings -> Show image statistics**) and image center mark (**Settings -> Show image center**).  
 
@@ -38,7 +38,7 @@ If the current image is solved and the **Solver** or **Telescope** tab is active
 Mouse wheel will zoom in or zoom out the image and **Left-Click + Drag** will pan the image.
 
 ### Log area
-In this area all messages from the INDIGO framework will be displayed, preceded by a timestamp. There are three types of messages: *Information* - displayed in white, *Error* - displayed in red and *Warning* - displayed in yellow. Ain does not display errors or warnings in dialog boxes, all errors, warnings and messages go to this log. In addition each message can be accompanied by an audible notification. Audible notifications are enabled by **Settings -> Play sound notifications**.
+Log area is the bottom part of the main window. In this area all messages from the INDIGO framework will be displayed, preceded by a timestamp. There are three types of messages: *Information* - displayed in white, *Error* - displayed in red and *Warning* - displayed in yellow. Ain does not display errors or warnings in dialog boxes, all errors, warnings and messages go to this log. In addition each message can be accompanied by an audible notification. Audible notifications are enabled by **Settings -> Play sound notifications**.
 
 ## Connecting to INDIGO services
 Ain will automatically discover all INDIGO services available on the network. And depending on **Settings -> Auto connect new services** it will connect or not to the newly discovered services.
@@ -261,3 +261,15 @@ Plate solving configuration and usage is described in [INDIGO Astrometry Agent -
 ![](images/solver_main.png)
 
 If a local file needs to be solved **Image source** should be set to "Upload file" and by pushing the **Solve** button, a file select dialog will popup to choose the file to be solved.
+
+## Managing service configurations
+
+Note: This feature is experimental!
+
+Ain can use *Configuration Agents* running on INDIGO services to manage the configuration of each service. It can save, load, delete and create new configurations for each INDIGO service. Configuration manager dialog can be accessed via **File -> Manage service configurations**.
+
+![](images/config_manager.png)
+
+Available configuration agents will be listed in the top combo box and available configurations will be listed in the **Configuration** combo box.
+
+More information about configuration management can be found in [INDIGO Configuration Agent README](https://github.com/indigo-astronomy/indigo/blob/master/indigo_drivers/agent_config/README.md).
