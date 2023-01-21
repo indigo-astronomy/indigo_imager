@@ -5,12 +5,20 @@ Author: **Rumen G.Bogdanovski**
 
 e-mail: *rumenastro@gmail.com*
 
+## Table of Contents
+1. [Introduction](#introduction)
+1. [Main Window](#main-window)
+1. [Connecting to INDIGO services](#connecting-to-indigo-services)
+1. [Capture tab](#capture-tab)
+
+
 ## Introduction
 *Ain INDIGO Imager* is a free and open source astronomical image acquisition software distributed under [INDIGO Astronomy open-source license](https://github.com/indigo-astronomy/indigo_imager/blob/master/LICENSE.md). *Ain* is designed to be easy to use and lightweight. It requires a running [INDIGO Server](https://github.com/indigo-astronomy/indigo/blob/master/indigo_docs/INDIGO_SERVER_AND_DRIVERS_GUIDE.md).
 
 *Ain* is supported on Linux and Windows operating systems and is available for download on the [INDIGO Astronomy](https://www.indigo-astronomy.org/downloads.html) website.
 
 *Ain* is designed to be simple and it has very little busyness logic embedded. It relays on [INDIGO Agents](https://github.com/indigo-astronomy/indigo/blob/master/indigo_docs/INDIGO_AGENTS.md) to operate. It is essentially a user interface for the INDIGO agents and because of that, on connect *Ain* will automatically load the agents it needs to operate, if they are not loaded.
+
 
 ## Main Window
 
@@ -38,6 +46,7 @@ Mouse wheel will zoom in or zoom out the image and **Left-Click + Drag** will pa
 
 ### Log area
 Log area is the bottom part of the main window. In this area all messages from the INDIGO framework will be displayed, preceded by a timestamp. There are three types of messages: *Information* - displayed in white, *Error* - displayed in red and *Warning* - displayed in yellow. *Ain* does not display errors or warnings in dialog boxes, all errors, warnings and messages go to this log. In addition each message can be accompanied by an audible notification. Audible notifications are enabled by **Settings -> Play sound notifications**.
+
 
 ## Connecting to INDIGO services
 *Ain* will automatically discover all INDIGO services available on the network. And depending on **Settings -> Auto connect new services** it will connect or not to the newly discovered services.
