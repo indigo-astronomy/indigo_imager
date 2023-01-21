@@ -285,17 +285,21 @@ Pushing the **[-]** button will remove the selected custom object. Please note t
 ### Solver tab
 ![](images/telescope_solver.png)
 
-TBD
+In the solver tab the user should select the image source and exposure time to be used and can perform two operations:
+- **Solve & Center** - the selected agent will take exposure solve it and using the solution as a reference will perform precise goto to the desired coordinates.
+- **Solve & Sync** - the selected agent will take exposure solve it and the solution will be set to the telescope as a reference (sync the telescope with the solution). This will allow precise goto in the vicinity.
 
 ### Site (geographic location) tab
 ![](images/telescope_site.png)
 
-TBD
+In the **Source** combo box all available geo location sources will be listed. Such as the GPS device selected in the **GPS** tab or the selected **Mount Agent** coordinates, which are set in the **Set Location / Time** section.
+
+If **Keep the mount time synchronized** is checked each time the time or geo coordinates of the source are changed the mount will be updated. This is somewhat dangerous as the GPS may loose signal and the mount will loose alignment.
 
 ### GPS tab
 ![](images/telescope_gps.png)
 
-TBD
+In the **GPS** combo box all available GPS devices will be listed. The selected GPS can be used as a time and geographic coordinates source in the **Site** tab. It also shows the position data from the selected device.
 
 ### Polar align tab
 ![](images/telescope_polaralign.png)
