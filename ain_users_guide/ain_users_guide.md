@@ -8,6 +8,7 @@ e-mail: *rumenastro@gmail.com*
 ## Table of Contents
 1. [Introduction](#introduction)
 1. [Main Window](#main-window)
+1. [General Concepts](#general-concepts)
 1. [Connecting to INDIGO services](#connecting-to-indigo-services)
 1. [Image capture](#image-capture)
 1. [Focusing](#focusing)
@@ -55,6 +56,27 @@ Mouse wheel will zoom in or zoom out the image and **Left-Click + Drag** will pa
 ### Log area
 Log area is the bottom part of the main window. In this area all messages from the INDIGO framework will be displayed, preceded by a timestamp. There are three types of messages: *Information* - displayed in white, *Error* - displayed in red and *Warning* - displayed in yellow. *Ain* does not display errors or warnings in dialog boxes, all errors, warnings and messages go to this log. In addition each message can be accompanied by an audible notification. Audible notifications are enabled by **Settings -> Play sound notifications**.
 
+## General Concepts
+
+### Data storage
+By default Ain will store the files in a subdirectory of your home directory called "ain_data". Frames obtained on different dates will be saved in different subdirectories with format "YYYY-MM-DD". The output directory changes automatically at noon, to keep the data from the same night in the same directory. The data directory can be changed from **File -> Select Data Directory**
+
+### Widget color coding
+*Ain Imager* uses colors to represent the states of the operations. Related widgets will be decorated differently depending on the status. **Default** color (or **green** in some cases) means that the operation is idle or finished successfully. **Red** means operation failed or is canceled by the user. **Yellow** means the operation is in progress.
+
+For example:
+
+* Aborted exposure, "Expose" button in **red**:
+
+	![](images/exposure_aborted.png)
+
+* Exposure in progress, **Expose** button in **yellow**:
+
+	![](images/exposure_busy.png)
+
+* Exposure completed successfully, **Expose** button in default color:
+
+	![](images/exposure_ok.png)
 
 ## Connecting to INDIGO services
 *Ain* will automatically discover all INDIGO services available on the network. And depending on **Settings -> Auto connect new services** it will connect or not to the newly discovered services.
@@ -264,6 +286,12 @@ If the displayed image is solved a **Right-Click** on it will load the coordinat
 
 ##### Mount
 All mounts available to the selected *Guider Agent* will be listed here. The correct one should be selected.
+
+##### Az / Alt
+Displays current target Azimuth and Altitude and uses color coding to give a visual clue of the target suitability to be observed:
+* **Green** - target is hight above the horizon and is good to observe.
+* **Yellow** - target is low above the horizon.
+* **Red** - target is below the horizon
 
 ##### RA / Dec input
 In these fields the target Right ascension and Declination should be entered. They will be used for goto if **Goto** is button is pushed or to synchronize the mount to these coordinates if **Sync** is button is pushed.
