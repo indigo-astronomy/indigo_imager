@@ -1,5 +1,5 @@
-# Ain INDIGO Imager - Users Guide
-Revision: 21.01.2023 (early draft)
+# Ain INDIGO Imager - User Guide
+Revision: 23.01.2023 (early draft)
 
 Author: **Rumen G.Bogdanovski**
 
@@ -28,7 +28,6 @@ e-mail: *rumenastro@gmail.com*
 
 
 ## Main Window
-
 The main window is divided in three main areas as seen on the picture below:
 
 ![](images/capture_main_color.png)
