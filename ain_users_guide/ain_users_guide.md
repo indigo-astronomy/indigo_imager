@@ -48,7 +48,7 @@ For **Solver** tab it will display the image being solved.
 
 When the Mouse cursor is over the image the current pixel value will be displayed along with the mouse coordinates and the zoom level. Next to them are located several buttons to control the zoom and stretching.
 
-If the current image is solved and the **Solver** or **Telescope** tab is active, the Right ascension and Declination are shown (instead of the pixel coordinates) under the mouse cursor. In this case **Right-Click** on the image will load the coordinates under the mouse in the **Telescope tab** and pressing **Goto** will slew the telescope to center these coordinates (**Control + Right-Click** will slew the telescope directly).
+If the current image is solved and the **Solver** or **Telescope** tab is active, the Right ascension and Declination are shown (instead of the pixel coordinates) under the mouse cursor. In this case **Right-Clicking** on the image will load the coordinates under the mouse in the **Telescope tab** and pushing **Goto** button will slew the telescope to center these coordinates (**Control + Right-Click** will slew the telescope directly).
 
 Mouse wheel will zoom in or zoom out the image and **Left-Click + Drag** will pan the image.
 
@@ -237,7 +237,6 @@ Only the first star can be selected manually or automatically. All other stars c
 In "Donuts" guiding the whole frame is used to detect drift but some cameras have unusable border around the frame. This can interfere with the guiding and this area can be excluded by specifying **Edge Clipping**
 
 ### Advanced tab
-
 ![](images/guider_advanced.png)
 
 *Guder Agent* configuration is described in [INDIGO Guider Agent - PI Controller Tuning](https://github.com/indigo-astronomy/indigo/blob/master/indigo_docs/GUIDING_PI_CONTROLLER_TUNING.md) and in [Guider Agent README](https://github.com/indigo-astronomy/indigo/blob/master/indigo_drivers/agent_guider/README.md)
@@ -258,14 +257,32 @@ Frame format, gain and offset of the guiding camera can be specified in this sec
 The focal length of the guider scope should be entered in order to enable the drift to be displayed in arc seconds. Otherwise **Settings -> Guider Graph -> RA / Dec Drift (arcsec)** will have no effect and statistics and graph will be in pixels.
 
 ## Telescope control
-TBD
+*Ain* uses the service *Mount Agent* to control mounts. The top combo box has a list of all available mount agents and the correct one should be selected.
+
+If the displayed image is solved a **Right-Click** on it will load the coordinates under the mouse cursor in the **RA / Dec input** boxes and pushing **Goto** button will slew the telescope to these coordinates. **Control + Right-Click** will slew the telescope directly (no need to push the *Goto* button).
 
 ![](images/telescope_main_solved.png)
+
+##### Mount
+All mounts available to the selected *Guider Agent* will be listed here. The correct one should be selected.
+
+##### RA / Dec input
+In these fields the target Right ascension and Declination should be entered. They will be used for goto if **Goto** is button is pushed or to synchronize the mount to these coordinates if **Sync** is button is pushed.
 
 ### Main tab
 ![](images/telescope_main1.png)
 
-TBD
+##### N S W E buttons and slew rates
+The mount can be moved by pushing **N S W E** buttons. The speed is selected from four available presets. The slowest is **Guide rate** and the fastest is **Max rate**.
+
+##### Tracking / Not Tracking
+This check box controls the mount tracking. The mount tracking is enabled if it is checked.
+
+##### Go home
+Checking this check box will slew the mount to its home position.
+
+##### Parked / Unparked
+Checking this checkbox will slew the mount to its park position.
 
 ### Object tab
 Typing in the **Search** field will update the object list as you type with the objects that match the pattern. Once the desired object is selected its coordinates will be loaded in telescope coordinate fields and clicking on **Goto** will point the telescope to the selected object.
