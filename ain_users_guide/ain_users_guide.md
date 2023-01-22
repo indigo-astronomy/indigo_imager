@@ -141,9 +141,9 @@ INDIGO services can work in the so called "clientless" or "headless" mode. This 
 
  ![](images/capture_remoteimages.png)
 
- To enable the server to store the captured frames on its end, one should check **Save image copies on the server**. If one does not want to have downloaded images deleted from the server one should check **Keep downloaded images on server** otherwise images will be deleted once downloaded.
+To enable the server to store the captured frames on its end, one should check **Save image copies on the server**. If one does not want to have downloaded images deleted from the server one should check **Keep downloaded images on server** otherwise images will be deleted once downloaded.
 
- If the server is configured to keep the downloaded images they can still be removed when not needed. This is achieved by unchecking **Keep downloaded images on server** and press **Server cleanup**. This will remove all locally downloaded images that are kept on the server and not downloaded will be kept. This is useful when the images should be downloaded to several locations and removed once downloaded everywhere.
+If the server is configured to keep the downloaded images they can still be removed when not needed. This is achieved by unchecking **Keep downloaded images on server** and press **Server cleanup**. This will remove all locally downloaded images that are kept on the server and not downloaded will be kept. This is useful when the images should be downloaded to several locations and removed once downloaded everywhere.
 
 
 ## Focusing
@@ -259,7 +259,7 @@ The focal length of the guider scope should be entered in order to enable the dr
 ## Telescope control
 *Ain* uses the service *Mount Agent* to control mounts. The top combo box has a list of all available mount agents and the correct one should be selected.
 
-If the displayed image is solved a **Right-Click** on it will load the coordinates under the mouse cursor in the **RA / Dec input** boxes and pushing **Goto** button will slew the telescope to these coordinates. **Control + Right-Click** will slew the telescope directly (no need to push the *Goto* button).
+If the displayed image is solved a **Right-Click** on it will load the coordinates under the mouse cursor in the **RA / Dec input** boxes and pushing **Goto** button will slew the telescope to these coordinates. **Control + Right-Click** will slew the telescope directly.
 
 ![](images/telescope_main_solved.png)
 
