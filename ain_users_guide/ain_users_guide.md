@@ -102,7 +102,6 @@ The name of the object being photographed should be entered here. It is used for
 If the selected camera can report the sensor temperature the current temperature will be shown here. If the camera supports cooling user can enable and disable cooler and set the target temperature. In this case the cooler power will also be displayed.
 
 ### Image tab
-
 ![](images/capture_image.png)
 
 ##### Preview exposure
@@ -164,9 +163,9 @@ Relative move will help achieve precise focus manually. The value represents how
 There the current temperature will be shown if the focuser has a temperature sensor. if **Auto compensation** is checked the focus will be automatically corrected with the temperature change if the compensation factor is set in the **Misc** tab.This value must be determined by the user as it is setup dependent.
 
 ### Statistics tab
-Here the essential focusing statistics will be displayed when manual or automatic focusing is started. It is dependent on the focus estimator being used.
-
 ![](images/focus_statistics.png)
+
+Essential focusing statistics along with a graphical representation will be displayed during manual or automatic focusing. The information displayed depends on the on the focus estimator being used. For "Peak/HFD" estimator, half flux diameter (HFD) or full width half maximum (FWHM) will be displayed on the graph (configured with  **Settings -> Peak/HFD Focuser Graph**). For "RMS Contrast", the contrast will be shown.
 
 ### Settings tab
 ![](images/focus_settings.png)
@@ -196,7 +195,7 @@ Auto focus configuration is described in [INDIGO Imager Agent - Autofocus Tuning
 In order to transfer less amount of data through the network sub-frames with size of 10 or 20 radii centered around the selection can be used. This is applicable only for "Peak/HFD" estimator.
 
 ##### Focus compensation
-This is the temperature compensation factor, in steps per degree celsius. This is how many steps will be applied when **Auto compensation** is ON with each degree change of the ambient temperature.
+This is the temperature compensation factor, in steps per degree Celsius. This is how many steps will be applied when **Auto compensation** is ON with each degree change of the ambient temperature.
 
 ##### On focus failed (Peak/HFD)
 This defines what to do if the auto focus procedure fils. If **Return to the initial position** is checked it will return to the starting position otherwise it will just stop. This applies to "Peak/HFD" estimator only. "RMS Contrast" it will always stop.
@@ -285,9 +284,11 @@ Checking this check box will slew the mount to its home position.
 Checking this checkbox will slew the mount to its park position.
 
 ### Object tab
+![](images/telescope_object.png)
+
 Typing in the **Search** field will update the object list as you type with the objects that match the pattern. Once the desired object is selected its coordinates will be loaded in telescope coordinate fields and clicking on **Goto** will point the telescope to the selected object.
 
-![](images/telescope_object.png)
+Each object in the list has a tool tip with information about the object like coordinates, magnitude and type.
 
 #### Manage custom objects
 Custom objects can be added by clicking on the **[+]** button in the object tab. The following dialog will appear:
