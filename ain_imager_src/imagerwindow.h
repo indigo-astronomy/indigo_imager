@@ -236,6 +236,7 @@ public slots:
 	void on_servers_act();
 	void on_exit_act();
 	void on_about_act();
+	void on_user_guide_act();
 	void on_save_config(ConfigItem configItem);
 	void on_load_config(ConfigItem configItem);
 	void on_delete_config(ConfigItem configItem);

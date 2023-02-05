@@ -290,6 +290,12 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu = new QMenu("&Help");
 
+	act = menu->addAction(tr("Online &User Guide"));
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_user_guide_act);
+	menu_bar->addMenu(menu);
+
+	menu->addSeparator();
+
 	act = menu->addAction(tr("&About"));
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_about_act);
 	menu_bar->addMenu(menu);
@@ -1365,6 +1371,10 @@ void ImagerWindow::on_acl_clear_act() {
 	indigo_clear_device_tokens();
 	window_log("Device ACL cleared");
 	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_user_guide_act() {
+  QDesktopServices::openUrl(QUrl("https://github.com/indigo-astronomy/indigo_imager/blob/master/ain_users_guide/ain_users_guide.md", QUrl::TolerantMode));
 }
 
 void ImagerWindow::on_about_act() {
