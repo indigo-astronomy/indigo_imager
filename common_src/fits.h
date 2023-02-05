@@ -28,6 +28,8 @@
 extern "C" {
 #endif
 
+#define FITS_HEADER_BLOCK_SIZE 2880
+
 typedef enum fits_error {
 	FITS_OK = 0,
 	FITS_INVALIDDATA = -1,

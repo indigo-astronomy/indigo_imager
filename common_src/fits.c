@@ -21,6 +21,7 @@
 #include "fits.h"
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 #include <indigo/indigo_bus.h>
 
 static int fits_header_init(fits_header *header, fits_header_state state) {
@@ -212,9 +213,9 @@ int fits_read_header(const uint8_t *fits_data, int fits_size, fits_header *heade
 	int lines_read, ret = 0;
 	size_t size;
 
-	if (fits_size < 2880) return FITS_INVALIDDATA;
+	if (fits_size < FITS_HEADER_BLOCK_SIZE) return FITS_INVALIDDATA;
 
-	lines_read = 1; // to account for first header line, SIMPLE or XTENSION which is not included in packet...
+	lines_read = 0;
 	fits_header_init(header, STATE_SIMPLE);
 	do {
 		ret = fits_header_parse_line(header, ptr8);
@@ -224,7 +225,8 @@ int fits_read_header(const uint8_t *fits_data, int fits_size, fits_header *heade
 
 	if (ret < 0) return ret;
 
-	header->data_offset = (ptr8 + 80) - fits_data + ((((lines_read + 35) / 36) * 36 - lines_read) * 80);
+	header->data_offset = (int)ceil(lines_read / 36.0) * FITS_HEADER_BLOCK_SIZE;
+	indigo_debug("lines_read = %d, header blocks = %d", lines_read, (int)ceil(lines_read / 36.0));
 
 	if (header->rgb && (header->naxis != 3 || (header->naxisn[2] != 3 && header->naxisn[2] != 4))) {
 		indigo_error("File contains RGB image but NAXIS = %d and NAXIS3 = %d\n", header->naxis, header->naxisn[2]);
@@ -262,8 +264,8 @@ int fits_process_data(const uint8_t *fits_data, int fits_size, fits_header *head
 		size *= header->naxisn[i];
 	}
 
-	indigo_debug("size = %d min_size = %d fits_size = %d\n", size, size * header->bitpix/8 + header->data_offset, fits_size);
-	if ((size * header->bitpix/8 + header->data_offset) > fits_size) {
+	indigo_debug("size = %d min_size = %d fits_size = %d\n", size, size * abs(header->bitpix)/8 + header->data_offset, fits_size);
+	if ((size * abs(header->bitpix)/8 + header->data_offset) > fits_size) {
 		return FITS_INVALIDDATA;
 	}
 
