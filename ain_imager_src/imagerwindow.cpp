@@ -455,7 +455,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(&IndigoClient::instance(), &IndigoClient::property_changed, this, &ImagerWindow::on_property_change, Qt::BlockingQueuedConnection);
 	connect(&IndigoClient::instance(), &IndigoClient::property_deleted, this, &ImagerWindow::on_property_delete, Qt::BlockingQueuedConnection);
 
-	connect(&IndigoClient::instance(), &IndigoClient::create_preview, this, &ImagerWindow::on_create_preview, Qt::BlockingQueuedConnection);
+	// in some cases Qt::BlockingQueuedConnection causes app to hang, use of Qt::QueuedConnection is safe as blob is cached
+	connect(&IndigoClient::instance(), &IndigoClient::create_preview, this, &ImagerWindow::on_create_preview, Qt::QueuedConnection);
 	//connect(&IndigoClient::instance(), &IndigoClient::obsolete_preview, this, &ImagerWindow::on_obsolete_preview, Qt::BlockingQueuedConnection);
 	connect(&IndigoClient::instance(), &IndigoClient::remove_preview, this, &ImagerWindow::on_remove_preview, Qt::BlockingQueuedConnection);
 
