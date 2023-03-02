@@ -98,7 +98,7 @@ bool QIndigoService::connected() const {
 
 bool QIndigoService::disconnect() {
 	indigo_debug("%s(): called m_server_entry= %p\n",__FUNCTION__, m_server_entry);
-	if (indigo_connection_status(m_server_entry, NULL)) {
+	if (m_server_entry) {
 		indigo_debug("%s(): %s %s %d\n",__FUNCTION__, m_name.constData(), m_host.constData(), m_port);
 		bool res = (indigo_disconnect_server(m_server_entry) == INDIGO_OK);
 		while (connected()) {
