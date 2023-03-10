@@ -21,27 +21,45 @@
 #include "qindigoservice.h"
 #include "qservicemodel.h"
 #include <indigo/indigo_client.h>
+#include <indigo/indigo_service_discovery.h>
 #include "conf.h"
 
 #define SERVICE_FILENAME "indigo_imager.services"
 
+void resolve_callback(const char *service_name, uint32_t interface_index, const char *host, int port) {
+	QServiceModel *model = NULL;
+	model = &QServiceModel::instance();
+	indigo_error("resolved %p", model);
+	model->onServiceAdded(QByteArray(service_name), QByteArray(host), port);
+}
 
-QServiceModel::QServiceModel(const QByteArray &type) {
+
+void discover_callback(indigo_service_discovery_event event, const char *service_name, uint32_t interface_index) {
+	if (event == INDIGO_SERVICE_ADDED_GROUPED) {
+		indigo_resolve_service(service_name, interface_index, resolve_callback);
+	} else if (event == INDIGO_SERVICE_REMOVED_GROUPED) {
+		QServiceModel *model = &QServiceModel::instance();
+		model->onServiceRemoved(QByteArray(service_name));
+	}
+}
+
+
+QServiceModel::QServiceModel() {
 	m_logger = &Logger::instance();
 	m_auto_connect = true;
 	QTimer *m_timer = new QTimer(this);
 	connect(m_timer, &QTimer::timeout, this, QOverload<>::of(&QServiceModel::onTimer));
 	m_timer->start(3000);
-	connect(&m_zero_conf, &QZeroConf::error, this, &QServiceModel::onServiceError);
-	connect(&m_zero_conf, &QZeroConf::serviceAdded, this, &QServiceModel::onServiceAdded);
-	connect(&m_zero_conf, &QZeroConf::serviceRemoved, this, &QServiceModel::onServiceRemoved);
-	m_zero_conf.startBrowser(type);
+	indigo_start_service_browser(discover_callback);
+	indigo_debug("Service discovery started");
 }
 
 
 QServiceModel::~QServiceModel() {
 	saveManualServices();
 	while (!m_services.isEmpty()) delete m_services.takeFirst();
+	indigo_stop_service_browser();
+	indigo_debug("Service discovery stopped");
 }
 
 
@@ -94,7 +112,7 @@ void QServiceModel::onTimer() {
 		if (socket != (*i)->prev_socket) {
 			indigo_debug("SERVICE Sockets '%s' '%s' [%d] %d\n",(*i)->m_server_entry->name, (*i)->m_server_entry->host, socket, (*i)->prev_socket);
 			(*i)->prev_socket = socket;
-			emit(serviceConnectionChange(**i));
+			emit(serviceConnectionChange((*i)->name(), (*i)->connected()));
 		}
 	}
 }
@@ -122,7 +140,17 @@ bool QServiceModel::addService(QByteArray name, QByteArray host, int port, bool 
 	endInsertRows();
 
 	if (indigo_service->auto_connect && !indigo_service->is_auto_service) indigo_service->connect();
-	if (!indigo_service->is_auto_service) emit(serviceAdded(*indigo_service));
+	if (!indigo_service->is_auto_service) {
+		emit(
+			serviceAdded(
+				indigo_service->name(),
+				indigo_service->host(),
+				indigo_service->port(),
+				indigo_service->is_auto_service,
+				indigo_service->connected()
+			)
+		);
+	}
 	return true;
 }
 
@@ -141,7 +169,7 @@ bool QServiceModel::removeService(QByteArray name) {
 		m_services.removeAt(i);
 		endRemoveRows();
 		indigo_service->disconnect();
-		emit(serviceRemoved(*indigo_service));
+		emit(serviceRemoved(indigo_service->name()));
 		delete indigo_service;
 		indigo_debug("SERVICE REMOVED [%s]\n", name.constData());
 		return true;
@@ -199,17 +227,12 @@ QVariant QServiceModel::data(const QModelIndex &index, int role) const {
 }
 
 
-void QServiceModel::onServiceError(QZeroConf::error_t e) {
-	indigo_error("ZEROCONF ERROR %d", e);
-}
-
-
-void QServiceModel::onServiceAdded(QZeroConfService service) {
-	QIndigoService* indigo_service = new QIndigoService(service, m_auto_connect);
+void QServiceModel::onServiceAdded(QByteArray name, QByteArray host, int port) {
+	QIndigoService* indigo_service = new QIndigoService(name, host, port, m_auto_connect, false);
 	QIndigoService* stored_service = nullptr;
-	int i = findService(service->name().toUtf8());
+	int i = findService(name);
 	if (i == -1) {
-		indigo_debug("SERVICE ADDED [%s] on %s:%d\n", service->name().toUtf8().constData(), service->host().toUtf8().constData(), service->port());
+		indigo_debug("SERVICE ADDED [%s] on %s:%d\n", name.constData(), host.constData(), port);
 		beginInsertRows(QModelIndex(), m_services.count(), m_services.count());
 		m_services.append(indigo_service);
 		endInsertRows();
@@ -221,41 +244,37 @@ void QServiceModel::onServiceAdded(QZeroConfService service) {
 			stored_service->host() == indigo_service->host() &&
 			stored_service->port() == indigo_service->port()
 		) {
-			indigo_debug("SERVICE HAS RECORD [%s] connect = %d\n", service->name().toUtf8().constData(), stored_service->auto_connect);
+			indigo_debug("SERVICE HAS RECORD [%s] connect = %d\n", name.constData(), stored_service->auto_connect);
 			delete indigo_service;
 		} else {
-			indigo_debug("DUPLICATE SERVICE [%s]\n", service->name().toUtf8().constData());
+			indigo_debug("DUPLICATE SERVICE [%s]\n", name.constData());
 			delete indigo_service;
 			return;
 		}
 	}
 
 	if (stored_service->auto_connect) stored_service->connect();
-	emit(serviceAdded(*stored_service));
+	emit(
+		serviceAdded(
+			stored_service->name(),
+			stored_service->host(),
+			stored_service->port(),
+			stored_service->is_auto_service,
+			stored_service->connected()
+		)
+	);
 }
 
 
-void QServiceModel::onServiceUpdated(QZeroConfService service) {
-	indigo_debug("SERVICE UPDATED [%s] on %s:%d\n", service->name().constData(), service->host().constData(), service->port());
-//	int i = findService(service.name());
-//	if (i != -1) {
-//		IndigoService s(service);
-//		m_services.replace(i, s);
-//		emit dataChanged(index(i), index(i));
-//	}
-}
+void QServiceModel::onServiceRemoved(QByteArray name) {
+	indigo_debug("REMOVE SERVICE [%s]\n", name.constData());
 
-
-void QServiceModel::onServiceRemoved(QZeroConfService service) {
-	indigo_debug("REMOVE SERVICE [%s]\n", service->name().toUtf8().constData());
-
-	//qDebug() << "Service Removed " << service.name();
-	int i = findService(service->name().toUtf8());
+	int i = findService(name);
 	if (i != -1) {
 		QIndigoService* indigo_service = m_services.at(i);
-		indigo_debug("SERVICE REMOVED [%s]\n", service->name().toUtf8().constData());
+		indigo_debug("SERVICE REMOVED [%s]\n", name.constData());
 		if (indigo_service->connected()) indigo_service->disconnect();
-		emit(serviceRemoved(*indigo_service));
+		emit(serviceRemoved(indigo_service->name()));
 	}
 }
 

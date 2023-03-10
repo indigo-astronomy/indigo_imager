@@ -19,34 +19,6 @@
 
 #include "qindigoservice.h"
 
-QIndigoService::QIndigoService(const QZeroConfService& _service) :
-	m_name(_service->name().toUtf8().constData()),
-	m_host(_service->host().toUtf8().constData()),
-	m_port(_service->port()),
-	m_service(_service),
-	m_server_entry(nullptr),
-	is_auto_service(true),
-	auto_connect(true),
-	prev_socket(-1) {
-}
-
-
-QIndigoService::QIndigoService(const QZeroConfService& _service, bool connect) :
-	m_name(_service->name().toUtf8().constData()),
-	m_host(_service->host().toUtf8().constData()),
-	m_port(_service->port()),
-	m_service(_service),
-	m_server_entry(nullptr),
-	is_auto_service(true),
-	auto_connect(connect),
-	prev_socket(-1) {
-}
-
-
-//QIndigoService::QIndigoService(const QIndigoService &other) : m_service(other.m_service) {
-//}
-
-
 QIndigoService::QIndigoService(QByteArray name, QByteArray host, int port) :
 	m_name(name),
 	m_host(host),
@@ -108,20 +80,4 @@ bool QIndigoService::disconnect() {
 		return res;
 	}
 	return false;
-}
-
-
-QIndigoService &QIndigoService::operator=(const QIndigoService &other) {
-	m_service = other.m_service;
-	return *this;
-}
-
-
-bool QIndigoService::operator==(const QIndigoService &other) const {
-	return m_service == other.m_service;
-}
-
-
-bool QIndigoService::operator!=(const QIndigoService &other) const {
-	return !(*this == other);
 }

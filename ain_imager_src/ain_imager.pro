@@ -144,15 +144,12 @@ HEADERS += \
 	../common_src/dslr_raw.h
 
 
-
-include(../external/qtzeroconf/qtzeroconf.pri)
-
 #unix:!mac {
 #    CONFIG += link_pkgconfig
 #    PKGCONFIG += indigo
 #}
 
-INCLUDEPATH += "../indigo/indigo_libs" + "../external" + "../external/qtzeroconf/" + "../external/libraw/" + "../external/lz4/" + "../common_src" + "../object_data" + "../ain_imager_src"
+INCLUDEPATH += "../indigo/indigo_libs" + "../external" + "../external/libraw/" + "../external/lz4/" + "../common_src" + "../object_data" + "../ain_imager_src"
 
 unix:!mac | win32 {
 	LIBS += -L"../external/libraw/lib" -L"../../external/libraw/lib" -L"../external/lz4" -L"../../external/lz4" -lraw -lz

@@ -82,15 +82,14 @@ void QIndigoServers::onClose() {
 	close();
 }
 
-void QIndigoServers::onConnectionChange(QIndigoService &indigo_service) {
-	QString service_name = indigo_service.name();
-	indigo_debug("Connection State Change [%s] connected = %d\n", service_name.toUtf8().constData(), indigo_service.connected());
+void QIndigoServers::onConnectionChange(QString service_name, bool is_connected) {
+	indigo_debug("Connection State Change [%s] connected = %d\n", service_name.toUtf8().constData(), is_connected);
 	QListWidgetItem* item = 0;
 	for(int i = 0; i < m_server_list->count(); ++i){
 		item = m_server_list->item(i);
 		QString service = getServiceName(item);
 		if (service == service_name) {
-			if (indigo_service.connected())
+			if (is_connected)
 				item->setCheckState(Qt::Checked);
 			else
 				item->setCheckState(Qt::Unchecked);
@@ -100,8 +99,8 @@ void QIndigoServers::onConnectionChange(QIndigoService &indigo_service) {
 }
 
 
-void QIndigoServers::onAddService(QIndigoService &indigo_service) {
-	QString server_string = indigo_service.name() + tr(" @ ") + indigo_service.host() + tr(":") + QString::number(indigo_service.port());
+void QIndigoServers::onAddService(QString name, QString host, int port, bool is_auto_service, bool is_connected) {
+	QString server_string = name + tr(" @ ") + host + tr(":") + QString::number(port);
 	QList<QListWidgetItem *> items = m_server_list->findItems(server_string, Qt::MatchExactly);
 	if (items.size() > 0) {
 		indigo_debug("SERVER IN IS IN THE MENU [%s]", server_string.toUtf8().constData());
@@ -111,12 +110,12 @@ void QIndigoServers::onAddService(QIndigoService &indigo_service) {
 	QListWidgetItem* item = new QListWidgetItem(server_string);
 
 	item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-	if (indigo_service.connected())
+	if (is_connected)
 		item->setCheckState(Qt::Checked);
 	else
 		item->setCheckState(Qt::Unchecked);
 
-	if (indigo_service.is_auto_service) {
+	if (is_auto_service) {
 		item->setData(Qt::DecorationRole,QIcon(":resource/bonjour_service.png"));
 	} else {
 		item->setData(Qt::DecorationRole,QIcon(":resource/manual_service.png"));
@@ -176,8 +175,7 @@ void QIndigoServers::onAddManualService() {
 }
 
 
-void QIndigoServers::onRemoveService(QIndigoService &indigo_service) {
-	QString service_name = indigo_service.name();
+void QIndigoServers::onRemoveService(QString service_name) {
 	QListWidgetItem* item = 0;
 	for(int i = 0; i < m_server_list->count(); ++i){
 		item = m_server_list->item(i);

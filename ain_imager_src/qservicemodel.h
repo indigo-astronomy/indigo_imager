@@ -24,7 +24,6 @@
 #include <QList>
 #include <QTimer>
 
-#include <qzeroconf.h>
 #include "logger.h"
 
 
@@ -36,8 +35,10 @@ class QServiceModel : public QAbstractListModel
 	Q_OBJECT
 
 public:
-	QServiceModel(const QByteArray &type);
+	QServiceModel();
 	~QServiceModel();
+
+	static QServiceModel& instance();
 
 	void saveManualServices();
 	void loadManualServices();
@@ -51,17 +52,15 @@ public:
 		m_auto_connect = enable;
 	};
 	virtual QVariant data(const QModelIndex &index, int role) const;
+	void onServiceAdded(QByteArray name, QByteArray host, int port);
+	void onServiceRemoved(QByteArray name);
 
 signals:
-	void serviceAdded(QIndigoService &indigo_service);
-	void serviceRemoved(QIndigoService &indigo_service);
-	void serviceConnectionChange(QIndigoService &indigo_service);
+	void serviceAdded(QString name, QString host, int port, bool is_auto_service, bool is_connected);
+	void serviceRemoved(QString name);
+	void serviceConnectionChange(QString service_name, bool is_connected);
 
 private Q_SLOTS:
-	void onServiceError(QZeroConf::error_t);
-	void onServiceAdded(QZeroConfService s);
-	void onServiceUpdated(QZeroConfService s);
-	void onServiceRemoved(QZeroConfService s);
 	void onTimer();
 public Q_SLOTS:
 	void onRequestConnect(const QString &service);
@@ -76,7 +75,13 @@ private:
 	Logger* m_logger;
 	bool m_auto_connect;
     QList<QIndigoService*> m_services;
-    QZeroConf m_zero_conf;
 };
+
+inline QServiceModel& QServiceModel::instance() {
+	static QServiceModel* me = nullptr;
+	if (!me)
+		me = new QServiceModel();
+	return *me;
+}
 
 #endif // SERVICEMODEL_H

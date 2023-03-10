@@ -50,10 +50,10 @@ signals:
 
 public slots:
 	void onClose();
-	void onAddService(QIndigoService &indigo_service);
-	void onRemoveService(QIndigoService &indigo_service);
+	void onAddService(QString name, QString host, int port, bool is_auto_service, bool is_connected);
+	void onRemoveService(QString name);
 	void highlightChecked(QListWidgetItem* item);
-	void onConnectionChange(QIndigoService &indigo_service);
+	void onConnectionChange(QString service_name, bool is_connected);
 	void onAddManualService();
 	void onRemoveManualService();
 

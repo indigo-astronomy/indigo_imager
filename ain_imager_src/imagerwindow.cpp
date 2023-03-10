@@ -385,7 +385,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	propertyLayout->addWidget(hSplitter, 85);
 	propertyLayout->addWidget(mLog, 15);
 
-	mServiceModel = new QServiceModel("_indigo._tcp");
+	mServiceModel = &QServiceModel::instance();
+	indigo_error("servicemodel %p", mServiceModel);
 	mServiceModel->enable_auto_connect(conf.auto_connect);
 
 	connect(m_imager_viewer, &ImageViewer::stretchChanged, this, &ImagerWindow::on_imager_stretch_changed);
