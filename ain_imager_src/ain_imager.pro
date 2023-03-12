@@ -143,12 +143,6 @@ HEADERS += \
 	../common_src/image_stats.h \
 	../common_src/dslr_raw.h
 
-
-#unix:!mac {
-#    CONFIG += link_pkgconfig
-#    PKGCONFIG += indigo
-#}
-
 INCLUDEPATH += "../indigo/indigo_libs" + "../external" + "../external/libraw/" + "../external/lz4/" + "../common_src" + "../object_data" + "../ain_imager_src"
 
 unix:!mac | win32 {
@@ -174,31 +168,5 @@ DISTFILES += \
 
 win32 {
         DEFINES += INDIGO_WINDOWS
-		LIBS += -llz4
-
-        SOURCES += \
-            ../indigo/indigo_libs/indigo_base64.c \
-            ../indigo/indigo_libs/indigo_md5.c \
-            ../indigo/indigo_libs/indigo_bus.c \
-            ../indigo/indigo_libs/indigo_client.c \
-            ../indigo/indigo_libs/indigo_client_xml.c \
-            ../indigo/indigo_libs/indigo_version.c \
-            ../indigo/indigo_libs/indigo_io.c \
-            ../indigo/indigo_libs/indigo_token.c \
-            ../indigo/indigo_libs/indigo_xml.c
-
-        HEADERS += \
-            ../indigo/indigo_libs/indigo/indigo_base64.h \
-            ../indigo/indigo_libs/indigo/indigo_base64_luts.h \
-            ../indigo/indigo_libs/indigo/indigo_md5.h \
-            ../indigo/indigo_libs/indigo/indigo_bus.h \
-            ../indigo/indigo_libs/indigo/indigo_client.h \
-            ../indigo/indigo_libs/indigo/indigo_client_xml.h \
-            ../indigo/indigo_libs/indigo/indigo_config.h \
-            ../indigo/indigo_libs/indigo/indigo_io.h \
-            ../indigo/indigo_libs/indigo/indigo_version.h \
-            ../indigo/indigo_libs/indigo/indigo_xml.h \
-            ../indigo/indigo_libs/indigo/indigo_token.h \
-            ../indigo/indigo_libs/indigo/indigo_names.h \
-            ../indigo/indigo_libs/indigo/indigo_platesolver.h
+	    LIBS += -llz4 ../../external/indigo_sdk/lib/libindigo_client.lib -lws2_32
 }

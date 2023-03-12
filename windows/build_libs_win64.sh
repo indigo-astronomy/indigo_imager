@@ -11,3 +11,8 @@ mkdir dll/
 mingw32-make clean
 mingw32-make CC=gcc
 cd ../../windows
+
+cd ../external/indigo_sdk
+rm -r lib/
+mkdir lib/
+cp -r lib64/* lib/

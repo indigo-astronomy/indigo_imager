@@ -22,7 +22,25 @@
 #include "propertycache.h"
 #include "conf.h"
 #include "widget_state.h"
-#include <indigo/indigo_platesolver.h>
+//#include <indigo/indigo_platesolver.h>
+
+typedef enum {
+	POLAR_ALIGN_IDLE = 0,
+	POLAR_ALIGN_START,
+	POLAR_ALIGN_REFERENCE_1,
+	POLAR_ALIGN_REFERENCE_2,
+	POLAR_ALIGN_REFERENCE_3,
+	POLAR_ALIGN_RECALCULATE,
+	POLAR_ALIGN_IN_PROGRESS
+} platesolver_pa_state_t;
+
+typedef enum {
+	SOLVER_WCS_IDLE = 0,
+	SOLVER_WCS_WAITING_FOR_IMAGE,
+	SOLVER_WCS_SOLVING,
+	SOLVER_WCS_SYNCING,
+	SOLVER_WCS_CENTERING
+} platesolver_wcs_state_t;
 
 template<typename W>
 static void configure_spinbox(ImagerWindow *w, indigo_item *item, int perm, W *widget) {

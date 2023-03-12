@@ -19,6 +19,7 @@ mingw32-make -f Makefile.release
 [ ! -d "${APP}" ] && mkdir ${APP}
 cd ${APP}
 cp ../release/${APP}.exe .
+cp ../../../external/indigo_sdk/lib/libindigo_client.dll .
 windeployqt ${APP}.exe
 popd
 
@@ -43,6 +44,7 @@ mingw32-make -f Makefile.release
 [ ! -d "${APP}" ] && mkdir ${APP}
 cd ${APP}
 cp ../release/${APP}.exe .
+cp ../../../external/indigo_sdk/lib/libindigo_client.dll .
 windeployqt ${APP}.exe
 popd
 
