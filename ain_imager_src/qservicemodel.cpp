@@ -125,6 +125,9 @@ int QServiceModel::rowCount(const QModelIndex &) const {
 
 bool QServiceModel::addService(QByteArray name, QByteArray host, int port, bool auto_connect, bool is_manual_service) {
 	host = host.trimmed();
+	if (host.endsWith('.')) {
+		host.chop(1);
+	}
 	name = name.trimmed();
 	int i = findService(name);
 	if (i != -1) {
