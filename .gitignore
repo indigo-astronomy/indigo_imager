@@ -1,6 +1,8 @@
 .qmake.stash
 Makefile
 
+*.o
+
 external/libjpeg/*.o
 external/libjpeg/*.lo
 external/libjpeg/*.la
@@ -46,8 +48,16 @@ ain_viewer_src/qmake_qmake_immediate.qrc
 ain_viewer_src/qrc_qmake_qmake_immediate.cpp
 ain_viewer_src/qrc_style.cpp
 
-indigo
-indigo/*
-*.deb
+/indigo
+/indigo/*
 
+windows/ain_imager_32
+windows/ain_imager_64
+windows/ain_viewer_32
+windows/ain_viewer_64
+windows/Outout
+
+
+
+*.deb
 
