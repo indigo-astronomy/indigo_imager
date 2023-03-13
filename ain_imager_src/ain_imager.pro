@@ -167,6 +167,7 @@ DISTFILES += \
 	LICENCE.md \
 
 win32 {
-        DEFINES += INDIGO_WINDOWS
-	    LIBS += -llz4 ../../external/indigo_sdk/lib/libindigo_client.lib -lws2_32
+	DEFINES += INDIGO_WINDOWS
+	INCLUDEPATH += ../../external/indigo_sdk/include
+	LIBS += -llz4 ../../external/indigo_sdk/lib/libindigo_client.lib -lws2_32
 }
