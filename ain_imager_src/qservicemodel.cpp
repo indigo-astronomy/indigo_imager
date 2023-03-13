@@ -27,10 +27,12 @@
 #define SERVICE_FILENAME "indigo_imager.services"
 
 void resolve_callback(const char *service_name, uint32_t interface_index, const char *host, int port) {
-	QServiceModel *model = NULL;
-	model = &QServiceModel::instance();
-	indigo_error("resolved %p", model);
-	model->onServiceAdded(QByteArray(service_name), QByteArray(host), port);
+	if (host != NULL) {
+		QServiceModel *model = NULL;
+		model = &QServiceModel::instance();
+		indigo_error("resolved %p", model);
+		model->onServiceAdded(QByteArray(service_name), QByteArray(host), port);
+	}
 }
 
 
