@@ -215,6 +215,46 @@ void ImageViewer::makeToolbar(bool prev_next) {
 
 	menu->addSeparator();
 
+	QActionGroup *debayer_group = new QActionGroup(this);
+	debayer_group->setExclusive(true);
+	act = menu->addAction("Debayer: &Auto");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::debayerAuto);
+	debayer_group->addAction(act);
+	m_debayer_act[DEBAYER_AUTO] = act;
+
+	act = menu->addAction("Debayer: Non&e");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::debayerNone);
+	debayer_group->addAction(act);
+	m_debayer_act[DEBAYER_NONE] = act;
+
+	act = menu->addAction("Debayer: &GBRG");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::debayerGBRG);
+	debayer_group->addAction(act);
+	m_debayer_act[DEBAYER_GBRG] = act;
+
+	act = menu->addAction("Debayer: &GRBG");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::debayerGRBG);
+	debayer_group->addAction(act);
+	m_debayer_act[DEBAYER_GRBG] = act;
+
+	act = menu->addAction("Debayer: &RGGB");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::debayerRGGB);
+	debayer_group->addAction(act);
+	m_debayer_act[DEBAYER_RGGB] = act;
+
+	act = menu->addAction("Debayer: &BGGR");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::debayerBGGR);
+	debayer_group->addAction(act);
+	m_debayer_act[DEBAYER_BGGR] = act;
+
+	menu->addSeparator();
+
 	QActionGroup *cb_group = new QActionGroup(this);
 	cb_group->setExclusive(true);
 	act = menu->addAction("Background Neutralization: O&N");
@@ -817,6 +857,30 @@ void ImageViewer::stretchHard() {
 	emit stretchChanged(PREVIEW_STRETCH_HARD);
 }
 
+void ImageViewer::debayerAuto() {
+	emit debayerChanged(BAYER_PAT_AUTO);
+}
+
+void ImageViewer::debayerNone() {
+	emit debayerChanged(BAYER_PAT_NONE);
+}
+
+void ImageViewer::debayerGBRG() {
+	emit debayerChanged(BAYER_PAT_GBRG);
+}
+
+void ImageViewer::debayerGRBG() {
+	emit debayerChanged(BAYER_PAT_GRBG);
+}
+
+void ImageViewer::debayerRGGB() {
+	emit debayerChanged(BAYER_PAT_RGGB);
+}
+
+void ImageViewer::debayerBGGR() {
+	emit debayerChanged(BAYER_PAT_BGGR);
+}
+
 void ImageViewer::onAutoBalance() {
 	emit BalanceChanged(COLOR_BALANCE_AUTO);
 }
@@ -858,6 +922,39 @@ void ImageViewer::setStretch(int level) {
 		default:
 			m_stretch_act[PREVIEW_STRETCH_NONE]->setChecked(true);
 			stretchNone();
+	}
+}
+
+void ImageViewer::setDebayer(uint32_t bayer_pat) {
+	switch (bayer_pat) {
+		case 0:
+		case BAYER_PAT_AUTO:
+			m_debayer_act[DEBAYER_AUTO]->setChecked(true);
+			debayerAuto();
+			break;
+		case BAYER_PAT_NONE:
+			m_debayer_act[DEBAYER_NONE]->setChecked(true);
+			debayerNone();
+			break;
+		case BAYER_PAT_GBRG:
+			m_debayer_act[DEBAYER_GBRG]->setChecked(true);
+			debayerGBRG();
+			break;
+		case BAYER_PAT_GRBG:
+			m_debayer_act[DEBAYER_GRBG]->setChecked(true);
+			debayerGRBG();
+			break;
+		case BAYER_PAT_RGGB:
+			m_debayer_act[DEBAYER_RGGB]->setChecked(true);
+			debayerRGGB();
+			break;
+		case BAYER_PAT_BGGR:
+			m_debayer_act[DEBAYER_BGGR]->setChecked(true);
+			debayerBGGR();
+			break;
+		default:
+			m_debayer_act[DEBAYER_AUTO]->setChecked(true);
+			debayerAuto();
 	}
 }
 

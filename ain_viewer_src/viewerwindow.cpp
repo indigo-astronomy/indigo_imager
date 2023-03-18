@@ -173,9 +173,11 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	rootLayout->addWidget(form_panel);
 
 	m_imager_viewer->setStretch(conf.preview_stretch_level);
+	m_imager_viewer->setDebayer(conf.preview_bayer_pattern);
 	m_imager_viewer->setBalance(conf.preview_color_balance);
 
 	connect(m_imager_viewer, &ImageViewer::stretchChanged, this, &ViewerWindow::on_stretch_changed);
+	connect(m_imager_viewer, &ImageViewer::debayerChanged, this, &ViewerWindow::on_debayer_changed);
 	connect(m_imager_viewer, &ImageViewer::BalanceChanged, this, &ViewerWindow::on_cb_changed);
 	connect(m_imager_viewer, &ImageViewer::previousRequested, this, &ViewerWindow::on_image_prev_act);
 	connect(m_imager_viewer, &ImageViewer::nextRequested, this, &ViewerWindow::on_image_next_act);
@@ -233,7 +235,7 @@ void ViewerWindow::open_image(QString file_name) {
 	}
 
 	m_image_formrat = strrchr(m_image_path, '.');
-	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance };
+	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat, sc);
 
 	if (m_preview_image) {
@@ -662,12 +664,34 @@ void ViewerWindow::on_stretch_changed(int level) {
 		int width = m_preview_image->width();
 		int height = m_preview_image->height();
 		int pix_format = m_preview_image->m_pix_format;
-		const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance};
+		const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 		preview_image *new_preview = create_preview(width, height, pix_format, m_preview_image->m_raw_data, sc);
 		if (new_preview) {
 			delete m_preview_image;
 			m_preview_image = new_preview;
 			m_imager_viewer->setImage(*m_preview_image);
+		}
+		block_scrolling(false);
+	}
+	write_conf();
+}
+
+void ViewerWindow::on_debayer_changed(uint32_t bayer_pat) {
+	conf.preview_bayer_pattern = bayer_pat;
+	if (m_preview_image) {
+		block_scrolling(true);
+		const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
+		preview_image *new_preview = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat, sc);
+		if (new_preview) {
+			delete m_preview_image;
+			m_preview_image = new_preview;
+			m_imager_viewer->setImage(*m_preview_image);
+
+			ImageStats stats;
+			if (conf.statistics_enabled) {
+				stats = imageStats((const uint8_t*)(m_preview_image->m_raw_data), m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
+			}
+			m_imager_viewer->setImageStats(stats);
 		}
 		block_scrolling(false);
 	}
@@ -681,7 +705,7 @@ void ViewerWindow::on_cb_changed(int balance) {
 		int width = m_preview_image->width();
 		int height = m_preview_image->height();
 		int pix_format = m_preview_image->m_pix_format;
-		const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance};
+		const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 		preview_image *new_preview = create_preview(width, height, pix_format, m_preview_image->m_raw_data, sc);
 		if (new_preview) {
 			delete m_preview_image;

@@ -365,6 +365,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	form_layout->addWidget((QWidget*)m_imager_viewer);
 	m_imager_viewer->setMinimumWidth(PROPERTY_AREA_MIN_WIDTH);
 	m_imager_viewer->setStretch(conf.preview_stretch_level);
+	m_imager_viewer->setDebayer(conf.preview_bayer_pattern);
 	m_imager_viewer->setBalance(conf.preview_color_balance);
 	m_visible_viewer = m_imager_viewer;
 
@@ -373,6 +374,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_guider_viewer->setText("Guider Image");
 	m_guider_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
 	m_guider_viewer->setStretch(conf.guider_stretch_level);
+	m_guider_viewer->setDebayer(conf.guider_bayer_pattern);
 	m_guider_viewer->setBalance(conf.guider_color_balance);
 	m_guider_viewer->setVisible(false);
 
@@ -390,8 +392,10 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	mServiceModel->enable_auto_connect(conf.auto_connect);
 
 	connect(m_imager_viewer, &ImageViewer::stretchChanged, this, &ImagerWindow::on_imager_stretch_changed);
+	connect(m_imager_viewer, &ImageViewer::debayerChanged, this, &ImagerWindow::on_imager_debayer_changed);
 	connect(m_imager_viewer, &ImageViewer::BalanceChanged, this, &ImagerWindow::on_imager_cb_changed);
 	connect(m_guider_viewer, &ImageViewer::stretchChanged, this, &ImagerWindow::on_guider_stretch_changed);
+	connect(m_guider_viewer, &ImageViewer::debayerChanged, this, &ImagerWindow::on_guider_debayer_changed);
 	connect(m_guider_viewer, &ImageViewer::BalanceChanged, this, &ImagerWindow::on_guider_cb_changed);
 
 	connect(this, &ImagerWindow::move_resize_focuser_selection, m_imager_viewer, &ImageViewer::moveResizeSelection);
@@ -669,7 +673,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 			m_indigo_item = nullptr;
 		}
 		m_indigo_item = item;
-		const stretch_config_t sconfig = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance};
+		const stretch_config_t sconfig = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 		preview_cache.create(property, m_indigo_item, sconfig);
 		QString key = preview_cache.create_key(property, m_indigo_item);
 		//preview_image *image = preview_cache.get(m_image_key);
@@ -755,7 +759,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 	} else if (get_selected_guider_agent(selected_agent)) {
 		if ((client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME) && conf.guider_save_bandwidth == 0) ||
 			(client_match_device_property(property, selected_agent, CCD_PREVIEW_IMAGE_PROPERTY_NAME) && conf.guider_save_bandwidth > 0)) {
-			const stretch_config_t sconfig = {(uint8_t)conf.guider_stretch_level, (uint8_t)conf.guider_color_balance};
+			const stretch_config_t sconfig = {(uint8_t)conf.guider_stretch_level, (uint8_t)conf.guider_color_balance, conf.guider_bayer_pattern};
 			preview_cache.create(property, item, sconfig);
 			QString key = preview_cache.create_key(property, item);
 			//preview_image *image = preview_cache.get(key);
@@ -1105,8 +1109,17 @@ void ImagerWindow::on_use_system_locale_changed(bool status) {
 
 void ImagerWindow::on_imager_stretch_changed(int level) {
 	conf.preview_stretch_level = (preview_stretch)level;
-	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance};
+	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 	preview_cache.recreate(m_image_key, sc);
+	show_preview_in_imager_viewer(m_image_key);
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_imager_debayer_changed(uint32_t bayer_pat) {
+	conf.preview_bayer_pattern = bayer_pat;
+	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
+	preview_cache.recreate(m_image_key, m_indigo_item, sc);
 	show_preview_in_imager_viewer(m_image_key);
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
@@ -1114,7 +1127,7 @@ void ImagerWindow::on_imager_stretch_changed(int level) {
 
 void ImagerWindow::on_imager_cb_changed(int balance) {
 	conf.preview_color_balance = (color_balance)balance;
-	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance};
+	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 	preview_cache.recreate(m_image_key, sc);
 	show_preview_in_imager_viewer(m_image_key);
 	write_conf();
@@ -1128,7 +1141,7 @@ void ImagerWindow::on_guider_stretch_changed(int level) {
 		get_selected_guider_agent(selected_agent);
 		setup_preview(selected_agent);
 	});
-	const stretch_config_t sc = {(uint8_t)conf.guider_stretch_level, (uint8_t)conf.guider_color_balance};
+	const stretch_config_t sc = {(uint8_t)conf.guider_stretch_level, (uint8_t)conf.guider_color_balance, conf.guider_bayer_pattern};
 	preview_cache.recreate(m_guider_key, sc);
 	show_preview_in_guider_viewer(m_guider_key);
 	write_conf();
@@ -1137,7 +1150,16 @@ void ImagerWindow::on_guider_stretch_changed(int level) {
 
 void ImagerWindow::on_guider_cb_changed(int balance) {
 	conf.guider_color_balance = (color_balance)balance;
-	const stretch_config_t sc = {(uint8_t)conf.guider_stretch_level, (uint8_t)conf.guider_color_balance};
+	const stretch_config_t sc = {(uint8_t)conf.guider_stretch_level, (uint8_t)conf.guider_color_balance, conf.guider_bayer_pattern};
+	preview_cache.recreate(m_guider_key, sc);
+	show_preview_in_guider_viewer(m_guider_key);
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_guider_debayer_changed(uint32_t bayer_pat) {
+	conf.guider_bayer_pattern = bayer_pat;
+	const stretch_config_t sc = {(uint8_t)conf.guider_stretch_level, (uint8_t)conf.guider_color_balance, conf.guider_bayer_pattern};
 	preview_cache.recreate(m_guider_key, sc);
 	show_preview_in_guider_viewer(m_guider_key);
 	write_conf();

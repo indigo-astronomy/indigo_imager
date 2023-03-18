@@ -55,6 +55,7 @@ public:
 	bool isAntialiasingEnabled() const;
 	void enableAntialiasing(bool on = true);
 	void setStretch(int level);
+	void setDebayer(uint32_t bayer_pat);
 	void setBalance(int Balance);
 
 public slots:
@@ -91,6 +92,14 @@ public slots:
 	void stretchModerate();
 	void stretchNormal();
 	void stretchHard();
+
+	void debayerAuto();
+	void debayerNone();
+	void debayerGBRG();
+	void debayerGRBG();
+	void debayerRGGB();
+	void debayerBGGR();
+
 	void onAutoBalance();
 	void onNoBalance();
 
@@ -104,6 +113,7 @@ signals:
 	void mouseRightPressRADec(double ra, double dec, double telescope_ra, double telescope_dec, Qt::KeyboardModifiers modifiers);
 	void zoomChanged(double scale);
 	void stretchChanged(int level);
+	void debayerChanged(uint32_t bayer_pat);
 	void BalanceChanged(int balance);
 	void previousRequested();
 	void nextRequested();
@@ -145,6 +155,7 @@ private:
 	bool m_edge_clipping_visible;
 	ToolBarMode m_bar_mode;
 	QAction *m_stretch_act[PREVIEW_STRETCH_COUNT];
+	QAction *m_debayer_act[DEBAYER_COUNT];
 	QAction *m_color_reference_act[COLOR_BALANCE_COUNT];
 };
 

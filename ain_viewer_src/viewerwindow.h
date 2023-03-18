@@ -72,6 +72,7 @@ public slots:
 
 	void on_stretch_changed(int level);
 	void on_cb_changed(int balance);
+	void on_debayer_changed(uint32_t bayer_pat);
 	void on_antialias_view(bool status);
 	void on_statistics_show(bool enabled);
 

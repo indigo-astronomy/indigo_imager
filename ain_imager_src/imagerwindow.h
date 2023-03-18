@@ -244,8 +244,10 @@ public slots:
 
 	void on_imager_cb_changed(int balance);
 	void on_imager_stretch_changed(int level);
+	void on_imager_debayer_changed(uint32_t bayer_pat);
 	void on_guider_cb_changed(int balance);
 	void on_guider_stretch_changed(int level);
+	void on_guider_debayer_changed(uint32_t bayer_pat);
 
 	void on_focus_show_fwhm();
 	void on_focus_show_hfd();

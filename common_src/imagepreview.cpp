@@ -30,7 +30,16 @@
 
 // Related Functions
 
-static unsigned int bayer_to_pix_format(const char *bayerpat, const char bitpix) {
+static unsigned int bayer_to_pix_format(const char *image_bayer_pat, const char bitpix, uint32_t prefered_bayer_pat) {
+	char bayerpat[5] = {0};
+
+	if (prefered_bayer_pat == BAYER_PAT_AUTO || prefered_bayer_pat == 0) {
+		memcpy(bayerpat, image_bayer_pat, 4);
+	} else {
+		memcpy(bayerpat, &prefered_bayer_pat, 4);
+	}
+	bayerpat[4] = '\0';
+
 	if ((!strcmp(bayerpat, "BGGR") || !strcmp(bayerpat, "BGRG")) && (bitpix == 8)) {
 		return PIX_FMT_SBGGR8;
 	} else if ((!strcmp(bayerpat, "GBRG") || !strcmp(bayerpat, "GBGR")) && (bitpix == 8)) {
@@ -188,7 +197,7 @@ preview_image* create_dslr_raw_preview(unsigned char *raw_buffer, unsigned long 
 			pix_format = PIX_FMT_RGB48;
 		}
 	} else {
-		int bayer_pix_fmt = bayer_to_pix_format(outout_image.bayer_pattern, outout_image.bits);
+		int bayer_pix_fmt = bayer_to_pix_format(outout_image.bayer_pattern, outout_image.bits, sconfig.bayer_pattern);
 		if (bayer_pix_fmt != 0) pix_format = bayer_pix_fmt;
 
 	}
@@ -242,7 +251,7 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 	}
 
 	if (header.naxis == 2) {
-		int bayer_pix_fmt = bayer_to_pix_format(header.bayerpat, header.bitpix);
+		int bayer_pix_fmt = bayer_to_pix_format(header.bayerpat, header.bitpix, sconfig.bayer_pattern);
 		if (bayer_pix_fmt != 0) pix_format = bayer_pix_fmt;
 	}
 
@@ -295,7 +304,7 @@ preview_image* create_xisf_preview(unsigned char *xisf_buffer, unsigned long xis
 		}
 
 		if (header.channels == 1) {
-			int bayer_pix_fmt = bayer_to_pix_format(header.bayer_pattern, header.bitpix);
+			int bayer_pix_fmt = bayer_to_pix_format(header.bayer_pattern, header.bitpix, sconfig.bayer_pattern);
 			if (bayer_pix_fmt != 0) pix_format = bayer_pix_fmt;
 		}
 
@@ -310,7 +319,7 @@ preview_image* create_xisf_preview(unsigned char *xisf_buffer, unsigned long xis
 		}
 
 		if (header.channels == 1) {
-			int bayer_pix_fmt = bayer_to_pix_format(header.bayer_pattern, header.bitpix);
+			int bayer_pix_fmt = bayer_to_pix_format(header.bayer_pattern, header.bitpix, sconfig.bayer_pattern);
 			if (bayer_pix_fmt != 0) pix_format = bayer_pix_fmt;
 		}
 

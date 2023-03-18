@@ -34,6 +34,16 @@ typedef enum {
 	COLOR_BALANCE_COUNT
 } color_balance_t;
 
+typedef enum {
+	DEBAYER_AUTO = 0,
+	DEBAYER_NONE,
+	DEBAYER_GBRG,
+	DEBAYER_GRBG,
+	DEBAYER_RGGB,
+	DEBAYER_BGGR,
+	DEBAYER_COUNT
+} debayer_t;
+
 typedef struct {
 	double clip_black;
 	double clip_white;
@@ -42,6 +52,7 @@ typedef struct {
 typedef struct {
 	uint8_t stretch_level;
 	uint8_t balance; /* 0 = AWB, 1 = red, 2 = green, 3 = blue; */
+	uint32_t bayer_pattern; /* BAYER_PAT_XXXX from image_preview_lut.h */
 } stretch_config_t;
 
 typedef struct {

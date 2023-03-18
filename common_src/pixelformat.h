@@ -23,6 +23,13 @@
 #define pack(a, b, c, d)\
         ((uint32_t)(a) | ((uint32_t)(b) << 8) | ((uint32_t)(c) << 16) | ((uint32_t)(d) << 24))
 
+#define BAYER_PAT_GBRG  pack('G','B','R','G')
+#define BAYER_PAT_GRBG  pack('G','R','B','G')
+#define BAYER_PAT_RGGB  pack('R','G','G','B')
+#define BAYER_PAT_BGGR  pack('B','G','G','R')
+#define BAYER_PAT_NONE  pack('N','O','N','E')
+#define BAYER_PAT_AUTO  pack('A','U','T','O')
+
 #define PIX_FMT_INDEX   pack('I','N','D',' ')
 
 #define PIX_FMT_PJPG    pack('P','J','P','G')

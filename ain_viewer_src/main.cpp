@@ -66,6 +66,7 @@ int main(int argc, char *argv[]) {
 	conf.window_height = 0;
 	conf.restore_window_size = true;
 	conf.statistics_enabled = false;
+	conf.preview_bayer_pattern = 0;
 	read_conf();
 
 	if (!conf.reopen_file_at_start) {

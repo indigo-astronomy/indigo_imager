@@ -77,6 +77,7 @@ typedef struct {
 	int window_height;
 	bool restore_window_size;
 	bool statistics_enabled;
+	uint32_t preview_bayer_pattern;
 	char unused[100];
 } conf_t;
 
