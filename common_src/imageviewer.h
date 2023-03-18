@@ -30,7 +30,7 @@ public:
 	};
 
 public:
-	explicit ImageViewer(QWidget *parent = nullptr, bool prev_next = false);
+	explicit ImageViewer(QWidget *parent = nullptr, bool show_prev_next = false, bool show_debayer = true);
 
 	/// Text displayed on the left side of the toolbar
 	QString text() const;
@@ -126,7 +126,7 @@ protected:
 
 private:
 	void setMatrix();
-	void makeToolbar(bool prev_next);
+	void makeToolbar(bool show_prev_next, bool show_debayer);
 
 private:
 	void showZoom();

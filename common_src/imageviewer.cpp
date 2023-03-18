@@ -63,7 +63,7 @@ private:
 };
 
 
-ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
+ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer)
 	: QFrame(parent)
 	, m_zoom_level(0)
 	, m_fit(true)
@@ -120,7 +120,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
 	m_edge_clipping->setVisible(false);
 	m_edge_clipping_visible = false;
 
-	makeToolbar(prev_next);
+	makeToolbar(show_prev_next, show_debayer);
 
 	auto box = new QVBoxLayout;
 	box->setContentsMargins(0,0,0,0);
@@ -152,7 +152,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
 }
 
 // toolbar with a few quick actions and display information
-void ImageViewer::makeToolbar(bool prev_next) {
+void ImageViewer::makeToolbar(bool show_prev_next, bool show_debayer) {
 	// text and value at pixel
 	m_text_label = new QLabel(this);
 	m_text_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
@@ -253,7 +253,13 @@ void ImageViewer::makeToolbar(bool prev_next) {
 	debayer_group->addAction(act);
 	m_debayer_act[DEBAYER_BGGR] = act;
 
-	menu->addSeparator();
+	if (show_debayer) {
+		menu->addSeparator();
+	} else {
+		for (int i = 0; i < DEBAYER_COUNT; i++) {
+			m_debayer_act[i]->setVisible(false);
+		}
+	}
 
 	QActionGroup *cb_group = new QActionGroup(this);
 	cb_group->setExclusive(true);
@@ -279,7 +285,7 @@ void ImageViewer::makeToolbar(bool prev_next) {
 	auto box = new QHBoxLayout(m_toolbar);
 	m_toolbar->setContentsMargins(0,0,0,0);
 	box->setContentsMargins(0,0,0,0);
-	if (prev_next) {
+	if (show_prev_next) {
 		auto pn_bar = new QWidget;
 		auto pn_box = new QHBoxLayout(pn_bar);
 		pn_bar->setContentsMargins(0,0,0,0);
