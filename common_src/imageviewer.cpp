@@ -215,52 +215,6 @@ void ImageViewer::makeToolbar(bool show_prev_next, bool show_debayer) {
 
 	menu->addSeparator();
 
-	QActionGroup *debayer_group = new QActionGroup(this);
-	debayer_group->setExclusive(true);
-	act = menu->addAction("Debayer: &Auto");
-	act->setCheckable(true);
-	connect(act, &QAction::triggered, this, &ImageViewer::debayerAuto);
-	debayer_group->addAction(act);
-	m_debayer_act[DEBAYER_AUTO] = act;
-
-	act = menu->addAction("Debayer: Non&e");
-	act->setCheckable(true);
-	connect(act, &QAction::triggered, this, &ImageViewer::debayerNone);
-	debayer_group->addAction(act);
-	m_debayer_act[DEBAYER_NONE] = act;
-
-	act = menu->addAction("Debayer: &GBRG");
-	act->setCheckable(true);
-	connect(act, &QAction::triggered, this, &ImageViewer::debayerGBRG);
-	debayer_group->addAction(act);
-	m_debayer_act[DEBAYER_GBRG] = act;
-
-	act = menu->addAction("Debayer: &GRBG");
-	act->setCheckable(true);
-	connect(act, &QAction::triggered, this, &ImageViewer::debayerGRBG);
-	debayer_group->addAction(act);
-	m_debayer_act[DEBAYER_GRBG] = act;
-
-	act = menu->addAction("Debayer: &RGGB");
-	act->setCheckable(true);
-	connect(act, &QAction::triggered, this, &ImageViewer::debayerRGGB);
-	debayer_group->addAction(act);
-	m_debayer_act[DEBAYER_RGGB] = act;
-
-	act = menu->addAction("Debayer: &BGGR");
-	act->setCheckable(true);
-	connect(act, &QAction::triggered, this, &ImageViewer::debayerBGGR);
-	debayer_group->addAction(act);
-	m_debayer_act[DEBAYER_BGGR] = act;
-
-	if (show_debayer) {
-		menu->addSeparator();
-	} else {
-		for (int i = 0; i < DEBAYER_COUNT; i++) {
-			m_debayer_act[i]->setVisible(false);
-		}
-	}
-
 	QActionGroup *cb_group = new QActionGroup(this);
 	cb_group->setExclusive(true);
 	act = menu->addAction("Background Neutralization: O&N");
@@ -275,8 +229,58 @@ void ImageViewer::makeToolbar(bool show_prev_next, bool show_debayer) {
 	cb_group->addAction(act);
 	m_color_reference_act[COLOR_BALANCE_NONE] = act;
 
+	if (show_debayer) {
+		menu->addSeparator();
+	}
+
+	QMenu *sub_menu = menu->addMenu("&Debayering");
+
+	if (!show_debayer) {
+		sub_menu->menuAction()->setVisible(false);
+	}
+
+	QActionGroup *debayer_group = new QActionGroup(this);
+	debayer_group->setExclusive(true);
+	act = sub_menu->addAction("&Auto");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::debayerAuto);
+	debayer_group->addAction(act);
+	m_debayer_act[DEBAYER_AUTO] = act;
+
+	act = sub_menu->addAction("Non&e");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::debayerNone);
+	debayer_group->addAction(act);
+	m_debayer_act[DEBAYER_NONE] = act;
+
+	sub_menu->addSeparator();
+
+	act = sub_menu->addAction("&GBRG");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::debayerGBRG);
+	debayer_group->addAction(act);
+	m_debayer_act[DEBAYER_GBRG] = act;
+
+	act = sub_menu->addAction("&GRBG");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::debayerGRBG);
+	debayer_group->addAction(act);
+	m_debayer_act[DEBAYER_GRBG] = act;
+
+	act = sub_menu->addAction("&RGGB");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::debayerRGGB);
+	debayer_group->addAction(act);
+	m_debayer_act[DEBAYER_RGGB] = act;
+
+	act = sub_menu->addAction("&BGGR");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::debayerBGGR);
+	debayer_group->addAction(act);
+	m_debayer_act[DEBAYER_BGGR] = act;
+
 	auto stretch = new QToolButton(this);
-	stretch->setToolTip(tr("Histogram Stretch"));
+	stretch->setToolTip(tr("Histogram stretching / Background neutralization / Debayer"));
 	stretch->setIcon(QIcon(":resource/histogram.png"));
 	stretch->setMenu(menu);
 	stretch->setPopupMode(QToolButton::InstantPopup);
