@@ -24,6 +24,7 @@
 #include <QVersionNumber>
 #include <viewerwindow.h>
 #include <conf.h>
+#include <signal.h>
 
 conf_t conf;
 char config_path[PATH_LEN];
@@ -51,6 +52,7 @@ void read_conf() {
 
 int main(int argc, char *argv[]) {
 	// create config path if it does not exist
+	signal(SIGPIPE, SIG_IGN);
 	QDir dir("");
 	dir.mkpath(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation));
 	strncpy(config_path, QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation).toUtf8().constData(), PATH_LEN);
