@@ -206,6 +206,7 @@ typedef enum {
 	INDIGO_LOG_ERROR,
 	INDIGO_LOG_INFO,
 	INDIGO_LOG_DEBUG,
+	INDIGO_LOG_TRACE_BUS,
 	INDIGO_LOG_TRACE
 } indigo_log_levels;
 
@@ -401,11 +402,18 @@ extern void indigo_log_message(const char *format, va_list args);
 /** Print diagnostic messages on trace level, wrap calls to INDIGO_TRACE() macro.
  */
 extern void indigo_trace(const char *format, ...);
+
 /** Print diagnostic messages on debug level, wrap calls to INDIGO_DEBUG() macro.
  */
+
 extern void indigo_debug(const char *format, ...);
+/** Print diagnostic messages on debug_bus level, wrap calls to INDIGO_DEBUG() macro.
+ */
+
+extern void indigo_trace_bus(const char *format, ...);
 /** Print diagnostic messages on error level, wrap calls to INDIGO_ERROR() macro.
  */
+
 extern void indigo_error(const char *format, ...);
 /** Print diagnostic messages on info level, wrap calls to INDIGO_LOG() macro.
  */
@@ -413,7 +421,7 @@ extern void indigo_log(const char *format, ...);
 
 /** Print diagnostic message on trace level with property value, full property definition and items dump can be requested.
  */
-extern void indigo_trace_property(const char *message, indigo_property *property, bool defs, bool items);
+extern void indigo_trace_property(const char *message, indigo_client *client, indigo_property *property, bool defs, bool items);
 
 /** Start bus operation.
  Call has no effect, if bus is already started.
@@ -549,6 +557,14 @@ extern bool indigo_populate_http_blob_item(indigo_item *blob_item);
 /** upload BLOB item if url is given.
  */
 extern bool indigo_upload_http_blob_item(indigo_item *blob_item);
+
+/** get property hint value by key, returns false if key is not found, if the key has no value empty string is returned
+ */
+extern bool indigo_get_property_hint(indigo_property *property, const char *key, char *value);
+
+/** get item hint value by key, returns false if key is not found, if the key has no value empty string is returned
+ */
+extern bool indigo_get_item_hint(indigo_item *item, const char *key, char *value);
 
 /** Test, if property matches other property.
  */
