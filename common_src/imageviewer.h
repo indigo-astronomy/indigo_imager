@@ -2,6 +2,7 @@
 #define IMAGEVIEWER_H
 
 #include <QFrame>
+#include <image_stats.h>
 #include <imagepreview.h>
 #include <QGraphicsPixmapItem>
 
@@ -29,7 +30,7 @@ public:
 	};
 
 public:
-	explicit ImageViewer(QWidget *parent = nullptr, bool prev_next = false);
+	explicit ImageViewer(QWidget *parent = nullptr, bool show_prev_next = false, bool show_debayer = true);
 
 	/// Text displayed on the left side of the toolbar
 	QString text() const;
@@ -54,11 +55,14 @@ public:
 	bool isAntialiasingEnabled() const;
 	void enableAntialiasing(bool on = true);
 	void setStretch(int level);
+	void setDebayer(uint32_t bayer_pat);
+	void setBalance(int Balance);
 
 public slots:
 	void setText(const QString &txt);
 	void setToolTip(const QString &txt);
-	void setImage(preview_image &im);
+	void onSetImage(preview_image &im);
+	void setImageStats(const ImageStats &stats);
 
 	void showSelection(bool show);
 	void moveSelection(double x, double y);
@@ -69,6 +73,9 @@ public slots:
 
 	void showReference(bool show);
 	void moveReference(double x, double y);
+	void centerReference();
+
+	void showWCS(bool show);
 
 	void showEdgeClipping(bool show);
 	void resizeEdgeClipping(double edge_clipping);
@@ -78,7 +85,7 @@ public slots:
 	void zoomIn();
 	void zoomOut();
 	void mouseAt(double x, double y);
-	void mouseRightPressAt(double x, double y);
+	void mouseRightPressAt(double x, double y, Qt::KeyboardModifiers modifiers);
 
 	void stretchNone();
 	void stretchSlight();
@@ -86,14 +93,28 @@ public slots:
 	void stretchNormal();
 	void stretchHard();
 
+	void debayerAuto();
+	void debayerNone();
+	void debayerGBRG();
+	void debayerGRBG();
+	void debayerRGGB();
+	void debayerBGGR();
+
+	void onAutoBalance();
+	void onNoBalance();
+
 	void onPrevious();
 	void onNext();
 
 signals:
 	void imageChanged();
-	void mouseRightPress(double x, double y);
+	void setImage(preview_image &im);
+	void mouseRightPress(double x, double y, Qt::KeyboardModifiers modifiers);
+	void mouseRightPressRADec(double ra, double dec, double telescope_ra, double telescope_dec, Qt::KeyboardModifiers modifiers);
 	void zoomChanged(double scale);
 	void stretchChanged(int level);
+	void debayerChanged(uint32_t bayer_pat);
+	void BalanceChanged(int balance);
 	void previousRequested();
 	void nextRequested();
 
@@ -105,12 +126,15 @@ protected:
 
 private:
 	void setMatrix();
-	void makeToolbar(bool prev_next);
+	void makeToolbar(bool show_prev_next, bool show_debayer);
 
 private:
-	int m_zoom_level;
+	void showZoom();
+	double m_zoom_level;
 	QLabel *m_text_label;
 	QLabel *m_pixel_value;
+	QLabel *m_image_stats;
+	QLabel *m_image_histogram;
 	GraphicsView *m_view;
 	PixmapItem *m_pixmap;
 	QGraphicsRectItem *m_selection;
@@ -120,18 +144,19 @@ private:
 	QPoint m_selection_p;
 	QPoint m_ref_p;
 	double m_edge_clipping_v;
-	preview_stretch_level m_stretch_level;
 	QList<QGraphicsEllipseItem*> m_extra_selections;
-	//QList<QPoint> m_extra_points;
 	bool m_extra_selections_visible;
 
 	QWidget *m_toolbar;
 	bool m_fit;
 	bool m_selection_visible;
 	bool m_ref_visible;
+	bool m_show_wcs;
 	bool m_edge_clipping_visible;
 	ToolBarMode m_bar_mode;
 	QAction *m_stretch_act[PREVIEW_STRETCH_COUNT];
+	QAction *m_debayer_act[DEBAYER_COUNT];
+	QAction *m_color_reference_act[COLOR_BALANCE_COUNT];
 };
 
 
@@ -148,7 +173,7 @@ public slots:
 signals:
 	void imageChanged(const preview_image &);
 	void sizeChanged(int w, int h);
-	void mouseRightPress(double x, double y);
+	void mouseRightPress(double x, double y, Qt::KeyboardModifiers);
 	void mouseMoved(double x, double y);
 
 protected:

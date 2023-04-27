@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Rumen G.Bogdanovski & David Hulse
+// Copyright (c) 2019 Rumen G.Bogdanovski
 // All rights reserved.
 //
 // You can use this software under the terms of 'INDIGO Astronomy
@@ -21,25 +21,16 @@
 #define INDIGOSERVICE_H
 
 #include <QObject>
-#include <qzeroconf.h>
 #include <indigo/indigo_client.h>
 
 
 class QIndigoService {
 
 public:
-	QIndigoService(const QZeroConfService& _service);
-	QIndigoService(const QZeroConfService& _service, bool connect);
 	QIndigoService(const QIndigoService &other);
 	QIndigoService(QByteArray name, QByteArray host, int port);
 	QIndigoService(QByteArray name, QByteArray host, int port, bool connect, bool is_manual_service = true);
-
 	virtual ~QIndigoService();
-
-	QIndigoService &operator=(const QIndigoService &other);
-
-	bool operator==(const QIndigoService &other) const;
-	bool operator!=(const QIndigoService &other) const;
 
 	bool connect();
 	bool connected() const;
@@ -51,7 +42,6 @@ public:
 	QByteArray m_name;
 	QByteArray m_host;
 	int m_port;
-	QZeroConfService m_service;
 	indigo_server_entry* m_server_entry;
 
 public:

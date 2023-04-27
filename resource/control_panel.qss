@@ -6,7 +6,7 @@
 
 #SELECTION_TEXT {
 	font-weight: bold;
-	background-color: #353535;
+	background-color: #404040;
 	border-bottom-left-radius: 0;
 	/* border-top-left-radius: 0; */
 	border-bottom-right-radius: 0;

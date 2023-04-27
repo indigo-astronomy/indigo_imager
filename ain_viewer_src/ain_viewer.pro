@@ -1,6 +1,14 @@
 QT += core gui widgets network printsupport concurrent
 CONFIG += c++11 debug
 
+unix:mac {
+	CONFIG += app_bundle
+	ICON=../resource/ain_viewer.icns
+}
+
+QMAKE_CXXFLAGS += -O3
+QMAKE_CXXFLAGS_RELEASE += -O3
+
 OBJECTS_DIR=object
 MOC_DIR=moc
 
@@ -19,12 +27,18 @@ SOURCES += \
 	main.cpp \
 	textdialog.cpp \
 	viewerwindow.cpp \
+	../common_src/coordconv.c \
 	../common_src/utils.cpp \
 	../common_src/imagepreview.cpp \
 	../common_src/imageviewer.cpp \
+	../common_src/image_stats.cpp \
 	../common_src/fits.c \
 	../common_src/raw_to_fits.c \
+	../common_src/xisf.c \
+	../common_src/xml.c \
 	../common_src/debayer.c \
+	../common_src/dslr_raw.c \
+	../common_src/stretcher.cpp
 
 RESOURCES += \
 	../qdarkstyle/style.qrc \
@@ -55,29 +69,42 @@ else: unix:!android: target.path = /usr/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
-	version.h \
 	viewerwindow.h \
 	textdialog.h \
 	conf.h \
+	../common_src/version.h \
 	../common_src/utils.h \
 	../common_src/image_preview_lut.h \
 	../common_src/imagepreview.h \
 	../common_src/imageviewer.h \
+	../common_src/image_stats.h \
 	../common_src/fits.h \
 	../common_src/raw_to_fits.h \
+	../common_src/xisf.h \
+	../common_src/xml.h \
 	../common_src/debayer.h \
-	../common_src/pixelformat.h
+	../common_src/pixelformat.h \
+	../common_src/coordconv.h \
+	../common_src/dslr_raw.h \
+	../common_src/stretcher.h
 
 #unix:!mac {
 #    CONFIG += link_pkgconfig
 #    PKGCONFIG += indigo
 #}
 
-INCLUDEPATH += "../indigo/indigo_libs" + "../external" + "../external/qtzeroconf/" + "../common_src" + "../ain_viewer_src"
+INCLUDEPATH += "../indigo/indigo_libs" + "../external" + "../external/qtzeroconf/" + "../external/libraw/" + "../external/lz4/" + "../common_src" + "../ain_viewer_src"
+LIBS += -L"../external/libraw/lib" -L"../../external/libraw/lib" -L"../../external/lz4" -L"../external/lz4" -lraw -lz
 
-unix {
+unix:!mac {
 	INCLUDEPATH += "../external/libjpeg"
-	LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -lindigo -ljpeg
+	LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -l:libindigo.a -lz -ljpeg -l:liblz4.a
+	#LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -lindigo -ljpeg -l:liblz4.a
+}
+
+unix:mac {
+	INCLUDEPATH += "../external/libjpeg"
+	LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -lindigo -ljpeg -llz4
 }
 
 DISTFILES += \
@@ -85,29 +112,7 @@ DISTFILES += \
 	LICENCE.md \
 
 win32 {
-	LIBS += -lws2_32
-        DEFINES += INDIGO_WINDOWS
-
-	SOURCES += \
-	    ../indigo/indigo_libs/indigo_base64.c \
-	    ../indigo/indigo_libs/indigo_bus.c \
-	    ../indigo/indigo_libs/indigo_client.c \
-	    ../indigo/indigo_libs/indigo_client_xml.c \
-	    ../indigo/indigo_libs/indigo_version.c \
-	    ../indigo/indigo_libs/indigo_io.c \
-	    ../indigo/indigo_libs/indigo_token.c \
-	    ../indigo/indigo_libs/indigo_xml.c
-
-	HEADERS += \
-	    ../indigo/indigo_libs/indigo/indigo_base64.h \
-	    ../indigo/indigo_libs/indigo/indigo_base64_luts.h \
-	    ../indigo/indigo_libs/indigo/indigo_bus.h \
-	    ../indigo/indigo_libs/indigo/indigo_client.h \
-	    ../indigo/indigo_libs/indigo/indigo_client_xml.h \
-	    ../indigo/indigo_libs/indigo/indigo_config.h \
-	    ../indigo/indigo_libs/indigo/indigo_io.h \
-	    ../indigo/indigo_libs/indigo/indigo_version.h \
-	    ../indigo/indigo_libs/indigo/indigo_xml.h \
-	    ../indigo/indigo_libs/indigo/indigo_token.h \
-	    ../indigo/indigo_libs/indigo/indigo_names.h
+	DEFINES += INDIGO_WINDOWS
+	INCLUDEPATH += ../../external/indigo_sdk/include
+	LIBS += -llz4 ../../external/indigo_sdk/lib/libindigo_client.lib -lws2_32
 }

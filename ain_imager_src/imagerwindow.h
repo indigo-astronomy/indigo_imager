@@ -59,9 +59,13 @@ class QIndigoServers;
 #include <QTableView>
 #include <QThread>
 #include <QtConcurrentRun>
+#include <QProcess>
 #include "focusgraph.h"
 #include "sequence_model.h"
-
+#include "syncutils.h"
+#include "customobjectmodel.h"
+#include "qaddcustomobject.h"
+#include "qconfigdialog.h"
 
 class ImagerWindow : public QMainWindow {
 	Q_OBJECT
@@ -70,45 +74,62 @@ public:
 	virtual ~ImagerWindow();
 	void property_define_delete(indigo_property* property, char *message, bool action_deleted);
 
-	bool get_selected_imager_agent(char * selected_agent) {
+	bool get_selected_imager_agent(char * selected_agent) const {
 		if (!selected_agent || !m_agent_imager_select) return false;
 		strncpy(selected_agent, m_agent_imager_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
 		indigo_debug("SELECTED IMAGER AGENT = %s", selected_agent);
 		return true;
 	};
 
-	bool get_selected_guider_agent(char * selected_agent) {
+	bool get_selected_guider_agent(char * selected_agent) const {
 		if (!selected_agent || !m_agent_guider_select) return false;
 		strncpy(selected_agent, m_agent_guider_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
 		indigo_debug("SELECTED GUIDER AGENT = %s", selected_agent);
 		return true;
 	};
 
-	bool get_selected_mount_agent(char * selected_agent) {
+	bool get_selected_mount_agent(char * selected_agent) const {
 		if (!selected_agent || !m_agent_mount_select) return false;
 		strncpy(selected_agent, m_agent_mount_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
 		indigo_debug("SELECTED GUIDER AGENT = %s", selected_agent);
 		return true;
 	};
 
-	bool get_selected_solver_agent(char * selected_agent) {
+	bool get_selected_config_agent(char * selected_agent) const {
+		if (!m_config_dialog) return false;
+		strncpy(selected_agent, m_config_dialog->getSelectedAgent().toUtf8().constData(), INDIGO_NAME_SIZE);
+		return true;
+	}
+
+	bool get_selected_solver_agent(char * selected_agent) const {
 		if (!selected_agent || !m_agent_solver_select) return false;
 		strncpy(selected_agent, m_agent_solver_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
 		indigo_debug("SELECTED SOLVER AGENT = %s", selected_agent);
 		return true;
 	};
 
+	void play_sound(const char *sound_file);
+
 	void property_delete(indigo_property* property, char *message);
 	void property_define(indigo_property* property, char *message);
 
+	friend void update_focus_failreturn(ImagerWindow *w, indigo_property *property);
 	friend void set_filter_selected(ImagerWindow *w, indigo_property *property);
 	friend void reset_filter_names(ImagerWindow *w, indigo_property *property);
 	friend void update_cooler_onoff(ImagerWindow *w, indigo_property *property);
 	friend void update_cooler_power(ImagerWindow *w, indigo_property *property);
+	friend void update_focuser_temperature(ImagerWindow *w, indigo_property *property);
+	friend void update_focuser_temperature_compensation_steps(ImagerWindow *w, indigo_property *property);
+	friend void update_focuser_mode(ImagerWindow *w, indigo_property *property);
+	friend void update_focuser_poition(ImagerWindow *w, indigo_property *property, QSpinBox *set_position);
 	friend void update_imager_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_gain_offset_property(ImagerWindow *w, indigo_property *property);
+	friend void update_agent_imager_binning_property(ImagerWindow *w, indigo_property *property);
+	friend void update_agent_guider_gain_offset_property(ImagerWindow *w, indigo_property *property);
+	friend void update_agent_guider_focal_length_property(ImagerWindow *w, indigo_property *property);
 	friend void update_focus_setup_property(ImagerWindow *w, indigo_property *property);
+	friend void update_focus_estimator_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *property);
 	friend void update_ccd_frame_property(ImagerWindow *w, indigo_property *property);
 	friend void update_wheel_slot_property(ImagerWindow *w, indigo_property *property);
@@ -116,11 +137,13 @@ public:
 	friend void update_ccd_exposure(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_stats(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_settings(ImagerWindow *w, indigo_property *property);
+	friend void update_guider_apply_dec_backlash(ImagerWindow *w, indigo_property *property);
 	friend void agent_guider_start_process_change(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_ra_dec(ImagerWindow *w, indigo_property *property, bool update_input);
 	friend void update_mount_az_alt(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_lst(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_park(ImagerWindow *w, indigo_property *property);
+	friend void update_mount_home(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_track(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_slew_rates(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_side_of_pier(ImagerWindow *w, indigo_property *property);
@@ -135,6 +158,9 @@ public:
 	friend void log_guide_header(ImagerWindow *w, char *device_name);
 	friend void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property);
 	friend void update_solver_agent_hints(ImagerWindow *w, indigo_property *property);
+	friend void define_ccd_exposure_property(ImagerWindow *w, indigo_property *property);
+	friend int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property);
+	friend void update_solver_agent_pa_settings(ImagerWindow *w, indigo_property *property);
 
 	bool save_blob;
 
@@ -155,6 +181,7 @@ signals:
 	void set_text(QLineEdit *widget, QString text);
 	void set_text(QPushButton *widget, QString text);
 	void set_text(QCheckBox *widget, QString text);
+	void show_widget(QWidget *widget, bool show);
 
 	void set_lcd(QLCDNumber *widget, QString text, int state);
 
@@ -178,9 +205,7 @@ signals:
 	void resize_guider_edge_clipping(double edge_clipping);
 
 public slots:
-	void on_start(bool clicked);
 	void on_exposure_start_stop(bool clicked);
-	void on_preview(bool clicked);
 	void on_preview_start_stop(bool clicked);
 	void on_abort(bool clicked);
 	void on_pause(bool clicked);
@@ -190,6 +215,9 @@ public slots:
 	void on_property_delete(indigo_property* property, char *message);
 	void on_message_sent(indigo_property* property, char *message);
 	void on_blobs_changed(bool status);
+	void on_save_noname_images_changed(bool status);
+	void on_sound_notifications_changed(bool status);
+	void on_restore_window_size_changed(bool status);
 	void on_bonjour_changed(bool status);
 	void on_use_suffix_changed(bool status);
 	void on_use_state_icons_changed(bool status);
@@ -199,6 +227,9 @@ public slots:
 	void on_log_debug();
 	void on_log_trace();
 	void on_image_save_act();
+	void on_service_config_act();
+	void on_start_control_panel_act();
+	void on_data_directory_prefix_act();
 	void on_acl_load_act();
 	void on_acl_append_act();
 	void on_acl_save_act();
@@ -206,14 +237,24 @@ public slots:
 	void on_servers_act();
 	void on_exit_act();
 	void on_about_act();
+	void on_user_guide_act();
+	void on_save_config(ConfigItem configItem);
+	void on_load_config(ConfigItem configItem);
+	void on_delete_config(ConfigItem configItem);
+	void on_config_agent_changed(QString configAgent);
 
+	void on_imager_cb_changed(int balance);
 	void on_imager_stretch_changed(int level);
+	void on_imager_debayer_changed(uint32_t bayer_pat);
+	void on_guider_cb_changed(int balance);
 	void on_guider_stretch_changed(int level);
 
 	void on_focus_show_fwhm();
 	void on_focus_show_hfd();
 
 	void on_antialias_view(bool status);
+	void on_statistics_show(bool enabled);
+	void on_imager_show_reference(bool status);
 	void on_antialias_guide_view(bool status);
 	void on_create_preview(indigo_property *property, indigo_item *item);
 	void on_obsolete_preview(indigo_property *property, indigo_item *item);
@@ -233,18 +274,30 @@ public slots:
 	void on_temperature_set(double value);
 	void on_agent_imager_gain_changed(int value);
 	void on_agent_imager_offset_changed(int value);
+	void on_object_name_changed(const QString &object_name);
+	void on_save_image_on_server(int state);
+	void on_keep_image_on_server(int state);
+	void on_sync_remote_files(bool clicked);
+	void on_remove_synced_remote_files(bool clicked);
 
 	void on_focus_start_stop(bool clicked);
 	void on_focus_preview_start_stop(bool clicked);
 	void on_focus_mode_selected(int index);
+	void on_focus_estimator_selected(int index);
 	void on_selection_changed(double value);
 	void on_focuser_selection_radius_changed(int value);
-	void on_focuser_position_changed(int value);
-	void on_image_right_click(double x, double y);
+	void on_focuser_position_changed();
+	void on_image_right_click(double x, double y, Qt::KeyboardModifiers modifiers);
+	void on_image_right_click_ra_dec(double ra, double dec, double telescope_ra, double telescope_dec, Qt::KeyboardModifiers mdifiers);
 	void on_focus_in(bool clicked);
 	void on_focus_out(bool clicked);
 	void on_focuser_subframe_changed(int index);
-
+	void on_focuser_backlash_changed(int value);
+	void on_focuser_bl_overshoot_changed(double value);
+	void on_focuser_failreturn_changed(int state);
+	void on_focuser_reverse_changed(int index);
+	void on_focuser_temp_compensation_changed(int state);
+	void on_focuser_temp_compensation_steps_changed(int value);
 	void on_guider_agent_selected(int index);
 	void on_guider_camera_selected(int index);
 	void on_guider_selected(int index);
@@ -261,15 +314,22 @@ public slots:
 	void on_detection_mode_selected(int index);
 	void on_dec_guiding_selected(int index);
 	void on_guider_clear_selection(bool clicked);
+	void on_guider_ccd_mode_selected(int index);
+	void on_agent_guider_gain_changed(int value);
+	void on_agent_guider_offset_changed(int value);
+	void on_agent_guider_focal_length_changed(int value);
+	void on_agent_imager_binning_changed(int value);
 
 	void on_guider_agent_exposure_changed(double value);
 	void on_guider_agent_callibration_changed(double value);
+	void on_guider_apply_backlash_changed(int state);
 	void on_guider_agent_pulse_changed(double value);
 	void on_guider_agent_aggressivity_changed(int value);
 	void on_change_guider_agent_i_gain_changed(double value);
 	void on_change_guider_agent_is_changed(int value);
 	void on_guider_bw_save_changed(int index);
 	void on_guide_show_rd_drift();
+	void on_guide_show_rd_s_drift();
 	void on_guide_show_rd_pulse();
 	void on_guide_show_xy_drift();
 	void on_guider_save_log(bool status);
@@ -282,6 +342,7 @@ public slots:
 	void on_mount_abort(int index);
 	void on_mount_track(int state);
 	void on_mount_park(int state);
+	void on_mount_home(int state);
 	void on_mount_move_north();
 	void on_mount_stop_north();
 	void on_mount_move_south();
@@ -300,23 +361,49 @@ public slots:
 	void on_mount_set_coordinates_to_agent();
 	void on_mount_solve_and_center();
 	void on_mount_solve_and_sync();
+	void on_mount_guider_agent_selected(int index);
+	void on_mount_joystick_selected(int index);
 	void on_trigger_solve();
+	void on_mount_polar_align();
+	void on_mount_polar_align_stop();
+	void on_mount_recalculate_polar_error();
 	void on_image_source2_selected(int index);
+	void on_image_source3_selected(int index);
 
 	void on_solver_agent_selected(int index);
 	void on_solver_ra_dec_hints_changed(bool clicked);
 	void on_solver_hints_changed(int value);
 	void on_solver_hints_changed(double value);
+	void on_solver_hints_changed();
 	void on_image_source1_selected(int index);
 	void on_object_selected();
 	void on_object_clicked(QListWidgetItem *item);
 	void on_object_search_changed(const QString &obj_name);
 	void on_object_search_entered();
+	void on_custom_object_add();
+	void on_custom_object_added(CustomObject object);
+	void on_custom_object_remove();
+	void on_mount_agent_set_pa_settings(double value);
+	void on_mount_agent_set_pa_refraction(bool clicked);
 
 	void on_tab_changed(int index);
 
+	void on_custom_object_populate() {
+		QString ra_str(indigo_dtos(m_mount_ra, "%d:%02d:%04.1f"));
+		QString dec_str(indigo_dtos(m_mount_dec, "%d:%02d:%04.1f"));
+		m_add_object_dialog->populate(QString::null, ra_str, dec_str, -100, QString::null);
+	}
+
 	void on_set_enabled(QWidget *widget, bool enabled) {
 		widget->setEnabled(enabled);
+	};
+
+	void on_show(QWidget *widget, bool show) {
+		if(show) {
+			widget->show();
+		} else {
+			widget->hide();
+		}
 	};
 
 	void on_set_text(QLabel *widget, QString text) {
@@ -455,6 +542,9 @@ public slots:
 	};
 private:
 	QTextEdit* mLog;
+	QTabWidget *m_tools_tabbar;
+
+	bool is_control_panel_running;
 
 	// Capture tab
 	QComboBox *m_agent_imager_select;
@@ -468,6 +558,7 @@ private:
 	QSpinBox  *m_roi_y, *m_roi_h;
 	QSpinBox  *m_dither_aggr;
 	QSpinBox  *m_dither_to;
+	QSpinBox  *m_dither_skip;
 	QSpinBox  *m_imager_gain;
 	QSpinBox  *m_imager_offset;
 	QDoubleSpinBox *m_exposure_time;
@@ -485,33 +576,57 @@ private:
 	QCheckBox *m_cooler_onoff;
 	QPushButton *m_exposure_button;
 	QPushButton *m_preview_button;
+	QDoubleSpinBox *m_preview_exposure_time;
+	QCheckBox *m_save_image_on_server_cbox;
+	QCheckBox *m_keep_image_on_server_cbox;
+	QPushButton *m_sync_files_button;
+	QPushButton *m_remove_synced_files_button;
+	QProgressBar *m_download_progress;
+	QString m_object_name_str;
+	QStringList m_files_to_download;
+	QStringList m_files_to_remove;
 
 	// Focuser tabbar
 	QComboBox *m_focuser_select;
 	QComboBox *m_focus_mode_select;
+	QComboBox *m_focus_estimator_select;
 	QDoubleSpinBox  *m_star_x;
 	QDoubleSpinBox  *m_star_y;
 	QSpinBox  *m_focus_star_radius;
 	QComboBox *m_focuser_subframe_select;
+	QComboBox *m_focuser_reverse_select;
 	QSpinBox  *m_initial_step;
 	QSpinBox  *m_final_step;
 	QSpinBox  *m_focus_backlash;
+	QDoubleSpinBox  *m_focus_bl_overshoot;
 	QSpinBox  *m_focus_stack;
 	QSpinBox  *m_focus_position;
+	QToolButton *m_focus_position_button;
 	QSpinBox  *m_focus_steps;
 	QLabel    *m_FWHM_label;
 	QLabel    *m_HFD_label;
 	QLabel    *m_peak_label;
+	QLabel    *m_contrast_label;
 	QLabel    *m_drift_label;
+	QCheckBox *m_focuser_failreturn_cbox;
 	QDoubleSpinBox *m_focuser_exposure_time;
 	QPushButton *m_focusing_button;
+	QToolButton *m_focusing_in_button;
+	QToolButton *m_focusing_out_button;
 	QPushButton *m_focusing_preview_button;
 	QProgressBar *m_focusing_progress;
 	FocusGraph *m_focus_graph;
 	QLabel     *m_focus_graph_label;
+	QFrame     *m_hfd_stats_frame;
+	QFrame     *m_contrast_stats_frame;
 	QVector<double> m_focus_fwhm_data;
 	QVector<double> m_focus_hfd_data;
+	QVector<double> m_focus_contrast_data;
 	QVector<double> *m_focus_display_data;
+	QLineEdit *m_focuser_temperature;
+	QCheckBox *m_temperature_compensation_cbox;
+	QFrame    *m_temperature_compensation_frame;
+	QSpinBox  *m_focuser_temperature_compensation_steps;
 
 	// Guider tab
 	QComboBox *m_agent_guider_select;
@@ -526,12 +641,19 @@ private:
 	QSpinBox  *m_guide_edge_clipping;
 	QComboBox *m_guider_save_bw_select;
 	QComboBox *m_guider_subframe_select;
+	QComboBox *m_guider_frame_size_select;
+	QSpinBox  *m_guider_gain;
+	QSpinBox  *m_guider_offset;
+	QDoubleSpinBox  *m_guider_focal_lenght;
+	QSpinBox  *m_imager_bin_x;
+	QSpinBox  *m_imager_bin_y;
 
 	QDoubleSpinBox  *m_guide_cal_step;
 	QDoubleSpinBox  *m_guide_rotation;
 	QDoubleSpinBox  *m_guide_ra_speed;
 	QDoubleSpinBox  *m_guide_dec_speed;
 	QDoubleSpinBox  *m_guide_dec_backlash;
+	QCheckBox *m_guider_apply_backlash_cbox;
 	QDoubleSpinBox  *m_guide_min_error;
 	QDoubleSpinBox  *m_guide_min_pulse;
 	QDoubleSpinBox  *m_guide_max_pulse;
@@ -543,6 +665,8 @@ private:
 	FocusGraph *m_guider_graph;
 	QVector<double> m_drift_data_ra;
 	QVector<double> m_drift_data_dec;
+	QVector<double> m_drift_data_dec_s;
+	QVector<double> m_drift_data_ra_s;
 	QVector<double> m_pulse_data_ra;
 	QVector<double> m_pulse_data_dec;
 	QVector<double> m_drift_data_x;
@@ -569,6 +693,8 @@ private:
 	QComboBox *m_mount_select;
 	QLCDNumber *m_mount_ra_label;
 	QLCDNumber *m_mount_dec_label;
+	double m_mount_ra;
+	double m_mount_dec;
 #ifdef USE_LCD
 	QLCDNumber *m_mount_lst_label;
 	QLCDNumber *m_mount_az_label;
@@ -586,11 +712,14 @@ private:
 	QPushButton *m_mount_abort_button;
 	QCheckBox *m_mount_track_cbox;
 	QCheckBox *m_mount_park_cbox;
+	QCheckBox *m_mount_home_cbox;
 	QCheckBox *m_mount_guide_rate_cbox;
 	QCheckBox *m_mount_center_rate_cbox;
 	QCheckBox *m_mount_find_rate_cbox;
 	QCheckBox *m_mount_max_rate_cbox;
 	QComboBox *m_mount_gps_select;
+	QComboBox *m_mount_guider_select;
+	QComboBox *m_mount_joystick_select;
 	QComboBox *m_mount_coord_source_select;
 	QLabel *m_mount_latitude;
 	QLabel *m_mount_longitude;
@@ -604,8 +733,10 @@ private:
 	QLabel *m_gps_elevation;
 	QLabel *m_gps_utc;
 	QLabel *m_gps_status;
-	QListWidget* m_object_list;
-	QLineEdit* m_object_search_line;
+	QListWidget *m_object_list;
+	QLineEdit *m_object_search_line;
+	QToolButton *m_add_object_button;
+	QToolButton *m_remove_object_button;
 
 	QPushButton *m_mount_solve_and_center_button;
 	QPushButton *m_mount_solve_and_sync_button;
@@ -614,6 +745,7 @@ private:
 	QComboBox *m_solver_source_select2;
 	QDoubleSpinBox *m_solver_exposure2;
 	QLabel *m_solver_status_label2;
+	QLabel *m_pa_status_label;
 
 	//Solver agent
 	QComboBox *m_agent_solver_select;
@@ -632,10 +764,29 @@ private:
 	QLineEdit *m_solver_ra_hint;
 	QLineEdit *m_solver_dec_hint;
 	QDoubleSpinBox *m_solver_radius_hint;
+	QDoubleSpinBox *m_solver_scale_hint;
 	QSpinBox *m_solver_ds_hint;
 	QSpinBox *m_solver_parity_hint;
 	QSpinBox *m_solver_depth_hint;
 	QSpinBox *m_solver_tlimit_hint;
+	QString m_last_solver_source;
+
+	QComboBox *m_solver_source_select3;
+	QDoubleSpinBox *m_solver_exposure3;
+	QDoubleSpinBox *m_pa_move_ha;
+	/*
+	QCheckBox *m_pa_use_initial_cbox;
+	QLineEdit *m_pa_dec_input;
+	QLineEdit *m_pa_ha_input;
+	*/
+	QPushButton *m_mount_start_pa_button;
+	QPushButton *m_mount_recalculate_pe_button;
+	QPushButton *m_mount_pa_stop_button;
+	QCheckBox *m_pa_refraction_cbox;
+	QLabel *m_pa_error_az_label;
+	QLabel *m_pa_error_alt_label;
+	QLabel *m_pa_error_label;
+	QMutex m_property_mutex;
 
 	int m_stderr;
 
@@ -655,6 +806,16 @@ private:
 	QIndigoServers *mIndigoServers;
 	QServiceModel *mServiceModel;
 
+	CustomObjectModel *m_custom_object_model;
+	QAddCustomObject *m_add_object_dialog;
+	QConfigDialog *m_config_dialog;
+
+	char m_image_path[PATH_LEN];
+	//char *m_image_formrat;
+	QString m_selected_filter;
+
+	void window_log(char *message, int state = INDIGO_OK_STATE);
+
 	void change_jpeg_settings_property(
 		const char *agent,
 		const int jpeg_quality,
@@ -670,35 +831,50 @@ private:
 	void create_guider_tab(QFrame *guider_frame);
 	void create_telescope_tab(QFrame *solver_frame);
 	void create_solver_tab(QFrame *telescope_frame);
+
+	void change_config_agent_load(const char *agent, const char *config, bool unload) const;
+	void change_config_agent_save(const char *agent, const char *config, bool autosave) const;
+	void change_config_agent_delete(const char *agent, const char *config) const;
 	void change_ccd_frame_property(const char *agent) const;
 	void change_ccd_exposure_property(const char *agent, QDoubleSpinBox *exp_time) const;
 	void change_ccd_abort_exposure_property(const char *agent) const;
-	void change_ccd_mode_property(const char *agent) const;
+	void change_ccd_mode_property(const char *agent, QComboBox *frame_size_select) const;
 	void change_ccd_image_format_property(const char *agent) const;
 	void change_ccd_frame_type_property(const char *agent) const;
 	void change_agent_batch_property(const char *agent) const;
 	void change_agent_batch_property_for_focus(const char *agent) const;
 	void change_agent_start_exposure_property(const char *agent) const;
-	void change_agent_pause_process_property(const char *agent) const;
+	void change_agent_pause_process_property(const char *agent, bool wait_exposure) const;
 	void change_agent_abort_process_property(const char *agent) const;
 	void change_wheel_slot_property(const char *agent) const;
 	void change_cooler_onoff_property(const char *agent) const;
 	void change_ccd_temperature_property(const char *agent) const;
 	void change_ccd_upload_property(const char *agent, const char *item_name) const;
-	void change_related_dither_agent(const char *agent, const char *old_agent, const char *new_agent) const;
+	void change_ccd_localmode_property(const char *agent, const QString *object_name);
+	void add_fits_keyword_string(const char *agent, const char *keyword, const QString *object_name) const;
+	void request_file_download(const char *agent, const char *file_name) const;
+	void request_file_remove(const char *agent, const char *file_name) const;
+	void change_related_agent(const char *agent, const char *old_agent, const char *new_agent) const;
+	void set_mount_agent_selected_imager_agent() const;
 	void change_agent_imager_dithering_property(const char *agent) const;
-	void change_agent_imager_gain_property(const char *agent) const;
-	void change_agent_imager_offset_property(const char *agent) const;
+	void change_agent_gain_property(const char *agent, QSpinBox *ccd_gain) const;
+	void change_agent_offset_property(const char *agent, QSpinBox *ccd_offset) const;
+	void change_agent_lens_profile_property(const char *agent, QDoubleSpinBox *guider_focal_lenght) const;
+	void change_agent_binning_property(const char *agent) const;
 
 	void change_agent_start_preview_property(const char *agent) const;
 	void change_agent_start_focusing_property(const char *agent) const;
 	void change_agent_star_selection(const char *agent) const;
-	void change_agent_focus_params_property(const char *agent) const;
+	void change_agent_focus_params_property(const char *agent, bool set_backlash) const;
+	void change_agent_focuser_bl_overshoot(const char *agent) const;
 	void change_focuser_steps_property(const char *agent) const;
 	void change_focuser_position_property(const char *agent) const;
 	void change_focuser_focus_in_property(const char *agent) const;
 	void change_focuser_focus_out_property(const char *agent) const;
 	void change_focuser_subframe(const char *agent) const;
+	void change_focus_estimator_property(const char *agent) const;
+	void change_focuser_reverse_property(const char *agent) const;
+	void change_focuser_temperature_compensation_steps(const char *agent) const;
 
 	void select_focuser_data(focuser_display_data show);
 
@@ -712,6 +888,7 @@ private:
 	void change_dec_guiding_property(const char *agent) const;
 	void change_guider_agent_exposure(const char *agent) const;
 	void change_guider_agent_callibration(const char *agent) const;
+	void change_guider_agent_apply_dec_backlash(const char *agent) const;
 	void change_guider_agent_pulse_min_max(const char *agent) const;
 	void change_guider_agent_aggressivity(const char *agent) const;
 	void change_guider_agent_i(const char *agent) const;
@@ -724,6 +901,7 @@ private:
 
 	void change_solver_agent_hints_property(const char *agent) const;
 	void clear_solver_agent_releated_agents(const char *agent) const;
+	void change_solver_agent_abort(const char *agent) const;
 
 	void set_agent_releated_agent(const char *agent, const char *related_agent, bool select) const;
 	void set_agent_solver_sync_action(const char *agent, char *item) const;
@@ -734,17 +912,32 @@ private:
 
 	void trigger_solve_and_sync(bool recenter);
 	void trigger_solve();
+	void trigger_polar_alignment(bool recalculate);
+	void change_solver_agent_pa_settings(const char *agent) const;
 
 	void select_guider_data(guider_display_data show);
 
 	void setup_preview(const char *agent);
+	bool open_image(QString file_name, int *image_size, unsigned char **image_data);
 
 	bool show_preview_in_imager_viewer(QString &key);
 	bool show_preview_in_guider_viewer(QString &key);
 	void show_selected_preview_in_solver_tab(QString &solver_source);
-	bool save_blob_item_with_prefix(indigo_item *item, const char *prefix, char *file_name);
+	bool save_blob_item_with_prefix(indigo_item *item, const char *prefix, char *file_name, bool auto_construct = true);
 	bool save_blob_item(indigo_item *item, char *file_name);
 	void save_blob_item(indigo_item *item);
+
+	void sync_remote_files();
+	void remove_synced_remote_files();
+
+	void show_message(const char *title, const char *message, QMessageBox::Icon icon = QMessageBox::Warning) {
+		QMessageBox msgBox(this);
+		indigo_error(message);
+		msgBox.setWindowTitle(title);
+		msgBox.setIcon(icon);
+		msgBox.setText(message);
+		msgBox.exec();
+	};
 };
 
 #endif // IMAGERWINDOW_H

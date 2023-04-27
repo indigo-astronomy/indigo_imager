@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Rumen G.Bogdanovski & David Hulse
+// Copyright (c) 2019 Rumen G.Bogdanovski
 // All rights reserved.
 //
 // You can use this software under the terms of 'INDIGO Astronomy
@@ -21,6 +21,7 @@
 #include <QDir>
 #include <QStandardPaths>
 #include <QTextStream>
+#include <QVersionNumber>
 #include "imagerwindow.h"
 #include <conf.h>
 
@@ -65,7 +66,9 @@ int main(int argc, char *argv[]) {
 	conf.use_system_locale = false;
 	conf.indigo_log_level = INDIGO_LOG_INFO;
 	conf.preview_stretch_level = STRETCH_NORMAL;
+	conf.preview_color_balance = CB_AUTO;
 	conf.guider_stretch_level = STRETCH_MODERATE;
+	conf.guider_color_balance = CB_AUTO;
 	conf.antialiasing_enabled = false;
 	conf.guider_antialiasing_enabled = false;
 	conf.focus_mode = 0;
@@ -76,6 +79,17 @@ int main(int argc, char *argv[]) {
 	conf.guider_display = SHOW_RA_DEC_DRIFT;
 	conf.guider_save_log = false;
 	conf.indigo_save_log = false;
+	conf.save_noname_images = false;
+	conf.data_dir_prefix[0] = '\0';
+	conf.window_width = 0;
+	conf.window_height = 0;
+	conf.restore_window_size = true;
+	conf.imager_show_reference = false;
+	conf.sound_notifications_enabled = true;
+	conf.save_images_on_server = false;
+	conf.keep_images_on_server = false;
+	conf.statistics_enabled = false;
+	conf.preview_bayer_pattern = 0;
 	read_conf();
 
 	if (!conf.use_system_locale) qunsetenv("LC_NUMERIC");
@@ -113,7 +127,13 @@ int main(int argc, char *argv[]) {
 	app.setFont(font);
 	//qDebug() << "Font: " << app.font().family() << app.font().pointSize();
 
-	QFile f(":qdarkstyle/style.qss");
+	QVersionNumber running_version = QVersionNumber::fromString(qVersion());
+	QVersionNumber threshod_version(5, 13, 0);
+	QString qss_resource(":qdarkstyle/style.qss");
+	if (running_version >= threshod_version) {
+		qss_resource = ":qdarkstyle/style-5.13.qss";
+	}
+	QFile f(qss_resource);
 	f.open(QFile::ReadOnly | QFile::Text);
 	QTextStream ts(&f);
 	app.setStyleSheet(ts.readAll());

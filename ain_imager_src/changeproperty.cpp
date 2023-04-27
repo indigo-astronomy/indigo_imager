@@ -16,9 +16,26 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include <libgen.h>
 #include <imagerwindow.h>
 #include <propertycache.h>
 #include <utils.h>
+#include <logger.h>
+#include <conf.h>
+
+void ImagerWindow::change_config_agent_load(const char *agent, const char *config, bool unload) const {
+	indigo_change_switch_property_1(nullptr, agent, AGENT_CONFIG_SETUP_PROPERTY_NAME, AGENT_CONFIG_SETUP_UNLOAD_DRIVERS_ITEM_NAME, unload);
+	indigo_change_switch_property_1(nullptr, agent, AGENT_CONFIG_LOAD_PROPERTY_NAME, config, true);
+}
+
+void ImagerWindow::change_config_agent_save(const char *agent, const char *config, bool autosave) const {
+	indigo_change_switch_property_1(nullptr, agent, AGENT_CONFIG_SETUP_PROPERTY_NAME, AGENT_CONFIG_SETUP_AUTOSAVE_ITEM_NAME, autosave);
+	indigo_change_text_property_1_raw(nullptr, agent, AGENT_CONFIG_SAVE_PROPERTY_NAME, AGENT_CONFIG_SAVE_NAME_ITEM_NAME, config);
+}
+
+void ImagerWindow::change_config_agent_delete(const char *agent, const char *config) const {
+	indigo_change_text_property_1_raw(nullptr, agent, AGENT_CONFIG_DELETE_PROPERTY_NAME, AGENT_CONFIG_DELETE_NAME_ITEM_NAME, config);
+}
 
 void ImagerWindow::change_ccd_frame_property(const char *agent) const {
 	static const char *items[] = {
@@ -36,110 +53,172 @@ void ImagerWindow::change_ccd_frame_property(const char *agent) const {
 }
 
 void ImagerWindow::change_ccd_exposure_property(const char *agent, QDoubleSpinBox *exp_time) const {
-	static const char *items[] = {
-		CCD_EXPOSURE_ITEM_NAME,
-	};
-	static double values[1];
-	values[0] = (double)exp_time->value();
-	indigo_change_number_property(nullptr, agent, CCD_EXPOSURE_PROPERTY_NAME, 1, items, values);
+	static double value;
+	value = (double)exp_time->value();
+	indigo_change_number_property_1(nullptr, agent, CCD_EXPOSURE_PROPERTY_NAME, CCD_EXPOSURE_ITEM_NAME, value);
 }
 
 void ImagerWindow::change_ccd_abort_exposure_property(const char *agent) const {
-	static const char *items[] = {
-		CCD_ABORT_EXPOSURE_ITEM_NAME
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, CCD_ABORT_EXPOSURE_PROPERTY_NAME, 1, items, values);
+	indigo_change_switch_property_1(nullptr, agent, CCD_ABORT_EXPOSURE_PROPERTY_NAME, CCD_ABORT_EXPOSURE_ITEM_NAME, true);
 }
 
-void ImagerWindow::change_ccd_mode_property(const char *agent) const {
+void ImagerWindow::change_ccd_mode_property(const char *agent, QComboBox *frame_size_select) const {
 	static char selected_mode[INDIGO_NAME_SIZE];
-	strncpy(selected_mode, m_frame_size_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
-	static const char * items[] = {
-		selected_mode
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, CCD_MODE_PROPERTY_NAME, 1, items, values);
+	strncpy(selected_mode, frame_size_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	indigo_change_switch_property_1(nullptr, agent, CCD_MODE_PROPERTY_NAME, selected_mode, true);
+}
+
+void ImagerWindow::change_focuser_reverse_property(const char *agent) const {
+	static char selected_mode[INDIGO_NAME_SIZE];
+	strncpy(selected_mode, m_focuser_reverse_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	indigo_change_switch_property_1(nullptr, agent, FOCUSER_REVERSE_MOTION_PROPERTY_NAME, selected_mode, true);
 }
 
 void ImagerWindow::change_ccd_image_format_property(const char *agent) const {
 	static char selected_format[INDIGO_NAME_SIZE];
 	strncpy(selected_format, m_frame_format_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
-	static const char * items[] = {
-		selected_format
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, CCD_IMAGE_FORMAT_PROPERTY_NAME, 1, items, values);
+	indigo_change_switch_property_1(nullptr, agent, CCD_IMAGE_FORMAT_PROPERTY_NAME, selected_format, true);
 }
 
 void ImagerWindow::change_ccd_upload_property(const char *agent, const char *item_name) const {
-	static const char * items[] = {
-		item_name
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, CCD_UPLOAD_MODE_PROPERTY_NAME, 1, items, values);
+	static char item[INDIGO_NAME_SIZE];
+	strncpy(item, item_name, INDIGO_NAME_SIZE);
+	indigo_change_switch_property_1(nullptr, agent, CCD_UPLOAD_MODE_PROPERTY_NAME, item, true);
 }
 
-void ImagerWindow::change_related_dither_agent(const char *agent, const char *old_agent, const char *new_agent) const {
+void ImagerWindow::change_ccd_localmode_property(const char *agent, const QString *object_name) {
+	static char filename_template[INDIGO_VALUE_SIZE];
+	if (object_name->isEmpty()) {
+		m_object_name_str = DEFAULT_OBJECT_NAME;
+	} else {
+		m_object_name_str = object_name->trimmed();
+	}
+	strcpy(filename_template, m_object_name_str.toUtf8().constData());
+	strcat(filename_template, "_%-D_%F_%C_%M");
+	indigo_debug("filename template = %s", filename_template);
+
+	indigo_change_text_property_1_raw(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, CCD_LOCAL_MODE_PREFIX_ITEM_NAME, filename_template);
+}
+
+void ImagerWindow::add_fits_keyword_string(const char *agent, const char *keyword, const QString *object_name) const {
+	if (object_name->isEmpty()) {
+		indigo_change_text_property_1_raw(nullptr, agent, CCD_REMOVE_FITS_HEADERS_PROPERTY_NAME, CCD_REMOVE_FITS_HEADER_KEYWORD_ITEM_NAME, keyword);
+	} else {
+		static const char *items[] = {
+			CCD_SET_FITS_HEADER_KEYWORD_ITEM_NAME,
+			CCD_SET_FITS_HEADER_VALUE_ITEM_NAME
+		};
+		QString object = QString("'") + object_name->trimmed() + QString("'");
+		char *values[] {
+			(char *)keyword,
+			object.toUtf8().data()
+		};
+		indigo_change_text_property(nullptr, agent, CCD_SET_FITS_HEADER_PROPERTY_NAME, 2, items, (const char **)values);
+	}
+}
+
+void ImagerWindow::request_file_download(const char *agent, const char *file_name) const {
+	indigo_debug("Requested remote: %s", file_name);
+	indigo_change_text_property_1_raw(nullptr, agent, AGENT_IMAGER_DOWNLOAD_FILE_PROPERTY_NAME, AGENT_IMAGER_DOWNLOAD_FILE_ITEM_NAME, file_name);
+}
+
+void ImagerWindow::request_file_remove(const char *agent, const char *file_name) const {
+	indigo_debug("Requested delete: %s", file_name);
+	indigo_change_text_property_1_raw(nullptr, agent, AGENT_IMAGER_DELETE_FILE_PROPERTY_NAME, AGENT_IMAGER_DELETE_FILE_ITEM_NAME, file_name);
+}
+
+void ImagerWindow::set_mount_agent_selected_imager_agent() const {
+	// Select related imager agent
+	static char selected_agent[INDIGO_NAME_SIZE] = {0};
+	static char old_agent[INDIGO_NAME_SIZE] = {0};
+	static char new_agent[INDIGO_NAME_SIZE] = {0};
+
+	get_selected_mount_agent(selected_agent);
+	get_selected_imager_agent(new_agent);
+
+	char *service1 = strrchr(new_agent, '@');
+	char *service2 = strrchr(selected_agent, '@');
+	if (service1 != nullptr && service2 != nullptr && !strcmp(service1, service2)) {
+		*(service1 - 1) = '\0';
+	}
+
+	indigo_property *p = properties.get(selected_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
+	if (p) {
+		for (int i = 0; i < p->count; i++) {
+			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Imager Agent", strlen("Imager Agent"))) {
+				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
+				if (!strcmp(old_agent, new_agent)) return;
+				break;
+			}
+		}
+
+		indigo_log("[RELATED AGENT] %s '%s' %s -> %s\n", __FUNCTION__, selected_agent, old_agent, new_agent);
+		change_related_agent(selected_agent, old_agent, new_agent);
+	}
+}
+
+void ImagerWindow::change_related_agent(const char *agent, const char *old_agent, const char *new_agent) const {
+	indigo_log("[RELATED AGENT] %s '%s': %s -> %s\n", __FUNCTION__, agent, old_agent, new_agent);
 	if (old_agent[0] != '\0') {
-		static const char * items[] = {
-			old_agent
-		};
-		static bool values[] = {
-			false
-		};
-		indigo_change_switch_property(nullptr, agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME, 1, items, values);
+		indigo_change_switch_property_1(nullptr, agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME, old_agent, false);
 	}
 	if (new_agent[0] != '\0') {
-		static const char * items[] = {
-			new_agent
-		};
-		static bool values[] = {
-			true
-		};
-		indigo_change_switch_property(nullptr, agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME, 1, items, values);
+		indigo_change_switch_property_1(nullptr, agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME, new_agent, true);
 	}
 }
 
 void ImagerWindow::change_agent_imager_dithering_property(const char *agent) const {
 	static const char *items[] = {
 		AGENT_IMAGER_DITHERING_AGGRESSIVITY_ITEM_NAME,
-		AGENT_IMAGER_DITHERING_TIME_LIMIT_ITEM_NAME
+		AGENT_IMAGER_DITHERING_TIME_LIMIT_ITEM_NAME,
+		AGENT_IMAGER_DITHERING_SKIP_FRAMES_ITEM_NAME
 	};
-	static double values[2];
+	static double values[3];
 	values[0] = (double)m_dither_aggr->value();
 	values[1] = (double)m_dither_to->value();
-	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_DITHERING_PROPERTY_NAME, 2, items, values);
+	values[2] = (double)m_dither_skip->value();
+
+	int count = 2;
+	if (m_dither_skip->isEnabled()) count = 3;
+	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_DITHERING_PROPERTY_NAME, count, items, values);
 }
 
-void ImagerWindow::change_agent_imager_gain_property(const char *agent) const {
-	double value = (double)m_imager_gain->value();
+void ImagerWindow::change_focuser_temperature_compensation_steps(const char *agent) const {
+	double value = (double)m_focuser_temperature_compensation_steps->value();
+	indigo_change_number_property_1(nullptr, agent, FOCUSER_COMPENSATION_PROPERTY_NAME, FOCUSER_COMPENSATION_ITEM_NAME, value);
+}
+
+void ImagerWindow::change_agent_gain_property(const char *agent, QSpinBox *ccd_gain) const {
+	double value = (double)ccd_gain->value();
 	indigo_change_number_property_1(nullptr, agent, CCD_GAIN_PROPERTY_NAME, CCD_GAIN_ITEM_NAME, value);
 }
 
-void ImagerWindow::change_agent_imager_offset_property(const char *agent) const {
-	double value = (double)m_imager_offset->value();
+void ImagerWindow::change_agent_offset_property(const char *agent, QSpinBox *ccd_offset) const {
+	double value = (double)ccd_offset->value();
 	indigo_change_number_property_1(nullptr, agent, CCD_OFFSET_PROPERTY_NAME, CCD_OFFSET_ITEM_NAME, value);
+}
+
+void ImagerWindow::change_agent_lens_profile_property(const char *agent, QDoubleSpinBox *guider_focal_lenght) const {
+	double value = (double)guider_focal_lenght->value();
+	indigo_change_number_property_1(nullptr, agent, CCD_LENS_PROPERTY_NAME, CCD_LENS_FOCAL_LENGTH_ITEM_NAME, value);
+}
+
+void ImagerWindow::change_agent_binning_property(const char *agent) const {
+	static const char *items[] = {
+		CCD_BIN_HORIZONTAL_ITEM_NAME,
+		CCD_BIN_VERTICAL_ITEM_NAME
+	};
+	static double values[2];
+	values[0] = (double)m_imager_bin_x->value();
+	values[1] = (double)m_imager_bin_y->value();
+
+	indigo_change_number_property(nullptr, agent, CCD_BIN_PROPERTY_NAME, 2, items, values);
 }
 
 void ImagerWindow::change_ccd_frame_type_property(const char *agent) const {
 	static char selected_type[INDIGO_NAME_SIZE];
 	strncpy(selected_type, m_frame_type_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
-	static const char * items[] = {
-		selected_type
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, CCD_FRAME_TYPE_PROPERTY_NAME, 1, items, values);
+	indigo_change_switch_property_1(nullptr, agent, CCD_FRAME_TYPE_PROPERTY_NAME, selected_type, true);
 }
 
 void ImagerWindow::change_agent_batch_property(const char *agent) const {
@@ -223,7 +302,7 @@ void ImagerWindow::clear_guider_agent_star_selection(const char *agent) const {
 		index++;
 	}
 
-	static double values[max_stars] = {0};
+	static double values[max_stars * 2] = {0};
 
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME, count, (const char**)items, values);
 }
@@ -281,43 +360,50 @@ void ImagerWindow::change_jpeg_settings_property(const char *agent, const int jp
 	indigo_change_number_property(nullptr, agent, CCD_JPEG_SETTINGS_PROPERTY_NAME, 5, items, values);
 }
 
+void ImagerWindow::change_focus_estimator_property(const char *agent) const {
+	static char selected_estimator[INDIGO_NAME_SIZE];
+	strncpy(selected_estimator, m_focus_estimator_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	indigo_change_switch_property_1(nullptr, agent, AGENT_IMAGER_FOCUS_ESTIMATOR_PROPERTY_NAME, selected_estimator, true);
+}
+
 void ImagerWindow::change_detection_mode_property(const char *agent) const {
 	static char selected_mode[INDIGO_NAME_SIZE];
 	strncpy(selected_mode, m_detection_mode_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
-	static const char * items[] = {
-		selected_mode
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME, 1, items, values);
+	indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME, selected_mode, true);
 }
 
 void ImagerWindow::change_dec_guiding_property(const char *agent) const {
 	static char selected_mode[INDIGO_NAME_SIZE];
 	strncpy(selected_mode, m_dec_guiding_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
-	static const char * items[] = {
-		selected_mode
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME, 1, items, values);
+	indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME, selected_mode, true);
 }
 
-void ImagerWindow::change_agent_focus_params_property(const char *agent) const {
+void ImagerWindow::change_agent_focus_params_property(const char *agent, bool set_backlash) const {
 	static const char *items[] = {
 		AGENT_IMAGER_FOCUS_INITIAL_ITEM_NAME,
 		AGENT_IMAGER_FOCUS_FINAL_ITEM_NAME,
-		AGENT_IMAGER_FOCUS_BACKLASH_ITEM_NAME,
-		AGENT_IMAGER_FOCUS_STACK_ITEM_NAME
+		AGENT_IMAGER_FOCUS_STACK_ITEM_NAME,
+		AGENT_IMAGER_FOCUS_REPEAT_ITEM_NAME,
+		AGENT_IMAGER_FOCUS_DELAY_ITEM_NAME,
+		AGENT_IMAGER_FOCUS_BACKLASH_ITEM_NAME
 	};
-	static double values[4];
+	static double values[6];
 	values[0] = (double)m_initial_step->value();
 	values[1] = (double)m_final_step->value();
-	values[2] = (double)m_focus_backlash->value();
-	values[3] = (double)m_focus_stack->value();
-	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME, 4, items, values);
+	values[2] = (double)m_focus_stack->value();
+	values[3] = 0;
+	values[4] = 0;
+	values[5] = (double)m_focus_backlash->value();
+	if (set_backlash) {
+		indigo_change_number_property(nullptr, agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME, 6, items, values);
+	} else {
+		indigo_change_number_property(nullptr, agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME, 5, items, values);
+	}
+}
+
+void ImagerWindow::change_agent_focuser_bl_overshoot(const char *agent) const {
+	double value = m_focus_bl_overshoot->value();
+	indigo_change_number_property_1(nullptr, agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME, AGENT_IMAGER_FOCUS_BACKLASH_OVERSHOOT_ITEM_NAME, value);
 }
 
 void ImagerWindow::change_agent_start_exposure_property(const char *agent) const {
@@ -391,14 +477,12 @@ void ImagerWindow::change_focuser_focus_out_property(const char *agent) const {
 	indigo_change_switch_property(nullptr, agent, FOCUSER_DIRECTION_PROPERTY_NAME, 1, items, values);
 }
 
-void ImagerWindow::change_agent_pause_process_property(const char *agent) const {
-	static const char *items[] = {
-		AGENT_PAUSE_PROCESS_ITEM_NAME
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME, 1, items, values);
+void ImagerWindow::change_agent_pause_process_property(const char *agent, bool wait_exposure) const {
+	if(wait_exposure) {
+		indigo_change_switch_property_1(nullptr, agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME, AGENT_PAUSE_PROCESS_WAIT_ITEM_NAME, true);
+	} else {
+		indigo_change_switch_property_1(nullptr, agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME, AGENT_PAUSE_PROCESS_ITEM_NAME, true);
+	}
 }
 
 void ImagerWindow::change_agent_abort_process_property(const char *agent) const {
@@ -542,6 +626,15 @@ void ImagerWindow::change_guider_agent_i(const char *agent) const {
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 3, items, values);
 }
 
+
+void ImagerWindow::change_guider_agent_apply_dec_backlash(const char *agent) const {
+	if (m_guider_apply_backlash_cbox->isChecked()) {
+		indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_APPLY_DEC_BACKLASH_PROPERTY_NAME, AGENT_GUIDER_APPLY_DEC_BACKLASH_ENABLED_ITEM_NAME, true);
+	} else {
+		indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_APPLY_DEC_BACKLASH_PROPERTY_NAME, AGENT_GUIDER_APPLY_DEC_BACKLASH_DISABLED_ITEM_NAME, true);
+	}
+}
+
 void ImagerWindow::change_mount_agent_equatorial(const char *agent, bool sync) const {
 	if (sync) {
 		indigo_change_switch_property_1(nullptr, agent, MOUNT_ON_COORDINATES_SET_PROPERTY_NAME, MOUNT_ON_COORDINATES_SET_SYNC_ITEM_NAME, true);
@@ -578,11 +671,16 @@ void ImagerWindow::change_mount_agent_abort(const char *agent) const {
 	indigo_change_switch_property_1(nullptr, agent, MOUNT_ABORT_MOTION_PROPERTY_NAME, MOUNT_ABORT_MOTION_ITEM_NAME, true);
 }
 
+void ImagerWindow::change_solver_agent_abort(const char *agent) const {
+	indigo_change_switch_property_1(nullptr, agent, AGENT_PLATESOLVER_ABORT_PROPERTY_NAME, AGENT_PLATESOLVER_ABORT_ITEM_NAME, true);
+}
+
 void ImagerWindow::change_solver_agent_hints_property(const char *agent) const {
 	static const char *items[] = {
 		AGENT_PLATESOLVER_HINTS_RA_ITEM_NAME,
 		AGENT_PLATESOLVER_HINTS_DEC_ITEM_NAME,
 		AGENT_PLATESOLVER_HINTS_RADIUS_ITEM_NAME,
+		AGENT_PLATESOLVER_HINTS_SCALE_ITEM_NAME,
 		AGENT_PLATESOLVER_HINTS_PARITY_ITEM_NAME,
 		AGENT_PLATESOLVER_HINTS_DOWNSAMPLE_ITEM_NAME,
 		AGENT_PLATESOLVER_HINTS_DEPTH_ITEM_NAME,
@@ -592,12 +690,13 @@ void ImagerWindow::change_solver_agent_hints_property(const char *agent) const {
 	values[0] = indigo_stod((char*)m_solver_ra_hint->text().trimmed().toStdString().c_str());
 	values[1] = indigo_stod((char*)m_solver_dec_hint->text().trimmed().toStdString().c_str());
 	values[2] = (double)m_solver_radius_hint->value();
-	values[3] = (double)m_solver_parity_hint->value();
-	values[4] = (double)m_solver_ds_hint->value();
-	values[5] = (double)m_solver_depth_hint->value();
-	values[6] = (double)m_solver_tlimit_hint->value();
+	values[3] = (double)m_solver_scale_hint->value() / 3600.0;
+	values[4] = (double)m_solver_parity_hint->value();
+	values[5] = (double)m_solver_ds_hint->value();
+	values[6] = (double)m_solver_depth_hint->value();
+	values[7] = (double)m_solver_tlimit_hint->value();
 
-	indigo_change_number_property(nullptr, agent, AGENT_PLATESOLVER_HINTS_PROPERTY_NAME, 7, items, values);
+	indigo_change_number_property(nullptr, agent, AGENT_PLATESOLVER_HINTS_PROPERTY_NAME, 8, items, values);
 }
 
 
@@ -636,17 +735,23 @@ void ImagerWindow::trigger_solve() {
 	static char selected_mount_agent[INDIGO_NAME_SIZE];
 	static char selected_solver_agent[INDIGO_NAME_SIZE];
 	static char selected_solver_source[INDIGO_NAME_SIZE];
+	static int image_size = 0;
+	static unsigned char *image_data = nullptr;
+	static QString solver_source;
+	QString file_name;
 	char domain_name[INDIGO_NAME_SIZE];
 
 	get_selected_solver_agent(selected_solver_agent);
 	get_indigo_device_domain(domain_name, selected_solver_agent);
 	// if() do checks
 
-	QString solver_source = m_solver_source_select1->currentText();
+	solver_source = m_solver_source_select1->currentData().toString();
+	indigo_log("[SELECTED] %s solver_source = '%s'\n", __FUNCTION__, solver_source.toUtf8().constData());
 	if (solver_source == "None" || solver_source == "") return;
 	strncpy(selected_image_agent, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
 	strncpy(selected_solver_source, selected_image_agent, INDIGO_NAME_SIZE);
 	add_indigo_device_domain(selected_image_agent, domain_name);
+	m_last_solver_source = QString(selected_solver_source);
 
 	get_selected_mount_agent(selected_mount_agent);
 	remove_indigo_device_domain(selected_mount_agent, 1);
@@ -657,15 +762,73 @@ void ImagerWindow::trigger_solve() {
 	indigo_log("[SELECTED] %s solver_agent = '%s'\n", __FUNCTION__, selected_solver_agent);
 	indigo_log("[SELECTED] %s domain_name = '%s'\n", __FUNCTION__, domain_name);
 
+	indigo_property *p = properties.get(selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME);
+	if (p && p->state == INDIGO_BUSY_STATE ) {
+		QtConcurrent::run([&]() {
+			m_property_mutex.lock();
+			change_solver_agent_abort(selected_solver_agent);
+			m_property_mutex.unlock();
+		});
+		return;
+	}
+
+	if (solver_source == AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME) {
+		char path[PATH_LEN];
+		strncpy(path, m_image_path, PATH_LEN);
+		QString qlocation(dirname(path));
+		if (m_image_path[0] == '\0') qlocation = QDir::toNativeSeparators(QDir::homePath());
+		file_name = QFileDialog::getOpenFileName(
+			this,
+			tr("Upload Image"),
+			qlocation,
+			QString("FITS (*.fit *.FIT *.fits *.FITS *.fts *.FTS );;Indigo RAW (*.raw *.RAW);;FITS / Indigo RAW (*.fit *FIT *.fits *.FITS *.fts *.FTS *.raw *.RAW);;JPEG / (*.jpg *.JPG *.jpeg *.JPEG *.jpe *.JPE);;All Files (*)"),
+			&m_selected_filter
+		);
+		if(file_name.isNull()) {
+			return;
+		} else {
+			if(!open_image(file_name, &image_size, &image_data)) {
+				return;
+			}
+		}
+	}
+
 	QtConcurrent::run([&]() {
-		set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME);
+		m_property_mutex.lock();
+		if (solver_source == AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME) {
+			indigo_property *p = properties.get(selected_solver_agent, AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME);
+			indigo_item *image_item = indigo_get_item(p, AGENT_PLATESOLVER_IMAGE_ITEM_NAME);
+			if (image_item) {
+				indigo_result res = indigo_change_blob_property_1(
+					nullptr,
+					selected_solver_agent,
+					AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME,
+					AGENT_PLATESOLVER_IMAGE_ITEM_NAME,
+					image_data,
+					image_size,
+					"",
+					image_item->blob.url
+				);
+				if (res != INDIGO_OK) {
+					Logger::instance().log(nullptr, "Failed to upload file for solving");
+				} else {
+					Logger::instance().log(nullptr, "File uploaded for solving");
+					update_solver_widgets_at_start(selected_image_agent, selected_solver_agent);
+				}
+			}
+		} else {
+			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME);
 
-		set_agent_releated_agent(selected_solver_agent, selected_mount_agent, true);
-		set_agent_releated_agent(selected_solver_agent, selected_solver_source, true);
+			set_agent_releated_agent(selected_solver_agent, selected_mount_agent, true);
+			set_agent_releated_agent(selected_solver_agent, selected_solver_source, true);
 
-		change_ccd_exposure_property(selected_image_agent, m_solver_exposure1);
-
-		update_solver_widgets_at_start(selected_image_agent, selected_solver_agent);
+			change_ccd_exposure_property(selected_image_agent, m_solver_exposure1);
+			update_solver_widgets_at_start(selected_image_agent, selected_solver_agent);
+		}
+		indigo_safe_free(image_data);
+		image_data = nullptr;
+		image_size = 0;
+		m_property_mutex.unlock();
 	});
 }
 
@@ -674,9 +837,10 @@ void ImagerWindow::trigger_solve_and_sync(bool recenter) {
 	static char selected_mount_agent[INDIGO_NAME_SIZE];
 	static char selected_solver_agent[INDIGO_NAME_SIZE];
 	static char selected_solver_source[INDIGO_NAME_SIZE];
-	static bool recenter_cache = recenter;
+	static bool recenter_cache;
 	char domain_name[INDIGO_NAME_SIZE];
 
+	recenter_cache = recenter;
 	get_selected_solver_agent(selected_solver_agent);
 	get_indigo_device_domain(domain_name, selected_solver_agent);
 	// if() do checks
@@ -686,6 +850,7 @@ void ImagerWindow::trigger_solve_and_sync(bool recenter) {
 	strncpy(selected_image_agent, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
 	strncpy(selected_solver_source, selected_image_agent, INDIGO_NAME_SIZE);
 	add_indigo_device_domain(selected_image_agent, domain_name);
+	m_last_solver_source = QString(selected_solver_source);
 
 	get_selected_mount_agent(selected_mount_agent);
 	remove_indigo_device_domain(selected_mount_agent, 1);
@@ -697,6 +862,7 @@ void ImagerWindow::trigger_solve_and_sync(bool recenter) {
 	indigo_log("[SELECTED] %s domain_name = '%s'\n", __FUNCTION__, domain_name);
 
 	QtConcurrent::run([&]() {
+		m_property_mutex.lock();
 		if (recenter_cache) {
 			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_CENTER_ITEM_NAME);
 		} else {
@@ -709,5 +875,66 @@ void ImagerWindow::trigger_solve_and_sync(bool recenter) {
 		change_ccd_exposure_property(selected_image_agent, m_solver_exposure2);
 
 		update_solver_widgets_at_start(selected_image_agent, selected_solver_agent);
+		m_property_mutex.unlock();
 	});
+}
+
+void ImagerWindow::trigger_polar_alignment(bool recalculate) {
+	static char selected_image_agent[INDIGO_NAME_SIZE];
+	static char selected_mount_agent[INDIGO_NAME_SIZE];
+	static char selected_solver_agent[INDIGO_NAME_SIZE];
+	static char selected_solver_source[INDIGO_NAME_SIZE];
+	static bool recalculate_cache;
+	char domain_name[INDIGO_NAME_SIZE];
+
+	recalculate_cache = recalculate;
+	get_selected_solver_agent(selected_solver_agent);
+	get_indigo_device_domain(domain_name, selected_solver_agent);
+	// if() do checks
+	QString solver_source = m_solver_source_select3->currentText();
+	if (solver_source == "None" || solver_source == "") return;
+	strncpy(selected_image_agent, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
+	strncpy(selected_solver_source, selected_image_agent, INDIGO_NAME_SIZE);
+	add_indigo_device_domain(selected_image_agent, domain_name);
+	m_last_solver_source = QString(selected_solver_source);
+
+	get_selected_mount_agent(selected_mount_agent);
+	remove_indigo_device_domain(selected_mount_agent, 1);
+
+	indigo_log("[RECALCULATE] %s recalculate_cache = %d\n", __FUNCTION__, recalculate_cache);
+	indigo_log("[SELECTED] %s image_agent = '%s'\n", __FUNCTION__, selected_image_agent);
+	indigo_log("[SELECTED] %s solver_source = '%s'\n", __FUNCTION__, selected_solver_source);
+	indigo_log("[SELECTED] %s mount_agent = '%s'\n", __FUNCTION__, selected_mount_agent);
+	indigo_log("[SELECTED] %s solver_agent = '%s'\n", __FUNCTION__, selected_solver_agent);
+	indigo_log("[SELECTED] %s domain_name = '%s'\n", __FUNCTION__, domain_name);
+
+	QtConcurrent::run([&]() {
+		m_property_mutex.lock();
+		if (recalculate_cache) {
+			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_RECALCULATE_PA_ERROR_ITEM_NAME);
+		} else {
+			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_CALCULATE_PA_ERROR_ITEM_NAME);
+		}
+
+		set_agent_releated_agent(selected_solver_agent, selected_mount_agent, true);
+		set_agent_releated_agent(selected_solver_agent, selected_solver_source, true);
+
+		change_ccd_exposure_property(selected_image_agent, m_solver_exposure3);
+
+		update_solver_widgets_at_start(selected_image_agent, selected_solver_agent);
+		m_property_mutex.unlock();
+	});
+}
+
+void ImagerWindow::change_solver_agent_pa_settings(const char *agent) const {
+	static const char *items[] = {
+		AGENT_PLATESOLVER_PA_SETTINGS_EXPOSURE_ITEM_NAME,
+		AGENT_PLATESOLVER_PA_SETTINGS_HA_MOVE_ITEM_NAME,
+		AGENT_PLATESOLVER_PA_SETTINGS_COMPENSATE_REFRACTION_ITEM_NAME
+	};
+	static double values[3];
+	values[0] = (double)m_solver_exposure3->value();
+	values[1] = (double)m_pa_move_ha->value();
+	values[2] = (double)m_pa_refraction_cbox->isChecked();
+	indigo_change_number_property(nullptr, agent, AGENT_PLATESOLVER_PA_SETTINGS_PROPERTY_NAME, 3, items, values);
 }

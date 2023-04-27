@@ -18,7 +18,11 @@
 
 #include "imagerwindow.h"
 #include "propertycache.h"
+#include <libgen.h>
 #include <conf.h>
+#include <utils.h>
+
+void write_conf();
 
 void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	QGridLayout *capture_frame_layout = new QGridLayout();
@@ -73,6 +77,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	label = new QLabel("Exposure (s):");
 	capture_frame_layout->addWidget(label, row, 0);
 	m_exposure_time = new QDoubleSpinBox();
+	m_exposure_time->setDecimals(3);
 	m_exposure_time->setMaximum(10000);
 	m_exposure_time->setMinimum(0);
 	m_exposure_time->setValue(1);
@@ -82,6 +87,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	label = new QLabel("Delay (s):");
 	capture_frame_layout->addWidget(label, row, 2);
 	m_exposure_delay = new QDoubleSpinBox();
+	m_exposure_delay->setDecimals(3);
 	m_exposure_delay->setMaximum(10000);
 	m_exposure_delay->setMinimum(0);
 	m_exposure_delay->setValue(0);
@@ -95,6 +101,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_frame_count = new QSpinBox();
 	m_frame_count->setMaximum(100000);
 	m_frame_count->setMinimum(-1);
+	m_frame_count->setSpecialValueText("∞");
 	m_frame_count->setValue(1);
 	capture_frame_layout->addWidget(m_frame_count, row, 1);
 
@@ -112,6 +119,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_object_name->setPlaceholderText("Image file prefix e.g. M16, M33 ...");
 	m_object_name->setToolTip("Object name or any text that will be used as a file name prefix.\nIf empty images will not be saved.");
 	capture_frame_layout->addWidget(m_object_name, row, 1, 1, 3);
+	connect(m_object_name, &QLineEdit::textChanged, this, &ImagerWindow::on_object_name_changed);
 
 	row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -190,7 +198,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	cooler_box->addWidget(m_current_temp);
 	m_current_temp->setStyleSheet("width: 30px");
 	m_current_temp->setText("");
-	m_current_temp->setEnabled(false);
+	m_current_temp->setReadOnly(true);
 
 	label = new QLabel("P:");
 	cooler_box->addWidget(label);
@@ -200,7 +208,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	cooler_box->addWidget(m_cooler_pwr);
 	m_cooler_pwr->setStyleSheet("width: 30px");
 	m_cooler_pwr->setText("");
-	m_cooler_pwr->setEnabled(false);
+	m_cooler_pwr->setReadOnly(true);
 
 	m_cooler_onoff = new QCheckBox();
 	m_cooler_onoff->setToolTip("Turn CCD Cooler ON/OFF");
@@ -238,6 +246,20 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 
 	int image_row = 0;
 
+	label = new QLabel("Preview exposure (s):");
+	image_frame_layout->addWidget(label, image_row, 0, 1, 3);
+	m_preview_exposure_time = new QDoubleSpinBox();
+	m_preview_exposure_time->setDecimals(3);
+	m_preview_exposure_time->setMaximum(10000);
+	m_preview_exposure_time->setMinimum(0);
+	m_preview_exposure_time->setValue(1);
+	image_frame_layout->addWidget(m_preview_exposure_time, image_row, 3);
+
+	image_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	image_frame_layout->addItem(spacer, image_row, 0, 1, 4);
+
+	image_row++;
 	label = new QLabel("Image format:");
 	image_frame_layout->addWidget(label, image_row, 0, 1, 2);
 	m_frame_format_select = new QComboBox();
@@ -327,6 +349,17 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	dither_frame_layout->addWidget(m_dither_to, dither_row, 3);
 	connect(m_dither_to, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_imager_dithering_changed);
 
+	dither_row++;
+	label = new QLabel("Skip frames:");
+	dither_frame_layout->addWidget(label, dither_row, 0, 1, 3);
+	m_dither_skip = new QSpinBox();
+	m_dither_skip->setMaximum(100);
+	m_dither_skip->setMinimum(0);
+	m_dither_skip->setValue(0);
+	m_dither_skip->setEnabled(false);
+	dither_frame_layout->addWidget(m_dither_skip, dither_row, 3);
+	connect(m_dither_skip, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_imager_dithering_changed);
+
 	// settings
 	QFrame *camera_frame = new QFrame();
 	capture_tabbar->addTab(camera_frame, "Camera");
@@ -352,6 +385,80 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_imager_offset->setEnabled(false);
 	camera_frame_layout->addWidget(m_imager_offset, camera_row, 3);
 	connect(m_imager_offset, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_imager_offset_changed);
+
+	camera_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	camera_frame_layout->addItem(spacer, camera_row, 0, 1, 4);
+
+	camera_row++;
+	label = new QLabel("X Binning:");
+	camera_frame_layout->addWidget(label, camera_row, 0);
+	m_imager_bin_x = new QSpinBox();
+	m_imager_bin_x->setEnabled(false);
+	camera_frame_layout->addWidget(m_imager_bin_x, camera_row, 1);
+	label = new QLabel("Y Binning:");
+	camera_frame_layout->addWidget(label, camera_row, 2);
+	m_imager_bin_y = new QSpinBox();
+	m_imager_bin_y->setEnabled(false);
+	camera_frame_layout->addWidget(m_imager_bin_y, camera_row, 3);
+	connect(m_imager_bin_x, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_imager_binning_changed);
+	connect(m_imager_bin_y, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_imager_binning_changed);
+
+	// Remote files
+	QFrame *remote_files_frame = new QFrame();
+	capture_tabbar->addTab(remote_files_frame, "Remote images");
+
+	QGridLayout *remote_files_frame_layout = new QGridLayout();
+	remote_files_frame_layout->setAlignment(Qt::AlignTop);
+	remote_files_frame->setLayout(remote_files_frame_layout);
+	remote_files_frame->setFrameShape(QFrame::StyledPanel);
+	remote_files_frame->setContentsMargins(0, 0, 0, 0);
+
+	int remote_files_row = 0;
+	m_save_image_on_server_cbox = new QCheckBox("Save image copies on the server");
+	m_save_image_on_server_cbox->setToolTip("Save images copies on server");
+	m_save_image_on_server_cbox->setEnabled(true);
+	m_save_image_on_server_cbox->setChecked(conf.save_images_on_server);
+	remote_files_frame_layout->addWidget(m_save_image_on_server_cbox, remote_files_row, 0, 1, 4);
+	connect(m_save_image_on_server_cbox, &QPushButton::clicked, this, &ImagerWindow::on_save_image_on_server);
+
+	remote_files_row++;
+	m_keep_image_on_server_cbox = new QCheckBox("Keep downloaded images on server");
+	m_keep_image_on_server_cbox->setToolTip("Do not remove downloaded image copies from server");
+	m_keep_image_on_server_cbox->setEnabled(true);
+	m_keep_image_on_server_cbox->setChecked(conf.keep_images_on_server);
+	remote_files_frame_layout->addWidget(m_keep_image_on_server_cbox, remote_files_row, 0, 1, 4);
+	connect(m_keep_image_on_server_cbox, &QPushButton::clicked, this, &ImagerWindow::on_keep_image_on_server);
+
+	remote_files_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	remote_files_frame_layout->addItem(spacer, remote_files_row, 0, 1, 4);
+
+	remote_files_row++;
+	m_sync_files_button = new QPushButton("Download images");
+	m_sync_files_button->setToolTip("Download available remote images");
+	m_sync_files_button->setStyleSheet("min-width: 30px");
+//	m_check_files_button->setIcon(QIcon(":resource/play.png"));
+	remote_files_frame_layout->addWidget(m_sync_files_button, remote_files_row, 0, 1, 2);
+	connect(m_sync_files_button, &QPushButton::clicked, this, &ImagerWindow::on_sync_remote_files);
+
+	m_remove_synced_files_button = new QPushButton("Server cleanup");
+	m_remove_synced_files_button->setToolTip("Remove downloaded image copies from server");
+	m_remove_synced_files_button->setStyleSheet("min-width: 30px");
+//	m_check_files_button->setIcon(QIcon(":resource/play.png"));
+	remote_files_frame_layout->addWidget(m_remove_synced_files_button, remote_files_row, 2, 1, 2);
+	connect(m_remove_synced_files_button, &QPushButton::clicked, this, &ImagerWindow::on_remove_synced_remote_files);
+
+	remote_files_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	remote_files_frame_layout->addItem(spacer, remote_files_row, 0, 1, 4);
+
+	remote_files_row++;
+	m_download_progress = new QProgressBar();
+	remote_files_frame_layout->addWidget(m_download_progress, remote_files_row, 0, 1, 4);
+	m_download_progress->setMaximum(1);
+	m_download_progress->setValue(0);
+	m_download_progress->setFormat("Download progress");
 }
 
 void ImagerWindow::on_exposure_start_stop(bool clicked) {
@@ -364,9 +471,17 @@ void ImagerWindow::on_exposure_start_stop(bool clicked) {
 		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
 			change_agent_abort_process_property(selected_agent);
 		} else {
+			set_mount_agent_selected_imager_agent();
+			QString obj_name = m_object_name->text();
+			add_fits_keyword_string(selected_agent, "OBJECT", &obj_name);
 			change_agent_batch_property(selected_agent);
 			change_ccd_frame_property(selected_agent);
-			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
+			if(conf.save_images_on_server) {
+				change_ccd_localmode_property(selected_agent, &m_object_name_str);
+				change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_BOTH_ITEM_NAME);
+			} else {
+				change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
+			}
 			change_agent_start_exposure_property(selected_agent);
 		}
 	});
@@ -384,36 +499,14 @@ void ImagerWindow::on_preview_start_stop(bool clicked) {
 		    ccd_exposure && ccd_exposure->state == INDIGO_BUSY_STATE) {
 			change_ccd_abort_exposure_property(selected_agent);
 		} else {
+			set_mount_agent_selected_imager_agent();
+			QString obj_name = m_object_name->text();
+			add_fits_keyword_string(selected_agent, "OBJECT", &obj_name);
 			change_agent_batch_property(selected_agent);
 			change_ccd_frame_property(selected_agent);
 			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
-			change_ccd_exposure_property(selected_agent, m_exposure_time);
+			change_ccd_exposure_property(selected_agent, m_preview_exposure_time);
 		}
-	});
-}
-
-void ImagerWindow::on_preview(bool clicked) {
-	QtConcurrent::run([=]() {
-		indigo_debug("CALLED: %s\n", __FUNCTION__);
-		static char selected_agent[INDIGO_NAME_SIZE];
-		get_selected_imager_agent(selected_agent);
-		change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
-		change_ccd_frame_property(selected_agent);
-		change_ccd_exposure_property(selected_agent, m_exposure_time);
-	});
-}
-
-
-void ImagerWindow::on_start(bool clicked) {
-	QtConcurrent::run([=]() {
-		indigo_debug("CALLED: %s\n", __FUNCTION__);
-		static char selected_agent[INDIGO_NAME_SIZE];
-		get_selected_imager_agent(selected_agent);
-
-		change_agent_batch_property(selected_agent);
-		change_ccd_frame_property(selected_agent);
-		change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
-		change_agent_start_exposure_property(selected_agent);
 	});
 }
 
@@ -443,9 +536,9 @@ void ImagerWindow::on_pause(bool clicked) {
 		get_selected_imager_agent(selected_agent);
 
 		indigo_property *p = properties.get(selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME);
-		if (p == nullptr || p->count != 1) return;
+		if (p == nullptr || p->count < 1) return;
 
-		change_agent_pause_process_property(selected_agent);
+		change_agent_pause_process_property(selected_agent, true);
 	});
 }
 
@@ -456,6 +549,7 @@ void ImagerWindow::on_agent_selected(int index) {
 		memset(property, 0, sizeof(indigo_property));
 		get_selected_imager_agent(property->device);
 		property_delete(property, nullptr);
+		properties.remove(property);
 		free(property);
 
 		// populate them again with the new values
@@ -521,7 +615,7 @@ void ImagerWindow::on_ccd_mode_selected(int index) {
 		get_selected_imager_agent(selected_agent);
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-		change_ccd_mode_property(selected_agent);
+		change_ccd_mode_property(selected_agent, m_frame_size_select);
 	});
 }
 
@@ -552,9 +646,13 @@ void ImagerWindow::on_frame_type_selected(int index) {
 
 void ImagerWindow::on_dither_agent_selected(int index) {
 	QtConcurrent::run([=]() {
-		static char selected_agent[INDIGO_NAME_SIZE] = {0};
-		static char old_agent[INDIGO_NAME_SIZE] = {0};
-		static char new_agent[INDIGO_NAME_SIZE] = {0};
+		static char selected_agent[INDIGO_NAME_SIZE];
+		static char old_agent[INDIGO_NAME_SIZE];
+		static char new_agent[INDIGO_NAME_SIZE];
+
+		selected_agent[0] = '\0';
+		old_agent[0] = '\0';
+		new_agent[0] = '\0';
 
 		get_selected_imager_agent(selected_agent);
 
@@ -570,7 +668,7 @@ void ImagerWindow::on_dither_agent_selected(int index) {
 		strncpy(new_agent, m_dither_agent_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
 
 		indigo_debug("[SELECTED] %s '%s' %s -> %s\n", __FUNCTION__, selected_agent, old_agent, new_agent);
-		change_related_dither_agent(selected_agent, old_agent, new_agent);
+		change_related_agent(selected_agent, old_agent, new_agent);
 	});
 }
 
@@ -592,7 +690,7 @@ void ImagerWindow::on_agent_imager_gain_changed(int value) {
 		get_selected_imager_agent(selected_agent);
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-		change_agent_imager_gain_property(selected_agent);
+		change_agent_gain_property(selected_agent, m_imager_gain);
 	});
 }
 
@@ -603,7 +701,18 @@ void ImagerWindow::on_agent_imager_offset_changed(int value) {
 		get_selected_imager_agent(selected_agent);
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-		change_agent_imager_offset_property(selected_agent);
+		change_agent_offset_property(selected_agent, m_imager_offset);
+	});
+}
+
+void ImagerWindow::on_agent_imager_binning_changed(int value) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_imager_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_agent_binning_property(selected_agent);
 	});
 }
 
@@ -637,4 +746,139 @@ void ImagerWindow::on_temperature_set(double value) {
 
 		change_ccd_temperature_property(selected_agent);
 	});
+}
+
+void ImagerWindow::on_object_name_changed(const QString &object_name) {
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+
+		change_ccd_localmode_property(selected_agent, &object_name);
+		add_fits_keyword_string(selected_agent, "OBJECT", &object_name);
+	});
+}
+
+void ImagerWindow::on_save_image_on_server(int state) {
+	conf.save_images_on_server = m_save_image_on_server_cbox->checkState();
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_keep_image_on_server(int state) {
+	conf.keep_images_on_server = m_keep_image_on_server_cbox->checkState();
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_sync_remote_files(bool clicked) {
+	if (!conf.keep_images_on_server) {
+		remove_synced_remote_files();
+	}
+	sync_remote_files();
+}
+
+void ImagerWindow::on_remove_synced_remote_files(bool clicked) {
+	if (!conf.keep_images_on_server) {
+		remove_synced_remote_files();
+	} else {
+		window_log("Error: Can not remove images if keep images is enabled");
+	}
+}
+
+
+void ImagerWindow::sync_remote_files() {
+	char message[PATH_LEN];
+	char work_dir[PATH_LEN];
+
+
+	if (!m_files_to_download.empty()) {
+		m_download_progress->setFormat("Download canceled %v of %m");
+		m_files_to_download.clear();
+		return;
+	}
+
+	m_download_progress->setFormat("Preparing download...");
+	QCoreApplication::processEvents();
+
+	get_current_output_dir(work_dir, conf.data_dir_prefix);
+	QString work_dir_str(dirname(work_dir));
+	SyncUtils sutil(work_dir_str);
+	sutil.rebuild();
+	m_files_to_download.clear();
+	static char selected_agent[INDIGO_NAME_SIZE];
+	get_selected_imager_agent(selected_agent);
+
+	indigo_property *p = properties.get(selected_agent, AGENT_IMAGER_DOWNLOAD_FILES_PROPERTY_NAME);
+	if (p) {
+		for (int i = 0; i < p->count; i++) {
+			if (sutil.needs_sync(p->items[i].label)) {
+				m_files_to_download.append(p->items[i].label);
+				indigo_debug("Remote file: %s", p->items[i].label);
+			} else {
+				indigo_debug("Downloaded:  %s", p->items[i].label);
+			}
+
+		}
+	}
+
+	if (!m_files_to_download.empty()) {
+		snprintf(message, sizeof(message), "Downloading %d images from server", m_files_to_download.length());
+		m_download_progress->setRange(0, m_files_to_download.length());
+		m_download_progress->setValue(0);
+		m_download_progress->setFormat("Downloading %v of %m images...");
+		window_log(message, INDIGO_OK_STATE);
+		QtConcurrent::run([=]() {
+			char agent[INDIGO_VALUE_SIZE];
+			get_selected_imager_agent(agent);
+			QString next_file = m_files_to_download.at(0);
+			request_file_download(agent, next_file.toUtf8().constData());
+		});
+	} else {
+		m_download_progress->setRange(0, 1);
+		m_download_progress->setValue(0);
+		m_download_progress->setFormat("No images to download");
+		window_log("No images to download");
+	}
+}
+
+void ImagerWindow::remove_synced_remote_files() {
+	char message[PATH_LEN];
+	char work_dir[PATH_LEN];
+	get_current_output_dir(work_dir, conf.data_dir_prefix);
+	QString work_dir_str(dirname(work_dir));
+	SyncUtils sutil(work_dir_str);
+	sutil.rebuild();
+	m_files_to_remove.clear();
+	static char selected_agent[INDIGO_NAME_SIZE];
+	get_selected_imager_agent(selected_agent);
+
+	indigo_property *p = properties.get(selected_agent, AGENT_IMAGER_DOWNLOAD_FILES_PROPERTY_NAME);
+	if (p) {
+		for (int i = 0; i < p->count; i++) {
+			if (!sutil.needs_sync(p->items[i].label) && sutil.syncable(p->items[i].label)) {
+				m_files_to_remove.append(p->items[i].label);
+				indigo_debug("To remove: %s", p->items[i].label);
+			} else {
+				indigo_debug("To keep:   %s", p->items[i].label);
+			}
+		}
+	}
+	if (!m_files_to_remove.empty()) {
+		int file_num = m_files_to_remove.length();
+		snprintf(message, sizeof(message), "Removing %d downloaded images from server", file_num);
+		window_log(message, INDIGO_OK_STATE);
+		QtConcurrent::run([=]() {
+			for (int i = 0; i < file_num; i++) {
+				static char agent[INDIGO_NAME_SIZE];
+				get_selected_imager_agent(agent);
+				QString next_file = m_files_to_remove.at(i);
+				indigo_debug("Remove:  %s", next_file.toUtf8().constData());
+				request_file_remove(agent, next_file.toUtf8().constData());
+			}
+			m_files_to_remove.clear();
+		});
+	} else {
+		window_log("No downloaded images to remove");
+	}
 }

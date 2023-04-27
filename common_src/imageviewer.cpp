@@ -63,10 +63,9 @@ private:
 };
 
 
-ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
+ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer)
 	: QFrame(parent)
 	, m_zoom_level(0)
-	, m_stretch_level(PREVIEW_STRETCH_NONE)
 	, m_fit(true)
 	, m_bar_mode(ToolBarMode::Visible)
 {
@@ -78,7 +77,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
 	m_pixmap = new PixmapItem;
 	scene->addItem(m_pixmap);
 	connect(m_pixmap, SIGNAL(mouseMoved(double,double)), SLOT(mouseAt(double,double)));
-	connect(m_pixmap, SIGNAL(mouseRightPress(double,double)), SLOT(mouseRightPressAt(double,double)));
+	connect(m_pixmap, SIGNAL(mouseRightPress(double, double, Qt::KeyboardModifiers)), SLOT(mouseRightPressAt(double, double, Qt::KeyboardModifiers)));
 
 	m_ref_x = new QGraphicsLineItem(25,0,25,50, m_pixmap);
 	QPen pen;
@@ -98,6 +97,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
 	m_ref_y->setVisible(false);
 
 	m_ref_visible = false;
+	m_show_wcs = false;
 
 	m_selection = new QGraphicsRectItem(0,0,25,25, m_pixmap);
 	m_selection->setBrush(QBrush(Qt::NoBrush));
@@ -120,7 +120,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
 	m_edge_clipping->setVisible(false);
 	m_edge_clipping_visible = false;
 
-	makeToolbar(prev_next);
+	makeToolbar(show_prev_next, show_debayer);
 
 	auto box = new QVBoxLayout;
 	box->setContentsMargins(0,0,0,0);
@@ -128,11 +128,31 @@ ImageViewer::ImageViewer(QWidget *parent, bool prev_next)
 	box->addWidget(m_view, 1);
 	setLayout(box);
 
+	m_image_histogram = new QLabel(m_view);
+	m_image_histogram->setStyleSheet("background-color: rgba(0,0,0,40%); color: rgba(200,200,200,100%);");
+	m_image_histogram->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+	m_image_histogram->setAttribute(Qt::WA_TransparentForMouseEvents);
+	m_image_histogram->move(QPoint(12, 12));
+	m_image_histogram->setTextFormat(Qt::RichText);
+	m_image_histogram->raise();
+	m_image_histogram->setVisible(false);
+
+	m_image_stats = new QLabel(m_view);
+	m_image_stats->setStyleSheet("background-color: rgba(0,0,0,40%); color: rgba(200,200,200,100%);");
+	m_image_stats->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+	m_image_stats->setAttribute(Qt::WA_TransparentForMouseEvents);
+	m_image_stats->move(QPoint(12, 128 + 24));
+	m_image_stats->setTextFormat(Qt::RichText);
+	m_image_stats->raise();
+	m_image_stats->setVisible(false);
+
 	m_extra_selections_visible = false;
+
+	connect(this, &ImageViewer::setImage, this, &ImageViewer::onSetImage);
 }
 
 // toolbar with a few quick actions and display information
-void ImageViewer::makeToolbar(bool prev_next) {
+void ImageViewer::makeToolbar(bool show_prev_next, bool show_debayer) {
 	// text and value at pixel
 	m_text_label = new QLabel(this);
 	m_text_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
@@ -193,8 +213,74 @@ void ImageViewer::makeToolbar(bool prev_next) {
 	stretch_group->addAction(act);
 	m_stretch_act[PREVIEW_STRETCH_HARD] = act;
 
+	menu->addSeparator();
+
+	QActionGroup *cb_group = new QActionGroup(this);
+	cb_group->setExclusive(true);
+	act = menu->addAction("Background Neutralization: O&N");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::onAutoBalance);
+	cb_group->addAction(act);
+	m_color_reference_act[COLOR_BALANCE_AUTO] = act;
+
+	act = menu->addAction("Background Neutralization: O&FF");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::onNoBalance);
+	cb_group->addAction(act);
+	m_color_reference_act[COLOR_BALANCE_NONE] = act;
+
+	if (show_debayer) {
+		menu->addSeparator();
+	}
+
+	QMenu *sub_menu = menu->addMenu("&Debayering");
+
+	if (!show_debayer) {
+		sub_menu->menuAction()->setVisible(false);
+	}
+
+	QActionGroup *debayer_group = new QActionGroup(this);
+	debayer_group->setExclusive(true);
+	act = sub_menu->addAction("&Auto");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::debayerAuto);
+	debayer_group->addAction(act);
+	m_debayer_act[DEBAYER_AUTO] = act;
+
+	act = sub_menu->addAction("Non&e");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::debayerNone);
+	debayer_group->addAction(act);
+	m_debayer_act[DEBAYER_NONE] = act;
+
+	sub_menu->addSeparator();
+
+	act = sub_menu->addAction("&GBRG");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::debayerGBRG);
+	debayer_group->addAction(act);
+	m_debayer_act[DEBAYER_GBRG] = act;
+
+	act = sub_menu->addAction("&GRBG");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::debayerGRBG);
+	debayer_group->addAction(act);
+	m_debayer_act[DEBAYER_GRBG] = act;
+
+	act = sub_menu->addAction("&RGGB");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::debayerRGGB);
+	debayer_group->addAction(act);
+	m_debayer_act[DEBAYER_RGGB] = act;
+
+	act = sub_menu->addAction("&BGGR");
+	act->setCheckable(true);
+	connect(act, &QAction::triggered, this, &ImageViewer::debayerBGGR);
+	debayer_group->addAction(act);
+	m_debayer_act[DEBAYER_BGGR] = act;
+
 	auto stretch = new QToolButton(this);
-	stretch->setToolTip(tr("Histogram Stretch"));
+	stretch->setToolTip(tr("Histogram stretching / Background neutralization / Debayer"));
 	stretch->setIcon(QIcon(":resource/histogram.png"));
 	stretch->setMenu(menu);
 	stretch->setPopupMode(QToolButton::InstantPopup);
@@ -203,7 +289,7 @@ void ImageViewer::makeToolbar(bool prev_next) {
 	auto box = new QHBoxLayout(m_toolbar);
 	m_toolbar->setContentsMargins(0,0,0,0);
 	box->setContentsMargins(0,0,0,0);
-	if (prev_next) {
+	if (show_prev_next) {
 		auto pn_bar = new QWidget;
 		auto pn_box = new QHBoxLayout(pn_bar);
 		pn_bar->setContentsMargins(0,0,0,0);
@@ -227,7 +313,6 @@ void ImageViewer::makeToolbar(bool prev_next) {
 		box->addWidget(pn_bar);
 	}
 
-
 	box->addWidget(m_text_label);
 	box->addStretch(1);
 	box->addWidget(m_pixel_value);
@@ -239,12 +324,100 @@ void ImageViewer::makeToolbar(bool prev_next) {
 	box->addWidget(stretch);
 }
 
+void ImageViewer::setImageStats(const ImageStats &stats) {
+	if (stats.channels == 1) {
+		QString stats_str = "<b>Statistics</b>";
+		if(stats.bitdepth == -32) {
+			stats_str += " (float)";
+		} else {
+			stats_str += " (" + QString::number(stats.bitdepth) + "bit)<br>";
+		}
+		stats_str += "<table cellspacing=1>";
+		stats_str += "<tr><td><b>Min </b></td><td align=right> " + QString::number(stats.grey_red.min) + "</td></tr>";
+		stats_str += "<tr><td><b>Max </b></td><td align=right> " + QString::number(stats.grey_red.max) + "</td></tr>";
+		stats_str += "<tr><td><b>Mean </b></td><td align=right> " + QString::number(stats.grey_red.mean) + "</td></tr>";
+		stats_str += "<tr><td><b>StdDev </b></td><td align=right> " + QString::number(stats.grey_red.stddev) + "</td></tr>";
+		stats_str += "<tr><td><b>MAD </b></td><td align=right> "  + QString::number(stats.grey_red.mad) + "</td></tr>";
+		stats_str += "</table>";
+		m_image_stats->setText(stats_str);
+		m_image_stats->adjustSize();
+		m_image_stats->setVisible(true);
+
+		QImage hist = makeHistogram(stats);
+		m_image_histogram->setPixmap(QPixmap::fromImage(hist));
+		m_image_histogram->adjustSize();
+		m_image_histogram->setVisible(true);
+	} else if (stats.channels == 3) {
+		QString stats_str = "<b>Statistics</b> ";
+		if(stats.bitdepth == -32) {
+			stats_str += " (float)";
+		} else {
+			stats_str += " (" + QString::number(stats.bitdepth) + "bit)<br>";
+		}
+		stats_str += "<table cellspacing=1>";
+		stats_str += "<tr><td><b>Min </b></td>";
+		stats_str += "<td align=right><font color=\"#C05050\"> " + QString::number(stats.grey_red.min) + " </font></td>";
+		stats_str += "<td align=right><font color=\"#50C050\"> " + QString::number(stats.green.min) + " </font></td>";
+		stats_str += "<td align=right><font color=\"#5050FF\"> " + QString::number(stats.blue.min) + " </font></td>";
+		stats_str += "</tr>";
+
+		stats_str += "<tr><td><b>Max </b></td>";
+		stats_str += "<td align=right><font color=\"#C05050\"> " + QString::number(stats.grey_red.max) + " </font></td>";
+		stats_str += "<td align=right><font color=\"#50C050\"> " + QString::number(stats.green.max) + " </font></td>";
+		stats_str += "<td align=right><font color=\"#5050FF\"> " + QString::number(stats.blue.max) + " </font></td>";
+		stats_str += "</tr>";
+
+		stats_str += "<tr><td><b>Mean </b></td>";
+		stats_str += "<td align=right><font color=\"#C05050\"> " + QString::number(stats.grey_red.mean) + " </font></td>";
+		stats_str += "<td align=right><font color=\"#50C050\"> " + QString::number(stats.green.mean) + " </font></td>";
+		stats_str += "<td align=right><font color=\"#5050FF\"> " + QString::number(stats.blue.mean) + " </font></td>";
+		stats_str += "</tr>";
+
+		stats_str += "<tr><td><b>StdDev </b></td>";
+		stats_str += "<td align=right><font color=\"#C05050\"> " + QString::number(stats.grey_red.stddev) + " </font></td>";
+		stats_str += "<td align=right><font color=\"#50C050\"> " + QString::number(stats.green.stddev) + " </font></td>";
+		stats_str += "<td align=right><font color=\"#5050FF\"> " + QString::number(stats.blue.stddev) + " </font></td>";
+		stats_str += "</tr>";
+
+		stats_str += "<tr><td><b>MAD </b></td>";
+		stats_str += "<td align=right><font color=\"#C05050\"> " + QString::number(stats.grey_red.mad) + " </font></td>";
+		stats_str += "<td align=right><font color=\"#50C050\"> " + QString::number(stats.green.mad) + " </font></td>";
+		stats_str += "<td align=right><font color=\"#5050FF\"> " + QString::number(stats.blue.mad) + " </font></td>";
+		stats_str += "</tr>";
+		stats_str += "</table>";
+
+		m_image_stats->setText(stats_str);
+		m_image_stats->adjustSize();
+		m_image_stats->setVisible(true);
+
+		QImage hist = makeHistogram(stats);
+		m_image_histogram->setPixmap(QPixmap::fromImage(hist));
+		m_image_histogram->adjustSize();
+		m_image_histogram->setVisible(true);
+	} else {
+		m_image_stats->setVisible(false);
+		m_image_stats->setText("");
+		m_image_histogram->setVisible(false);
+		m_image_histogram->setText("");
+	}
+}
+
 QString ImageViewer::text() const {
 	return m_text_label->text();
 }
 
 void ImageViewer::setText(const QString &txt) {
 	m_text_label->setText(txt);
+}
+
+void ImageViewer::showZoom() {
+	if (m_pixmap->image().isNull()) {
+		m_pixel_value->setText(QString());
+	} else {
+		QString s;
+		s.sprintf("%.0f%%", m_zoom_level);
+		m_pixel_value->setText(s);
+	}
 }
 
 void ImageViewer::setToolTip(const QString &txt) {
@@ -351,6 +524,29 @@ void ImageViewer::showReference(bool show) {
 	}
 }
 
+void ImageViewer::centerReference() {
+	double x_len = m_pixmap->pixmap().width();
+	double y_len = m_pixmap->pixmap().height();
+	double x = x_len / 2;
+	double y = y_len / 2;
+	if (m_pixmap->pixmap().isNull()) {
+		return;
+	}
+	indigo_debug("X = %.2f, Y = %.2f, X_len = %.2f, y_len = %.2f", x, y, x_len, y_len);
+
+	m_ref_p.setX(x);
+	m_ref_p.setY(y);
+	if (m_ref_p.isNull()) {
+		m_ref_x->setVisible(false);
+		m_ref_y->setVisible(false);
+	} else if (m_ref_visible){
+		m_ref_x->setVisible(true);
+		m_ref_y->setVisible(true);
+	}
+	m_ref_x->setLine(x, 0, x, y_len);
+	m_ref_y->setLine(0, y, x_len, y);
+}
+
 void ImageViewer::moveReference(double x, double y) {
 	double cor_x = x;
 	double cor_y = y;
@@ -372,6 +568,10 @@ void ImageViewer::moveReference(double x, double y) {
 	}
 	m_ref_x->setLine(cor_x, 0, cor_x, y_len);
 	m_ref_y->setLine(0, cor_y, x_len, cor_y);
+}
+
+void ImageViewer::showWCS(bool show) {
+	m_show_wcs = show;
 }
 
 void ImageViewer::showEdgeClipping(bool show) {
@@ -413,7 +613,7 @@ const preview_image &ImageViewer::image() const {
 	return m_pixmap->image();
 }
 
-void ImageViewer::setImage(preview_image &im) {
+void ImageViewer::onSetImage(preview_image &im) {
 	m_pixmap->setImage(im);
 	if (!m_pixmap->pixmap().isNull()) {
 		if (m_selection_visible && !m_selection_p.isNull()) {
@@ -504,84 +704,115 @@ void ImageViewer::setMatrix() {
 
 void ImageViewer::zoomFit() {
 	m_view->fitInView(m_pixmap, Qt::KeepAspectRatio);
-	m_zoom_level = 100.0 * m_view->matrix().m11();
-	indigo_debug("Zoom FIT = %d", m_zoom_level);
+	m_zoom_level = (100.0 * m_view->matrix().m11());
+	showZoom();
+	indigo_debug("Zoom FIT = %.2f", m_zoom_level);
 	m_fit = true;
 	emit zoomChanged(m_view->matrix().m11());
 }
 
 void ImageViewer::zoomOriginal() {
 	m_zoom_level = 100;
-	indigo_debug("Zoom 1:1 = %d", m_zoom_level);
+	showZoom();
+	indigo_debug("Zoom 1:1 = %.2f", m_zoom_level);
 	m_fit = false;
 	setMatrix();
 }
 
 void ImageViewer::zoomIn() {
+	if (!(m_pixmap && m_pixmap->image().valid(1,1))) return;
+
 	if (m_zoom_level >= 1000) {
-		m_zoom_level = (int)(m_zoom_level / 500) * 500 + 500;
+		m_zoom_level = floor(m_zoom_level / 500.0) * 500 + 500;
 	} else if (m_zoom_level >= 100) {
-		m_zoom_level = (int)(m_zoom_level / 50) * 50 + 50;
+		m_zoom_level = floor(m_zoom_level / 50.0) * 50 + 50;
 	} else if (m_zoom_level >= 10) {
-		m_zoom_level = (int)(m_zoom_level / 10) * 10 + 10;
+		m_zoom_level = floor(m_zoom_level / 10.0) * 10 + 10;
 	} else if (m_zoom_level >= 1) {
-		m_zoom_level += 1;
+		m_zoom_level = floor(m_zoom_level) + 1;
 	} else {
 		m_zoom_level = 1;
 	}
 	if (m_zoom_level > 5000) {
 		m_zoom_level = 5000;
 	}
-	indigo_debug("Zoom IN = %d", m_zoom_level);
+	showZoom();
+	indigo_debug("Zoom IN = %.2f", m_zoom_level);
 	m_fit = false;
 	setMatrix();
 }
 
 void ImageViewer::zoomOut() {
+	if (!(m_pixmap && m_pixmap->image().valid(1,1))) return;
+
 	if (m_zoom_level > 1000) {
-		m_zoom_level = (int)(round(m_zoom_level / 500.0)) * 500 - 500;
+		m_zoom_level = ceil(m_zoom_level / 500.0) * 500 - 500;
 	} else if (m_zoom_level > 100) {
-		m_zoom_level = (int)(round(m_zoom_level / 50.0)) * 50 - 50;
+		m_zoom_level = ceil(m_zoom_level / 50.0) * 50 - 50;
 	} else if (m_zoom_level > 10) {
-		m_zoom_level = (int)(round(m_zoom_level / 10.0)) * 10 - 10;
+		m_zoom_level = ceil(m_zoom_level / 10.0) * 10 - 10;
 	} else if (m_zoom_level > 1) {
-		m_zoom_level -= 1;
+		m_zoom_level = ceil(m_zoom_level) - 1;
 	} else {
 		m_zoom_level = 1;
 	}
-	indigo_debug("Zoom OUT = %d", m_zoom_level);
+	// Do not zoom out bellow zoom fit or 100% if zoom fit is bigger than 100%
+	QRectF rect = m_view->viewport()->geometry();
+	double scale_x = rect.width() / m_pixmap->image().width() * 100;
+	double scale_y = rect.height() / m_pixmap->image().height() * 100;
+	double zoom_min = (scale_x < scale_y) ? scale_x : scale_y;
+	zoom_min = (zoom_min < 100) ? zoom_min : 100;
+	m_zoom_level = (zoom_min > m_zoom_level) ? zoom_min : m_zoom_level;
+	showZoom();
+	indigo_debug("Zoom OUT = %.2f (fit = %.2f)", m_zoom_level, zoom_min);
 	m_fit = false;
 	setMatrix();
 }
 
 void ImageViewer::mouseAt(double x, double y) {
-	if (m_pixmap->image().valid(x,y)) {
-		int r,g,b;
+	if (m_pixmap && m_pixmap->image().valid(x,y)) {
+		double r,g,b;
+		double ra, dec;
 		int pix_format = m_pixmap->image().pixel_value(x, y, r, g, b);
-
+		int res = m_pixmap->image().wcs_data(x, y, &ra, &dec);
 		QString s;
-		if (pix_format == PIX_FMT_INDEX) {
-			s.sprintf("%d%% [%5.1f, %5.1f]", m_zoom_level, x, y);
+		if (res != -1 && m_show_wcs) {
+			s.sprintf("%.0f%% [%5.1f, %5.1f] (%s, %s) ", m_zoom_level, x, y, indigo_dtos(ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(dec, "%+d° %02d' %04.1f\""));
 		} else {
-			if (g == -1) {
-				//s = QString("%1% [%2, %3] (%4)").arg(scale).arg(x).arg(y).arg(r);
-				s.sprintf("%d%% [%5.1f, %5.1f] (%5d)", m_zoom_level, x, y, r);
+			if (pix_format == PIX_FMT_INDEX) {
+				s.sprintf("%.0f%% [%5.1f, %5.1f]", m_zoom_level, x, y);
+			} else if (pix_format == PIX_FMT_F32 || pix_format == PIX_FMT_RGBF){
+				if (g == -1) {
+					s.sprintf("%.0f%% [%5.1f, %5.1f] (%.6f)", m_zoom_level, x, y, r);
+				} else {
+					s.sprintf("%.0f%% [%5.1f, %5.1f] (%.6f, %.6f, %.6f)", m_zoom_level, x, y, r, g, b);
+				}
 			} else {
-				//s = QString("%1% [%2, %3] (%4, %5, %6)").arg(scale).arg(x).arg(y).arg(r).arg(g).arg(b);
-				s.sprintf("%d%% [%5.1f, %5.1f] (%5d, %5d, %5d)", m_zoom_level, x, y, r, g, b);
+				if (g == -1) {
+					s.sprintf("%.0f%% [%5.1f, %5.1f] (%5.0f)", m_zoom_level, x, y, r);
+				} else {
+					s.sprintf("%.0f%% [%5.1f, %5.1f] (%5.0f, %5.0f, %5.0f)", m_zoom_level, x, y, r, g, b);
+				}
 			}
 		}
 		m_pixel_value->setText(s);
 	} else {
-		m_pixel_value->setText(QString());
+		showZoom();
 	}
 }
 
-void ImageViewer::mouseRightPressAt(double x, double y) {
+void ImageViewer::mouseRightPressAt(double x, double y, Qt::KeyboardModifiers modifiers) {
 	indigo_debug("RIGHT CLICK COORDS: %f %f" ,x,y);
+	double ra, dec, telescope_ra, telescope_dec;
 	if (m_pixmap->image().valid(x,y)) {
 		moveSelection(x,y);
-		emit mouseRightPress(x,y);
+		emit mouseRightPress(x, y, modifiers);
+		if (
+			m_pixmap->image().wcs_data(x, y, &ra, &dec, &telescope_ra, &telescope_dec) == 0 &&
+			m_show_wcs
+		) {
+			emit mouseRightPressRADec(ra, dec, telescope_ra, telescope_dec, modifiers);
+		}
 	}
 }
 
@@ -617,43 +848,55 @@ void ImageViewer::showEvent(QShowEvent *event) {
 }
 
 void ImageViewer::stretchNone() {
-	m_stretch_level = PREVIEW_STRETCH_NONE;
-	preview_image &image = (preview_image&)m_pixmap->image();
-	stretch_preview(&image, preview_stretch_lut[m_stretch_level]);
-	setImage(image);
-	emit stretchChanged(m_stretch_level);
+	emit stretchChanged(PREVIEW_STRETCH_NONE);
 }
 
 void ImageViewer::stretchSlight() {
-	m_stretch_level = PREVIEW_STRETCH_SLIGHT;
-	preview_image &image = (preview_image&)m_pixmap->image();
-	stretch_preview(&image, preview_stretch_lut[m_stretch_level]);
-	setImage(image);
-	emit stretchChanged(m_stretch_level);
+	emit stretchChanged(PREVIEW_STRETCH_SLIGHT);
 }
 
 void ImageViewer::stretchModerate() {
-	m_stretch_level = PREVIEW_STRETCH_MODERATE;
-	preview_image &image = (preview_image&)m_pixmap->image();
-	stretch_preview(&image, preview_stretch_lut[m_stretch_level]);
-	setImage(image);
-	emit stretchChanged(m_stretch_level);
+	emit stretchChanged(PREVIEW_STRETCH_MODERATE);
 }
 
 void ImageViewer::stretchNormal() {
-	m_stretch_level = PREVIEW_STRETCH_NORMAL;
-	preview_image &image = (preview_image&)m_pixmap->image();
-	stretch_preview(&image, preview_stretch_lut[m_stretch_level]);
-	setImage(image);
-	emit stretchChanged(m_stretch_level);
+	emit stretchChanged(PREVIEW_STRETCH_NORMAL);
 }
 
 void ImageViewer::stretchHard() {
-	m_stretch_level = PREVIEW_STRETCH_HARD;
-	preview_image &image = (preview_image&)m_pixmap->image();
-	stretch_preview(&image, preview_stretch_lut[m_stretch_level]);
-	setImage(image);
-	emit stretchChanged(m_stretch_level);
+	emit stretchChanged(PREVIEW_STRETCH_HARD);
+}
+
+void ImageViewer::debayerAuto() {
+	emit debayerChanged(BAYER_PAT_AUTO);
+}
+
+void ImageViewer::debayerNone() {
+	emit debayerChanged(BAYER_PAT_NONE);
+}
+
+void ImageViewer::debayerGBRG() {
+	emit debayerChanged(BAYER_PAT_GBRG);
+}
+
+void ImageViewer::debayerGRBG() {
+	emit debayerChanged(BAYER_PAT_GRBG);
+}
+
+void ImageViewer::debayerRGGB() {
+	emit debayerChanged(BAYER_PAT_RGGB);
+}
+
+void ImageViewer::debayerBGGR() {
+	emit debayerChanged(BAYER_PAT_BGGR);
+}
+
+void ImageViewer::onAutoBalance() {
+	emit BalanceChanged(COLOR_BALANCE_AUTO);
+}
+
+void ImageViewer::onNoBalance() {
+	emit BalanceChanged(COLOR_BALANCE_NONE);
 }
 
 void ImageViewer::onPrevious() {
@@ -692,6 +935,55 @@ void ImageViewer::setStretch(int level) {
 	}
 }
 
+void ImageViewer::setDebayer(uint32_t bayer_pat) {
+	switch (bayer_pat) {
+		case 0:
+		case BAYER_PAT_AUTO:
+			m_debayer_act[DEBAYER_AUTO]->setChecked(true);
+			debayerAuto();
+			break;
+		case BAYER_PAT_NONE:
+			m_debayer_act[DEBAYER_NONE]->setChecked(true);
+			debayerNone();
+			break;
+		case BAYER_PAT_GBRG:
+			m_debayer_act[DEBAYER_GBRG]->setChecked(true);
+			debayerGBRG();
+			break;
+		case BAYER_PAT_GRBG:
+			m_debayer_act[DEBAYER_GRBG]->setChecked(true);
+			debayerGRBG();
+			break;
+		case BAYER_PAT_RGGB:
+			m_debayer_act[DEBAYER_RGGB]->setChecked(true);
+			debayerRGGB();
+			break;
+		case BAYER_PAT_BGGR:
+			m_debayer_act[DEBAYER_BGGR]->setChecked(true);
+			debayerBGGR();
+			break;
+		default:
+			m_debayer_act[DEBAYER_AUTO]->setChecked(true);
+			debayerAuto();
+	}
+}
+
+void ImageViewer::setBalance(int balance) {
+	switch (balance) {
+		case COLOR_BALANCE_AUTO:
+			m_color_reference_act[COLOR_BALANCE_AUTO]->setChecked(true);
+			onAutoBalance();
+			break;
+		case COLOR_BALANCE_NONE:
+			m_color_reference_act[COLOR_BALANCE_NONE]->setChecked(true);
+			onNoBalance();
+			break;
+		default:
+			m_color_reference_act[COLOR_BALANCE_AUTO]->setChecked(true);
+			onAutoBalance();
+	}
+}
+
 PixmapItem::PixmapItem(QGraphicsItem *parent) :
 	QObject(), QGraphicsPixmapItem(parent)
 {
@@ -717,7 +1009,7 @@ void PixmapItem::setImage(preview_image im) {
 void PixmapItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
 		if(event->button() == Qt::RightButton) {
 			auto pos = event->pos();
-			emit mouseRightPress(pos.x(), pos.y());
+			emit mouseRightPress(pos.x(), pos.y(), event->modifiers());
 		}
 	QGraphicsItem::mousePressEvent(event);
 }

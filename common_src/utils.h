@@ -24,7 +24,7 @@ void get_date(char *date_str);
 void get_date_jd(char *date_str);
 void get_time(char *time_str);
 
-void get_current_output_dir(char *output_dir);
+void get_current_output_dir(char *output_dir, char *prefix = nullptr);
 
 void get_indigo_device_domain(char *device_domain, const char *device_name);
 void remove_indigo_device_domain(char *device_name, int levels);

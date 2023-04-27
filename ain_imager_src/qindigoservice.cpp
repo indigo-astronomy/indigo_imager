@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Rumen G.Bogdanovski & David Hulse
+// Copyright (c) 2019 Rumen G.Bogdanovski
 // All rights reserved.
 //
 // You can use this software under the terms of 'INDIGO Astronomy
@@ -19,34 +19,6 @@
 
 #include "qindigoservice.h"
 
-QIndigoService::QIndigoService(const QZeroConfService& _service) :
-	m_name(_service->name().toUtf8().constData()),
-	m_host(_service->host().toUtf8().constData()),
-	m_port(_service->port()),
-	m_service(_service),
-	m_server_entry(nullptr),
-	is_auto_service(true),
-	auto_connect(true),
-	prev_socket(0) {
-}
-
-
-QIndigoService::QIndigoService(const QZeroConfService& _service, bool connect) :
-	m_name(_service->name().toUtf8().constData()),
-	m_host(_service->host().toUtf8().constData()),
-	m_port(_service->port()),
-	m_service(_service),
-	m_server_entry(nullptr),
-	is_auto_service(true),
-	auto_connect(connect),
-	prev_socket(0) {
-}
-
-
-//QIndigoService::QIndigoService(const QIndigoService &other) : m_service(other.m_service) {
-//}
-
-
 QIndigoService::QIndigoService(QByteArray name, QByteArray host, int port) :
 	m_name(name),
 	m_host(host),
@@ -54,7 +26,7 @@ QIndigoService::QIndigoService(QByteArray name, QByteArray host, int port) :
 	m_server_entry(nullptr),
 	is_auto_service(false),
 	auto_connect(true),
-	prev_socket(0) {
+	prev_socket(-1) {
 }
 
 QIndigoService::QIndigoService(QByteArray name, QByteArray host, int port, bool connect, bool is_manual_service) :
@@ -64,7 +36,7 @@ QIndigoService::QIndigoService(QByteArray name, QByteArray host, int port, bool 
 	m_server_entry(nullptr),
 	is_auto_service(!is_manual_service),
 	auto_connect(connect),
-	prev_socket(0) {
+	prev_socket(-1) {
 }
 
 
@@ -74,7 +46,7 @@ QIndigoService::~QIndigoService() {
 
 bool QIndigoService::connect() {
 	int i = 5; /* 0.5 seconds */
-	prev_socket = -100;
+	prev_socket = -1;
 	indigo_debug("%s(): %s %s %d\n",__FUNCTION__, m_name.constData(), m_host.constData(), m_port);
 	indigo_result res = indigo_connect_server(m_name.constData(), m_host.constData(), m_port, &m_server_entry);
 	indigo_debug("%s(): %s %s %d server_entry=%p\n",__FUNCTION__, m_name.constData(), m_host.constData(), m_port, m_server_entry);
@@ -89,7 +61,7 @@ bool QIndigoService::connect() {
 
 bool QIndigoService::connected() const {
 	if (m_server_entry) {
-		return (m_server_entry->socket > 0);
+		return indigo_connection_status(m_server_entry, NULL);
 	}
 	indigo_debug("%s(): socket is null\n", __FUNCTION__);
 	return false;
@@ -98,7 +70,7 @@ bool QIndigoService::connected() const {
 
 bool QIndigoService::disconnect() {
 	indigo_debug("%s(): called m_server_entry= %p\n",__FUNCTION__, m_server_entry);
-	if (m_server_entry && m_server_entry->socket > 0) {
+	if (m_server_entry) {
 		indigo_debug("%s(): %s %s %d\n",__FUNCTION__, m_name.constData(), m_host.constData(), m_port);
 		bool res = (indigo_disconnect_server(m_server_entry) == INDIGO_OK);
 		while (connected()) {
@@ -108,20 +80,4 @@ bool QIndigoService::disconnect() {
 		return res;
 	}
 	return false;
-}
-
-
-QIndigoService &QIndigoService::operator=(const QIndigoService &other) {
-	m_service = other.m_service;
-	return *this;
-}
-
-
-bool QIndigoService::operator==(const QIndigoService &other) const {
-	return m_service == other.m_service;
-}
-
-
-bool QIndigoService::operator!=(const QIndigoService &other) const {
-	return !(*this == other);
 }

@@ -28,12 +28,70 @@ typedef enum {
 	PREVIEW_STRETCH_COUNT
 } preview_stretch_level;
 
-const float preview_stretch_lut[] = {
-	0.0,
-	0.05,
-	0.1,
-	0.5,
-	1.0
+typedef enum {
+	COLOR_BALANCE_AUTO = 0,
+	COLOR_BALANCE_NONE,
+	COLOR_BALANCE_COUNT
+} color_balance_t;
+
+typedef enum {
+	DEBAYER_AUTO = 0,
+	DEBAYER_NONE,
+	DEBAYER_GBRG,
+	DEBAYER_GRBG,
+	DEBAYER_RGGB,
+	DEBAYER_BGGR,
+	DEBAYER_COUNT
+} debayer_t;
+
+typedef struct {
+	double clip_black;
+	double clip_white;
+} preview_stretch_t;
+
+typedef struct {
+	uint8_t stretch_level;
+	uint8_t balance; /* 0 = AWB, 1 = red, 2 = green, 3 = blue; */
+	uint32_t bayer_pattern; /* BAYER_PAT_XXXX from image_preview_lut.h */
+} stretch_config_t;
+
+typedef struct {
+	// Stretch algorithm parameter multipliers
+	float shadows;
+	float highlights;
+	float midtones;
+	// The extension parameters are not used.
+	float shadows_expansion;
+	float highlights_expansion;
+} stretch_multiplier_t;
+
+typedef struct {
+	float brightness;
+	float contrast;
+} stretch_input_params_t;
+
+static const preview_stretch_t stretch_linear_lut[] = {
+	{0.01, 0.001},
+	{0.01, 0.07},
+	{0.01, 0.25},
+	{0.01, 0.75},
+	{0.01, 1.30},
+};
+
+static const stretch_multiplier_t stretch_multiplier_lut[] = {
+	{1.00, 1.00, 0.80, 1.00, 1.00},
+	{0.80, 1.00, 0.90, 1.00, 1.00},
+	{1.00, 1.00, 1.00, 1.00, 1.00},
+	{1.05, 0.95, 0.80, 1.00, 1.00},
+	{1.10, 0.90, 0.50, 1.00, 1.00}
+};
+
+static const stretch_input_params_t stretch_params_lut[] ={
+	{0   ,    0}, // Does not matter
+	{0.05, -2.8},
+	{0.15, -2.8},
+	{0.25, -2.8},
+	{0.40, -2.5}
 };
 
 #endif /* _IMAGE_PREVIEW_LUT_H */

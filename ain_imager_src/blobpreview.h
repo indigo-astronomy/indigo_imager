@@ -27,10 +27,14 @@
 class blob_preview_cache: QHash<QString, preview_image*> {
 public:
 	blob_preview_cache(): preview_mutex(PTHREAD_MUTEX_INITIALIZER) {
+		pthread_mutexattr_t attr;
+		pthread_mutexattr_init(&attr);
+		pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+		pthread_mutex_init(&preview_mutex, &attr);
 	};
 
 	~blob_preview_cache() {
-		indigo_debug("preview: %s()\n", __FUNCTION__);
+		//indigo_debug("preview: %s()\n", __FUNCTION__);
 		blob_preview_cache::iterator i = begin();
 		while (i != end()) {
 			preview_image *preview = i.value();
@@ -49,12 +53,16 @@ private:
 
 public:
 	QString create_key(indigo_property *property, indigo_item *item);
-	bool create(indigo_property *property, indigo_item *item, const double white_threshold);
-	bool recreate(QString &key, indigo_item *item, const double white_threshold);
+	bool add(QString &key, preview_image *preview);
+	bool create(indigo_property *property, indigo_item *item, const stretch_config_t sconfig);
+	bool recreate(QString &key, indigo_item *item, const stretch_config_t sconfig);
+	bool recreate(QString &key, const stretch_config_t sconfig);
+	bool stretch(QString &key, const stretch_config_t sconfig);
 	bool obsolete(indigo_property *property, indigo_item *item);
 	preview_image* get(indigo_property *property, indigo_item *item);
 	preview_image* get(QString &key);
 	bool remove(indigo_property *property, indigo_item *item);
+	bool remove(QString &key);
 };
 
 extern blob_preview_cache preview_cache;

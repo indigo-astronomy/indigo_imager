@@ -55,6 +55,11 @@ typedef enum {
 } guider_display_data;
 
 typedef enum {
+	CB_AUTO = 0,
+	CD_NONE
+} color_balance;
+
+typedef enum {
 	AIN_ALERT_STATE = INDIGO_ALERT_STATE,
 	AIN_WARNING_STATE = INDIGO_BUSY_STATE,
 	AIN_OK_STATE = 100
@@ -63,10 +68,16 @@ typedef enum {
 typedef struct {
 	indigo_log_levels indigo_log_level;
 	bool use_state_icons;
-	bool use_system_locale;
+	bool reopen_file_at_start;
 	bool antialiasing_enabled;
 	preview_stretch preview_stretch_level;
+	color_balance preview_color_balance;
 	char file_open[PATH_LEN];
+	int window_width;
+	int window_height;
+	bool restore_window_size;
+	bool statistics_enabled;
+	uint32_t preview_bayer_pattern;
 	char unused[100];
 } conf_t;
 

@@ -37,6 +37,18 @@ void bayer_to_rgb48(const uint16_t *bayer,
 void bayer_to_bgr48(const uint16_t *bayer,
   uint16_t *rgb, int width, int height, unsigned int pixfmt);
 
+void bayer_to_rgb96(const uint32_t *bayer,
+	uint32_t *rgb, int width, int height, unsigned int pixfmt);
+
+void bayer_to_bgr96(const uint32_t *bayer,
+	uint32_t *rgb, int width, int height, unsigned int pixfmt);
+
+void bayer_to_rgbf(const float *bayer,
+	float *rgb, int width, int height, unsigned int pixfmt);
+
+void bayer_to_bgrf(const float *bayer,
+	float *rgb, int width, int height, unsigned int pixfmt);
+
 #ifdef __cplusplus
 }
 #endif

@@ -58,10 +58,12 @@ public:
 	}
 
 public slots:
-	void on_use_system_locale_changed(bool status);
+	void on_reopen_file_changed(bool status);
+	void on_restore_window_size_changed(bool status);
 	void on_image_open_act();
 	void on_image_next_act();
 	void on_image_prev_act();
+	void on_delete_current_image_act();
 	void on_image_close_act();
 	void on_image_raw_to_fits();
 	void on_image_info_act();
@@ -69,11 +71,14 @@ public slots:
 	void on_about_act();
 
 	void on_stretch_changed(int level);
+	void on_cb_changed(int balance);
+	void on_debayer_changed(uint32_t bayer_pat);
 	void on_antialias_view(bool status);
+	void on_statistics_show(bool enabled);
 
 private:
 	// Image viewer
-	TextDialog *m_header_info;
+	TextDialog *m_image_info_dlg;
 	ImageViewer *m_imager_viewer;
 	preview_image *m_preview_image;
 	unsigned char *m_image_data;

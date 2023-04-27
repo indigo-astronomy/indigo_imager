@@ -587,3 +587,564 @@ void bayer_to_bgr48(const uint16_t *bayer,
 		pixfmt == PIX_FMT_SBGGR16		/* blue line */
 			|| pixfmt == PIX_FMT_SGBRG16);
 }
+
+
+static void border_bayer_line_to_bgr96(
+	const uint32_t* bayer, const uint32_t* adjacent_bayer,
+	uint32_t *bgr, int width, int start_with_green, int blue_line)
+{
+	uint64_t t0, t1;
+
+	if (start_with_green) {
+		/* First pixel */
+		if (blue_line) {
+			*bgr++ = bayer[1];
+			*bgr++ = bayer[0];
+			*bgr++ = adjacent_bayer[0];
+		} else {
+			*bgr++ = adjacent_bayer[0];
+			*bgr++ = bayer[0];
+			*bgr++ = bayer[1];
+		}
+		/* Second pixel */
+		t0 = ((uint64_t)bayer[0] + bayer[2] + adjacent_bayer[1] + 1) / 3;
+		t1 = ((uint64_t)adjacent_bayer[0] + adjacent_bayer[2] + 1) >> 1;
+		if (blue_line) {
+			*bgr++ = bayer[1];
+			*bgr++ = t0;
+			*bgr++ = t1;
+		} else {
+			*bgr++ = t1;
+			*bgr++ = t0;
+			*bgr++ = bayer[1];
+		}
+		bayer++;
+		adjacent_bayer++;
+		width -= 2;
+	} else {
+		/* First pixel */
+		t0 = ((uint64_t)bayer[1] + adjacent_bayer[0] + 1) >> 1;
+		if (blue_line) {
+			*bgr++ = bayer[0];
+			*bgr++ = t0;
+			*bgr++ = adjacent_bayer[1];
+		} else {
+			*bgr++ = adjacent_bayer[1];
+			*bgr++ = t0;
+			*bgr++ = bayer[0];
+		}
+		width--;
+	}
+
+	if (blue_line) {
+		for ( ; width > 2; width -= 2) {
+			t0 = ((uint64_t)bayer[0] + bayer[2] + 1) >> 1;
+			*bgr++ = t0;
+			*bgr++ = bayer[1];
+			*bgr++ = adjacent_bayer[1];
+			bayer++;
+			adjacent_bayer++;
+
+			t0 = ((uint64_t)bayer[0] + bayer[2] + adjacent_bayer[1] + 1) / 3;
+			t1 = ((uint64_t)adjacent_bayer[0] + adjacent_bayer[2] + 1) >> 1;
+			*bgr++ = bayer[1];
+			*bgr++ = t0;
+			*bgr++ = t1;
+			bayer++;
+			adjacent_bayer++;
+		}
+	} else {
+		for ( ; width > 2; width -= 2) {
+			t0 = ((uint64_t)bayer[0] + bayer[2] + 1) >> 1;
+			*bgr++ = adjacent_bayer[1];
+			*bgr++ = bayer[1];
+			*bgr++ = t0;
+			bayer++;
+			adjacent_bayer++;
+
+			t0 = ((uint64_t)bayer[0] + bayer[2] + adjacent_bayer[1] + 1) / 3;
+			t1 = ((uint64_t)adjacent_bayer[0] + adjacent_bayer[2] + 1) >> 1;
+			*bgr++ = t1;
+			*bgr++ = t0;
+			*bgr++ = bayer[1];
+			bayer++;
+			adjacent_bayer++;
+		}
+	}
+
+	if (width == 2) {
+		/* Second to last pixel */
+		t0 = ((uint64_t)bayer[0] + bayer[2] + 1) >> 1;
+		if (blue_line) {
+			*bgr++ = t0;
+			*bgr++ = bayer[1];
+			*bgr++ = adjacent_bayer[1];
+		} else {
+			*bgr++ = adjacent_bayer[1];
+			*bgr++ = bayer[1];
+			*bgr++ = t0;
+		}
+		/* Last pixel */
+		t0 = ((uint64_t)bayer[1] + adjacent_bayer[2] + 1) >> 1;
+		if (blue_line) {
+			*bgr++ = bayer[2];
+			*bgr++ = t0;
+			*bgr++ = adjacent_bayer[1];
+		} else {
+			*bgr++ = adjacent_bayer[1];
+			*bgr++ = t0;
+			*bgr++ = bayer[2];
+		}
+	} else {
+		/* Last pixel */
+		if (blue_line) {
+			*bgr++ = bayer[0];
+			*bgr++ = bayer[1];
+			*bgr++ = adjacent_bayer[1];
+		} else {
+			*bgr++ = adjacent_bayer[1];
+			*bgr++ = bayer[1];
+			*bgr++ = bayer[0];
+		}
+	}
+}
+
+/* From libdc1394, which on turn was based on OpenCV's Bayer decoding */
+static void bayer_to_rgbbgr96(const uint32_t *bayer,
+	uint32_t *bgr, int width, int height, unsigned int pixfmt,
+	int start_with_green, int blue_line)
+{
+	(void)pixfmt;
+	/* render the first line */
+	border_bayer_line_to_bgr96(bayer, bayer + width, bgr, width, start_with_green, blue_line);
+	bgr += width * 3;
+
+	/* reduce height by 2 because of the special case top/bottom line */
+	for (height -= 2; height; height--) {
+		uint64_t t0, t1;
+		/* (width - 2) because of the border */
+		const uint32_t *bayerEnd = bayer + (width - 2);
+
+		if (start_with_green) {
+			/* OpenCV has a bug in the next line, which was
+			   t0 = (bayer[0] + bayer[width * 2] + 1) >> 1; */
+			t0 = ((uint64_t)bayer[1] + bayer[width * 2 + 1] + 1) >> 1;
+			/* Write first pixel */
+			t1 = ((uint64_t)bayer[0] + bayer[width * 2] + bayer[width + 1] + 1) / 3;
+			if (blue_line) {
+				*bgr++ = t0;
+				*bgr++ = t1;
+				*bgr++ = bayer[width];
+			} else {
+				*bgr++ = bayer[width];
+				*bgr++ = t1;
+				*bgr++ = t0;
+			}
+
+			/* Write second pixel */
+			t1 = ((uint64_t)bayer[width] + bayer[width + 2] + 1) >> 1;
+			if (blue_line) {
+				*bgr++ = t0;
+				*bgr++ = bayer[width + 1];
+				*bgr++ = t1;
+			} else {
+				*bgr++ = t1;
+				*bgr++ = bayer[width + 1];
+				*bgr++ = t0;
+			}
+			bayer++;
+		} else {
+			/* Write first pixel */
+			t0 = ((uint64_t)bayer[0] + bayer[width * 2] + 1) >> 1;
+			if (blue_line) {
+				*bgr++ = t0;
+				*bgr++ = bayer[width];
+				*bgr++ = bayer[width + 1];
+			} else {
+				*bgr++ = bayer[width + 1];
+				*bgr++ = bayer[width];
+				*bgr++ = t0;
+			}
+		}
+
+		if (blue_line) {
+			for (; bayer <= bayerEnd - 2; bayer += 2) {
+				t0 = ((uint64_t)bayer[0] + bayer[2] + bayer[width * 2] + bayer[width * 2 + 2] + 2) >> 2;
+				t1 = ((uint64_t)bayer[1] + bayer[width] + bayer[width + 2] + bayer[width * 2 + 1] + 2) >> 2;
+				*bgr++ = t0;
+				*bgr++ = t1;
+				*bgr++ = bayer[width + 1];
+
+				t0 = ((uint64_t)bayer[2] + bayer[width * 2 + 2] + 1) >> 1;
+				t1 = ((uint64_t)bayer[width + 1] + bayer[width + 3] + 1) >> 1;
+				*bgr++ = t0;
+				*bgr++ = bayer[width + 2];
+				*bgr++ = t1;
+			}
+		} else {
+			for (; bayer <= bayerEnd - 2; bayer += 2) {
+				t0 = ((uint64_t)bayer[0] + bayer[2] + bayer[width * 2] + bayer[width * 2 + 2] + 2) >> 2;
+				t1 = ((uint64_t)bayer[1] + bayer[width] + bayer[width + 2] + bayer[width * 2 + 1] + 2) >> 2;
+				*bgr++ = bayer[width + 1];
+				*bgr++ = t1;
+				*bgr++ = t0;
+
+				t0 = ((uint64_t)bayer[2] + bayer[width * 2 + 2] + 1) >> 1;
+				t1 = ((uint64_t)bayer[width + 1] + bayer[width + 3] + 1) >> 1;
+				*bgr++ = t1;
+				*bgr++ = bayer[width + 2];
+				*bgr++ = t0;
+			}
+		}
+
+		if (bayer < bayerEnd) {
+			/* write second to last pixel */
+			t0 = ((uint64_t)bayer[0] + bayer[2] + bayer[width * 2] +
+			bayer[width * 2 + 2] + 2) >> 2;
+			t1 = ((uint64_t)bayer[1] + bayer[width] +
+			bayer[width + 2] + bayer[width * 2 + 1] + 2) >> 2;
+			if (blue_line) {
+				*bgr++ = t0;
+				*bgr++ = t1;
+				*bgr++ = bayer[width + 1];
+			} else {
+				*bgr++ = bayer[width + 1];
+				*bgr++ = t1;
+				*bgr++ = t0;
+			}
+			/* write last pixel */
+			t0 = ((uint64_t)bayer[2] + bayer[width * 2 + 2] + 1) >> 1;
+			if (blue_line) {
+				*bgr++ = t0;
+				*bgr++ = bayer[width + 2];
+				*bgr++ = bayer[width + 1];
+			} else {
+				*bgr++ = bayer[width + 1];
+				*bgr++ = bayer[width + 2];
+				*bgr++ = t0;
+			}
+			bayer++;
+		} else {
+			/* write last pixel */
+			t0 = ((uint64_t)bayer[0] + bayer[width * 2] + 1) >> 1;
+			t1 = ((uint64_t)bayer[1] + bayer[width * 2 + 1] + bayer[width] + 1) / 3;
+			if (blue_line) {
+				*bgr++ = t0;
+				*bgr++ = t1;
+				*bgr++ = bayer[width + 1];
+			} else {
+				*bgr++ = bayer[width + 1];
+				*bgr++ = t1;
+				*bgr++ = t0;
+			}
+		}
+
+		/* skip 2 border pixels */
+		bayer += 2;
+
+		blue_line = !blue_line;
+		start_with_green = !start_with_green;
+	}
+
+	/* render the last line */
+	border_bayer_line_to_bgr96(bayer + width, bayer, bgr, width, !start_with_green, !blue_line);
+}
+
+void bayer_to_rgb96(const uint32_t *bayer,
+	uint32_t *bgr, int width, int height, unsigned int pixfmt)
+{
+	bayer_to_rgbbgr96(bayer, bgr, width, height, pixfmt,
+		pixfmt == PIX_FMT_SGBRG32		/* start with green */
+			|| pixfmt == PIX_FMT_SGRBG32,
+		pixfmt != PIX_FMT_SBGGR32		/* blue line */
+			&& pixfmt != PIX_FMT_SGBRG32);
+}
+
+void bayer_to_bgr96(const uint32_t *bayer,
+	uint32_t *bgr, int width, int height, unsigned int pixfmt)
+{
+	bayer_to_rgbbgr96(bayer, bgr, width, height, pixfmt,
+		pixfmt == PIX_FMT_SGBRG32		/* start with green */
+			|| pixfmt == PIX_FMT_SGRBG32,
+		pixfmt == PIX_FMT_SBGGR32		/* blue line */
+			|| pixfmt == PIX_FMT_SGBRG32);
+}
+
+/* insprired by OpenCV's Bayer decoding */
+static void border_bayer_line_to_bgrf(
+	const float* bayer, const float* adjacent_bayer,
+	float *bgr, int width, int start_with_green, int blue_line)
+{
+	float t0, t1;
+
+	if (start_with_green) {
+		/* First pixel */
+		if (blue_line) {
+			*bgr++ = bayer[1];
+			*bgr++ = bayer[0];
+			*bgr++ = adjacent_bayer[0];
+		} else {
+			*bgr++ = adjacent_bayer[0];
+			*bgr++ = bayer[0];
+			*bgr++ = bayer[1];
+		}
+		/* Second pixel */
+		t0 = (bayer[0] + bayer[2] + adjacent_bayer[1]) / 3;
+		t1 = (adjacent_bayer[0] + adjacent_bayer[2]) / 2;
+		if (blue_line) {
+			*bgr++ = bayer[1];
+			*bgr++ = t0;
+			*bgr++ = t1;
+		} else {
+			*bgr++ = t1;
+			*bgr++ = t0;
+			*bgr++ = bayer[1];
+		}
+		bayer++;
+		adjacent_bayer++;
+		width -= 2;
+	} else {
+		/* First pixel */
+		t0 = (bayer[1] + adjacent_bayer[0]) / 2;
+		if (blue_line) {
+			*bgr++ = bayer[0];
+			*bgr++ = t0;
+			*bgr++ = adjacent_bayer[1];
+		} else {
+			*bgr++ = adjacent_bayer[1];
+			*bgr++ = t0;
+			*bgr++ = bayer[0];
+		}
+		width--;
+	}
+
+	if (blue_line) {
+		for ( ; width > 2; width -= 2) {
+			t0 = (bayer[0] + bayer[2]) / 2;
+			*bgr++ = t0;
+			*bgr++ = bayer[1];
+			*bgr++ = adjacent_bayer[1];
+			bayer++;
+			adjacent_bayer++;
+
+			t0 = (bayer[0] + bayer[2] + adjacent_bayer[1]) / 3;
+			t1 = (adjacent_bayer[0] + adjacent_bayer[2]) / 2;
+			*bgr++ = bayer[1];
+			*bgr++ = t0;
+			*bgr++ = t1;
+			bayer++;
+			adjacent_bayer++;
+		}
+	} else {
+		for ( ; width > 2; width -= 2) {
+			t0 = (bayer[0] + bayer[2]) / 2;
+			*bgr++ = adjacent_bayer[1];
+			*bgr++ = bayer[1];
+			*bgr++ = t0;
+			bayer++;
+			adjacent_bayer++;
+
+			t0 = (bayer[0] + bayer[2] + adjacent_bayer[1]) / 3;
+			t1 = (adjacent_bayer[0] + adjacent_bayer[2]) / 2;
+			*bgr++ = t1;
+			*bgr++ = t0;
+			*bgr++ = bayer[1];
+			bayer++;
+			adjacent_bayer++;
+		}
+	}
+
+	if (width == 2) {
+		/* Second to last pixel */
+		t0 = (bayer[0] + bayer[2]) / 2;
+		if (blue_line) {
+			*bgr++ = t0;
+			*bgr++ = bayer[1];
+			*bgr++ = adjacent_bayer[1];
+		} else {
+			*bgr++ = adjacent_bayer[1];
+			*bgr++ = bayer[1];
+			*bgr++ = t0;
+		}
+		/* Last pixel */
+		t0 = (bayer[1] + adjacent_bayer[2]) / 2;
+		if (blue_line) {
+			*bgr++ = bayer[2];
+			*bgr++ = t0;
+			*bgr++ = adjacent_bayer[1];
+		} else {
+			*bgr++ = adjacent_bayer[1];
+			*bgr++ = t0;
+			*bgr++ = bayer[2];
+		}
+	} else {
+		/* Last pixel */
+		if (blue_line) {
+			*bgr++ = bayer[0];
+			*bgr++ = bayer[1];
+			*bgr++ = adjacent_bayer[1];
+		} else {
+			*bgr++ = adjacent_bayer[1];
+			*bgr++ = bayer[1];
+			*bgr++ = bayer[0];
+		}
+	}
+}
+
+/* From libdc1394, which on turn was based on OpenCV's Bayer decoding */
+static void bayer_to_rgbbgrf(const float *bayer,
+	float *bgr, int width, int height, unsigned int pixfmt,
+	int start_with_green, int blue_line)
+{
+	(void)pixfmt;
+	/* render the first line */
+	border_bayer_line_to_bgrf(bayer, bayer + width, bgr, width, start_with_green, blue_line);
+	bgr += width * 3;
+
+	/* reduce height by 2 because of the special case top/bottom line */
+	for (height -= 2; height; height--) {
+		float t0, t1;
+		/* (width - 2) because of the border */
+		const float *bayerEnd = bayer + (width - 2);
+
+		if (start_with_green) {
+			/* OpenCV has a bug in the next line, which was
+				 t0 = (bayer[0] + bayer[width * 2] + 1) >> 1; */
+			t0 = (bayer[1] + bayer[width * 2 + 1]) / 2;
+			/* Write first pixel */
+			t1 = (bayer[0] + bayer[width * 2] + bayer[width + 1]) / 3;
+			if (blue_line) {
+				*bgr++ = t0;
+				*bgr++ = t1;
+				*bgr++ = bayer[width];
+			} else {
+				*bgr++ = bayer[width];
+				*bgr++ = t1;
+				*bgr++ = t0;
+			}
+
+				/* Write second pixel */
+			t1 = (bayer[width] + bayer[width + 2]) / 2;
+			if (blue_line) {
+				*bgr++ = t0;
+				*bgr++ = bayer[width + 1];
+				*bgr++ = t1;
+			} else {
+				*bgr++ = t1;
+				*bgr++ = bayer[width + 1];
+				*bgr++ = t0;
+			}
+			bayer++;
+		} else {
+			/* Write first pixel */
+			t0 = (bayer[0] + bayer[width * 2]) / 2;
+			if (blue_line) {
+				*bgr++ = t0;
+				*bgr++ = bayer[width];
+				*bgr++ = bayer[width + 1];
+			} else {
+				*bgr++ = bayer[width + 1];
+				*bgr++ = bayer[width];
+				*bgr++ = t0;
+			}
+		}
+
+		if (blue_line) {
+			for (; bayer <= bayerEnd - 2; bayer += 2) {
+				t0 = (bayer[0] + bayer[2] + bayer[width * 2] + bayer[width * 2 + 2]) / 4;
+				t1 = (bayer[1] + bayer[width] + bayer[width + 2] + bayer[width * 2 + 1]) / 4;
+				*bgr++ = t0;
+				*bgr++ = t1;
+				*bgr++ = bayer[width + 1];
+
+				t0 = (bayer[2] + bayer[width * 2 + 2]) / 2;
+				t1 = (bayer[width + 1] + bayer[width + 3]) / 2;
+				*bgr++ = t0;
+				*bgr++ = bayer[width + 2];
+				*bgr++ = t1;
+			}
+		} else {
+			for (; bayer <= bayerEnd - 2; bayer += 2) {
+				t0 = (bayer[0] + bayer[2] + bayer[width * 2] + bayer[width * 2 + 2]) / 4;
+				t1 = (bayer[1] + bayer[width] + bayer[width + 2] + bayer[width * 2 + 1]) / 4;
+				*bgr++ = bayer[width + 1];
+				*bgr++ = t1;
+				*bgr++ = t0;
+
+				t0 = (bayer[2] + bayer[width * 2 + 2]) / 2;
+				t1 = (bayer[width + 1] + bayer[width + 3]) / 2;
+				*bgr++ = t1;
+				*bgr++ = bayer[width + 2];
+				*bgr++ = t0;
+			}
+		}
+
+		if (bayer < bayerEnd) {
+			/* write second to last pixel */
+			t0 = (bayer[0] + bayer[2] + bayer[width * 2] + bayer[width * 2 + 2]) / 4;
+			t1 = (bayer[1] + bayer[width] + bayer[width + 2] + bayer[width * 2 + 1]) / 4;
+			if (blue_line) {
+				*bgr++ = t0;
+				*bgr++ = t1;
+				*bgr++ = bayer[width + 1];
+			} else {
+				*bgr++ = bayer[width + 1];
+				*bgr++ = t1;
+				*bgr++ = t0;
+			}
+			/* write last pixel */
+			t0 = (bayer[2] + bayer[width * 2 + 2]) / 2;
+			if (blue_line) {
+				*bgr++ = t0;
+				*bgr++ = bayer[width + 2];
+				*bgr++ = bayer[width + 1];
+			} else {
+				*bgr++ = bayer[width + 1];
+				*bgr++ = bayer[width + 2];
+				*bgr++ = t0;
+			}
+			bayer++;
+		} else {
+			/* write last pixel */
+			t0 = (bayer[0] + bayer[width * 2]) / 2;
+			t1 = (bayer[1] + bayer[width * 2 + 1] + bayer[width]) / 3;
+			if (blue_line) {
+				*bgr++ = t0;
+				*bgr++ = t1;
+				*bgr++ = bayer[width + 1];
+			} else {
+				*bgr++ = bayer[width + 1];
+				*bgr++ = t1;
+				*bgr++ = t0;
+			}
+		}
+
+		/* skip 2 border pixels */
+		bayer += 2;
+
+		blue_line = !blue_line;
+		start_with_green = !start_with_green;
+	}
+	/* render the last line */
+	border_bayer_line_to_bgrf(bayer + width, bayer, bgr, width, !start_with_green, !blue_line);
+}
+
+void bayer_to_rgbf(const float *bayer,
+	float *bgr, int width, int height, unsigned int pixfmt)
+{
+	bayer_to_rgbbgrf(bayer, bgr, width, height, pixfmt,
+		pixfmt == PIX_FMT_SGBRGF		/* start with green */
+			|| pixfmt == PIX_FMT_SGRBGF,
+		pixfmt != PIX_FMT_SBGGRF		/* blue line */
+			&& pixfmt != PIX_FMT_SGBRGF);
+}
+
+void bayer_to_bgrf(const float *bayer,
+	float *bgr, int width, int height, unsigned int pixfmt)
+{
+	bayer_to_rgbbgrf(bayer, bgr, width, height, pixfmt,
+		pixfmt == PIX_FMT_SGBRGF		/* start with green */
+			|| pixfmt == PIX_FMT_SGRBGF,
+		pixfmt == PIX_FMT_SBGGRF		/* blue line */
+			|| pixfmt == PIX_FMT_SGBRGF);
+}

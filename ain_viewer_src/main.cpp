@@ -21,6 +21,7 @@
 #include <QDir>
 #include <QStandardPaths>
 #include <QTextStream>
+#include <QVersionNumber>
 #include <viewerwindow.h>
 #include <conf.h>
 
@@ -56,14 +57,23 @@ int main(int argc, char *argv[]) {
 
 	memset(&conf,0,sizeof(conf_t));
 	conf.use_state_icons = false;
-	conf.use_system_locale = false;
+	conf.reopen_file_at_start = false;
 	conf.indigo_log_level = INDIGO_LOG_INFO;
 	conf.preview_stretch_level = STRETCH_NORMAL;
+	conf.preview_color_balance = CB_AUTO;
 	conf.antialiasing_enabled = false;
+	conf.window_width = 0;
+	conf.window_height = 0;
+	conf.restore_window_size = true;
+	conf.statistics_enabled = false;
+	conf.preview_bayer_pattern = 0;
 	read_conf();
-	conf.file_open[0] = '\0';
 
-	if (!conf.use_system_locale) qunsetenv("LC_NUMERIC");
+	if (!conf.reopen_file_at_start) {
+		conf.file_open[0] = '\0';
+	}
+
+	qunsetenv("LC_NUMERIC");
 
 	if (argc > 1) {
 		strncpy(conf.file_open, argv[argc-1], PATH_MAX);
@@ -80,7 +90,13 @@ int main(int argc, char *argv[]) {
 	app.setFont(font);
 	//qDebug() << "Font: " << app.font().family() << app.font().pointSize();
 
-	QFile f(":qdarkstyle/style.qss");
+	QVersionNumber running_version = QVersionNumber::fromString(qVersion());
+	QVersionNumber threshod_version(5, 13, 0);
+	QString qss_resource(":qdarkstyle/style.qss");
+	if (running_version >= threshod_version) {
+		qss_resource = ":qdarkstyle/style-5.13.qss";
+	}
+	QFile f(qss_resource);
 	f.open(QFile::ReadOnly | QFile::Text);
 	QTextStream ts(&f);
 	app.setStyleSheet(ts.readAll());

@@ -36,6 +36,7 @@
 #define CONFIG_FILENAME "indigo_imager.conf"
 #define AIN_GUIDER_LOG_NAME_FORMAT "ain_guiding_%s.log"
 #define AIN_INDIGO_LOG_NAME_FORMAT "ain_indigo_%s.log"
+#define DEFAULT_OBJECT_NAME "noname"
 
 typedef enum {
 	STRETCH_NONE = 0,
@@ -46,14 +47,21 @@ typedef enum {
 } preview_stretch;
 
 typedef enum {
+	CB_AUTO = 0,
+	CB_NONE
+} color_balance;
+
+typedef enum {
 	SHOW_FWHM = 0,
 	SHOW_HFD = 1,
+	SHOW_CONTRAST = 2,
 } focuser_display_data;
 
 typedef enum {
 	SHOW_RA_DEC_DRIFT = 0,
-	SHOW_RA_DEC_PULSE = 1,
-	SHOW_X_Y_DRIFT = 2,
+	SHOW_RA_DEC_S_DRIFT = 1,
+	SHOW_RA_DEC_PULSE = 2,
+	SHOW_X_Y_DRIFT = 3,
 } guider_display_data;
 
 typedef enum {
@@ -83,6 +91,20 @@ typedef struct {
 	bool indigo_save_log;
 	char solver_image_source1[INDIGO_NAME_SIZE];
 	char solver_image_source2[INDIGO_NAME_SIZE];
+	bool save_noname_images;
+	char data_dir_prefix[PATH_LEN];
+	color_balance preview_color_balance;
+	color_balance guider_color_balance;
+	int window_width;
+	int window_height;
+	bool restore_window_size;
+	bool imager_show_reference;
+	char solver_image_source3[INDIGO_NAME_SIZE];
+	bool sound_notifications_enabled;
+	bool save_images_on_server;
+	bool keep_images_on_server;
+	bool statistics_enabled;
+	uint32_t preview_bayer_pattern; /* BAYER_PAT_XXXX from image_preview_lut.h */
 	char unused[100];
 } conf_t;
 

@@ -29,9 +29,10 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	QGridLayout *focuser_frame_layout = new QGridLayout();
 	focuser_frame_layout->setAlignment(Qt::AlignTop);
 	focuser_frame_layout->setColumnStretch(0, 1);
-	focuser_frame_layout->setColumnStretch(1, 1);
+	focuser_frame_layout->setColumnStretch(1, 2);
 	focuser_frame_layout->setColumnStretch(2, 1);
 	focuser_frame_layout->setColumnStretch(3, 1);
+	focuser_frame_layout->setColumnStretch(4, 1);
 
 	focuser_frame->setLayout(focuser_frame_layout);
 	focuser_frame->setFrameShape(QFrame::StyledPanel);
@@ -45,51 +46,67 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	focuser_frame_layout->addWidget(label, row, 0);
 	m_focuser_select = new QComboBox();
-	focuser_frame_layout->addWidget(m_focuser_select, row, 1, 1, 3);
+	focuser_frame_layout->addWidget(m_focuser_select, row, 1, 1, 4);
 	connect(m_focuser_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focuser_selected);
 
 	row++;
-	label = new QLabel("Focuser control:");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	focuser_frame_layout->addWidget(label, row, 0, 1, 4);
-
-	row++;
-	label = new QLabel("Absoute Position:");
+	label = new QLabel("Absolute position:");
 	focuser_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_focus_position = new QSpinBox();
 	m_focus_position->setMaximum(1000000);
 	m_focus_position->setMinimum(-1000000);
 	m_focus_position->setValue(0);
 	m_focus_position->setEnabled(false);
-	m_focus_position->setKeyboardTracking(false);
-	focuser_frame_layout->addWidget(m_focus_position, row, 3);
-	connect(m_focus_position, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_focuser_position_changed);
+	// no idea why I had this here!!!
+	// m_focus_position->setKeyboardTracking(false);
+	focuser_frame_layout->addWidget(m_focus_position, row, 2, 1, 2);
+
+	m_focus_position_button = new QToolButton(this);
+	m_focus_position_button->setToolTip(tr("Go to absolute position / Abort move"));
+	m_focus_position_button->setIcon(QIcon(":resource/play.png"));
+	focuser_frame_layout->addWidget(m_focus_position_button, row, 4);
+	QObject::connect(m_focus_position_button, &QToolButton::clicked, this, &ImagerWindow::on_focuser_position_changed);
 
 	row++;
-	label = new QLabel("Move:");
+	label = new QLabel("Relative move:");
 	focuser_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_focus_steps = new QSpinBox();
 	m_focus_steps->setMaximum(100000);
 	m_focus_steps->setMinimum(0);
 	m_focus_steps->setValue(0);
 	m_focus_steps->setEnabled(false);
-	focuser_frame_layout->addWidget(m_focus_steps, row, 3);
+	focuser_frame_layout->addWidget(m_focus_steps, row, 2);
+
+	m_focusing_out_button = new QToolButton(this);
+	m_focusing_out_button->setStyleSheet("min-width: 15px");
+	m_focusing_out_button->setIcon(QIcon(":resource/focus_out.png"));
+	m_focusing_out_button->setToolTip("Relative move out");
+	focuser_frame_layout->addWidget(m_focusing_out_button, row, 3);
+	connect(m_focusing_out_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_out);
+
+	m_focusing_in_button = new QToolButton(this);
+	m_focusing_in_button->setStyleSheet("min-width: 15px");
+	m_focusing_in_button->setIcon(QIcon(":resource/focus_in.png"));
+	m_focusing_in_button->setToolTip("Relative move in");
+	focuser_frame_layout->addWidget(m_focusing_in_button, row, 4);
+	connect(m_focusing_in_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_in);
 
 	row++;
 	QWidget *toolbar = new QWidget;
 	QHBoxLayout *toolbox = new QHBoxLayout(toolbar);
 	toolbar->setContentsMargins(1,1,1,1);
 	toolbox->setContentsMargins(1,1,1,1);
-	focuser_frame_layout->addWidget(toolbar, row, 0, 1, 4);
+	focuser_frame_layout->addWidget(toolbar, row, 0, 1, 5);
 
 	m_focusing_preview_button = new QPushButton("Preview");
 	m_focusing_preview_button->setStyleSheet("min-width: 30px");
 	m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
+	m_focusing_preview_button->setToolTip("Take preview exposure");
 	toolbox->addWidget(m_focusing_preview_button);
 	set_ok(m_focusing_preview_button);
 	connect(m_focusing_preview_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_preview_start_stop);
-
 	m_focusing_button = new QPushButton("Focus");
+	m_focusing_button->setToolTip("Start focusing process");
 	m_focusing_button->setStyleSheet("min-width: 30px");
 	m_focusing_button->setIcon(QIcon(":resource/focus.png"));
 	toolbox->addWidget(m_focusing_button);
@@ -99,37 +116,55 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	QPushButton *button = new QPushButton("Abort");
 	button->setStyleSheet("min-width: 30px");
 	button->setIcon(QIcon(":resource/stop.png"));
+	button->setToolTip("Abort focusing process");
 	toolbox->addWidget(button);
 	set_ok(button);
 	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
 
-	button = new QPushButton("|");
-	button->setStyleSheet("min-width: 15px");
-	button->setIcon(QIcon(":resource/focus_in.png"));
-	toolbox->addWidget(button);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_focus_in);
-
-	button = new QPushButton("|");
-	button->setStyleSheet("min-width: 15px");
-	button->setIcon(QIcon(":resource/focus_out.png"));
-	toolbox->addWidget(button);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_focus_out);
-
 	row++;
 	m_focusing_progress = new QProgressBar();
-	focuser_frame_layout->addWidget(m_focusing_progress, row, 0, 1, 4);
+	focuser_frame_layout->addWidget(m_focusing_progress, row, 0, 1, 5);
 	m_focusing_progress->setMaximum(1);
 	m_focusing_progress->setValue(0);
 	m_focusing_progress->setFormat("Focusing: Idle");
 
 	row++;
-	spacer = new QSpacerItem(1, 5, QSizePolicy::Expanding, QSizePolicy::Maximum);
-	focuser_frame_layout->addItem(spacer, row, 0);
+	m_temperature_compensation_frame = new QFrame();
+	m_temperature_compensation_frame->setHidden(true);
+	QGridLayout *temperature_compensation_frame_layout = new QGridLayout();
+	temperature_compensation_frame_layout->setAlignment(Qt::AlignTop);
+	temperature_compensation_frame_layout->setColumnStretch(0, 1);
+	temperature_compensation_frame_layout->setColumnStretch(1, 0);
+	temperature_compensation_frame_layout->setColumnStretch(2, 0);
+	temperature_compensation_frame_layout->setMargin(0);
+
+	m_temperature_compensation_frame->setLayout(temperature_compensation_frame_layout);
+	m_temperature_compensation_frame->setFrameShape(QFrame::StyledPanel);
+	m_temperature_compensation_frame->setContentsMargins(0, 0, 0, 0);
+	focuser_frame_layout->addWidget(m_temperature_compensation_frame, row, 0, 1, 5);
+
+	int temp_comp_row = 0;
+	label = new QLabel("Reference T (°C):");
+	label->setToolTip("Reference temperature used by the focuser");
+	temperature_compensation_frame_layout->addWidget(label, temp_comp_row, 0, 1, 1, Qt::AlignRight);
+
+	m_focuser_temperature = new QLineEdit();
+	m_focuser_temperature->setStyleSheet("width: 30px");
+	m_focuser_temperature->setText("");
+	m_focuser_temperature->setReadOnly(true);
+	m_focuser_temperature->setToolTip("Reference temperature used by the focuser");
+	temperature_compensation_frame_layout->addWidget(m_focuser_temperature, temp_comp_row, 1, 1, 1, Qt::AlignRight);
+
+	m_temperature_compensation_cbox = new QCheckBox("Auto compensation");
+	m_temperature_compensation_cbox->setEnabled(false);
+	m_temperature_compensation_cbox->setToolTip("Turn ON/OFF automatic focus compensation");
+	temperature_compensation_frame_layout->addWidget(m_temperature_compensation_cbox, temp_comp_row, 2, 1, 1, Qt::AlignRight);
+	connect(m_temperature_compensation_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_focuser_temp_compensation_changed);
 
 	row++;
 	// Tools tabbar
 	QTabWidget *focuser_tabbar = new QTabWidget;
-	focuser_frame_layout->addWidget(focuser_tabbar, row, 0, 1, 4);
+	focuser_frame_layout->addWidget(focuser_tabbar, row, 0, 1, 5);
 
 	QFrame *stats_frame = new QFrame();
 	focuser_tabbar->addTab(stats_frame, "Statistics");
@@ -144,39 +179,74 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	int stats_row = 0;
 	m_focus_graph_label = new QLabel();
 	m_focus_graph_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	stats_frame_layout->addWidget(m_focus_graph_label, stats_row, 0, 1, 4);
+	stats_frame_layout->addWidget(m_focus_graph_label, stats_row, 0);
 
 	stats_row++;
 	m_focus_graph = new FocusGraph();
 	m_focus_graph->redraw_data(m_focus_fwhm_data);
-	m_focus_graph->setMinimumHeight(200);
-	stats_frame_layout->addWidget(m_focus_graph, stats_row, 0, 1, 4);
+	m_focus_graph->setMinimumHeight(230);
+	stats_frame_layout->addWidget(m_focus_graph, stats_row, 0);
 
 	stats_row++;
+	m_contrast_stats_frame = new QFrame();
+	QGridLayout *contrast_stats_frame_layout = new QGridLayout();
+	contrast_stats_frame_layout->setAlignment(Qt::AlignTop);
+	m_contrast_stats_frame->setLayout(contrast_stats_frame_layout);
+	m_contrast_stats_frame->setFrameShape(QFrame::StyledPanel);
+	//stats_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
+	m_contrast_stats_frame->setContentsMargins(0, 0, 0, 0);
+	contrast_stats_frame_layout->setColumnStretch(0, 1);
+	contrast_stats_frame_layout->setColumnStretch(1, 1);
+	contrast_stats_frame_layout->setColumnStretch(2, 2);
+	stats_frame_layout->addWidget(m_contrast_stats_frame, stats_row, 0);
+
+	int contrast_stats_row = 0;
+	label = new QLabel("Contrast x100 (c/b):");
+	label->setToolTip("RMS contrast x100 (current/best)");
+	contrast_stats_frame_layout->addWidget(label, contrast_stats_row, 0);
+	m_contrast_label = new QLabel();
+	m_contrast_label->setToolTip("RMS contrast x100 (current/best)");
+	m_contrast_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	contrast_stats_frame_layout->addWidget(m_contrast_label, contrast_stats_row, 1);
+	m_contrast_stats_frame->hide();
+
+	stats_row++;
+	m_hfd_stats_frame = new QFrame();
+	QGridLayout *hfd_stats_frame_layout = new QGridLayout();
+	hfd_stats_frame_layout->setAlignment(Qt::AlignTop);
+	m_hfd_stats_frame->setLayout(hfd_stats_frame_layout);
+	m_hfd_stats_frame->setFrameShape(QFrame::StyledPanel);
+	//stats_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
+	m_hfd_stats_frame->setContentsMargins(0, 0, 0, 0);
+	stats_frame_layout->addWidget(m_hfd_stats_frame, stats_row, 0);
+
+	int hfd_stats_row = 0;
+	label = new QLabel("HFD (c/b):");
+	label->setToolTip("Half Flux Diameter (current/best)");
+	hfd_stats_frame_layout->addWidget(label, hfd_stats_row, 0);
+	m_HFD_label = new QLabel();
+	m_HFD_label->setToolTip("Half Flux Diameter (current/best)");
+	m_HFD_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	hfd_stats_frame_layout->addWidget(m_HFD_label, hfd_stats_row, 1);
+
 	label = new QLabel("FWHM:");
-	stats_frame_layout->addWidget(label, stats_row, 0);
+	hfd_stats_frame_layout->addWidget(label, hfd_stats_row, 2);
 	m_FWHM_label = new QLabel();
 	m_FWHM_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	stats_frame_layout->addWidget(m_FWHM_label, stats_row, 1);
+	hfd_stats_frame_layout->addWidget(m_FWHM_label, hfd_stats_row, 3);
 
-	label = new QLabel("HFD:");
-	stats_frame_layout->addWidget(label, stats_row, 2);
-	m_HFD_label = new QLabel();
-	m_HFD_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	stats_frame_layout->addWidget(m_HFD_label, stats_row, 3);
-
-	stats_row++;
+	hfd_stats_row++;
 	label = new QLabel("Drift (X, Y):");
-	stats_frame_layout->addWidget(label, stats_row, 0);
+	hfd_stats_frame_layout->addWidget(label, hfd_stats_row, 0);
 	m_drift_label = new QLabel();
 	m_drift_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	stats_frame_layout->addWidget(m_drift_label, stats_row, 1);
+	hfd_stats_frame_layout->addWidget(m_drift_label, hfd_stats_row, 1);
 
 	label = new QLabel("Peak:");
-	stats_frame_layout->addWidget(label, stats_row, 2);
+	hfd_stats_frame_layout->addWidget(label, hfd_stats_row, 2);
 	m_peak_label = new QLabel();
 	m_peak_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	stats_frame_layout->addWidget(m_peak_label, stats_row, 3);
+	hfd_stats_frame_layout->addWidget(m_peak_label, hfd_stats_row, 3);
 
 	// Settings tab
 	QFrame *settings_frame = new QFrame;
@@ -195,6 +265,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	label = new QLabel("Exposure time (s):");
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 2);
 	m_focuser_exposure_time = new QDoubleSpinBox();
+	m_focuser_exposure_time->setDecimals(3);
 	m_focuser_exposure_time->setMaximum(10000);
 	m_focuser_exposure_time->setMinimum(0);
 	m_focuser_exposure_time->setValue(1);
@@ -211,11 +282,18 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	connect(m_focus_mode_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focus_mode_selected);
 
 	settings_row++;
+	label = new QLabel("Focus estimator:");
+	settings_frame_layout->addWidget(label, settings_row, 0, 1 ,2);
+	m_focus_estimator_select = new QComboBox();
+	settings_frame_layout->addWidget(m_focus_estimator_select, settings_row, 2, 1, 2);
+	connect(m_focus_estimator_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focus_estimator_selected);
+
+	settings_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	settings_frame_layout->addItem(spacer, settings_row, 0);
 
 	settings_row++;
-	label = new QLabel("Selection:");
+	label = new QLabel("Selection (Peak/HFD):");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
 
@@ -227,7 +305,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_star_x->setMaximum(100000);
 	m_star_x->setMinimum(0);
 	m_star_x->setValue(0);
-	//m_star_x->setEnabled(false);
+	m_star_x->setEnabled(false);
 	settings_frame_layout->addWidget(m_star_x , settings_row, 2);
 	connect(m_star_x, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_selection_changed);
 
@@ -235,7 +313,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_star_y->setMaximum(100000);
 	m_star_y->setMinimum(0);
 	m_star_y->setValue(0);
-	//m_star_y->setEnabled(false);
+	m_star_y->setEnabled(false);
 	settings_frame_layout->addWidget(m_star_y, settings_row, 3);
 	connect(m_star_y, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_selection_changed);
 
@@ -246,6 +324,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_star_radius->setMaximum(100000);
 	m_focus_star_radius->setMinimum(0);
 	m_focus_star_radius->setValue(0);
+	m_focus_star_radius->setEnabled(false);
 	settings_frame_layout->addWidget(m_focus_star_radius, settings_row, 3);
 	connect(m_focus_star_radius, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_focuser_selection_radius_changed);
 
@@ -265,7 +344,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_initial_step->setMaximum(1000000);
 	m_initial_step->setMinimum(0);
 	m_initial_step->setValue(0);
-	//m_initial_step->setEnabled(false);
+	m_initial_step->setEnabled(false);
 	settings_frame_layout->addWidget(m_initial_step , settings_row, 1);
 
 	label = new QLabel("Final step:");
@@ -274,7 +353,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_final_step->setMaximum(100000);
 	m_final_step->setMinimum(0);
 	m_final_step->setValue(0);
-	//m_final_step->setEnabled(false);
+	m_final_step->setEnabled(false);
 	settings_frame_layout->addWidget(m_final_step, settings_row, 3);
 
 	settings_row++;
@@ -284,8 +363,10 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_backlash->setMaximum(1000000);
 	m_focus_backlash->setMinimum(0);
 	m_focus_backlash->setValue(0);
-	//m_focus_backlash->setEnabled(false);
+	m_focus_backlash->setEnabled(false);
 	settings_frame_layout->addWidget(m_focus_backlash, settings_row, 1);
+	m_focus_backlash->setKeyboardTracking(false);
+	connect(m_focus_backlash, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_focuser_backlash_changed);
 
 	label = new QLabel("Stacking:");
 	settings_frame_layout->addWidget(label, settings_row, 2);
@@ -293,46 +374,128 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_stack->setMaximum(100000);
 	m_focus_stack->setMinimum(0);
 	m_focus_stack->setValue(0);
-	//m_focus_stack->setEnabled(false);
+	m_focus_stack->setEnabled(false);
 	settings_frame_layout->addWidget(m_focus_stack, settings_row, 3);
 
 	settings_row++;
-	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
-	settings_frame_layout->addItem(spacer, settings_row, 0);
+	label = new QLabel("Backlash overshoot factor:");
+	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
+	m_focus_bl_overshoot = new QDoubleSpinBox();
+	m_focus_bl_overshoot->setMaximum(1000000);
+	m_focus_bl_overshoot->setMinimum(0);
+	m_focus_bl_overshoot->setValue(1);
+	m_focus_bl_overshoot->setEnabled(false);
+	settings_frame_layout->addWidget(m_focus_bl_overshoot, settings_row, 3);
+	connect(m_focus_bl_overshoot, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_focuser_bl_overshoot_changed);
 
-	settings_row++;
-	label = new QLabel("Misc settings:");
+	// Misc tab
+	QFrame *misc_frame = new QFrame;
+	focuser_tabbar->addTab(misc_frame, "Misc");
+
+	QGridLayout *misc_frame_layout = new QGridLayout();
+	misc_frame_layout->setAlignment(Qt::AlignTop);
+	misc_frame->setLayout(misc_frame_layout);
+	misc_frame->setFrameShape(QFrame::StyledPanel);
+	misc_frame->setContentsMargins(0, 0, 0, 0);
+
+	int misc_row = 0;
+	label = new QLabel("Save bandwidth:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 4);
 
-	settings_row++;
+	misc_row++;
 	label = new QLabel("Use subframe:");
-	settings_frame_layout->addWidget(label, settings_row, 0, 1 ,2);
+	misc_frame_layout->addWidget(label, misc_row, 0, 1 ,2);
 	m_focuser_subframe_select = new QComboBox();
 	m_focuser_subframe_select->addItem("Off");
 	m_focuser_subframe_select->addItem("10 radii");
 	m_focuser_subframe_select->addItem("20 radii");
-	settings_frame_layout->addWidget(m_focuser_subframe_select, settings_row, 2, 1, 2);
+	misc_frame_layout->addWidget(m_focuser_subframe_select, misc_row, 2, 1, 2);
 	m_focuser_subframe_select->setCurrentIndex(conf.focuser_subframe);
 	connect(m_focuser_subframe_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focuser_subframe_changed);
+
+	misc_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	misc_frame_layout->addItem(spacer, misc_row, 0);
+
+	misc_row++;
+	label = new QLabel("Focus compensantion:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 4);
+
+	misc_row++;
+	label = new QLabel("Compensation (steps/°C):");
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 2);
+	m_focuser_temperature_compensation_steps = new QSpinBox();
+	m_focuser_temperature_compensation_steps->setMaximum(10000);
+	m_focuser_temperature_compensation_steps->setMinimum(-10000);
+	m_focuser_temperature_compensation_steps->setValue(0);
+	m_focuser_temperature_compensation_steps->setEnabled(false);
+	m_focuser_temperature_compensation_steps->setKeyboardTracking(false);
+	misc_frame_layout->addWidget(m_focuser_temperature_compensation_steps, misc_row, 2, 1, 2);
+
+	connect(m_focuser_temperature_compensation_steps, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_focuser_temp_compensation_steps_changed);
+
+	misc_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	misc_frame_layout->addItem(spacer, misc_row, 0);
+
+	misc_row++;
+	label = new QLabel("On focus failed (Peak/HFD):");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 4);
+
+	misc_row++;
+	m_focuser_failreturn_cbox = new QCheckBox("Return to the initial position");
+	m_focuser_failreturn_cbox->setEnabled(false);
+	misc_frame_layout->addWidget(m_focuser_failreturn_cbox, misc_row, 0, 1, 4);
+	connect(m_focuser_failreturn_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_focuser_failreturn_changed);
+
+	misc_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	misc_frame_layout->addItem(spacer, misc_row, 0);
+
+	misc_row++;
+	label = new QLabel("Miscellaneous settings:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 4);
+
+	misc_row++;
+	label = new QLabel("Invert IN and OUT motion:");
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 2);
+
+	m_focuser_reverse_select = new QComboBox();
+	misc_frame_layout->addWidget(m_focuser_reverse_select, misc_row, 2, 1, 2);
+	connect(m_focuser_reverse_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focuser_reverse_changed);
 }
 
+void ImagerWindow::on_focus_estimator_selected(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_focus_estimator_property(selected_agent);
+	});
+}
 
 void ImagerWindow::select_focuser_data(focuser_display_data show) {
 	switch (show) {
 		case SHOW_FWHM:
 			m_focus_display_data = &m_focus_fwhm_data;
-			m_focus_graph_label->setText("Focus FWHM (px):");
+			set_text(m_focus_graph_label, "Focus FWHM (px):");
 			break;
 		case SHOW_HFD:
 			m_focus_display_data = &m_focus_hfd_data;
-			m_focus_graph_label->setText("Focus HFD (px):");
+			set_text(m_focus_graph_label, "Focus HFD (px):");
+			break;
+		case SHOW_CONTRAST:
+			m_focus_display_data = &m_focus_contrast_data;
+			set_text(m_focus_graph_label, "RMS Contrast (x100):");
 			break;
 		default:
 			m_focus_display_data = nullptr;
 	}
 }
-
 
 void ImagerWindow::on_focuser_selected(int index) {
 	QtConcurrent::run([=]() {
@@ -349,6 +512,47 @@ void ImagerWindow::on_focuser_selected(int index) {
 		static const char * items[] = { selected_focuser };
 		static bool values[] = { true };
 		indigo_change_switch_property(nullptr, selected_agent, FILTER_FOCUSER_LIST_PROPERTY_NAME, 1, items, values);
+	});
+}
+
+void ImagerWindow::on_focuser_backlash_changed(int value) {
+	QtConcurrent::run([=]() {
+		char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_agent_focus_params_property(selected_agent, true);
+	});
+}
+
+void ImagerWindow::on_focuser_bl_overshoot_changed(double value) {
+	QtConcurrent::run([=]() {
+		char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_agent_focuser_bl_overshoot(selected_agent);
+	});
+}
+
+void ImagerWindow::on_focuser_temp_compensation_changed(int state) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		bool checked = m_temperature_compensation_cbox->checkState();
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		if (checked) {
+			indigo_change_switch_property_1(nullptr, selected_agent, FOCUSER_MODE_PROPERTY_NAME, FOCUSER_MODE_AUTOMATIC_ITEM_NAME, true);
+		} else {
+			indigo_change_switch_property_1(nullptr, selected_agent, FOCUSER_MODE_PROPERTY_NAME, FOCUSER_MODE_MANUAL_ITEM_NAME, true);
+		}
+	});
+}
+
+void ImagerWindow::on_focuser_temp_compensation_steps_changed(int value) {
+	QtConcurrent::run([=]() {
+		char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_focuser_temperature_compensation_steps(selected_agent);
 	});
 }
 
@@ -377,7 +581,7 @@ void ImagerWindow::on_focus_mode_selected(int index) {
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
-void ImagerWindow::on_image_right_click(double x, double y) {
+void ImagerWindow::on_image_right_click(double x, double y, Qt::KeyboardModifiers modifiers) {
 	m_star_x->blockSignals(true);
 	m_star_x->setValue(x);
 	m_star_x->blockSignals(false);
@@ -393,16 +597,20 @@ void ImagerWindow::on_image_right_click(double x, double y) {
 	});
 }
 
-
-void ImagerWindow::on_focuser_position_changed(int value) {
+void ImagerWindow::on_focuser_position_changed() {
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-		change_focuser_position_property(selected_agent);
+
+		indigo_property *focuser_position = properties.get(selected_agent, FOCUSER_POSITION_PROPERTY_NAME);
+		if (focuser_position->state != INDIGO_BUSY_STATE) {
+			change_focuser_position_property(selected_agent);
+		} else {
+			indigo_change_switch_property_1(nullptr, selected_agent, FOCUSER_ABORT_MOTION_PROPERTY_NAME, FOCUSER_ABORT_MOTION_ITEM_NAME, true);
+		}
 	});
 }
-
 
 void ImagerWindow::on_focus_preview_start_stop(bool clicked) {
 	QtConcurrent::run([=]() {
@@ -423,7 +631,6 @@ void ImagerWindow::on_focus_preview_start_stop(bool clicked) {
 	});
 }
 
-
 void ImagerWindow::on_focus_start_stop(bool clicked) {
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
@@ -439,7 +646,7 @@ void ImagerWindow::on_focus_start_stop(bool clicked) {
 			change_agent_star_selection(selected_agent);
 			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			change_agent_batch_property_for_focus(selected_agent);
-			change_agent_focus_params_property(selected_agent);
+			change_agent_focus_params_property(selected_agent, false);
 			change_ccd_frame_property(selected_agent);
 			if(m_focus_mode_select->currentIndex() == 0) {
 				change_agent_start_preview_property(selected_agent);
@@ -472,7 +679,6 @@ void ImagerWindow::on_focus_out(bool clicked) {
 	});
 }
 
-
 void ImagerWindow::on_focuser_subframe_changed(int index) {
 	conf.focuser_subframe = index;
 	write_conf();
@@ -483,5 +689,32 @@ void ImagerWindow::on_focuser_subframe_changed(int index) {
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_focuser_subframe(selected_agent);
+	});
+}
+
+void ImagerWindow::on_focuser_failreturn_changed(int state) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		bool checked = m_focuser_failreturn_cbox->checkState();
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+
+		if (checked) {
+			indigo_change_switch_property_1(nullptr, selected_agent, AGENT_IMAGER_FOCUS_FAILURE_PROPERTY_NAME, AGENT_IMAGER_FOCUS_FAILURE_RESTORE_ITEM_NAME, true);
+		} else {
+			indigo_change_switch_property_1(nullptr, selected_agent, AGENT_IMAGER_FOCUS_FAILURE_PROPERTY_NAME, AGENT_IMAGER_FOCUS_FAILURE_STOP_ITEM_NAME, true);
+		}
+	});
+}
+
+void ImagerWindow::on_focuser_reverse_changed(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_imager_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_focuser_reverse_property(selected_agent);
 	});
 }

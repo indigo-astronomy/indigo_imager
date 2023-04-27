@@ -1,8 +1,26 @@
 # indigo_imager
 
-To build this code on Mac, it is necessary to create a symlink to the location of your indigo source tree:
+## Configuring build
+Install Qt (qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools qtmultimedia5-dev libz-dev) and and build tools: gcc, g++, make etc.
 
+1. To build this code on Linux where you do not have INDIGO installed, it is necessary to create a symlink to the location of your indigo source tree (INDIGO should be built there):
+```
 ln -s <path-to-indigo> indigo
+```
+2. execute:
+```
+./build_libs.sh
+```
+3. execute:
+```
+qmake
+```
+
+## Build
+4. execute:
+```
+make
+```
 
 # Linux users note:
 If the image download is very slow (~ 5sec with the CCD Imager Simulator) this may be a result of a slow mDNS response. This can be fixed by editing the following system files:
@@ -23,4 +41,3 @@ hosts:          files mdns4 [NOTFOUND=return] dns
 .local.
 .local
 ```
-

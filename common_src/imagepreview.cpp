@@ -19,13 +19,62 @@
 #include <setjmp.h>
 #include <math.h>
 #include <fits.h>
+#include <xisf.h>
 #include <debayer.h>
 #include <pixelformat.h>
 #include <imagepreview.h>
 #include <QPainter>
 #include <QCoreApplication>
+#include <image_preview_lut.h>
+#include <dslr_raw.h>
 
 // Related Functions
+
+static unsigned int bayer_to_pix_format(const char *image_bayer_pat, const char bitpix, uint32_t prefered_bayer_pat) {
+	char bayerpat[5] = {0};
+
+	if (prefered_bayer_pat == BAYER_PAT_AUTO || prefered_bayer_pat == 0) {
+		memcpy(bayerpat, image_bayer_pat, 4);
+	} else {
+		memcpy(bayerpat, &prefered_bayer_pat, 4);
+	}
+	bayerpat[4] = '\0';
+
+	if ((!strcmp(bayerpat, "BGGR") || !strcmp(bayerpat, "BGRG")) && (bitpix == 8)) {
+		return PIX_FMT_SBGGR8;
+	} else if ((!strcmp(bayerpat, "GBRG") || !strcmp(bayerpat, "GBGR")) && (bitpix == 8)) {
+		return PIX_FMT_SGBRG8;
+	} else if ((!strcmp(bayerpat, "GRBG") || !strcmp(bayerpat, "GRGB")) && (bitpix == 8)) {
+		return PIX_FMT_SGRBG8;
+	} else if ((!strcmp(bayerpat, "RGGB") || !strcmp(bayerpat, "RGBG")) && (bitpix == 8)) {
+		return PIX_FMT_SRGGB8;
+	} else if ((!strcmp(bayerpat, "BGGR") || !strcmp(bayerpat, "BGRG")) && (bitpix == 16)) {
+		return PIX_FMT_SBGGR16;
+	} else if ((!strcmp(bayerpat, "GBRG") || !strcmp(bayerpat, "GBGR")) && (bitpix == 16)) {
+		return PIX_FMT_SGBRG16;
+	} else if ((!strcmp(bayerpat, "GRBG") || !strcmp(bayerpat, "GRGB")) && (bitpix == 16)) {
+		return PIX_FMT_SGRBG16;
+	} else if ((!strcmp(bayerpat, "RGGB") || !strcmp(bayerpat, "RGBG")) && (bitpix == 16)) {
+		return PIX_FMT_SRGGB16;
+	} else if ((!strcmp(bayerpat, "BGGR") || !strcmp(bayerpat, "BGRG")) && (bitpix == 32)) {
+		return PIX_FMT_SBGGR32;
+	} else if ((!strcmp(bayerpat, "GBRG") || !strcmp(bayerpat, "GBGR")) && (bitpix == 32)) {
+		return PIX_FMT_SGBRG32;
+	} else if ((!strcmp(bayerpat, "GRBG") || !strcmp(bayerpat, "GRGB")) && (bitpix == 32)) {
+		return PIX_FMT_SGRBG32;
+	} else if ((!strcmp(bayerpat, "RGGB") || !strcmp(bayerpat, "RGBG")) && (bitpix == 32)) {
+		return PIX_FMT_SRGGB32;
+	} else if ((!strcmp(bayerpat, "BGGR") || !strcmp(bayerpat, "BGRG")) && (bitpix == -32)) {
+		return PIX_FMT_SBGGRF;
+	} else if ((!strcmp(bayerpat, "GBRG") || !strcmp(bayerpat, "GBGR")) && (bitpix == -32)) {
+		return PIX_FMT_SGBRGF;
+	} else if ((!strcmp(bayerpat, "GRBG") || !strcmp(bayerpat, "GRGB")) && (bitpix == -32)) {
+		return PIX_FMT_SGRBGF;
+	} else if ((!strcmp(bayerpat, "RGGB") || !strcmp(bayerpat, "RGBG")) && (bitpix == -32)) {
+		return PIX_FMT_SRGGBF;
+	}
+	return 0;
+}
 
 preview_image* create_tiff_preview(unsigned char *tiff_image_buffer, unsigned long tiff_size) {
 	indigo_error("PREVIEW: %s(): not implemented!", __FUNCTION__);
@@ -50,7 +99,7 @@ preview_image* create_qtsupported_preview(unsigned char *image_buffer, unsigned 
 #if defined(USE_LIBJPEG)
 static jmp_buf jpeg_error;
 static void jpeg_error_cb(j_common_ptr cinfo) {
-	cinfo;
+	Q_UNUSED(cinfo);
 	longjmp(jpeg_error, 1);
 }
 #endif
@@ -131,28 +180,62 @@ preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_
 }
 
 
-preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long fits_size, const double white_threshold) {
-	fits_header header;
-	int *hist;
+preview_image* create_dslr_raw_preview(unsigned char *raw_buffer, unsigned long raw_size, const stretch_config_t sconfig) {
+	dslr_raw_image_s outout_image;
 	unsigned int pix_format = 0;
 
+	int rc = dslr_raw_process_image((void *)raw_buffer, raw_size, &outout_image);
+	if (rc != LIBRAW_SUCCESS) {
+		if (outout_image.data != nullptr) free(outout_image.data);
+		return nullptr;
+	}
+
+	if (outout_image.debayered) {
+		if (outout_image.bits == 8) {
+			pix_format = PIX_FMT_RGB24;
+		} else {
+			pix_format = PIX_FMT_RGB48;
+		}
+	} else {
+		int bayer_pix_fmt = bayer_to_pix_format(outout_image.bayer_pattern, outout_image.bits, sconfig.bayer_pattern);
+		if (bayer_pix_fmt != 0) pix_format = bayer_pix_fmt;
+
+	}
+
+	preview_image *img = create_preview(outout_image.width, outout_image.height,
+	        pix_format, (char*)outout_image.data, sconfig);
+
+	if (outout_image.data != nullptr) free(outout_image.data);
+	return img;
+}
+
+
+preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long fits_size, const stretch_config_t sconfig) {
+	fits_header header;
+	unsigned int pix_format = 0;
+
+	indigo_debug("FITS_START");
 	int res = fits_read_header(raw_fits_buffer, fits_size, &header);
 	if (res != FITS_OK) {
 		indigo_error("FITS: Error parsing header");
 		return nullptr;
 	}
 
-	if ((header.bitpix==16) && (header.naxis == 2)){
-		hist = (int*)malloc(65536*sizeof(int));
+	if ((header.bitpix == -32) && (header.naxis == 2)){
+		pix_format = PIX_FMT_F32;
+	} else if ((header.bitpix == 32) && (header.naxis == 2)){
+		pix_format = PIX_FMT_Y32;
+	} else if ((header.bitpix == 16) && (header.naxis == 2)){
 		pix_format = PIX_FMT_Y16;
-	} else if ((header.bitpix==16) && (header.naxis == 3)){
-		hist = (int*)malloc(65536*sizeof(int));
-		pix_format = PIX_FMT_3RGB48;
-	} else if ((header.bitpix==8) && (header.naxis == 2)){
-		hist = (int*)malloc(256*sizeof(int));
+	} else if ((header.bitpix == 8) && (header.naxis == 2)){
 		pix_format = PIX_FMT_Y8;
-	} else if ((header.bitpix==8) && (header.naxis == 3)){
-		hist = (int*)malloc(256*sizeof(int));
+	} else if ((header.bitpix == -32) && (header.naxis == 3)){
+		pix_format = PIX_FMT_3RGBF;
+	} else if ((header.bitpix == 32) && (header.naxis == 3)){
+		pix_format = PIX_FMT_3RGB96;
+	} else if ((header.bitpix == 16) && (header.naxis == 3)){
+		pix_format = PIX_FMT_3RGB48;
+	} else if ((header.bitpix == 8) && (header.naxis == 3)){
 		pix_format = PIX_FMT_3RGB24;
 	} else {
 		indigo_error("FITS: Unsupported bitpix (BITPIX= %d)", header.bitpix);
@@ -161,229 +244,172 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 
 	char *fits_data = (char*)malloc(fits_get_buffer_size(&header));
 
-	res = fits_process_data_with_hist(raw_fits_buffer, fits_size, &header, fits_data, hist);
+	res = fits_process_data(raw_fits_buffer, fits_size, &header, fits_data);
 	if (res != FITS_OK) {
 		indigo_error("FITS: Error processing data");
 		return nullptr;
 	}
 
 	if (header.naxis == 2) {
-		if (!strcmp(header.bayerpat, "BGGR") && (header.bitpix == 8)) {
-			pix_format = PIX_FMT_SBGGR8;
-		} else if (!strcmp(header.bayerpat, "GBRG") && (header.bitpix == 8)) {
-			pix_format = PIX_FMT_SGBRG8;
-		} else if (!strcmp(header.bayerpat, "GRBG") && (header.bitpix == 8)) {
-			pix_format = PIX_FMT_SGRBG8;
-		} else if (!strcmp(header.bayerpat, "RGGB") && (header.bitpix == 8)) {
-			pix_format = PIX_FMT_SRGGB8;
-		} else if (!strcmp(header.bayerpat, "BGGR") && (header.bitpix == 16)) {
-			pix_format = PIX_FMT_SBGGR16;
-		} else if (!strcmp(header.bayerpat, "GBRG") && (header.bitpix == 16)) {
-			pix_format = PIX_FMT_SGBRG16;
-		} else if (!strcmp(header.bayerpat, "GRBG") && (header.bitpix == 16)) {
-			pix_format = PIX_FMT_SGRBG16;
-		} else if (!strcmp(header.bayerpat, "RGGB") && (header.bitpix == 16)) {
-			pix_format = PIX_FMT_SRGGB16;
-		}
+		int bayer_pix_fmt = bayer_to_pix_format(header.bayerpat, header.bitpix, sconfig.bayer_pattern);
+		if (bayer_pix_fmt != 0) pix_format = bayer_pix_fmt;
 	}
 
 	preview_image *img = create_preview(header.naxisn[0], header.naxisn[1],
-	        pix_format, fits_data, hist, white_threshold);
+	        pix_format, fits_data, sconfig);
 
 	free(fits_data);
+	indigo_debug("FITS_END: fits_data = %p", fits_data);
 	return img;
 }
 
+preview_image* create_xisf_preview(unsigned char *xisf_buffer, unsigned long xisf_size, const stretch_config_t sconfig) {
+	xisf_metadata header;
+	unsigned int pix_format = 0;
+	preview_image *img = nullptr;
 
-preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size, const double white_threshold) {
-	int *hist;
+	indigo_debug("XISF_START");
+	int res = xisf_read_metadata(xisf_buffer, xisf_size, &header);
+	if (res != XISF_OK) {
+		indigo_error("XISF: Error parsing header res=%d", res);
+		return nullptr;
+	}
+
+	if ((header.bitpix == -32) && (header.channels == 1)){
+		pix_format = PIX_FMT_F32;
+	} else if ((header.bitpix == 32) && (header.channels == 1)){
+		pix_format = PIX_FMT_Y32;
+	} else if ((header.bitpix == 16) && (header.channels == 1)){
+		pix_format = PIX_FMT_Y16;
+	} else if ((header.bitpix == 8) && (header.channels == 1)){
+		pix_format = PIX_FMT_Y8;
+	} else if ((header.bitpix == -32) && (header.channels == 3)){
+		pix_format = (header.normal_pixel_storage) ? PIX_FMT_RGBF : PIX_FMT_3RGBF;
+	} else if ((header.bitpix == 32) && (header.channels == 3)){
+		pix_format = (header.normal_pixel_storage) ? PIX_FMT_RGB96 : PIX_FMT_3RGB96;
+	} else if ((header.bitpix == 16) && (header.channels == 3)){
+		pix_format = (header.normal_pixel_storage) ? PIX_FMT_RGB48 : PIX_FMT_3RGB48;
+	} else if ((header.bitpix == 8) && (header.channels == 3)){
+		pix_format = (header.normal_pixel_storage) ? PIX_FMT_RGB24 : PIX_FMT_3RGB24;
+	} else {
+		indigo_error("XISF: Unsupported bitpix (BITPIX= %d)", header.bitpix);
+		return nullptr;
+	}
+
+	if (header.compression[0] == '\0') {
+		indigo_debug("XISF: file_size = %d, required_size = %d", xisf_size, header.data_offset + header.data_size);
+		if (header.data_offset + header.data_size > xisf_size) {
+			indigo_error("XISF: Wrong size (file_size = %d, required_size = %d)", xisf_size, header.data_offset + header.data_size);
+			return nullptr;
+		}
+
+		if (header.channels == 1) {
+			int bayer_pix_fmt = bayer_to_pix_format(header.bayer_pattern, header.bitpix, sconfig.bayer_pattern);
+			if (bayer_pix_fmt != 0) pix_format = bayer_pix_fmt;
+		}
+
+		img = create_preview(header.width, header.height, pix_format, (char*)xisf_buffer + header.data_offset, sconfig);
+	} else {
+		char *xisf_data = (char*)malloc(header.uncompressed_data_size);
+		int res = xisf_decompress(xisf_buffer, &header, (uint8_t*)xisf_data);
+		if (res != XISF_OK) {
+			indigo_error("XISF: Decompression failed res = %d", res);
+			free(xisf_data);
+			return nullptr;
+		}
+
+		if (header.channels == 1) {
+			int bayer_pix_fmt = bayer_to_pix_format(header.bayer_pattern, header.bitpix, sconfig.bayer_pattern);
+			if (bayer_pix_fmt != 0) pix_format = bayer_pix_fmt;
+		}
+
+		img = create_preview(header.width, header.height, pix_format, (char*)xisf_data, sconfig);
+		free(xisf_data);
+	}
+
+	indigo_debug("XISF_END");
+	return img;
+}
+
+preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size, const stretch_config_t sconfig) {
 	unsigned int pix_format;
-	int bitpix;
 
 	if (sizeof(indigo_raw_header) > raw_size) {
 		indigo_error("RAW: Image buffer is too short: can not fit the header (%dB)", raw_size);
 		return nullptr;
 	}
 
+	indigo_debug("RAW_START");
 	indigo_raw_header *header = (indigo_raw_header*)raw_image_buffer;
 	char *raw_data = (char*)raw_image_buffer + sizeof(indigo_raw_header);
-
-	int pixel_count = header->height * header->width;
 
 	switch (header->signature) {
 	case INDIGO_RAW_MONO16:
 		pix_format = PIX_FMT_Y16;
-		bitpix = 16;
 		break;
 	case INDIGO_RAW_MONO8:
 		pix_format = PIX_FMT_Y8;
-		bitpix = 8;
 		break;
 	case INDIGO_RAW_RGB24:
 		pix_format = PIX_FMT_RGB24;
-		bitpix = 8;
 		break;
 	case INDIGO_RAW_RGB48:
 		pix_format = PIX_FMT_RGB48;
-		bitpix = 16;
 		break;
 	default:
 		indigo_error("RAW: Unsupported image format (%d)", header->signature);
 		return nullptr;
 	}
 
-	if ((pixel_count * bitpix / 8 + sizeof(indigo_raw_header)) > raw_size) {
-		indigo_error("RAW: Image buffer is too short: can not fit the image (%dB)", raw_size);
-		return nullptr;
-	}
-
-	if ((header->signature == INDIGO_RAW_MONO16) ||
-	    (header->signature == INDIGO_RAW_RGB48)) {
-		hist = (int*)malloc(65536 * sizeof(int));
-		memset(hist, 0, 65536 * sizeof(int));
-		uint16_t* buf = (uint16_t*)raw_data;
-		for (int pix = 0; pix < pixel_count; ++pix) {
-			hist[*buf++]++;
-		}
-	} else if ((header->signature == INDIGO_RAW_MONO8) ||
-	           (header->signature == INDIGO_RAW_RGB24)) {
-		hist = (int*)malloc(256*sizeof(int));
-		memset(hist, 0, 256*sizeof(int));
-		uint8_t* buf = (uint8_t*)raw_data;
-		for (int pix = 0; pix < pixel_count; ++pix) {
-			hist[*buf++]++;
-		}
-	} else {
-		// should not happen - handled above
-		return nullptr;
-	}
-
 	preview_image *img = create_preview(header->width, header->height,
-	        pix_format, raw_data, hist, white_threshold);
+	        pix_format, raw_data, sconfig);
 
+	indigo_debug("RAW_END: raw_data = %p", raw_data);
 	return img;
 }
 
-
-preview_image* create_preview(int width, int height, int pix_format, char *image_data, int *hist, double white_threshold) {
-	int range, max, min = 0, sum;
-	int pix_cnt = width * height;
-	int thresh = (int)(white_threshold / 100.0 * pix_cnt); // white thresh is in percentiles
-
-	switch (pix_format) {
-	case PIX_FMT_Y8:
-	case PIX_FMT_RGB24:
-	case PIX_FMT_3RGB24:
-	case PIX_FMT_SBGGR8:
-	case PIX_FMT_SGBRG8:
-	case PIX_FMT_SGRBG8:
-	case PIX_FMT_SRGGB8:
-		max = 255;
-		break;
-	case PIX_FMT_Y16:
-	case PIX_FMT_RGB48:
-	case PIX_FMT_3RGB48:
-	case PIX_FMT_SBGGR16:
-	case PIX_FMT_SGBRG16:
-	case PIX_FMT_SGRBG16:
-	case PIX_FMT_SRGGB16:
-		max = 65535;
-		break;
-	default:
-		indigo_error("PREVIEW: Unsupported pixel format (%d)", pix_format);
-		return nullptr;
-	}
-
-	min = 0;
-	while (hist[min] == 0 && min < max) {
-		min++;
-	};
-
-	sum = hist[max];
-	while (sum < thresh && max > min) {
-		sum += hist[--max];
-	}
-
-	switch (pix_format) {
-	case PIX_FMT_Y8:
-	case PIX_FMT_RGB24:
-	case PIX_FMT_3RGB24:
-	case PIX_FMT_SBGGR8:
-	case PIX_FMT_SGBRG8:
-	case PIX_FMT_SGRBG8:
-	case PIX_FMT_SRGGB8:
-		if (fabs(max - min) < 2) {
-			if (min >= 2) {
-				min -= 2;
-			} else if (max <= 253) {
-				max += 2;
-			}
-		}
-		break;
-	case PIX_FMT_Y16:
-	case PIX_FMT_RGB48:
-	case PIX_FMT_3RGB48:
-	case PIX_FMT_SBGGR16:
-	case PIX_FMT_SGBRG16:
-	case PIX_FMT_SGRBG16:
-	case PIX_FMT_SRGGB16:
-		if (fabs(max - min) < 2) {
-			if (min >= 2) {
-				min -= 2;
-			} else if (max <= 65533) {
-				max += 2;
-			}
-		}
-		break;
-	default:
-		indigo_error("PREVIEW: Unsupported pixel format (%d)", pix_format);
-		return nullptr;
-	}
-
-	range = max - min;
-	if (range < 2) range = 2;
-	double scale = 256.0 / range;
-
-	indigo_debug("PREVIEW: pix_format = %d sum = %d thresh = %d max = %d min = %d", pix_format, sum, thresh, max, min);
-
-	preview_image* img = new preview_image(width, height, QImage::Format_RGB888);
+preview_image* create_preview(int width, int height, int pix_format, char *image_data, const stretch_config_t sconfig) {
+	preview_image* img = new preview_image(width, height, QImage::Format_RGB32);
 	if (pix_format == PIX_FMT_Y8) {
 		uint8_t* buf = (uint8_t*)image_data;
 		uint8_t* pixmap_data = (uint8_t*)malloc(sizeof(uint8_t) * height * width);
-		int index = 0;
-		for (int y = 0; y < height; ++y) {
-			for (int x = 0; x < width; ++x) {
-				pixmap_data[index] = buf[index];
-				int value = buf[index++] - min;
-				if (value >= range) value = 255;
-				else value *= scale;
-				img->setPixel(x, y, qRgb(value, value, value));
-			}
-		}
+		memcpy(pixmap_data, buf, sizeof(uint8_t) * height * width);
 		img->m_raw_data = (char*)pixmap_data;
-		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_Y8;
 		img->m_height = height;
 		img->m_width = width;
+
+		stretch_preview(img, sconfig);
 	} else if (pix_format == PIX_FMT_Y16) {
 		uint16_t* buf = (uint16_t*)image_data;
 		uint16_t* pixmap_data = (uint16_t*)malloc(sizeof(uint16_t) * height * width);
-		int index = 0;
-		for (int y = 0; y < height; ++y) {
-			QCoreApplication::processEvents();
-			for (int x = 0; x < width; ++x) {
-				pixmap_data[index] = buf[index];
-				int value = buf[index++] - min;
-				if (value >= range) value = 255;
-				else value *= scale;
-				img->setPixel(x, y, qRgb(value, value, value));
-			}
-		}
+		memcpy(pixmap_data, buf, sizeof(uint16_t) * height * width);
 		img->m_raw_data = (char*)pixmap_data;
-		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_Y16;
 		img->m_height = height;
 		img->m_width = width;
+
+		stretch_preview(img, sconfig);
+	} else if (pix_format == PIX_FMT_Y32) {
+		uint32_t* buf = (uint32_t*)image_data;
+		uint32_t* pixmap_data = (uint32_t*)malloc(sizeof(uint32_t) * height * width);
+		memcpy(pixmap_data, buf, sizeof(uint32_t) * height * width);
+		img->m_raw_data = (char*)pixmap_data;
+		img->m_pix_format = PIX_FMT_Y32;
+		img->m_height = height;
+		img->m_width = width;
+
+		stretch_preview(img, sconfig);
+	} else if (pix_format == PIX_FMT_F32) {
+		float* buf = (float*)image_data;
+		float* pixmap_data = (float*)malloc(sizeof(float) * height * width);
+		memcpy(pixmap_data, buf, sizeof(float) * height * width);
+		img->m_raw_data = (char*)pixmap_data;
+		img->m_pix_format = PIX_FMT_F32;
+		img->m_height = height;
+		img->m_width = width;
+
+		stretch_preview(img, sconfig);
 	} else if (pix_format == PIX_FMT_3RGB24) {
 		int channel_offest = width * height;
 		uint8_t* buf = (uint8_t*)image_data;
@@ -393,28 +419,19 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		for (int y = 0; y < height; ++y) {
 			QCoreApplication::processEvents();
 			for (int x = 0; x < width; ++x) {
-				int value_r = buf[index] - min;
-				int value_g = buf[index + channel_offest] - min;
-				int value_b = buf[index + 2 * channel_offest] - min;
 				pixmap_data[index2 + 0] = buf[index];
 				pixmap_data[index2 + 1] = buf[index + channel_offest];
 				pixmap_data[index2 + 2] = buf[index + 2 * channel_offest];
 				index++;
 				index2 += 3;
-				if (value_r >= range) value_r = 255;
-				else value_r *= scale;
-				if (value_g >= range) value_g = 255;
-				else value_g *= scale;
-				if (value_b >= range) value_b = 255;
-				else value_b *= scale;
-				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
 		}
 		img->m_raw_data = (char*)pixmap_data;
-		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_RGB24;
 		img->m_height = height;
 		img->m_width = width;
+
+		stretch_preview(img, sconfig);
 	} else if (pix_format == PIX_FMT_3RGB48) {
 		int channel_offest = width * height;
 		uint16_t* buf = (uint16_t*)image_data;
@@ -424,356 +441,216 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		for (int y = 0; y < height; ++y) {
 			QCoreApplication::processEvents();
 			for (int x = 0; x < width; ++x) {
-				int value_r = buf[index] - min;
-				int value_g = buf[index + channel_offest] - min;
-				int value_b = buf[index + 2 * channel_offest] - min;
 				pixmap_data[index2 + 0] = buf[index];
 				pixmap_data[index2 + 1] = buf[index + channel_offest];
 				pixmap_data[index2 + 2] = buf[index + 2 * channel_offest];
 				index++;
 				index2 += 3;
-				if (value_r >= range) value_r = 255;
-				else value_r *= scale;
-				if (value_g >= range) value_g = 255;
-				else value_g *= scale;
-				if (value_b >= range) value_b = 255;
-				else value_b *= scale;
-				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
 			}
 		}
 		img->m_raw_data = (char*)pixmap_data;
-		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_RGB48;
 		img->m_height = height;
 		img->m_width = width;
+
+		stretch_preview(img, sconfig);
+	} else if (pix_format == PIX_FMT_3RGB96) {
+		int channel_offest = width * height;
+		uint32_t* buf = (uint32_t*)image_data;
+		uint32_t* pixmap_data = (uint32_t*)malloc(sizeof(uint32_t) * height * width * 3);
+		int index = 0;
+		int index2 = 0;
+		for (int y = 0; y < height; ++y) {
+			QCoreApplication::processEvents();
+			for (int x = 0; x < width; ++x) {
+				pixmap_data[index2 + 0] = buf[index];
+				pixmap_data[index2 + 1] = buf[index + channel_offest];
+				pixmap_data[index2 + 2] = buf[index + 2 * channel_offest];
+				index++;
+				index2 += 3;
+			}
+		}
+		img->m_raw_data = (char*)pixmap_data;
+		img->m_pix_format = PIX_FMT_RGB96;
+		img->m_height = height;
+		img->m_width = width;
+
+		stretch_preview(img, sconfig);
+	} else if (pix_format == PIX_FMT_3RGBF) {
+		int channel_offest = width * height;
+		float* buf = (float*)image_data;
+		float* pixmap_data = (float*)malloc(sizeof(float) * height * width * 3);
+		int index = 0;
+		int index2 = 0;
+		for (int y = 0; y < height; ++y) {
+			QCoreApplication::processEvents();
+			for (int x = 0; x < width; ++x) {
+				pixmap_data[index2 + 0] = buf[index];
+				pixmap_data[index2 + 1] = buf[index + channel_offest];
+				pixmap_data[index2 + 2] = buf[index + 2 * channel_offest];
+				index++;
+				index2 += 3;
+			}
+		}
+		img->m_raw_data = (char*)pixmap_data;
+		img->m_pix_format = PIX_FMT_RGBF;
+		img->m_height = height;
+		img->m_width = width;
+
+		stretch_preview(img, sconfig);
 	} else if (pix_format == PIX_FMT_RGB24) {
 		uint8_t* buf = (uint8_t*)image_data;
 		uint8_t* pixmap_data = (uint8_t*)malloc(sizeof(uint8_t) * height * width * 3);
-		int index = 0;
-		for (int y = 0; y < height; ++y) {
-			QCoreApplication::processEvents();
-			for (int x = 0; x < width; ++x) {
-				pixmap_data[index] = buf[index];
-				int value_r = buf[index] - min;
-				index++;
-				pixmap_data[index] = buf[index];
-				int value_g = buf[index] - min;
-				index++;
-				pixmap_data[index] = buf[index];
-				int value_b = buf[index] - min;
-				index++;
-
-				if (value_r >= range) value_r = 255;
-				else value_r *= scale;
-				if (value_g >= range) value_g = 255;
-				else value_g *= scale;
-				if (value_b >= range) value_b = 255;
-				else value_b *= scale;
-				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
-			}
-		}
+		memcpy(pixmap_data, buf, sizeof(uint8_t) * height * width * 3);
 		img->m_raw_data = (char*)pixmap_data;
-		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_RGB24;
 		img->m_height = height;
 		img->m_width = width;
+
+		stretch_preview(img, sconfig);
 	} else if (pix_format == PIX_FMT_RGB48) {
 		uint16_t* buf = (uint16_t*)image_data;
 		uint16_t* pixmap_data = (uint16_t*)malloc(sizeof(uint16_t) * height * width * 3);
-		int index = 0;
-		for (int y = 0; y < height; ++y) {
-			QCoreApplication::processEvents();
-			for (int x = 0; x < width; ++x) {
-				pixmap_data[index] = buf[index];
-				int value_r = buf[index] - min;
-				index++;
-				pixmap_data[index] = buf[index];
-				int value_g = buf[index] - min;
-				index++;
-				pixmap_data[index] = buf[index];
-				int value_b = buf[index] - min;
-				index++;
-
-				if (value_r >= range) value_r = 255;
-				else value_r *= scale;
-				if (value_g >= range) value_g = 255;
-				else value_g *= scale;
-				if (value_b >= range) value_b = 255;
-				else value_b *= scale;
-				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
-			}
-		}
+		memcpy(pixmap_data, buf, sizeof(uint16_t) * height * width * 3);
 		img->m_raw_data = (char*)pixmap_data;
-		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_RGB48;
 		img->m_height = height;
 		img->m_width = width;
+
+		stretch_preview(img, sconfig);
+	} else if (pix_format == PIX_FMT_RGB96) {
+		uint32_t* buf = (uint32_t*)image_data;
+		uint32_t* pixmap_data = (uint32_t*)malloc(sizeof(uint32_t) * height * width * 3);
+		memcpy(pixmap_data, buf, sizeof(uint32_t) * height * width * 3);
+		img->m_raw_data = (char*)pixmap_data;
+		img->m_pix_format = PIX_FMT_RGB96;
+		img->m_height = height;
+		img->m_width = width;
+
+		stretch_preview(img, sconfig);
+	} else if (pix_format == PIX_FMT_RGBF) {
+		float* buf = (float*)image_data;
+		float* pixmap_data = (float*)malloc(sizeof(float) * height * width * 3);
+		memcpy(pixmap_data, buf, sizeof(float) * height * width * 3);
+		img->m_raw_data = (char*)pixmap_data;
+		img->m_pix_format = PIX_FMT_RGBF;
+		img->m_height = height;
+		img->m_width = width;
+
+		stretch_preview(img, sconfig);
 	} else if ((pix_format == PIX_FMT_SBGGR8) || (pix_format == PIX_FMT_SGBRG8) ||
 		       (pix_format == PIX_FMT_SGRBG8) || (pix_format == PIX_FMT_SRGGB8)) {
 		uint8_t* rgb_data = (uint8_t*)malloc(width*height*3);
 		bayer_to_rgb24((unsigned char*)image_data, rgb_data, width, height, pix_format);
-		uint8_t* buf = (uint8_t*)rgb_data;
-		int index = 0;
-		for (int y = 0; y < height; ++y) {
-			QCoreApplication::processEvents();
-			for (int x = 0; x < width; ++x) {
-				int value_r = buf[index++] - min;
-				int value_g = buf[index++] - min;
-				int value_b = buf[index++] - min;
 
-				if (value_r >= range) value_r = 255;
-				else value_r *= scale;
-				if (value_g >= range) value_g = 255;
-				else value_g *= scale;
-				if (value_b >= range) value_b = 255;
-				else value_b *= scale;
-				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
-			}
-		}
 		img->m_raw_data = (char*)rgb_data;
-		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_RGB24;
 		img->m_height = height;
 		img->m_width = width;
+
+		stretch_preview(img, sconfig);
 	} else if ((pix_format == PIX_FMT_SBGGR16) || (pix_format == PIX_FMT_SGBRG16) ||
 		       (pix_format == PIX_FMT_SGRBG16) || (pix_format == PIX_FMT_SRGGB16)) {
 		uint16_t* rgb_data = (uint16_t*)malloc(width*height*6);
 		bayer_to_rgb48((const uint16_t*)image_data, rgb_data, width, height, pix_format);
-		uint16_t* buf = (uint16_t*)rgb_data;
-		int index = 0;
-		for (int y = 0; y < height; ++y) {
-			QCoreApplication::processEvents();
-			for (int x = 0; x < width; ++x) {
-				int value_r = buf[index++] - min;
-				int value_g = buf[index++] - min;
-				int value_b = buf[index++] - min;
 
-				if (value_r >= range) value_r = 255;
-				else value_r *= scale;
-				if (value_g >= range) value_g = 255;
-				else value_g *= scale;
-				if (value_b >= range) value_b = 255;
-				else value_b *= scale;
-				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
-			}
-		}
 		img->m_raw_data = (char*)rgb_data;
-		img->m_histogram = hist;
 		img->m_pix_format = PIX_FMT_RGB48;
 		img->m_height = height;
 		img->m_width = width;
+
+		stretch_preview(img, sconfig);
+	} else if ((pix_format == PIX_FMT_SBGGR32) || (pix_format == PIX_FMT_SGBRG32) ||
+		       (pix_format == PIX_FMT_SGRBG32) || (pix_format == PIX_FMT_SRGGB32)) {
+		uint32_t* rgb_data = (uint32_t*)malloc(width*height*12);
+		bayer_to_rgb96((const uint32_t*)image_data, rgb_data, width, height, pix_format);
+
+		img->m_raw_data = (char*)rgb_data;
+		img->m_pix_format = PIX_FMT_RGB96;
+		img->m_height = height;
+		img->m_width = width;
+
+		stretch_preview(img, sconfig);
+	} else if ((pix_format == PIX_FMT_SBGGRF) || (pix_format == PIX_FMT_SGBRGF) ||
+		       (pix_format == PIX_FMT_SGRBGF) || (pix_format == PIX_FMT_SRGGBF)) {
+		float* rgb_data = (float*)malloc(width*height*12);
+		bayer_to_rgbf((const float*)image_data, rgb_data, width, height, pix_format);
+
+		img->m_raw_data = (char*)rgb_data;
+		img->m_pix_format = PIX_FMT_RGBF;
+		img->m_height = height;
+		img->m_width = width;
+
+		stretch_preview(img, sconfig);
 	} else {
-		indigo_error("PREVIEW: Unsupported pixel format (%d)", pix_format);
+		char *c = (char*)&pix_format;
+		indigo_error("%s(): Unsupported pixel format (%c%c%c%c)", __FUNCTION__, c[0], c[1], c[2], c[3]);
 		delete img;
 		img = nullptr;
 	}
 	return img;
 }
 
-
-void stretch_preview(preview_image *img, double white_threshold) {
-	int range, max, min = 0, sum;
-	int width = img->m_width;
-	int height = img->m_height;
-	int pix_format = img->m_pix_format;
-	int *hist = img->m_histogram;
-
-	if ((hist == nullptr) || (img->m_raw_data == nullptr)) {
-		indigo_debug("image not scalable");
-		return;
-	}
-
-	int pix_cnt = width * height;
-	int thresh = (int)(white_threshold / 100.0 * pix_cnt); // white thresh is in percentiles
-
-	switch (pix_format) {
-	case PIX_FMT_Y8:
-	case PIX_FMT_RGB24:
-		max = 255;
-		break;
-	case PIX_FMT_Y16:
-	case PIX_FMT_RGB48:
-		max = 65535;
-		break;
-	default:
-		indigo_error("PREVIEW: Unsupported pixel format (%d)", pix_format);
-		return;
-	}
-
-	min = 0;
-	while (hist[min] == 0 && min < max) {
-		min++;
-	};
-
-	sum = hist[max];
-	while (sum < thresh && max > min) {
-		sum += hist[--max];
-	}
-
-	switch (pix_format) {
-	case PIX_FMT_Y8:
-	case PIX_FMT_RGB24:
-		if (fabs(max - min) < 2) {
-			if (min >= 2) {
-				min -= 2;
-			} else if (max <= 253) {
-				max += 2;
-			}
+void stretch_preview(preview_image *img, const stretch_config_t sconfig) {
+	if (
+		img->m_pix_format == PIX_FMT_Y8 ||
+		img->m_pix_format == PIX_FMT_Y16 ||
+		img->m_pix_format == PIX_FMT_Y32 ||
+		img->m_pix_format == PIX_FMT_F32 ||
+		img->m_pix_format == PIX_FMT_RGB24 ||
+		img->m_pix_format == PIX_FMT_RGB48 ||
+		img->m_pix_format == PIX_FMT_RGB96 ||
+		img->m_pix_format == PIX_FMT_RGBF
+	) {
+		Stretcher s(img->m_width, img->m_height, img->m_pix_format);
+		StretchParams sp;
+		sp.grey_red.highlights = sp.green.highlights = sp.blue.highlights = 0.9;
+		if (sconfig.stretch_level > 0) {
+			sp = s.computeParams((const uint8_t*)img->m_raw_data, stretch_params_lut[sconfig.stretch_level].brightness, stretch_params_lut[sconfig.stretch_level].contrast);
 		}
-		break;
-	case PIX_FMT_Y16:
-	case PIX_FMT_RGB48:
-		if (fabs(max - min) < 2) {
-			if (min >= 2) {
-				min -= 2;
-			} else if (max <= 65533) {
-				max += 2;
-			}
-		}
-		break;
-	default:
-		indigo_error("PREVIEW: Unsupported pixel format (%d)", pix_format);
-		return;
-	}
+		indigo_debug("Stretch level: %d, params %f %f %f\n", sconfig.stretch_level, sp.grey_red.shadows, sp.grey_red.midtones, sp.grey_red.highlights);
 
-	range = max - min;
-	if (range < 2) range = 2;
-	double scale = 256.0 / range;
-
-	indigo_debug("PREVIEW: pix_format = %d sum = %d thresh = %d max = %d min = %d", pix_format, sum, thresh, max, min);
-
-	if (pix_format == PIX_FMT_Y8) {
-		uint8_t* buf = (uint8_t*)img->m_raw_data;
-		int index = 0;
-		for (int y = 0; y < height; ++y) {
-			QCoreApplication::processEvents();
-			for (int x = 0; x < width; ++x) {
-				int value = buf[index++] - min;
-				if (value >= range) value = 255;
-				else value *= scale;
-				img->setPixel(x, y, qRgb(value, value, value));
-			}
+		if (sconfig.balance) {
+			sp.refChannel = &sp.green;
 		}
-	} else if (pix_format == PIX_FMT_Y16) {
-		uint16_t* buf = (uint16_t*)img->m_raw_data;
-		int index = 0;
-		for (int y = 0; y < height; ++y) {
-			QCoreApplication::processEvents();
-			for (int x = 0; x < width; ++x) {
-				int value = buf[index++] - min;
-				if (value >= range) value = 255;
-				else value *= scale;
-				img->setPixel(x, y, qRgb(value, value, value));
-			}
-		}
-	} else if (pix_format == PIX_FMT_RGB24) {
-		uint8_t* buf = (uint8_t*)img->m_raw_data;
-		int index = 0;
-		for (int y = 0; y < height; ++y) {
-			QCoreApplication::processEvents();
-			for (int x = 0; x < width; ++x) {
-				int value_r = buf[index] - min;
-				index++;
-				int value_g = buf[index] - min;
-				index++;
-				int value_b = buf[index] - min;
-				index++;
-
-				if (value_r >= range) value_r = 255;
-				else value_r *= scale;
-				if (value_g >= range) value_g = 255;
-				else value_g *= scale;
-				if (value_b >= range) value_b = 255;
-				else value_b *= scale;
-				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
-			}
-		}
-	} else if (pix_format == PIX_FMT_RGB48) {
-		uint16_t* buf = (uint16_t*)img->m_raw_data;
-		int index = 0;
-		for (int y = 0; y < height; ++y) {
-			QCoreApplication::processEvents();
-			for (int x = 0; x < width; ++x) {
-				int value_r = buf[index] - min;
-				index++;
-				int value_g = buf[index] - min;
-				index++;
-				int value_b = buf[index] - min;
-				index++;
-
-				if (value_r >= range) value_r = 255;
-				else value_r *= scale;
-				if (value_g >= range) value_g = 255;
-				else value_g *= scale;
-				if (value_b >= range) value_b = 255;
-				else value_b *= scale;
-				img->setPixel(x, y, qRgb(value_r, value_g, value_b));
-			}
-		}
+		s.setParams(sp);
+		s.stretch((const uint8_t*)img->m_raw_data, img, 1);
 	} else {
-		indigo_error("PREVIEW: Unsupported pixel format (%d)", pix_format);
+		char *c = (char*)&img->m_pix_format;
+		indigo_error("%s(): Unsupported pixel format (%c%c%c%c)", __FUNCTION__, c[0], c[1], c[2], c[3]);
 	}
 }
 
-preview_image* create_preview(indigo_property *property, indigo_item *item, const double white_threshold) {
+preview_image* create_preview(indigo_property *property, indigo_item *item, const stretch_config_t sconfig) {
 	preview_image *preview = nullptr;
 	if (property->type == INDIGO_BLOB_VECTOR && property->state == INDIGO_OK_STATE) {
-		preview = create_preview(item, white_threshold);
+		preview = create_preview(item, sconfig);
 	}
 	return preview;
 }
 
-preview_image* create_preview(indigo_item *item, const double white_threshold) {
-	return create_preview((unsigned char*)item->blob.value, item->blob.size, item->blob.format, white_threshold);
+preview_image* create_preview(indigo_item *item, const stretch_config_t sconfig) {
+	return create_preview((unsigned char*)item->blob.value, item->blob.size, item->blob.format, sconfig);
 }
 
-preview_image* create_preview(unsigned char *data, size_t size, const char* format, const double white_threshold) {
+preview_image* create_preview(unsigned char *data, size_t size, const char* format, const stretch_config_t sconfig) {
 	preview_image *preview = nullptr;
 	if (data != NULL && format != NULL) {
-		if (!strcmp(format, ".jpeg") ||
-			!strcmp(format, ".jpg")  ||
-			!strcmp(format, ".JPG")  ||
-			!strcmp(format, ".JPEG")
-		) {
+		if ((((uint8_t *)data)[0] == 0xFF && ((uint8_t *)data)[1] == 0xD8 && ((uint8_t *)data)[2] == 0xFF)) {
 			preview = create_jpeg_preview(data, size);
-		} else if (
-			!strcmp(format, ".fits") ||
-			!strcmp(format, ".fit")  ||
-			!strcmp(format, ".fts")  ||
-			!strcmp(format, ".FITS") ||
-			!strcmp(format, ".FIT")  ||
-			!strcmp(format, ".FTS")
-		) {
-			preview = create_fits_preview(data, size, white_threshold);
-		} else if (
-			!strcmp(format, ".raw") ||
-			!strcmp(format, ".RAW")
-		) {
-			preview = create_raw_preview(data, size, white_threshold);
-		} else if (
-			!strcmp(format, ".tif")  ||
-			!strcmp(format, ".tiff") ||
-			!strcmp(format, ".TIF")  ||
-			!strcmp(format, ".TIFF")
-		) {
-			preview = create_tiff_preview(data, size);
+		} else if (!strncmp((const char*)data, "SIMPLE", 6)) {
+			preview = create_fits_preview(data, size, sconfig);
+		} else if (!strncmp((const char*)data, "RAW", 3)) {
+			preview = create_raw_preview(data, size, sconfig);
+		} else if (!strncmp((const char*)data, "XISF0100", 8)) {
+			preview = create_xisf_preview(data, size, sconfig);
+		//} else if (!strncmp((const char*)data, "II*", 3) || !strncmp((const char*)data, "MM*", 3)) {
+		//	preview = create_tiff_preview(data, size);
 		} else if (format[0] != '\0') {
-			/* DUMMY TEST CODE */
-			/*
-			FILE *file;
-			char *buffer;
-			unsigned long fileLen;
-			char name[100] = "/home/rumen/test.png";
-			file = fopen(name, "rb");
-			fseek(file, 0, SEEK_END);
-			fileLen=ftell(file);
-			fseek(file, 0, SEEK_SET);
-			buffer=(char *)malloc(fileLen+1);
-			fread(buffer, fileLen, 1, file);
-			fclose(file);
-			preview = create_qt_preview((unsigned char*)buffer, fileLen);
-			*/
-			preview = create_qtsupported_preview(data, size);
+			preview = create_dslr_raw_preview(data, size, sconfig);
+			if (preview == nullptr) {
+				preview = create_qtsupported_preview(data, size);
+			}
 		}
 	}
 	return preview;

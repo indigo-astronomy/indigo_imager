@@ -18,9 +18,11 @@
 
 #include <imagerwindow.h>
 #include <propertycache.h>
+#include <indigoclient.h>
 #include <conf.h>
 #include <indigo_cat_data.h>
 #include <QLCDNumber>
+#include <qaddcustomobject.h>
 
 void write_conf();
 
@@ -68,6 +70,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	set_ok(m_mount_ra_label);
 	m_mount_ra_label->show();
 	telescope_frame_layout->addWidget(m_mount_ra_label, row, 2, 1, 2);
+	m_mount_ra = 0;
 
 	row++;
 	m_mount_dec_label = new QLCDNumber(13);
@@ -77,6 +80,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	set_ok(m_mount_dec_label);
 	m_mount_dec_label->show();
 	telescope_frame_layout->addWidget(m_mount_dec_label, row, 2, 1, 2);
+	m_mount_dec = 0;
 
 	row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -160,10 +164,12 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 
 	m_mount_ra_input = new QLineEdit();
 	m_mount_ra_input->setPlaceholderText("hh:mm:ss");
+	m_mount_ra_input->setToolTip("Enter Right ascension in format hh:mm:ss or\nright-click on a solved image to load the coordinates");
 	telescope_frame_layout->addWidget(m_mount_ra_input, row, 2);
 
 	m_mount_dec_input = new QLineEdit();
 	m_mount_dec_input->setPlaceholderText("dd:mm:ss");
+	m_mount_dec_input->setToolTip("Enter Declination in format dd:mm:ss or\nright-click on a solved image to load the coordinates");
 	telescope_frame_layout->addWidget(m_mount_dec_input, row, 3);
 
 	row++;
@@ -203,7 +209,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 
 	// image frame
 	QFrame *slew_frame = new QFrame();
-	telescope_tabbar->addTab(slew_frame, "Slew && Track");
+	telescope_tabbar->addTab(slew_frame, "Main");
 
 	QGridLayout *slew_frame_layout = new QGridLayout();
 	slew_frame_layout->setAlignment(Qt::AlignTop);
@@ -279,7 +285,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	set_ok(m_mount_side_of_pier_label);
 	slew_frame_layout->addWidget(m_mount_side_of_pier_label, slew_row, slew_col);
 
-	slew_row = 2;
+	slew_row++;
 	m_mount_track_cbox = new QCheckBox("Tracking");
 	m_mount_track_cbox->setEnabled(false);
 	set_ok(m_mount_track_cbox);
@@ -287,11 +293,36 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	connect(m_mount_track_cbox, &QPushButton::clicked, this, &ImagerWindow::on_mount_track);
 
 	slew_row++;
+	m_mount_home_cbox = new QCheckBox("Go home");
+	m_mount_home_cbox->setEnabled(false);
+	set_ok(m_mount_home_cbox);
+	slew_frame_layout->addWidget(m_mount_home_cbox, slew_row, slew_col);
+	connect(m_mount_home_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_home);
+
+	slew_row++;
 	m_mount_park_cbox = new QCheckBox("Park");
 	m_mount_park_cbox->setEnabled(false);
 	set_ok(m_mount_park_cbox);
 	slew_frame_layout->addWidget(m_mount_park_cbox, slew_row, slew_col);
 	connect(m_mount_park_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_park);
+
+	slew_row++;
+	label = new QLabel("Stop guiding on slew:");
+	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	slew_frame_layout->addWidget(label, slew_row, slew_col);
+	slew_row++;
+	m_mount_guider_select = new QComboBox();
+	slew_frame_layout->addWidget(m_mount_guider_select, slew_row, slew_col);
+	connect(m_mount_guider_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_mount_guider_agent_selected);
+
+	slew_row++;
+	label = new QLabel("Joystick control:");
+	slew_frame_layout->addWidget(label, slew_row, slew_col);
+	slew_row++;
+	m_mount_joystick_select = new QComboBox();
+	m_mount_joystick_select->setToolTip("Select joystick to control the telescope");
+	slew_frame_layout->addWidget(m_mount_joystick_select, slew_row, slew_col);
+	connect(m_mount_joystick_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_mount_joystick_selected);
 
 	QFrame *obj_frame = new QFrame();
 	telescope_tabbar->addTab(obj_frame, "Object");
@@ -305,18 +336,30 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	obj_frame->setContentsMargins(0, 0, 0, 0);
 
 	int obj_row = 0;
-	label = new QLabel("Search object: ");
+	label = new QLabel("Search: ");
 	obj_frame_layout->addWidget(label, obj_row, 0);
 	m_object_search_line = new QLineEdit();
 	m_object_search_line->setPlaceholderText("E.g. M42, Ain, Vega ...");
-	obj_frame_layout->addWidget(m_object_search_line, obj_row, 1);
+	obj_frame_layout->addWidget(m_object_search_line, obj_row, 1, 1, 2);
 	connect(m_object_search_line, &QLineEdit::textEdited, this, &ImagerWindow::on_object_search_changed);
 	connect(m_object_search_line, &QLineEdit::returnPressed, this, &ImagerWindow::on_object_search_entered);
 
+	m_add_object_button = new QToolButton(this);
+	m_add_object_button->setToolTip(tr("Add object to custom database"));
+	m_add_object_button->setIcon(QIcon(":resource/zoom-in.png"));
+	obj_frame_layout->addWidget(m_add_object_button, obj_row, 3);
+	connect(m_add_object_button, &QToolButton::clicked, this, &ImagerWindow::on_custom_object_add);
+
+	m_remove_object_button = new QToolButton(this);
+	m_remove_object_button->setToolTip(tr("Remove selected custom database object"));
+	m_remove_object_button->setIcon(QIcon(":resource/zoom-out.png"));
+	obj_frame_layout->addWidget(m_remove_object_button, obj_row, 4);
+	connect(m_remove_object_button, &QToolButton::clicked, this, &ImagerWindow::on_custom_object_remove);
+
 	obj_row++;
 	m_object_list = new QListWidget();
-	m_object_list->setStyleSheet("QListWidget {border: 1px solid #353535;}");
-	obj_frame_layout->addWidget(m_object_list, obj_row, 0, 1, 2);
+	m_object_list->setStyleSheet("QListWidget {border: 1px solid #404040;}");
+	obj_frame_layout->addWidget(m_object_list, obj_row, 0, 1, 5);
 	connect(m_object_list, &QListWidget::itemSelectionChanged, this, &ImagerWindow::on_object_selected);
 	connect(m_object_list, &QListWidget::itemClicked, this, &ImagerWindow::on_object_clicked);
 
@@ -336,21 +379,23 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	solve_frame_layout->addWidget(m_solver_status_label2, solve_row, 0, 1, 4);
 
 	solve_row++;
-	// Exposure time
-	label = new QLabel("Exposure time (s):");
-	solve_frame_layout->addWidget(label, solve_row, 0, 1, 2);
-	m_solver_exposure2 = new QDoubleSpinBox();
-	m_solver_exposure2->setMaximum(10000);
-	m_solver_exposure2->setMinimum(0);
-	m_solver_exposure2->setValue(1);
-	solve_frame_layout->addWidget(m_solver_exposure2, solve_row, 2, 1, 2);
-
-	solve_row++;
 	label = new QLabel("Image source:");
 	solve_frame_layout->addWidget(label, solve_row, 0, 1, 2);
 	m_solver_source_select2 = new QComboBox();
 	solve_frame_layout->addWidget(m_solver_source_select2, solve_row, 2, 1, 2);
 	connect(m_solver_source_select2, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_image_source2_selected);
+
+	solve_row++;
+	// Exposure time
+	label = new QLabel("Exposure time (s):");
+	solve_frame_layout->addWidget(label, solve_row, 0, 1, 2);
+	m_solver_exposure2 = new QDoubleSpinBox();
+	m_solver_exposure2->setDecimals(3);
+	m_solver_exposure2->setMaximum(10000);
+	m_solver_exposure2->setMinimum(0);
+	m_solver_exposure2->setValue(1);
+	m_solver_exposure2->setEnabled(false);
+	solve_frame_layout->addWidget(m_solver_exposure2, solve_row, 2, 1, 2);
 
 	solve_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -462,7 +507,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	site_frame_layout->addItem(spacer, site_row, 0, 1, 4);
 
 	site_row++;
-	m_mount_sync_time_cbox = new QCheckBox("Keep mount time sychronized");
+	m_mount_sync_time_cbox = new QCheckBox("Keep mount time synchronized");
 	m_mount_sync_time_cbox->setEnabled(false);
 	site_frame_layout->addWidget(m_mount_sync_time_cbox, site_row, 0, 1, 4);
 	connect(m_mount_sync_time_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_sync_time);
@@ -531,6 +576,170 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	set_idle(m_gps_utc);
 	gps_frame_layout->addWidget(m_gps_utc, gps_row, 2, 1, 2);
 
+	// Polar Align tab
+	QFrame *palign_frame = new QFrame();
+	telescope_tabbar->addTab(palign_frame, "Polar align");
+
+	QGridLayout *palign_frame_layout = new QGridLayout();
+	palign_frame_layout->setAlignment(Qt::AlignTop);
+	palign_frame->setLayout(palign_frame_layout);
+	palign_frame->setFrameShape(QFrame::StyledPanel);
+	palign_frame->setContentsMargins(0, 0, 0, 0);
+
+	int palign_row = 0;
+	m_pa_status_label = new QLabel("");
+	m_pa_status_label->setTextFormat(Qt::RichText);
+	m_pa_status_label->setText("<img src=\":resource/led-grey.png\"> Idle");
+	palign_frame_layout->addWidget(m_pa_status_label, palign_row, 0, 1, 4);
+
+	palign_row++;
+	label = new QLabel("Image source:");
+	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
+	m_solver_source_select3 = new QComboBox();
+	palign_frame_layout->addWidget(m_solver_source_select3, palign_row, 2, 1, 2);
+	connect(m_solver_source_select3, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_image_source3_selected);
+
+	palign_row++;
+	// Exposure time
+	label = new QLabel("Exposure time (s):");
+	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
+	m_solver_exposure3 = new QDoubleSpinBox();
+	m_solver_exposure3->setDecimals(3);
+	m_solver_exposure3->setMaximum(10000);
+	m_solver_exposure3->setMinimum(0);
+	m_solver_exposure3->setValue(1);
+	m_solver_exposure3->setEnabled(false);
+	palign_frame_layout->addWidget(m_solver_exposure3, palign_row, 2, 1, 1);
+	connect(m_solver_exposure3, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_mount_agent_set_pa_settings);
+
+	m_pa_refraction_cbox = new QCheckBox("Comp. AR");
+	m_pa_refraction_cbox->setToolTip("Compensate for atmospheric refraction.\nSome mounts do it automatically, in this case it should be off.");
+	m_pa_refraction_cbox->setEnabled(false);
+	palign_frame_layout->addWidget(m_pa_refraction_cbox, palign_row, 3, 1, 1);
+	connect(m_pa_refraction_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_agent_set_pa_refraction);
+
+	palign_row++;
+	label = new QLabel("Hour Angle move (°):");
+	palign_frame_layout->addWidget(label, palign_row, 0, 1, 2);
+	m_pa_move_ha = new QDoubleSpinBox();
+	m_pa_move_ha->setEnabled(false);
+	connect(m_pa_move_ha, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_mount_agent_set_pa_settings);
+	palign_frame_layout->addWidget(m_pa_move_ha, palign_row, 2, 1, 1);
+
+	palign_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	palign_frame_layout->addItem(spacer, palign_row, 0, 1, 4);
+
+	palign_row++;
+	toolbar = new QWidget;
+	toolbox = new QHBoxLayout(toolbar);
+	toolbar->setContentsMargins(0,0,0,0);
+	toolbox->setContentsMargins(0,0,0,0);
+	palign_frame_layout->addWidget(toolbar, palign_row, 0, 1, 4);
+
+	m_mount_start_pa_button = new QPushButton("Start alignment");
+	m_mount_start_pa_button->setEnabled(false);
+	m_mount_start_pa_button->setStyleSheet("min-width: 30px");
+	m_mount_start_pa_button->setIcon(QIcon(":resource/play.png"));
+	toolbox->addWidget(m_mount_start_pa_button);
+	connect(m_mount_start_pa_button, &QPushButton::clicked, this, &ImagerWindow::on_mount_polar_align);
+
+	m_mount_recalculate_pe_button = new QPushButton("Recalculate error");
+	m_mount_recalculate_pe_button->setEnabled(false);
+	m_mount_recalculate_pe_button->setStyleSheet("min-width: 30px");
+	m_mount_recalculate_pe_button->setIcon(QIcon(":resource/calibrate.png"));
+	toolbox->addWidget(m_mount_recalculate_pe_button);
+	connect(m_mount_recalculate_pe_button , &QPushButton::clicked, this, &ImagerWindow::on_mount_recalculate_polar_error);
+
+	m_mount_pa_stop_button = new QPushButton("Stop");
+	m_mount_pa_stop_button->setEnabled(false);
+	m_mount_pa_stop_button->setStyleSheet("min-width: 15px");
+	m_mount_pa_stop_button->setIcon(QIcon(":resource/stop.png"));
+	toolbox->addWidget(m_mount_pa_stop_button);
+	connect(m_mount_pa_stop_button , &QPushButton::clicked, this, &ImagerWindow::on_mount_polar_align_stop);
+
+	palign_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	palign_frame_layout->addItem(spacer, palign_row, 0, 1, 4);
+
+	palign_row++;
+	label = new QLabel("Polar error:");
+	palign_frame_layout->addWidget(label, palign_row, 0, 1, 1);
+	m_pa_error_label = new QLabel();
+	m_pa_error_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	palign_frame_layout->addWidget(m_pa_error_label, palign_row, 1, 1, 3);
+
+	palign_row++;
+	label = new QLabel("Azimuth error:");
+	palign_frame_layout->addWidget(label, palign_row, 0, 1, 1);
+	m_pa_error_az_label = new QLabel();
+	m_pa_error_az_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	palign_frame_layout->addWidget(m_pa_error_az_label, palign_row, 1, 1, 3);
+
+	palign_row++;
+	label = new QLabel("Altitude error:");
+	palign_frame_layout->addWidget(label, palign_row, 0, 1, 1);
+	m_pa_error_alt_label = new QLabel();
+	m_pa_error_alt_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	palign_frame_layout->addWidget(m_pa_error_alt_label, palign_row, 1, 1, 3);
+}
+
+void ImagerWindow::on_mount_polar_align_stop() {
+	QtConcurrent::run([&]() {
+		m_property_mutex.lock();
+		static char selected_solver_agent[INDIGO_NAME_SIZE];
+		if (get_selected_solver_agent(selected_solver_agent)) {
+			change_solver_agent_abort(selected_solver_agent);
+		}
+		m_property_mutex.unlock();
+	});
+}
+
+void ImagerWindow::on_mount_guider_agent_selected(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		static char old_agent[INDIGO_NAME_SIZE];
+		static char new_agent[INDIGO_NAME_SIZE];
+
+		selected_agent[0] = '\0';
+		old_agent[0] = '\0';
+		new_agent[0] = '\0';
+
+		get_selected_mount_agent(selected_agent);
+
+		indigo_property *p = properties.get(selected_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
+		if (!p) return;
+
+		for (int i = 0; i < p->count; i++) {
+			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Guider Agent", strlen("Guider Agent"))) {
+				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
+				break;
+			}
+		}
+		strncpy(new_agent, m_mount_guider_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+
+		indigo_debug("[SELECTED] %s '%s' %s -> %s\n", __FUNCTION__, selected_agent, old_agent, new_agent);
+		change_related_agent(selected_agent, old_agent, new_agent);
+	});
+}
+
+void ImagerWindow::on_mount_joystick_selected(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_joystick[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
+		QString q_joystick_str = m_mount_joystick_select->currentText();
+		if (q_joystick_str.compare("No joystick") == 0) {
+			strcpy(selected_joystick, "NONE");
+		} else {
+			strncpy(selected_joystick, q_joystick_str.toUtf8().constData(), INDIGO_NAME_SIZE);
+		}
+		get_selected_mount_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_joystick);
+		static const char * items[] = { selected_joystick };
+
+		static bool values[] = { true };
+		indigo_change_switch_property(nullptr, selected_agent, FILTER_JOYSTICK_LIST_PROPERTY_NAME, 1, items, values);
+	});
 }
 
 void ImagerWindow::on_mount_agent_selected(int index) {
@@ -587,6 +796,28 @@ void ImagerWindow::on_mount_sync(int index) {
 	});
 }
 
+void ImagerWindow::on_mount_agent_set_pa_settings(double value) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_solver_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+
+		change_solver_agent_pa_settings(selected_agent);
+	});
+}
+
+void ImagerWindow::on_mount_agent_set_pa_refraction(bool clicked) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_solver_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+
+		change_solver_agent_pa_settings(selected_agent);
+	});
+}
+
 void ImagerWindow::on_mount_abort(int index) {
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -627,6 +858,18 @@ void ImagerWindow::on_mount_park(int state) {
 		} else {
 			indigo_change_switch_property_1(nullptr, selected_agent, MOUNT_PARK_PROPERTY_NAME, MOUNT_PARK_UNPARKED_ITEM_NAME, true);
 		}
+	});
+}
+
+void ImagerWindow::on_mount_home(int state) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+		bool checked = m_mount_home_cbox->checkState();
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+
+		indigo_change_switch_property_1(nullptr, selected_agent, MOUNT_HOME_PROPERTY_NAME, MOUNT_HOME_ITEM_NAME, checked);
 	});
 }
 
@@ -736,6 +979,33 @@ void ImagerWindow::on_mount_gps_selected(int index) {
 	});
 }
 
+void ImagerWindow::on_image_right_click_ra_dec(double ra, double dec, double telescope_ra, double telescope_dec, Qt::KeyboardModifiers modifiers) {
+	char message[255];
+
+	set_text(m_mount_ra_input, indigo_dtos(telescope_ra / 15.0, "%d:%02d:%04.1f"));
+	set_text(m_mount_dec_input, indigo_dtos(telescope_dec, "%d:%02d:%04.1f"));
+	if (modifiers & Qt::ControlModifier || modifiers & Qt::AltModifier) {
+		snprintf(
+			message, 255, "Centering telescope α = %s, δ = %s (solved α = %s, δ = %s)",
+			indigo_dtos(telescope_ra / 15, "%dh %02d' %04.1f\""),
+			indigo_dtos(telescope_dec, "%+d° %02d' %04.1f\""),
+			indigo_dtos(ra / 15, "%dh %02d' %04.1f\""),
+			indigo_dtos(dec, "%+d° %02d' %04.1f\"")
+		);
+		window_log(message);
+		on_mount_goto(0);
+	} else {
+		snprintf(
+			message, 255, "Push Goto to center telescope α = %s, δ = %s (solved α = %s, δ = %s)",
+			indigo_dtos(telescope_ra / 15, "%dh %02d' %04.1f\""),
+			indigo_dtos(telescope_dec, "%+d° %02d' %04.1f\""),
+			indigo_dtos(ra / 15, "%dh %02d' %04.1f\""),
+			indigo_dtos(dec, "%+d° %02d' %04.1f\"")
+		);
+		window_log(message);
+	}
+
+}
 
 void ImagerWindow::on_mount_solve_and_center() {
 	trigger_solve_and_sync(true);
@@ -745,10 +1015,25 @@ void ImagerWindow::on_mount_solve_and_sync() {
 	trigger_solve_and_sync(false);
 }
 
+void ImagerWindow::on_mount_polar_align() {
+	trigger_polar_alignment(false);
+}
+
+void ImagerWindow::on_mount_recalculate_polar_error() {
+	trigger_polar_alignment(true);
+}
+
 void ImagerWindow::on_image_source2_selected(int index) {
 	QString solver_source = m_solver_source_select2->currentText();
 	strncpy(conf.solver_image_source2, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
 	indigo_debug("%s -> %s\n", __FUNCTION__, conf.solver_image_source2);
+	write_conf();
+}
+
+void ImagerWindow::on_image_source3_selected(int index) {
+	QString solver_source = m_solver_source_select3->currentText();
+	strncpy(conf.solver_image_source3, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
+	indigo_debug("%s -> %s\n", __FUNCTION__, conf.solver_image_source3);
 	write_conf();
 }
 
@@ -761,6 +1046,29 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 	strncpy(obj_name_c, obj_name.toUtf8().data(), INDIGO_VALUE_SIZE);
 
 	if (obj_name_c[0] == '\0') return;
+
+	auto objects = m_custom_object_model->m_objects;
+	for (auto i = objects.constBegin(); i != objects.constEnd(); ++i) {
+		auto object = *i;
+		if (object->matchObject(obj_name_c)) {
+			QListWidgetItem *item = new QListWidgetItem(object->m_name);
+			snprintf(
+				tooltip_c,
+				INDIGO_VALUE_SIZE,
+				"<b>%s</b> (Custom DB object)<p>α: %s<br>δ: %s<br>Apparent magnitude: %.1f<sup>m</sup><br><nobr>Description: %s</nobr></p>\n",
+				object->m_name.toUtf8().constData(),
+				indigo_dtos(object->m_ra, "%d:%02d:%04.1f"),
+				indigo_dtos(object->m_dec, "+%d:%02d:%04.1f"),
+				object->m_mag,
+				object->m_description.toUtf8().constData()
+			);
+			item->setToolTip(tooltip_c);
+			item->setData(Qt::UserRole, object->m_name);
+			m_object_list->addItem(item);
+			//indigo_debug("%s -> %s = %s (custom)\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
+		}
+	}
+
 	indigo_dso_entry *dso = &indigo_dso_data[0];
 	while (dso->id) {
 		if (
@@ -777,9 +1085,11 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 			snprintf(
 				tooltip_c,
 				INDIGO_VALUE_SIZE,
-				"<b>%s</b> (%s)<p>Apparent size: %.1f' x %.1f'<br>Apparent magnitude: %.1f<sup>m</sup><br><nobr>Names: %s</nobr></p>\n",
+				"<b>%s</b> (%s)<p>α: %s<br>δ: %s<br>Apparent size: %.1f' x %.1f'<br>Apparent magnitude: %.1f<sup>m</sup><br><nobr>Names: %s</nobr></p>\n",
 				dso->id,
 				indigo_dso_type_description[dso->type],
+				indigo_dtos(dso->ra, "%d:%02d:%04.1f"),
+				indigo_dtos(dso->dec, "+%d:%02d:%04.1f"),
 				dso->r1, dso->r2,
 				dso->mag,
 				dso->name
@@ -787,31 +1097,41 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 			item->setToolTip(tooltip_c);
 			item->setData(Qt::UserRole, data);
 			m_object_list->addItem(item);
-			indigo_debug("%s -> %s = %s\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
+			//indigo_debug("%s -> %s = %s\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
 		}
 		dso++;
 	}
+
 	indigo_star_entry *star = &indigo_star_data[0];
+	QRegExp hip_re("HIP\\d+");
+	hip_re.setCaseSensitivity(Qt::CaseInsensitive);
 	while (star->hip) {
+		QString star_name = "HIP" + QString::number(star->hip);
 		if (
-			star->name &&
-			QString(star->name).contains(obj_name_c, Qt::CaseInsensitive)
+			(star->name && QString(star->name).contains(obj_name_c, Qt::CaseInsensitive)) ||
+			(hip_re.exactMatch(obj_name) && star_name.contains(obj_name_c, Qt::CaseInsensitive))
 		) {
-			data = QString(star->name);
-			name = QString(star->name);
+			data = star_name;
+			if (star->name == nullptr || star->name[0] == '\0') {
+				name = star_name;
+			} else {
+				name = star_name + ", " + star->name;
+			}
 			QListWidgetItem *item = new QListWidgetItem(name);
 			snprintf(
 				tooltip_c,
 				INDIGO_VALUE_SIZE,
-				"<b>HIP%d</b> (Star)<p>Apparent magnitude: %.1f<sup>m</sup><br><nobr>Names: %s</nobr></p>\n",
+				"<b>HIP%d</b> (Star)<p>α: %s<br>δ: %s<br>Apparent magnitude: %.1f<sup>m</sup><br><nobr>Names: %s</nobr></p>\n",
 				star->hip,
+				indigo_dtos(star->ra, "%d:%02d:%04.1f"),
+				indigo_dtos(star->dec, "+%d:%02d:%04.1f"),
 				star->mag,
-				star->name
+				star->name ? star->name : ""
 			);
 			item->setToolTip(tooltip_c);
 			item->setData(Qt::UserRole, data);
 			m_object_list->addItem(item);
-			indigo_debug("%s -> %s = %s\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
+			//indigo_debug("%s -> %s = %s\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
 		}
 		star++;
 	}
@@ -834,10 +1154,16 @@ void ImagerWindow::on_object_selected() {
 	QList<QListWidgetItem *> selected = m_object_list->selectedItems();
 	if (selected.isEmpty()) return;
 	QListWidgetItem *object = selected.at(0);
-	QString data = object->data(Qt::UserRole).toString();
+	QString object_id = object->data(Qt::UserRole).toString();
 
 	char obj_id_c[1000];
-	strcpy(obj_id_c, data.toUtf8().data());
+	strcpy(obj_id_c, object_id.toUtf8().data());
+
+	int index = m_custom_object_model->findObject(obj_id_c);
+	if (index >= 0) {
+		set_text(m_mount_ra_input, indigo_dtos(m_custom_object_model->m_objects.at(index)->m_ra, "%d:%02d:%04.1f"));
+		set_text(m_mount_dec_input, indigo_dtos(m_custom_object_model->m_objects.at(index)->m_dec, "%d:%02d:%04.1f"));
+	}
 
 	indigo_dso_entry *dso = &indigo_dso_data[0];
 	while (dso->id) {
@@ -850,7 +1176,8 @@ void ImagerWindow::on_object_selected() {
 	}
 	indigo_star_entry *star = &indigo_star_data[0];
 	while (star->hip) {
-		if (star->name && !strcmp(star->name, obj_id_c)) {
+		QString star_name = "HIP" + QString::number(star->hip);
+		if (star_name == object_id) {
 			set_text(m_mount_ra_input, indigo_dtos(star->ra, "%d:%02d:%04.1f"));
 			set_text(m_mount_dec_input, indigo_dtos(star->dec, "%d:%02d:%04.1f"));
 			break;
@@ -858,5 +1185,58 @@ void ImagerWindow::on_object_selected() {
 		star++;
 	}
 
-	indigo_debug("%s -> %s = %s\n", __FUNCTION__, object->text().toUtf8().constData(), data.toUtf8().constData());
+	indigo_debug("%s -> %s = %s\n", __FUNCTION__, object->text().toUtf8().constData(), object_id.toUtf8().constData());
+}
+
+void ImagerWindow::on_custom_object_add() {
+	indigo_debug("%s -> 0\n", __FUNCTION__);
+	m_add_object_dialog->show();
+}
+
+void ImagerWindow::on_custom_object_added(CustomObject object) {
+	indigo_debug("%s -> %s\n", __FUNCTION__, object.m_name.toUtf8().constData());
+	if (m_custom_object_model->addObject(object.m_name, object.m_ra, object.m_dec, object.m_mag, object.m_description)) {
+		m_custom_object_model->saveObjects();
+		QString message("Object '" + object.m_name + "' added to custom database");
+		window_log(message.toUtf8().data());
+		m_add_object_dialog->clear();
+	} else {
+		QString message("Object '" + object.m_name + "' already exists in custom database");
+		window_log(message.toUtf8().data(), INDIGO_ALERT_STATE);
+	}
+}
+
+void ImagerWindow::on_custom_object_remove() {
+	QList<QListWidgetItem *> selected = m_object_list->selectedItems();
+	if (selected.isEmpty()) {
+		indigo_debug("%s -> No selection\n", __FUNCTION__);
+		return;
+	}
+	QListWidgetItem *object = selected.at(0);
+	QString obj_id = object->data(Qt::UserRole).toString();
+
+	int index = m_custom_object_model->findObject(obj_id);
+	if (index < 0) {
+		window_log("Only objects in custom database can be removed", INDIGO_ALERT_STATE);
+		return;
+	}
+
+	int ret = QMessageBox::question(
+		this,
+		"Remove object",
+		"Object <b>" + obj_id + "</b> is about to be removed<br><br>" + "Do you want to continue?" ,
+		QMessageBox::Yes | QMessageBox::No,
+		QMessageBox::No
+	);
+
+	if (ret == QMessageBox::Yes) {
+		m_custom_object_model->removeObject(obj_id);
+		m_custom_object_model->saveObjects();
+		delete(object);
+		QString message("Object '" + obj_id + "' removed");
+		window_log(message.toUtf8().data());
+		indigo_debug("%s -> removed %s\n", __FUNCTION__, obj_id.toUtf8().constData());
+	} else {
+		indigo_debug("%s -> keep %s\n", __FUNCTION__, obj_id.toUtf8().constData());
+	}
 }

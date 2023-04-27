@@ -3,14 +3,14 @@
 VERSION=${1}
 
 DEBFULLNAME="Rumen Bogdanovski"
-EMAIL="rumen@skyarchive.org"
+EMAIL="rumenastro@gmail.com"
 
 __check_file_exits() {
     [ ! -f ${1} ] && { echo "file '${1}' not found"; exit 1; }
 }
 
 # Check for files where version number shall be replaced.
-__check_file_exits "ain_imager_src/version.h"
+__check_file_exits "common_src/version.h"
 
 # Make sure debian/changelog does not exists because we will genrate it.
 rm -f debian/changelog

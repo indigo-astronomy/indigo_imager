@@ -124,28 +124,28 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	stats_frame_layout->addWidget(m_guider_graph, stats_row, 0, 1, 2);
 
 	stats_row++;
-	label = new QLabel("Drift RA / Dec (px):");
+	label = new QLabel("Drift RA / Dec:");
 	stats_frame_layout->addWidget(label, stats_row, 0);
 	m_guider_rd_drift_label = new QLabel();
 	m_guider_rd_drift_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	stats_frame_layout->addWidget(m_guider_rd_drift_label, stats_row, 1);
 
 	stats_row++;
-	label = new QLabel("Drift X / Y (px):");
+	label = new QLabel("Drift X / Y:");
 	stats_frame_layout->addWidget(label, stats_row, 0);
 	m_guider_xy_drift_label = new QLabel();
 	m_guider_xy_drift_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	stats_frame_layout->addWidget(m_guider_xy_drift_label, stats_row, 1);
 
 	stats_row++;
-	label = new QLabel("Correction RA / Dec (s):");
+	label = new QLabel("Correction RA / Dec:");
 	stats_frame_layout->addWidget(label, stats_row, 0);
 	m_guider_pulse_label = new QLabel();
 	m_guider_pulse_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	stats_frame_layout->addWidget(m_guider_pulse_label, stats_row, 1);
 
 	stats_row++;
-	label = new QLabel("RMSE RA / Dec (px):");
+	label = new QLabel("RMSE RA / Dec:");
 	stats_frame_layout->addWidget(label, stats_row, 0);
 	m_guider_rmse_label = new QLabel();
 	m_guider_rmse_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
@@ -171,6 +171,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	label = new QLabel("Exposure time (s):");
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
 	m_guider_exposure = new QDoubleSpinBox();
+	m_guider_exposure->setDecimals(3);
 	m_guider_exposure->setMaximum(100000);
 	m_guider_exposure->setMinimum(0);
 	m_guider_exposure->setValue(0);
@@ -182,6 +183,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	label = new QLabel("Exposure delay (s):");
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
 	m_guider_delay = new QDoubleSpinBox();
+	m_guider_delay->setDecimals(3);
 	m_guider_delay->setMaximum(100000);
 	m_guider_delay->setMinimum(0);
 	m_guider_delay->setValue(0);
@@ -265,8 +267,12 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	settings_row++;
 	button = new QPushButton("Clear star selection");
 	button->setStyleSheet("min-width: 30px");
+	button->setToolTip("Keyboard shortcut: Ctrl+Backspace");
 	settings_frame_layout->addWidget(button, settings_row, 0, 1, 4);
+
 	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_guider_clear_selection);
+	QShortcut *shortcut = new QShortcut(QKeySequence("Ctrl+Backspace"), this);
+	connect(shortcut, &QShortcut::activated, this, [this](){this->on_guider_clear_selection(true);});
 
 	settings_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -314,6 +320,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	label = new QLabel("Min/Max pulse (s):");
 	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 2);
 	m_guide_min_pulse = new QDoubleSpinBox();
+	m_guide_min_pulse->setDecimals(3);
 	m_guide_min_pulse->setMaximum(100000);
 	m_guide_min_pulse->setMinimum(0);
 	m_guide_min_pulse->setValue(0);
@@ -321,6 +328,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	connect(m_guide_min_pulse, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_pulse_changed);
 
 	m_guide_max_pulse = new QDoubleSpinBox();
+	m_guide_max_pulse->setDecimals(3);
 	m_guide_max_pulse->setMaximum(100000);
 	m_guide_max_pulse->setMinimum(0);
 	m_guide_max_pulse->setValue(0);
@@ -401,7 +409,14 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 
 	advanced_row++;
 	label = new QLabel("Dec Backlash (px):");
-	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
+	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 2);
+
+	m_guider_apply_backlash_cbox = new QCheckBox("");
+	m_guider_apply_backlash_cbox->setToolTip("Compensate declination backlash while guiding");
+	m_guider_apply_backlash_cbox->setEnabled(false);
+	advanced_frame_layout->addWidget(m_guider_apply_backlash_cbox, advanced_row, 2, Qt::AlignRight);
+	connect(m_guider_apply_backlash_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_guider_apply_backlash_changed);
+
 	m_guide_dec_backlash = new QDoubleSpinBox();
 	m_guide_dec_backlash->setMaximum(1);
 	m_guide_dec_backlash->setMinimum(0);
@@ -444,6 +459,10 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	misc_frame->setLayout(misc_frame_layout);
 	misc_frame->setFrameShape(QFrame::StyledPanel);
 	misc_frame->setContentsMargins(0, 0, 0, 0);
+	misc_frame_layout->setColumnStretch(0, 3);
+	misc_frame_layout->setColumnStretch(1, 1);
+	misc_frame_layout->setColumnStretch(2, 1);
+	misc_frame_layout->setColumnStretch(3, 1);
 
 	int misc_row = 0;
 	label = new QLabel("Save bandwidth:");
@@ -472,6 +491,56 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	misc_frame_layout->addWidget(m_guider_subframe_select, misc_row, 2, 1, 2);
 	m_guider_subframe_select->setCurrentIndex(conf.guider_subframe);
 	connect(m_guider_subframe_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_subframe_changed);
+
+	misc_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	misc_frame_layout->addItem(spacer, misc_row, 0);
+
+	misc_row++;
+	label = new QLabel("Camera Settings:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 4);
+
+	misc_row++;
+	label = new QLabel("Frame:");
+	misc_frame_layout->addWidget(label, misc_row, 0);
+	m_guider_frame_size_select = new QComboBox();
+	misc_frame_layout->addWidget(m_guider_frame_size_select, misc_row, 1, 1, 3);
+	connect(m_guider_frame_size_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_ccd_mode_selected);
+
+	misc_row++;
+	label = new QLabel("Gain:");
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 2);
+	m_guider_gain = new QSpinBox();
+	m_guider_gain->setEnabled(false);
+	misc_frame_layout->addWidget(m_guider_gain, misc_row, 2, 1, 2);
+	connect(m_guider_gain, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_guider_gain_changed);
+
+	misc_row++;
+	label = new QLabel("Offset:");
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 2);
+	m_guider_offset = new QSpinBox();
+	m_guider_offset->setEnabled(false);
+	misc_frame_layout->addWidget(m_guider_offset, misc_row, 2, 1, 2);
+	connect(m_guider_offset, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_guider_offset_changed);
+
+	misc_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	misc_frame_layout->addItem(spacer, misc_row, 0);
+
+	misc_row++;
+	label = new QLabel("Guider Scope Profile:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 4);
+
+	misc_row++;
+	label = new QLabel("Focal length (cm):");
+	misc_frame_layout->addWidget(label, misc_row, 0, 1, 2);
+	m_guider_focal_lenght = new QDoubleSpinBox();
+	m_guider_focal_lenght->setEnabled(false);
+	m_guider_focal_lenght->setSpecialValueText(" ");
+	misc_frame_layout->addWidget(m_guider_focal_lenght, misc_row, 2, 1, 2);
+	connect(m_guider_focal_lenght, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_agent_guider_focal_length_changed);
 }
 
 void ImagerWindow::setup_preview(const char *agent) {
@@ -480,13 +549,13 @@ void ImagerWindow::setup_preview(const char *agent) {
 	case 0:
 		break;
 	case 1:
-		change_jpeg_settings_property(agent, 93, 0.05, preview_stretch_lut[conf.guider_stretch_level]);
+		change_jpeg_settings_property(agent, 93, stretch_linear_lut[conf.guider_stretch_level].clip_black, stretch_linear_lut[conf.guider_stretch_level].clip_white);
 		break;
 	case 2:
-		change_jpeg_settings_property(agent, 89, 0.05, preview_stretch_lut[conf.guider_stretch_level]);
+		change_jpeg_settings_property(agent, 89, stretch_linear_lut[conf.guider_stretch_level].clip_black, stretch_linear_lut[conf.guider_stretch_level].clip_white);
 		break;
 	case 3:
-		change_jpeg_settings_property(agent, 50, 0.05, preview_stretch_lut[conf.guider_stretch_level]);
+		change_jpeg_settings_property(agent, 50, stretch_linear_lut[conf.guider_stretch_level].clip_black, stretch_linear_lut[conf.guider_stretch_level].clip_white);
 		break;
 	default:
 		break;
@@ -499,21 +568,24 @@ void ImagerWindow::select_guider_data(guider_display_data show) {
 			m_guider_data_1 = &m_drift_data_ra;
 			m_guider_data_2 = &m_drift_data_dec;
 			m_guider_graph->set_yaxis_range(-6, 6);
-			// m_guider_graph_label->setText("Drift RA / Dec (px):");
 			m_guider_graph_label->setText("Drift <font color=\"red\">RA</font> / <font color=\"#03acf0\">Dec</font> (px):");
+			break;
+		case SHOW_RA_DEC_S_DRIFT:
+			m_guider_data_1 = &m_drift_data_ra_s;
+			m_guider_data_2 = &m_drift_data_dec_s;
+			m_guider_graph->set_yaxis_range(-6, 6);
+			m_guider_graph_label->setText("Drift <font color=\"red\">RA</font> / <font color=\"#03acf0\">Dec</font> (arcsec):");
 			break;
 		case SHOW_RA_DEC_PULSE:
 			m_guider_data_1 = &m_pulse_data_ra;
 			m_guider_data_2 = &m_pulse_data_dec;
 			m_guider_graph->set_yaxis_range(-1.5, 1.5);
-			// m_guider_graph_label->setText("Guiding Pulses RA / Dec (s):");
 			m_guider_graph_label->setText("Guiding Pulses <font color=\"red\">RA</font> / <font color=\"#03acf0\">Dec</font> (s):");
 			break;
 		case SHOW_X_Y_DRIFT:
 			m_guider_data_1 = &m_drift_data_x;
 			m_guider_data_2 = &m_drift_data_y;
 			m_guider_graph->set_yaxis_range(-6, 6);
-			// m_guider_graph_label->setText("Drift X / Y (px):");
 			m_guider_graph_label->setText("Drift <font color=\"red\">X</font> / <font color=\"#03acf0\">Y</font> (px):");
 			break;
 		default:
@@ -774,6 +846,17 @@ void ImagerWindow::on_guider_agent_callibration_changed(double value) {
 	});
 }
 
+void ImagerWindow::on_guider_apply_backlash_changed(int state) {
+	QtConcurrent::run([=]() {
+		char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_guider_agent_apply_dec_backlash(selected_agent);
+	});
+}
+
 void ImagerWindow::on_guider_bw_save_changed(int index) {
 	conf.guider_save_bandwidth = index;
 	write_conf();
@@ -807,5 +890,49 @@ void ImagerWindow::on_guider_clear_selection(bool clicked) {
 		get_selected_guider_agent(selected_agent);
 
 		clear_guider_agent_star_selection(selected_agent);
+	});
+}
+
+void ImagerWindow::on_guider_ccd_mode_selected(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[MODE CHANGE SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_ccd_mode_property(selected_agent, m_guider_frame_size_select);
+	});
+}
+
+void ImagerWindow::on_agent_guider_gain_changed(int value) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_agent_gain_property(selected_agent, m_guider_gain);
+	});
+}
+
+void ImagerWindow::on_agent_guider_offset_changed(int value) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_agent_offset_property(selected_agent, m_guider_offset);
+	});
+}
+
+void ImagerWindow::on_agent_guider_focal_length_changed(int value) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_agent_lens_profile_property(selected_agent, m_guider_focal_lenght);
 	});
 }

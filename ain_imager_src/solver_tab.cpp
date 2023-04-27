@@ -62,9 +62,11 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	label = new QLabel("Exposure time (s):");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_solver_exposure1 = new QDoubleSpinBox();
+	m_solver_exposure1->setDecimals(3);
 	m_solver_exposure1->setMaximum(10000);
 	m_solver_exposure1->setMinimum(0);
 	m_solver_exposure1->setValue(1);
+	m_solver_exposure1->setEnabled(false);
 	solver_frame_layout->addWidget(m_solver_exposure1, row, 2);
 
 	m_solve_button = new QPushButton("Solve");
@@ -194,12 +196,28 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	m_solver_radius_hint->setMinimum(0);
 	m_solver_radius_hint->setValue(0);
 	m_solver_radius_hint->setEnabled(false);
+	m_solver_radius_hint->setSpecialValueText("no limit");
 	solver_frame_layout->addWidget(m_solver_radius_hint, row, 3);
 	connect(m_solver_radius_hint, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, QOverload<double>::of(&ImagerWindow::on_solver_hints_changed));
 
 	row++;
-	label = new QLabel("Downsample:");
+	label = new QLabel("Pixel scale (\"/px):");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
+	m_solver_scale_hint = new QDoubleSpinBox();
+	m_solver_scale_hint->setDecimals(3);
+	m_solver_scale_hint->setMaximum(7200);
+	m_solver_scale_hint->setMinimum(-0.1);
+	m_solver_scale_hint->setSingleStep(0.1);
+	m_solver_scale_hint->setValue(0);
+	m_solver_scale_hint->setSpecialValueText("camera");
+	m_solver_scale_hint->setToolTip("Pixel scale:<br> = 0: automatic (slow)<br> &lt; 0: use pixel scale from camera<br> &gt; 0: use specified pixel scale");
+	m_solver_scale_hint->setEnabled(false);
+	solver_frame_layout->addWidget(m_solver_scale_hint, row, 3);
+	connect(m_solver_scale_hint, &QDoubleSpinBox::editingFinished, this,QOverload<>::of(&ImagerWindow::on_solver_hints_changed));
+
+	row++;
+	label = new QLabel("Downsample:");
+	solver_frame_layout->addWidget(label, row, 0, 1, 3);
 	m_solver_ds_hint = new QSpinBox();
 	m_solver_ds_hint->setMaximum(16);
 	m_solver_ds_hint->setMinimum(0);
@@ -210,7 +228,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 
 	row++;
 	label = new QLabel("Parity:");
-	solver_frame_layout->addWidget(label, row, 0, 1, 2);
+	solver_frame_layout->addWidget(label, row, 0, 1, 3);
 	m_solver_parity_hint = new QSpinBox();
 	m_solver_parity_hint->setMaximum(16);
 	m_solver_parity_hint->setMinimum(0);
@@ -227,6 +245,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	m_solver_depth_hint->setMinimum(0);
 	m_solver_depth_hint->setValue(0);
 	m_solver_depth_hint->setEnabled(false);
+	m_solver_depth_hint->setSpecialValueText("no limit");
 	solver_frame_layout->addWidget(m_solver_depth_hint, row, 3);
 	connect(m_solver_depth_hint, QOverload<int>::of(&QSpinBox::valueChanged), this, QOverload<int>::of(&ImagerWindow::on_solver_hints_changed));
 
@@ -244,16 +263,19 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 
 void ImagerWindow::update_solver_widgets_at_start(const char *imager_agent, const char *solver_agent) {
 	bool done = false;
-	int wait_busy = 25;
-	set_text(m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Witing for image");
-	set_text(m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Witing for image");
+	int wait_busy = 40; // wait 4s to start exposure
+	set_text(m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Waiting for image");
+	set_text(m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Waiting for image");
 	set_widget_state(m_mount_solve_and_sync_button, INDIGO_BUSY_STATE);
 	set_widget_state(m_mount_solve_and_center_button, INDIGO_BUSY_STATE);
+	set_widget_state(m_mount_start_pa_button, INDIGO_BUSY_STATE);
+	set_widget_state(m_mount_recalculate_pe_button, INDIGO_BUSY_STATE);
 	set_widget_state(m_solve_button, INDIGO_BUSY_STATE);
 	do {
 		indigo_property *exp = properties.get((char*)imager_agent, CCD_EXPOSURE_PROPERTY_NAME);
+		indigo_property *wcs = properties.get((char*)solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME);
 		if (wait_busy) {
-			if (exp && exp->state == INDIGO_BUSY_STATE) {
+			if ((exp && exp->state == INDIGO_BUSY_STATE) || (wcs && wcs->state == INDIGO_BUSY_STATE)){
 				done = true;
 			} else {
 				indigo_usleep(100000);
@@ -267,6 +289,8 @@ void ImagerWindow::update_solver_widgets_at_start(const char *imager_agent, cons
 			if (wcs && wcs->state != INDIGO_BUSY_STATE) {
 				set_widget_state(m_mount_solve_and_sync_button, INDIGO_OK_STATE);
 				set_widget_state(m_mount_solve_and_center_button, INDIGO_OK_STATE);
+				set_widget_state(m_mount_start_pa_button, INDIGO_OK_STATE);
+				set_widget_state(m_mount_recalculate_pe_button, INDIGO_OK_STATE);
 				set_widget_state(m_solve_button, INDIGO_OK_STATE);
 				set_text(m_solver_status_label1, "<img src=\":resource/led-red.png\"> No image");
 				set_text(m_solver_status_label2, "<img src=\":resource/led-red.png\"> No image");
@@ -275,6 +299,47 @@ void ImagerWindow::update_solver_widgets_at_start(const char *imager_agent, cons
 		}
 	} while (!done);
 	indigo_debug("%s(): DONE", __FUNCTION__);
+}
+
+bool ImagerWindow::open_image(QString file_name, int *image_size, unsigned char **image_data) {
+	char msg[PATH_LEN];
+	if (file_name == "") return false;
+	FILE *file;
+	strncpy(m_image_path, file_name.toUtf8().data(), PATH_LEN);
+	file = fopen(m_image_path, "rb");
+	if (file) {
+		fseek(file, 0, SEEK_END);
+		*image_size = (size_t)ftell(file);
+		fseek(file, 0, SEEK_SET);
+		if (*image_data == nullptr) {
+			*image_data = (unsigned char *)malloc(*image_size + 1);
+		} else {
+			*image_data = (unsigned char *)realloc(*image_data, *image_size + 1);
+		}
+		fread(*image_data, *image_size, 1, file);
+		fclose(file);
+	} else {
+		snprintf(msg, PATH_LEN, "File '%s'\nCan not be open for reading.", QDir::toNativeSeparators(m_image_path).toUtf8().data());
+		show_message("Error!", msg);
+		return false;
+	}
+
+	char *image_formrat = strrchr(m_image_path, '.');
+	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
+	preview_image *image = create_preview(*image_data, *image_size, (const char*)image_formrat, sc);
+	if (image) {
+		QString key = QString(AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME);
+		preview_cache.add(key, image);
+		if (show_preview_in_imager_viewer(key)) {
+			m_imager_viewer->setText(file_name);
+			m_imager_viewer->setToolTip(file_name);
+		}
+	} else {
+		snprintf(msg, PATH_LEN, "File: '%s'\nDoes not seem to be a supported image format.", QDir::toNativeSeparators(m_image_path).toUtf8().data());
+		show_message("Error!", msg);
+		return false;
+	}
+	return true;
 }
 
 void ImagerWindow::on_solver_agent_selected(int index) {
@@ -290,7 +355,7 @@ void ImagerWindow::on_solver_agent_selected(int index) {
 	});
 }
 
-void ImagerWindow::on_solver_ra_dec_hints_changed(bool clicked) {
+void ImagerWindow::on_solver_hints_changed() {
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -298,26 +363,18 @@ void ImagerWindow::on_solver_ra_dec_hints_changed(bool clicked) {
 
 		change_solver_agent_hints_property(selected_agent);
 	});
+}
+
+void ImagerWindow::on_solver_ra_dec_hints_changed(bool clicked) {
+	on_solver_hints_changed();
 }
 
 void ImagerWindow::on_solver_hints_changed(int value) {
-	QtConcurrent::run([=]() {
-		indigo_debug("CALLED: %s\n", __FUNCTION__);
-		static char selected_agent[INDIGO_NAME_SIZE];
-		get_selected_solver_agent(selected_agent);
-
-		change_solver_agent_hints_property(selected_agent);
-	});
+	on_solver_hints_changed();
 }
 
 void ImagerWindow::on_solver_hints_changed(double value) {
-	QtConcurrent::run([=]() {
-		indigo_debug("CALLED: %s\n", __FUNCTION__);
-		static char selected_agent[INDIGO_NAME_SIZE];
-		get_selected_solver_agent(selected_agent);
-
-		change_solver_agent_hints_property(selected_agent);
-	});
+	on_solver_hints_changed();
 }
 
 void ImagerWindow::on_trigger_solve() {
