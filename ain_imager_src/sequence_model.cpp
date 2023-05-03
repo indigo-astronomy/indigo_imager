@@ -20,11 +20,13 @@
 #include <indigo/indigo_bus.h>
 
 SequenceViewer::SequenceViewer() {
+	//Batch b("name=alaba nica;exposure=4;delay=3;count=3;focus=2;");
 	int row = 0;
 	int col = 0;
 	m_layout.addWidget(&m_view, row, col, 1, 8);
 	m_view.setSelectionBehavior(QAbstractItemView::SelectRows);
 	m_view.setSelectionMode(QAbstractItemView::SingleSelection);
+	m_view.horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 	m_view.setModel(&m_model);
 
 	row++;

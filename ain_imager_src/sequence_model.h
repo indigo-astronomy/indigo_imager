@@ -59,6 +59,53 @@ public:
 		m_focus{focus}
 	{}
 
+	Batch (QString batch_string):
+		m_empty{true},
+		m_name{""},
+		m_filter{""},
+		m_exposure{""},
+		m_delay{""},
+		m_count{""},
+		m_mode{""},
+		m_frame{""},
+		m_focus{""}
+	{
+		QStringList list = batch_string.split(';', Qt::SkipEmptyParts);
+		for(int i; i < list.length(); i++) {
+			QStringList key_val = list[i].split('=', Qt::SkipEmptyParts);
+			if (key_val.length() <= 2) {
+				QString key = key_val[0].trimmed();
+				if (!key.compare("name")) {
+					m_name = key_val[1].trimmed();
+				}
+				if (!key.compare("filter")) {
+					m_filter = key_val[1].trimmed();
+				}
+				if (!key.compare("exposure")) {
+					m_exposure = key_val[1].trimmed();
+				}
+				if (!key.compare("delay")) {
+					m_delay = key_val[1].trimmed();
+				}
+				if (!key.compare("count")) {
+					m_count = key_val[1].trimmed();
+				}
+				if (!key.compare("mode")) {
+					m_mode = key_val[1].trimmed();
+				}
+				if (!key.compare("frame")) {
+					m_frame = key_val[1].trimmed();
+				}
+				if (!key.compare("focus")) {
+					m_focus = key_val[1].trimmed();
+				}
+			}
+		}
+		// printf("\nm_name = %s\nm_filter= %s\nm_exposure = %s\nm_delay = %s\nm_count = %s\nm_mode = %s\nm_frame = %s\nm_focus = %s",
+		// m_name.toStdString().c_str(), m_filter.toStdString().c_str(), m_exposure.toStdString().c_str(), m_delay.toStdString().c_str(),
+		// m_count.toStdString().c_str(), m_mode.toStdString().c_str(), m_frame.toStdString().c_str(), m_focus.toStdString().c_str());
+	}
+
 	QString name() const { return m_name; }
 	QString filter() const { return m_filter; }
 	QString exposure() const { return m_exposure; }
