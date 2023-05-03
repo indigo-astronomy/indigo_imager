@@ -68,6 +68,35 @@ public:
 	QString frame() const { return m_frame; }
 	QString focus() const { return m_focus; }
 
+	QString to_property_value() const {
+		QString batch_str;
+		if (!m_name.isEmpty()) {
+			batch_str.append("name=" + m_name + "_%-D_%F_%C_%M" + ";");
+		}
+		if (!m_filter.isEmpty() && m_filter != "*") {
+			batch_str.append("filter=" + m_filter + ";");
+		}
+		if (!m_exposure.isEmpty() && m_exposure != "*") {
+			batch_str.append("exposure=" + m_exposure + ";");
+		}
+		if (!m_delay.isEmpty() && m_delay != "*") {
+			batch_str.append("delay=" + m_delay + ";");
+		}
+		if (!m_count.isEmpty() && m_count != "*") {
+			batch_str.append("count=" + m_count + ";");
+		}
+		if (!m_mode.isEmpty() && m_mode != "*") {
+			batch_str.append("mode=" + m_mode + ";");
+		}
+		if (!m_frame.isEmpty() && m_frame != "*") {
+			batch_str.append("frame=" + m_frame + ";");
+		}
+		if (!m_focus.isEmpty() && m_focus != "*" && m_focus.toDouble() > 0) {
+			batch_str.append("focus=" + m_focus + ";");
+		}
+		return batch_str;
+	};
+
 	bool is_empty() const {
 		return m_empty;
 	}
@@ -167,7 +196,7 @@ public:
 			}
 		}
 		if (orientation == Qt::Vertical) {
-			return section;
+			return section + 1;
 		}
 		return {};
 	}

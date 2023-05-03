@@ -26,25 +26,6 @@ SequenceViewer::SequenceViewer() {
 	m_view.setSelectionBehavior(QAbstractItemView::SelectRows);
 	m_view.setSelectionMode(QAbstractItemView::SingleSelection);
 	m_view.setModel(&m_model);
-	//m_view.setSelectionMode(QAbstractItemView::ContiguousSelection);
-
-	//m_layout.addWidget(&m_button, 1, 0, 1, 1);
-	//connect(&m_button, SIGNAL(clicked()), &m_dialog, SLOT(open()));
-
-	//m_model.set_batch({"M13", "800x600", "5", "Lum", "FITS","","",""});
-	//m_model.set_batch({"M13", "800x600", "5", "R", "FITS","","",""});
-	//m_model.append({"M13", "800x600", "5", "G", "FITS","","",""});
-	//m_model.append({"M13", "800x600", "5", "B", "FITS","","",""});
-
-	//m_model.set_batch({"M14", "800x600", "5", "R", "FITS","","",""}, 1);
-	//m_proxy.setSourceModel(&m_model);
-	//m_proxy.setFilterKeyColumn(2);
-	//
-	//m_model.set_batch({"M15", "800x600", "5", "R", "FITS","","",""}, 0);
-
-	//Batch b = m_model.get_batch(1);
-	//b.set_frame("XXXXXXXX");
-	//m_model.set_batch(b);
 
 	row++;
 	col=0;
@@ -163,20 +144,9 @@ SequenceViewer::SequenceViewer() {
 	QItemSelectionModel *selection_model = m_view.selectionModel();
 	connect(selection_model, &QItemSelectionModel::currentRowChanged, this, &SequenceViewer::on_row_changed);
 
-	QList<QString> filters;
-	filters.append("U");
-	filters.append("B");
-	filters.append("V");
-	filters.append("R");
-	filters.append("I");
-	populate_filter_select(filters);
-
+	clear_filter_select();
+	clear_mode_select();
 	clear_frame_select();
-
-	QList<QString> modes;
-	modes.append("800x600");
-	modes.append("1280x1024");
-	populate_combobox(m_mode_select, modes);
 }
 
 SequenceViewer::~SequenceViewer() {
@@ -211,18 +181,6 @@ void SequenceViewer::on_row_changed(const QModelIndex &current, const QModelInde
 	m_delay_box->setValue(b.delay().toFloat());
 	m_count_box->setValue(b.count().toInt());
 	m_focus_exp_box->setValue(b.focus().toFloat());
-
-	// TESTCODE !!!!
-	/*
-	QList<QString> batches;
-	QString s;
-	generate_sequence(s, batches);
-	indigo_error("[SEQUENCE] %s\n", s.toUtf8().data());
-	QList<QString>::iterator item;
-	for (item = batches.begin(); item != batches.end(); ++item) {
-		indigo_error("[BATCH] %s\n", item->toUtf8().data());
-	}
-	*/
 }
 
 void SequenceViewer::on_move_up_sequence() {
@@ -276,6 +234,16 @@ void SequenceViewer::on_add_sequence() {
 	b.set_focus(focus);
 
 	m_model.append(b);
+
+	// TESTCODE
+	QList<QString> batches;
+	QString sequence;
+	generate_sequence(sequence, batches);
+	printf("Sequence: %s\n", sequence.toStdString().c_str());
+	for (int i = 0; i < batches.count(); i++) {
+		printf("BATCH %d: %s\n", i+1, batches[i].toStdString().c_str());
+	}
+
 }
 
 void SequenceViewer::on_update_sequence() {
@@ -351,42 +319,11 @@ void SequenceViewer::generate_sequence(QString &sequence, QList<QString> &batche
 
 	for (int row = 0; row < row_count; row++) {
 		Batch b = m_model.get_batch(row);
-		QString batch_str("");
 
-		if (!b.name().isEmpty()) {
-			batch_str.append("prefix=" + b.name() + ";");
-		}
-
-		if (!b.filter().isEmpty() && b.filter() != "*") {
-			batch_str.append("filter=" + b.filter() + ";");
-		}
-
-		if (!b.exposure().isEmpty() && b.exposure() != "*") {
-			batch_str.append("exposure=" + b.exposure() + ";");
-		}
-
-		if (!b.delay().isEmpty() && b.delay() != "*") {
-			batch_str.append("delay=" + b.delay() + ";");
-		}
-
-		if (!b.count().isEmpty() && b.count() != "*") {
-			batch_str.append("count=" + b.count() + ";");
-		}
-
-		if (!b.mode().isEmpty() && b.mode() != "*") {
-			batch_str.append("mode=" + b.mode() + ";");
-		}
-
-		if (!b.frame().isEmpty() && b.frame() != "*") {
-			batch_str.append("frame=" + b.frame() + ";");
-		}
-
-		if (!b.focus().isEmpty() && b.focus() != "*") {
-			batch_str.append("focus=" + b.focus() + ";");
-		}
+		QString batch_str = b.to_property_value();
 
 		if (!batch_str.isEmpty()) {
-			sequence.append(QString().number(row) + ";");
+			sequence.append(QString().number(row+1) + ";");
 			batches.append(batch_str);
 		}
 	}
