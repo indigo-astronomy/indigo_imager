@@ -196,6 +196,7 @@ void SequenceViewer::on_move_up_sequence() {
 
 	QModelIndex index = m_view.model()->index(row - 1, 0);
 	m_view.setCurrentIndex(index);
+	emit(sequence_updated());
 }
 
 void SequenceViewer::on_move_down_sequence() {
@@ -209,13 +210,19 @@ void SequenceViewer::on_move_down_sequence() {
 
 	QModelIndex index = m_view.model()->index(row + 1, 0);
 	m_view.setCurrentIndex(index);
+	emit(sequence_updated());
 }
 
 void  SequenceViewer::on_remove_sequence() {
+	bool removed = false;
 	QModelIndexList selection = m_view.selectionModel()->selectedRows();
 	for(int i = 0; i < selection.count(); ++i) {
 		QModelIndex index = selection.at(i);
 		m_model.remove(index.row());
+		removed = true;
+	}
+	if (removed) {
+		emit(sequence_updated());
 	}
 }
 
@@ -236,16 +243,7 @@ void SequenceViewer::on_add_sequence() {
 	b.set_focus(focus);
 
 	m_model.append(b);
-
-	// TESTCODE
-	QList<QString> batches;
-	QString sequence;
-	generate_sequence(sequence, batches);
-	printf("Sequence: %s\n", sequence.toStdString().c_str());
-	for (int i = 0; i < batches.count(); i++) {
-		printf("BATCH %d: %s\n", i+1, batches[i].toStdString().c_str());
-	}
-
+	emit(sequence_updated());
 }
 
 void SequenceViewer::on_update_sequence() {
@@ -269,6 +267,7 @@ void SequenceViewer::on_update_sequence() {
 
 	m_model.set_batch(b, row);
 	m_view.update();
+	emit(sequence_updated());
 }
 
 void SequenceViewer::populate_combobox(QComboBox *combobox, const char *items[255], const int count) {

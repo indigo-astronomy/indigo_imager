@@ -208,7 +208,7 @@ public:
 	int rowCount(const QModelIndex &) const override { return m_data.count(); }
 	int columnCount(const QModelIndex &) const override { return 8; }
 	QVariant data(const QModelIndex &index, int role) const override {
-		if (role != Qt::DisplayRole && role != Qt::EditRole) return {};
+		if (role != Qt::DisplayRole && role != Qt::EditRole && role != Qt::ToolTipRole) return {};
 		const auto &sequence = m_data[index.row()];
 		if (sequence.is_empty()) {
 			return {};
@@ -313,6 +313,7 @@ signals:
 	void clear_filter_select();
 	void clear_mode_select();
 	void clear_frame_select();
+	void sequence_updated();
 
 public slots:
 	void on_add_sequence();

@@ -476,6 +476,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(m_imager_viewer, &ImageViewer::mouseRightPressRADec, this, &ImagerWindow::on_image_right_click_ra_dec);
 	connect(m_guider_viewer, &ImageViewer::mouseRightPress, this, &ImagerWindow::on_guider_image_right_click);
 
+	connect(m_sequence_viewer, &SequenceViewer::sequence_updated, this, &ImagerWindow::on_sequence_updated);
+
 	connect(m_add_object_dialog, &QAddCustomObject::requestPopulate, this, &ImagerWindow::on_custom_object_populate);
 
 	select_focuser_data(conf.focuser_display);
@@ -1443,4 +1445,15 @@ void ImagerWindow::on_about_act() {
 	);
 	msgBox.exec();
 	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_sequence_updated() {
+	// TESTCODE
+	QList<QString> batches;
+	QString sequence;
+	m_sequence_viewer->generate_sequence(sequence, batches);
+	indigo_error("Sequence: %s\n", sequence.toStdString().c_str());
+	for (int i = 0; i < batches.count(); i++) {
+		indigo_error("BATCH %d: %s\n", i+1, batches[i].toStdString().c_str());
+	}
 }
