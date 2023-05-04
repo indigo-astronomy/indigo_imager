@@ -16,8 +16,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef _SEQUENCE_MODEL_H
-#define _SEQUENCE_MODEL_H
+#ifndef _SEQUENCE_EDITOR_H
+#define _SEQUENCE_EDITOR_H
 
 #include <QtGui>
 #include <QtWidgets>
@@ -275,12 +275,12 @@ public:
 	}
 };
 
-class SequenceViewer : public QWidget {
+class SequenceEditor : public QWidget {
 	Q_OBJECT
 
 public:
-	SequenceViewer();
-	~SequenceViewer();
+	SequenceEditor();
+	~SequenceEditor();
 	void populate_combobox(QComboBox *combobox, const char *items[255], const int count);
 	void populate_combobox(QComboBox *combobox, QList<QString> &items);
 	void clear_combobox(QComboBox *combobox);
@@ -348,4 +348,4 @@ public slots:
 	}
 };
 
-#endif /* _SEQUENCE_MODEL_H */
+#endif /* _SEQUENCE_EDITOR_H */

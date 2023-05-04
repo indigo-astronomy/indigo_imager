@@ -43,7 +43,7 @@ SOURCES += \
 	handlepropertychange.cpp \
 	focusgraph.cpp \
 	blobpreview.cpp \
-	sequence_model.cpp \
+	sequence_editor.cpp \
 	sequence_tab.cpp \
 	syncutils.cpp \
 	qconfigdialog.cpp \
@@ -126,7 +126,7 @@ HEADERS += \
 	conf.h \
 	widget_state.h \
 	blobpreview.h \
-	sequence_model.h \
+	sequence_editor.h \
 	syncutils.h \
 	qconfigdialog.h \
 	../common_src/version.h \

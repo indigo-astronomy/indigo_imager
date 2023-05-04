@@ -61,7 +61,7 @@ class QIndigoServers;
 #include <QtConcurrentRun>
 #include <QProcess>
 #include "focusgraph.h"
-#include "sequence_model.h"
+#include "sequence_editor.h"
 #include "syncutils.h"
 #include "customobjectmodel.h"
 #include "qaddcustomobject.h"
@@ -800,7 +800,7 @@ private:
 
 	indigo_item *m_indigo_item;
 
-	SequenceViewer *m_sequence_viewer;
+	SequenceEditor *m_sequence_editor;
 
 	QString m_image_key;
 	QString m_guider_key;

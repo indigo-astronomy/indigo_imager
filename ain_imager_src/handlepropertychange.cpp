@@ -197,7 +197,7 @@ void reset_filter_names(ImagerWindow *w, indigo_property *property) {
 		filters.append(filter_name);
 		w->add_combobox_item(w->m_filter_select, filter_name, QString(property->items[i].name));
 	}
-	w->m_sequence_viewer->populate_filter_select(filters);
+	w->m_sequence_editor->populate_filter_select(filters);
 }
 
 void set_filter_selected(ImagerWindow *w, indigo_property *property) {
@@ -643,7 +643,7 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 		auto im = (preview_image &)w->m_guider_viewer->pixmapItem()->image();
 		im.set_wcs_data(ra * 15, dec, telescope_ra * 15, telescope_dec, angle, parity, scale);
 		w->m_guider_viewer->setImage(im);
-	} else if (w->m_visible_viewer != w->m_sequence_viewer) {
+	} else if (w->m_visible_viewer != w->m_sequence_editor) {
 		auto im = (preview_image &)((ImageViewer*)w->m_visible_viewer)->pixmapItem()->image();
 		// if solved from file set telescope ra and dec to solved
 		im.set_wcs_data(ra * 15, dec, ra * 15, dec, angle, parity, scale);
@@ -2105,7 +2105,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		for (int i = 0; i < property->count; i++) {
 			ccd_modes.append(property->items[i].label);
 		}
-		m_sequence_viewer->populate_mode_select(ccd_modes);
+		m_sequence_editor->populate_mode_select(ccd_modes);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_IMAGE_FORMAT_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_frame_format_select);
@@ -2116,7 +2116,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		for (int i = 0; i < property->count; i++) {
 			frame_types.append(property->items[i].label);
 		}
-		m_sequence_viewer->populate_frame_select(frame_types);
+		m_sequence_editor->populate_frame_select(frame_types);
 	}
 	if (client_match_device_property(property, selected_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox_filtered(this, property, "Guider Agent", m_dither_agent_select);
@@ -2757,7 +2757,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		clear_combobox(m_frame_size_select);
-		m_sequence_viewer->clear_mode_select();
+		m_sequence_editor->clear_mode_select();
 	}
 	if (client_match_device_property(property, selected_agent, CCD_IMAGE_FORMAT_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
@@ -2768,7 +2768,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		clear_combobox(m_frame_type_select);
-		m_sequence_viewer->clear_frame_select();
+		m_sequence_editor->clear_frame_select();
 	}
 	if (client_match_device_property(property, selected_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
@@ -2820,7 +2820,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		clear_combobox(m_filter_select);
-		m_sequence_viewer->clear_filter_select();
+		m_sequence_editor->clear_filter_select();
 	}
 	if (client_match_device_property(property, selected_agent, CCD_COOLER_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {

@@ -36,7 +36,7 @@ void ImagerWindow::on_sequence_updated() {
 	// TESTCODE
 	QList<QString> batches;
 	QString sequence;
-	m_sequence_viewer->generate_sequence(sequence, batches);
+	m_sequence_editor->generate_sequence(sequence, batches);
 	indigo_error("Sequence: %s\n", sequence.toStdString().c_str());
 	for (int i = 0; i < batches.count(); i++) {
 		indigo_error("BATCH %d: %s\n", i+1, batches[i].toStdString().c_str());

@@ -16,10 +16,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <sequence_model.h>
+#include <sequence_editor.h>
 #include <indigo/indigo_bus.h>
 
-SequenceViewer::SequenceViewer() {
+SequenceEditor::SequenceEditor() {
 	//Batch b("name=alaba nica;exposure=4;delay=3;count=3;focus=2;");
 	int row = 0;
 	int col = 0;
@@ -106,55 +106,55 @@ SequenceViewer::SequenceViewer() {
 	m_add_button->setStyleSheet("min-width: 30px");
 	///m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
 	m_layout.addWidget(m_add_button, row, col);
-	connect(m_add_button, &QPushButton::clicked, this, &SequenceViewer::on_add_sequence);
+	connect(m_add_button, &QPushButton::clicked, this, &SequenceEditor::on_add_sequence);
 
 	col++;
 	m_rm_button = new QPushButton("-");
 	m_rm_button->setStyleSheet("min-width: 30px");
 	///m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
 	m_layout.addWidget(m_rm_button, row, col);
-	connect(m_rm_button, &QPushButton::clicked, this, &SequenceViewer::on_remove_sequence);
+	connect(m_rm_button, &QPushButton::clicked, this, &SequenceEditor::on_remove_sequence);
 
 	col++;
 	m_up_button = new QPushButton("Up");
 	m_up_button->setStyleSheet("min-width: 30px");
 	///m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
 	m_layout.addWidget(m_up_button, row, col);
-	connect(m_up_button, &QPushButton::clicked, this, &SequenceViewer::on_move_up_sequence);
+	connect(m_up_button, &QPushButton::clicked, this, &SequenceEditor::on_move_up_sequence);
 
 	col++;
 	m_down_button = new QPushButton("Down");
 	m_down_button->setStyleSheet("min-width: 30px");
 	///m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
 	m_layout.addWidget(m_down_button, row, col);
-	connect(m_down_button, &QPushButton::clicked, this, &SequenceViewer::on_move_down_sequence);
+	connect(m_down_button, &QPushButton::clicked, this, &SequenceEditor::on_move_down_sequence);
 
 	col++;
 	m_update_button = new QPushButton("Update");
 	m_update_button->setStyleSheet("min-width: 30px");
 	///m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
 	m_layout.addWidget(m_update_button, row, col);
-	connect(m_update_button, &QPushButton::clicked, this, &SequenceViewer::on_update_sequence);
+	connect(m_update_button, &QPushButton::clicked, this, &SequenceEditor::on_update_sequence);
 
-	connect(this, &SequenceViewer::populate_filter_select, this, &SequenceViewer::on_populate_filter_select);
-	connect(this, &SequenceViewer::populate_mode_select, this, &SequenceViewer::on_populate_mode_select);
-	connect(this, &SequenceViewer::populate_frame_select, this, &SequenceViewer::on_populate_frame_select);
-	connect(this, &SequenceViewer::clear_filter_select, this, &SequenceViewer::on_clear_filter_select);
-	connect(this, &SequenceViewer::clear_mode_select, this, &SequenceViewer::on_clear_mode_select);
-	connect(this, &SequenceViewer::clear_frame_select, this, &SequenceViewer::on_clear_frame_select);
+	connect(this, &SequenceEditor::populate_filter_select, this, &SequenceEditor::on_populate_filter_select);
+	connect(this, &SequenceEditor::populate_mode_select, this, &SequenceEditor::on_populate_mode_select);
+	connect(this, &SequenceEditor::populate_frame_select, this, &SequenceEditor::on_populate_frame_select);
+	connect(this, &SequenceEditor::clear_filter_select, this, &SequenceEditor::on_clear_filter_select);
+	connect(this, &SequenceEditor::clear_mode_select, this, &SequenceEditor::on_clear_mode_select);
+	connect(this, &SequenceEditor::clear_frame_select, this, &SequenceEditor::on_clear_frame_select);
 
 	QItemSelectionModel *selection_model = m_view.selectionModel();
-	connect(selection_model, &QItemSelectionModel::currentRowChanged, this, &SequenceViewer::on_row_changed);
+	connect(selection_model, &QItemSelectionModel::currentRowChanged, this, &SequenceEditor::on_row_changed);
 
 	clear_filter_select();
 	clear_mode_select();
 	clear_frame_select();
 }
 
-SequenceViewer::~SequenceViewer() {
+SequenceEditor::~SequenceEditor() {
 }
 
-void SequenceViewer::on_row_changed(const QModelIndex &current, const QModelIndex &previous) {
+void SequenceEditor::on_row_changed(const QModelIndex &current, const QModelIndex &previous) {
 	Q_UNUSED(previous);
 
 	int row = current.row();
@@ -185,7 +185,7 @@ void SequenceViewer::on_row_changed(const QModelIndex &current, const QModelInde
 	m_focus_exp_box->setValue(b.focus().toFloat());
 }
 
-void SequenceViewer::on_move_up_sequence() {
+void SequenceEditor::on_move_up_sequence() {
 	int row = m_view.currentIndex().row();
 	if(row <= 0) return;
 
@@ -199,7 +199,7 @@ void SequenceViewer::on_move_up_sequence() {
 	emit(sequence_updated());
 }
 
-void SequenceViewer::on_move_down_sequence() {
+void SequenceEditor::on_move_down_sequence() {
 	int row = m_view.currentIndex().row();
 	if (row >= m_view.model()->rowCount() - 1) return;
 
@@ -213,7 +213,7 @@ void SequenceViewer::on_move_down_sequence() {
 	emit(sequence_updated());
 }
 
-void  SequenceViewer::on_remove_sequence() {
+void  SequenceEditor::on_remove_sequence() {
 	bool removed = false;
 	QModelIndexList selection = m_view.selectionModel()->selectedRows();
 	for(int i = 0; i < selection.count(); ++i) {
@@ -226,7 +226,7 @@ void  SequenceViewer::on_remove_sequence() {
 	}
 }
 
-void SequenceViewer::on_add_sequence() {
+void SequenceEditor::on_add_sequence() {
 	Batch b;
 	b.set_name(m_name_edit->text());
 	b.set_filter(m_filter_select->currentData().toString());
@@ -246,7 +246,7 @@ void SequenceViewer::on_add_sequence() {
 	emit(sequence_updated());
 }
 
-void SequenceViewer::on_update_sequence() {
+void SequenceEditor::on_update_sequence() {
 	Batch b;
 	int row = m_view.currentIndex().row();
 	if (row < 0) return;
@@ -270,7 +270,7 @@ void SequenceViewer::on_update_sequence() {
 	emit(sequence_updated());
 }
 
-void SequenceViewer::populate_combobox(QComboBox *combobox, const char *items[255], const int count) {
+void SequenceEditor::populate_combobox(QComboBox *combobox, const char *items[255], const int count) {
 	if (combobox == nullptr) return;
 	combobox->clear();
 	combobox->addItem("* (no change)", "*");
@@ -287,7 +287,7 @@ void SequenceViewer::populate_combobox(QComboBox *combobox, const char *items[25
 	}
 }
 
-void SequenceViewer::populate_combobox(QComboBox *combobox, QList<QString> &items) {
+void SequenceEditor::populate_combobox(QComboBox *combobox, QList<QString> &items) {
 	if (combobox == nullptr) return;
 	combobox->clear();
 	combobox->addItem("* (no change)", "*");
@@ -303,13 +303,13 @@ void SequenceViewer::populate_combobox(QComboBox *combobox, QList<QString> &item
 	}
 }
 
-void SequenceViewer::clear_combobox(QComboBox *combobox) {
+void SequenceEditor::clear_combobox(QComboBox *combobox) {
 	if (combobox == nullptr) return;
 	combobox->clear();
 	combobox->addItem("* (no change)", "*");
 }
 
-void SequenceViewer::generate_sequence(QString &sequence, QList<QString> &batches) {
+void SequenceEditor::generate_sequence(QString &sequence, QList<QString> &batches) {
 	int row_count = m_view.model()->rowCount();
 	batches.clear();
 	sequence.clear();

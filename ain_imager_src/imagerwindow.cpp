@@ -382,7 +382,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_guider_viewer->setBalance(conf.guider_color_balance);
 	m_guider_viewer->setVisible(false);
 
-	m_sequence_viewer = new SequenceViewer();
+	m_sequence_editor = new SequenceEditor();
 
 	QSplitter* hSplitter = new QSplitter;
 	hSplitter->addWidget(tools_panel);
@@ -476,7 +476,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(m_imager_viewer, &ImageViewer::mouseRightPressRADec, this, &ImagerWindow::on_image_right_click_ra_dec);
 	connect(m_guider_viewer, &ImageViewer::mouseRightPress, this, &ImagerWindow::on_guider_image_right_click);
 
-	connect(m_sequence_viewer, &SequenceViewer::sequence_updated, this, &ImagerWindow::on_sequence_updated);
+	connect(m_sequence_editor, &SequenceEditor::sequence_updated, this, &ImagerWindow::on_sequence_updated);
 
 	connect(m_add_object_dialog, &QAddCustomObject::requestPopulate, this, &ImagerWindow::on_custom_object_populate);
 
@@ -624,7 +624,7 @@ void ImagerWindow::show_selected_preview_in_solver_tab(QString &solver_source) {
 		m_visible_viewer = m_imager_viewer;
 		m_imager_viewer->setVisible(true);
 	}
-	if	(m_visible_viewer != m_sequence_viewer) {
+	if	(m_visible_viewer != m_sequence_editor) {
 		((ImageViewer*)m_visible_viewer)->showWCS(true);
 	}
 }
@@ -645,7 +645,7 @@ void ImagerWindow::on_tab_changed(int index) {
 			m_visible_viewer = m_imager_viewer;
 			m_imager_viewer->setVisible(true);
 			m_guider_viewer->setVisible(false);
-			m_sequence_viewer->setVisible(false);
+			m_sequence_editor->setVisible(false);
 		}
 
 		if (index == TELESCOPE_TAB) m_imager_viewer->showWCS(true);
@@ -659,12 +659,12 @@ void ImagerWindow::on_tab_changed(int index) {
 			m_imager_viewer->showReference(conf.imager_show_reference);
 		}
 	} else if (index == SEQUENCE_TAB) {
-		if (m_visible_viewer != m_sequence_viewer) {
-			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_sequence_viewer);
-			m_visible_viewer = m_sequence_viewer;
+		if (m_visible_viewer != m_sequence_editor) {
+			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_sequence_editor);
+			m_visible_viewer = m_sequence_editor;
 			m_guider_viewer->setVisible(false);
 			m_imager_viewer->setVisible(false);
-			m_sequence_viewer->setVisible(true);
+			m_sequence_editor->setVisible(true);
 		}
 	} else if (index == GUIDER_TAB) {
 		if (m_visible_viewer != m_guider_viewer) {
@@ -672,7 +672,7 @@ void ImagerWindow::on_tab_changed(int index) {
 			m_visible_viewer = m_guider_viewer;
 			m_guider_viewer->setVisible(true);
 			m_imager_viewer->setVisible(false);
-			m_sequence_viewer->setVisible(false);
+			m_sequence_editor->setVisible(false);
 		}
 	} else if (index == SOLVER_TAB) {
 		QString solver_source = m_solver_source_select1->currentText();
