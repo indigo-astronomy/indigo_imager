@@ -44,6 +44,7 @@ SOURCES += \
 	focusgraph.cpp \
 	blobpreview.cpp \
 	sequence_model.cpp \
+	sequence_tab.cpp \
 	syncutils.cpp \
 	qconfigdialog.cpp \
 	../common_src/coordconv.c \

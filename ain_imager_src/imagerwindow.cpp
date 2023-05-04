@@ -334,7 +334,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	QFrame *sequence_frame = new QFrame;
 	m_tools_tabbar->addTab(sequence_frame,  "Se&quence");
-	//create_sequence_tab(sequence_frame);
+	create_sequence_tab(sequence_frame);
 
 	QFrame *focuser_frame = new QFrame;
 	m_tools_tabbar->addTab(focuser_frame, "F&ocus");
@@ -1445,15 +1445,4 @@ void ImagerWindow::on_about_act() {
 	);
 	msgBox.exec();
 	indigo_debug("%s\n", __FUNCTION__);
-}
-
-void ImagerWindow::on_sequence_updated() {
-	// TESTCODE
-	QList<QString> batches;
-	QString sequence;
-	m_sequence_viewer->generate_sequence(sequence, batches);
-	indigo_error("Sequence: %s\n", sequence.toStdString().c_str());
-	for (int i = 0; i < batches.count(); i++) {
-		indigo_error("BATCH %d: %s\n", i+1, batches[i].toStdString().c_str());
-	}
 }

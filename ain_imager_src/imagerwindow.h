@@ -830,6 +830,7 @@ private:
 
 	void create_focuser_tab(QFrame *capture_frame);
 	void create_imager_tab(QFrame *camera_frame);
+	void create_sequence_tab(QFrame *sequence_frame);
 	void create_guider_tab(QFrame *guider_frame);
 	void create_telescope_tab(QFrame *solver_frame);
 	void create_solver_tab(QFrame *telescope_frame);
