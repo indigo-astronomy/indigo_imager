@@ -918,6 +918,8 @@ private:
 	void trigger_polar_alignment(bool recalculate);
 	void change_solver_agent_pa_settings(const char *agent) const;
 
+	void change_imager_agent_sequence(const char *agent, QString sequence, QList<QString> batches) const;
+
 	void select_guider_data(guider_display_data show);
 
 	void setup_preview(const char *agent);

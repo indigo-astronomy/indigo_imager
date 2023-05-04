@@ -938,3 +938,31 @@ void ImagerWindow::change_solver_agent_pa_settings(const char *agent) const {
 	values[2] = (double)m_pa_refraction_cbox->isChecked();
 	indigo_change_number_property(nullptr, agent, AGENT_PLATESOLVER_PA_SETTINGS_PROPERTY_NAME, 3, items, values);
 }
+
+void ImagerWindow::change_imager_agent_sequence(const char *agent, QString sequence, QList<QString> batches) const {
+	static char items[32][INDIGO_NAME_SIZE] = {0};
+	static char values[32][INDIGO_VALUE_SIZE] = {0};
+	static char *items_ptr[32];
+	static char *values_ptr[32];
+
+	indigo_property *p = properties.get((char*)agent, AGENT_IMAGER_SEQUENCE_PROPERTY_NAME);
+	if (p) {
+		strncpy(items[0], AGENT_IMAGER_SEQUENCE_ITEM_NAME, INDIGO_NAME_SIZE);
+		strncpy(values[0], sequence.toStdString().c_str(), INDIGO_VALUE_SIZE);
+		items_ptr[0] = items[0];
+		values_ptr[0] = values[0];
+		for (int i = 1; i < p->count; i++) {
+			sprintf(items[i], "%02d", i);
+			if (i-1 < batches.count()) {
+				strncpy(values[i], batches[i-1].toStdString().c_str(), INDIGO_VALUE_SIZE);
+			} else {
+				values[i][0] = '\0';
+			}
+			items_ptr[i] = items[i];
+			values_ptr[i] = values[i];
+		}
+
+		indigo_log("[SEQUENCE] %s '%s'\n", __FUNCTION__, agent);
+		indigo_change_text_property(nullptr, agent, AGENT_IMAGER_SEQUENCE_PROPERTY_NAME, p->count, (const char**)items_ptr, (const char**)values_ptr);
+	}
+}

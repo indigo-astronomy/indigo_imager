@@ -34,11 +34,19 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 
 void ImagerWindow::on_sequence_updated() {
 	// TESTCODE
-	QList<QString> batches;
-	QString sequence;
-	m_sequence_editor->generate_sequence(sequence, batches);
-	indigo_error("Sequence: %s\n", sequence.toStdString().c_str());
-	for (int i = 0; i < batches.count(); i++) {
-		indigo_error("BATCH %d: %s\n", i+1, batches[i].toStdString().c_str());
-	}
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		static QList<QString> batches;
+		static QString sequence;
+		m_sequence_editor->generate_sequence(sequence, batches);
+
+		indigo_error("Sequence: %s\n", sequence.toStdString().c_str());
+		for (int i = 0; i < batches.count(); i++) {
+			indigo_error("BATCH %d: %s\n", i+1, batches[i].toStdString().c_str());
+		}
+
+		change_imager_agent_sequence(selected_agent, sequence, batches);
+	});
 }
