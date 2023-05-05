@@ -1273,6 +1273,12 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	if (stats_p == nullptr || start_p == nullptr) return;
 
 	if (start_p && start_p->state == INDIGO_BUSY_STATE ) {
+		bool sequence_item = false;
+		for (int i = 0; i < start_p->count; i++) {
+			if (!strcmp(start_p->items[i].name, AGENT_IMAGER_START_SEQUENCE_ITEM_NAME)) {
+				sequence_item = start_p->items[i].sw.value;
+			}
+		}
 		for (int i = 0; i < start_p->count; i++) {
 			if (!strcmp(start_p->items[i].name, AGENT_IMAGER_START_EXPOSURE_ITEM_NAME)) {
 				bool pause_sw = false;
@@ -1281,14 +1287,14 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 				if (pause_p) {
 					for (int i = 0; i < pause_p->count; i++) {
 						if (client_match_item(&stats_p->items[i], AGENT_PAUSE_PROCESS_WAIT_ITEM_NAME)) {
-							pause_wait_sw = start_p->items[i].sw.value;
+							pause_wait_sw = sequence_item || start_p->items[i].sw.value;
 						} else if (client_match_item(&stats_p->items[i], AGENT_PAUSE_PROCESS_ITEM_NAME)) {
-							pause_sw = start_p->items[i].sw.value;
+							pause_sw = sequence_item || start_p->items[i].sw.value;
 						}
 					}
 					bool paused = false;
 					if (pause_wait_sw || pause_sw) paused = true;
-					exposure_running = start_p->items[i].sw.value && !paused;
+					exposure_running = (sequence_item || start_p->items[i].sw.value) && !paused;
 					w->save_blob = exposure_running;
 				} else {
 					exposure_running = false;
@@ -2222,6 +2228,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_pause_process_property(this, property, m_pause_button);
+		update_agent_imager_pause_process_property(this, property, m_seq_pause_button);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_COOLER_PROPERTY_NAME)) {
 		update_cooler_onoff(this, property);
@@ -2566,6 +2573,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_pause_process_property(this, property, m_pause_button);
+		update_agent_imager_pause_process_property(this, property, m_seq_pause_button);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_COOLER_PROPERTY_NAME)) {
 		update_cooler_onoff(this, property);
