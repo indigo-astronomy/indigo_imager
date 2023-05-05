@@ -416,6 +416,16 @@ void ImagerWindow::change_agent_start_exposure_property(const char *agent) const
 	indigo_change_switch_property(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, 1, items, values);
 }
 
+void ImagerWindow::change_agent_start_sequence_property(const char *agent) const {
+	static const char *items[] = {
+		AGENT_IMAGER_START_SEQUENCE_ITEM_NAME
+	};
+	static bool values[] = {
+		true
+	};
+	indigo_change_switch_property(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, 1, items, values);
+}
+
 void ImagerWindow::change_agent_start_focusing_property(const char *agent) const {
 	static const char *items[] = {
 		AGENT_IMAGER_START_FOCUSING_ITEM_NAME

@@ -461,7 +461,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_download_progress->setFormat("Download progress");
 }
 
-void ImagerWindow::on_exposure_start_stop(bool clicked) {
+void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -482,9 +482,17 @@ void ImagerWindow::on_exposure_start_stop(bool clicked) {
 			} else {
 				change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			}
-			change_agent_start_exposure_property(selected_agent);
+			if (is_sequence) {
+				change_agent_start_sequence_property(selected_agent);
+			} else {
+				change_agent_start_exposure_property(selected_agent);
+			}
 		}
 	});
+}
+
+void ImagerWindow::on_exposure_start_stop(bool clicked) {
+	exposure_start_stop(clicked, false);
 }
 
 void ImagerWindow::on_preview_start_stop(bool clicked) {

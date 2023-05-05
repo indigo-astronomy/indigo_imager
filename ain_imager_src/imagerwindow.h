@@ -206,6 +206,7 @@ signals:
 
 public slots:
 	void on_exposure_start_stop(bool clicked);
+	void on_sequence_start_stop(bool clicked);
 	void on_preview_start_stop(bool clicked);
 	void on_abort(bool clicked);
 	void on_pause(bool clicked);
@@ -588,6 +589,13 @@ private:
 	QStringList m_files_to_download;
 	QStringList m_files_to_remove;
 
+	// Sequence tabbar
+	QProgressBar *m_seq_exposure_progress;
+	QProgressBar *m_seq_batch_progress;
+	QProgressBar *m_seq_sequence_progress;
+	QPushButton *m_seq_start_button;
+	QPushButton *m_seq_pause_button;
+
 	// Focuser tabbar
 	QComboBox *m_focuser_select;
 	QComboBox *m_focus_mode_select;
@@ -847,6 +855,7 @@ private:
 	void change_agent_batch_property(const char *agent) const;
 	void change_agent_batch_property_for_focus(const char *agent) const;
 	void change_agent_start_exposure_property(const char *agent) const;
+	void change_agent_start_sequence_property(const char *agent) const;
 	void change_agent_pause_process_property(const char *agent, bool wait_exposure) const;
 	void change_agent_abort_process_property(const char *agent) const;
 	void change_wheel_slot_property(const char *agent) const;
@@ -880,6 +889,7 @@ private:
 	void change_focuser_temperature_compensation_steps(const char *agent) const;
 
 	void select_focuser_data(focuser_display_data show);
+	void exposure_start_stop(bool clicked, bool is_sequence);
 
 	void change_guider_agent_star_selection(const char *agent) const;
 	void clear_guider_agent_star_selection(const char *agent) const;

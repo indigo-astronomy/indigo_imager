@@ -22,14 +22,65 @@
 #include <utils.h>
 
 void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
-	/*
-	QGridLayout *capture_frame_layout = new QGridLayout();
-	capture_frame_layout->setAlignment(Qt::AlignTop);
-	capture_frame->setLayout(capture_frame_layout);
-	capture_frame->setFrameShape(QFrame::StyledPanel);
-	capture_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
-	capture_frame->setContentsMargins(0, 0, 0, 0);
-	*/
+	QGridLayout *sequence_frame_layout = new QGridLayout();
+	sequence_frame_layout->setAlignment(Qt::AlignTop);
+	sequence_frame->setLayout(sequence_frame_layout);
+	sequence_frame->setFrameShape(QFrame::StyledPanel);
+	sequence_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
+	sequence_frame->setContentsMargins(0, 0, 0, 0);
+
+	int row = 0;
+
+	row++;
+	QWidget *toolbar = new QWidget;
+	QHBoxLayout *toolbox = new QHBoxLayout(toolbar);
+	toolbar->setContentsMargins(1,1,1,1);
+	toolbox->setContentsMargins(1,1,1,1);
+	sequence_frame_layout->addWidget(toolbar, row, 0, 1, 4);
+
+	m_seq_start_button = new QPushButton("Start");
+	m_seq_start_button->setStyleSheet("min-width: 30px");
+	m_seq_start_button->setIcon(QIcon(":resource/record.png"));
+	toolbox->addWidget(m_seq_start_button);
+	connect(m_seq_start_button, &QPushButton::clicked, this, &ImagerWindow::on_sequence_start_stop);
+
+	m_seq_pause_button = new QPushButton("Pause");
+	toolbox->addWidget(m_seq_pause_button);
+	m_seq_pause_button->setStyleSheet("min-width: 30px");
+	m_seq_pause_button->setIcon(QIcon(":resource/pause.png"));
+	connect(m_seq_pause_button, &QPushButton::clicked, this, &ImagerWindow::on_pause);
+
+	QPushButton *button = new QPushButton("Abort");
+	button->setStyleSheet("min-width: 30px");
+	button->setIcon(QIcon(":resource/stop.png"));
+	toolbox->addWidget(button);
+	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
+
+
+	row++;
+	QSpacerItem *spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	sequence_frame_layout->addItem(spacer, row, 0);
+
+	row++;
+	m_seq_exposure_progress = new QProgressBar();
+	sequence_frame_layout->addWidget(m_seq_exposure_progress, row, 0, 1, 4);
+	m_seq_exposure_progress->setFormat("Exposure: Idle");
+	m_seq_exposure_progress->setMaximum(1);
+	m_seq_exposure_progress->setValue(0);
+
+	row++;
+	m_seq_batch_progress = new QProgressBar();
+	sequence_frame_layout->addWidget(m_seq_batch_progress, row, 0, 1, 4);
+	m_seq_batch_progress->setMaximum(1);
+	m_seq_batch_progress->setValue(0);
+	m_seq_batch_progress->setFormat("Batch: Idle");
+
+	row++;
+	m_seq_sequence_progress = new QProgressBar();
+	sequence_frame_layout->addWidget(m_seq_sequence_progress, row, 0, 1, 4);
+	m_seq_sequence_progress->setMaximum(1);
+	m_seq_sequence_progress->setValue(0);
+	m_seq_sequence_progress->setFormat("Sequence: Idle");
 }
 
 void ImagerWindow::on_sequence_updated() {
@@ -49,4 +100,8 @@ void ImagerWindow::on_sequence_updated() {
 
 		change_imager_agent_sequence(selected_agent, sequence, batches);
 	});
+}
+
+void ImagerWindow::on_sequence_start_stop(bool clicked) {
+	exposure_start_stop(clicked, true);
 }

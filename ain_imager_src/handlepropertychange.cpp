@@ -1348,51 +1348,79 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		w->set_widget_state(w->m_focusing_preview_button, INDIGO_OK_STATE);
 		if (start_p->state == INDIGO_BUSY_STATE) {
 			w->m_exposure_button->setIcon(QIcon(":resource/stop.png"));
+			w->m_seq_start_button->setIcon(QIcon(":resource/stop.png"));
 			w->set_enabled(w->m_exposure_button, true);
+			w->set_enabled(w->m_seq_start_button, true);
 			w->set_enabled(w->m_preview_button, false);
 			w->set_enabled(w->m_focusing_button, false);
 			w->set_enabled(w->m_focusing_preview_button, false);
 			w->m_exposure_progress->setRange(0, exp_time);
 			w->m_exposure_progress->setValue(exp_elapsed);
 			w->m_exposure_progress->setFormat("Exposure: %v of %m seconds elapsed...");
+			w->m_seq_exposure_progress->setRange(0, exp_time);
+			w->m_seq_exposure_progress->setValue(exp_elapsed);
+			w->m_seq_exposure_progress->setFormat("Exposure: %v of %m seconds elapsed...");
 			if (frames_total < 0) {
 				w->m_process_progress->setRange(0, frames_complete);
 				w->m_process_progress->setValue(frames_complete - 1);
-				w->m_process_progress->setFormat("Process: exposure %v complete...");
+				w->m_process_progress->setFormat("Batch: exposure %v complete...");
+				w->m_seq_batch_progress->setRange(0, frames_complete);
+				w->m_seq_batch_progress->setValue(frames_complete - 1);
+				w->m_seq_batch_progress->setFormat("Batch: exposure %v complete...");
 			} else {
 				w->m_process_progress->setRange(0, frames_total);
 				w->m_process_progress->setValue(frames_complete - 1);
-				w->m_process_progress->setFormat("Process: exposure %v of %m complete...");
+				w->m_process_progress->setFormat("Batch: exposure %v of %m complete...");
+				w->m_seq_batch_progress->setRange(0, frames_total);
+				w->m_seq_batch_progress->setValue(frames_complete - 1);
+				w->m_seq_batch_progress->setFormat("Batch: exposure %v of %m complete...");
 			}
 			indigo_debug("frames total = %d", frames_total);
 		} else if (start_p->state == INDIGO_OK_STATE) {
 			w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
+			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 			w->set_enabled(w->m_exposure_button, true);
+			w->set_enabled(w->m_seq_start_button, true);
 			w->set_enabled(w->m_preview_button, true);
 			w->set_enabled(w->m_focusing_button, true);
 			w->set_enabled(w->m_focusing_preview_button, true);
 			w->m_exposure_progress->setRange(0, 100);
 			w->m_exposure_progress->setValue(100);
 			w->m_exposure_progress->setFormat("Exposure: Complete");
+			w->m_seq_exposure_progress->setRange(0, 100);
+			w->m_seq_exposure_progress->setValue(100);
+			w->m_seq_exposure_progress->setFormat("Exposure: Complete");
 			w->m_process_progress->setRange(0, 100);
 			w->m_process_progress->setValue(100);
-			w->m_process_progress->setFormat("Process: Complete");
+			w->m_process_progress->setFormat("Batch: Complete");
+			w->m_seq_batch_progress->setRange(0, 100);
+			w->m_seq_batch_progress->setValue(100);
+			w->m_seq_batch_progress->setFormat("Batch: Complete");
 			exposure_running = false;
 		} else {
 			w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
+			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 			w->set_enabled(w->m_exposure_button, true);
+			w->set_enabled(w->m_seq_start_button, true);
 			w->set_enabled(w->m_preview_button, true);
 			w->set_enabled(w->m_focusing_button, true);
 			w->set_enabled(w->m_focusing_preview_button, true);
 			w->m_exposure_progress->setRange(0, 1);
 			w->m_exposure_progress->setValue(0);
 			w->m_exposure_progress->setFormat("Exposure: Aborted");
+			w->m_seq_exposure_progress->setRange(0, 1);
+			w->m_seq_exposure_progress->setValue(0);
+			w->m_seq_exposure_progress->setFormat("Exposure: Aborted");
 			w->m_process_progress->setRange(0, frames_total);
 			w->m_process_progress->setValue(frames_complete - 1);
+			w->m_seq_batch_progress->setRange(0, frames_total);
+			w->m_seq_batch_progress->setValue(frames_complete - 1);
 			if (frames_total < 0) {
-				w->m_process_progress->setFormat("Process: exposure %v complete");
+				w->m_process_progress->setFormat("Batch: exposure %v complete");
+				w->m_seq_batch_progress->setFormat("Batch: exposure %v complete");
 			} else {
-				w->m_process_progress->setFormat("Process: exposure %v of %m complete");
+				w->m_process_progress->setFormat("Batch: exposure %v of %m complete");
+				w->m_seq_batch_progress->setFormat("Batch: exposure %v of %m complete");
 			}
 			exposure_running = false;
 		}
@@ -1430,10 +1458,12 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		}
 		w->set_widget_state(w->m_preview_button, INDIGO_OK_STATE);
 		w->set_widget_state(w->m_exposure_button, INDIGO_OK_STATE);
+		w->set_widget_state(w->m_seq_start_button, INDIGO_OK_STATE);
 		w->set_widget_state(w->m_focusing_preview_button, INDIGO_OK_STATE);
 		if (start_p->state == INDIGO_BUSY_STATE) {
 			w->set_enabled(w->m_preview_button, false);
 			w->set_enabled(w->m_exposure_button, false);
+			w->set_enabled(w->m_seq_start_button, false);
 			w->set_enabled(w->m_focusing_button, true);
 			w->set_enabled(w->m_focusing_preview_button, false);
 			w->m_focusing_progress->setRange(0, exp_time);
@@ -1442,6 +1472,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		} else if(start_p->state == INDIGO_OK_STATE) {
 			w->set_enabled(w->m_preview_button, true);
 			w->set_enabled(w->m_exposure_button, true);
+			w->set_enabled(w->m_seq_start_button, true);
 			w->set_enabled(w->m_focusing_button, true);
 			w->set_enabled(w->m_focusing_preview_button, true);
 			w->m_focusing_progress->setRange(0, 100);
@@ -1452,6 +1483,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		} else {
 			w->set_enabled(w->m_preview_button, true);
 			w->set_enabled(w->m_exposure_button, true);
+			w->set_enabled(w->m_seq_start_button, true);
 			w->set_enabled(w->m_focusing_button, true);
 			w->set_enabled(w->m_focusing_preview_button, true);
 			w->m_focusing_progress->setRange(0, 1);
@@ -1462,8 +1494,10 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		}
 	} else {
 		w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
+		w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 		w->set_enabled(w->m_preview_button, true);
 		w->set_enabled(w->m_exposure_button, true);
+		w->set_enabled(w->m_seq_start_button, true);
 		w->set_enabled(w->m_focusing_button, true);
 		w->set_enabled(w->m_focusing_preview_button, true);
 		focusing_running = false;
@@ -1473,6 +1507,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 
 	if (property == start_p) {
 		w->set_widget_state(w->m_exposure_button, start_p->state);
+		w->set_widget_state(w->m_seq_start_button, start_p->state);
 		w->set_widget_state(w->m_focusing_button, start_p->state);
 	}
 }
@@ -1490,6 +1525,7 @@ void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 		w->m_preview_button->setIcon(QIcon(":resource/stop.png"));
 		w->m_focusing_preview_button->setIcon(QIcon(":resource/stop.png"));
 		w->set_enabled(w->m_exposure_button, false);
+		w->set_enabled(w->m_seq_start_button, false);
 		w->set_enabled(w->m_focusing_button, false);
 		w->m_exposure_progress->setRange(0, exp_time);
 		w->m_exposure_progress->setValue(exp_elapsed);
@@ -1501,6 +1537,7 @@ void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 		w->m_preview_button->setIcon(QIcon(":resource/play.png"));
 		w->m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
 		w->set_enabled(w->m_exposure_button, true);
+		w->set_enabled(w->m_seq_start_button, true);
 		w->set_enabled(w->m_focusing_button, true);
 		w->m_exposure_progress->setRange(0, 100);
 		w->m_exposure_progress->setValue(100);
@@ -1512,6 +1549,7 @@ void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 		w->m_preview_button->setIcon(QIcon(":resource/play.png"));
 		w->m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
 		w->set_enabled(w->m_exposure_button, true);
+		w->set_enabled(w->m_seq_start_button, true);
 		w->set_enabled(w->m_focusing_button, true);
 		w->m_exposure_progress->setRange(0, 1);
 		w->m_exposure_progress->setValue(0);
@@ -2087,6 +2125,10 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			set_enabled(m_exposure_button, true);
 			set_widget_state(m_exposure_button, INDIGO_OK_STATE);
 			m_exposure_button->setIcon(QIcon(":resource/record.png"));
+			set_enabled(m_seq_start_button, true);
+			set_widget_state(m_seq_start_button, INDIGO_OK_STATE);
+			m_seq_start_button->setIcon(QIcon(":resource/record.png"));
+
 			set_enabled(m_focusing_button, true);
 			set_widget_state(m_focusing_button, INDIGO_OK_STATE);
 			set_enabled(m_focusing_preview_button, true);
