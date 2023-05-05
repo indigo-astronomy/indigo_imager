@@ -808,6 +808,7 @@ private:
 	ImageViewer *m_guider_viewer;
 //	ImageViewer *m_visible_viewer;
 	QWidget *m_visible_viewer;
+	ImageViewer *m_seq_imager_viewer;
 
 	indigo_item *m_indigo_item;
 

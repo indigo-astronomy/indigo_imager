@@ -582,6 +582,8 @@ bool ImagerWindow::show_preview_in_imager_viewer(QString &key) {
 		m_imager_viewer->setImage(*image);
 		m_imager_viewer->centerReference();
 
+		m_seq_imager_viewer->setImage(*image);
+
 		ImageStats stats;
 		if (conf.statistics_enabled) {
 			stats = imageStats((const uint8_t*)(image->m_raw_data), image->m_width, image->m_height, image->m_pix_format);

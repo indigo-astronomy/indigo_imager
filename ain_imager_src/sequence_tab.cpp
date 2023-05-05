@@ -30,6 +30,15 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	sequence_frame->setContentsMargins(0, 0, 0, 0);
 
 	int row = 0;
+	QLabel *label = new QLabel("Last Image:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	sequence_frame_layout->addWidget(label, row, 0, 1, 4);
+	row++;
+	m_seq_imager_viewer = new ImageViewer(this);
+	m_seq_imager_viewer->setToolBarMode(ImageViewer::ToolBarMode::Hidden);
+	sequence_frame_layout->addWidget(m_seq_imager_viewer, row, 0, 1, 4);
+
+	row++;
 	m_seq_cooler_off_cbox = new QCheckBox("Turn camera cooler off when finished");
 	m_seq_cooler_off_cbox->setToolTip("Turn camera cooler off when finished");
 	m_seq_cooler_off_cbox->setEnabled(true);
@@ -46,7 +55,7 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	//connect(m_keep_image_on_server_cbox, &QPushButton::clicked, this, &ImagerWindow::on_keep_image_on_server);
 
 	row++;
-	QLabel *label = new QLabel("Repeat sequence:");
+	label = new QLabel("Repeat sequence:");
 	sequence_frame_layout->addWidget(label, row, 0, 1, 3);
 	m_seq_repeat_count = new QSpinBox();
 	m_seq_repeat_count->setMaximum(10);
