@@ -30,6 +30,34 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	sequence_frame->setContentsMargins(0, 0, 0, 0);
 
 	int row = 0;
+	m_seq_cooler_off_cbox = new QCheckBox("Turn camera cooler off when finished");
+	m_seq_cooler_off_cbox->setToolTip("Turn camera cooler off when finished");
+	m_seq_cooler_off_cbox->setEnabled(true);
+	m_seq_cooler_off_cbox->setChecked(false);
+	sequence_frame_layout->addWidget(m_seq_cooler_off_cbox, row, 0, 1, 4);
+	// connect(m_save_image_on_server_cbox, &QPushButton::clicked, this, &ImagerWindow::on_save_image_on_server);
+
+	row++;
+	m_seq_park_cbox = new QCheckBox("Park mount when finished");
+	m_seq_park_cbox->setToolTip("Park mount when finished");
+	m_seq_park_cbox->setEnabled(true);
+	m_seq_park_cbox->setChecked(false);
+	sequence_frame_layout->addWidget(m_seq_park_cbox, row, 0, 1, 4);
+	//connect(m_keep_image_on_server_cbox, &QPushButton::clicked, this, &ImagerWindow::on_keep_image_on_server);
+
+	row++;
+	QLabel *label = new QLabel("Repeat sequence:");
+	sequence_frame_layout->addWidget(label, row, 0, 1, 3);
+	m_seq_repeat_count = new QSpinBox();
+	m_seq_repeat_count->setMaximum(10);
+	m_seq_repeat_count->setMinimum(1);
+	m_seq_repeat_count->setMinimumWidth(50);
+	m_seq_repeat_count->setValue(1);
+	sequence_frame_layout->addWidget(m_seq_repeat_count, row, 3);
+
+	row++;
+	QSpacerItem *spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	sequence_frame_layout->addItem(spacer, row, 0);
 
 	row++;
 	QWidget *toolbar = new QWidget;
@@ -58,7 +86,7 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 
 
 	row++;
-	QSpacerItem *spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	sequence_frame_layout->addItem(spacer, row, 0);
 
 	row++;

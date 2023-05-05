@@ -1249,7 +1249,7 @@ void update_wheel_slot_property(ImagerWindow *w, indigo_property *property) {
 void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *property) {
 	double exp_elapsed, exp_time = 1;
 	double drift_x, drift_y;
-	int frames_complete, frames_total;
+	int frames_complete = 0, frames_total = 0, batches_complete = 0, batches_total = 0;
 	static bool exposure_running = false;
 	static bool focusing_running = false;
 	static bool preview_running = false;
@@ -1343,6 +1343,10 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			frames_complete = (int)stats_p->items[i].number.value;
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_FRAMES_ITEM_NAME)) {
 			frames_total = (int)stats_p->items[i].number.value;
+		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_BATCH_ITEM_NAME)) {
+			batches_complete = (int)stats_p->items[i].number.value;
+		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_BATCHES_ITEM_NAME)) {
+			batches_total = (int)stats_p->items[i].number.value;
 		}
 	}
 	char drift_str[50];
@@ -1381,6 +1385,9 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 				w->m_seq_batch_progress->setValue(frames_complete - 1);
 				w->m_seq_batch_progress->setFormat("Batch: exposure %v of %m complete...");
 			}
+			w->m_seq_sequence_progress->setRange(0, batches_total);
+			w->m_seq_sequence_progress->setValue(batches_complete - 1);
+			w->m_seq_sequence_progress->setFormat("Sequence: batch %v of %m complete...");
 			indigo_debug("frames total = %d", frames_total);
 		} else if (start_p->state == INDIGO_OK_STATE) {
 			w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
@@ -1402,6 +1409,9 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			w->m_seq_batch_progress->setRange(0, 100);
 			w->m_seq_batch_progress->setValue(100);
 			w->m_seq_batch_progress->setFormat("Batch: Complete");
+			w->m_seq_sequence_progress->setRange(0, 100);
+			w->m_seq_sequence_progress->setValue(100);
+			w->m_seq_sequence_progress->setFormat("Sequence: Complete");
 			exposure_running = false;
 		} else {
 			w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
@@ -1428,6 +1438,9 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 				w->m_process_progress->setFormat("Batch: exposure %v of %m complete");
 				w->m_seq_batch_progress->setFormat("Batch: exposure %v of %m complete");
 			}
+			w->m_seq_sequence_progress->setRange(0, batches_total);
+			w->m_seq_sequence_progress->setValue(batches_complete - 1);
+			w->m_seq_sequence_progress->setFormat("Sequence: batch %v of %m complete");
 			exposure_running = false;
 		}
 	} else if (focusing_running || preview_running) {
