@@ -283,6 +283,10 @@ private:
 	SequenceModel m_model;
 
 	QLineEdit *m_name_edit;
+	QSpinBox *m_repeat_box;
+	QCheckBox *m_cooler_off_cbox;
+	QCheckBox *m_park_cbox;
+
 	QComboBox *m_filter_select;
 	QDoubleSpinBox *m_exposure_box;
 	QDoubleSpinBox *m_delay_box;
@@ -312,6 +316,7 @@ public slots:
 	void on_move_up_sequence();
 	void on_move_down_sequence();
 	void on_row_changed(const QModelIndex &current, const QModelIndex &previous);
+	void on_park_cooler_clicked(bool state);
 
 	void on_populate_filter_select(QList<QString> &items) {
 		populate_combobox(m_filter_select, items);

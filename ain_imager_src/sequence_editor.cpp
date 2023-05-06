@@ -24,6 +24,14 @@ SequenceEditor::SequenceEditor() {
 	int row = 0;
 	int col = 0;
 	m_layout.addWidget(&m_view, row, col, 1, 8);
+	m_layout.setColumnStretch(0, 1);
+	m_layout.setColumnStretch(1, 1);
+	m_layout.setColumnStretch(2, 1);
+	m_layout.setColumnStretch(3, 1);
+	m_layout.setColumnStretch(4, 1);
+	m_layout.setColumnStretch(5, 1);
+	m_layout.setColumnStretch(6, 1);
+	m_layout.setColumnStretch(7, 1);
 	m_view.setSelectionBehavior(QAbstractItemView::SelectRows);
 	m_view.setSelectionMode(QAbstractItemView::SingleSelection);
 	m_view.horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
@@ -32,8 +40,47 @@ SequenceEditor::SequenceEditor() {
 	row++;
 	col=0;
 	m_name_edit = new QLineEdit();
-	m_name_edit->setPlaceholderText("Object name");
+	m_name_edit->setPlaceholderText("File prefix e.g. M16");
 	m_layout.addWidget(m_name_edit, row, col, 1, 2);
+
+	col += 2;
+	m_cooler_off_cbox = new QCheckBox("Turn cooler off");
+	m_cooler_off_cbox->setToolTip("Turn camera cooler off when finished");
+	m_cooler_off_cbox->setEnabled(true);
+	m_cooler_off_cbox->setChecked(false);
+	m_layout.addWidget(m_cooler_off_cbox, row, col, 1, 2);
+	connect(m_cooler_off_cbox, &QPushButton::clicked, this, &SequenceEditor::on_park_cooler_clicked);
+
+	col += 2;
+	m_park_cbox = new QCheckBox("Park mount");
+	m_park_cbox->setToolTip("Park mount when finished");
+	m_park_cbox->setEnabled(true);
+	m_park_cbox->setChecked(false);
+	m_layout.addWidget(m_park_cbox, row, col, 1, 2);
+	connect(m_park_cbox, &QPushButton::clicked, this, &SequenceEditor::on_park_cooler_clicked);
+
+	col+=2;
+	QLabel *label = new QLabel("Repeat:");
+	label->setToolTip("Reperat sequence");
+	m_layout.addWidget(label, row, col);
+	col++;
+	m_repeat_box = new QSpinBox();
+	m_repeat_box->setMaximum(10);
+	m_repeat_box->setMinimum(1);
+	m_repeat_box->setMinimumWidth(50);
+	m_repeat_box->setValue(1);
+	m_layout.addWidget(m_repeat_box, row, col);
+
+	row++;
+	QSpacerItem *spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	m_layout.addItem(spacer, row, 0);
+
+	row++;
+	col = 0;
+	label = new QLabel("Batch description:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	label->setToolTip("Batch description");
+	m_layout.addWidget(label, row, col, 1, 2);
 
 	col += 2;
 	m_filter_select = new QComboBox();
@@ -49,8 +96,8 @@ SequenceEditor::SequenceEditor() {
 
 	row++;
 	col = 0;
-	QLabel *label = new QLabel("Exposure (s):");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	label = new QLabel("Exposure (s):");
+	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	m_layout.addWidget(label, row, col);
 
 	col++;
@@ -63,7 +110,7 @@ SequenceEditor::SequenceEditor() {
 
 	col++;
 	label = new QLabel("Delay (s):");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	m_layout.addWidget(label, row, col);
 
 	col++;
@@ -76,7 +123,7 @@ SequenceEditor::SequenceEditor() {
 
 	col++;
 	label = new QLabel("Count:");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	m_layout.addWidget(label, row, col);
 
 	col++;
@@ -89,7 +136,7 @@ SequenceEditor::SequenceEditor() {
 
 	col++;
 	label = new QLabel("Focus (s):");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	m_layout.addWidget(label, row, col);
 
 	col++;
@@ -99,6 +146,10 @@ SequenceEditor::SequenceEditor() {
 	m_focus_exp_box ->setValue(0);
 	m_focus_exp_box ->setKeyboardTracking(false);
 	m_layout.addWidget(m_focus_exp_box, row, col);
+
+	row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	m_layout.addItem(spacer, row, 0);
 
 	row++;
 	col = 0;
@@ -152,6 +203,11 @@ SequenceEditor::SequenceEditor() {
 }
 
 SequenceEditor::~SequenceEditor() {
+}
+
+void SequenceEditor::on_park_cooler_clicked(bool state) {
+	Q_UNUSED(state);
+	emit(sequence_updated());
 }
 
 void SequenceEditor::on_row_changed(const QModelIndex &current, const QModelIndex &previous) {
@@ -270,8 +326,7 @@ void SequenceEditor::on_update_sequence() {
 
 void SequenceEditor::populate_combobox(QComboBox *combobox, const char *items[255], const int count) {
 	if (combobox == nullptr) return;
-	combobox->clear();
-	combobox->addItem("* (no change)", "*");
+	clear_combobox(combobox);
 	if (items == nullptr) return;
 
 	for (int i = 0; i < count; i++) {
@@ -287,8 +342,7 @@ void SequenceEditor::populate_combobox(QComboBox *combobox, const char *items[25
 
 void SequenceEditor::populate_combobox(QComboBox *combobox, QList<QString> &items) {
 	if (combobox == nullptr) return;
-	combobox->clear();
-	combobox->addItem("* (no change)", "*");
+	clear_combobox(combobox);
 
 	QList<QString>::iterator item;
 	for (item = items.begin(); item != items.end(); ++item) {
@@ -304,7 +358,7 @@ void SequenceEditor::populate_combobox(QComboBox *combobox, QList<QString> &item
 void SequenceEditor::clear_combobox(QComboBox *combobox) {
 	if (combobox == nullptr) return;
 	combobox->clear();
-	combobox->addItem("* (no change)", "*");
+	combobox->addItem("* (use current)", "*");
 }
 
 void SequenceEditor::generate_sequence(QString &sequence, QList<QString> &batches) {
@@ -320,10 +374,24 @@ void SequenceEditor::generate_sequence(QString &sequence, QList<QString> &batche
 		Batch b = m_model.get_batch(row);
 
 		QString batch_str = b.to_property_value();
-
 		if (!batch_str.isEmpty()) {
 			sequence.append(QString().number(row+1) + ";");
 			batches.append(batch_str);
 		}
+	}
+
+	int repeat = m_repeat_box->value();
+	QString seq_str;
+	for (int i = 0; i < repeat; i++) {
+		seq_str += sequence;
+	}
+	sequence = seq_str;
+
+	if (m_cooler_off_cbox->checkState() == Qt::Checked) {
+		sequence += "cooler=Off;";
+	}
+
+	if (m_park_cbox->checkState() == Qt::Checked) {
+		sequence += "park;";
 	}
 }
