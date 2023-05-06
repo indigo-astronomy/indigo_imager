@@ -35,7 +35,9 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	sequence_frame_layout->addWidget(label, row, 0, 1, 4);
 	row++;
 	m_seq_imager_viewer = new ImageViewer(this);
-	m_seq_imager_viewer->setToolBarMode(ImageViewer::ToolBarMode::Hidden);
+	m_seq_imager_viewer->showStretchButton(false);
+	m_seq_imager_viewer->showZoomButtons(false);
+	m_seq_imager_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
 	sequence_frame_layout->addWidget(m_seq_imager_viewer, row, 0, 1, 4);
 
 	row++;

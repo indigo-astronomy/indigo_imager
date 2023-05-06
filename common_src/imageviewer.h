@@ -12,6 +12,7 @@ QT_END_NAMESPACE
 
 class PixmapItem;
 class GraphicsView;
+class QToolButton;
 
 /**
  * @brief ImageViewer displays images and allows basic interaction with it
@@ -57,6 +58,8 @@ public:
 	void setStretch(int level);
 	void setDebayer(uint32_t bayer_pat);
 	void setBalance(int Balance);
+	void showStretchButton(bool show);
+	void showZoomButtons(bool show);
 
 public slots:
 	void setText(const QString &txt);
@@ -154,6 +157,9 @@ private:
 	bool m_show_wcs;
 	bool m_edge_clipping_visible;
 	ToolBarMode m_bar_mode;
+	QToolButton *m_stretch_button;
+	QToolButton *m_zoomout_button;
+	QToolButton *m_zoomin_button;
 	QAction *m_stretch_act[PREVIEW_STRETCH_COUNT];
 	QAction *m_debayer_act[DEBAYER_COUNT];
 	QAction *m_color_reference_act[COLOR_BALANCE_COUNT];

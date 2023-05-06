@@ -168,15 +168,15 @@ void ImageViewer::makeToolbar(bool show_prev_next, bool show_debayer) {
 	orig->setIcon(QIcon(":resource/zoom-original.png"));
 	connect(orig, SIGNAL(clicked()), SLOT(zoomOriginal()));
 
-	auto zoomin = new QToolButton(this);
-	zoomin->setToolTip(tr("Zoom In"));
-	zoomin->setIcon(QIcon(":resource/zoom-in.png"));
-	connect(zoomin, SIGNAL(clicked()), SLOT(zoomIn()));
+	m_zoomin_button = new QToolButton(this);
+	m_zoomin_button->setToolTip(tr("Zoom In"));
+	m_zoomin_button->setIcon(QIcon(":resource/zoom-in.png"));
+	connect(m_zoomin_button, SIGNAL(clicked()), SLOT(zoomIn()));
 
-	auto zoomout = new QToolButton(this);
-	zoomout->setToolTip(tr("Zoom Out"));
-	zoomout->setIcon(QIcon(":resource/zoom-out.png"));
-	connect(zoomout, SIGNAL(clicked()), SLOT(zoomOut()));
+	m_zoomout_button = new QToolButton(this);
+	m_zoomout_button->setToolTip(tr("Zoom Out"));
+	m_zoomout_button->setIcon(QIcon(":resource/zoom-out.png"));
+	connect(m_zoomout_button, SIGNAL(clicked()), SLOT(zoomOut()));
 
 	QMenu *menu = new QMenu("");
 	QAction *act;
@@ -279,11 +279,11 @@ void ImageViewer::makeToolbar(bool show_prev_next, bool show_debayer) {
 	debayer_group->addAction(act);
 	m_debayer_act[DEBAYER_BGGR] = act;
 
-	auto stretch = new QToolButton(this);
-	stretch->setToolTip(tr("Histogram stretching / Background neutralization / Debayer"));
-	stretch->setIcon(QIcon(":resource/histogram.png"));
-	stretch->setMenu(menu);
-	stretch->setPopupMode(QToolButton::InstantPopup);
+	m_stretch_button = new QToolButton(this);
+	m_stretch_button->setToolTip(tr("Histogram stretching / Background neutralization / Debayer"));
+	m_stretch_button->setIcon(QIcon(":resource/histogram.png"));
+	m_stretch_button->setMenu(menu);
+	m_stretch_button->setPopupMode(QToolButton::InstantPopup);
 
 	m_toolbar = new QWidget;
 	auto box = new QHBoxLayout(m_toolbar);
@@ -317,11 +317,20 @@ void ImageViewer::makeToolbar(bool show_prev_next, bool show_debayer) {
 	box->addStretch(1);
 	box->addWidget(m_pixel_value);
 
-	box->addWidget(zoomout);
-	box->addWidget(zoomin);
+	box->addWidget(m_zoomout_button);
+	box->addWidget(m_zoomin_button);
 	box->addWidget(fit);
 	box->addWidget(orig);
-	box->addWidget(stretch);
+	box->addWidget(m_stretch_button);
+}
+
+void ImageViewer::showStretchButton(bool show) {
+	m_stretch_button->setVisible(show);
+}
+
+void ImageViewer::showZoomButtons(bool show) {
+	m_zoomin_button->setVisible(show);
+	m_zoomout_button->setVisible(show);
 }
 
 void ImageViewer::setImageStats(const ImageStats &stats) {
