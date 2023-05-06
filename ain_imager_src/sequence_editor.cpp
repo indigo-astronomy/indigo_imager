@@ -162,8 +162,6 @@ void SequenceEditor::on_row_changed(const QModelIndex &current, const QModelInde
 
 	Batch b = m_model.get_batch(row);
 
-	m_name_edit->setText(b.name());
-
 	int index = m_filter_select->findData(b.filter());
 	if ( index != -1 ) {
 		m_filter_select->setCurrentIndex(index);
@@ -228,7 +226,7 @@ void  SequenceEditor::on_remove_sequence() {
 
 void SequenceEditor::on_add_sequence() {
 	Batch b;
-	b.set_name(m_name_edit->text());
+	//b.set_name(m_name_edit->text());
 	b.set_filter(m_filter_select->currentData().toString());
 	b.set_mode(m_mode_select->currentData().toString());
 	b.set_frame(m_frame_select->currentData().toString());
@@ -251,7 +249,7 @@ void SequenceEditor::on_update_sequence() {
 	int row = m_view.currentIndex().row();
 	if (row < 0) return;
 
-	b.set_name(m_name_edit->text());
+	//b.set_name(m_name_edit->text());
 	b.set_filter(m_filter_select->currentData().toString());
 	b.set_mode(m_mode_select->currentData().toString());
 	b.set_frame(m_frame_select->currentData().toString());

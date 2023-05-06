@@ -24,11 +24,10 @@
 
 class Batch {
 	bool m_empty;
-	QString m_name, m_filter, m_exposure, m_delay, m_count, m_mode, m_frame, m_focus;
+	QString m_filter, m_exposure, m_delay, m_count, m_mode, m_frame, m_focus;
 public:
 	Batch():
 		m_empty{true},
-		m_name{""},
 		m_filter{""},
 		m_exposure{""},
 		m_delay{""},
@@ -39,7 +38,6 @@ public:
 	{}
 
 	Batch(
-		const QString & name,
 		const QString & filter,
 		const QString & exposure,
 		const QString & delay,
@@ -49,7 +47,6 @@ public:
 		const QString & focus
 	):
 		m_empty{false},
-		m_name{name},
 		m_filter{filter},
 		m_exposure{exposure},
 		m_delay{delay},
@@ -61,7 +58,6 @@ public:
 
 	Batch (QString batch_string):
 		m_empty{true},
-		m_name{""},
 		m_filter{""},
 		m_exposure{""},
 		m_delay{""},
@@ -75,9 +71,6 @@ public:
 			QStringList key_val = list[i].split('=', Qt::SkipEmptyParts);
 			if (key_val.length() <= 2) {
 				QString key = key_val[0].trimmed();
-				if (!key.compare("name")) {
-					m_name = key_val[1].trimmed();
-				}
 				if (!key.compare("filter")) {
 					m_filter = key_val[1].trimmed();
 				}
@@ -106,7 +99,6 @@ public:
 		// m_count.toStdString().c_str(), m_mode.toStdString().c_str(), m_frame.toStdString().c_str(), m_focus.toStdString().c_str());
 	}
 
-	QString name() const { return m_name; }
 	QString filter() const { return m_filter; }
 	QString exposure() const { return m_exposure; }
 	QString delay() const { return m_delay; }
@@ -117,9 +109,6 @@ public:
 
 	QString to_property_value() const {
 		QString batch_str;
-		if (!m_name.isEmpty()) {
-			batch_str.append("name=" + m_name + "_%-D_%F_%C_%M" + ";");
-		}
 		if (!m_filter.isEmpty() && m_filter != "*") {
 			batch_str.append("filter=" + m_filter + ";");
 		}
@@ -148,10 +137,6 @@ public:
 		return m_empty;
 	}
 
-	void set_name(QString s) {
-		 m_empty = false;
-		 m_name = s;
-	}
 	void set_filter(QString s) {
 		m_empty = false;
 		m_filter = s;
@@ -205,8 +190,15 @@ class SequenceModel : public QAbstractTableModel {
 	QList<Batch> m_data;
 public:
 	SequenceModel(QObject * parent = {}) : QAbstractTableModel{parent} {}
-	int rowCount(const QModelIndex &) const override { return m_data.count(); }
-	int columnCount(const QModelIndex &) const override { return 8; }
+
+	int rowCount(const QModelIndex &) const override {
+		return m_data.count();
+	}
+
+	int columnCount(const QModelIndex &) const override {
+		return 7;
+	}
+
 	QVariant data(const QModelIndex &index, int role) const override {
 		if (role != Qt::DisplayRole && role != Qt::EditRole && role != Qt::ToolTipRole) return {};
 		const auto &sequence = m_data[index.row()];
@@ -214,14 +206,13 @@ public:
 			return {};
 		}
 		switch (index.column()) {
-			case 0: return sequence.name();
-			case 1: return sequence.filter();
-			case 2: return sequence.exposure();
-			case 3: return sequence.delay();
-			case 4: return sequence.count();
-			case 5: return sequence.mode();
-			case 6: return sequence.frame();
-			case 7: return sequence.focus();
+			case 0: return sequence.filter();
+			case 1: return sequence.exposure();
+			case 2: return sequence.delay();
+			case 3: return sequence.count();
+			case 4: return sequence.mode();
+			case 5: return sequence.frame();
+			case 6: return sequence.focus();
 			default: return {};
 		};
 		return {};
@@ -231,14 +222,13 @@ public:
 		if ((orientation != Qt::Horizontal && orientation != Qt::Vertical) || role != Qt::DisplayRole) return {};
 		if (orientation == Qt::Horizontal) {
 			switch (section) {
-				case 0: return "Name";
-				case 1: return "Filter";
-				case 2: return "Exposure";
-				case 3: return "Delay";
-				case 4: return "Count";
-				case 5: return "Mode";
-				case 6: return "Frame";
-				case 7: return "Focus";
+				case 0: return "Filter";
+				case 1: return "Exposure";
+				case 2: return "Delay";
+				case 3: return "Count";
+				case 4: return "Mode";
+				case 5: return "Frame";
+				case 6: return "Focus";
 				default: return {};
 			}
 		}
