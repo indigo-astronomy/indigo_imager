@@ -94,6 +94,10 @@ RESOURCES += \
 	../resource/next.png \
 	../resource/zoom-in.png \
 	../resource/zoom-out.png \
+	../resource/arrow-up.png \
+	../resource/arrow-down.png \
+	../resource/edit.png \
+	../resource/folder.png \
 	../resource/histogram.png \
 	../resource/error.wav \
 	../resource/ok.wav \

@@ -595,9 +595,6 @@ private:
 	QProgressBar *m_seq_sequence_progress;
 	QPushButton *m_seq_start_button;
 	QPushButton *m_seq_pause_button;
-	QSpinBox *m_seq_repeat_count;
-	QCheckBox *m_seq_cooler_off_cbox;
-	QCheckBox *m_seq_park_cbox;
 
 	// Focuser tabbar
 	QComboBox *m_focuser_select;
@@ -806,7 +803,6 @@ private:
 	// Image viewer
 	ImageViewer *m_imager_viewer;
 	ImageViewer *m_guider_viewer;
-//	ImageViewer *m_visible_viewer;
 	QWidget *m_visible_viewer;
 	ImageViewer *m_seq_imager_viewer;
 

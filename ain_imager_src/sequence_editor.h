@@ -294,11 +294,13 @@ private:
 	QComboBox *m_mode_select;
 	QComboBox *m_frame_select;
 	QDoubleSpinBox *m_focus_exp_box;
-	QPushButton *m_add_button;
-	QPushButton *m_rm_button;
-	QPushButton *m_up_button;
-	QPushButton *m_down_button;
-	QPushButton *m_update_button;
+	QToolButton *m_add_button;
+	QToolButton *m_rm_button;
+	QToolButton *m_up_button;
+	QToolButton *m_down_button;
+	QToolButton *m_update_button;
+	QToolButton *m_load_sequence_button;
+	QToolButton *m_save_sequence_button;
 
 signals:
 	void populate_filter_select(QList<QString> &items);
@@ -317,6 +319,7 @@ public slots:
 	void on_move_down_sequence();
 	void on_row_changed(const QModelIndex &current, const QModelIndex &previous);
 	void on_park_cooler_clicked(bool state);
+	void on_repeat_changed(int value);
 
 	void on_populate_filter_select(QList<QString> &items) {
 		populate_combobox(m_filter_select, items);

@@ -70,6 +70,7 @@ SequenceEditor::SequenceEditor() {
 	m_repeat_box->setMinimumWidth(50);
 	m_repeat_box->setValue(1);
 	m_layout.addWidget(m_repeat_box, row, col);
+	connect(m_repeat_box, QOverload<int>::of(&QSpinBox::valueChanged), this, &SequenceEditor::on_repeat_changed);
 
 	row++;
 	QSpacerItem *spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -152,40 +153,55 @@ SequenceEditor::SequenceEditor() {
 	m_layout.addItem(spacer, row, 0);
 
 	row++;
-	col = 0;
-	m_add_button = new QPushButton("+");
-	m_add_button->setStyleSheet("min-width: 30px");
-	///m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
-	m_layout.addWidget(m_add_button, row, col);
-	connect(m_add_button, &QPushButton::clicked, this, &SequenceEditor::on_add_sequence);
+	QWidget *toolbar = new QWidget;
+	QHBoxLayout *toolbox = new QHBoxLayout(toolbar);
+	toolbar->setContentsMargins(1,1,1,1);
+	toolbox->setContentsMargins(1,1,1,1);
+	m_layout.addWidget(toolbar, row, 0, 1, 8);
 
-	col++;
-	m_rm_button = new QPushButton("-");
-	m_rm_button->setStyleSheet("min-width: 30px");
-	///m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
-	m_layout.addWidget(m_rm_button, row, col);
-	connect(m_rm_button, &QPushButton::clicked, this, &SequenceEditor::on_remove_sequence);
+	m_add_button = new QToolButton(this);
+	m_add_button->setIcon(QIcon(":resource/zoom-in.png"));
+	m_add_button->setToolTip("Add batch to the sequence");
+	toolbox->addWidget(m_add_button);
+	connect(m_add_button, &QToolButton::clicked, this, &SequenceEditor::on_add_sequence);
 
-	col++;
-	m_up_button = new QPushButton("Up");
-	m_up_button->setStyleSheet("min-width: 30px");
-	///m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
-	m_layout.addWidget(m_up_button, row, col);
-	connect(m_up_button, &QPushButton::clicked, this, &SequenceEditor::on_move_up_sequence);
+	m_rm_button = new QToolButton(this);
+	m_rm_button->setIcon(QIcon(":resource/zoom-out.png"));
+	m_rm_button->setToolTip("Remove selected batch from the sequence");
+	toolbox->addWidget(m_rm_button);
+	connect(m_rm_button, &QToolButton::clicked, this, &SequenceEditor::on_remove_sequence);
 
-	col++;
-	m_down_button = new QPushButton("Down");
-	m_down_button->setStyleSheet("min-width: 30px");
-	///m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
-	m_layout.addWidget(m_down_button, row, col);
-	connect(m_down_button, &QPushButton::clicked, this, &SequenceEditor::on_move_down_sequence);
+	m_up_button = new QToolButton(this);
+	m_up_button->setIcon(QIcon(":resource/arrow-up.png"));
+	m_up_button->setToolTip("Move selected batch up");
+	toolbox->addWidget(m_up_button);
+	connect(m_up_button, &QToolButton::clicked, this, &SequenceEditor::on_move_up_sequence);
 
-	col++;
-	m_update_button = new QPushButton("Update");
-	m_update_button->setStyleSheet("min-width: 30px");
-	///m_focusing_preview_button->setIcon(QIcon(":resource/play.png"));
-	m_layout.addWidget(m_update_button, row, col);
-	connect(m_update_button, &QPushButton::clicked, this, &SequenceEditor::on_update_sequence);
+	m_down_button = new QToolButton(this);
+	m_down_button->setIcon(QIcon(":resource/arrow-down.png"));
+	m_down_button->setToolTip("Move selected batch down");
+	toolbox->addWidget(m_down_button);
+	connect(m_down_button, &QToolButton::clicked, this, &SequenceEditor::on_move_down_sequence);
+
+	m_update_button = new QToolButton(this);
+	m_update_button->setIcon(QIcon(":resource/edit.png"));
+	m_update_button->setToolTip("Update selected batch");
+	toolbox->addWidget(m_update_button);
+	connect(m_update_button, &QToolButton::clicked, this, &SequenceEditor::on_update_sequence);
+
+	toolbox->addStretch(1);
+
+	m_load_sequence_button = new QToolButton(this);
+	m_load_sequence_button->setIcon(QIcon(":resource/folder.png"));
+	m_load_sequence_button->setToolTip("Load sequence from file");
+	toolbox->addWidget(m_load_sequence_button);
+	connect(m_load_sequence_button, &QToolButton::clicked, this, &SequenceEditor::on_update_sequence);
+
+	m_save_sequence_button = new QToolButton(this);
+	m_save_sequence_button->setIcon(QIcon(":resource/save.png"));
+	m_save_sequence_button->setToolTip("Save sequence to file");
+	toolbox->addWidget(m_save_sequence_button);
+	connect(m_save_sequence_button, &QToolButton::clicked, this, &SequenceEditor::on_update_sequence);
 
 	connect(this, &SequenceEditor::populate_filter_select, this, &SequenceEditor::on_populate_filter_select);
 	connect(this, &SequenceEditor::populate_mode_select, this, &SequenceEditor::on_populate_mode_select);
@@ -207,6 +223,11 @@ SequenceEditor::~SequenceEditor() {
 
 void SequenceEditor::on_park_cooler_clicked(bool state) {
 	Q_UNUSED(state);
+	emit(sequence_updated());
+}
+
+void SequenceEditor::on_repeat_changed(int value) {
+	Q_UNUSED(value);
 	emit(sequence_updated());
 }
 
