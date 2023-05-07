@@ -19,6 +19,12 @@
 #include <sequence_editor.h>
 #include <indigo/indigo_bus.h>
 
+#if defined(INDIGO_WINDOWS)
+#define PATH_LEN 4096
+#else
+#define PATH_LEN PATH_MAX
+#endif
+
 SequenceEditor::SequenceEditor() {
 	//Batch b("name=alaba nica;exposure=4;delay=3;count=3;focus=2;");
 	int row = 0;
@@ -199,7 +205,7 @@ SequenceEditor::SequenceEditor() {
 	m_save_sequence_button->setIcon(QIcon(":resource/save.png"));
 	m_save_sequence_button->setToolTip("Save sequence to file");
 	toolbox->addWidget(m_save_sequence_button);
-	connect(m_save_sequence_button, &QToolButton::clicked, this, &SequenceEditor::on_update_sequence);
+	connect(m_save_sequence_button, &QToolButton::clicked, this, &SequenceEditor::on_save_sequence);
 
 	connect(this, &SequenceEditor::populate_filter_select, this, &SequenceEditor::on_populate_filter_select);
 	connect(this, &SequenceEditor::populate_mode_select, this, &SequenceEditor::on_populate_mode_select);
@@ -343,6 +349,23 @@ void SequenceEditor::on_update_sequence() {
 	emit(sequence_updated());
 }
 
+void SequenceEditor::on_save_sequence() {
+	QString qlocation = QDir::toNativeSeparators(QDir::homePath());
+	QString file_name = QFileDialog::getSaveFileName(this,
+		tr("Save sequence"), qlocation,
+		QString("Ain sequence (*.seq)"));
+
+	if (file_name == "") return;
+
+	if (!file_name.endsWith(".seq", Qt::CaseInsensitive)) file_name += ".seq";
+
+	if (!save_sequence(file_name)) {
+		char msg[PATH_LEN];
+		snprintf(msg, PATH_LEN, "Error saving: '%s'\nMake sure you have write permissions and the sequence is not empty!", QDir::toNativeSeparators(file_name).toUtf8().data());
+		show_message("Error!", msg);
+	}
+}
+
 void SequenceEditor::populate_combobox(QComboBox *combobox, const char *items[255], const int count) {
 	if (combobox == nullptr) return;
 	clear_combobox(combobox);
@@ -415,6 +438,31 @@ void SequenceEditor::generate_sequence(QString &sequence, QList<QString> &batche
 	}
 }
 
+bool SequenceEditor::save_sequence(QString filename) {
+	char file_name[PATH_MAX];
+	QString sequence;
+	QList<QString> batches;
+
+	QString sequence_name = m_name_edit->text();
+	generate_sequence(sequence, batches);
+
+	if (batches.count() <= 0) return false;
+
+	strcpy(file_name, filename.toUtf8().constData());
+	FILE *fp = fopen(file_name, "w+");
+	if (fp) {
+		fprintf(fp, "# Ain INDIGO Imager sequence file. DO NOT EDIT MANUALLY!\n");
+		fprintf(fp, "%s\n", sequence_name.toStdString().c_str());
+		fprintf(fp, "%s\n", sequence.toStdString().c_str());
+		for (int i = 0; i < batches.count(); i++) {
+			fprintf(fp, "%s\n", batches[i].toStdString().c_str());
+		}
+		fclose(fp);
+		return true;
+	}
+	return false;
+}
+
 double SequenceEditor::approximate_duration() {
 	int row_count = m_view.model()->rowCount();
 	double duration = 0;
@@ -435,4 +483,13 @@ double SequenceEditor::approximate_duration() {
 		duration = 0;
 	}
 	return duration / 3600.0;
+}
+
+void SequenceEditor::show_message(const char *title, const char *message, QMessageBox::Icon icon) {
+	QMessageBox msgBox(this);
+	indigo_error(message);
+	msgBox.setWindowTitle(title);
+	msgBox.setIcon(icon);
+	msgBox.setText(message);
+	msgBox.exec();
 }

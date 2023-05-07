@@ -276,7 +276,8 @@ public:
 	void clear_combobox(QComboBox *combobox);
 	void generate_sequence(QString &sequence, QList<QString> &batches);
 	double approximate_duration();
-
+	bool save_sequence(QString filename);
+	void show_message(const char *title, const char *message,  QMessageBox::Icon icon = QMessageBox::Warning);
 
 private:
 	QGridLayout m_layout{this};
@@ -322,6 +323,7 @@ public slots:
 	void on_row_changed(const QModelIndex &current, const QModelIndex &previous);
 	void on_park_cooler_clicked(bool state);
 	void on_repeat_changed(int value);
+	void on_save_sequence();
 
 	void on_populate_filter_select(QList<QString> &items) {
 		populate_combobox(m_filter_select, items);
