@@ -300,6 +300,7 @@ private:
 	QToolButton *m_up_button;
 	QToolButton *m_down_button;
 	QToolButton *m_update_button;
+	QToolButton *m_download_sequence_button;
 	QToolButton *m_load_sequence_button;
 	QToolButton *m_save_sequence_button;
 

@@ -98,6 +98,7 @@ RESOURCES += \
 	../resource/arrow-down.png \
 	../resource/edit.png \
 	../resource/folder.png \
+	../resource/download.png \
 	../resource/histogram.png \
 	../resource/error.wav \
 	../resource/ok.wav \

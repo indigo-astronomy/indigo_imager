@@ -183,6 +183,12 @@ SequenceEditor::SequenceEditor() {
 
 	toolbox->addStretch(1);
 
+	m_download_sequence_button = new QToolButton(this);
+	m_download_sequence_button->setIcon(QIcon(":resource/download.png"));
+	m_download_sequence_button->setToolTip("Download the sequence from the Imager Agent");
+	toolbox->addWidget(m_download_sequence_button);
+	connect(m_download_sequence_button, &QToolButton::clicked, this, &SequenceEditor::on_update_sequence);
+
 	m_load_sequence_button = new QToolButton(this);
 	m_load_sequence_button->setIcon(QIcon(":resource/folder.png"));
 	m_load_sequence_button->setToolTip("Load sequence from file");
