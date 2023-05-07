@@ -30,7 +30,7 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	sequence_frame->setContentsMargins(0, 0, 0, 0);
 
 	int row = 0;
-	QLabel *label = new QLabel("Image preview");
+	QLabel *label = new QLabel("Image preview:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	sequence_frame_layout->addWidget(label, row, 0, 1, 4);
 	row++;
@@ -74,7 +74,7 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	sequence_frame_layout->addItem(spacer, row, 0);
 
-	label = new QLabel("Sequence progress");
+	label = new QLabel("Sequence progress:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	sequence_frame_layout->addWidget(label, row, 0, 1, 4);
 	row++;

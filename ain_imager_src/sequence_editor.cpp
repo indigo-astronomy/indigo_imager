@@ -91,14 +91,17 @@ SequenceEditor::SequenceEditor() {
 
 	col += 2;
 	m_filter_select = new QComboBox();
+	m_filter_select->setToolTip("Filter to be used for the batch.");
 	m_layout.addWidget(m_filter_select, row, col, 1, 2);
 
 	col += 2;
 	m_mode_select = new QComboBox();
+	m_mode_select->setToolTip("Frame mode: gray/RGB, bit depth, resolution etc.");
 	m_layout.addWidget(m_mode_select, row, col, 1, 2);
 
 	col+=2;
 	m_frame_select = new QComboBox();
+	m_frame_select->setToolTip("Frame type: Light, Dark, Flat frame etc.");
 	m_layout.addWidget(m_frame_select, row, col, 1, 2);
 
 	row++;
@@ -108,6 +111,7 @@ SequenceEditor::SequenceEditor() {
 
 	col++;
 	m_exposure_box = new QDoubleSpinBox();
+	m_exposure_box->setToolTip("Exposure time for each frame in the batch.");
 	m_exposure_box->setMaximum(10000);
 	m_exposure_box->setMinimum(0);
 	m_exposure_box->setValue(1);
@@ -119,6 +123,7 @@ SequenceEditor::SequenceEditor() {
 
 	col++;
 	m_delay_box = new QDoubleSpinBox();
+	m_delay_box->setToolTip("Delay between exposures in the batch.");
 	m_delay_box->setMaximum(10000);
 	m_delay_box->setMinimum(0);
 	m_delay_box->setValue(0);
@@ -130,6 +135,7 @@ SequenceEditor::SequenceEditor() {
 
 	col++;
 	m_count_box = new QSpinBox();
+	m_count_box->setToolTip("Number of frames in the batch.");
 	m_count_box->setMaximum(10000);
 	m_count_box->setMinimum(1);
 	m_count_box->setValue(1);
@@ -141,9 +147,10 @@ SequenceEditor::SequenceEditor() {
 
 	col++;
 	m_focus_exp_box = new QDoubleSpinBox();
+	m_focus_exp_box->setToolTip("Focusing exposure time (0 = no focusing). Focusing will be performed before starting the batch.");
 	m_focus_exp_box->setMaximum(10000);
-	m_focus_exp_box ->setMinimum(0);
-	m_focus_exp_box ->setValue(0);
+	m_focus_exp_box->setMinimum(0);
+	m_focus_exp_box->setValue(0);
 	m_layout.addWidget(m_focus_exp_box, row, col);
 
 	row++;
@@ -430,7 +437,7 @@ void SequenceEditor::generate_sequence(QString &sequence, QList<QString> &batche
 	sequence = seq_str;
 
 	if (m_cooler_off_cbox->checkState() == Qt::Checked) {
-		sequence += "cooler=Off;";
+		sequence += "cooler=off;";
 	}
 
 	if (m_park_cbox->checkState() == Qt::Checked) {
