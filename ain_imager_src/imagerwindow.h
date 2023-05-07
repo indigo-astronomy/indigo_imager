@@ -595,6 +595,7 @@ private:
 	QProgressBar *m_seq_sequence_progress;
 	QPushButton *m_seq_start_button;
 	QPushButton *m_seq_pause_button;
+	QLabel *m_seq_esimated_duration;
 
 	// Focuser tabbar
 	QComboBox *m_focuser_select;

@@ -275,6 +275,7 @@ public:
 	void populate_combobox(QComboBox *combobox, QList<QString> &items);
 	void clear_combobox(QComboBox *combobox);
 	void generate_sequence(QString &sequence, QList<QString> &batches);
+	double approximate_duration();
 
 
 private:

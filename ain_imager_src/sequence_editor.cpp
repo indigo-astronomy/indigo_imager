@@ -98,7 +98,6 @@ SequenceEditor::SequenceEditor() {
 	row++;
 	col = 0;
 	label = new QLabel("Exposure (s):");
-	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	m_layout.addWidget(label, row, col);
 
 	col++;
@@ -106,12 +105,10 @@ SequenceEditor::SequenceEditor() {
 	m_exposure_box->setMaximum(10000);
 	m_exposure_box->setMinimum(0);
 	m_exposure_box->setValue(1);
-	m_exposure_box->setKeyboardTracking(false);
 	m_layout.addWidget(m_exposure_box, row, col);
 
 	col++;
 	label = new QLabel("Delay (s):");
-	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	m_layout.addWidget(label, row, col);
 
 	col++;
@@ -119,12 +116,10 @@ SequenceEditor::SequenceEditor() {
 	m_delay_box->setMaximum(10000);
 	m_delay_box->setMinimum(0);
 	m_delay_box->setValue(0);
-	m_delay_box->setKeyboardTracking(false);
 	m_layout.addWidget(m_delay_box, row, col);
 
 	col++;
 	label = new QLabel("Count:");
-	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	m_layout.addWidget(label, row, col);
 
 	col++;
@@ -132,12 +127,10 @@ SequenceEditor::SequenceEditor() {
 	m_count_box->setMaximum(10000);
 	m_count_box->setMinimum(1);
 	m_count_box->setValue(1);
-	m_count_box->setKeyboardTracking(false);
 	m_layout.addWidget(m_count_box, row, col);
 
 	col++;
 	label = new QLabel("Focus (s):");
-	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	m_layout.addWidget(label, row, col);
 
 	col++;
@@ -145,7 +138,6 @@ SequenceEditor::SequenceEditor() {
 	m_focus_exp_box->setMaximum(10000);
 	m_focus_exp_box ->setMinimum(0);
 	m_focus_exp_box ->setValue(0);
-	m_focus_exp_box ->setKeyboardTracking(false);
 	m_layout.addWidget(m_focus_exp_box, row, col);
 
 	row++;
@@ -415,4 +407,26 @@ void SequenceEditor::generate_sequence(QString &sequence, QList<QString> &batche
 	if (m_park_cbox->checkState() == Qt::Checked) {
 		sequence += "park;";
 	}
+}
+
+double SequenceEditor::approximate_duration() {
+	int row_count = m_view.model()->rowCount();
+	double duration = 0;
+
+	if (row_count <= 0) {
+		return duration;
+	}
+
+	for (int row = 0; row < row_count; row++) {
+		Batch b = m_model.get_batch(row);
+		duration += (b.exposure().toDouble() + b.delay().toDouble()) * b.count().toDouble() + 10 * b.focus().toDouble();
+	}
+
+	int repeat = m_repeat_box->value();
+	if (repeat >= 0) {
+		duration *= repeat;
+	} else {
+		duration = 0;
+	}
+	return duration / 3600.0;
 }
