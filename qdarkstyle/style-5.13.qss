@@ -353,7 +353,7 @@ QMenuBar::item:selected {
 QMenuBar::item:pressed {
     padding: 0px;
     border: 0px solid #404040;
-    background-color: #454545;
+    background-color: #505050;
     color: #F0F0F0;
     margin-bottom: 0px;
     padding-bottom: 0px;
@@ -369,7 +369,7 @@ QMenu {
 
 QMenu::separator {
     height: 1px;
-    background-color: #505252;
+    background-color: #545454;
     color: #F0F0F0;
     padding-left: 4px;
     margin-left: 0px;
