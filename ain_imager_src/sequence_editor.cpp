@@ -222,9 +222,11 @@ SequenceEditor::SequenceEditor() {
 	connect(this, &SequenceEditor::clear_mode_select, this, &SequenceEditor::on_clear_mode_select);
 	connect(this, &SequenceEditor::clear_frame_select, this, &SequenceEditor::on_clear_frame_select);
 	connect(this, &SequenceEditor::set_sequence_name, this, &SequenceEditor::on_set_sequence_name);
+	connect(&m_view, &QTableView::doubleClicked, this, &SequenceEditor::on_double_click);
 
 	QItemSelectionModel *selection_model = m_view.selectionModel();
 	connect(selection_model, &QItemSelectionModel::currentRowChanged, this, &SequenceEditor::on_row_changed);
+	connect(this, &SequenceEditor::clear_selection, selection_model, &QItemSelectionModel::clearSelection);
 
 	clear_filter_select();
 	clear_mode_select();
@@ -232,6 +234,13 @@ SequenceEditor::SequenceEditor() {
 }
 
 SequenceEditor::~SequenceEditor() {
+}
+
+void SequenceEditor::on_double_click(const QModelIndex& idx) {
+	Q_UNUSED(idx);
+	QItemSelectionModel *selection_model = m_view.selectionModel();
+	selection_model->clearSelection();
+	m_view.reset();
 }
 
 void SequenceEditor::on_park_cooler_clicked(bool state) {
@@ -274,7 +283,10 @@ void SequenceEditor::on_row_changed(const QModelIndex &current, const QModelInde
 }
 
 void SequenceEditor::on_move_up_sequence() {
-	int row = m_view.currentIndex().row();
+	QModelIndexList selection = m_view.selectionModel()->selectedRows();
+	if (selection.count() != 1) return;
+	int row = selection[0].row();
+
 	if(row <= 0) return;
 
 	Batch b1 = m_model.get_batch(row);
@@ -288,7 +300,10 @@ void SequenceEditor::on_move_up_sequence() {
 }
 
 void SequenceEditor::on_move_down_sequence() {
-	int row = m_view.currentIndex().row();
+	QModelIndexList selection = m_view.selectionModel()->selectedRows();
+	if (selection.count() != 1) return;
+	int row = selection[0].row();
+
 	if (row >= m_view.model()->rowCount() - 1) return;
 
 	Batch b1 = m_model.get_batch(row);
@@ -498,6 +513,7 @@ bool SequenceEditor::load_sequence(QString filename) {
 	}
 
 	m_model.clear();
+	m_view.reset();
 
 	int ln = 0;
 	while (fgets(line, PATH_MAX, fp)) {

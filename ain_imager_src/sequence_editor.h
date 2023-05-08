@@ -336,6 +336,7 @@ signals:
 	void clear_frame_select();
 	void sequence_updated();
 	void set_sequence_name(QString name);
+	void clear_selection();
 
 public slots:
 	void on_add_sequence();
@@ -344,6 +345,7 @@ public slots:
 	void on_move_up_sequence();
 	void on_move_down_sequence();
 	void on_row_changed(const QModelIndex &current, const QModelIndex &previous);
+	void on_double_click(const QModelIndex& idx);
 	void on_park_cooler_clicked(bool state);
 	void on_repeat_changed(int value);
 	void on_save_sequence();

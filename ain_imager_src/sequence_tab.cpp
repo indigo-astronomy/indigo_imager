@@ -133,5 +133,6 @@ void ImagerWindow::on_sequence_updated() {
 }
 
 void ImagerWindow::on_sequence_start_stop(bool clicked) {
+	m_sequence_editor->clear_selection();
 	exposure_start_stop(clicked, true);
 }
