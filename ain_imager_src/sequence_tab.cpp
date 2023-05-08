@@ -105,7 +105,7 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	sequence_frame_layout->addItem(spacer, row, 0);
 
 	row++;
-	m_seq_esimated_duration = new QLabel(QString("Sequence duration: ") + indigo_dtos(0, "%02d:%02d:%02d"));
+	m_seq_esimated_duration = new QLabel(QString("Sequence duration: ") + indigo_dtos(0, "%02d:%02d:%02.0f"));
 	m_seq_esimated_duration->setToolTip("This is approximate sequence duration as download, focusing, filter change etc., times are unpredicatble.");
 	//m_seq_esimated_duration ->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	sequence_frame_layout->addWidget(m_seq_esimated_duration, row, 0, 1, 4);
@@ -114,7 +114,7 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 void ImagerWindow::on_sequence_updated() {
 	// TESTCODE
 	double duration = m_sequence_editor->approximate_duration();
-	m_seq_esimated_duration->setText(QString("Sequence duration: ") + indigo_dtos(duration, "%02d:%02d:%02d"));
+	m_seq_esimated_duration->setText(QString("Sequence duration: ") + indigo_dtos(duration, "%02d:%02d:%02.0f"));
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
