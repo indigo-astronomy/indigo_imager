@@ -830,7 +830,7 @@ void ImagerWindow::save_blob_item(indigo_item *item) {
 		char message[PATH_LEN+100];
 		char location[PATH_LEN];
 
-		if (m_object_name->text().trimmed() == "" && !conf.save_noname_images) {
+		if ((m_object_name_str == DEFAULT_OBJECT_NAME || m_object_name_str.isEmpty()) && !conf.save_noname_images) {
 			snprintf(message, sizeof(message), "Warning: image not saved, provide object name");
 			window_log(message, INDIGO_BUSY_STATE);
 			return;
