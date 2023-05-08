@@ -147,10 +147,11 @@ SequenceEditor::SequenceEditor() {
 
 	col++;
 	m_focus_exp_box = new QDoubleSpinBox();
-	m_focus_exp_box->setToolTip("Focusing exposure time (0 = no focusing). Focusing will be performed before starting the batch.");
+	m_focus_exp_box->setToolTip("Focusing exposure time (0 = skip). Focusing will be performed before starting the batch.");
 	m_focus_exp_box->setMaximum(10000);
 	m_focus_exp_box->setMinimum(0);
 	m_focus_exp_box->setValue(0);
+	m_focus_exp_box->setSpecialValueText("* (skip)");
 	m_layout.addWidget(m_focus_exp_box, row, col);
 
 	row++;
@@ -206,7 +207,7 @@ SequenceEditor::SequenceEditor() {
 	m_load_sequence_button->setIcon(QIcon(":resource/folder.png"));
 	m_load_sequence_button->setToolTip("Load sequence from file");
 	toolbox->addWidget(m_load_sequence_button);
-	connect(m_load_sequence_button, &QToolButton::clicked, this, &SequenceEditor::on_update_sequence);
+	connect(m_load_sequence_button, &QToolButton::clicked, this, &SequenceEditor::on_load_sequence);
 
 	m_save_sequence_button = new QToolButton(this);
 	m_save_sequence_button->setIcon(QIcon(":resource/save.png"));
@@ -314,7 +315,6 @@ void  SequenceEditor::on_remove_sequence() {
 
 void SequenceEditor::on_add_sequence() {
 	Batch b;
-	//b.set_name(m_name_edit->text());
 	b.set_filter(m_filter_select->currentData().toString());
 	b.set_mode(m_mode_select->currentData().toString());
 	b.set_frame(m_frame_select->currentData().toString());
@@ -337,7 +337,6 @@ void SequenceEditor::on_update_sequence() {
 	int row = m_view.currentIndex().row();
 	if (row < 0) return;
 
-	//b.set_name(m_name_edit->text());
 	b.set_filter(m_filter_select->currentData().toString());
 	b.set_mode(m_mode_select->currentData().toString());
 	b.set_frame(m_frame_select->currentData().toString());
@@ -369,6 +368,21 @@ void SequenceEditor::on_save_sequence() {
 	if (!save_sequence(file_name)) {
 		char msg[PATH_LEN];
 		snprintf(msg, PATH_LEN, "Error saving: '%s'\nMake sure you have write permissions and the sequence is not empty!", QDir::toNativeSeparators(file_name).toUtf8().data());
+		show_message("Error!", msg);
+	}
+}
+
+void SequenceEditor::on_load_sequence() {
+	QString qlocation = QDir::toNativeSeparators(QDir::homePath());
+	QString file_name = QFileDialog::getOpenFileName(this,
+		tr("Load sequence"), qlocation,
+		QString("Ain sequence (*.seq)"));
+
+	if (file_name == "") return;
+
+	if (!load_sequence(file_name)) {
+		char msg[PATH_LEN];
+		snprintf(msg, PATH_LEN, "Error opening: '%s'\nMake sure you have read permissions!", QDir::toNativeSeparators(file_name).toUtf8().data());
 		show_message("Error!", msg);
 	}
 }
@@ -453,21 +467,71 @@ bool SequenceEditor::save_sequence(QString filename) {
 	QString sequence_name = m_name_edit->text();
 	generate_sequence(sequence, batches);
 
-	if (batches.count() <= 0) return false;
+	if (batches.count() <= 0) {
+		return false;
+	}
 
 	strcpy(file_name, filename.toUtf8().constData());
 	FILE *fp = fopen(file_name, "w+");
-	if (fp) {
-		fprintf(fp, "# Ain INDIGO Imager sequence file. DO NOT EDIT MANUALLY!\n");
-		fprintf(fp, "%s\n", sequence_name.toStdString().c_str());
-		fprintf(fp, "%s\n", sequence.toStdString().c_str());
-		for (int i = 0; i < batches.count(); i++) {
-			fprintf(fp, "%s\n", batches[i].toStdString().c_str());
-		}
-		fclose(fp);
-		return true;
+	if (fp == nullptr) {
+		return false;
 	}
-	return false;
+	fprintf(fp, "# Ain INDIGO Imager sequence file. DO NOT EDIT MANUALLY!\n");
+	fprintf(fp, "%s\n", sequence_name.toStdString().c_str());
+	fprintf(fp, "%s\n", sequence.toStdString().c_str());
+	for (int i = 0; i < batches.count(); i++) {
+		fprintf(fp, "%s\n", batches[i].toStdString().c_str());
+	}
+	fclose(fp);
+	return true;
+}
+
+bool SequenceEditor::load_sequence(QString filename) {
+	char file_name[PATH_MAX];
+	char line[PATH_MAX];
+
+	strcpy(file_name, filename.toUtf8().constData());
+	FILE *fp = fopen(file_name, "r");
+	if (fp == nullptr) {
+		return false;
+	}
+
+	m_model.clear();
+
+	int ln = 0;
+	while (fgets(line, PATH_MAX, fp)) {
+		QString line_str = QString(line).trimmed();
+		if (line_str.startsWith("#")) {
+			continue;
+		}
+		if (ln == 0) {
+			m_name_edit->setText(line_str);
+		} else if (ln == 1) {
+			if(line_str.contains("cooler=off;", Qt::CaseInsensitive)) {
+				m_cooler_off_cbox->setCheckState(Qt::Checked);
+			} else {
+				m_cooler_off_cbox->setCheckState(Qt::Unchecked);
+			}
+			if(line_str.contains("park;", Qt::CaseInsensitive)) {
+				m_park_cbox->setCheckState(Qt::Checked);
+			} else {
+				m_park_cbox->setCheckState(Qt::Unchecked);
+			}
+			int repeat = line_str.split(";1;").length();
+			m_repeat_box->blockSignals(true);
+			m_repeat_box->setValue(repeat);
+			m_repeat_box->blockSignals(false);
+		} else {
+			Batch b(line_str);
+			if (!b.is_empty()) {
+				m_model.append(b);
+			}
+		}
+		ln++;
+    }
+	fclose(fp);
+	emit(sequence_updated());
+	return true;
 }
 
 double SequenceEditor::approximate_duration() {

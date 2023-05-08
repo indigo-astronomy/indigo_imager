@@ -58,45 +58,53 @@ public:
 
 	Batch (QString batch_string):
 		m_empty{true},
-		m_filter{""},
-		m_exposure{""},
-		m_delay{""},
-		m_count{""},
-		m_mode{""},
-		m_frame{""},
-		m_focus{""}
+		m_filter{"*"},
+		m_exposure{"1"},
+		m_delay{"0"},
+		m_count{"1"},
+		m_mode{"*"},
+		m_frame{"*"},
+		m_focus{"*"}
 	{
 		QStringList list = batch_string.split(';', Qt::SkipEmptyParts);
-		for(int i; i < list.length(); i++) {
+		for(int i = 0; i < list.length(); i++) {
 			QStringList key_val = list[i].split('=', Qt::SkipEmptyParts);
 			if (key_val.length() <= 2) {
 				QString key = key_val[0].trimmed();
 				if (!key.compare("filter")) {
 					m_filter = key_val[1].trimmed();
+					m_empty = false;
 				}
 				if (!key.compare("exposure")) {
 					m_exposure = key_val[1].trimmed();
+					m_empty = false;
 				}
 				if (!key.compare("delay")) {
 					m_delay = key_val[1].trimmed();
+					m_empty = false;
 				}
 				if (!key.compare("count")) {
 					m_count = key_val[1].trimmed();
+					m_empty = false;
 				}
 				if (!key.compare("mode")) {
 					m_mode = key_val[1].trimmed();
+					m_empty = false;
 				}
 				if (!key.compare("frame")) {
 					m_frame = key_val[1].trimmed();
+					m_empty = false;
+
 				}
 				if (!key.compare("focus")) {
 					m_focus = key_val[1].trimmed();
+					m_empty = false;
 				}
 			}
 		}
-		// printf("\nm_name = %s\nm_filter= %s\nm_exposure = %s\nm_delay = %s\nm_count = %s\nm_mode = %s\nm_frame = %s\nm_focus = %s",
-		// m_name.toStdString().c_str(), m_filter.toStdString().c_str(), m_exposure.toStdString().c_str(), m_delay.toStdString().c_str(),
-		// m_count.toStdString().c_str(), m_mode.toStdString().c_str(), m_frame.toStdString().c_str(), m_focus.toStdString().c_str());
+		//printf("m_filter= %s\nm_exposure = %s\nm_delay = %s\nm_count = %s\nm_mode = %s\nm_frame = %s\nm_focus = %s\n",
+		//m_filter.toStdString().c_str(), m_exposure.toStdString().c_str(), m_delay.toStdString().c_str(),
+		//m_count.toStdString().c_str(), m_mode.toStdString().c_str(), m_frame.toStdString().c_str(), m_focus.toStdString().c_str());
 	}
 
 	QString filter() const { return m_filter; }
@@ -251,6 +259,16 @@ public:
 		endRemoveRows();
 	}
 
+	void clear() {
+		int index = m_data.count() - 1;
+		beginRemoveRows({}, 0, index);
+		while (index >= 0) {
+			m_data.removeAt(index);
+			index--;
+		}
+		endRemoveRows();
+	}
+
 	void set_batch(const Batch & batch, int pos = -1) {
 		if (pos < 0) {
 			beginInsertRows({}, m_data.count(), m_data.count());
@@ -277,6 +295,7 @@ public:
 	void generate_sequence(QString &sequence, QList<QString> &batches);
 	double approximate_duration();
 	bool save_sequence(QString filename);
+	bool load_sequence(QString filename);
 	void show_message(const char *title, const char *message,  QMessageBox::Icon icon = QMessageBox::Warning);
 
 private:
@@ -324,6 +343,7 @@ public slots:
 	void on_park_cooler_clicked(bool state);
 	void on_repeat_changed(int value);
 	void on_save_sequence();
+	void on_load_sequence();
 
 	void on_populate_filter_select(QList<QString> &items) {
 		populate_combobox(m_filter_select, items);
