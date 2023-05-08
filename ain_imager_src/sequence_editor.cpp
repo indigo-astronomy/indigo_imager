@@ -221,6 +221,7 @@ SequenceEditor::SequenceEditor() {
 	connect(this, &SequenceEditor::clear_filter_select, this, &SequenceEditor::on_clear_filter_select);
 	connect(this, &SequenceEditor::clear_mode_select, this, &SequenceEditor::on_clear_mode_select);
 	connect(this, &SequenceEditor::clear_frame_select, this, &SequenceEditor::on_clear_frame_select);
+	connect(this, &SequenceEditor::set_sequence_name, this, &SequenceEditor::on_set_sequence_name);
 
 	QItemSelectionModel *selection_model = m_view.selectionModel();
 	connect(selection_model, &QItemSelectionModel::currentRowChanged, this, &SequenceEditor::on_row_changed);

@@ -472,12 +472,17 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 			change_agent_abort_process_property(selected_agent);
 		} else {
 			set_mount_agent_selected_imager_agent();
-			QString obj_name = m_object_name->text();
-			add_fits_keyword_string(selected_agent, "OBJECT", &obj_name);
+			QString obj_name;
+			if (is_sequence) {
+				obj_name = m_sequence_editor->get_sequence_name();
+			} else {
+				obj_name = m_object_name->text().trimmed();
+			}
+			add_fits_keyword_string(selected_agent, "OBJECT", obj_name);
 			change_agent_batch_property(selected_agent);
 			change_ccd_frame_property(selected_agent);
 			if(conf.save_images_on_server) {
-				change_ccd_localmode_property(selected_agent, &m_object_name_str);
+				change_ccd_localmode_property(selected_agent, obj_name);
 				change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_BOTH_ITEM_NAME);
 			} else {
 				change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
@@ -509,7 +514,7 @@ void ImagerWindow::on_preview_start_stop(bool clicked) {
 		} else {
 			set_mount_agent_selected_imager_agent();
 			QString obj_name = m_object_name->text();
-			add_fits_keyword_string(selected_agent, "OBJECT", &obj_name);
+			add_fits_keyword_string(selected_agent, "OBJECT", obj_name);
 			change_agent_batch_property(selected_agent);
 			change_ccd_frame_property(selected_agent);
 			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
@@ -757,13 +762,14 @@ void ImagerWindow::on_temperature_set(double value) {
 }
 
 void ImagerWindow::on_object_name_changed(const QString &object_name) {
+	m_sequence_editor->on_set_sequence_name(object_name);
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
 
-		change_ccd_localmode_property(selected_agent, &object_name);
-		add_fits_keyword_string(selected_agent, "OBJECT", &object_name);
+		change_ccd_localmode_property(selected_agent, object_name);
+		add_fits_keyword_string(selected_agent, "OBJECT", object_name);
 	});
 }
 

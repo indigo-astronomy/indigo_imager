@@ -296,7 +296,10 @@ public:
 	double approximate_duration();
 	bool save_sequence(QString filename);
 	bool load_sequence(QString filename);
-	void show_message(const char *title, const char *message,  QMessageBox::Icon icon = QMessageBox::Warning);
+	void show_message(const char *title, const char *message, QMessageBox::Icon icon = QMessageBox::Warning);
+	QString get_sequence_name() {
+		return m_name_edit->text().trimmed();
+	}
 
 private:
 	QGridLayout m_layout{this};
@@ -332,6 +335,7 @@ signals:
 	void clear_mode_select();
 	void clear_frame_select();
 	void sequence_updated();
+	void set_sequence_name(QString name);
 
 public slots:
 	void on_add_sequence();
@@ -344,6 +348,10 @@ public slots:
 	void on_repeat_changed(int value);
 	void on_save_sequence();
 	void on_load_sequence();
+
+	void on_set_sequence_name(QString name) {
+		m_name_edit->setText(name);
+	}
 
 	void on_populate_filter_select(QList<QString> &items) {
 		populate_combobox(m_filter_select, items);

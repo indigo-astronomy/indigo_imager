@@ -86,29 +86,29 @@ void ImagerWindow::change_ccd_upload_property(const char *agent, const char *ite
 	indigo_change_switch_property_1(nullptr, agent, CCD_UPLOAD_MODE_PROPERTY_NAME, item, true);
 }
 
-void ImagerWindow::change_ccd_localmode_property(const char *agent, const QString *object_name) {
+void ImagerWindow::change_ccd_localmode_property(const char *agent, const QString &object_name) {
 	static char filename_template[INDIGO_VALUE_SIZE];
-	if (object_name->isEmpty()) {
-		m_object_name_str = DEFAULT_OBJECT_NAME;
+	if (object_name.isEmpty()) {
+		m_object_name_str = QString(DEFAULT_OBJECT_NAME);
 	} else {
-		m_object_name_str = object_name->trimmed();
+		m_object_name_str = object_name.trimmed();
 	}
-	strcpy(filename_template, m_object_name_str.toUtf8().constData());
+	strcpy(filename_template, m_object_name_str.toStdString().c_str());
 	strcat(filename_template, "_%-D_%F_%C_%M");
 	indigo_debug("filename template = %s", filename_template);
 
 	indigo_change_text_property_1_raw(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, CCD_LOCAL_MODE_PREFIX_ITEM_NAME, filename_template);
 }
 
-void ImagerWindow::add_fits_keyword_string(const char *agent, const char *keyword, const QString *object_name) const {
-	if (object_name->isEmpty()) {
+void ImagerWindow::add_fits_keyword_string(const char *agent, const char *keyword, const QString &value) const {
+	if (value.isEmpty()) {
 		indigo_change_text_property_1_raw(nullptr, agent, CCD_REMOVE_FITS_HEADERS_PROPERTY_NAME, CCD_REMOVE_FITS_HEADER_KEYWORD_ITEM_NAME, keyword);
 	} else {
 		static const char *items[] = {
 			CCD_SET_FITS_HEADER_KEYWORD_ITEM_NAME,
 			CCD_SET_FITS_HEADER_VALUE_ITEM_NAME
 		};
-		QString object = QString("'") + object_name->trimmed() + QString("'");
+		QString object = QString("'") + value.trimmed() + QString("'");
 		char *values[] {
 			(char *)keyword,
 			object.toUtf8().data()

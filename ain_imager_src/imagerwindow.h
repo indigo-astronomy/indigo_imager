@@ -162,7 +162,8 @@ public:
 	friend int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property);
 	friend void update_solver_agent_pa_settings(ImagerWindow *w, indigo_property *property);
 
-	bool save_blob;
+	bool m_save_blob;
+	bool m_is_sequence;
 
 signals:
 	void enable_blobs(bool on);
@@ -863,8 +864,8 @@ private:
 	void change_cooler_onoff_property(const char *agent) const;
 	void change_ccd_temperature_property(const char *agent) const;
 	void change_ccd_upload_property(const char *agent, const char *item_name) const;
-	void change_ccd_localmode_property(const char *agent, const QString *object_name);
-	void add_fits_keyword_string(const char *agent, const char *keyword, const QString *object_name) const;
+	void change_ccd_localmode_property(const char *agent, const QString &object_name);
+	void add_fits_keyword_string(const char *agent, const char *keyword, const QString &value) const;
 	void request_file_download(const char *agent, const char *file_name) const;
 	void request_file_remove(const char *agent, const char *file_name) const;
 	void change_related_agent(const char *agent, const char *old_agent, const char *new_agent) const;
