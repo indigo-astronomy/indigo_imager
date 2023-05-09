@@ -330,6 +330,8 @@ private:
 	void show_message(const char *title, const char *message, QMessageBox::Icon icon = QMessageBox::Warning);
 
 signals:
+	void request_sequence();
+	void set_sequence(QString name, QString sequence, QList<QString> batches);
 	void populate_filter_select(QList<QString> &items);
 	void populate_mode_select(QList<QString> &items);
 	void populate_frame_select(QList<QString> &items);
@@ -352,6 +354,7 @@ public slots:
 	void on_repeat_changed(int value);
 	void on_save_sequence();
 	void on_load_sequence();
+	void on_set_sequence(QString name, QString sequence, QList<QString> batches);
 
 	void on_set_sequence_name(QString name) {
 		m_name_edit->setText(name);

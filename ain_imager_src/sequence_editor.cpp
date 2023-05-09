@@ -201,7 +201,7 @@ SequenceEditor::SequenceEditor() {
 	m_download_sequence_button->setIcon(QIcon(":resource/download.png"));
 	m_download_sequence_button->setToolTip("Download the sequence from the Imager Agent");
 	toolbox->addWidget(m_download_sequence_button);
-	connect(m_download_sequence_button, &QToolButton::clicked, this, &SequenceEditor::on_update_sequence);
+	connect(m_download_sequence_button, &QToolButton::clicked, this, [this](){ emit(this->request_sequence()); });
 
 	m_load_sequence_button = new QToolButton(this);
 	m_load_sequence_button->setIcon(QIcon(":resource/folder.png"));
@@ -222,6 +222,7 @@ SequenceEditor::SequenceEditor() {
 	connect(this, &SequenceEditor::clear_mode_select, this, &SequenceEditor::on_clear_mode_select);
 	connect(this, &SequenceEditor::clear_frame_select, this, &SequenceEditor::on_clear_frame_select);
 	connect(this, &SequenceEditor::set_sequence_name, this, &SequenceEditor::on_set_sequence_name);
+	connect(this, &SequenceEditor::set_sequence, this, &SequenceEditor::on_set_sequence);
 	connect(&m_view, &QTableView::doubleClicked, this, &SequenceEditor::on_double_click);
 
 	QItemSelectionModel *selection_model = m_view.selectionModel();
@@ -553,6 +554,27 @@ bool SequenceEditor::load_sequence(QString filename) {
 	fclose(fp);
 	emit(sequence_updated());
 	return true;
+}
+
+void SequenceEditor::on_set_sequence(QString name, QString sequence, QList<QString> batches) {
+	m_model.clear();
+	m_view.reset();
+
+	if (!name.isEmpty()) {
+		m_name_edit->setText(name.trimmed());
+	}
+
+	if (!sequence.isEmpty()) {
+		populate_sequence_settings(sequence);
+	}
+
+	for (int i = 0; i < batches.count(); i++) {
+		Batch b(batches[i]);
+		if (!b.is_empty()) {
+			m_model.append(b);
+		}
+    }
+	//emit(sequence_updated());
 }
 
 double SequenceEditor::approximate_duration() {

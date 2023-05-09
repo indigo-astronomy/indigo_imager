@@ -17,6 +17,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "imagerwindow.h"
+#include "indigoclient.h"
 #include "propertycache.h"
 #include <conf.h>
 #include <utils.h>
@@ -130,6 +131,41 @@ void ImagerWindow::on_sequence_updated() {
 
 		change_imager_agent_sequence(selected_agent, sequence, batches);
 	});
+}
+
+void ImagerWindow::on_request_sequence() {
+	indigo_error("Sequence REQUESTED:");
+	static char selected_agent[INDIGO_NAME_SIZE];
+	get_selected_imager_agent(selected_agent);
+
+	QString name;
+	QString sequence;
+	QList<QString> batches;
+
+	indigo_property *p = properties.get(selected_agent, CCD_FITS_HEADERS_PROPERTY_NAME);
+	if (p) {
+		for (int i = 0; i < p->count; i++) {
+			if (client_match_item(&p->items[i], "OBJECT")) {
+				name = QString(p->items[i].text.value).trimmed().remove("\'");
+				break;
+			}
+		}
+	}
+
+	p = properties.get(selected_agent, AGENT_IMAGER_SEQUENCE_PROPERTY_NAME);
+	if (p) {
+		for (int i = 0; i < p->count; i++) {
+			if (client_match_item(&p->items[i], AGENT_IMAGER_SEQUENCE_ITEM_NAME)) {
+				sequence = p->items[i].text.value;
+			} else {
+				QString batch(p->items[i].text.value);
+				if (!batch.isEmpty()) {
+					batches.append(batch);
+				};
+			}
+		}
+		m_sequence_editor->set_sequence(name, sequence, batches);
+	}
 }
 
 void ImagerWindow::on_sequence_start_stop(bool clicked) {
