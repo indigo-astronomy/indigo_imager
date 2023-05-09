@@ -534,7 +534,7 @@ bool SequenceEditor::load_sequence(QString filename) {
 			} else {
 				m_park_cbox->setCheckState(Qt::Unchecked);
 			}
-			int repeat = line_str.split(";1;").length();
+			int repeat = line_str.count(QRegularExpression("^1;|;1;"));
 			m_repeat_box->blockSignals(true);
 			m_repeat_box->setValue(repeat);
 			m_repeat_box->blockSignals(false);
