@@ -52,7 +52,7 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	toolbox->setContentsMargins(1,1,1,1);
 	sequence_frame_layout->addWidget(toolbar, row, 0, 1, 4);
 
-	m_seq_start_button = new QPushButton("Start");
+	m_seq_start_button = new QPushButton("Run");
 	m_seq_start_button->setStyleSheet("min-width: 30px");
 	m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 	toolbox->addWidget(m_seq_start_button);
@@ -108,7 +108,6 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	row++;
 	m_seq_esimated_duration = new QLabel(QString("Sequence duration: ") + indigo_dtos(0, "%02d:%02d:%02.0f"));
 	m_seq_esimated_duration->setToolTip("This is approximate sequence duration as download, focusing, filter change etc., times are unpredicatble.");
-	//m_seq_esimated_duration ->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	sequence_frame_layout->addWidget(m_seq_esimated_duration, row, 0, 1, 4);
 }
 
@@ -124,9 +123,9 @@ void ImagerWindow::on_sequence_updated() {
 		static QString sequence;
 		m_sequence_editor->generate_sequence(sequence, batches);
 
-		indigo_error("Sequence: %s\n", sequence.toStdString().c_str());
+		indigo_debug("SEQUENCE: %s\n", sequence.toStdString().c_str());
 		for (int i = 0; i < batches.count(); i++) {
-			indigo_error("BATCH %d: %s\n", i+1, batches[i].toStdString().c_str());
+			indigo_debug("BATCH %d: %s\n", i+1, batches[i].toStdString().c_str());
 		}
 
 		change_imager_agent_sequence(selected_agent, sequence, batches);
@@ -134,7 +133,7 @@ void ImagerWindow::on_sequence_updated() {
 }
 
 void ImagerWindow::on_request_sequence() {
-	indigo_error("Sequence REQUESTED:");
+	indigo_debug("Sequence requested");
 	static char selected_agent[INDIGO_NAME_SIZE];
 	get_selected_imager_agent(selected_agent);
 

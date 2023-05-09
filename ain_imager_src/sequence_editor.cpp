@@ -574,7 +574,6 @@ void SequenceEditor::on_set_sequence(QString name, QString sequence, QList<QStri
 			m_model.append(b);
 		}
     }
-	//emit(sequence_updated());
 }
 
 double SequenceEditor::approximate_duration() {

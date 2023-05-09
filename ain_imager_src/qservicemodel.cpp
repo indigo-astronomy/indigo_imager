@@ -30,7 +30,7 @@ void resolve_callback(const char *service_name, uint32_t interface_index, const 
 	if (host != NULL) {
 		QServiceModel *model = NULL;
 		model = &QServiceModel::instance();
-		indigo_error("resolved %p", model);
+		indigo_debug("resolved %p", model);
 		model->onServiceAdded(QByteArray(service_name), QByteArray(host), port);
 	}
 }
