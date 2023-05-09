@@ -949,19 +949,22 @@ void ImagerWindow::change_solver_agent_pa_settings(const char *agent) const {
 	indigo_change_number_property(nullptr, agent, AGENT_PLATESOLVER_PA_SETTINGS_PROPERTY_NAME, 3, items, values);
 }
 
+#define MAX_ITEMS 256
 void ImagerWindow::change_imager_agent_sequence(const char *agent, QString sequence, QList<QString> batches) const {
-	static char items[32][INDIGO_NAME_SIZE] = {0};
-	static char values[32][INDIGO_VALUE_SIZE] = {0};
-	static char *items_ptr[32];
-	static char *values_ptr[32];
+	static char items[MAX_ITEMS][INDIGO_NAME_SIZE] = {0};
+	static char values[MAX_ITEMS][INDIGO_VALUE_SIZE] = {0};
+	static char *items_ptr[MAX_ITEMS];
+	static char *values_ptr[MAX_ITEMS];
 
 	indigo_property *p = properties.get((char*)agent, AGENT_IMAGER_SEQUENCE_PROPERTY_NAME);
 	if (p) {
+		int count = (p->count < MAX_ITEMS) ? p->count : MAX_ITEMS;
+		indigo_debug("%s(): MAX_ITEMS = %d, p->count = %d, count = %d", __FUNCTION__, MAX_ITEMS, p->count, count);
 		strncpy(items[0], AGENT_IMAGER_SEQUENCE_ITEM_NAME, INDIGO_NAME_SIZE);
 		strncpy(values[0], sequence.toStdString().c_str(), INDIGO_VALUE_SIZE);
 		items_ptr[0] = items[0];
 		values_ptr[0] = values[0];
-		for (int i = 1; i < p->count; i++) {
+		for (int i = 1; i < count; i++) {
 			sprintf(items[i], "%02d", i);
 			if (i-1 < batches.count()) {
 				strncpy(values[i], batches[i-1].toStdString().c_str(), INDIGO_VALUE_SIZE);

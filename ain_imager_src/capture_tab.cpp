@@ -488,6 +488,10 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 				change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			}
 			if (is_sequence) {
+				QList<QString> batches;
+				QString sequence;
+				m_sequence_editor->generate_sequence(sequence, batches);
+				change_imager_agent_sequence(selected_agent, sequence, batches);
 				change_agent_start_sequence_property(selected_agent);
 			} else {
 				change_agent_start_exposure_property(selected_agent);
