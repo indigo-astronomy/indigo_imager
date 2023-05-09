@@ -289,14 +289,8 @@ class SequenceEditor : public QWidget {
 public:
 	SequenceEditor();
 	~SequenceEditor();
-	void populate_combobox(QComboBox *combobox, const char *items[255], const int count);
-	void populate_combobox(QComboBox *combobox, QList<QString> &items);
-	void clear_combobox(QComboBox *combobox);
 	void generate_sequence(QString &sequence, QList<QString> &batches);
 	double approximate_duration();
-	bool save_sequence(QString filename);
-	bool load_sequence(QString filename);
-	void show_message(const char *title, const char *message, QMessageBox::Icon icon = QMessageBox::Warning);
 	QString get_sequence_name() {
 		return m_name_edit->text().trimmed();
 	}
@@ -326,6 +320,14 @@ private:
 	QToolButton *m_download_sequence_button;
 	QToolButton *m_load_sequence_button;
 	QToolButton *m_save_sequence_button;
+
+	void populate_sequence_settings(QString &sequence_line);
+	void populate_combobox(QComboBox *combobox, const char *items[255], const int count);
+	void populate_combobox(QComboBox *combobox, QList<QString> &items);
+	void clear_combobox(QComboBox *combobox);
+	bool save_sequence(QString filename);
+	bool load_sequence(QString filename);
+	void show_message(const char *title, const char *message, QMessageBox::Icon icon = QMessageBox::Warning);
 
 signals:
 	void populate_filter_select(QList<QString> &items);

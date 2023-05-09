@@ -502,6 +502,23 @@ bool SequenceEditor::save_sequence(QString filename) {
 	return true;
 }
 
+void SequenceEditor::populate_sequence_settings(QString &sequence_line) {
+	if(sequence_line.contains("cooler=off;", Qt::CaseInsensitive)) {
+		m_cooler_off_cbox->setCheckState(Qt::Checked);
+	} else {
+		m_cooler_off_cbox->setCheckState(Qt::Unchecked);
+	}
+	if(sequence_line.contains("park;", Qt::CaseInsensitive)) {
+		m_park_cbox->setCheckState(Qt::Checked);
+	} else {
+		m_park_cbox->setCheckState(Qt::Unchecked);
+	}
+	int repeat = sequence_line.count(QRegularExpression("^1;|;1;"));
+	m_repeat_box->blockSignals(true);
+	m_repeat_box->setValue(repeat);
+	m_repeat_box->blockSignals(false);
+}
+
 bool SequenceEditor::load_sequence(QString filename) {
 	char file_name[PATH_MAX];
 	char line[PATH_MAX];
@@ -518,27 +535,14 @@ bool SequenceEditor::load_sequence(QString filename) {
 	int ln = 0;
 	while (fgets(line, PATH_MAX, fp)) {
 		QString line_str = QString(line).trimmed();
-		if (line_str.startsWith("#")) {
+		if (line_str.startsWith("#")) { // skip comments
 			continue;
 		}
-		if (ln == 0) {
+		if (ln == 0) {                  // line 0 is the name
 			m_name_edit->setText(line_str);
-		} else if (ln == 1) {
-			if(line_str.contains("cooler=off;", Qt::CaseInsensitive)) {
-				m_cooler_off_cbox->setCheckState(Qt::Checked);
-			} else {
-				m_cooler_off_cbox->setCheckState(Qt::Unchecked);
-			}
-			if(line_str.contains("park;", Qt::CaseInsensitive)) {
-				m_park_cbox->setCheckState(Qt::Checked);
-			} else {
-				m_park_cbox->setCheckState(Qt::Unchecked);
-			}
-			int repeat = line_str.count(QRegularExpression("^1;|;1;"));
-			m_repeat_box->blockSignals(true);
-			m_repeat_box->setValue(repeat);
-			m_repeat_box->blockSignals(false);
-		} else {
+		} else if (ln == 1) {           // line 1 is the sequence
+			populate_sequence_settings(line_str);
+		} else {                        // other lines are batches
 			Batch b(line_str);
 			if (!b.is_empty()) {
 				m_model.append(b);
