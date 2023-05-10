@@ -114,6 +114,7 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 void ImagerWindow::on_sequence_updated() {
 	double duration = m_sequence_editor->approximate_duration();
 	m_seq_esimated_duration->setText(QString("Sequence duration: ") + indigo_dtos(duration, "%02d:%02d:%02.0f"));
+	/*
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -129,6 +130,7 @@ void ImagerWindow::on_sequence_updated() {
 
 		change_imager_agent_sequence(selected_agent, sequence, batches);
 	});
+	*/
 }
 
 void ImagerWindow::on_request_sequence() {
@@ -164,6 +166,8 @@ void ImagerWindow::on_request_sequence() {
 		}
 		m_sequence_editor->set_sequence(name, sequence, batches);
 	}
+	double duration = m_sequence_editor->approximate_duration();
+	m_seq_esimated_duration->setText(QString("Sequence duration: ") + indigo_dtos(duration, "%02d:%02d:%02.0f"));
 }
 
 void ImagerWindow::on_sequence_start_stop(bool clicked) {
