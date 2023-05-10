@@ -196,8 +196,9 @@ public:
 
 class SequenceModel : public QAbstractTableModel {
 	QList<Batch> m_data;
+	int current_section;
 public:
-	SequenceModel(QObject * parent = {}) : QAbstractTableModel{parent} {}
+	SequenceModel(QObject * parent = {}) : QAbstractTableModel{parent}, current_section(0) {}
 
 	int rowCount(const QModelIndex &) const override {
 		return m_data.count();
@@ -205,6 +206,14 @@ public:
 
 	int columnCount(const QModelIndex &) const override {
 		return 7;
+	}
+
+	int currentSection() {
+		return current_section;
+	}
+
+	void setCurrentSection(int section) {
+		current_section = section;
 	}
 
 	QVariant data(const QModelIndex &index, int role) const override {
@@ -241,7 +250,11 @@ public:
 			}
 		}
 		if (orientation == Qt::Vertical) {
-			return section + 1;
+			if (section + 1 == current_section) {
+				return  QString().number(section + 1) + " ▶";
+			} else {
+				return  QString().number(section + 1) + "   ";
+			}
 		}
 		return {};
 	}
@@ -341,6 +354,7 @@ signals:
 	void sequence_updated();
 	void set_sequence_name(QString name);
 	void clear_selection();
+	void set_current_batch(int batch_index);
 
 public slots:
 	void on_add_sequence();
@@ -382,6 +396,11 @@ public slots:
 
 	void on_clear_frame_select() {
 		clear_combobox(m_frame_select);
+	}
+
+	void on_set_current_batch(int batch_index) {
+		m_model.setCurrentSection(batch_index);
+		m_view.repaint();
 	}
 };
 

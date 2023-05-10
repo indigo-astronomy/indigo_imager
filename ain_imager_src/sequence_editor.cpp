@@ -223,6 +223,7 @@ SequenceEditor::SequenceEditor() {
 	connect(this, &SequenceEditor::clear_frame_select, this, &SequenceEditor::on_clear_frame_select);
 	connect(this, &SequenceEditor::set_sequence_name, this, &SequenceEditor::on_set_sequence_name);
 	connect(this, &SequenceEditor::set_sequence, this, &SequenceEditor::on_set_sequence);
+	connect(this, &SequenceEditor::set_current_batch, this, &SequenceEditor::on_set_current_batch);
 	connect(&m_view, &QTableView::doubleClicked, this, &SequenceEditor::on_double_click);
 
 	QItemSelectionModel *selection_model = m_view.selectionModel();
@@ -533,6 +534,7 @@ bool SequenceEditor::load_sequence(QString filename) {
 
 	m_model.clear();
 	m_view.reset();
+	set_current_batch(0);
 
 	int ln = 0;
 	while (fgets(line, LINE_MAX_LEN, fp)) {
@@ -560,6 +562,7 @@ bool SequenceEditor::load_sequence(QString filename) {
 void SequenceEditor::on_set_sequence(QString name, QString sequence, QList<QString> batches) {
 	m_model.clear();
 	m_view.reset();
+	set_current_batch(0);
 
 	if (!name.isEmpty()) {
 		m_name_edit->setText(name.trimmed());

@@ -1249,7 +1249,7 @@ void update_wheel_slot_property(ImagerWindow *w, indigo_property *property) {
 void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *property) {
 	double exp_elapsed, exp_time = 1;
 	double drift_x, drift_y;
-	int frames_complete = 0, frames_total = 0, batches_complete = 0, batches_total = 0;
+	int frames_complete = 0, frames_total = 0, batches_complete = 0, batches_total = 0, batch_index = 0;
 	static bool exposure_running = false;
 	static bool focusing_running = false;
 	static bool preview_running = false;
@@ -1349,6 +1349,8 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			batches_complete = (int)stats_p->items[i].number.value;
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_BATCHES_ITEM_NAME)) {
 			batches_total = (int)stats_p->items[i].number.value;
+		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_BATCH_INDEX_ITEM_NAME)) {
+			batch_index = (int)stats_p->items[i].number.value;
 		}
 	}
 	char drift_str[50];
@@ -1359,6 +1361,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		w->set_widget_state(w->m_focusing_button, INDIGO_OK_STATE);
 		w->set_widget_state(w->m_focusing_preview_button, INDIGO_OK_STATE);
 		if (start_p->state == INDIGO_BUSY_STATE) {
+			w->m_sequence_editor->on_set_current_batch(batch_index);
 			w->m_exposure_button->setIcon(QIcon(":resource/stop.png"));
 			w->m_seq_start_button->setIcon(QIcon(":resource/stop.png"));
 			w->set_enabled(w->m_exposure_button, true);
@@ -1392,6 +1395,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			w->m_seq_sequence_progress->setFormat("Sequence: batch %v of %m complete...");
 			indigo_debug("frames total = %d", frames_total);
 		} else if (start_p->state == INDIGO_OK_STATE) {
+			w->m_sequence_editor->on_set_current_batch(0);
 			w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
 			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 			w->set_enabled(w->m_exposure_button, true);
@@ -1416,6 +1420,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			w->m_seq_sequence_progress->setFormat("Sequence: Complete");
 			exposure_running = false;
 		} else {
+			w->m_sequence_editor->on_set_current_batch(0);
 			w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
 			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 			w->set_enabled(w->m_exposure_button, true);
