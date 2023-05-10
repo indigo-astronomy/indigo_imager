@@ -950,6 +950,7 @@ void ImagerWindow::change_solver_agent_pa_settings(const char *agent) const {
 }
 
 #define MAX_ITEMS 256
+
 void ImagerWindow::change_imager_agent_sequence(const char *agent, QString sequence, QList<QString> batches) const {
 	static char items[MAX_ITEMS][INDIGO_NAME_SIZE] = {0};
 	static char values[MAX_ITEMS][INDIGO_VALUE_SIZE] = {0};
@@ -960,10 +961,20 @@ void ImagerWindow::change_imager_agent_sequence(const char *agent, QString seque
 	if (p) {
 		int count = (p->count < MAX_ITEMS) ? p->count : MAX_ITEMS;
 		indigo_debug("%s(): MAX_ITEMS = %d, p->count = %d, count = %d", __FUNCTION__, MAX_ITEMS, p->count, count);
+
+		// Sequence
 		strncpy(items[0], AGENT_IMAGER_SEQUENCE_ITEM_NAME, INDIGO_NAME_SIZE);
-		strncpy(values[0], sequence.toStdString().c_str(), INDIGO_VALUE_SIZE);
 		items_ptr[0] = items[0];
-		values_ptr[0] = values[0];
+		char *sequence_c = (char*)indigo_safe_malloc(sequence.size() + 1);
+		if (sequence_c != nullptr) {
+			strncpy(sequence_c, sequence.toStdString().c_str(), sequence.size() + 1);
+			values_ptr[0] = sequence_c;
+		} else {
+			strncpy(values[0], sequence.toStdString().c_str(), INDIGO_VALUE_SIZE);
+			values_ptr[0] = values[0];
+		}
+
+		// Batches
 		for (int i = 1; i < count; i++) {
 			sprintf(items[i], "%02d", i);
 			if (i-1 < batches.count()) {
@@ -974,8 +985,8 @@ void ImagerWindow::change_imager_agent_sequence(const char *agent, QString seque
 			items_ptr[i] = items[i];
 			values_ptr[i] = values[i];
 		}
-
 		indigo_log("[SEQUENCE] %s '%s'\n", __FUNCTION__, agent);
 		indigo_change_text_property(nullptr, agent, AGENT_IMAGER_SEQUENCE_PROPERTY_NAME, p->count, (const char**)items_ptr, (const char**)values_ptr);
+		indigo_safe_free(sequence_c);
 	}
 }

@@ -154,9 +154,9 @@ void ImagerWindow::on_request_sequence() {
 	if (p) {
 		for (int i = 0; i < p->count; i++) {
 			if (client_match_item(&p->items[i], AGENT_IMAGER_SEQUENCE_ITEM_NAME)) {
-				sequence = p->items[i].text.value;
+				sequence = indigo_get_text_item_value(&p->items[i]);
 			} else {
-				QString batch(p->items[i].text.value);
+				QString batch(indigo_get_text_item_value(&p->items[i]));
 				if (!batch.isEmpty()) {
 					batches.append(batch);
 				};

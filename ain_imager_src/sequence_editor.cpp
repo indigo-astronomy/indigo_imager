@@ -71,7 +71,7 @@ SequenceEditor::SequenceEditor() {
 	m_layout.addWidget(label, row, col);
 	col++;
 	m_repeat_box = new QSpinBox();
-	m_repeat_box->setMaximum(10);
+	m_repeat_box->setMaximum(100);
 	m_repeat_box->setMinimum(1);
 	m_repeat_box->setMinimumWidth(50);
 	m_repeat_box->setValue(1);
@@ -520,9 +520,10 @@ void SequenceEditor::populate_sequence_settings(QString &sequence_line) {
 	m_repeat_box->blockSignals(false);
 }
 
+#define LINE_MAX_LEN 32768
 bool SequenceEditor::load_sequence(QString filename) {
 	char file_name[PATH_MAX];
-	char line[PATH_MAX];
+	char line[LINE_MAX_LEN];
 
 	strcpy(file_name, filename.toUtf8().constData());
 	FILE *fp = fopen(file_name, "r");
@@ -534,7 +535,7 @@ bool SequenceEditor::load_sequence(QString filename) {
 	m_view.reset();
 
 	int ln = 0;
-	while (fgets(line, PATH_MAX, fp)) {
+	while (fgets(line, LINE_MAX_LEN, fp)) {
 		QString line_str = QString(line).trimmed();
 		if (line_str.startsWith("#")) { // skip comments
 			continue;
