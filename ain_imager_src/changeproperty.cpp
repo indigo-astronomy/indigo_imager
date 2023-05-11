@@ -964,7 +964,7 @@ void ImagerWindow::change_imager_agent_sequence(const char *agent, QString seque
 
 		if (p->count < batches.size() + 1) {
 			char message[255];
-			snprintf(message, 254, "Warning: Only %d batches will be executed. Please increase the number of batches on '%s' to at least %d!", p->count - 1, agent, batches.size());
+			snprintf(message, 254, "Warning: Maximum number of batches of '%s' reached, only %d of %d will be executed", agent, p->count - 1, batches.size());
 			Logger::instance().log(NULL, message);
 		}
 

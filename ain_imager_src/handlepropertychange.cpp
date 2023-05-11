@@ -2009,12 +2009,18 @@ static void populateConfigItem(indigo_property *property, ConfigItem &configItem
 }
 
 void ImagerWindow::property_define(indigo_property* property, char *message) {
-	char selected_agent[INDIGO_VALUE_SIZE] = {0};
-	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0};
-	char selected_mount_agent[INDIGO_VALUE_SIZE] = {0};
-	char selected_solver_agent[INDIGO_VALUE_SIZE] = {0};
-	char selected_config_agent[INDIGO_VALUE_SIZE] = {0};
+	static char selected_agent[INDIGO_VALUE_SIZE];
+	static char selected_guider_agent[INDIGO_VALUE_SIZE];
+	static char selected_mount_agent[INDIGO_VALUE_SIZE];
+	static char selected_solver_agent[INDIGO_VALUE_SIZE];
+	static char selected_config_agent[INDIGO_VALUE_SIZE];
 	static pthread_mutex_t l_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+	selected_agent[0] = '\0';
+	selected_guider_agent[0] = '\0';
+	selected_mount_agent[0] = '\0';
+	selected_solver_agent[0] = '\0';
+	selected_config_agent[0] = '\0';
 
 	indigo_debug("[PROPERTY DEFINE] %s(): %s.%s\n", __FUNCTION__, property->device, property->name);
 
@@ -2134,6 +2140,16 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 
 	// Imager Agent
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SEQUENCE_SIZE_PROPERTY_NAME)) {
+		indigo_item *item = indigo_get_item(property, AGENT_IMAGER_SEQUENCE_SIZE_ITEM_NAME);
+		if (item && item->number.max > item->number.value) {
+			indigo_debug("Setting AGENT_IMAGER_SEQUENCE_SIZE on '%s' to %.0f (was %.0f)", selected_agent, item->number.max, item->number.value);
+			static double max = item->number.max;
+			QtConcurrent::run([=]() {
+				indigo_change_number_property_1(nullptr, selected_agent, AGENT_IMAGER_SEQUENCE_SIZE_PROPERTY_NAME, AGENT_IMAGER_SEQUENCE_SIZE_ITEM_NAME, max);
+			});
+		}
+	}
 	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_camera_select);
 		if (indigo_get_switch(property, "NONE")) {
