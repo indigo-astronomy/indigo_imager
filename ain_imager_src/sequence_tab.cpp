@@ -113,7 +113,8 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 
 void ImagerWindow::on_sequence_updated() {
 	double duration = m_sequence_editor->approximate_duration();
-	m_seq_esimated_duration->setText(QString("Sequence duration: ") + indigo_dtos(duration, "%02d:%02d:%02.0f"));
+	m_seq_esimated_duration->setText(QString("Sequence duration: ") + QString(indigo_dtos(duration, "%02d:%02d:%02.0f")));
+
 	/*
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);

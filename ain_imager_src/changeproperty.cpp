@@ -962,6 +962,12 @@ void ImagerWindow::change_imager_agent_sequence(const char *agent, QString seque
 		int count = (p->count < MAX_ITEMS) ? p->count : MAX_ITEMS;
 		indigo_debug("%s(): MAX_ITEMS = %d, p->count = %d, count = %d", __FUNCTION__, MAX_ITEMS, p->count, count);
 
+		if (p->count < batches.size() + 1) {
+			char message[255];
+			snprintf(message, 254, "Warning: Only %d batches will be executed. Please increase the number of batches on '%s' to at least %d!", p->count - 1, agent, batches.size());
+			Logger::instance().log(NULL, message);
+		}
+
 		// Sequence
 		strncpy(items[0], AGENT_IMAGER_SEQUENCE_ITEM_NAME, INDIGO_NAME_SIZE);
 		items_ptr[0] = items[0];
