@@ -713,7 +713,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 			m_imager_viewer->setText(QString("Unsaved") + QString(m_indigo_item->blob.format));
 			m_imager_viewer->setToolTip(QString("Unsaved") + QString(m_indigo_item->blob.format));
 		}
-		if (m_save_blob) save_blob_item(m_indigo_item);
+		if (m_save_blob && strcasecmp(".raw", m_indigo_item->blob.format)) save_blob_item(m_indigo_item);
 	} else if (
 		get_selected_imager_agent(selected_agent) &&
 		client_match_device_property(property, selected_agent, AGENT_IMAGER_DOWNLOAD_IMAGE_PROPERTY_NAME)
