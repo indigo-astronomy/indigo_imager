@@ -478,6 +478,7 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 			} else {
 				obj_name = m_object_name->text().trimmed();
 			}
+			m_object_name_str = obj_name;
 			add_fits_keyword_string(selected_agent, "OBJECT", obj_name);
 			change_agent_batch_property(selected_agent);
 			change_ccd_frame_property(selected_agent);
