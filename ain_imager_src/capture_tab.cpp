@@ -639,6 +639,9 @@ void ImagerWindow::on_ccd_mode_selected(int index) {
 
 
 void ImagerWindow::on_ccd_image_format_selected(int index) {
+	if (m_frame_format_select->currentData().toString() == "RAW") {
+		window_log("Warning: Indigo RAW format is for internal use, aquired images will not be auto saved.");
+	}
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
