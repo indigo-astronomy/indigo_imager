@@ -134,6 +134,20 @@ void ImagerWindow::on_sequence_updated() {
 	*/
 }
 
+void ImagerWindow::on_sequence_name_changed(const QString &object_name) {
+	if (!m_is_sequence) {
+		return;
+	}
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+
+		change_ccd_localmode_property(selected_agent, object_name);
+		add_fits_keyword_string(selected_agent, "OBJECT", object_name);
+	});
+}
+
 void ImagerWindow::on_request_sequence() {
 	indigo_debug("Sequence requested");
 	static char selected_agent[INDIGO_NAME_SIZE];

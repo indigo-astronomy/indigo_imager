@@ -767,7 +767,9 @@ void ImagerWindow::on_temperature_set(double value) {
 }
 
 void ImagerWindow::on_object_name_changed(const QString &object_name) {
-	m_sequence_editor->on_set_sequence_name(object_name);
+	if (m_is_sequence) {
+		return;
+	}
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];

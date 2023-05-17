@@ -277,6 +277,7 @@ public slots:
 	void on_agent_imager_gain_changed(int value);
 	void on_agent_imager_offset_changed(int value);
 	void on_object_name_changed(const QString &object_name);
+	void on_sequence_name_changed(const QString &object_name);
 	void on_save_image_on_server(int state);
 	void on_keep_image_on_server(int state);
 	void on_sync_remote_files(bool clicked);

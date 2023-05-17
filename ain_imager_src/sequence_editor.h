@@ -353,6 +353,7 @@ signals:
 	void clear_frame_select();
 	void sequence_updated();
 	void set_sequence_name(QString name);
+	void sequence_name_set(const QString &name);
 	void clear_selection();
 	void set_current_batch(int batch_index);
 

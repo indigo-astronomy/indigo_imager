@@ -48,6 +48,7 @@ SequenceEditor::SequenceEditor() {
 	m_name_edit = new QLineEdit();
 	m_name_edit->setPlaceholderText("File prefix e.g. M16");
 	m_layout.addWidget(m_name_edit, row, col, 1, 2);
+	connect(m_name_edit, &QLineEdit::textChanged, this, [this](const QString &name){ emit(this->sequence_name_set(name)); });
 
 	col += 2;
 	m_cooler_off_cbox = new QCheckBox("Turn cooler off");
