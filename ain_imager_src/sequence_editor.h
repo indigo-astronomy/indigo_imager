@@ -251,7 +251,8 @@ public:
 		}
 		if (orientation == Qt::Vertical) {
 			if (section + 1 == current_section) {
-				return  QString().number(section + 1) + " ▶";
+				return  QString().number(section + 1) + " 🠶";
+				//return  QString().number(section + 1) + " ▶";
 			} else {
 				return  QString().number(section + 1) + "   ";
 			}
