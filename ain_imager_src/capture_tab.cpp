@@ -471,7 +471,7 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
 			change_agent_abort_process_property(selected_agent);
 		} else {
-			set_mount_agent_selected_imager_agent();
+			set_related_mount_and_imager_agents();
 			QString obj_name;
 			if (is_sequence) {
 				obj_name = m_sequence_editor->get_sequence_name();
@@ -517,7 +517,7 @@ void ImagerWindow::on_preview_start_stop(bool clicked) {
 		    ccd_exposure && ccd_exposure->state == INDIGO_BUSY_STATE) {
 			change_ccd_abort_exposure_property(selected_agent);
 		} else {
-			set_mount_agent_selected_imager_agent();
+			set_related_mount_and_imager_agents();
 			QString obj_name = m_object_name->text();
 			add_fits_keyword_string(selected_agent, "OBJECT", obj_name);
 			change_agent_batch_property(selected_agent);

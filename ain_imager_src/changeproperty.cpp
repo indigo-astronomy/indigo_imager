@@ -127,38 +127,68 @@ void ImagerWindow::request_file_remove(const char *agent, const char *file_name)
 	indigo_change_text_property_1_raw(nullptr, agent, AGENT_IMAGER_DELETE_FILE_PROPERTY_NAME, AGENT_IMAGER_DELETE_FILE_ITEM_NAME, file_name);
 }
 
-void ImagerWindow::set_mount_agent_selected_imager_agent() const {
+void ImagerWindow::set_related_mount_and_imager_agents() const {
 	// Select related imager agent
-	static char selected_agent[INDIGO_NAME_SIZE] = {0};
-	static char old_agent[INDIGO_NAME_SIZE] = {0};
-	static char new_agent[INDIGO_NAME_SIZE] = {0};
+	char selected_mount_agent[INDIGO_NAME_SIZE] = {0};
+	char selected_imager_agent[INDIGO_NAME_SIZE] = {0};
+	char selected_mount_agent_trimmed[INDIGO_NAME_SIZE] = {0};
+	char selected_imager_agent_trimmed[INDIGO_NAME_SIZE] = {0};
+	char old_agent[INDIGO_NAME_SIZE] = {0};
 
-	get_selected_mount_agent(selected_agent);
-	get_selected_imager_agent(new_agent);
+	get_selected_mount_agent(selected_mount_agent);
+	get_selected_imager_agent(selected_imager_agent);
 
-	char *service1 = strrchr(new_agent, '@');
-	char *service2 = strrchr(selected_agent, '@');
+	strncpy(selected_mount_agent_trimmed, selected_mount_agent, INDIGO_NAME_SIZE);
+	strncpy(selected_imager_agent_trimmed, selected_imager_agent, INDIGO_NAME_SIZE);
+
+	char *service1 = strrchr(selected_imager_agent_trimmed, '@');
+	char *service2 = strrchr(selected_mount_agent_trimmed, '@');
 	if (service1 != nullptr && service2 != nullptr && !strcmp(service1, service2)) {
 		*(service1 - 1) = '\0';
+		*(service2 - 1) = '\0';
 	}
 
-	indigo_property *p = properties.get(selected_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
+	bool change = true;
+	old_agent[0] = '\0';
+	indigo_property *p = properties.get(selected_mount_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
 	if (p) {
 		for (int i = 0; i < p->count; i++) {
 			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Imager Agent", strlen("Imager Agent"))) {
 				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
-				if (!strcmp(old_agent, new_agent)) return;
-				break;
+				if (!strcmp(old_agent, selected_imager_agent_trimmed)) {
+					change = false;
+					break;
+				}
 			}
 		}
+		if (change) {
+			indigo_debug("[RELATED IMAGER AGENT] %s '%s' %s -> %s\n", __FUNCTION__, selected_mount_agent, old_agent, selected_imager_agent_trimmed);
+			change_related_agent(selected_mount_agent, old_agent, selected_imager_agent_trimmed);
+		}
+	}
 
-		indigo_log("[RELATED AGENT] %s '%s' %s -> %s\n", __FUNCTION__, selected_agent, old_agent, new_agent);
-		change_related_agent(selected_agent, old_agent, new_agent);
+	change = true;
+	old_agent[0] = '\0';
+	p = properties.get(selected_imager_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
+	if (p) {
+		for (int i = 0; i < p->count; i++) {
+			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Mount Agent", strlen("Mount Agent"))) {
+				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
+				if (!strcmp(old_agent, selected_mount_agent_trimmed)) {
+					change = false;
+					break;
+				}
+			}
+		}
+		if (change) {
+			indigo_debug("[RELATED MOUNT AGENT] %s '%s' %s -> %s\n", __FUNCTION__, selected_imager_agent, old_agent, selected_mount_agent_trimmed);
+			change_related_agent(selected_imager_agent, old_agent, selected_mount_agent_trimmed);
+		}
 	}
 }
 
 void ImagerWindow::change_related_agent(const char *agent, const char *old_agent, const char *new_agent) const {
-	indigo_log("[RELATED AGENT] %s '%s': %s -> %s\n", __FUNCTION__, agent, old_agent, new_agent);
+	indigo_debug("[RELATED AGENT] %s '%s': %s -> %s\n", __FUNCTION__, agent, old_agent, new_agent);
 	if (old_agent[0] != '\0') {
 		indigo_change_switch_property_1(nullptr, agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME, old_agent, false);
 	}
