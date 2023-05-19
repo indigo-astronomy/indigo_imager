@@ -1,5 +1,5 @@
 # Ain INDIGO Imager - Users Guide
-Revision: 27.01.2023 (early draft)
+Revision: 20.05.2023 (draft)
 
 Author: **Rumen G.Bogdanovski**
 
@@ -133,7 +133,7 @@ If the selected camera can report the sensor temperature, the current temperatur
 The time (in seconds) used to get a preview frame with the **Preview** button.
 
 ##### Image format
-The image file formats supported by the camera driver will be listed here. They can be different for different cameras. The selected format will be used as a storage format for the saved images.
+The image file formats supported by the camera driver will be listed here. They can be different for different cameras. The selected format will be used as a storage format for the saved images. **Raw data** format is a special case. It is supposed to be used by INDIGO internally, this is why batches and sequences will not save images taken as **Raw data** (as of Ain Imager version 0.99).
 
 ##### Region of interest
 The region of interest (ROI) can be configured by specifying **X** and **Y** of the top left corner and **Width** and **Height** of the sub-frame.
@@ -171,12 +171,14 @@ If the server is configured to keep the downloaded images they can still be remo
 
 ## Sequences
 
-Image capture in a sequence is a feature of the *Imager Agent* and it works with the selected imager agent. Currently, sequences work with a single target, and targets can not be changed. The user can specify filter, exposure time, delay between exposures, type of exposure etc., in each batch. For example (the screenshot below) we have a sequence with batches that will take 10 x 30s Light exposures in each of the filters: Lum, Red, Green, Blue and Ha. Focusing will be performed for each filter with 1s exposure. At the end it will take 10 Dark and 10 Bias exposures. Exposures will be saved with file name prefix "Rozette". The whole sequence will be repeated 3 times and at the end camera cooling will be stopped and the telescope will be parked. The running batch is indicated by a small arrow next to the batch number in the table.
+Image capture in a sequence is a feature of the *Imager Agent* and it is executed on the selected imager agent. Currently, sequences work with a single target, and target can not be changed. The user can specify filter, exposure time, delay between exposures, type of exposure etc., in each batch. For example (the screenshot below) we have a sequence with batches that will take 10 x 30s Light exposures in each of the filters: Lum, Red, Green, Blue and Ha. Focusing will be performed for each filter with 1s exposure. At the end it will take 10 Dark and 10 Bias exposures. Exposures will be saved with file name prefix "Rozette". The whole sequence will be repeated 3 times and at the end camera cooling will be stopped and the telescope will be parked. The running batch is indicated by a small arrow next to the batch number in the table.
 
 ![](images/sequence_main.png)
 
+The sequence capturing will use the *Imager Agent* selected in **Capture** tab, which means that the camera and the filter wheel selected there along with their configurations will be used. For focusing the focuser and its configuration will be used from the **Focus** tab.
+
 ### Editing sequence
-Each sequence consists of separate bates that will be executed in a sequence. Each batch is described with several proprieties like: Filter to be used, exposure time, frame type etc. Batches can be added (**[+]** button), removed (**[-]** button) and edited. The batch order in a sequence can also be changed. Batches can be saved and loaded from file (*.seq*) and downloaded from the *Imager Agent*.
+Each sequence consists of separate bates that will be executed in a sequence. Each batch is described by several proprieties like: Filter to be used, exposure time, frame type etc. Batches can be added (**[+]** button), removed (**[-]** button) and edited. The batch order in a sequence can also be changed. Batches can be saved and loaded from file (*.seq*) and downloaded from the *Imager Agent*.
 
 #### Sequence naming, ending and repetitions
 The sequence name should be specified in the text field as shown below, This will be used as a file name prefix and object name in the FITS header. If there is no name entered and **Settings -> Save noname images** is checked, "noname" string will be used as file name prefix, otherwise the images will not be saved and a warning will be issued in the log.
