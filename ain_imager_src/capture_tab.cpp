@@ -493,6 +493,7 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 				QString sequence;
 				m_sequence_editor->generate_sequence(sequence, batches);
 				change_imager_agent_sequence(selected_agent, sequence, batches);
+				change_agent_focus_params_property(selected_agent, false);
 				change_agent_start_sequence_property(selected_agent);
 			} else {
 				change_agent_start_exposure_property(selected_agent);
