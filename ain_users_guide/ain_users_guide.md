@@ -121,7 +121,7 @@ How how many frames should be taken in the batch exposure. Use -1 for an unlimit
 All available filters in the selected filter wheel will be listed in the drop-down. The selected filter is the one currently being used.
 
 ##### Object
-The name of the object being photographed should be entered here. It is used for the saved file name and for the FITS header. If there is no name specified and **Settings -> Save noname images** is checked, "noname" string will be used as object name.
+The name of the object being photographed should be entered here. It is used as a prefix of the saved file name and as an object name in the FITS header. If there is no name specified and **Settings -> Save noname images** is checked, "noname" string will be used as file name prefix, otherwise the images will not be saved and a warning will be printed in the log.
 
 ##### Cooler
 If the selected camera can report the sensor temperature, the current temperature will be shown. If the camera supports cooling, it can be enabled and disabled here along with setting the target temperature. If cooling, the cooler power will be displayed.
@@ -171,27 +171,29 @@ If the server is configured to keep the downloaded images they can still be remo
 
 ## Sequences
 
-Image capture in a sequence is a feature of the *Imager Agent* and it works with the selected imager agent. Currently sequences work with a single target and targets can not be changed. The user can specify filter, exposure time, delay between exposures, type of exposure etc., in each sequence. For example (the screenshot below) we have a sequence with batches that will take 10 x 30s Light exposures in each of the filters: Lum, Red, Green, Blue and Ha. Focusing will be performed for each filter with 1s exposure. At the end it will take 10 Dark and 10 Bias exposures. Exposures will be saved with file name prefix "Rozette". The whole sequence will be repeated 3 times and at the end camera cooling will be stopped and the telescope will be parked. The running batch will be indicated by a small arrow next to the batch number.
+Image capture in a sequence is a feature of the *Imager Agent* and it works with the selected imager agent. Currently, sequences work with a single target, and targets can not be changed. The user can specify filter, exposure time, delay between exposures, type of exposure etc., in each batch. For example (the screenshot below) we have a sequence with batches that will take 10 x 30s Light exposures in each of the filters: Lum, Red, Green, Blue and Ha. Focusing will be performed for each filter with 1s exposure. At the end it will take 10 Dark and 10 Bias exposures. Exposures will be saved with file name prefix "Rozette". The whole sequence will be repeated 3 times and at the end camera cooling will be stopped and the telescope will be parked. The running batch is indicated by a small arrow next to the batch number in the table.
 
 ![](images/sequence_main.png)
 
 ### Editing sequence
-Each sequence consists of individual bates that will be executed in sequence. Each batch is described with several proprieties like: Filter to be used, exposure time, frame type etc. Batches can be added (**+** button), removed (**-** button) and edited. The batch order in a sequence can also be changed. Batches can be saved and loaded from file (*.seq*) and downloaded from the *Imager Agent*.
+Each sequence consists of separate bates that will be executed in a sequence. Each batch is described with several proprieties like: Filter to be used, exposure time, frame type etc. Batches can be added (**[+]** button), removed (**[-]** button) and edited. The batch order in a sequence can also be changed. Batches can be saved and loaded from file (*.seq*) and downloaded from the *Imager Agent*.
 
 #### Sequence naming, ending and repetitions
-The sequence name should be specified in the text field as shown below, This will be used as a file name prefix and object name in the FITS header. The user can specify how many times the batches in the sequence should be executed by setting **Repeat** value (default is 1).
+The sequence name should be specified in the text field as shown below, This will be used as a file name prefix and object name in the FITS header. If there is no name entered and **Settings -> Save noname images** is checked, "noname" string will be used as file name prefix, otherwise the images will not be saved and a warning will be issued in the log.
+
+The user can specify how many times the batches in the sequence should be executed by setting **Repeat** value (default is 1).
 
 ![](images/sequence_name_end_repeat.png)
 
-By checking **Turn cooler off** the cooling of the selected camera will be turned off at the end of the sequence.
+By checking **Turn cooler off** the cooling of the used camera will be turned off at the end of the sequence.
 
-By checking **Park mount** the selected mount will be parked at the end of the sequence.
+By checking **Park mount** the used mount will be parked at the end of the sequence.
 
 #### Add, remove, move up, move down and update batches
 To add a new batch to the sequence the user should describe its properties as shown below:
 
 ![](images/sequence_add_batch.png)
-the batch will be added with pressing the **[+]** button:
+the batch will be added by pushing the **[+]** button:
 
 ![](images/sequence_edit_buttons.png)
 
@@ -199,18 +201,18 @@ In order to remove, move up or down or update a batch the user must select the b
 
 ![](images/sequence_selected_batch.png)
 
-Once the batch is selected its properties will be loaded in the **Batch description**. the selected batch can be removed by clicking **[-]** button or moved up or down the sequence with the up and down arrow buttons. To edit this batch the user must change the properties needed in the **Batch description** and to click update button (the most right button in the group).
+Once the batch is selected its properties will be loaded in the **Batch description**. The selected batch can be removed by pushing **[-]** button or moved up or down the sequence with the up and down arrow buttons. To edit the selected batch, the user must change the properties as needed, in the **Batch description** and click update button (the most right button in the group).
 
 #### Download sequence from the agent, load from file and save to file
 The already loaded sequence can be downloaded from the selected *Imager agent* by clicking the download button (left button):
 
 ![](images/sequence_download_load_save.png)
 
-Sequence can be loaded from file by clicking the folder button (the middle one) and choosing a the file.
+Sequence can be loaded from file by clicking the folder button (the middle one) and choosing the sequence file.
 
-The current sequence can be saved to a file by clicking the disk button (the right one) and providing a file name.
+The current sequence can be saved to a file by pushing the disk button (the right one) and providing a file name. The "*.seq*" extension will be automatically added.
 
-The sequence will be uploaded to the *Imager Agent* only when the sequence is started. Before that all the sequence changes will remain in the client only. Because of that if the user changes the sequence while it is running the changes will not take effect.
+The sequence being edited or loaded will be uploaded to the *Imager Agent* only when the sequence is started. Before that all the changes will remain in the client only. Because of that, if the user changes the sequence while it is running the changes will not take effect.
 
 **NOTE:** Loading sequence from file or downloading it from the agent will replace the current sequence and unsaved changes will be lost.
 
