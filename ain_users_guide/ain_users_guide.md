@@ -13,6 +13,7 @@ e-mail: *rumenastro@gmail.com*
 1. [General Concepts](#general-concepts)
 1. [Connecting to INDIGO services](#connecting-to-indigo-services)
 1. [Image capture](#image-capture)
+1. [Sequences](#sequences)
 1. [Focusing](#focusing)
 1. [Guiding](#guiding)
 1. [Telescope control](#telescope-control)
@@ -167,6 +168,65 @@ INDIGO services can work in the so called "clientless" or "headless" mode. This 
 To enable the server to store the captured frames locally, check **Save image copies on the server**. If one does not want downloaded images deleted from the server after downloading, check **Keep downloaded images on server** otherwise images will be deleted once downloaded.
 
 If the server is configured to keep the downloaded images they can still be removed when no longer needed. This is achieved by unchecking **Keep downloaded images on server** and press **Server cleanup**. This will remove any images that have already been downloaded.  Those not yet downloaded are kept. This is useful when the images should be downloaded to several locations and removed once downloaded everywhere.
+
+## Sequences
+
+Image capture in a sequence is a feature of the *Imager Agent* and it works with the selected imager agent. Currently sequences work with a single target and targets can not be changed. The user can specify filter, exposure time, delay between exposures, type of exposure etc., in each sequence. For example (the screenshot below) we have a sequence with batches that will take 10 x 30s Light exposures in each of the filters: Lum, Red, Green, Blue and Ha. Focusing will be performed for each filter with 1s exposure. At the end it will take 10 Dark and 10 Bias exposures. Exposures will be saved with file name prefix "Rozette". The whole sequence will be repeated 3 times and at the end camera cooling will be stopped and the telescope will be parked. The running batch will be indicated by a small arrow next to the batch number.
+
+![](images/sequence_main.png)
+
+### Editing sequence
+Each sequence consists of individual bates that will be executed in sequence. Each batch is described with several proprieties like: Filter to be used, exposure time, frame type etc. Batches can be added (**+** button), removed (**-** button) and edited. The batch order in a sequence can also be changed. Batches can be saved and loaded from file (*.seq*) and downloaded from the *Imager Agent*.
+
+#### Sequence naming, ending and repetitions
+The sequence name should be specified in the text field as shown below, This will be used as a file name prefix and object name in the FITS header. The user can specify how many times the batches in the sequence should be executed by setting **Repeat** value (default is 1).
+
+![](images/sequence_name_end_repeat.png)
+
+By checking **Turn cooler off** the cooling of the selected camera will be turned off at the end of the sequence.
+
+By checking **Park mount** the selected mount will be parked at the end of the sequence.
+
+#### Add, remove, move up, move down and update batches
+To add a new batch to the sequence the user should describe its properties as shown below:
+
+![](images/sequence_add_batch.png)
+the batch will be added with pressing the **[+]** button:
+
+![](images/sequence_edit_buttons.png)
+
+In order to remove, move up or down or update a batch the user must select the batch by clicking on it (double clicking will remove the selection):
+
+![](images/sequence_selected_batch.png)
+
+Once the batch is selected its properties will be loaded in the **Batch description**. the selected batch can be removed by clicking **[-]** button or moved up or down the sequence with the up and down arrow buttons. To edit this batch the user must change the properties needed in the **Batch description** and to click update button (the most right button in the group).
+
+#### Download sequence from the agent, load from file and save to file
+The already loaded sequence can be downloaded from the selected *Imager agent* by clicking the download button (left button):
+
+![](images/sequence_download_load_save.png)
+
+Sequence can be loaded from file by clicking the folder button (the middle one) and choosing a the file.
+
+The current sequence can be saved to a file by clicking the disk button (the right one) and providing a file name.
+
+The sequence will be uploaded to the *Imager Agent* only when the sequence is started. Before that all the sequence changes will remain in the client only. Because of that if the user changes the sequence while it is running the changes will not take effect.
+
+**NOTE:** Loading sequence from file or downloading it from the agent will replace the current sequence and unsaved changes will be lost.
+
+###  Start, pause, abort and sequence progress monitoring
+
+The current sequence can be started with the **Run** button. This will also upload the current sequence to the *Imager Agent* as described above.
+
+The running sequence can be paused with the **Pause** button and resumed later. Please note pausing will not abort the current exposure, the process will pause after the current exposure is complete.
+
+**Abort** button will stop the current sequence immediately and the shutdown tasks will not be performed. Clicking **Run** after abort will start from the beginning.
+
+![](images/sequence_progress.png)
+
+Progress can be monitored using the three progress bars shown above. The first one shows the elapsed time of the individual exposure. The second one shows the completed exposures in the current batch. And the third one shows the completed batches in the current sequence.
+
+**Sequence duration** shows approximately how long the current sequence will take to complete in HH:MM:SS. Please note that this value is approximate as some operations like image download, filter change and focusing are unpredictable.
 
 ## Focusing
 Focusing is a feature of the *Imager Agent* and it works with the selected imager agent.
