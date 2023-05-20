@@ -195,6 +195,7 @@ By checking **Park mount** the used mount will be parked at the end of the seque
 To add a new batch to the sequence the user should describe its properties as shown below:
 
 ![](images/sequence_add_batch.png)
+
 the batch will be added by pushing the **[+]** button:
 
 ![](images/sequence_edit_buttons.png)
@@ -228,7 +229,7 @@ The running sequence can be paused with the **Pause** button and resumed later. 
 
 ![](images/sequence_progress.png)
 
-Progress can be monitored using the three progress bars shown above. The first one shows the elapsed time of the individual exposure. The second one shows the completed exposures in the current batch. And the third one shows the completed batches in the current sequence.
+Progress can be monitored using the three progress bars shown above. The first one shows the elapsed time of each exposure. The second one shows the completed exposures in the current batch. And the third one shows the completed batches in the current sequence.
 
 **Sequence duration** shows approximately how long the current sequence will take to complete in HH:MM:SS. Please note that this value is approximate as some operations like image download, filter change and focusing are unpredictable.
 
