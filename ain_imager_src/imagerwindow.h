@@ -599,6 +599,7 @@ private:
 	QPushButton *m_seq_start_button;
 	QPushButton *m_seq_pause_button;
 	QLabel *m_seq_esimated_duration;
+	QLabel *m_imager_status_label;
 
 	// Focuser tabbar
 	QComboBox *m_focuser_select;

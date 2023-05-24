@@ -1256,6 +1256,8 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	static int prev_frame = -1;
 	static double best_hfd = 0, best_contrast = 0;
 	double FWHM = 0, HFD = 0, contrast = 0;
+	int phase = INDIGO_IMAGER_PHASE_IDLE;
+	bool has_phase = false;
 
 	indigo_item *exposure_item = properties.get_item(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME, AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME);
 	if (exposure_item) exp_time = exposure_item->number.target;
@@ -1351,6 +1353,9 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			batches_total = (int)stats_p->items[i].number.value;
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_BATCH_INDEX_ITEM_NAME)) {
 			batch_index = (int)stats_p->items[i].number.value;
+		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_PHASE_ITEM_NAME)) {
+			phase = (int)stats_p->items[i].number.value;
+			has_phase = true;
 		}
 	}
 	char drift_str[50];
@@ -1529,6 +1534,33 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		focusing_running = false;
 		preview_running = false;
 		exposure_running = false;
+	}
+
+	if (has_phase) {
+		switch (phase) {
+			case INDIGO_IMAGER_PHASE_IDLE:
+				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-grey.png\"> Idle");
+				break;
+			case INDIGO_IMAGER_PHASE_SETTING_FILTER:
+				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Changing filter");
+				break;
+			case INDIGO_IMAGER_PHASE_FOCUSING:
+				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Focusing");
+				break;
+			case INDIGO_IMAGER_PHASE_CAPTURING:
+				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Capturing");
+				break;
+			case INDIGO_IMAGER_PHASE_DITHERING:
+				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Dithering");
+				break;
+			case INDIGO_IMAGER_PHASE_WAITING:
+				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Waiting");
+				break;
+			default:
+				break;
+		}
+	} else {
+		w->set_text(w->m_imager_status_label, "");
 	}
 
 	if (property == start_p) {
