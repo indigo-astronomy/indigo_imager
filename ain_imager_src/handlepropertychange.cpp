@@ -1361,6 +1361,15 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	char drift_str[50];
 	snprintf(drift_str, 50, "%+.2f, %+.2f", drift_x, drift_y);
 	w->set_text(w->m_drift_label, drift_str);
+	/* make progress bar move undetermined if not in these states */
+	if (
+		phase != INDIGO_IMAGER_PHASE_IDLE &&
+		phase != INDIGO_IMAGER_PHASE_CAPTURING &&
+		phase != INDIGO_IMAGER_PHASE_FOCUSING &&
+		phase != INDIGO_IMAGER_PHASE_WAITING
+	) {
+		exp_time = 0;
+	}
 	if (exposure_running) {
 		w->set_widget_state(w->m_preview_button, INDIGO_OK_STATE);
 		w->set_widget_state(w->m_focusing_button, INDIGO_OK_STATE);
