@@ -127,8 +127,47 @@ void ImagerWindow::request_file_remove(const char *agent, const char *file_name)
 	indigo_change_text_property_1_raw(nullptr, agent, AGENT_IMAGER_DELETE_FILE_PROPERTY_NAME, AGENT_IMAGER_DELETE_FILE_ITEM_NAME, file_name);
 }
 
+void ImagerWindow::set_related_mount_guider_agent(const char *related_agent) const {
+	// Select related guider agent
+	char selected_mount_agent[INDIGO_NAME_SIZE] = {0};
+	char selected_mount_agent_trimmed[INDIGO_NAME_SIZE] = {0};
+	char related_agent_trimmed[INDIGO_NAME_SIZE] = {0};
+	char old_agent[INDIGO_NAME_SIZE] = {0};
+
+	get_selected_mount_agent(selected_mount_agent);
+
+	strncpy(selected_mount_agent_trimmed, selected_mount_agent, INDIGO_NAME_SIZE);
+	strncpy(related_agent_trimmed, related_agent, INDIGO_NAME_SIZE);
+
+	char *service1 = strrchr(related_agent_trimmed, '@');
+	char *service2 = strrchr(selected_mount_agent_trimmed, '@');
+	if (service1 != nullptr && service2 != nullptr && !strcmp(service1, service2)) {
+		*(service1 - 1) = '\0';
+		*(service2 - 1) = '\0';
+	}
+
+	bool change = true;
+	old_agent[0] = '\0';
+	indigo_property *p = properties.get(selected_mount_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
+	if (p) {
+		for (int i = 0; i < p->count; i++) {
+			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Guider Agent", strlen("Guider Agent"))) {
+				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
+				if (!strcmp(old_agent, related_agent_trimmed)) {
+					change = false;
+					break;
+				}
+			}
+		}
+		if (change) {
+			indigo_debug("[RELATED GUIDER AGENT] %s '%s' %s -> %s\n", __FUNCTION__, selected_mount_agent, old_agent, related_agent_trimmed);
+			change_related_agent(selected_mount_agent, old_agent, related_agent_trimmed);
+		}
+	}
+}
+
 void ImagerWindow::set_related_mount_and_imager_agents() const {
-	// Select related imager agent
+	// Select related imager and mount agent
 	char selected_mount_agent[INDIGO_NAME_SIZE] = {0};
 	char selected_imager_agent[INDIGO_NAME_SIZE] = {0};
 	char selected_mount_agent_trimmed[INDIGO_NAME_SIZE] = {0};

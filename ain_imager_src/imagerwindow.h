@@ -366,7 +366,6 @@ public slots:
 	void on_mount_set_coordinates_to_agent();
 	void on_mount_solve_and_center();
 	void on_mount_solve_and_sync();
-	void on_mount_guider_agent_selected(int index);
 	void on_mount_joystick_selected(int index);
 	void on_trigger_solve();
 	void on_mount_polar_align();
@@ -736,7 +735,6 @@ private:
 	QCheckBox *m_mount_find_rate_cbox;
 	QCheckBox *m_mount_max_rate_cbox;
 	QComboBox *m_mount_gps_select;
-	QComboBox *m_mount_guider_select;
 	QComboBox *m_mount_joystick_select;
 	QComboBox *m_mount_coord_source_select;
 	QLabel *m_mount_latitude;
@@ -876,6 +874,7 @@ private:
 	void request_file_remove(const char *agent, const char *file_name) const;
 	void change_related_agent(const char *agent, const char *old_agent, const char *new_agent) const;
 	void set_related_mount_and_imager_agents() const;
+	void set_related_mount_guider_agent(const char *related_agent) const;
 	void change_agent_imager_dithering_property(const char *agent) const;
 	void change_agent_gain_property(const char *agent, QSpinBox *ccd_gain) const;
 	void change_agent_offset_property(const char *agent, QSpinBox *ccd_offset) const;
