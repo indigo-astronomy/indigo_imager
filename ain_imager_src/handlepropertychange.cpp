@@ -1819,6 +1819,20 @@ void update_guider_settings(ImagerWindow *w, indigo_property *property) {
 	}
 }
 
+void update_guider_reverse_dec(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+
+	w->set_enabled(w->m_guider_reverse_dec_cbox, true);
+	w->set_checkbox_state(w->m_guider_reverse_dec_cbox, Qt::Unchecked);
+
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], AGENT_GUIDER_FLIP_REVERSES_DEC_ENABLED_ITEM_NAME)) {
+			if (property->items[i].sw.value) w->set_checkbox_state(w->m_guider_reverse_dec_cbox, Qt::Checked);
+			break;
+		}
+	}
+}
+
 void update_guider_apply_dec_backlash(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("change %s", property->name);
 
@@ -1828,6 +1842,7 @@ void update_guider_apply_dec_backlash(ImagerWindow *w, indigo_property *property
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_GUIDER_APPLY_DEC_BACKLASH_ENABLED_ITEM_NAME)) {
 			if (property->items[i].sw.value) w->set_checkbox_state(w->m_guider_apply_backlash_cbox, Qt::Checked);
+			break;
 		}
 	}
 }
@@ -2385,6 +2400,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME)) {
 		update_guider_settings(this, property);
 	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_FLIP_REVERSES_DEC_PROPERTY_NAME)) {
+		update_guider_reverse_dec(this, property);
+	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_APPLY_DEC_BACKLASH_PROPERTY_NAME)) {
 		update_guider_apply_dec_backlash(this, property);
 	}
@@ -2697,6 +2715,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME)) {
 		update_guider_settings(this, property);
+	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_FLIP_REVERSES_DEC_PROPERTY_NAME)) {
+		update_guider_reverse_dec(this, property);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_APPLY_DEC_BACKLASH_PROPERTY_NAME)) {
 		update_guider_apply_dec_backlash(this, property);
@@ -3100,6 +3121,12 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		set_spinbox_value(m_guide_is, 0);
 		set_enabled(m_guide_is, false);
+	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_FLIP_REVERSES_DEC_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
+
+		set_checkbox_state(m_guider_reverse_dec_cbox, Qt::Unchecked);
+		set_enabled(m_guider_reverse_dec_cbox, false);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {

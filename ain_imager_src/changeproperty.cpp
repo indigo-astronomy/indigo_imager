@@ -666,6 +666,13 @@ void ImagerWindow::change_guider_agent_i(const char *agent) const {
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 3, items, values);
 }
 
+void ImagerWindow::change_guider_agent_reverse_dec(const char *agent) const {
+	if (m_guider_reverse_dec_cbox->isChecked()) {
+		indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_FLIP_REVERSES_DEC_PROPERTY_NAME, AGENT_GUIDER_FLIP_REVERSES_DEC_ENABLED_ITEM_NAME, true);
+	} else {
+		indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_FLIP_REVERSES_DEC_PROPERTY_NAME, AGENT_GUIDER_FLIP_REVERSES_DEC_DISABLED_ITEM_NAME, true);
+	}
+}
 
 void ImagerWindow::change_guider_agent_apply_dec_backlash(const char *agent) const {
 	if (m_guider_apply_backlash_cbox->isChecked()) {

@@ -275,8 +275,15 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	connect(shortcut, &QShortcut::activated, this, [this](){this->on_guider_clear_selection(true);});
 
 	settings_row++;
-	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
-	settings_frame_layout->addItem(spacer, settings_row, 0);
+	m_guider_reverse_dec_cbox = new QCheckBox("Reverse Dec speed after meridian flip");
+	m_guider_reverse_dec_cbox->setToolTip("Some mounts require reversed Declination speed after meridian flip to guide correctly, others do not");
+	m_guider_reverse_dec_cbox->setEnabled(false);
+	settings_frame_layout->addWidget(m_guider_reverse_dec_cbox, settings_row, 0, 1, 4);
+	connect(m_guider_reverse_dec_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_guider_reverse_dec_changed);
+
+	//settings_row++;
+	//spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	//settings_frame_layout->addItem(spacer, settings_row, 0);
 
 	settings_row++;
 	label = new QLabel("Edge Clipping (Donuts) (px):");
@@ -843,6 +850,17 @@ void ImagerWindow::on_guider_agent_callibration_changed(double value) {
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_guider_agent_callibration(selected_agent);
+	});
+}
+
+void ImagerWindow::on_guider_reverse_dec_changed(int state) {
+	QtConcurrent::run([=]() {
+		char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_guider_agent_reverse_dec(selected_agent);
 	});
 }
 
