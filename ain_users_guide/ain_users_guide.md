@@ -321,6 +321,8 @@ In "Selection" guiding the primary star can be selected by **Right-Clicking** on
 
 Only the first star can be selected manually or automatically. All other stars can only be auto selected. The list of the selected star can be cleared by pushing **Clear star selection** button. This will force the *Guider Agent* to make a new selection when any process is started.
 
+If the Declination guiding runs away after meridian flip **Reverse Dec speed after meridian flip** should be checked. Some mounts track their "side of pier" state and automatically reverse the direction of the declination motor after a meridian flip. Other mounts do not do this. There is no way for INDIGO to know this in advance. This is why INDIGO needs this to be specified.
+
 In "Donuts" guiding the whole frame is used to detect drift but some cameras have unusable border around the frame. This can interfere with the guiding and this area can be excluded by specifying **Edge Clipping**
 
 ### Advanced tab
