@@ -1,5 +1,5 @@
 # Ain INDIGO Imager - Users Guide
-Revision: 20.05.2023 (draft)
+Revision: 30.05.2023 (draft)
 
 Author: **Rumen G.Bogdanovski**
 
