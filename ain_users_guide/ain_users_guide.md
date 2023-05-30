@@ -364,7 +364,7 @@ Displays current target Azimuth and Altitude and uses color coding to give a vis
 In these fields the target Right ascension and Declination should be entered. They will be used for goto if **Goto** is button is pushed or to synchronize the mount to these coordinates if **Sync** is button is pushed.
 
 ### Main tab
-![](images/telescope_main1.png)
+![](images/telescope_main.png)
 
 ##### N S W E buttons and slew rates
 The mount can be moved by pushing **N S W E** buttons. The speed is selected from four available presets. The slowest is **Guide rate** and the fastest is **Max rate**.
@@ -377,6 +377,9 @@ Checking this check box will slew the mount to its home position.
 
 ##### Parked / Unparked
 Checking this checkbox will slew the mount to its park position.
+
+##### Joystick control
+All available joysticks will be listed here. The mount can be controlled with the selected joystick/gamepad. The button operation of the joystick can be configured in the driver through *INDIGO Control Panel*.
 
 ### Object tab
 ![](images/telescope_object.png)
