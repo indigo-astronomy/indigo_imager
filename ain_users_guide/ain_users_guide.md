@@ -1,5 +1,5 @@
 # Ain INDIGO Imager - Users Guide
-Revision: 30.05.2023 (draft)
+Revision: 09.06.2023 (draft)
 
 Author: **Rumen G.Bogdanovski**
 
@@ -229,7 +229,7 @@ The running sequence can be paused with the **Pause** button and resumed later. 
 
 ![](images/sequence_progress.png)
 
-Progress can be monitored using the three progress bars shown above. The first one shows the elapsed time of each exposure. The second one shows the completed exposures in the current batch. And the third one shows the completed batches in the current sequence.
+Progress can be monitored using the three progress bars and the operation indicator as shown above. The first progress bar shows the elapsed time of each exposure. The second one shows the completed exposures in the current batch. And the third one shows the completed batches in the current sequence. The operation indicator shows the operation in progress like *Focusing*, *Capturing*, *Changing filter* etc.
 
 **Sequence duration** shows approximately how long the current sequence will take to complete in HH:MM:SS. Please note that this value is approximate as some operations like image download, filter change and focusing are unpredictable.
 
