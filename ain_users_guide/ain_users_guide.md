@@ -1,5 +1,5 @@
 # Ain INDIGO Imager - Users Guide
-Revision: 27.01.2023 (early draft)
+Revision: 30.05.2023 (draft)
 
 Author: **Rumen G.Bogdanovski**
 
@@ -13,6 +13,7 @@ e-mail: *rumenastro@gmail.com*
 1. [General Concepts](#general-concepts)
 1. [Connecting to INDIGO services](#connecting-to-indigo-services)
 1. [Image capture](#image-capture)
+1. [Sequences](#sequences)
 1. [Focusing](#focusing)
 1. [Guiding](#guiding)
 1. [Telescope control](#telescope-control)
@@ -120,7 +121,7 @@ How how many frames should be taken in the batch exposure. Use -1 for an unlimit
 All available filters in the selected filter wheel will be listed in the drop-down. The selected filter is the one currently being used.
 
 ##### Object
-The name of the object being photographed should be entered here. It is used for the saved file name and for the FITS header. If there is no name specified and **Settings -> Save noname images** is checked, "noname" string will be used as object name.
+The name of the object being photographed should be entered here. It is used as a prefix of the saved file name and as an object name in the FITS header. If there is no name specified and **Settings -> Save noname images** is checked, "noname" string will be used as file name prefix, otherwise the images will not be saved and a warning will be printed in the log.
 
 ##### Cooler
 If the selected camera can report the sensor temperature, the current temperature will be shown. If the camera supports cooling, it can be enabled and disabled here along with setting the target temperature. If cooling, the cooler power will be displayed.
@@ -132,7 +133,7 @@ If the selected camera can report the sensor temperature, the current temperatur
 The time (in seconds) used to get a preview frame with the **Preview** button.
 
 ##### Image format
-The image file formats supported by the camera driver will be listed here. They can be different for different cameras. The selected format will be used as a storage format for the saved images.
+The image file formats supported by the camera driver will be listed here. They can be different for different cameras. The selected format will be used as a storage format for the saved images. **Raw data** format is a special case. It is supposed to be used by INDIGO internally, this is why batches and sequences will not save images taken as **Raw data** (as of Ain Imager version 0.99).
 
 ##### Region of interest
 The region of interest (ROI) can be configured by specifying **X** and **Y** of the top left corner and **Width** and **Height** of the sub-frame.
@@ -167,6 +168,70 @@ INDIGO services can work in the so called "clientless" or "headless" mode. This 
 To enable the server to store the captured frames locally, check **Save image copies on the server**. If one does not want downloaded images deleted from the server after downloading, check **Keep downloaded images on server** otherwise images will be deleted once downloaded.
 
 If the server is configured to keep the downloaded images they can still be removed when no longer needed. This is achieved by unchecking **Keep downloaded images on server** and press **Server cleanup**. This will remove any images that have already been downloaded.  Those not yet downloaded are kept. This is useful when the images should be downloaded to several locations and removed once downloaded everywhere.
+
+## Sequences
+
+Image capture in a sequence is a feature of the *Imager Agent* and it is executed on the selected imager agent. Currently, sequences work with a single target, and target can not be changed. The user can specify filter, exposure time, delay between exposures, type of exposure etc., in each batch. For example (the screenshot below) we have a sequence with batches that will take 10 x 30s Light exposures in each of the filters: Lum, Red, Green, Blue and Ha. Focusing will be performed for each filter with 1s exposure. At the end it will take 10 Dark and 10 Bias exposures. Exposures will be saved with file name prefix "Rozette". The whole sequence will be repeated 3 times and at the end camera cooling will be stopped and the telescope will be parked. The running batch is indicated by a small arrow next to the batch number in the table.
+
+![](images/sequence_main.png)
+
+The sequence capturing will use the *Imager Agent* selected in **Capture** tab, which means that the camera and the filter wheel selected there along with their configurations will be used. For focusing the focuser and its configuration will be used from the **Focus** tab.
+
+### Editing sequence
+Each sequence consists of separate bates that will be executed in a sequence. Each batch is described by several proprieties like: Filter to be used, exposure time, frame type etc. Batches can be added (**[+]** button), removed (**[-]** button) and edited. The batch order in a sequence can also be changed. Batches can be saved and loaded from file (*.seq*) and downloaded from the *Imager Agent*.
+
+#### Sequence naming, ending and repetitions
+The sequence name should be specified in the text field as shown below, This will be used as a file name prefix and object name in the FITS header. If there is no name entered and **Settings -> Save noname images** is checked, "noname" string will be used as file name prefix, otherwise the images will not be saved and a warning will be issued in the log.
+
+The user can specify how many times the batches in the sequence should be executed by setting **Repeat** value (default is 1).
+
+![](images/sequence_name_end_repeat.png)
+
+By checking **Turn cooler off** the cooling of the used camera will be turned off at the end of the sequence.
+
+By checking **Park mount** the used mount will be parked at the end of the sequence.
+
+#### Add, remove, move up, move down and update batches
+To add a new batch to the sequence the user should describe its properties as shown below:
+
+![](images/sequence_add_batch.png)
+
+the batch will be added by pushing the **[+]** button:
+
+![](images/sequence_edit_buttons.png)
+
+In order to remove, move up or down or update a batch the user must select the batch by clicking on it (double clicking will remove the selection):
+
+![](images/sequence_selected_batch.png)
+
+Once the batch is selected its properties will be loaded in the **Batch description**. The selected batch can be removed by pushing **[-]** button or moved up or down the sequence with the up and down arrow buttons. To edit the selected batch, the user must change the properties as needed, in the **Batch description** and click update button (the most right button in the group).
+
+#### Download sequence from the agent, load from file and save to file
+The already loaded sequence can be downloaded from the selected *Imager agent* by clicking the download button (left button):
+
+![](images/sequence_download_load_save.png)
+
+Sequence can be loaded from file by clicking the folder button (the middle one) and choosing the sequence file.
+
+The current sequence can be saved to a file by pushing the disk button (the right one) and providing a file name. The "*.seq*" extension will be automatically added.
+
+The sequence being edited or loaded will be uploaded to the *Imager Agent* only when the sequence is started. Before that all the changes will remain in the client only. Because of that, if the user changes the sequence while it is running the changes will not take effect.
+
+**NOTE:** Loading sequence from file or downloading it from the agent will replace the current sequence and unsaved changes will be lost.
+
+###  Start, pause, abort and sequence progress monitoring
+
+The current sequence can be started with the **Run** button. This will also upload the current sequence to the *Imager Agent* as described above.
+
+The running sequence can be paused with the **Pause** button and resumed later. Please note pausing will not abort the current exposure, the process will pause after the current exposure is complete.
+
+**Abort** button will stop the current sequence immediately and the shutdown tasks will not be performed. Clicking **Run** after abort will start from the beginning.
+
+![](images/sequence_progress.png)
+
+Progress can be monitored using the three progress bars shown above. The first one shows the elapsed time of each exposure. The second one shows the completed exposures in the current batch. And the third one shows the completed batches in the current sequence.
+
+**Sequence duration** shows approximately how long the current sequence will take to complete in HH:MM:SS. Please note that this value is approximate as some operations like image download, filter change and focusing are unpredictable.
 
 ## Focusing
 Focusing is a feature of the *Imager Agent* and it works with the selected imager agent.
@@ -256,6 +321,8 @@ In "Selection" guiding the primary star can be selected by **Right-Clicking** on
 
 Only the first star can be selected manually or automatically. All other stars can only be auto selected. The list of the selected star can be cleared by pushing **Clear star selection** button. This will force the *Guider Agent* to make a new selection when any process is started.
 
+If the Declination guiding runs away after meridian flip **Reverse Dec speed after meridian flip** should be checked. Some mounts track their "side of pier" state and automatically reverse the direction of the declination motor after a meridian flip. Other mounts do not do this. There is no way for INDIGO to know this in advance. This is why INDIGO needs this to be specified.
+
 In "Donuts" guiding the whole frame is used to detect drift but some cameras have unusable border around the frame. This can interfere with the guiding and this area can be excluded by specifying **Edge Clipping**
 
 ### Advanced tab
@@ -297,7 +364,7 @@ Displays current target Azimuth and Altitude and uses color coding to give a vis
 In these fields the target Right ascension and Declination should be entered. They will be used for goto if **Goto** is button is pushed or to synchronize the mount to these coordinates if **Sync** is button is pushed.
 
 ### Main tab
-![](images/telescope_main1.png)
+![](images/telescope_main.png)
 
 ##### N S W E buttons and slew rates
 The mount can be moved by pushing **N S W E** buttons. The speed is selected from four available presets. The slowest is **Guide rate** and the fastest is **Max rate**.
@@ -310,6 +377,9 @@ Checking this check box will slew the mount to its home position.
 
 ##### Parked / Unparked
 Checking this checkbox will slew the mount to its park position.
+
+##### Joystick control
+All available joysticks will be listed here. The mount can be controlled with the selected joystick/gamepad. The button operation of the joystick can be configured in the driver through *INDIGO Control Panel*.
 
 ### Object tab
 ![](images/telescope_object.png)

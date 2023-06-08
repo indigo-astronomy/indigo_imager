@@ -72,7 +72,7 @@ SequenceEditor::SequenceEditor() {
 	m_layout.addWidget(label, row, col);
 	col++;
 	m_repeat_box = new QSpinBox();
-	m_repeat_box->setMaximum(100);
+	m_repeat_box->setMaximum(500);
 	m_repeat_box->setMinimum(1);
 	m_repeat_box->setMinimumWidth(50);
 	m_repeat_box->setValue(1);

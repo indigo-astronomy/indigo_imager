@@ -306,16 +306,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	slew_frame_layout->addWidget(m_mount_park_cbox, slew_row, slew_col);
 	connect(m_mount_park_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_park);
 
-	slew_row++;
-	label = new QLabel("Stop guiding on slew:");
-	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	slew_frame_layout->addWidget(label, slew_row, slew_col);
-	slew_row++;
-	m_mount_guider_select = new QComboBox();
-	slew_frame_layout->addWidget(m_mount_guider_select, slew_row, slew_col);
-	connect(m_mount_guider_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_mount_guider_agent_selected);
-
-	slew_row++;
+	slew_row+=2;
 	label = new QLabel("Joystick control:");
 	slew_frame_layout->addWidget(label, slew_row, slew_col);
 	slew_row++;
@@ -453,13 +444,6 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_mount_longitude = new QLabel("0° 00' 00.0\"");
 	set_ok(m_mount_longitude);
 	site_frame_layout->addWidget(m_mount_longitude, site_row, 2, 1, 2);
-
-	//site_row++;
-	//label = new QLabel("Elevation (m):");
-	//site_frame_layout->addWidget(label, site_row, 0, 1, 2);
-	//m_mount_elevation = new QLabel("0");
-	//set_ok(m_mount_elevation);
-	//site_frame_layout->addWidget(m_mount_elevation, site_row, 2, 1, 2);
 
 	site_row++;
 	label = new QLabel("UTC time:");
@@ -692,34 +676,6 @@ void ImagerWindow::on_mount_polar_align_stop() {
 			change_solver_agent_abort(selected_solver_agent);
 		}
 		m_property_mutex.unlock();
-	});
-}
-
-void ImagerWindow::on_mount_guider_agent_selected(int index) {
-	QtConcurrent::run([=]() {
-		static char selected_agent[INDIGO_NAME_SIZE];
-		static char old_agent[INDIGO_NAME_SIZE];
-		static char new_agent[INDIGO_NAME_SIZE];
-
-		selected_agent[0] = '\0';
-		old_agent[0] = '\0';
-		new_agent[0] = '\0';
-
-		get_selected_mount_agent(selected_agent);
-
-		indigo_property *p = properties.get(selected_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
-		if (!p) return;
-
-		for (int i = 0; i < p->count; i++) {
-			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Guider Agent", strlen("Guider Agent"))) {
-				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
-				break;
-			}
-		}
-		strncpy(new_agent, m_mount_guider_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
-
-		indigo_debug("[SELECTED] %s '%s' %s -> %s\n", __FUNCTION__, selected_agent, old_agent, new_agent);
-		change_related_agent(selected_agent, old_agent, new_agent);
 	});
 }
 

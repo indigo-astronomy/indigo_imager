@@ -34,6 +34,7 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	QLabel *label = new QLabel("Image preview:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	sequence_frame_layout->addWidget(label, row, 0, 1, 4);
+
 	row++;
 	m_seq_imager_viewer = new ImageViewer(this);
 	m_seq_imager_viewer->showStretchButton(false);
@@ -75,10 +76,12 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	sequence_frame_layout->addItem(spacer, row, 0);
 
+	row++;
 	label = new QLabel("Sequence progress:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	sequence_frame_layout->addWidget(label, row, 0, 1, 4);
-	row++;
+	sequence_frame_layout->addWidget(label, row, 0, 1, 2);
+	m_imager_status_label = new QLabel("<img src=\":resource/led-grey.png\"> Idle");
+	sequence_frame_layout->addWidget(m_imager_status_label, row, 2, 1, 2);
 
 	row++;
 	m_seq_exposure_progress = new QProgressBar();

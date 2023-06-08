@@ -1256,6 +1256,8 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	static int prev_frame = -1;
 	static double best_hfd = 0, best_contrast = 0;
 	double FWHM = 0, HFD = 0, contrast = 0;
+	int phase = INDIGO_IMAGER_PHASE_IDLE;
+	bool has_phase = false;
 
 	indigo_item *exposure_item = properties.get_item(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME, AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME);
 	if (exposure_item) exp_time = exposure_item->number.target;
@@ -1351,11 +1353,23 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			batches_total = (int)stats_p->items[i].number.value;
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_BATCH_INDEX_ITEM_NAME)) {
 			batch_index = (int)stats_p->items[i].number.value;
+		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_PHASE_ITEM_NAME)) {
+			phase = (int)stats_p->items[i].number.value;
+			has_phase = true;
 		}
 	}
 	char drift_str[50];
 	snprintf(drift_str, 50, "%+.2f, %+.2f", drift_x, drift_y);
 	w->set_text(w->m_drift_label, drift_str);
+	/* make progress bar move undetermined if not in these states */
+	if (
+		phase != INDIGO_IMAGER_PHASE_IDLE &&
+		phase != INDIGO_IMAGER_PHASE_CAPTURING &&
+		phase != INDIGO_IMAGER_PHASE_FOCUSING &&
+		phase != INDIGO_IMAGER_PHASE_WAITING
+	) {
+		exp_time = 0;
+	}
 	if (exposure_running) {
 		w->set_widget_state(w->m_preview_button, INDIGO_OK_STATE);
 		w->set_widget_state(w->m_focusing_button, INDIGO_OK_STATE);
@@ -1529,6 +1543,33 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		focusing_running = false;
 		preview_running = false;
 		exposure_running = false;
+	}
+
+	if (has_phase) {
+		switch (phase) {
+			case INDIGO_IMAGER_PHASE_IDLE:
+				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-grey.png\"> Idle");
+				break;
+			case INDIGO_IMAGER_PHASE_SETTING_FILTER:
+				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Changing filter");
+				break;
+			case INDIGO_IMAGER_PHASE_FOCUSING:
+				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Focusing");
+				break;
+			case INDIGO_IMAGER_PHASE_CAPTURING:
+				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Capturing");
+				break;
+			case INDIGO_IMAGER_PHASE_DITHERING:
+				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Dithering");
+				break;
+			case INDIGO_IMAGER_PHASE_WAITING:
+				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Waiting");
+				break;
+			default:
+				break;
+		}
+	} else {
+		w->set_text(w->m_imager_status_label, "");
 	}
 
 	if (property == start_p) {
@@ -1778,6 +1819,20 @@ void update_guider_settings(ImagerWindow *w, indigo_property *property) {
 	}
 }
 
+void update_guider_reverse_dec(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+
+	w->set_enabled(w->m_guider_reverse_dec_cbox, true);
+	w->set_checkbox_state(w->m_guider_reverse_dec_cbox, Qt::Unchecked);
+
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], AGENT_GUIDER_FLIP_REVERSES_DEC_ENABLED_ITEM_NAME)) {
+			if (property->items[i].sw.value) w->set_checkbox_state(w->m_guider_reverse_dec_cbox, Qt::Checked);
+			break;
+		}
+	}
+}
+
 void update_guider_apply_dec_backlash(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("change %s", property->name);
 
@@ -1787,6 +1842,7 @@ void update_guider_apply_dec_backlash(ImagerWindow *w, indigo_property *property
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_GUIDER_APPLY_DEC_BACKLASH_ENABLED_ITEM_NAME)) {
 			if (property->items[i].sw.value) w->set_checkbox_state(w->m_guider_apply_backlash_cbox, Qt::Checked);
+			break;
 		}
 	}
 }
@@ -2344,6 +2400,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME)) {
 		update_guider_settings(this, property);
 	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_FLIP_REVERSES_DEC_PROPERTY_NAME)) {
+		update_guider_reverse_dec(this, property);
+	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_APPLY_DEC_BACKLASH_PROPERTY_NAME)) {
 		update_guider_apply_dec_backlash(this, property);
 	}
@@ -2356,9 +2415,6 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 
 	// Mount agent
-	if (client_match_device_property(property, selected_mount_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
-		add_items_to_combobox_filtered(this, property, "Guider Agent", m_mount_guider_select);
-	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_MOUNT_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_mount_select);
 	}
@@ -2657,6 +2713,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME)) {
 		update_guider_settings(this, property);
 	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_FLIP_REVERSES_DEC_PROPERTY_NAME)) {
+		update_guider_reverse_dec(this, property);
+	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_APPLY_DEC_BACKLASH_PROPERTY_NAME)) {
 		update_guider_apply_dec_backlash(this, property);
 	}
@@ -2669,9 +2728,6 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 
 	// Mount Agent
-	if (client_match_device_property(property, selected_mount_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
-		change_combobox_selection_filtered(this, property, "Guider Agent", m_mount_guider_select);
-	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_MOUNT_LIST_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_mount_select);
 	}
@@ -3060,6 +3116,12 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_spinbox_value(m_guide_is, 0);
 		set_enabled(m_guide_is, false);
 	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_FLIP_REVERSES_DEC_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
+
+		set_checkbox_state(m_guider_reverse_dec_cbox, Qt::Unchecked);
+		set_enabled(m_guider_reverse_dec_cbox, false);
+	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
 
@@ -3111,11 +3173,6 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	}
 
 	// Mount Agent
-	if (client_match_device_property(property, selected_mount_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME) ||
-	    client_match_device_no_property(property, selected_mount_agent)) {
-		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
-		clear_combobox(m_mount_guider_select);
-	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_MOUNT_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);

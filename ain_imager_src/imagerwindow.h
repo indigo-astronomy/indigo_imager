@@ -138,6 +138,7 @@ public:
 	friend void update_guider_stats(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_settings(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_apply_dec_backlash(ImagerWindow *w, indigo_property *property);
+	friend void update_guider_reverse_dec(ImagerWindow *w, indigo_property *property);
 	friend void agent_guider_start_process_change(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_ra_dec(ImagerWindow *w, indigo_property *property, bool update_input);
 	friend void update_mount_az_alt(ImagerWindow *w, indigo_property *property);
@@ -325,6 +326,7 @@ public slots:
 
 	void on_guider_agent_exposure_changed(double value);
 	void on_guider_agent_callibration_changed(double value);
+	void on_guider_reverse_dec_changed(int state);
 	void on_guider_apply_backlash_changed(int state);
 	void on_guider_agent_pulse_changed(double value);
 	void on_guider_agent_aggressivity_changed(int value);
@@ -364,7 +366,6 @@ public slots:
 	void on_mount_set_coordinates_to_agent();
 	void on_mount_solve_and_center();
 	void on_mount_solve_and_sync();
-	void on_mount_guider_agent_selected(int index);
 	void on_mount_joystick_selected(int index);
 	void on_trigger_solve();
 	void on_mount_polar_align();
@@ -599,6 +600,7 @@ private:
 	QPushButton *m_seq_start_button;
 	QPushButton *m_seq_pause_button;
 	QLabel *m_seq_esimated_duration;
+	QLabel *m_imager_status_label;
 
 	// Focuser tabbar
 	QComboBox *m_focuser_select;
@@ -661,6 +663,7 @@ private:
 	QDoubleSpinBox  *m_guider_focal_lenght;
 	QSpinBox  *m_imager_bin_x;
 	QSpinBox  *m_imager_bin_y;
+	QCheckBox *m_guider_reverse_dec_cbox;
 
 	QDoubleSpinBox  *m_guide_cal_step;
 	QDoubleSpinBox  *m_guide_rotation;
@@ -732,7 +735,6 @@ private:
 	QCheckBox *m_mount_find_rate_cbox;
 	QCheckBox *m_mount_max_rate_cbox;
 	QComboBox *m_mount_gps_select;
-	QComboBox *m_mount_guider_select;
 	QComboBox *m_mount_joystick_select;
 	QComboBox *m_mount_coord_source_select;
 	QLabel *m_mount_latitude;
@@ -872,6 +874,7 @@ private:
 	void request_file_remove(const char *agent, const char *file_name) const;
 	void change_related_agent(const char *agent, const char *old_agent, const char *new_agent) const;
 	void set_related_mount_and_imager_agents() const;
+	void set_related_mount_guider_agent(const char *related_agent) const;
 	void change_agent_imager_dithering_property(const char *agent) const;
 	void change_agent_gain_property(const char *agent, QSpinBox *ccd_gain) const;
 	void change_agent_offset_property(const char *agent, QSpinBox *ccd_offset) const;
@@ -905,6 +908,7 @@ private:
 	void change_dec_guiding_property(const char *agent) const;
 	void change_guider_agent_exposure(const char *agent) const;
 	void change_guider_agent_callibration(const char *agent) const;
+	void change_guider_agent_reverse_dec(const char *agent) const;
 	void change_guider_agent_apply_dec_backlash(const char *agent) const;
 	void change_guider_agent_pulse_min_max(const char *agent) const;
 	void change_guider_agent_aggressivity(const char *agent) const;

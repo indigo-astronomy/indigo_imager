@@ -192,7 +192,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 
 
 	settings_row++;
-	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	spacer = new QSpacerItem(1, 5, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	settings_frame_layout->addItem(spacer, settings_row, 0);
 
 	settings_row++;
@@ -216,6 +216,13 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_dec_guiding_select = new QComboBox();
 	settings_frame_layout->addWidget(m_dec_guiding_select, settings_row, 2, 1, 2);
 	connect(m_dec_guiding_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_dec_guiding_selected);
+
+	settings_row++;
+	m_guider_reverse_dec_cbox = new QCheckBox("Reverse Dec speed after meridian flip");
+	m_guider_reverse_dec_cbox->setToolTip("Some mounts require reversed Declination speed after meridian flip to guide correctly, others do not");
+	m_guider_reverse_dec_cbox->setEnabled(false);
+	settings_frame_layout->addWidget(m_guider_reverse_dec_cbox, settings_row, 0, 1, 4);
+	connect(m_guider_reverse_dec_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_guider_reverse_dec_changed);
 
 	settings_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -275,7 +282,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	connect(shortcut, &QShortcut::activated, this, [this](){this->on_guider_clear_selection(true);});
 
 	settings_row++;
-	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	spacer = new QSpacerItem(1, 5, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	settings_frame_layout->addItem(spacer, settings_row, 0);
 
 	settings_row++;
@@ -709,6 +716,7 @@ void ImagerWindow::on_guider_preview_start_stop(bool clicked) {
 		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
 			change_agent_abort_process_property(selected_agent);
 		} else {
+			set_related_mount_guider_agent(selected_agent);
 			setup_preview(selected_agent);
 			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			change_agent_start_preview_property(selected_agent);
@@ -726,6 +734,7 @@ void ImagerWindow::on_guider_calibrate_start_stop(bool clicked) {
 		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
 			change_agent_abort_process_property(selected_agent);
 		} else {
+			set_related_mount_guider_agent(selected_agent);
 			setup_preview(selected_agent);
 			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			change_agent_start_calibrate_property(selected_agent);
@@ -744,6 +753,7 @@ void ImagerWindow::on_guider_guide_start_stop(bool clicked) {
 		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
 			change_agent_abort_process_property(selected_agent);
 		} else {
+			set_related_mount_guider_agent(selected_agent);
 			setup_preview(selected_agent);
 			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			change_agent_start_guide_property(selected_agent);
@@ -843,6 +853,17 @@ void ImagerWindow::on_guider_agent_callibration_changed(double value) {
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_guider_agent_callibration(selected_agent);
+	});
+}
+
+void ImagerWindow::on_guider_reverse_dec_changed(int state) {
+	QtConcurrent::run([=]() {
+		char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_guider_agent_reverse_dec(selected_agent);
 	});
 }
 
