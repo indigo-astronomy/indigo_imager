@@ -22,25 +22,6 @@
 #include "propertycache.h"
 #include "conf.h"
 #include "widget_state.h"
-//#include <indigo/indigo_platesolver.h>
-
-typedef enum {
-	POLAR_ALIGN_IDLE = 0,
-	POLAR_ALIGN_START,
-	POLAR_ALIGN_REFERENCE_1,
-	POLAR_ALIGN_REFERENCE_2,
-	POLAR_ALIGN_REFERENCE_3,
-	POLAR_ALIGN_RECALCULATE,
-	POLAR_ALIGN_IN_PROGRESS
-} platesolver_pa_state_t;
-
-typedef enum {
-	SOLVER_WCS_IDLE = 0,
-	SOLVER_WCS_WAITING_FOR_IMAGE,
-	SOLVER_WCS_SOLVING,
-	SOLVER_WCS_SYNCING,
-	SOLVER_WCS_CENTERING
-} platesolver_wcs_state_t;
 
 template<typename W>
 static void configure_spinbox(ImagerWindow *w, indigo_item *item, int perm, W *widget) {
@@ -691,13 +672,13 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 		if (wcs_state == -1) {
 			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Solving frame");
 			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Solving frame");
-		} else if (wcs_state == SOLVER_WCS_SOLVING) {
+		} else if (wcs_state == INDIGO_SOLVER_STATE_SOLVING) {
 			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Solving frame");
 			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Solving frame");
-		} else if (wcs_state == SOLVER_WCS_SYNCING) {
+		} else if (wcs_state == INDIGO_SOLVER_STATE_SYNCING) {
 			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Syncing telescope");
 			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Syncing telescope");
-		} else if (wcs_state == SOLVER_WCS_CENTERING) {
+		} else if (wcs_state == INDIGO_SOLVER_STATE_CENTERING) {
 			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Centering telescope");
 			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Centering telescope");
 		} else {
@@ -836,11 +817,11 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 	char alt_correction_str[50] = "Error";
 	char az_correction_str[50] = "Error";
 	char total_error_str[50] = "Error";
-	if (state == -1 || state == POLAR_ALIGN_IDLE || property->state == INDIGO_BUSY_STATE) {
+	if (state == -1 || state == INDIGO_POLAR_ALIGN_IDLE || property->state == INDIGO_BUSY_STATE) {
 		sprintf(alt_correction_str, "N/A");
 		sprintf(az_correction_str, "N/A");
 		sprintf(total_error_str, "N/A");
-	} else if (state == POLAR_ALIGN_RECALCULATE || property->state == INDIGO_OK_STATE) {
+	} else if (state == INDIGO_POLAR_ALIGN_RECALCULATE || property->state == INDIGO_OK_STATE) {
 		sprintf(alt_correction_str, "%+.2f'  move %s", alt_error * 60, alt_correction_up ? "Up ↑" : "Down ↓");
 		sprintf(az_correction_str, "%+.2f'  move %s", az_error * 60, az_correction_cw ? "C.W. ↻" : "C.C.W. ↺");
 		sprintf(total_error_str, "%.2f'", total_error * 60);
@@ -848,30 +829,30 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 
 	char message[50] = "Idle";
 	switch (state) {
-	case POLAR_ALIGN_IDLE:
+	case INDIGO_POLAR_ALIGN_IDLE:
 		break;
-	case POLAR_ALIGN_START:
+	case INDIGO_POLAR_ALIGN_START:
 		strcpy(message, "Slewing to initial position");
 		break;
-	case POLAR_ALIGN_REFERENCE_1:
+	case INDIGO_POLAR_ALIGN_REFERENCE_1:
 		strcpy(message, "Measuring point 1");
 		break;
-	case POLAR_ALIGN_REFERENCE_2:
+	case INDIGO_POLAR_ALIGN_REFERENCE_2:
 		strcpy(message, "Measuring point 2");
 		break;
-	case POLAR_ALIGN_REFERENCE_3:
+	case INDIGO_POLAR_ALIGN_REFERENCE_3:
 		strcpy(message, "Measuring point 3");
 		break;
-	case POLAR_ALIGN_RECALCULATE:
+	case INDIGO_POLAR_ALIGN_RECALCULATE:
 		strcpy(message, "Recalculating");
 		break;
-	case POLAR_ALIGN_IN_PROGRESS:
+	case INDIGO_POLAR_ALIGN_IN_PROGRESS:
 		strcpy(message, "In progress");
 		break;
 	}
 	char label_str[100];
 	if (property->state == INDIGO_OK_STATE) {
-		if (state == POLAR_ALIGN_IDLE) {
+		if (state == INDIGO_POLAR_ALIGN_IDLE) {
 			snprintf(label_str, 100, "<img src=\":resource/led-grey.png\"> %s", message);
 		} else {
 			snprintf(label_str, 100, "<img src=\":resource/led-green.png\"> %s", message);
