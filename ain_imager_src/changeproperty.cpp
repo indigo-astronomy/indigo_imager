@@ -58,6 +58,18 @@ void ImagerWindow::change_ccd_exposure_property(const char *agent, QDoubleSpinBo
 	indigo_change_number_property_1(nullptr, agent, CCD_EXPOSURE_PROPERTY_NAME, CCD_EXPOSURE_ITEM_NAME, value);
 }
 
+void ImagerWindow::change_solver_exposure_settings_property(const char *agent, QDoubleSpinBox *exp_time) const {
+	static double value;
+	value = (double)exp_time->value();
+	indigo_change_number_property_1(
+		nullptr,
+		agent,
+		AGENT_PLATESOLVER_EXPOSURE_SETTINGS_PROPERTY_NAME,
+		AGENT_PLATESOLVER_EXPOSURE_SETTINGS_EXPOSURE_ITEM_NAME,
+		value
+	);
+}
+
 void ImagerWindow::change_ccd_abort_exposure_property(const char *agent) const {
 	indigo_change_switch_property_1(nullptr, agent, CCD_ABORT_EXPOSURE_PROPERTY_NAME, CCD_ABORT_EXPOSURE_ITEM_NAME, true);
 }
@@ -476,43 +488,19 @@ void ImagerWindow::change_agent_focuser_bl_overshoot(const char *agent) const {
 }
 
 void ImagerWindow::change_agent_start_exposure_property(const char *agent) const {
-	static const char *items[] = {
-		AGENT_IMAGER_START_EXPOSURE_ITEM_NAME
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, 1, items, values);
+	change_agent_start_process(agent, AGENT_IMAGER_START_EXPOSURE_ITEM_NAME);
 }
 
 void ImagerWindow::change_agent_start_sequence_property(const char *agent) const {
-	static const char *items[] = {
-		AGENT_IMAGER_START_SEQUENCE_ITEM_NAME
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, 1, items, values);
+	change_agent_start_process(agent, AGENT_IMAGER_START_SEQUENCE_ITEM_NAME);
 }
 
 void ImagerWindow::change_agent_start_focusing_property(const char *agent) const {
-	static const char *items[] = {
-		AGENT_IMAGER_START_FOCUSING_ITEM_NAME
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, 1, items, values);
+	change_agent_start_process(agent, AGENT_IMAGER_START_FOCUSING_ITEM_NAME) ;
 }
 
 void ImagerWindow::change_agent_start_preview_property(const char *agent) const {
-	static const char *items[] = {
-		AGENT_IMAGER_START_PREVIEW_ITEM_NAME
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, 1, items, values);
+	change_agent_start_process(agent, AGENT_IMAGER_START_PREVIEW_ITEM_NAME);
 }
 
 
@@ -621,23 +609,11 @@ void ImagerWindow::change_ccd_temperature_property(const char *agent) const {
 }
 
 void ImagerWindow::change_agent_start_guide_property(const char *agent) const {
-	static const char *items[] = {
-		AGENT_GUIDER_START_GUIDING_ITEM_NAME
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, 1, items, values);
+	change_agent_start_process(agent, AGENT_GUIDER_START_GUIDING_ITEM_NAME);
 }
 
 void ImagerWindow::change_agent_start_calibrate_property(const char *agent) const {
-	static const char *items[] = {
-		AGENT_GUIDER_START_CALIBRATION_ITEM_NAME
-	};
-	static bool values[] = {
-		true
-	};
-	indigo_change_switch_property(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, 1, items, values);
+	change_agent_start_process(agent, AGENT_GUIDER_START_CALIBRATION_ITEM_NAME);
 }
 
 void ImagerWindow::change_guider_agent_exposure(const char *agent) const {
@@ -812,8 +788,13 @@ void ImagerWindow::set_agent_releated_agent(const char *agent, const char *relat
 	indigo_change_switch_property_1(nullptr, agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME, related_agent, select);
 }
 
-void ImagerWindow::set_agent_solver_sync_action(const char *agent, char *item) const {
-	indigo_change_switch_property_1(nullptr, agent, AGENT_PLATESOLVER_SYNC_PROPERTY_NAME, item, true);
+void ImagerWindow::disable_auto_solving(const char *agent) const {
+	indigo_change_switch_property_1(nullptr, agent, AGENT_PLATESOLVER_SOLVE_IMAGES_PROPERTY_NAME, AGENT_PLATESOLVER_SOLVE_IMAGES_DISABLED_ITEM_NAME, true);
+	indigo_change_switch_property_1(nullptr, agent, AGENT_PLATESOLVER_SYNC_PROPERTY_NAME, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME, true);
+}
+
+void ImagerWindow::change_agent_start_process(const char *agent, char *item) const {
+	indigo_change_switch_property_1(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, item, true);
 }
 
 void ImagerWindow::trigger_solve() {
@@ -903,12 +884,12 @@ void ImagerWindow::trigger_solve() {
 				}
 			}
 		} else {
-			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME);
-
 			set_agent_releated_agent(selected_solver_agent, selected_mount_agent, true);
 			set_agent_releated_agent(selected_solver_agent, selected_solver_source, true);
 
-			change_ccd_exposure_property(selected_image_agent, m_solver_exposure1);
+			change_solver_exposure_settings_property(selected_solver_agent, m_solver_exposure1);
+			change_agent_start_process(selected_solver_agent, AGENT_PLATESOLVER_START_SOLVE_ITEM_NAME);
+
 			update_solver_widgets_at_start(selected_image_agent, selected_solver_agent);
 		}
 		indigo_safe_free(image_data);
@@ -949,16 +930,17 @@ void ImagerWindow::trigger_solve_and_sync(bool recenter) {
 
 	QtConcurrent::run([&]() {
 		m_property_mutex.lock();
-		if (recenter_cache) {
-			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_CENTER_ITEM_NAME);
-		} else {
-			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_SYNC_ITEM_NAME);
-		}
 
 		set_agent_releated_agent(selected_solver_agent, selected_mount_agent, true);
 		set_agent_releated_agent(selected_solver_agent, selected_solver_source, true);
 
-		change_ccd_exposure_property(selected_image_agent, m_solver_exposure2);
+		change_solver_exposure_settings_property(selected_solver_agent, m_solver_exposure2);
+
+		if (recenter_cache) {
+			change_agent_start_process(selected_solver_agent, AGENT_PLATESOLVER_START_CENTER_ITEM_NAME);
+		} else {
+			change_agent_start_process(selected_solver_agent, AGENT_PLATESOLVER_START_SYNC_ITEM_NAME);
+		}
 
 		update_solver_widgets_at_start(selected_image_agent, selected_solver_agent);
 		m_property_mutex.unlock();
@@ -996,16 +978,17 @@ void ImagerWindow::trigger_polar_alignment(bool recalculate) {
 
 	QtConcurrent::run([&]() {
 		m_property_mutex.lock();
-		if (recalculate_cache) {
-			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_RECALCULATE_PA_ERROR_ITEM_NAME);
-		} else {
-			set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_CALCULATE_PA_ERROR_ITEM_NAME);
-		}
 
 		set_agent_releated_agent(selected_solver_agent, selected_mount_agent, true);
 		set_agent_releated_agent(selected_solver_agent, selected_solver_source, true);
 
-		change_ccd_exposure_property(selected_image_agent, m_solver_exposure3);
+		change_solver_exposure_settings_property(selected_solver_agent, m_solver_exposure3);
+
+		if (recalculate_cache) {
+			change_agent_start_process(selected_solver_agent, AGENT_PLATESOLVER_START_RECALCULATE_PA_ERROR_ITEM_NAME);
+		} else {
+			change_agent_start_process(selected_solver_agent, AGENT_PLATESOLVER_START_CALCULATE_PA_ERROR_ITEM_NAME);
+		}
 
 		update_solver_widgets_at_start(selected_image_agent, selected_solver_agent);
 		m_property_mutex.unlock();

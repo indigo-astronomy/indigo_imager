@@ -854,10 +854,12 @@ private:
 	void change_config_agent_delete(const char *agent, const char *config) const;
 	void change_ccd_frame_property(const char *agent) const;
 	void change_ccd_exposure_property(const char *agent, QDoubleSpinBox *exp_time) const;
+	void change_solver_exposure_settings_property(const char *agent, QDoubleSpinBox *exp_time) const;
 	void change_ccd_abort_exposure_property(const char *agent) const;
 	void change_ccd_mode_property(const char *agent, QComboBox *frame_size_select) const;
 	void change_ccd_image_format_property(const char *agent) const;
 	void change_ccd_frame_type_property(const char *agent) const;
+	void change_agent_start_process(const char *agent, char *item) const;
 	void change_agent_batch_property(const char *agent) const;
 	void change_agent_batch_property_for_focus(const char *agent) const;
 	void change_agent_start_exposure_property(const char *agent) const;
@@ -925,7 +927,7 @@ private:
 	void change_solver_agent_abort(const char *agent) const;
 
 	void set_agent_releated_agent(const char *agent, const char *related_agent, bool select) const;
-	void set_agent_solver_sync_action(const char *agent, char *item) const;
+	void disable_auto_solving(const char *agent) const;
 
 	void update_solver_widgets_at_start(const char *image_agent, const char *solver_agent);
 
