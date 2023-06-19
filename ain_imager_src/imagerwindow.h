@@ -933,6 +933,7 @@ private:
 
 	void mount_agent_set_switch_async(char *property, char *item, bool move);
 
+	bool get_solver_relations(char *selected_mount_agent, char* selected_solver_agent, char *selected_image_agent, char *selected_solver_source, QComboBox *solver_source_select);
 	void trigger_solve_and_sync(bool recenter);
 	void trigger_solve();
 	void trigger_polar_alignment(bool recalculate);
