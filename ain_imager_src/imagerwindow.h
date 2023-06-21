@@ -108,7 +108,7 @@ public:
 		return true;
 	};
 
-	void play_sound(const char *sound_file);
+	void play_sound(int alarm);
 
 	void property_delete(indigo_property* property, char *message);
 	void property_define(indigo_property* property, char *message);
@@ -219,12 +219,14 @@ public slots:
 	void on_message_sent(indigo_property* property, char *message);
 	void on_blobs_changed(bool status);
 	void on_save_noname_images_changed(bool status);
-	void on_sound_notifications_changed(bool status);
 	void on_restore_window_size_changed(bool status);
 	void on_bonjour_changed(bool status);
 	void on_use_suffix_changed(bool status);
 	void on_use_state_icons_changed(bool status);
 	void on_use_system_locale_changed(bool status);
+	void on_sound_notifications_nosound();
+	void on_sound_notifications_warning();
+	void on_sound_notifications_all();
 	void on_log_error();
 	void on_log_info();
 	void on_log_debug();

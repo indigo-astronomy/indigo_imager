@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
 	conf.window_height = 0;
 	conf.restore_window_size = true;
 	conf.imager_show_reference = false;
-	conf.sound_notifications_enabled = true;
+	conf.sound_notification_level = AIN_OK_SOUND;
 	conf.save_images_on_server = false;
 	conf.keep_images_on_server = false;
 	conf.statistics_enabled = false;

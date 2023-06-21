@@ -156,11 +156,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setChecked(conf.save_noname_images);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_save_noname_images_changed);
 
-	act = menu->addAction(tr("&Play sound notifications"));
-	act->setCheckable(true);
-	act->setChecked(conf.sound_notifications_enabled);
-	connect(act, &QAction::toggled, this, &ImagerWindow::on_sound_notifications_changed);
-
 	act = menu->addAction(tr("&Restore window size at start"));
 	act->setCheckable(true);
 	act->setChecked(conf.restore_window_size);
@@ -175,6 +170,29 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setCheckable(true);
 	act->setChecked(conf.use_system_locale);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_use_system_locale_changed);
+
+	menu->addSeparator();
+
+	QActionGroup *sound_group = new QActionGroup(this);
+	sound_group->setExclusive(true);
+
+	act = menu->addAction("No sounds");
+	act->setCheckable(true);
+	if (conf.sound_notification_level == AIN_NO_SOUND) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_sound_notifications_nosound);
+	sound_group->addAction(act);
+
+	act = menu->addAction("Play Alert && Warning sounds");
+	act->setCheckable(true);
+	if (conf.sound_notification_level == AIN_WARNING_SOUND) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_sound_notifications_warning);
+	sound_group->addAction(act);
+
+	act = menu->addAction("Play all sounds");
+	act->setCheckable(true);
+	if (conf.sound_notification_level == AIN_OK_SOUND) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_sound_notifications_all);
+	sound_group->addAction(act);
 
 	menu->addSeparator();
 
@@ -538,12 +556,12 @@ void ImagerWindow::window_log(char *message, int state) {
 	switch (state) {
 	case INDIGO_ALERT_STATE:
 		mLog->setTextColor(QColor::fromRgb(224, 0, 0));
-		play_sound(":/resource/error.wav");
+		play_sound(AIN_ALERT_SOUND);
 		break;
 	case INDIGO_BUSY_STATE:
 		mLog->setTextColor(QColor::fromRgb(255, 165, 0));
 		if (msg.contains("warn", Qt::CaseInsensitive)) {
-			play_sound(":/resource/warning.wav");
+			play_sound(AIN_WARNING_SOUND);
 		}
 		break;
 	default: {
@@ -557,16 +575,16 @@ void ImagerWindow::window_log(char *message, int state) {
 				)
 			) {
 				mLog->setTextColor(QColor::fromRgb(224, 0, 0));
-				play_sound(":/resource/error.wav");
+				play_sound(AIN_ALERT_SOUND);
 			} else if (msg.contains("warn", Qt::CaseInsensitive)) {
 				mLog->setTextColor(QColor::fromRgb(255, 165, 0));
-				play_sound(":/resource/warning.wav");
+				play_sound(AIN_WARNING_SOUND);
 			} else {
 				if (
 					msg.contains("finish", Qt::CaseInsensitive) ||
 					msg.contains("complete", Qt::CaseInsensitive)
 				) {
-					play_sound(":/resource/ok.wav");
+					play_sound(AIN_OK_SOUND);
 				}
 				mLog->setTextColor(Qt::white);
 			}
@@ -611,9 +629,23 @@ bool ImagerWindow::show_preview_in_guider_viewer(QString &key) {
 	return false;
 }
 
-void ImagerWindow::play_sound(const char *sound_file) {
-	if (conf.sound_notifications_enabled) {
-		QSound::play(sound_file);
+void ImagerWindow::play_sound(int alarm) {
+	if (conf.sound_notification_level) {
+		switch (alarm) {
+		case AIN_NO_SOUND:
+			return;
+		case AIN_ALERT_SOUND:
+			QSound::play(":/resource/error.wav");
+			return;
+		case AIN_WARNING_SOUND:
+			QSound::play(":/resource/warning.wav");
+			return;
+		case AIN_OK_SOUND:
+			if (conf.sound_notification_level > AIN_WARNING_SOUND) {
+				QSound::play(":/resource/ok.wav");
+			}
+			return;
+		}
 	}
 }
 
@@ -1094,8 +1126,20 @@ void ImagerWindow::on_save_noname_images_changed(bool status) {
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
-void ImagerWindow::on_sound_notifications_changed(bool status) {
-	conf.sound_notifications_enabled = status;
+void ImagerWindow::on_sound_notifications_nosound() {
+	conf.sound_notification_level = AIN_NO_SOUND;
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_sound_notifications_warning() {
+	conf.sound_notification_level = AIN_WARNING_SOUND;
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_sound_notifications_all() {
+	conf.sound_notification_level = AIN_OK_SOUND;
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
