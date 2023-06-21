@@ -70,6 +70,13 @@ typedef enum {
 	AIN_OK_STATE = 100
 } object_alt_state;
 
+typedef enum {
+	AIN_NO_SOUND = 0,
+	AIN_ALERT_SOUND,
+	AIN_WARNING_SOUND,
+	AIN_OK_SOUND
+} ain_sounds;
+
 typedef struct {
 	bool blobs_enabled;
 	bool auto_connect;
@@ -100,7 +107,7 @@ typedef struct {
 	bool restore_window_size;
 	bool imager_show_reference;
 	char solver_image_source3[INDIGO_NAME_SIZE];
-	bool sound_notifications_enabled;
+	char sound_notification_level;
 	bool save_images_on_server;
 	bool keep_images_on_server;
 	bool statistics_enabled;
