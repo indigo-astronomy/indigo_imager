@@ -584,13 +584,13 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 		}
 	}
 	bool update_pa_buttons = true;
-	indigo_property *sp = properties.get(property->device, AGENT_PLATESOLVER_SYNC_PROPERTY_NAME);
+	indigo_property *sp = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
 	if (sp) {
 		for (int i = 0; i < sp->count; i++) {
 			if (
 				(
-					client_match_item(&sp->items[i], AGENT_PLATESOLVER_SYNC_CALCULATE_PA_ERROR_ITEM_NAME) ||
-					client_match_item(&sp->items[i], AGENT_PLATESOLVER_SYNC_RECALCULATE_PA_ERROR_ITEM_NAME)
+					client_match_item(&sp->items[i], AGENT_PLATESOLVER_START_CALCULATE_PA_ERROR_ITEM_NAME) ||
+					client_match_item(&sp->items[i], AGENT_PLATESOLVER_START_RECALCULATE_PA_ERROR_ITEM_NAME)
 				) && (
 					sp->items[i].sw.value
 				)
@@ -681,6 +681,9 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 		} else if (wcs_state == INDIGO_SOLVER_STATE_CENTERING) {
 			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Centering telescope");
 			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Centering telescope");
+		} else if (wcs_state == INDIGO_SOLVER_STATE_GOTO) {
+			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Slewing telescope");
+			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Slewing telescope");
 		} else {
 			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Waiting for image");
 			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Waiting for image");
@@ -2491,14 +2494,22 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		m_solver_source_select1->blockSignals(false);
 		set_enabled(m_solver_exposure1, true);
 	}
+	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_SOLVE_IMAGES_PROPERTY_NAME)) {
+		QtConcurrent::run([=]() {
+			m_property_mutex.lock();
+			clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
+			disable_auto_solving(selected_solver_agent);
+			m_property_mutex.unlock();
+		});
+	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME)) {
 		update_solver_agent_wcs(this, property);
 		indigo_property *p = properties.get(property->device, AGENT_PLATESOLVER_PA_STATE_PROPERTY_NAME);
 		if ((property->state == INDIGO_ALERT_STATE || property->state == INDIGO_OK_STATE) && (p == nullptr || p->state != INDIGO_BUSY_STATE)) {
 			QtConcurrent::run([=]() {
 				m_property_mutex.lock();
-				clear_solver_agent_releated_agents(selected_solver_agent);
-				set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME);
+				clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
+				disable_auto_solving(selected_solver_agent);
 				m_property_mutex.unlock();
 			});
 		}
@@ -2515,8 +2526,8 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		if (property->state != INDIGO_BUSY_STATE && state == 0) {
 			QtConcurrent::run([=]() {
 				m_property_mutex.lock();
-				clear_solver_agent_releated_agents(selected_solver_agent);
-				set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME);
+				clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
+				disable_auto_solving(selected_solver_agent);
 				m_property_mutex.unlock();
 			});
 		}
@@ -2781,8 +2792,8 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		if ((property->state == INDIGO_ALERT_STATE || property->state == INDIGO_OK_STATE) && (p == nullptr || p->state != INDIGO_BUSY_STATE)) {
 			QtConcurrent::run([=]() {
 				m_property_mutex.lock();
-				clear_solver_agent_releated_agents(selected_solver_agent);
-				set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME);
+				clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
+				disable_auto_solving(selected_solver_agent);
 				m_property_mutex.unlock();
 			});
 		}
@@ -2796,8 +2807,8 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		if (property->state != INDIGO_BUSY_STATE && state == 0) {
 			QtConcurrent::run([=]() {
 				m_property_mutex.lock();
-				clear_solver_agent_releated_agents(selected_solver_agent);
-				set_agent_solver_sync_action(selected_solver_agent, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME);
+				clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
+				disable_auto_solving(selected_solver_agent);
 				m_property_mutex.unlock();
 			});
 		}
