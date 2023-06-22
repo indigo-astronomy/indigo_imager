@@ -2497,7 +2497,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_SOLVE_IMAGES_PROPERTY_NAME)) {
 		QtConcurrent::run([=]() {
 			m_property_mutex.lock();
-			//clear_solver_agent_releated_agents(selected_solver_agent);
+			clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
 			disable_auto_solving(selected_solver_agent);
 			m_property_mutex.unlock();
 		});
@@ -2508,7 +2508,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		if ((property->state == INDIGO_ALERT_STATE || property->state == INDIGO_OK_STATE) && (p == nullptr || p->state != INDIGO_BUSY_STATE)) {
 			QtConcurrent::run([=]() {
 				m_property_mutex.lock();
-				//clear_solver_agent_releated_agents(selected_solver_agent);
+				clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
 				disable_auto_solving(selected_solver_agent);
 				m_property_mutex.unlock();
 			});
@@ -2526,7 +2526,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		if (property->state != INDIGO_BUSY_STATE && state == 0) {
 			QtConcurrent::run([=]() {
 				m_property_mutex.lock();
-				//clear_solver_agent_releated_agents(selected_solver_agent);
+				clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
 				disable_auto_solving(selected_solver_agent);
 				m_property_mutex.unlock();
 			});
@@ -2792,7 +2792,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		if ((property->state == INDIGO_ALERT_STATE || property->state == INDIGO_OK_STATE) && (p == nullptr || p->state != INDIGO_BUSY_STATE)) {
 			QtConcurrent::run([=]() {
 				m_property_mutex.lock();
-				//clear_solver_agent_releated_agents(selected_solver_agent);
+				clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
 				disable_auto_solving(selected_solver_agent);
 				m_property_mutex.unlock();
 			});
@@ -2807,7 +2807,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		if (property->state != INDIGO_BUSY_STATE && state == 0) {
 			QtConcurrent::run([=]() {
 				m_property_mutex.lock();
-				//clear_solver_agent_releated_agents(selected_solver_agent);
+				clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
 				disable_auto_solving(selected_solver_agent);
 				m_property_mutex.unlock();
 			});
