@@ -24,10 +24,13 @@
 
 class Batch {
 	bool m_empty;
-	QString m_filter, m_exposure, m_delay, m_count, m_mode, m_frame, m_focus;
+	QString m_object, m_ra, m_dec, m_filter, m_exposure, m_delay, m_count, m_mode, m_frame, m_focus;
 public:
 	Batch():
 		m_empty{true},
+		m_object{""},
+		m_ra{""},
+		m_dec{""},
 		m_filter{""},
 		m_exposure{""},
 		m_delay{""},
@@ -38,6 +41,9 @@ public:
 	{}
 
 	Batch(
+		const QString & object,
+		const QString & ra,
+		const QString & dec,
 		const QString & filter,
 		const QString & exposure,
 		const QString & delay,
@@ -47,6 +53,9 @@ public:
 		const QString & focus
 	):
 		m_empty{false},
+		m_object{object},
+		m_ra{ra},
+		m_dec{dec},
 		m_filter{filter},
 		m_exposure{exposure},
 		m_delay{delay},
@@ -58,6 +67,9 @@ public:
 
 	Batch (QString batch_string):
 		m_empty{true},
+		m_object{"*"},
+		m_ra{""},
+		m_dec{""},
 		m_filter{"*"},
 		m_exposure{"1"},
 		m_delay{"0"},
@@ -107,6 +119,9 @@ public:
 		//m_count.toStdString().c_str(), m_mode.toStdString().c_str(), m_frame.toStdString().c_str(), m_focus.toStdString().c_str());
 	}
 
+	QString object() const { return m_object; }
+	QString ra() const { return m_ra; }
+	QString dec() const { return m_dec; }
 	QString filter() const { return m_filter; }
 	QString exposure() const { return m_exposure; }
 	QString delay() const { return m_delay; }
@@ -143,6 +158,21 @@ public:
 
 	bool is_empty() const {
 		return m_empty;
+	}
+
+	void set_object(QString name) {
+		m_empty = false;
+		m_object = name;
+	}
+
+	void set_ra(QString ra) {
+		m_empty = false;
+		m_ra = ra;
+	}
+
+	void set_dec(QString dec) {
+		m_empty = false;
+		m_dec = dec;
 	}
 
 	void set_filter(QString s) {
@@ -205,7 +235,7 @@ public:
 	}
 
 	int columnCount(const QModelIndex &) const override {
-		return 7;
+		return 10;
 	}
 
 	int currentSection() {
@@ -223,13 +253,16 @@ public:
 			return {};
 		}
 		switch (index.column()) {
-			case 0: return sequence.filter();
-			case 1: return sequence.exposure();
-			case 2: return sequence.delay();
-			case 3: return sequence.count();
-			case 4: return sequence.mode();
-			case 5: return sequence.frame();
-			case 6: return sequence.focus();
+			case 0: return sequence.object();
+			case 1: return sequence.ra();
+			case 2: return sequence.dec();
+			case 3: return sequence.filter();
+			case 4: return sequence.exposure();
+			case 5: return sequence.delay();
+			case 6: return sequence.count();
+			case 7: return sequence.mode();
+			case 8: return sequence.frame();
+			case 9: return sequence.focus();
 			default: return {};
 		};
 		return {};
@@ -239,13 +272,16 @@ public:
 		if ((orientation != Qt::Horizontal && orientation != Qt::Vertical) || role != Qt::DisplayRole) return {};
 		if (orientation == Qt::Horizontal) {
 			switch (section) {
-				case 0: return "Filter";
-				case 1: return "Exposure";
-				case 2: return "Delay";
-				case 3: return "Count";
-				case 4: return "Mode";
-				case 5: return "Frame";
-				case 6: return "Focus";
+				case 0: return "Object";
+				case 1: return "RA";
+				case 2: return "Dec";
+				case 3: return "Filter";
+				case 4: return "Exposure";
+				case 5: return "Delay";
+				case 6: return "Count";
+				case 7: return "Mode";
+				case 8: return "Frame";
+				case 9: return "Focus";
 				default: return {};
 			}
 		}

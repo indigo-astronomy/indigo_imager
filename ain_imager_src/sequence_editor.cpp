@@ -40,8 +40,12 @@ SequenceEditor::SequenceEditor() {
 	m_layout.setColumnStretch(7, 1);
 	m_view.setSelectionBehavior(QAbstractItemView::SelectRows);
 	m_view.setSelectionMode(QAbstractItemView::SingleSelection);
-	m_view.horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 	m_view.setModel(&m_model);
+	m_view.horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+	m_view.horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
+	m_view.horizontalHeader()->setSectionResizeMode(1, QHeaderView::Fixed);
+	m_view.horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);
+	m_view.horizontalHeader()->setSectionResizeMode(7, QHeaderView::Fixed);
 
 	row++;
 	col=0;
@@ -297,6 +301,12 @@ void SequenceEditor::on_move_up_sequence() {
 	m_model.set_batch(b1, row - 1);
 	m_model.set_batch(b2, row);
 
+	m_view.resizeRowsToContents();
+	m_view.resizeColumnToContents(0);
+	m_view.resizeColumnToContents(1);
+	m_view.resizeColumnToContents(2);
+	m_view.resizeColumnToContents(7);
+
 	QModelIndex index = m_view.model()->index(row - 1, 0);
 	m_view.setCurrentIndex(index);
 	emit(sequence_updated());
@@ -313,6 +323,12 @@ void SequenceEditor::on_move_down_sequence() {
 	Batch b2 = m_model.get_batch(row + 1);
 	m_model.set_batch(b1, row + 1);
 	m_model.set_batch(b2, row);
+
+	m_view.resizeRowsToContents();
+	m_view.resizeColumnToContents(0);
+	m_view.resizeColumnToContents(1);
+	m_view.resizeColumnToContents(2);
+	m_view.resizeColumnToContents(7);
 
 	QModelIndex index = m_view.model()->index(row + 1, 0);
 	m_view.setCurrentIndex(index);
@@ -334,6 +350,9 @@ void  SequenceEditor::on_remove_sequence() {
 
 void SequenceEditor::on_add_sequence() {
 	Batch b;
+	b.set_object("Lagoon Nebula");
+	b.set_ra("12:12:12.4");
+	b.set_dec("+12:12:12.4");
 	b.set_filter(m_filter_select->currentData().toString());
 	b.set_mode(m_mode_select->currentData().toString());
 	b.set_frame(m_frame_select->currentData().toString());
@@ -348,7 +367,12 @@ void SequenceEditor::on_add_sequence() {
 	b.set_focus(focus);
 
 	m_model.append(b);
-	emit(sequence_updated());
+	m_view.resizeRowsToContents();
+	m_view.resizeColumnToContents(0);
+	m_view.resizeColumnToContents(1);
+	m_view.resizeColumnToContents(2);
+	m_view.resizeColumnToContents(7);
+	emit(sequence_updated()); // ???
 }
 
 void SequenceEditor::on_update_sequence() {
@@ -356,6 +380,9 @@ void SequenceEditor::on_update_sequence() {
 	int row = m_view.currentIndex().row();
 	if (row < 0) return;
 
+	b.set_object("Lagoon Nebula");
+	b.set_ra("12:12:12.4");
+	b.set_dec("+12:12:12.4");
 	b.set_filter(m_filter_select->currentData().toString());
 	b.set_mode(m_mode_select->currentData().toString());
 	b.set_frame(m_frame_select->currentData().toString());
@@ -371,6 +398,11 @@ void SequenceEditor::on_update_sequence() {
 
 	m_model.set_batch(b, row);
 	m_view.update();
+	m_view.resizeRowsToContents();
+	m_view.resizeColumnToContents(0);
+	m_view.resizeColumnToContents(1);
+	m_view.resizeColumnToContents(2);
+	m_view.resizeColumnToContents(7);
 	emit(sequence_updated());
 }
 
@@ -556,6 +588,11 @@ bool SequenceEditor::load_sequence(QString filename) {
 		ln++;
     }
 	fclose(fp);
+	m_view.resizeRowsToContents();
+	m_view.resizeColumnToContents(0);
+	m_view.resizeColumnToContents(1);
+	m_view.resizeColumnToContents(2);
+	m_view.resizeColumnToContents(7);
 	emit(sequence_updated());
 	return true;
 }
