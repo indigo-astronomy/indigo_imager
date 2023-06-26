@@ -21,6 +21,7 @@
 
 #include <QtGui>
 #include <QtWidgets>
+#include <indigo/indigo_bus.h>
 
 class Batch {
 	bool m_empty;
@@ -68,8 +69,8 @@ public:
 	Batch (QString batch_string):
 		m_empty{true},
 		m_object{"*"},
-		m_ra{""},
-		m_dec{""},
+		m_ra{"*"},
+		m_dec{"*"},
 		m_filter{"*"},
 		m_exposure{"1"},
 		m_delay{"0"},
@@ -83,6 +84,18 @@ public:
 			QStringList key_val = list[i].split('=', QString::SkipEmptyParts);
 			if (key_val.length() <= 2) {
 				QString key = key_val[0].trimmed();
+				if (!key.compare("object")) {
+					m_object = key_val[1].trimmed();
+					m_empty = false;
+				}
+				if (!key.compare("ra")) {
+					m_ra = QString(indigo_dtos(key_val[1].toDouble(), "%d:%02d:%04.1f"));
+					m_empty = false;
+				}
+				if (!key.compare("dec")) {
+					m_dec = QString(indigo_dtos(key_val[1].toDouble(), "%d:%02d:%04.1f"));
+					m_empty = false;
+				}
 				if (!key.compare("filter")) {
 					m_filter = key_val[1].trimmed();
 					m_empty = false;
@@ -114,9 +127,9 @@ public:
 				}
 			}
 		}
-		//printf("m_filter= %s\nm_exposure = %s\nm_delay = %s\nm_count = %s\nm_mode = %s\nm_frame = %s\nm_focus = %s\n",
-		//m_filter.toStdString().c_str(), m_exposure.toStdString().c_str(), m_delay.toStdString().c_str(),
-		//m_count.toStdString().c_str(), m_mode.toStdString().c_str(), m_frame.toStdString().c_str(), m_focus.toStdString().c_str());
+		indigo_error("#### object = %s (%s, %s)\nm_filter= %s\nm_exposure = %s\nm_delay = %s\nm_count = %s\nm_mode = %s\nm_frame = %s\nm_focus = %s\n",
+		m_object.toStdString().c_str(), m_ra.toStdString().c_str(), m_dec.toStdString().c_str(), m_filter.toStdString().c_str(), m_exposure.toStdString().c_str(), m_delay.toStdString().c_str(),
+		m_count.toStdString().c_str(), m_mode.toStdString().c_str(), m_frame.toStdString().c_str(), m_focus.toStdString().c_str());
 	}
 
 	QString object() const { return m_object; }
@@ -132,6 +145,24 @@ public:
 
 	QString to_property_value() const {
 		QString batch_str;
+		if (!m_object.isEmpty() && m_object != "*") {
+			batch_str.append("object=" + m_object + ";");
+		}
+		bool goto_needed = false;
+		if (!m_ra.isEmpty() && m_ra != "*") {
+			goto_needed = true;
+			QString ra_str = QString::number(indigo_stod((char*)m_ra.trimmed().toStdString().c_str()), 'f', 6);
+			batch_str.append("ra=" + ra_str + ";");
+		}
+		if (!m_dec.isEmpty() && m_dec != "*") {
+			goto_needed = true;
+			QString dec_str = QString::number(indigo_stod((char*)m_dec.trimmed().toStdString().c_str()), 'f', 6);
+			batch_str.append("dec=" + dec_str + ";");
+		}
+		if (goto_needed) {
+			batch_str.append("goto=precise;");
+		}
+
 		if (!m_filter.isEmpty() && m_filter != "*") {
 			batch_str.append("filter=" + m_filter + ";");
 		}
@@ -153,6 +184,7 @@ public:
 		if (!m_focus.isEmpty() && m_focus != "*" && m_focus.toDouble() > 0) {
 			batch_str.append("focus=" + m_focus + ";");
 		}
+		indigo_error("**** batch_str = '%s'", batch_str.trimmed().toStdString().c_str());
 		return batch_str;
 	};
 
@@ -351,6 +383,8 @@ private:
 	SequenceModel m_model;
 
 	QLineEdit *m_name_edit;
+	QLineEdit *m_ra_edit;
+	QLineEdit *m_dec_edit;
 	QSpinBox *m_repeat_box;
 	QCheckBox *m_cooler_off_cbox;
 	QCheckBox *m_park_cbox;

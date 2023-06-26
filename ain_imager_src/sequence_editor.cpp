@@ -17,7 +17,6 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <sequence_editor.h>
-#include <indigo/indigo_bus.h>
 
 #if defined(INDIGO_WINDOWS)
 #define PATH_LEN 4096
@@ -48,13 +47,7 @@ SequenceEditor::SequenceEditor() {
 	m_view.horizontalHeader()->setSectionResizeMode(7, QHeaderView::Fixed);
 
 	row++;
-	col=0;
-	m_name_edit = new QLineEdit();
-	m_name_edit->setPlaceholderText("File prefix e.g. M16");
-	m_layout.addWidget(m_name_edit, row, col, 1, 2);
-	connect(m_name_edit, &QLineEdit::textChanged, this, [this](const QString &name){ emit(this->sequence_name_set(name)); });
-
-	col += 2;
+	col = 0;
 	m_cooler_off_cbox = new QCheckBox("Turn cooler off");
 	m_cooler_off_cbox->setToolTip("Turn camera cooler off when finished");
 	m_cooler_off_cbox->setEnabled(true);
@@ -95,6 +88,25 @@ SequenceEditor::SequenceEditor() {
 	m_layout.addWidget(label, row, col, 1, 2);
 
 	col += 2;
+	m_name_edit = new QLineEdit();
+	m_name_edit->setPlaceholderText("File prefix e.g. M16");
+	m_layout.addWidget(m_name_edit, row, col, 1, 2);
+	connect(m_name_edit, &QLineEdit::textChanged, this, [this](const QString &name){ emit(this->sequence_name_set(name)); });
+
+	col += 2;
+	m_ra_edit = new QLineEdit();
+	m_ra_edit->setPlaceholderText("hh:mm:ss");
+	m_ra_edit->setToolTip("Enter Right ascension in format hh:mm:ss");
+	m_layout.addWidget(m_ra_edit, row, col, 1, 2);
+
+	col += 2;
+	m_dec_edit = new QLineEdit();
+	m_dec_edit->setPlaceholderText("dd:mm:ss");
+	m_dec_edit->setToolTip("Enter Declination in format dd:mm:ss");
+	m_layout.addWidget(m_dec_edit, row, col, 1, 2);
+
+	row++;
+	col = 2;
 	m_filter_select = new QComboBox();
 	m_filter_select->setToolTip("Filter to be used for the batch.");
 	m_layout.addWidget(m_filter_select, row, col, 1, 2);
@@ -350,9 +362,9 @@ void  SequenceEditor::on_remove_sequence() {
 
 void SequenceEditor::on_add_sequence() {
 	Batch b;
-	b.set_object("Lagoon Nebula");
-	b.set_ra("12:12:12.4");
-	b.set_dec("+12:12:12.4");
+	b.set_object(m_name_edit->text().trimmed());
+	b.set_ra(m_ra_edit->text().trimmed());
+	b.set_dec(m_dec_edit->text().trimmed());
 	b.set_filter(m_filter_select->currentData().toString());
 	b.set_mode(m_mode_select->currentData().toString());
 	b.set_frame(m_frame_select->currentData().toString());
@@ -380,9 +392,9 @@ void SequenceEditor::on_update_sequence() {
 	int row = m_view.currentIndex().row();
 	if (row < 0) return;
 
-	b.set_object("Lagoon Nebula");
-	b.set_ra("12:12:12.4");
-	b.set_dec("+12:12:12.4");
+	b.set_object(m_name_edit->text().trimmed());
+	b.set_ra(m_ra_edit->text().trimmed());
+	b.set_dec(m_dec_edit->text().trimmed());
 	b.set_filter(m_filter_select->currentData().toString());
 	b.set_mode(m_mode_select->currentData().toString());
 	b.set_frame(m_frame_select->currentData().toString());
