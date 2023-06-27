@@ -280,6 +280,11 @@ void SequenceEditor::on_row_changed(const QModelIndex &current, const QModelInde
 
 	Batch b = m_model.get_batch(row);
 
+	m_name_edit->setText(b.object());
+
+	m_ra_edit->setText(b.ra());
+	m_dec_edit->setText(b.dec());
+
 	int index = m_filter_select->findData(b.filter());
 	if ( index != -1 ) {
 		m_filter_select->setCurrentIndex(index);
