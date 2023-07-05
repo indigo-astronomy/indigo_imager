@@ -877,6 +877,7 @@ private:
 	void request_file_download(const char *agent, const char *file_name) const;
 	void request_file_remove(const char *agent, const char *file_name) const;
 	void change_related_agent(const char *agent, const char *old_agent, const char *new_agent) const;
+	bool set_related_agents_to_solver();
 	void set_related_mount_and_imager_agents() const;
 	void set_related_mount_guider_agent(const char *related_agent) const;
 	void change_agent_imager_dithering_property(const char *agent) const;

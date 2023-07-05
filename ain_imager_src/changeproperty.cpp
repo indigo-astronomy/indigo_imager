@@ -853,6 +853,33 @@ bool ImagerWindow::get_solver_relations(char *selected_mount_agent, char* select
 	return true;
 }
 
+bool ImagerWindow::set_related_agents_to_solver() {
+	static char selected_image_agent[INDIGO_NAME_SIZE];
+	static char selected_mount_agent[INDIGO_NAME_SIZE];
+	static char selected_solver_agent[INDIGO_NAME_SIZE];
+	static char selected_solver_source[INDIGO_NAME_SIZE];
+	static QString solver_source;
+
+	solver_source = m_solver_source_select1->currentData().toString();
+	if (
+		!get_solver_relations(
+			selected_mount_agent,
+			selected_solver_agent,
+			selected_image_agent,
+			selected_solver_source,
+			m_solver_source_select1
+		)
+	) {
+		return false;
+	}
+
+	set_agent_releated_agent(selected_solver_agent, selected_mount_agent, true);
+	set_agent_releated_agent(selected_solver_agent, selected_solver_source, true);
+	set_agent_releated_agent(selected_solver_source, selected_solver_agent, true);
+
+	return true;
+}
+
 void ImagerWindow::trigger_solve() {
 	static char selected_image_agent[INDIGO_NAME_SIZE];
 	static char selected_mount_agent[INDIGO_NAME_SIZE];
@@ -869,7 +896,8 @@ void ImagerWindow::trigger_solve() {
 			selected_mount_agent,
 			selected_solver_agent,
 			selected_image_agent,
-			selected_solver_source,m_solver_source_select1
+			selected_solver_source,
+			m_solver_source_select1
 		)
 	) {
 		return;
@@ -959,7 +987,8 @@ void ImagerWindow::trigger_solve_and_sync(bool recenter) {
 			selected_mount_agent,
 			selected_solver_agent,
 			selected_image_agent,
-			selected_solver_source,m_solver_source_select2
+			selected_solver_source,
+			m_solver_source_select2
 		)
 	) {
 		return;
@@ -998,7 +1027,8 @@ void ImagerWindow::trigger_polar_alignment(bool recalculate) {
 			selected_mount_agent,
 			selected_solver_agent,
 			selected_image_agent,
-			selected_solver_source,m_solver_source_select3
+			selected_solver_source,
+			m_solver_source_select3
 		)
 	) {
 		return;

@@ -471,6 +471,7 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
 			change_agent_abort_process_property(selected_agent);
 		} else {
+			set_related_agents_to_solver();
 			set_related_mount_and_imager_agents();
 			QString obj_name;
 			if (is_sequence) {

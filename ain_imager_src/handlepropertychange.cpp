@@ -1549,6 +1549,12 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			case INDIGO_IMAGER_PHASE_WAITING:
 				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Waiting");
 				break;
+			case INDIGO_IMAGER_PHASE_SLEWING:
+				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Slewing to target");
+				break;
+			case INDIGO_IMAGER_PHASE_ROTATING:
+				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Rotating to angle");
+				break;
 			default:
 				break;
 		}
