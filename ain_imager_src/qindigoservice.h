@@ -38,6 +38,7 @@ public:
 	QByteArray name() const { return m_name; }
 	QByteArray host() const { return m_host; }
 	int port() const { return m_port; }
+	void setHost(QByteArray host) { m_host = host; }
 
 	QByteArray m_name;
 	QByteArray m_host;
