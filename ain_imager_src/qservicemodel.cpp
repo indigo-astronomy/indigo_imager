@@ -31,17 +31,25 @@ void resolve_callback(const char *service_name, uint32_t interface_index, const 
 		QServiceModel *model = NULL;
 		model = &QServiceModel::instance();
 		indigo_debug("resolved %p", model);
-		model->onServiceAdded(QByteArray(service_name), QByteArray(host), port);
+		if (interface_index == 1) { // if interface is loopback, use localhost, it is imune to interface drops
+			model->onServiceAdded(QByteArray(service_name) + QByteArray("(local)"), QByteArray("localhost"), port);
+		} else {
+			model->onServiceAdded(QByteArray(service_name), QByteArray(host), port);
+		}
 	}
 }
 
 
 void discover_callback(indigo_service_discovery_event event, const char *service_name, uint32_t interface_index) {
-	if (event == INDIGO_SERVICE_ADDED_GROUPED) {
+	if (event == INDIGO_SERVICE_ADDED) {
 		indigo_resolve_service(service_name, interface_index, resolve_callback);
-	} else if (event == INDIGO_SERVICE_REMOVED_GROUPED) {
+	} else if (event == INDIGO_SERVICE_REMOVED) {
 		QServiceModel *model = &QServiceModel::instance();
-		model->onServiceRemoved(QByteArray(service_name));
+		if (interface_index == 1) {
+			model->onServiceRemoved(QByteArray(service_name) + QByteArray("(local)"));
+		} else {
+			model->onServiceRemoved(QByteArray(service_name));
+		}
 	}
 }
 
