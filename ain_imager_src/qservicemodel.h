@@ -52,6 +52,7 @@ public:
 		m_auto_connect = enable;
 	};
 	void addServicePreferLocalhost(QByteArray service_name, uint32_t interface_index, QByteArray host, int port);
+	void removeServiceKeepLocalhost(QByteArray service_name, uint32_t interface_index);
 	virtual QVariant data(const QModelIndex &index, int role) const;
 	void onServiceAdded(QByteArray name, QByteArray host, int port);
 	void onServiceRemoved(QByteArray name);

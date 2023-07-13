@@ -44,7 +44,7 @@ void discover_callback(indigo_service_discovery_event event, const char *service
 	} else if (event == INDIGO_SERVICE_REMOVED) {
 		QServiceModel *model = &QServiceModel::instance();
 		if (model) {
-			model->onServiceRemoved(QByteArray(service_name));
+			model->removeServiceKeepLocalhost(QByteArray(service_name), interface_index);
 		}
 	}
 }
@@ -78,6 +78,20 @@ void QServiceModel::addServicePreferLocalhost(QByteArray service_name, uint32_t 
 		onServiceAdded(service_name, QByteArray("localhost"), port);
 	} else {
 		onServiceAdded(service_name, host, port);
+	}
+}
+
+
+void QServiceModel::removeServiceKeepLocalhost(QByteArray service_name, uint32_t interface_index) {
+	int i = findService(service_name);
+	if (i != -1) {
+		if (m_services.at(i)->host() == QByteArray("localhost")) {
+			if (interface_index == 1) {
+				onServiceRemoved(service_name);
+			}
+		} else {
+			onServiceRemoved(service_name);
+		}
 	}
 }
 
