@@ -31,17 +31,21 @@ void resolve_callback(const char *service_name, uint32_t interface_index, const 
 		QServiceModel *model = NULL;
 		model = &QServiceModel::instance();
 		indigo_debug("resolved %p", model);
-		model->onServiceAdded(QByteArray(service_name), QByteArray(host), port);
+		if (model) {
+			model->addServicePreferLocalhost(QByteArray(service_name), interface_index, QByteArray(host), port);
+		}
 	}
 }
 
 
 void discover_callback(indigo_service_discovery_event event, const char *service_name, uint32_t interface_index) {
-	if (event == INDIGO_SERVICE_ADDED_GROUPED) {
+	if (event == INDIGO_SERVICE_ADDED) {
 		indigo_resolve_service(service_name, interface_index, resolve_callback);
-	} else if (event == INDIGO_SERVICE_REMOVED_GROUPED) {
+	} else if (event == INDIGO_SERVICE_REMOVED) {
 		QServiceModel *model = &QServiceModel::instance();
-		model->onServiceRemoved(QByteArray(service_name));
+		if (model) {
+			model->removeServiceKeepLocalhost(QByteArray(service_name), interface_index);
+		}
 	}
 }
 
@@ -62,6 +66,33 @@ QServiceModel::~QServiceModel() {
 	while (!m_services.isEmpty()) delete m_services.takeFirst();
 	indigo_stop_service_browser();
 	indigo_debug("Service discovery stopped");
+}
+
+
+void QServiceModel::addServicePreferLocalhost(QByteArray service_name, uint32_t interface_index, QByteArray host, int port) {
+	if (interface_index == 1 ) { // if interface is loopback, use localhost, it is imune to interface drops
+		int i = findService(service_name);
+		if (i != -1 && m_services.at(i)->host() != QByteArray("localhost")) {
+			onServiceRemoved(service_name);
+		}
+		onServiceAdded(service_name, QByteArray("localhost"), port);
+	} else {
+		onServiceAdded(service_name, host, port);
+	}
+}
+
+
+void QServiceModel::removeServiceKeepLocalhost(QByteArray service_name, uint32_t interface_index) {
+	int i = findService(service_name);
+	if (i != -1) {
+		if (m_services.at(i)->host() == QByteArray("localhost")) {
+			if (interface_index == 1) {
+				onServiceRemoved(service_name);
+			}
+		} else {
+			onServiceRemoved(service_name);
+		}
+	}
 }
 
 
@@ -246,9 +277,12 @@ void QServiceModel::onServiceAdded(QByteArray name, QByteArray host, int port) {
 		stored_service = m_services.at(i);
 		if (
 			stored_service->name() == indigo_service->name() &&
-			stored_service->host() == indigo_service->host() &&
+			(stored_service->host() == indigo_service->host() || indigo_service->host() == "localhost") &&
 			stored_service->port() == indigo_service->port()
 		) {
+			if (indigo_service->host() == "localhost") {
+				stored_service->setHost(indigo_service->host());
+			}
 			indigo_debug("SERVICE HAS RECORD [%s] connect = %d\n", name.constData(), stored_service->auto_connect);
 			delete indigo_service;
 		} else {
