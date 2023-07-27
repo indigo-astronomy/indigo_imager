@@ -619,6 +619,7 @@ private:
 	QDoubleSpinBox  *m_focus_bl_overshoot;
 	QSpinBox  *m_focus_stack;
 	QSpinBox  *m_focus_position;
+	QLabel    *m_focus_position_label;
 	QToolButton *m_focus_position_button;
 	QSpinBox  *m_focus_steps;
 	QLabel    *m_FWHM_label;
