@@ -1027,14 +1027,18 @@ void update_agent_guider_focal_length_property(ImagerWindow *w, indigo_property 
 	}
 }
 
-void update_focuser_poition(ImagerWindow *w, indigo_property *property, QSpinBox *set_position) {
+void update_focuser_poition(ImagerWindow *w, indigo_property *property, bool update_input = false) {
 	indigo_debug("change %s", property->name);
 	for (int i = 0; i < property->count; i++) {
-		if (client_match_item(&property->items[i], FOCUSER_POSITION_ITEM_NAME) ||
-		    client_match_item(&property->items[i], FOCUSER_STEPS_ITEM_NAME)) {
-			w->set_widget_state(set_position, property->state);
+		if (update_input && client_match_item(&property->items[i], FOCUSER_POSITION_ITEM_NAME)) {
+			indigo_debug("change target %s = %f", property->items[i].name, property->items[i].number.target);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_focus_position);
+			w->set_spinbox_value(w->m_focus_position, property->items[i].number.target);
+		}
+		if (client_match_item(&property->items[i], FOCUSER_STEPS_ITEM_NAME)) {
+			w->set_widget_state(w->m_focus_steps, property->state);
 			indigo_debug("change %s = %f", property->items[i].name, property->items[i].number.value);
-			configure_spinbox(w, &property->items[i], property->perm, set_position);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_focus_steps);
 		}
 		if (client_match_item(&property->items[i], FOCUSER_POSITION_ITEM_NAME)) {
 			w->set_widget_state(w->m_focus_position_label, property->state);
@@ -2255,10 +2259,10 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_agent_imager_dithering_property(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_POSITION_PROPERTY_NAME)) {
-		update_focuser_poition(this, property, m_focus_position);
+		update_focuser_poition(this, property, true);
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_STEPS_PROPERTY_NAME)) {
-		update_focuser_poition(this, property, m_focus_steps);
+		update_focuser_poition(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_REVERSE_MOTION_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_focuser_reverse_select);
@@ -2589,10 +2593,10 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		change_combobox_selection(this, property, m_focuser_select);
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_POSITION_PROPERTY_NAME)) {
-		update_focuser_poition(this, property, m_focus_position);
+		update_focuser_poition(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_STEPS_PROPERTY_NAME)) {
-		update_focuser_poition(this, property, m_focus_steps);
+		update_focuser_poition(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_REVERSE_MOTION_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_focuser_reverse_select);
@@ -2854,6 +2858,19 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 			m_config_dialog->clearConfigs();
 		}
 		m_config_dialog->removeAgent(property->device);
+	}
+
+	if (client_match_device_property(property, selected_agent, FOCUSER_POSITION_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		indigo_debug("REMOVE %s", property->name);
+		set_text(m_focus_position_label, "0");
+		set_widget_state(m_focus_position_label, INDIGO_OK_STATE);
+	}
+	if (client_match_device_property(property, selected_agent, FOCUSER_STEPS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		indigo_debug("REMOVE %s", property->name);
+		set_spinbox_value(m_focus_steps, 0);
+		set_enabled(m_focus_steps, false);
 	}
 
 	if (client_match_device_property(property, selected_agent, FOCUSER_TEMPERATURE_PROPERTY_NAME) ||

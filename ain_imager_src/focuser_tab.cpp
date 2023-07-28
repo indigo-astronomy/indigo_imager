@@ -64,7 +64,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_position->setMaximum(1000000);
 	m_focus_position->setMinimum(-1000000);
 	m_focus_position->setValue(0);
-	m_focus_position->setEnabled(false);
+	//m_focus_position->setEnabled(false);
 
 	focuser_frame_layout->addWidget(m_focus_position, row, 3, 1, 2);
 
@@ -611,6 +611,9 @@ void ImagerWindow::on_focuser_position_changed() {
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 
 		indigo_property *focuser_position = properties.get(selected_agent, FOCUSER_POSITION_PROPERTY_NAME);
+		if (!focuser_position) {
+			return;
+		}
 		if (focuser_position->state != INDIGO_BUSY_STATE) {
 			change_focuser_position_property(selected_agent);
 		} else {
