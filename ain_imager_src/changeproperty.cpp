@@ -505,12 +505,10 @@ void ImagerWindow::change_agent_start_preview_property(const char *agent) const 
 
 
 void ImagerWindow::change_focuser_position_property(const char *agent) const {
-	static const char *items[] = {
-		FOCUSER_POSITION_ITEM_NAME
-	};
-	static double values[1];
-	values[0] = (double)m_focus_position->value();
-	indigo_change_number_property(nullptr, agent, FOCUSER_POSITION_PROPERTY_NAME, 1, items, values);
+	indigo_change_switch_property_1(nullptr, agent, FOCUSER_ON_POSITION_SET_PROPERTY_NAME, FOCUSER_ON_POSITION_SET_GOTO_ITEM_NAME, true);
+	static double position;
+	position = (double)m_focus_position->value();
+	indigo_change_number_property_1(nullptr, agent, FOCUSER_POSITION_PROPERTY_NAME, FOCUSER_POSITION_ITEM_NAME, position);
 }
 
 

@@ -687,14 +687,6 @@ void ImagerWindow::on_tab_changed(int index) {
 
 		if (index == TELESCOPE_TAB) m_imager_viewer->showWCS(true);
 		else m_imager_viewer->showWCS(false);
-
-		if (index == FOCUSER_TAB) {
-			m_imager_viewer->showSelection(true);
-			m_imager_viewer->showReference(false);
-		} else {
-			m_imager_viewer->showSelection(false);
-			m_imager_viewer->showReference(conf.imager_show_reference);
-		}
 	} else if (index == SEQUENCE_TAB) {
 		if (m_visible_viewer != m_sequence_editor) {
 			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_sequence_editor);
@@ -715,8 +707,13 @@ void ImagerWindow::on_tab_changed(int index) {
 		QString solver_source = m_solver_source_select1->currentText();
 		show_selected_preview_in_solver_tab(solver_source);
 	}
-	if (index == FOCUSER_TAB) m_imager_viewer->showSelection(true);
-	else m_imager_viewer->showSelection(false);
+	if (index == FOCUSER_TAB) {
+		m_imager_viewer->showSelection(true);
+		m_imager_viewer->showReference(false);
+	} else {
+		m_imager_viewer->showSelection(false);
+		m_imager_viewer->showReference(conf.imager_show_reference);
+	}
 }
 
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){
