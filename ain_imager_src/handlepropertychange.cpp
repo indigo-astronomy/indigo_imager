@@ -2135,8 +2135,8 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 				int build;
 				char message[255];
 				sscanf(item->text.value, "%d.%d-%d", &version_major, &version_minor, &build);
-				if (build < 155 && !properties.get(property->device, SERVER_INFO_PROPERTY_NAME)) { /* show warning only once per connection */
-					sprintf(message, "WARNING: Some features will not work on '%s' running Indigo %s as Ain requires 2.0-155 or newer!", property->device, item->text.value);
+				if (build < 242 && !properties.get(property->device, SERVER_INFO_PROPERTY_NAME)) { /* show warning only once per connection */
+					sprintf(message, "WARNING: Some features will not work on '%s' running Indigo %s as Ain requires 2.0-242 or newer!", property->device, item->text.value);
 					window_log(message, INDIGO_BUSY_STATE);
 				}
 			}
