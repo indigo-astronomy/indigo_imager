@@ -161,21 +161,26 @@ void ImageViewer::makeToolbar(bool show_prev_next, bool show_debayer) {
 	auto fit = new QToolButton(this);
 	fit->setToolTip(tr("Fit image to window"));
 	fit->setIcon(QIcon(":resource/zoom-fit-best.png"));
+	fit->setShortcut(QKeySequence(Qt::Key_F));
 	connect(fit, SIGNAL(clicked()), SLOT(zoomFit()));
 
 	auto orig = new QToolButton(this);
 	orig->setToolTip(tr("Zoom 1:1"));
 	orig->setIcon(QIcon(":resource/zoom-original.png"));
+	orig->setShortcut(QKeySequence(Qt::Key_1));
 	connect(orig, SIGNAL(clicked()), SLOT(zoomOriginal()));
 
 	m_zoomin_button = new QToolButton(this);
 	m_zoomin_button->setToolTip(tr("Zoom In"));
 	m_zoomin_button->setIcon(QIcon(":resource/zoom-in.png"));
+	m_zoomin_button->setShortcut(QKeySequence(Qt::Key_Plus));
+
 	connect(m_zoomin_button, SIGNAL(clicked()), SLOT(zoomIn()));
 
 	m_zoomout_button = new QToolButton(this);
 	m_zoomout_button->setToolTip(tr("Zoom Out"));
 	m_zoomout_button->setIcon(QIcon(":resource/zoom-out.png"));
+	m_zoomout_button->setShortcut(QKeySequence(Qt::Key_Minus));
 	connect(m_zoomout_button, SIGNAL(clicked()), SLOT(zoomOut()));
 
 	QMenu *menu = new QMenu("");
