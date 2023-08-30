@@ -57,10 +57,10 @@ If the **Solver** or **Telescope** tab is active and the current image has been 
 The mouse wheel zooms in or zoom out of the image and **Left-Click + Drag** will pan the image.
 
 When the image area is active several shortcut keys can be used for zooming:
-* zoom in - **+**
-* zoom out - **-**
-* zoom 1:1 - **1**
-* zoom to fit - **f**
+* **+** zoom in
+* **-** zoom out
+* **1** zoom 1:1
+* **f** zoom to fit
 
 ### Log area
 Log area is the bottom part of the main window. In this area all messages from the INDIGO framework will be displayed, preceded by a timestamp. There are three types of messages: *Information* - displayed in white, *Error* - displayed in red and *Warning* - displayed in yellow. *Ain* does not display errors or warnings in dialog boxes, all errors, warnings and messages are displayed in this log. In addition each message can be accompanied by an audible notification. Audible notifications are enabled by **Settings -> Play sound notifications**.
