@@ -370,6 +370,7 @@ public slots:
 	void on_mount_solve_and_sync();
 	void on_mount_joystick_selected(int index);
 	void on_trigger_solve();
+	void on_solver_load_coords();
 	void on_mount_polar_align();
 	void on_mount_polar_align_stop();
 	void on_mount_recalculate_polar_error();
@@ -771,6 +772,7 @@ private:
 	QComboBox *m_solver_source_select1;
 	QDoubleSpinBox *m_solver_exposure1;
 	QPushButton *m_solve_button;
+	QToolButton *m_load_coords_button;
 	QLabel *m_solver_ra_solution;
 	QLabel *m_solver_dec_solution;
 	QLabel *m_solver_angle_solution;
