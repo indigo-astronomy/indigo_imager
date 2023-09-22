@@ -24,6 +24,7 @@
 
 #include <imagerwindow.h>
 #include <propertycache.h>
+#include <indigoclient.h>
 #include <conf.h>
 #include <logger.h>
 
@@ -397,6 +398,37 @@ void ImagerWindow::on_trigger_solve() {
 
 void ImagerWindow::on_solver_load_coords() {
 	indigo_error("CALLED: %s - not implemented\n", __FUNCTION__);
+
+	int wcs_state = -1;
+
+	char selected_agent[INDIGO_NAME_SIZE];
+	get_selected_solver_agent(selected_agent);
+
+	indigo_property *p = properties.get(selected_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME);
+	if (p) {
+		if (p->state != INDIGO_OK_STATE) {
+			return;
+		}
+		double solved_ra = 0;
+		double solved_dec = 0;
+		for (int i = 0; i < p->count; i++) {
+			if (client_match_item(&p->items[i], AGENT_PLATESOLVER_WCS_RA_ITEM_NAME)) {
+				solved_ra = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_PLATESOLVER_WCS_DEC_ITEM_NAME)) {
+				solved_dec = p->items[i].number.value;
+			}
+		}
+		set_text(m_mount_ra_input, indigo_dtos(solved_ra, "%d:%02d:%04.1f"));
+		set_text(m_mount_dec_input, indigo_dtos(solved_dec, "%d:%02d:%04.1f"));
+
+		char message[255];
+		snprintf(
+			message, 255, "Push Goto to slew to α = %s, δ = %s",
+			indigo_dtos(solved_ra, "%dh %02d' %04.1f\""),
+			indigo_dtos(solved_dec, "%+d° %02d' %04.1f\"")
+		);
+		window_log(message);
+	}
 }
 
 void ImagerWindow::on_image_source1_selected(int index) {
