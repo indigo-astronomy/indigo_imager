@@ -100,7 +100,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	toolbox->addWidget(m_solver_status_label1);
 
 	m_load_coords_button = new QToolButton(this);
-	m_load_coords_button->setToolTip(tr("Load solved image center coordinates to the mount"));
+	m_load_coords_button->setToolTip(tr("Load solved coordinates in the mount RA / Dec input fileds"));
 	m_load_coords_button->setIcon(QIcon(":resource/guide.png"));
 	m_load_coords_button->setEnabled(false);
 	toolbox->addWidget(m_load_coords_button);
