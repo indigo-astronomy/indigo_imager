@@ -63,32 +63,19 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	label = new QLabel("Exposure time (s):");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
 
-	QWidget *toolbar = new QWidget;
-	QHBoxLayout *toolbox = new QHBoxLayout(toolbar);
-	toolbar->setContentsMargins(0,0,0,0);
-	toolbox->setContentsMargins(0,0,0,0);
-	solver_frame_layout->addWidget(toolbar, row, 2, 1, 2);
-
 	m_solver_exposure1 = new QDoubleSpinBox();
 	m_solver_exposure1->setDecimals(3);
-	m_solver_exposure1->setMaximum(10000);
+	m_solver_exposure1->setMaximum(1000);
 	m_solver_exposure1->setMinimum(0);
 	m_solver_exposure1->setValue(1);
 	m_solver_exposure1->setEnabled(false);
-	toolbox->addWidget(m_solver_exposure1);
+	solver_frame_layout->addWidget(m_solver_exposure1, row, 2);
 
 	m_solve_button = new QPushButton("Solve");
 	m_solve_button->setStyleSheet("min-width: 30px");
 	m_solve_button->setIcon(QIcon(":resource/play.png"));
-	toolbox->addWidget(m_solve_button);
+	solver_frame_layout->addWidget(m_solve_button, row, 3);
 	connect(m_solve_button, &QPushButton::clicked, this, &ImagerWindow::on_trigger_solve);
-
-	m_load_coords_button = new QToolButton(this);
-	m_load_coords_button->setToolTip(tr("Load solved image center coordinates to the mount"));
-	m_load_coords_button->setIcon(QIcon(":resource/guide.png"));
-	m_load_coords_button->setEnabled(false);
-	toolbox->addWidget(m_load_coords_button);
-	connect(m_load_coords_button, &QToolButton::clicked, this, &ImagerWindow::on_solver_load_coords);
 
 	row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -100,12 +87,24 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
 
-	//row++;
+	QWidget *toolbar = new QWidget;
+	QHBoxLayout *toolbox = new QHBoxLayout(toolbar);
+	toolbar->setContentsMargins(0,0,0,0);
+	toolbox->setContentsMargins(0,0,0,0);
+	solver_frame_layout->addWidget(toolbar, row, 2, 1, 2);
+
 	m_solver_status_label1 = new QLabel("");
 	m_solver_status_label1->setTextFormat(Qt::RichText);
 	m_solver_status_label1->setText("<img src=\":resource/led-grey.png\"> Idle");
 	//set_idle(m_solver_status_label);
-	solver_frame_layout->addWidget(m_solver_status_label1, row, 2, 1, 2);
+	toolbox->addWidget(m_solver_status_label1);
+
+	m_load_coords_button = new QToolButton(this);
+	m_load_coords_button->setToolTip(tr("Load solved image center coordinates to the mount"));
+	m_load_coords_button->setIcon(QIcon(":resource/guide.png"));
+	m_load_coords_button->setEnabled(false);
+	toolbox->addWidget(m_load_coords_button);
+	connect(m_load_coords_button, &QToolButton::clicked, this, &ImagerWindow::on_solver_load_coords);
 
 	row++;
 	label = new QLabel("Frame center RA :");
