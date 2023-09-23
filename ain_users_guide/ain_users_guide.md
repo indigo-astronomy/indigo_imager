@@ -1,5 +1,5 @@
 # Ain INDIGO Imager - Users Guide
-Revision: 09.06.2023 (draft)
+Revision: 23.09.2023 (draft)
 
 Author: **Rumen G.Bogdanovski**
 
@@ -253,7 +253,7 @@ The current focuser position will be displayed here. Entering a new value and pu
 ##### Relative Move
 Relative move will help achieve precise focus manually. The value represents how many steps, relative to the current position, the focuser should move when **[>>]** (focus out) or **[<<]** (focus in) button is pushed.
 
-##### Reference T (Templerature)
+##### Reference T (Temperature)
 The current temperature will be shown if the focuser has a temperature sensor. If **Auto compensation** is checked, the focus will be automatically corrected with the temperature change if the compensation factor is set in the **Misc** tab. This value must be determined by the user since it is setup dependent.
 
 ### Statistics tab
@@ -433,6 +433,10 @@ Plate solving configuration and usage is described in [INDIGO Astrometry Agent -
 ![](images/solver_main.png)
 
 If a local file needs to be solved, **Image source** should be set to "Upload file". In this case, pushing the **Solve** button will display a file select dialog for choosing the file to be solved.
+
+If the displayed image is solved a **Right-Click** on it will copy the coordinates under the mouse cursor in the **RA / Dec input** boxes and pushing **Goto** button will slew the telescope to these coordinates. **Control + Right-Click** will copy and slew the telescope in one action. This can be used to center a certain object in the frame.
+
+NOTE: If you want to achieve the same framing of an object as in a previous session, upload and solve a frame from this session and  **Right-Click** or **Control + Right-Click** on the image center and center the telescope to these coordinates as described above. Then if the rotation angle is different rotate the camera until the same rotation angle is reached as the solved one.
 
 ## Accessing advanced device and agent settings
 
