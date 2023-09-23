@@ -84,7 +84,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	connect(m_solve_button, &QPushButton::clicked, this, &ImagerWindow::on_trigger_solve);
 
 	m_load_coords_button = new QToolButton(this);
-	m_load_coords_button->setToolTip(tr("Load solved coordinates to the mount"));
+	m_load_coords_button->setToolTip(tr("Load solved image center coordinates to the mount"));
 	m_load_coords_button->setIcon(QIcon(":resource/guide.png"));
 	m_load_coords_button->setEnabled(false);
 	toolbox->addWidget(m_load_coords_button);
