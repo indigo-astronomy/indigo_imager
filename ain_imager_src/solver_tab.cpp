@@ -24,6 +24,7 @@
 
 #include <imagerwindow.h>
 #include <propertycache.h>
+#include <indigoclient.h>
 #include <conf.h>
 #include <logger.h>
 
@@ -61,9 +62,10 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	// Exposure time
 	label = new QLabel("Exposure time (s):");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
+
 	m_solver_exposure1 = new QDoubleSpinBox();
 	m_solver_exposure1->setDecimals(3);
-	m_solver_exposure1->setMaximum(10000);
+	m_solver_exposure1->setMaximum(1000);
 	m_solver_exposure1->setMinimum(0);
 	m_solver_exposure1->setValue(1);
 	m_solver_exposure1->setEnabled(false);
@@ -85,12 +87,24 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
 
-	//row++;
+	QWidget *toolbar = new QWidget;
+	QHBoxLayout *toolbox = new QHBoxLayout(toolbar);
+	toolbar->setContentsMargins(0,0,0,0);
+	toolbox->setContentsMargins(0,0,0,0);
+	solver_frame_layout->addWidget(toolbar, row, 2, 1, 2);
+
 	m_solver_status_label1 = new QLabel("");
 	m_solver_status_label1->setTextFormat(Qt::RichText);
 	m_solver_status_label1->setText("<img src=\":resource/led-grey.png\"> Idle");
 	//set_idle(m_solver_status_label);
-	solver_frame_layout->addWidget(m_solver_status_label1, row, 2, 1, 2);
+	toolbox->addWidget(m_solver_status_label1);
+
+	m_load_coords_button = new QToolButton(this);
+	m_load_coords_button->setToolTip(tr("Load solved coordinates in the mount RA / Dec input fileds"));
+	m_load_coords_button->setIcon(QIcon(":resource/guide.png"));
+	m_load_coords_button->setEnabled(false);
+	toolbox->addWidget(m_load_coords_button);
+	connect(m_load_coords_button, &QToolButton::clicked, this, &ImagerWindow::on_solver_load_coords);
 
 	row++;
 	label = new QLabel("Frame center RA :");
@@ -164,8 +178,8 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 
 	row++;
 
-	QWidget *toolbar = new QWidget;
-	QHBoxLayout *toolbox = new QHBoxLayout(toolbar);
+	toolbar = new QWidget;
+	toolbox = new QHBoxLayout(toolbar);
 	toolbar->setContentsMargins(0,0,0,0);
 	toolbox->setContentsMargins(0,0,0,0);
 	solver_frame_layout->addWidget(toolbar, row, 0, 1, 4);
@@ -379,6 +393,41 @@ void ImagerWindow::on_solver_hints_changed(double value) {
 
 void ImagerWindow::on_trigger_solve() {
 	trigger_solve();
+}
+
+void ImagerWindow::on_solver_load_coords() {
+	indigo_error("CALLED: %s - not implemented\n", __FUNCTION__);
+
+	int wcs_state = -1;
+
+	char selected_agent[INDIGO_NAME_SIZE];
+	get_selected_solver_agent(selected_agent);
+
+	indigo_property *p = properties.get(selected_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME);
+	if (p) {
+		if (p->state != INDIGO_OK_STATE) {
+			return;
+		}
+		double solved_ra = 0;
+		double solved_dec = 0;
+		for (int i = 0; i < p->count; i++) {
+			if (client_match_item(&p->items[i], AGENT_PLATESOLVER_WCS_RA_ITEM_NAME)) {
+				solved_ra = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_PLATESOLVER_WCS_DEC_ITEM_NAME)) {
+				solved_dec = p->items[i].number.value;
+			}
+		}
+		set_text(m_mount_ra_input, indigo_dtos(solved_ra, "%d:%02d:%04.1f"));
+		set_text(m_mount_dec_input, indigo_dtos(solved_dec, "%d:%02d:%04.1f"));
+
+		char message[255];
+		snprintf(
+			message, 255, "Push Goto to slew to α = %s, δ = %s",
+			indigo_dtos(solved_ra, "%dh %02d' %04.1f\""),
+			indigo_dtos(solved_dec, "%+d° %02d' %04.1f\"")
+		);
+		window_log(message);
+	}
 }
 
 void ImagerWindow::on_image_source1_selected(int index) {

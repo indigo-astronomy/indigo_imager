@@ -638,11 +638,13 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 		w->set_widget_state(w->m_mount_start_pa_button, property->state);
 		w->set_widget_state(w->m_mount_recalculate_pe_button, property->state);
 	}
+	w->set_enabled(w->m_load_coords_button, false);
 	if (property->state == INDIGO_OK_STATE) {
 		w->m_last_solver_source = "";
 		if (scale != 0) {
 			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-green.png\"> Solved");
 			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-green.png\"> Solved");
+			w->set_enabled(w->m_load_coords_button, true);
 		} else {
 			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-grey.png\"> Idle");
 			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-grey.png\"> Idle");

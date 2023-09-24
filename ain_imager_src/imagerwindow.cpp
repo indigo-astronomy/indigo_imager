@@ -887,6 +887,9 @@ void close_fd(int fd) {
 bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *prefix, char *file_name, bool auto_construct) {
 	int fd;
 	int file_no = 1;
+
+	// this flag is used to easily merge files from different nights in one folder, default is remote (no time flag)
+	char time_flag = 'r';
 	QString object_name("");
 
 	if (auto_construct) {
@@ -896,6 +899,14 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 		QString frame_type = m_frame_type_select->currentText().trimmed();
 		QDateTime date = date.currentDateTime();
 		QString date_str = date.toString("yyyy-MM-dd");
+
+		if (date.time().hour() < 12) {
+			// a.m.
+			time_flag = 'a';
+		} else {
+			// p.m.
+			time_flag = 'p';
+		}
 		if ((filter_name !=  "") && ((frame_type == "Light") || (frame_type == "Flat"))) {
 			object_name = object_name + "_" + date_str + "_" + frame_type + "_" + filter_name;
 		} else {
@@ -904,7 +915,7 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 	}
 
 	do {
-		sprintf(file_name, "%s%s_%03d%s", prefix, object_name.toUtf8().constData(), file_no++, item->blob.format);
+		sprintf(file_name, "%s%s_%c%03d%s", prefix, object_name.toUtf8().constData(), time_flag, file_no++, item->blob.format);
 #if defined(INDIGO_WINDOWS)
 		fd = open(file_name, O_CREAT | O_WRONLY | O_EXCL | O_BINARY, S_IRUSR | S_IWUSR);
 #else
