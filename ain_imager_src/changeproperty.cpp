@@ -818,7 +818,7 @@ void ImagerWindow::set_agent_releated_agent(const char *agent, const char *relat
 
 void ImagerWindow::disable_auto_solving(const char *agent) const {
 	indigo_change_switch_property_1(nullptr, agent, AGENT_PLATESOLVER_SOLVE_IMAGES_PROPERTY_NAME, AGENT_PLATESOLVER_SOLVE_IMAGES_DISABLED_ITEM_NAME, true);
-	indigo_change_switch_property_1(nullptr, agent, AGENT_PLATESOLVER_SYNC_PROPERTY_NAME, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME, true);
+	//indigo_change_switch_property_1(nullptr, agent, AGENT_PLATESOLVER_SYNC_PROPERTY_NAME, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME, true);
 }
 
 void ImagerWindow::change_agent_start_process(const char *agent, char *item) const {
@@ -867,7 +867,8 @@ void ImagerWindow::trigger_solve() {
 			selected_mount_agent,
 			selected_solver_agent,
 			selected_image_agent,
-			selected_solver_source,m_solver_source_select1
+			selected_solver_source,
+			m_solver_source_select1
 		)
 	) {
 		return;
@@ -957,7 +958,8 @@ void ImagerWindow::trigger_solve_and_sync(bool recenter) {
 			selected_mount_agent,
 			selected_solver_agent,
 			selected_image_agent,
-			selected_solver_source,m_solver_source_select2
+			selected_solver_source,
+			m_solver_source_select2
 		)
 	) {
 		return;
@@ -1004,7 +1006,8 @@ void ImagerWindow::trigger_precise_goto() {
 			selected_mount_agent,
 			selected_solver_agent,
 			selected_image_agent,
-			selected_solver_source,m_solver_source_select2
+			selected_solver_source,
+			m_solver_source_select2
 		)
 	) {
 		return;

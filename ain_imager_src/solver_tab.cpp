@@ -278,8 +278,8 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 void ImagerWindow::update_solver_widgets_at_start(const char *imager_agent, const char *solver_agent) {
 	bool done = false;
 	int wait_busy = 40; // wait 4s to start exposure
-	set_text(m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Waiting for image");
-	set_text(m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Waiting for image");
+	set_text(m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Starting process");
+	set_text(m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Starting process");
 	set_widget_state(m_mount_solve_and_sync_button, INDIGO_BUSY_STATE);
 	set_widget_state(m_mount_solve_and_center_button, INDIGO_BUSY_STATE);
 	set_widget_state(m_mount_start_pa_button, INDIGO_BUSY_STATE);
@@ -287,9 +287,9 @@ void ImagerWindow::update_solver_widgets_at_start(const char *imager_agent, cons
 	set_widget_state(m_solve_button, INDIGO_BUSY_STATE);
 	do {
 		indigo_property *exp = properties.get((char*)imager_agent, CCD_EXPOSURE_PROPERTY_NAME);
-		indigo_property *wcs = properties.get((char*)solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME);
+		indigo_property *proc = properties.get((char*)solver_agent, AGENT_START_PROCESS_PROPERTY_NAME);
 		if (wait_busy) {
-			if ((exp && exp->state == INDIGO_BUSY_STATE) || (wcs && wcs->state == INDIGO_BUSY_STATE)){
+			if ((exp && exp->state == INDIGO_BUSY_STATE) || (proc && proc->state == INDIGO_BUSY_STATE)){
 				done = true;
 			} else {
 				indigo_usleep(100000);
@@ -299,16 +299,16 @@ void ImagerWindow::update_solver_widgets_at_start(const char *imager_agent, cons
 		}
 		if (wait_busy == 0) {
 			done = true;
-			indigo_property *wcs = properties.get((char*)solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME);
-			if (wcs && wcs->state != INDIGO_BUSY_STATE) {
+			indigo_property *proc = properties.get((char*)solver_agent, AGENT_START_PROCESS_PROPERTY_NAME);
+			if (proc && proc->state != INDIGO_BUSY_STATE) {
 				set_widget_state(m_mount_solve_and_sync_button, INDIGO_OK_STATE);
 				set_widget_state(m_mount_solve_and_center_button, INDIGO_OK_STATE);
 				set_widget_state(m_mount_start_pa_button, INDIGO_OK_STATE);
 				set_widget_state(m_mount_recalculate_pe_button, INDIGO_OK_STATE);
 				set_widget_state(m_solve_button, INDIGO_OK_STATE);
-				set_text(m_solver_status_label1, "<img src=\":resource/led-red.png\"> No image");
-				set_text(m_solver_status_label2, "<img src=\":resource/led-red.png\"> No image");
-				Logger::instance().log(NULL, "Solve failed, exposure did not start");
+				set_text(m_solver_status_label1, "<img src=\":resource/led-red.png\"> Process failed");
+				set_text(m_solver_status_label2, "<img src=\":resource/led-red.png\"> Process failed");
+				Logger::instance().log(NULL, "Process failed to start");
 			}
 		}
 	} while (!done);

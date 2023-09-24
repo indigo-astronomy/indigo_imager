@@ -641,13 +641,18 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 	w->set_enabled(w->m_load_coords_button, false);
 	if (property->state == INDIGO_OK_STATE) {
 		w->m_last_solver_source = "";
-		if (scale != 0) {
-			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-green.png\"> Solved");
-			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-green.png\"> Solved");
-			w->set_enabled(w->m_load_coords_button, true);
-		} else {
-			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-grey.png\"> Idle");
-			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-grey.png\"> Idle");
+		if (wcs_state == INDIGO_SOLVER_STATE_IDLE) {
+			if (scale != 0) {
+				w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-green.png\"> Solved");
+				w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-green.png\"> Solved");
+				w->set_enabled(w->m_load_coords_button, true);
+			} else {
+				w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-grey.png\"> Idle");
+				w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-grey.png\"> Idle");
+			}
+		} else if (wcs_state == INDIGO_SOLVER_STATE_GOTO) {
+			w->set_text(w->m_solver_status_label1, "<img src=\":resource/led-orange.png\"> Slewing telescope");
+			w->set_text(w->m_solver_status_label2, "<img src=\":resource/led-orange.png\"> Slewing telescope");
 		}
 		w->set_enabled(w->m_mount_solve_and_center_button, true);
 		w->set_enabled(w->m_mount_solve_and_sync_button, true);
@@ -2509,7 +2514,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_SOLVE_IMAGES_PROPERTY_NAME)) {
 		QtConcurrent::run([=]() {
 			m_property_mutex.lock();
-			clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
+			//clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
 			disable_auto_solving(selected_solver_agent);
 			m_property_mutex.unlock();
 		});
@@ -2520,7 +2525,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		if ((property->state == INDIGO_ALERT_STATE || property->state == INDIGO_OK_STATE) && (p == nullptr || p->state != INDIGO_BUSY_STATE)) {
 			QtConcurrent::run([=]() {
 				m_property_mutex.lock();
-				clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
+				//clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
 				disable_auto_solving(selected_solver_agent);
 				m_property_mutex.unlock();
 			});
@@ -2538,7 +2543,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		if (property->state != INDIGO_BUSY_STATE && state == 0) {
 			QtConcurrent::run([=]() {
 				m_property_mutex.lock();
-				clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
+				//clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
 				disable_auto_solving(selected_solver_agent);
 				m_property_mutex.unlock();
 			});
@@ -2804,7 +2809,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		if ((property->state == INDIGO_ALERT_STATE || property->state == INDIGO_OK_STATE) && (p == nullptr || p->state != INDIGO_BUSY_STATE)) {
 			QtConcurrent::run([=]() {
 				m_property_mutex.lock();
-				clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
+				//clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
 				disable_auto_solving(selected_solver_agent);
 				m_property_mutex.unlock();
 			});
@@ -2819,7 +2824,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		if (property->state != INDIGO_BUSY_STATE && state == 0) {
 			QtConcurrent::run([=]() {
 				m_property_mutex.lock();
-				clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
+				//clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
 				disable_auto_solving(selected_solver_agent);
 				m_property_mutex.unlock();
 			});
