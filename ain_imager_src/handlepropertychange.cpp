@@ -225,7 +225,7 @@ void update_mount_ra_dec(ImagerWindow *w, indigo_property *property, bool update
 		}
 	}
 
-	if (update_input) {
+	if (update_input && w->m_mount_ra_input->text() == "" && w->m_mount_dec_input->text() == "") {
 		w->set_text(w->m_mount_ra_input, indigo_dtos(ra_tgt, "%d:%02d:%04.1f"));
 		w->set_text(w->m_mount_dec_input, indigo_dtos(dec_tgt, "%d:%02d:%04.1f"));
 	}
@@ -3213,6 +3213,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_lcd(m_mount_dec_label, "0' 00 00.0", INDIGO_IDLE_STATE);
 		m_mount_ra = 0;
 		m_mount_dec = 0;
+		set_text(m_mount_ra_input, "");
+		set_text(m_mount_dec_input, "");
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_HORIZONTAL_COORDINATES_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
