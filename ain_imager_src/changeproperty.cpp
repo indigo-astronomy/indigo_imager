@@ -1032,7 +1032,8 @@ void ImagerWindow::trigger_precise_goto() {
 			selected_mount_agent,
 			selected_solver_agent,
 			selected_image_agent,
-			selected_solver_source,m_solver_source_select2
+			selected_solver_source,
+			m_solver_source_select2
 		)
 	) {
 		return;
