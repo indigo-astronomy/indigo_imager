@@ -393,6 +393,14 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	solve_frame_layout->addItem(spacer, solve_row, 0, 1, 4);
 
 	solve_row++;
+	m_mount_precise_goto_button = new QPushButton("Precise Goto");
+	m_mount_precise_goto_button->setStyleSheet("min-width: 30px");
+	m_mount_precise_goto_button->setIcon(QIcon(":resource/play.png"));
+	m_mount_precise_goto_button->setToolTip("Solver assisted goto: performs goto, solve and recenter");
+	solve_frame_layout->addWidget(m_mount_precise_goto_button, solve_row, 0, 1, 4);
+	connect(m_mount_precise_goto_button, &QPushButton::clicked, this, &ImagerWindow::on_mount_precise_goto);
+
+	solve_row++;
 	toolbar = new QWidget;
 	toolbox = new QHBoxLayout(toolbar);
 	toolbar->setContentsMargins(0,0,0,0);
@@ -961,6 +969,10 @@ void ImagerWindow::on_image_right_click_ra_dec(double ra, double dec, double tel
 		window_log(message);
 	}
 
+}
+
+void ImagerWindow::on_mount_precise_goto() {
+	trigger_precise_goto();
 }
 
 void ImagerWindow::on_mount_solve_and_center() {

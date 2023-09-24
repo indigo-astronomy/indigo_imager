@@ -368,6 +368,7 @@ public slots:
 	void on_mount_set_coordinates_to_agent();
 	void on_mount_solve_and_center();
 	void on_mount_solve_and_sync();
+	void on_mount_precise_goto();
 	void on_mount_joystick_selected(int index);
 	void on_trigger_solve();
 	void on_solver_load_coords();
@@ -758,6 +759,7 @@ private:
 	QToolButton *m_add_object_button;
 	QToolButton *m_remove_object_button;
 
+	QPushButton *m_mount_precise_goto_button;
 	QPushButton *m_mount_solve_and_center_button;
 	QPushButton *m_mount_solve_and_sync_button;
 
@@ -943,6 +945,9 @@ private:
 	void trigger_solve();
 	void trigger_polar_alignment(bool recalculate);
 	void change_solver_agent_pa_settings(const char *agent) const;
+
+	void change_solver_goto_settings(const char *agent) const;
+	void trigger_precise_goto();
 
 	void change_imager_agent_sequence(const char *agent, QString sequence, QList<QString> batches) const;
 

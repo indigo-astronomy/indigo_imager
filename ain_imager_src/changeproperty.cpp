@@ -982,6 +982,49 @@ void ImagerWindow::trigger_solve_and_sync(bool recenter) {
 	});
 }
 
+void ImagerWindow::change_solver_goto_settings(const char *agent) const {
+	static const char *items[] = {
+		AGENT_PLATESOLVER_GOTO_SETTINGS_RA_ITEM_NAME,
+		AGENT_PLATESOLVER_GOTO_SETTINGS_DEC_ITEM_NAME
+	};
+	static double values[2];
+	values[0] = indigo_stod((char*)m_mount_ra_input->text().trimmed().toStdString().c_str());
+	values[1] = indigo_stod((char*)m_mount_dec_input->text().trimmed().toStdString().c_str());
+	indigo_change_number_property(nullptr, agent, AGENT_PLATESOLVER_GOTO_SETTINGS_PROPERTY_NAME, 2, items, values);
+}
+
+void ImagerWindow::trigger_precise_goto() {
+	static char selected_image_agent[INDIGO_NAME_SIZE];
+	static char selected_mount_agent[INDIGO_NAME_SIZE];
+	static char selected_solver_agent[INDIGO_NAME_SIZE];
+	static char selected_solver_source[INDIGO_NAME_SIZE];
+
+	if (
+		!get_solver_relations(
+			selected_mount_agent,
+			selected_solver_agent,
+			selected_image_agent,
+			selected_solver_source,m_solver_source_select2
+		)
+	) {
+		return;
+	}
+
+	QtConcurrent::run([&]() {
+		m_property_mutex.lock();
+
+		set_agent_releated_agent(selected_solver_agent, selected_mount_agent, true);
+		set_agent_releated_agent(selected_solver_agent, selected_solver_source, true);
+
+		change_solver_exposure_settings_property(selected_solver_agent, m_solver_exposure2);
+		change_solver_goto_settings(selected_solver_agent);
+		change_agent_start_process(selected_solver_agent, AGENT_PLATESOLVER_START_PRECISE_GOTO_ITEM_NAME);
+
+		update_solver_widgets_at_start(selected_image_agent, selected_solver_agent);
+		m_property_mutex.unlock();
+	});
+}
+
 void ImagerWindow::trigger_polar_alignment(bool recalculate) {
 	static char selected_image_agent[INDIGO_NAME_SIZE];
 	static char selected_mount_agent[INDIGO_NAME_SIZE];
