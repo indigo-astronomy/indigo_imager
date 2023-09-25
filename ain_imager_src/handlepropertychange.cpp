@@ -633,6 +633,7 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 
 	w->set_widget_state(w->m_mount_solve_and_center_button, property->state);
 	w->set_widget_state(w->m_mount_solve_and_sync_button, property->state);
+	w->set_widget_state(w->m_mount_precise_goto_button, property->state);
 	w->set_widget_state(w->m_solve_button, property->state);
 	if (update_pa_buttons) {
 		w->set_widget_state(w->m_mount_start_pa_button, property->state);
@@ -656,12 +657,14 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 		}
 		w->set_enabled(w->m_mount_solve_and_center_button, true);
 		w->set_enabled(w->m_mount_solve_and_sync_button, true);
+		w->set_enabled(w->m_mount_precise_goto_button, true);
 		//w->set_enabled(w->m_solve_button, true);
 		w->m_solve_button->setIcon(QIcon(":resource/play.png"));
 	} else if (property->state == INDIGO_ALERT_STATE) {
 		w->m_last_solver_source = "";
 		w->set_enabled(w->m_mount_solve_and_center_button, true);
 		w->set_enabled(w->m_mount_solve_and_sync_button, true);
+		w->set_enabled(w->m_mount_precise_goto_button, true);
 		//w->set_enabled(w->m_solve_button, true);
 		w->m_solve_button->setIcon(QIcon(":resource/play.png"));
 		if (scale == 0) {
@@ -674,6 +677,7 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 	} else if (property->state == INDIGO_BUSY_STATE) {
 		w->set_enabled(w->m_mount_solve_and_center_button, false);
 		w->set_enabled(w->m_mount_solve_and_sync_button, false);
+		w->set_enabled(w->m_mount_precise_goto_button, false);
 		//w->set_enabled(w->m_solve_button, false);
 		w->m_solve_button->setIcon(QIcon(":resource/stop.png"));
 		if (wcs_state == -1) {
