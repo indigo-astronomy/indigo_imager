@@ -1,5 +1,5 @@
 # Ain INDIGO Imager - Users Guide
-Revision: 23.09.2023 (draft)
+Revision: 29.09.2023 (draft)
 
 Author: **Rumen G.Bogdanovski**
 
@@ -406,7 +406,8 @@ Pushing the **[-]** button will remove the selected custom object. Please note t
 ### Solver tab
 ![](images/telescope_solver.png)
 
-In the solver tab the user should select the image source and exposure time to be used. Two operations can be performed:
+In the solver tab the user should select the image source and exposure time to be used. Three operations can be performed:
+- **Precise Goto** - the selected agent will slew the telescope to the input coordinates and then perform solve and center (available in version 1.2-0 and newer).
 - **Solve & Center** - the selected agent will take an exposure, solve it, and using the solution as a reference will perform a precise goto to the target coordinates.
 - **Solve & Sync** - the selected agent will take an exposure, solve it, and the solution will be sent to the telescope as a reference (sync the telescope with the solution). This will allow precise goto in the vicinity.
 
@@ -434,9 +435,11 @@ Plate solving configuration and usage is described in [INDIGO Astrometry Agent -
 
 If a local file needs to be solved, **Image source** should be set to "Upload file". In this case, pushing the **Solve** button will display a file select dialog for choosing the file to be solved.
 
-If the displayed image is solved a **Right-Click** on it will copy the coordinates under the mouse cursor in the **RA / Dec input** boxes and pushing **Goto** button will slew the telescope to these coordinates. **Control + Right-Click** will copy and slew the telescope in one action. This can be used to center a certain object in the frame.
+If the displayed image is solved a **Right-Click** on it will copy the coordinates under the mouse cursor in the **RA / Dec input** boxes and pushing **Goto** button will slew the telescope to these coordinates. **Control + Right-Click** will copy and slew the telescope in one action. This can be used to center a certain object in the frame. The telescope coordinates offset regarding to the solved image coordinates will be taken in to account, unless the solved image is an Uploaded file. In this case the solved coordinates will be used as most likely the telescope is pointing to another coordinates and the offset can not be calculated.
 
-NOTE: If you want to achieve the same framing of an object as in a previous session, upload and solve a frame from this session and  **Right-Click** or **Control + Right-Click** on the image center and center the telescope to these coordinates as described above. Then if the rotation angle is different rotate the camera until the same rotation angle is reached as the solved one.
+If you use the target button (next to the solution status indicator) to load the solved image center in to **RA / Dec input** fileds, the coordinates will NOT be adjusted to compensate for the telescope coordinates offset.
+
+NOTE: If you want to get the same framing of an object as in a previous session, upload and solve a frame from this session and  **Right-Click** or **Control + Right-Click** on the image center and center the telescope to these coordinates as described above. Then if the rotation angle is different, rotate the camera until the same rotation angle is reached as the rotation ange of the reference frame.
 
 ## Accessing advanced device and agent settings
 
