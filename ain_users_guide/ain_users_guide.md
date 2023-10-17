@@ -362,9 +362,9 @@ All mounts available to the selected *Guider Agent* will be listed here. The app
 
 ##### Az / Alt
 Displays current target Azimuth and Altitude and uses color coding to give a visual clue of the target suitability to be observed:
-* **Green** - target is high above the horizon and is good to observe.
-* **Yellow** - target is low above the horizon.
-* **Red** - target is below the horizon
+* **Green** - the target is high above the horizon and is good to observe.
+* **Yellow** - the target is low above the horizon.
+* **Red** - the target is very low or below the horizon.
 
 ##### RA / Dec input
 In these fields the target Right ascension and Declination should be entered. They will be used for goto if **Goto** is button is pushed or to synchronize the mount to these coordinates if **Sync** is button is pushed.
