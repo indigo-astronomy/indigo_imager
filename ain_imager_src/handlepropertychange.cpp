@@ -266,13 +266,6 @@ void update_mount_az_alt(ImagerWindow *w, indigo_property *property) {
 		state = AIN_WARNING_STATE;
 	}
 
-#ifdef USE_LCD
-	QString az_str(indigo_dtos(az, "%d' %02d %04.1f"));
-	w->set_lcd(w->m_mount_az_label, az_str, state);
-
-	QString alt_str(indigo_dtos(alt, "%d' %02d %04.1f"));
-	w->set_lcd(w->m_mount_alt_label, alt_str, state);
-#else
 	QString az_str(indigo_dtos(az, "%d° %02d' %04.1f\""));
 	w->set_text(w->m_mount_az_label, az_str);
 	w->set_widget_state(w->m_mount_az_label, state);
@@ -280,7 +273,6 @@ void update_mount_az_alt(ImagerWindow *w, indigo_property *property) {
 	QString alt_str(indigo_dtos(alt, "%d° %02d' %04.1f\""));
 	w->set_text(w->m_mount_alt_label, alt_str);
 	w->set_widget_state(w->m_mount_alt_label, state);
-#endif
 }
 
 void update_mount_lst(ImagerWindow *w, indigo_property *property) {
@@ -288,17 +280,60 @@ void update_mount_lst(ImagerWindow *w, indigo_property *property) {
 	QString lst_str;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], MOUNT_LST_TIME_ITEM_NAME)) {
-			lst_str = QString(indigo_dtos(property->items[i].number.value, NULL));
+			lst_str = QString(indigo_dtos(property->items[i].number.value, "%02d:%02d:%02d"));
 		}
 	}
-#ifdef USE_LCD
-	QString col = QLatin1String(":");
-	lst_str.replace(lst_str.indexOf(col), col.size(), QLatin1String(": "));
-	w->set_lcd(w->m_mount_lst_label, lst_str, property->state);
-#else
 	w->set_text(w->m_mount_lst_label, lst_str);
 	w->set_widget_state(w->m_mount_lst_label, property->state);
-#endif
+}
+
+void update_mount_target_info(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	QString ttr_str, transit_str;
+	double rise = 0, set = 0, ttr = 0;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], MOUNT_TARGET_INFO_TIME_TO_TRANSIT_ITEM_NAME)) {
+			ttr = property->items[i].number.value;
+			ttr_str = QString(indigo_dtos(ttr, "%d:%02d:%02d"));
+		}
+		if (client_match_item(&property->items[i], MOUNT_TARGET_INFO_TRANSIT_TIME_ITEM_NAME)) {
+			transit_str = QString(indigo_dtos(property->items[i].number.value, "%d:%02d:%02d"));
+		}
+		if (client_match_item(&property->items[i], MOUNT_TARGET_INFO_RISE_TIME_ITEM_NAME)) {
+			rise = property->items[i].number.value;
+		}
+		if (client_match_item(&property->items[i], MOUNT_TARGET_INFO_SET_TIME_ITEM_NAME)) {
+			set = property->items[i].number.value;
+		}
+
+	}
+	w->set_text(w->m_mount_ttr_label, ttr_str);
+	if (ttr < 5.0/60) {  // 5 min
+		w->set_widget_state(w->m_mount_ttr_label, INDIGO_ALERT_STATE);
+	} else if (ttr < 20.0/60) { // 20 min
+		w->set_widget_state(w->m_mount_ttr_label, INDIGO_BUSY_STATE);
+	} else {
+		w->set_widget_state(w->m_mount_ttr_label, INDIGO_OK_STATE);
+	}
+
+	QString tooltip_str = QString("<p><b>Rise/Transit/Set</b> (GMT)</p>");
+	if (rise == 0 && set == 0) { // never rises
+		tooltip_str +=
+			QString("Rise: never rises <br>") +
+			QString("Transit: ") + transit_str + "<br>" +
+			QString("Set: never rises");
+	} else if (rise == 0 && set == 24) { // never sets
+		tooltip_str +=
+			QString("Rise: circumpolar<br") +
+			QString("Transit: ") + transit_str + "<br>" +
+			QString("Set: circumpolar");
+	} else {
+		tooltip_str +=
+			QString("Rise: ") + QString(indigo_dtos(rise, "%2d:%02d:%02d")) + "<br>" +
+			QString("Transit: ") + transit_str + "<br>" +
+			QString("Set: ") + QString(indigo_dtos(rise, "%2d:%02d:%02d"));
+	}
+	w->m_mount_ttr_label->setToolTip(tooltip_str);
 }
 
 void update_mount_side_of_pier(ImagerWindow *w, indigo_property *property) {
@@ -2146,8 +2181,8 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 				int build;
 				char message[255];
 				sscanf(item->text.value, "%d.%d-%d", &version_major, &version_minor, &build);
-				if (build < 242 && !properties.get(property->device, SERVER_INFO_PROPERTY_NAME)) { /* show warning only once per connection */
-					sprintf(message, "WARNING: Some features will not work on '%s' running Indigo %s as Ain requires 2.0-242 or newer!", property->device, item->text.value);
+				if (build < 249 && !properties.get(property->device, SERVER_INFO_PROPERTY_NAME)) { /* show warning only once per connection */
+					sprintf(message, "WARNING: Some features will not work on '%s' running Indigo %s as Ain requires 2.0-249 or newer!", property->device, item->text.value);
 					window_log(message, INDIGO_BUSY_STATE);
 				}
 			}
@@ -2431,6 +2466,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_LST_TIME_PROPERTY_NAME)) {
 		update_mount_lst(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_TARGET_INFO_PROPERTY_NAME)) {
+		update_mount_target_info(this, property);
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_PARK_PROPERTY_NAME)) {
 		update_mount_park(this, property);
@@ -2752,6 +2790,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_LST_TIME_PROPERTY_NAME)) {
 		update_mount_lst(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, MOUNT_TARGET_INFO_PROPERTY_NAME)) {
+		update_mount_target_info(this, property);
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_PARK_PROPERTY_NAME)) {
 		update_mount_park(this, property);
@@ -3217,29 +3258,21 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_HORIZONTAL_COORDINATES_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
-#ifdef USE_LCD
-		QString zero_str(indigo_dtos(0, "%d' %02d %04.1f"));
-		set_lcd(m_mount_az_label, zero_str, INDIGO_IDLE_STATE);
-		set_lcd(m_mount_alt_label, zero_str, INDIGO_IDLE_STATE);
-#else
 		QString zero_str(indigo_dtos(0, "%d° %02d' %04.1f\""));
 		set_text(m_mount_az_label, zero_str);
 		set_widget_state(m_mount_az_label, INDIGO_IDLE_STATE);
 		set_text(m_mount_alt_label, zero_str);
 		set_widget_state(m_mount_alt_label, INDIGO_IDLE_STATE);
-#endif
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_HORIZONTAL_COORDINATES_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
-#ifdef USE_LCD
-		QString zero_str(indigo_dtos(0, "%d: %02d:%04.1f"));
-		set_lcd(m_mount_lst_label, zero_str, INDIGO_IDLE_STATE);
-#else
 		QString zero_str(indigo_dtos(0, "%d:%02d:%04.1f"));
 		set_text(m_mount_lst_label, zero_str);
 		set_widget_state(m_mount_lst_label, INDIGO_IDLE_STATE);
-#endif
+		set_text(m_mount_ttr_label, zero_str);
+		m_mount_ttr_label->setToolTip("");
+		set_widget_state(m_mount_ttr_label, INDIGO_IDLE_STATE);
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_PARK_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {

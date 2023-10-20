@@ -143,6 +143,7 @@ public:
 	friend void update_mount_ra_dec(ImagerWindow *w, indigo_property *property, bool update_input);
 	friend void update_mount_az_alt(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_lst(ImagerWindow *w, indigo_property *property);
+	friend void update_mount_target_info(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_park(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_home(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_track(ImagerWindow *w, indigo_property *property);
@@ -717,15 +718,10 @@ private:
 	QLCDNumber *m_mount_dec_label;
 	double m_mount_ra;
 	double m_mount_dec;
-#ifdef USE_LCD
-	QLCDNumber *m_mount_lst_label;
-	QLCDNumber *m_mount_az_label;
-	QLCDNumber *m_mount_alt_label;
-#else
 	QLabel *m_mount_lst_label;
 	QLabel *m_mount_az_label;
 	QLabel *m_mount_alt_label;
-#endif
+	QLabel *m_mount_ttr_label;
 	QLabel *m_mount_side_of_pier_label;
 	QLineEdit *m_mount_ra_input;
 	QLineEdit *m_mount_dec_input;
