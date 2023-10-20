@@ -316,7 +316,7 @@ void update_mount_target_info(ImagerWindow *w, indigo_property *property) {
 		w->set_widget_state(w->m_mount_ttr_label, INDIGO_OK_STATE);
 	}
 
-	QString tooltip_str = QString("<p><b>Rise/Transit/Set</b> (GMT)</p>");
+	QString tooltip_str = QString("<p><b>Rise / Transit / Set</b> (GMT)</p>");
 	if (rise == 0 && set == 0) { // never rises
 		tooltip_str +=
 			QString("Rise: never rises <br>") +
@@ -324,14 +324,14 @@ void update_mount_target_info(ImagerWindow *w, indigo_property *property) {
 			QString("Set: never rises");
 	} else if (rise == 0 && set == 24) { // never sets
 		tooltip_str +=
-			QString("Rise: circumpolar<br") +
+			QString("Rise: circumpolar<br>") +
 			QString("Transit: ") + transit_str + "<br>" +
 			QString("Set: circumpolar");
 	} else {
 		tooltip_str +=
 			QString("Rise: ") + QString(indigo_dtos(rise, "%2d:%02d:%02d")) + "<br>" +
 			QString("Transit: ") + transit_str + "<br>" +
-			QString("Set: ") + QString(indigo_dtos(rise, "%2d:%02d:%02d"));
+			QString("Set: ") + QString(indigo_dtos(set, "%2d:%02d:%02d"));
 	}
 	w->m_mount_ttr_label->setToolTip(tooltip_str);
 }
@@ -3267,7 +3267,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_HORIZONTAL_COORDINATES_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
-		QString zero_str(indigo_dtos(0, "%d:%02d:%04.1f"));
+		QString zero_str(indigo_dtos(0, "%d:%02d:%02d"));
 		set_text(m_mount_lst_label, zero_str);
 		set_widget_state(m_mount_lst_label, INDIGO_IDLE_STATE);
 		set_text(m_mount_ttr_label, zero_str);

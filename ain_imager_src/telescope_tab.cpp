@@ -113,12 +113,12 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	telescope_frame_layout->addWidget(m_mount_alt_label, row, 3, 1, 1);
 
 	row++;
-	label = new QLabel("LST / TTr:");
-	label->setToolTip("Local Tidereal Time / Time to Transit");
+	label = new QLabel("LST / Transit in:");
+	label->setToolTip("Local Sidereal Time / Time to Transit");
 	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	telescope_frame_layout->addWidget(label, row, 0);
 
-	m_mount_lst_label = new QLabel("0:00:00.0");
+	m_mount_lst_label = new QLabel("00:00:00");
 	m_mount_lst_label->setAlignment(Qt::AlignCenter);
 	font = m_mount_lst_label->font();
 	font.setPointSize(font.pointSize() + 2);
@@ -127,7 +127,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	set_ok(m_mount_lst_label);
 	telescope_frame_layout->addWidget(m_mount_lst_label, row, 2, 1, 1);
 
-	m_mount_ttr_label = new QLabel("0:00:00.0");
+	m_mount_ttr_label = new QLabel("0:00:00");
 	m_mount_ttr_label->setAlignment(Qt::AlignCenter);
 	font = m_mount_ttr_label->font();
 	font.setPointSize(font.pointSize() + 2);
