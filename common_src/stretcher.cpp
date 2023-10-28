@@ -7,6 +7,7 @@
 #include <math.h>
 #include <QCoreApplication>
 #include <QtConcurrent>
+#include <utils.h>
 
 #define MAX_THREADS 4
 
@@ -58,8 +59,10 @@ void stretchOneChannel(
 	const float k2 = ((2 * midtones) - 1) * hsRangeFactor / maxInput;
 
 	QVector<QFuture<void>> futures;
-	for (int rank = 0; rank < MAX_THREADS; rank++) {
-		const int chunk = image_height / MAX_THREADS;
+	int num_threads = get_number_of_cores();
+	num_threads = (num_threads > 0) ?  num_threads : MAX_THREADS;
+	for (int rank = 0; rank < num_threads; rank++) {
+		const int chunk = image_height / num_threads;
 		futures.append(QtConcurrent::run([ = ]() {
 			int start_row = chunk * rank;
 			int end_row = start_row + chunk;
@@ -141,8 +144,10 @@ void stretchThreeChannels(
 	const int imageWidth3 = imageWidth * 3;
 
 	QVector<QFuture<void>> futures;
-	for (int rank = 0; rank < MAX_THREADS; rank++) {
-		const int chunk = imageHeight / MAX_THREADS;
+	int num_threads = get_number_of_cores();
+	num_threads = (num_threads > 0) ?  num_threads : MAX_THREADS;
+	for (int rank = 0; rank < num_threads; rank++) {
+		const int chunk = imageHeight / num_threads;
 		futures.append(QtConcurrent::run([ = ]() {
 			int start_row = chunk * rank;
 			int end_row = start_row + chunk;

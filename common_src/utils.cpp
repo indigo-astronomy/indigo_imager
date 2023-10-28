@@ -31,6 +31,17 @@
 #include <conf.h>
 
 
+int get_number_of_cores() {
+//#ifdef INDIGO_WINDOWS
+//    SYSTEM_INFO sysinfo;
+//    GetSystemInfo(&sysinfo);
+//    return sysinfo.dwNumberOfProcessors;
+//#else
+	indigo_error("NUMCPU = %d", sysconf(_SC_NPROCESSORS_ONLN));
+    return sysconf(_SC_NPROCESSORS_ONLN);
+//#endif
+}
+
 void get_timestamp(char *timestamp_str) {
 	assert(timestamp_str != nullptr);
 	struct timeval tmnow;

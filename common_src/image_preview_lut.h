@@ -56,16 +56,6 @@ typedef struct {
 } stretch_config_t;
 
 typedef struct {
-	// Stretch algorithm parameter multipliers
-	float shadows;
-	float highlights;
-	float midtones;
-	// The extension parameters are not used.
-	float shadows_expansion;
-	float highlights_expansion;
-} stretch_multiplier_t;
-
-typedef struct {
 	float brightness;
 	float contrast;
 } stretch_input_params_t;
@@ -76,14 +66,6 @@ static const preview_stretch_t stretch_linear_lut[] = {
 	{0.01, 0.25},
 	{0.01, 0.75},
 	{0.01, 1.30},
-};
-
-static const stretch_multiplier_t stretch_multiplier_lut[] = {
-	{1.00, 1.00, 0.80, 1.00, 1.00},
-	{0.80, 1.00, 0.90, 1.00, 1.00},
-	{1.00, 1.00, 1.00, 1.00, 1.00},
-	{1.05, 0.95, 0.80, 1.00, 1.00},
-	{1.10, 0.90, 0.50, 1.00, 1.00}
 };
 
 static const stretch_input_params_t stretch_params_lut[] ={

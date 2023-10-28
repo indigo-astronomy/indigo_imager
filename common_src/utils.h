@@ -19,6 +19,8 @@
 #ifndef _UTILS_H
 #define _UTILS_H
 
+int get_number_of_cores();
+
 void get_timestamp(char *timestamp_str);
 void get_date(char *date_str);
 void get_date_jd(char *date_str);
