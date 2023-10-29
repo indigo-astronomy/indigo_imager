@@ -9,7 +9,7 @@
 #include <QtConcurrent>
 #include <utils.h>
 
-#define MAX_THREADS 4
+#define DEFAULT_THREADS 4
 
 // Returns the median value of the vector.
 // The values is modified
@@ -60,13 +60,14 @@ void stretchOneChannel(
 
 	QVector<QFuture<void>> futures;
 	int num_threads = get_number_of_cores();
-	num_threads = (num_threads > 0) ?  num_threads : MAX_THREADS;
+	num_threads = (num_threads > 0) ?  num_threads : DEFAULT_THREADS;
 	for (int rank = 0; rank < num_threads; rank++) {
-		const int chunk = image_height / num_threads;
+		const int chunk = ceil(image_height / (double)num_threads);
 		futures.append(QtConcurrent::run([ = ]() {
 			int start_row = chunk * rank;
 			int end_row = start_row + chunk;
 			end_row = (end_row > image_height) ? image_height : end_row;
+			//indigo_debug("stretchOneChannel(): %d - start_row %d, end_row %d, rows %d", rank, start_row, end_row, end_row-start_row);
 			for (int j = start_row, jout = start_row; j < end_row; j += sampling, jout++) {
 				T * inputLine  = input_buffer + j * image_width;
 				auto * scanLine = reinterpret_cast<QRgb*>(output_image->scanLine(jout));
@@ -145,13 +146,14 @@ void stretchThreeChannels(
 
 	QVector<QFuture<void>> futures;
 	int num_threads = get_number_of_cores();
-	num_threads = (num_threads > 0) ?  num_threads : MAX_THREADS;
+	num_threads = (num_threads > 0) ?  num_threads : DEFAULT_THREADS;
 	for (int rank = 0; rank < num_threads; rank++) {
-		const int chunk = imageHeight / num_threads;
+		const int chunk = ceil(imageHeight / (double)num_threads);
 		futures.append(QtConcurrent::run([ = ]() {
 			int start_row = chunk * rank;
 			int end_row = start_row + chunk;
 			end_row = (end_row > imageHeight) ? imageHeight : end_row;
+			//indigo_error("stretchThreeChannels(): %d - start_row %d, end_row %d, rows %d", rank, start_row, end_row, end_row-start_row);
 			int index = start_row * imageWidth3;
 			for (int j = start_row, jout = start_row; j < end_row; j += sampling, jout++) {
 				QCoreApplication::processEvents();
