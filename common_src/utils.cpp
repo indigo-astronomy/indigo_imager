@@ -30,16 +30,21 @@
 #include <utils.h>
 #include <conf.h>
 
+#ifdef INDIGO_WINDOWS
+#include <windows.h>
+#endif
+
 
 int get_number_of_cores() {
-//#ifdef INDIGO_WINDOWS
-//    SYSTEM_INFO sysinfo;
-//    GetSystemInfo(&sysinfo);
-//    return sysinfo.dwNumberOfProcessors;
-//#else
-	indigo_error("NUMCPU = %d", sysconf(_SC_NPROCESSORS_ONLN));
-    return sysconf(_SC_NPROCESSORS_ONLN);
-//#endif
+#ifdef INDIGO_WINDOWS
+	SYSTEM_INFO sysinfo;
+	GetSystemInfo(&sysinfo);
+	//indigo_error("NUMCPU = %d", sysinfo.dwNumberOfProcessors);
+	return sysinfo.dwNumberOfProcessors;
+#else
+	//indigo_error("NUMCPU = %d", sysconf(_SC_NPROCESSORS_ONLN));
+	return sysconf(_SC_NPROCESSORS_ONLN);
+#endif
 }
 
 void get_timestamp(char *timestamp_str) {
