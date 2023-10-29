@@ -839,7 +839,9 @@ private:
 		const char *agent,
 		const int jpeg_quality,
 		const double black_threshold,
-		const double white_threshold
+		const double white_threshold,
+		const double target_bg,
+		const double clipping_point
 	);
 
 	void configure_spinbox_int(QSpinBox *widget, indigo_item *item, int perm);

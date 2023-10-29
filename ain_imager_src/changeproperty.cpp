@@ -424,21 +424,28 @@ void ImagerWindow::change_focuser_subframe(const char *agent) const {
 	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME, 1, items, values);
 }
 
-void ImagerWindow::change_jpeg_settings_property(const char *agent, const int jpeg_quality, const double black_threshold, const double white_threshold) {
+void ImagerWindow::change_jpeg_settings_property(const char *agent, const int jpeg_quality, const double black_threshold, const double white_threshold, const double target_bg,  const double clipping_point) {
 	static const char *items[] = {
+		CCD_JPEG_SETTINGS_QUALITY_ITEM_NAME,
+		CCD_JPEG_SETTINGS_TARGET_BACKGROUND_ITEM_NAME,
+		CCD_JPEG_SETTINGS_CLIPPING_POINT_ITEM_NAME,
+		// these are obsolete - kept for compatibility
 		CCD_JPEG_SETTINGS_BLACK_ITEM_NAME,
 		CCD_JPEG_SETTINGS_WHITE_ITEM_NAME,
-		CCD_JPEG_SETTINGS_QUALITY_ITEM_NAME,
 		CCD_JPEG_SETTINGS_BLACK_TRESHOLD_ITEM_NAME,
 		CCD_JPEG_SETTINGS_WHITE_TRESHOLD_ITEM_NAME
 	};
-	static double values[5];
-	values[0] = -1;
-	values[1] = -1;
-	values[2] = (double)jpeg_quality;
-	values[3] = black_threshold;
-	values[4] = white_threshold;
-	indigo_change_number_property(nullptr, agent, CCD_JPEG_SETTINGS_PROPERTY_NAME, 5, items, values);
+	static double values[7];
+	values[0] = (double)jpeg_quality;
+	values[1] = target_bg;
+	values[2] = clipping_point;
+	// these are obsolete - kept for compatibility
+	values[3] = -1;
+	values[4] = -1;
+	values[5] = black_threshold;
+	values[6] = white_threshold;
+
+	indigo_change_number_property(nullptr, agent, CCD_JPEG_SETTINGS_PROPERTY_NAME, 7, items, values);
 }
 
 void ImagerWindow::change_focus_estimator_property(const char *agent) const {

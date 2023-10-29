@@ -556,13 +556,34 @@ void ImagerWindow::setup_preview(const char *agent) {
 	case 0:
 		break;
 	case 1:
-		change_jpeg_settings_property(agent, 93, stretch_linear_lut[conf.guider_stretch_level].clip_black, stretch_linear_lut[conf.guider_stretch_level].clip_white);
+		change_jpeg_settings_property(
+			agent,
+			93,
+			stretch_linear_lut[conf.guider_stretch_level].clip_black,
+			stretch_linear_lut[conf.guider_stretch_level].clip_white,
+			stretch_params_lut[conf.guider_stretch_level].brightness,
+			stretch_params_lut[conf.guider_stretch_level].contrast
+		);
 		break;
 	case 2:
-		change_jpeg_settings_property(agent, 89, stretch_linear_lut[conf.guider_stretch_level].clip_black, stretch_linear_lut[conf.guider_stretch_level].clip_white);
+		change_jpeg_settings_property(
+			agent,
+			89,
+			stretch_linear_lut[conf.guider_stretch_level].clip_black,
+			stretch_linear_lut[conf.guider_stretch_level].clip_white,
+			stretch_params_lut[conf.guider_stretch_level].brightness,
+			stretch_params_lut[conf.guider_stretch_level].contrast
+		);
 		break;
 	case 3:
-		change_jpeg_settings_property(agent, 50, stretch_linear_lut[conf.guider_stretch_level].clip_black, stretch_linear_lut[conf.guider_stretch_level].clip_white);
+		change_jpeg_settings_property(
+			agent,
+			50,
+			stretch_linear_lut[conf.guider_stretch_level].clip_black,
+			stretch_linear_lut[conf.guider_stretch_level].clip_white,
+			stretch_params_lut[conf.guider_stretch_level].brightness,
+			stretch_params_lut[conf.guider_stretch_level].contrast
+		);
 		break;
 	default:
 		break;
