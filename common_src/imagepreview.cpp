@@ -342,13 +342,16 @@ preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long
 	indigo_debug("RAW_START");
 	indigo_raw_header *header = (indigo_raw_header*)raw_image_buffer;
 	char *raw_data = (char*)raw_image_buffer + sizeof(indigo_raw_header);
+	int bitpix = 0;
 
 	switch (header->signature) {
 	case INDIGO_RAW_MONO16:
 		pix_format = PIX_FMT_Y16;
+		bitpix = 16;
 		break;
 	case INDIGO_RAW_MONO8:
 		pix_format = PIX_FMT_Y8;
+		bitpix = 8;
 		break;
 	case INDIGO_RAW_RGB24:
 		pix_format = PIX_FMT_RGB24;
@@ -359,6 +362,11 @@ preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long
 	default:
 		indigo_error("RAW: Unsupported image format (%d)", header->signature);
 		return nullptr;
+	}
+
+	if (sconfig.bayer_pattern != BAYER_PAT_AUTO && sconfig.bayer_pattern != 0 && bitpix != 0) {
+		int bayer_pix_fmt = bayer_to_pix_format(0, bitpix, sconfig.bayer_pattern);
+		if (bayer_pix_fmt != 0) pix_format = bayer_pix_fmt;
 	}
 
 	preview_image *img = create_preview(header->width, header->height,
