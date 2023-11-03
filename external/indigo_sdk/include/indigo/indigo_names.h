@@ -638,22 +638,54 @@
  */
 #define CCD_JPEG_SETTINGS_QUALITY_ITEM_NAME		"QUALITY"
 
-/** CCD_JPEG_SETTINGS.BLACK property item name.
+/** CCD_JPEG_SETTINGS.TARGET_BACKGROUND property item name.
  */
-#define CCD_JPEG_SETTINGS_BLACK_ITEM_NAME			"BLACK"
+#define CCD_JPEG_SETTINGS_TARGET_BACKGROUND_ITEM_NAME     "TARGET_BACKGROUND"
 
-/** CCD_JPEG_SETTINGS.WHITE property item name.
+/** CCD_JPEG_SETTINGS.CLIPPING_POINT property item name.
  */
-#define CCD_JPEG_SETTINGS_WHITE_ITEM_NAME			"WHITE"
+#define CCD_JPEG_SETTINGS_CLIPPING_POINT_ITEM_NAME     "CLIPPING_POINT"
 
-/** CCD_JPEG_SETTINGS.BLACK_TRESHOLD property item name.
+// obsolete CCD_JPEG_SETTINGS item names kept for backward compatibility
+
+/** (obsolete) CCD_JPEG_SETTINGS.BLACK property item name.
  */
-#define CCD_JPEG_SETTINGS_BLACK_TRESHOLD_ITEM_NAME			"BLACK_TRESHOLD"
-
-/** CCD_JPEG_SETTINGS.WHITE_TRESHOLD property item name.
+#define CCD_JPEG_SETTINGS_BLACK_ITEM_NAME                      "BLACK"
+ 
+/** (obsolete) CCD_JPEG_SETTINGS.WHITE property item name.
  */
-#define CCD_JPEG_SETTINGS_WHITE_TRESHOLD_ITEM_NAME			"WHITE_TRESHOLD"
+#define CCD_JPEG_SETTINGS_WHITE_ITEM_NAME                      "WHITE"
 
+/** (obsolete) CCD_JPEG_SETTINGS.BLACK_TRESHOLD property item name.
+ */
+#define CCD_JPEG_SETTINGS_BLACK_TRESHOLD_ITEM_NAME                     "BLACK_TRESHOLD"
+
+/** (obsolete) CCD_JPEG_SETTINGS.WHITE_TRESHOLD property item name.
+ */
+#define CCD_JPEG_SETTINGS_WHITE_TRESHOLD_ITEM_NAME                     "WHITE_TRESHOLD"
+
+//----------------------------------------------------------------------------------------
+/** CCD_JPEG_STRETCH_PRESETS property name.
+ */
+#define CCD_JPEG_STRETCH_PRESETS_PROPERTY_NAME         "CCD_JPEG_STRETCH_PRESETS"
+
+/** CCD_JPEG_STRETCH_PRESETS.SLIGHT property item name.
+ */
+#define  CCD_JPEG_STRETCH_PRESETS_SLIGHT_ITEM_NAME      "SLIGHT"
+
+/** CCD_JPEG_STRETCH_PRESETS.MODERATE property item name.
+ */
+#define  CCD_JPEG_STRETCH_PRESETS_MODERATE_ITEM_NAME      "MODERATE"
+
+/** CCD_JPEG_STRETCH_PRESETS.NORMAL property item name.
+ */
+#define  CCD_JPEG_STRETCH_PRESETS_NORMAL_ITEM_NAME      "NORMAL"
+
+/** CCD_JPEG_STRETCH_PRESETS.HARD property item name.
+ */
+#define  CCD_JPEG_STRETCH_PRESETS_HARD_ITEM_NAME      "HARD"
+
+//------------------------------------------------------------------------
 /** CCD_RBI_FLUSH_ENABLE property name.
  */
 #define CCD_RBI_FLUSH_PROPERTY_NAME          "CCD_RBI_FLUSH"
