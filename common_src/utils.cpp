@@ -34,7 +34,6 @@
 #include <windows.h>
 #endif
 
-
 int get_number_of_cores() {
 #ifdef INDIGO_WINDOWS
 	SYSTEM_INFO sysinfo;

@@ -9,8 +9,6 @@
 #include <QtConcurrent>
 #include <utils.h>
 
-#define DEFAULT_THREADS 4
-
 // Returns the median value of the vector.
 // The values is modified
 template <typename T>
@@ -60,7 +58,7 @@ void stretchOneChannel(
 
 	QVector<QFuture<void>> futures;
 	int num_threads = get_number_of_cores();
-	num_threads = (num_threads > 0) ?  num_threads : DEFAULT_THREADS;
+	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
 	for (int rank = 0; rank < num_threads; rank++) {
 		const int chunk = ceil(image_height / (double)num_threads);
 		futures.append(QtConcurrent::run([ = ]() {
@@ -146,7 +144,7 @@ void stretchThreeChannels(
 
 	QVector<QFuture<void>> futures;
 	int num_threads = get_number_of_cores();
-	num_threads = (num_threads > 0) ?  num_threads : DEFAULT_THREADS;
+	num_threads = (num_threads > 0) ?  num_threads : AIN_DEFAULT_THREADS;
 	for (int rank = 0; rank < num_threads; rank++) {
 		const int chunk = ceil(imageHeight / (double)num_threads);
 		futures.append(QtConcurrent::run([ = ]() {

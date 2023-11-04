@@ -19,6 +19,8 @@
 #ifndef _UTILS_H
 #define _UTILS_H
 
+#define AIN_DEFAULT_THREADS 4
+
 int get_number_of_cores();
 
 void get_timestamp(char *timestamp_str);

@@ -196,7 +196,8 @@ template <typename T> void parallel_debayer(T *input_buffer, int width, int heig
 			}
 		}
 	} else {
-		const int max_threads = get_number_of_cores();
+		int max_threads = get_number_of_cores();
+		max_threads = (max_threads > 0) ? max_threads : AIN_DEFAULT_THREADS;
 		std::thread threads[max_threads];
 		for (int rank = 0; rank < max_threads; rank++) {
 			const int chunk = ceil(height / (double)max_threads);
