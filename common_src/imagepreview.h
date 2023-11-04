@@ -309,6 +309,9 @@ public:
 	StretchParams m_strech_params;
 };
 
+int get_bayer_offsets(uint32_t pix_format);
+template <typename T> void parallel_debayer(T *input_buffer, int width, int height, int offsets, T *output_buffer);
+
 preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_size);
 preview_image* create_fits_preview(unsigned char *fits_buffer, unsigned long fits_size, const stretch_config_t sconfig);
 preview_image* create_xisf_preview(unsigned char *xisf_buffer, unsigned long xisf_size, const stretch_config_t sconfig);

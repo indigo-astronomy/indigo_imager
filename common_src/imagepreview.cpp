@@ -20,15 +20,209 @@
 #include <math.h>
 #include <fits.h>
 #include <xisf.h>
-#include <debayer.h>
 #include <pixelformat.h>
 #include <imagepreview.h>
 #include <QPainter>
 #include <QCoreApplication>
 #include <image_preview_lut.h>
 #include <dslr_raw.h>
+#include <utils.h>
+
+#include <unistd.h>
+#include <thread>
+
+#define MIN_SIZE_TO_PARALLELIZE 0x3FFFF
 
 // Related Functions
+
+int get_bayer_offsets(uint32_t pix_format) {
+	switch (pix_format) {
+		case PIX_FMT_SBGGR8:
+		case PIX_FMT_SBGGR12:
+		case PIX_FMT_SBGGR16:
+		case PIX_FMT_SBGGR32:
+		case PIX_FMT_SBGGRF:
+			return 0x11;
+
+		case PIX_FMT_SGBRG8:
+		case PIX_FMT_SGBRG12:
+		case PIX_FMT_SGBRG16:
+		case PIX_FMT_SGBRG32:
+		case PIX_FMT_SGBRGF:
+			return 0x01;
+
+		case PIX_FMT_SGRBG8:
+		case PIX_FMT_SGRBG12:
+		case PIX_FMT_SGRBG16:
+		case PIX_FMT_SGRBG32:
+		case PIX_FMT_SGRBGF:
+			return 0x10;
+
+		case PIX_FMT_SRGGB8:
+		case PIX_FMT_SRGGB12:
+		case PIX_FMT_SRGGB16:
+		case PIX_FMT_SRGGB32:
+		case PIX_FMT_SRGGBF:
+			return 0x00;
+	}
+}
+
+template <typename T> static inline void debayer(T *raw, int index, int row, int column, int width, int height, int offsets, float &red, float &green, float &blue) {
+	switch (offsets ^ ((column & 1) << 4 | (row & 1))) {
+		case 0x00:
+			red = raw[index];
+			if (column == 0) {
+				if (row == 0) {
+					green = (raw[index + 1] + raw[index + width]) / 2.0;
+					blue = raw[index + width + 1];
+				} else if (row == height - 1) {
+					green = (raw[index + 1] + raw[index - width]) / 2.0;
+					blue = raw[index - width + 1];
+				} else {
+					green = (raw[index + 1] + raw[index + width] + raw[index - width]) / 3.0;
+					blue = (raw[index - width + 1] + raw[index + width + 1]) / 2.0;
+				}
+			} else if (column == width - 1) {
+				if (row == 0) {
+					green = (raw[index - 1] + raw[index + width]) / 2.0;
+					blue = (raw[index + width - 1] + raw[index + width + 1]) / 2.0;
+				} else if (row == height - 1) {
+					green = (raw[index - 1] + raw[index - width]) / 2.0;
+					blue = (raw[index - width - 1] + raw[index - width + 1]) / 2.0;
+				} else {
+					green = (raw[index - 1] + raw[index + width] + raw[index - width]) / 3.0;
+					blue = (raw[index - width - 1] + raw[index + width - 1]) / 2.0;
+				}
+			} else {
+				if (row == 0) {
+					green = (raw[index + 1] + raw[index - 1] + raw[index + width]) / 3.0;
+					blue = (raw[index + width - 1] + raw[index + width + 1]) / 2.0;
+				} else if (row == height - 1) {
+					green = (raw[index + 1] + raw[index - 1] + raw[index - width]) / 3.0;
+					blue = (raw[index - width - 1] + raw[index - width + 1]) / 2.0;
+				} else {
+					green = (raw[index + 1] + raw[index - 1] + raw[index + width] + raw[index - width]) / 4.0;
+					blue = (raw[index - width - 1] + raw[index - width + 1] + raw[index + width - 1] + raw[index + width + 1]) / 4.0;
+				}
+			}
+			break;
+		case 0x10:
+			if (column == 0) {
+				red = raw[index + 1];
+			} else if (column == width - 1) {
+				red = raw[index - 1];
+			} else {
+				red = (raw[index - 1] + raw[index + 1]) / 2.0;
+			}
+			green = raw[index];
+			if (row == 0) {
+				blue = raw[index + width];
+			} else if (row == height - 1) {
+				blue = raw[index - width];
+			} else {
+				blue = (raw[index - width] + raw[index + width]) / 2.0;
+			}
+			break;
+		case 0x01:
+			if (row == 0) {
+				red = raw[index + width];
+			} else if (row == height - 1) {
+				red = raw[index - width];
+			} else {
+				red = (raw[index - width] + raw[index + width]) / 2.0;
+			}
+			green = raw[index];
+			if (column == 0) {
+				blue = raw[index + 1];
+			} else if (column == width - 1) {
+				blue = raw[index - 1];
+			} else {
+				blue = (raw[index - 1] + raw[index + 1]) / 2.0;
+			}
+			break;
+		case 0x11:
+			if (column == 0) {
+				if (row == 0) {
+					red = raw[index + width + 1];
+					green = (raw[index + 1] + raw[index + width]) / 2.0;
+				} else if (row == height - 1) {
+					red = raw[index - width + 1];
+					green = (raw[index + 1] + raw[index - width]) / 2.0;
+				} else {
+					red = raw[index - width + 1];
+					green = (raw[index + 1] + raw[index + width] + raw[index - width]) / 3.0;
+				}
+			} else if (column == width - 1) {
+				if (row == 0) {
+					red = raw[index + width - 1];
+					green = (raw[index - 1] + raw[index + width]) / 2.0;
+				} else if (row == height - 1) {
+					red = raw[index - width - 1];
+					green = (raw[index - 1] + raw[index - width]) / 2.0;
+				} else {
+					red = (raw[index - width - 1] + raw[index + width - 1]) / 2.0;
+					green = (raw[index - 1] + raw[index + width] + raw[index - width]) / 3.0;
+				}
+			} else {
+				if (row == 0) {
+					red = (raw[index + width - 1] + raw[index + width + 1]) / 2.0;
+					green = (raw[index + 1] + raw[index - 1] + raw[index + width]) / 3.0;
+				} else if (row == height - 1) {
+					red = (raw[index - width - 1] + raw[index - width + 1]) / 2.0;
+					green = (raw[index + 1] + raw[index - 1] + raw[index - width]) / 3.0;
+				} else {
+					red = (raw[index - width - 1] + raw[index - width + 1] + raw[index + width - 1] + raw[index + width + 1]) / 4.0;
+					green = (raw[index + 1] + raw[index - 1] + raw[index + width] + raw[index - width]) / 4.0;
+				}
+			}
+			blue = raw[index];
+			break;
+	}
+}
+
+template <typename T> void parallel_debayer(T *input_buffer, int width, int height, int offsets, T *output_buffer) {
+	const int size = width * height;
+	if (size < MIN_SIZE_TO_PARALLELIZE) {
+		int input_index = 0;
+		for (int row_index = 0; row_index < height; row_index++) {
+			for (int column_index = 0; column_index < width; column_index++) {
+				float red = 0, green = 0, blue = 0;
+				int output_index = input_index * 3;
+				debayer(input_buffer, input_index, row_index, column_index, width, height, offsets, red, green, blue);
+				output_buffer[output_index] = red;
+				output_buffer[output_index + 1] = green;
+				output_buffer[output_index + 2] = blue;
+				input_index++;
+			}
+		}
+	} else {
+		const int max_threads = get_number_of_cores();
+		std::thread threads[max_threads];
+		for (int rank = 0; rank < max_threads; rank++) {
+			const int chunk = ceil(height / (double)max_threads);
+			threads[rank] = std::thread([=]() {
+				const int start = chunk * rank;
+				int end = start + chunk;
+				end = (end > height) ? height : end;
+				int input_index = start * width;
+				for (int row_index = start; row_index < end; row_index++) {
+					for (int column_index = 0; column_index < width; column_index++) {
+						float red = 0, green = 0, blue = 0;
+						int output_index = input_index * 3;
+						debayer(input_buffer, input_index, row_index, column_index, width, height, offsets, red, green, blue);
+						output_buffer[output_index] = red;
+						output_buffer[output_index + 1] = green;
+						output_buffer[output_index + 2] = blue;
+						input_index++;
+					}
+				}
+			});
+		}
+		for (int rank = 0; rank < max_threads; rank++) {
+			threads[rank].join();
+		}
+	}
+}
 
 static unsigned int bayer_to_pix_format(const char *image_bayer_pat, const char bitpix, uint32_t prefered_bayer_pat) {
 	char bayerpat[5] = {0};
@@ -549,7 +743,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 	} else if ((pix_format == PIX_FMT_SBGGR8) || (pix_format == PIX_FMT_SGBRG8) ||
 		       (pix_format == PIX_FMT_SGRBG8) || (pix_format == PIX_FMT_SRGGB8)) {
 		uint8_t* rgb_data = (uint8_t*)malloc(width*height*3);
-		bayer_to_rgb24((unsigned char*)image_data, rgb_data, width, height, pix_format);
+		parallel_debayer((uint8_t*)image_data, width, height, get_bayer_offsets(pix_format), rgb_data);
 
 		img->m_raw_data = (char*)rgb_data;
 		img->m_pix_format = PIX_FMT_RGB24;
@@ -560,7 +754,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 	} else if ((pix_format == PIX_FMT_SBGGR16) || (pix_format == PIX_FMT_SGBRG16) ||
 		       (pix_format == PIX_FMT_SGRBG16) || (pix_format == PIX_FMT_SRGGB16)) {
 		uint16_t* rgb_data = (uint16_t*)malloc(width*height*6);
-		bayer_to_rgb48((const uint16_t*)image_data, rgb_data, width, height, pix_format);
+		parallel_debayer((uint16_t*)image_data, width, height, get_bayer_offsets(pix_format), rgb_data);
 
 		img->m_raw_data = (char*)rgb_data;
 		img->m_pix_format = PIX_FMT_RGB48;
@@ -571,7 +765,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 	} else if ((pix_format == PIX_FMT_SBGGR32) || (pix_format == PIX_FMT_SGBRG32) ||
 		       (pix_format == PIX_FMT_SGRBG32) || (pix_format == PIX_FMT_SRGGB32)) {
 		uint32_t* rgb_data = (uint32_t*)malloc(width*height*12);
-		bayer_to_rgb96((const uint32_t*)image_data, rgb_data, width, height, pix_format);
+		parallel_debayer((uint32_t*)image_data, width, height, get_bayer_offsets(pix_format), rgb_data);
 
 		img->m_raw_data = (char*)rgb_data;
 		img->m_pix_format = PIX_FMT_RGB96;
@@ -582,7 +776,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 	} else if ((pix_format == PIX_FMT_SBGGRF) || (pix_format == PIX_FMT_SGBRGF) ||
 		       (pix_format == PIX_FMT_SGRBGF) || (pix_format == PIX_FMT_SRGGBF)) {
 		float* rgb_data = (float*)malloc(width*height*12);
-		bayer_to_rgbf((const float*)image_data, rgb_data, width, height, pix_format);
+		parallel_debayer((float*)image_data, width, height, get_bayer_offsets(pix_format), rgb_data);
 
 		img->m_raw_data = (char*)rgb_data;
 		img->m_pix_format = PIX_FMT_RGBF;

@@ -18,7 +18,6 @@
 
 #include <math.h>
 #include <fits.h>
-#include <debayer.h>
 #include <pixelformat.h>
 #include <imagepreview.h>
 #include <blobpreview.h>

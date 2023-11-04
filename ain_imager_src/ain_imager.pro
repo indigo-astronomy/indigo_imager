@@ -55,7 +55,6 @@ SOURCES += \
 	../common_src/fits.c \
 	../common_src/xisf.c \
 	../common_src/xml.c \
-	../common_src/debayer.c \
 	../common_src/stretcher.cpp \
 	../common_src/image_stats.cpp \
 	../common_src/dslr_raw.c \
@@ -143,7 +142,6 @@ HEADERS += \
 	../common_src/fits.h \
 	../common_src/xisf.h \
 	../common_src/xml.h \
-	../common_src/debayer.h \
 	../common_src/pixelformat.h \
 	../external/qcustomplot/qcustomplot.h \
 	../common_src/coordconv.h \
