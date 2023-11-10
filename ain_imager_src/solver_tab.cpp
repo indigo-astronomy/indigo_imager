@@ -288,8 +288,9 @@ void ImagerWindow::update_solver_widgets_at_start(const char *imager_agent, cons
 	do {
 		indigo_property *exp = properties.get((char*)imager_agent, CCD_EXPOSURE_PROPERTY_NAME);
 		indigo_property *proc = properties.get((char*)solver_agent, AGENT_START_PROCESS_PROPERTY_NAME);
+		indigo_property *solution = properties.get((char*)solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME);
 		if (wait_busy) {
-			if ((exp && exp->state == INDIGO_BUSY_STATE) || (proc && proc->state == INDIGO_BUSY_STATE)){
+			if ((exp && exp->state == INDIGO_BUSY_STATE) || (proc && proc->state == INDIGO_BUSY_STATE) || (solution && solution->state == INDIGO_BUSY_STATE)){
 				done = true;
 			} else {
 				indigo_usleep(100000);
@@ -300,7 +301,8 @@ void ImagerWindow::update_solver_widgets_at_start(const char *imager_agent, cons
 		if (wait_busy == 0) {
 			done = true;
 			indigo_property *proc = properties.get((char*)solver_agent, AGENT_START_PROCESS_PROPERTY_NAME);
-			if (proc && proc->state != INDIGO_BUSY_STATE) {
+			indigo_property *solution = properties.get((char*)solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME);
+			if ((proc && proc->state != INDIGO_BUSY_STATE) && (solution && solution->state != INDIGO_BUSY_STATE)) {
 				set_widget_state(m_mount_solve_and_sync_button, INDIGO_OK_STATE);
 				set_widget_state(m_mount_solve_and_center_button, INDIGO_OK_STATE);
 				set_widget_state(m_mount_start_pa_button, INDIGO_OK_STATE);
