@@ -142,6 +142,11 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setChecked(conf.statistics_enabled);
 	connect(act, &QAction::toggled, this, &ViewerWindow::on_statistics_show);
 
+	act = menu->addAction(tr("Show image &center"));
+	act->setCheckable(true);
+	act->setChecked(conf.show_reference);
+	connect(act, &QAction::toggled, this, &ViewerWindow::on_viewer_show_reference);
+
 	menu->addSeparator();
 
 	act = menu->addAction(tr("Enable &antialiasing"));
@@ -183,6 +188,7 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(m_imager_viewer, &ImageViewer::nextRequested, this, &ViewerWindow::on_image_next_act);
 
 	m_imager_viewer->enableAntialiasing(conf.antialiasing_enabled);
+	m_imager_viewer->showReference(conf.show_reference);
 	if (conf.file_open[0] != '\0') open_image(conf.file_open);
 }
 
@@ -246,6 +252,7 @@ void ViewerWindow::open_image(QString file_name) {
 			stats = imageStats((const uint8_t*)(m_preview_image->m_raw_data), m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
 		}
 		m_imager_viewer->setImageStats(stats);
+		m_imager_viewer->centerReference();
 
 		char info[256] = {};
 		int w = m_preview_image->width();
@@ -643,6 +650,13 @@ void ViewerWindow::on_antialias_view(bool status) {
 	conf.antialiasing_enabled = status;
 	m_imager_viewer->enableAntialiasing(status);
 	write_conf();
+}
+
+void ViewerWindow::on_viewer_show_reference(bool status) {
+	conf.show_reference = status;
+	m_imager_viewer->showReference(status);
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
 }
 
 void ViewerWindow::on_statistics_show(bool enabled) {
