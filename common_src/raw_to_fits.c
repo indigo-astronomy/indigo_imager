@@ -79,15 +79,16 @@ int open_file(const char *file_name, char **data, int *size) {
 int convert_raw_to_fits(char *infile_name) {
 	char *in_data = NULL;
 	char *out_data = NULL;
-	int size = 0;
+	int in_data_size = 0;
+	int fits_size = 0;
 
-	int res = open_file(infile_name, &in_data, &size);
+	int res = open_file(infile_name, &in_data, &in_data_size);
 	if (res != 0) {
 		if (in_data) free(in_data);
 		return -1;
 	}
 
-	res = indigo_raw_to_fits(in_data, &out_data, &size, NULL);
+	res = indigo_raw_to_fits(in_data, in_data_size, &out_data, &fits_size, NULL);
 	if (res != 0) {
 		if (in_data) free(in_data);
 		if (out_data) free(out_data);
@@ -104,7 +105,7 @@ int convert_raw_to_fits(char *infile_name) {
 		snprintf(outfile_name, PATH_MAX, "%s.fits", infile_name);
 	}
 
-	res = save_file(outfile_name, out_data, size);
+	res = save_file(outfile_name, out_data, fits_size);
 	if (in_data) free(in_data);
 	if (out_data) free(out_data);
 
