@@ -526,8 +526,47 @@ preview_image* create_xisf_preview(unsigned char *xisf_buffer, unsigned long xis
 	return img;
 }
 
+static int raw_read_keyword_value(const char *ptr8, char *keyword, char *value) {
+	int i;
+	int length = strlen(ptr8);
+
+	for (i = 0; i < 8 && ptr8[i] != ' '; i++) {
+		keyword[i] = ptr8[i];
+	}
+	keyword[i] = '\0';
+
+	if (ptr8[8] == '=') {
+		i++;
+		while (i < length && ptr8[i] == ' ') {
+			i++;
+		}
+
+		if (i < length) {
+			*value++ = ptr8[i];
+			i++;
+			if (ptr8[i-1] == '\'') {
+				for (; i < length && ptr8[i] != '\''; i++) {
+					*value++ = ptr8[i];
+				}
+				*value++ = '\'';
+			} else if (ptr8[i-1] == '(') {
+				for (; i < length && ptr8[i] != ')'; i++) {
+					*value++ = ptr8[i];
+				}
+				*value++ = ')';
+			} else {
+				for (; i < length && ptr8[i] != ' ' && ptr8[i] != '/'; i++) {
+					*value++ = ptr8[i];
+				}
+			}
+		}
+	}
+	*value = '\0';
+	return 0;
+}
+
 preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size, const stretch_config_t sconfig) {
-	unsigned int pix_format;
+	unsigned int pix_format = 0;
 
 	if (sizeof(indigo_raw_header) > raw_size) {
 		indigo_error("RAW: Image buffer is too short: can not fit the header (%dB)", raw_size);
@@ -559,7 +598,40 @@ preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long
 		return nullptr;
 	}
 
-	if (sconfig.bayer_pattern != BAYER_PAT_AUTO && sconfig.bayer_pattern != 0 && bitpix != 0) {
+	/* use embedded keywords */
+	uint32_t embedded_bayer_pix_fmt = 0;
+	int pixel_count = header->width * header->height;
+	int data_size = pixel_count * bitpix/8;
+	int extension_length = raw_size - data_size - sizeof(indigo_raw_header);
+	indigo_debug("RAW: extension_length = %d", extension_length);
+	if (extension_length > 9) {
+		char *extension = (char*)indigo_safe_malloc(extension_length + 1);
+		char *extension_start = extension;
+		strncpy(extension, raw_data + data_size, extension_length);
+		if (!strncmp(extension_start, "SIMPLE=T;", 9)) {
+			extension_start += 9;
+			extension_length -= 9;
+			char *pos = NULL;
+			while(pos = strchr(extension_start, ';')) {
+				char keyword[80];
+				char value[80];
+				*pos = '\0';
+				raw_read_keyword_value(extension_start, keyword, value);
+				extension_start = pos+1;
+				if (!strcmp(keyword, "BAYERPAT")) {
+					indigo_debug("RAW: BAYERPAT = %s", value);
+					char *value_start = value + 1;              //get rid of the start quote
+					value_start[strlen(value_start)-1] = '\0';  //get rid of the end quote
+					embedded_bayer_pix_fmt = bayer_to_pix_format(value_start , bitpix, sconfig.bayer_pattern);
+				}
+			}
+		}
+		indigo_safe_free(extension);
+	}
+
+	if ((sconfig.bayer_pattern == BAYER_PAT_AUTO || sconfig.bayer_pattern == 0) && bitpix != 0 && embedded_bayer_pix_fmt != 0) {
+		pix_format = embedded_bayer_pix_fmt;
+	} else if (sconfig.bayer_pattern != BAYER_PAT_AUTO && sconfig.bayer_pattern != 0 && bitpix != 0) {
 		int bayer_pix_fmt = bayer_to_pix_format(0, bitpix, sconfig.bayer_pattern);
 		if (bayer_pix_fmt != 0) pix_format = bayer_pix_fmt;
 	}
