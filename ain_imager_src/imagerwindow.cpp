@@ -161,6 +161,11 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setChecked(conf.restore_window_size);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_restore_window_size_changed);
 
+	act = menu->addAction(tr("Require user &confirmation"));
+	act->setCheckable(true);
+	act->setChecked(conf.require_confirmation);
+	connect(act, &QAction::toggled, this, &ImagerWindow::on_require_confirmtion);
+
 	act = menu->addAction(tr("&Use host suffix"));
 	act->setCheckable(true);
 	act->setChecked(conf.indigo_use_host_suffix);
@@ -1175,6 +1180,13 @@ void ImagerWindow::on_use_suffix_changed(bool status) {
 
 void ImagerWindow::on_use_state_icons_changed(bool status) {
 	conf.use_state_icons = status;
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+
+void ImagerWindow::on_require_confirmtion(bool status) {
+	conf.require_confirmation = status;
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }

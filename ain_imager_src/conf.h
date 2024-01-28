@@ -112,6 +112,7 @@ typedef struct {
 	bool keep_images_on_server;
 	bool statistics_enabled;
 	uint32_t preview_bayer_pattern; /* BAYER_PAT_XXXX from image_preview_lut.h */
+	bool require_confirmation;
 	char unused[100];
 } conf_t;
 

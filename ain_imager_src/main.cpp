@@ -90,6 +90,7 @@ int main(int argc, char *argv[]) {
 	conf.keep_images_on_server = false;
 	conf.statistics_enabled = false;
 	conf.preview_bayer_pattern = 0;
+	conf.require_confirmation = false;
 	read_conf();
 
 	if (!conf.use_system_locale) qunsetenv("LC_NUMERIC");

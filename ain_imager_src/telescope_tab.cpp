@@ -967,19 +967,21 @@ void ImagerWindow::on_mount_solve_and_sync() {
 }
 
 void ImagerWindow::on_mount_polar_align() {
-	char selected_agent[INDIGO_NAME_SIZE];
-	get_selected_solver_agent(selected_agent);
-	indigo_property *property = properties.get(selected_agent, AGENT_PLATESOLVER_PA_STATE_PROPERTY_NAME);
-	if (property) {
-		for (int i = 0; i < property->count; i++) {
-			if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_ITEM_NAME) && (int)property->items[i].number.value != INDIGO_POLAR_ALIGN_IDLE) {
-				QMessageBox msgBox(this);
-				msgBox.setWindowTitle("Polar alignment");
-				msgBox.setText(QString("Restart running polar alignment process?"));
-				msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-				msgBox.setDefaultButton(QMessageBox::No);
-				if (QMessageBox::No == msgBox.exec()) {
-					return;
+	if (conf.require_confirmation) {
+		char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_solver_agent(selected_agent);
+		indigo_property *property = properties.get(selected_agent, AGENT_PLATESOLVER_PA_STATE_PROPERTY_NAME);
+		if (property) {
+			for (int i = 0; i < property->count; i++) {
+				if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_ITEM_NAME) && (int)property->items[i].number.value != INDIGO_POLAR_ALIGN_IDLE) {
+					QMessageBox msgBox(this);
+					msgBox.setWindowTitle("Polar alignment");
+					msgBox.setText(QString("Restart running polar alignment process?"));
+					msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+					msgBox.setDefaultButton(QMessageBox::No);
+					if (QMessageBox::No == msgBox.exec()) {
+						return;
+					}
 				}
 			}
 		}
