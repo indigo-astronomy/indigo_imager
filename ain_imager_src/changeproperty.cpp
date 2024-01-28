@@ -1049,7 +1049,8 @@ void ImagerWindow::trigger_polar_alignment(bool recalculate) {
 			selected_mount_agent,
 			selected_solver_agent,
 			selected_image_agent,
-			selected_solver_source,m_solver_source_select3
+			selected_solver_source,
+			m_solver_source_select3
 		)
 	) {
 		return;

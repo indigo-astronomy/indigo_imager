@@ -746,8 +746,23 @@ void ImagerWindow::on_guider_preview_start_stop(bool clicked) {
 }
 
 void ImagerWindow::on_guider_calibrate_start_stop(bool clicked) {
+	indigo_debug("CALLED: %s\n", __FUNCTION__);
+
+	char guider_agent[INDIGO_NAME_SIZE];
+	get_selected_guider_agent(guider_agent);
+	indigo_property *agent_start_process = properties.get(guider_agent, AGENT_START_PROCESS_PROPERTY_NAME);
+	if (agent_start_process && agent_start_process->state != INDIGO_BUSY_STATE ) {
+		QMessageBox msgBox(this);
+		msgBox.setWindowTitle("Guider callibration");
+		msgBox.setText(QString("Guider settings will be reset, proceed with calibration?"));
+		msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+		msgBox.setDefaultButton(QMessageBox::Yes);
+		if (QMessageBox::No == msgBox.exec()) {
+			return;
+		}
+	}
+
 	QtConcurrent::run([=]() {
-		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_guider_agent(selected_agent);
 

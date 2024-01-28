@@ -478,7 +478,7 @@ void ViewerWindow::on_delete_current_image_act() {
 	if (m_image_path[0] == '\0') return;
 	strncpy(path, m_image_path, PATH_LEN);
 
-	QMessageBox msgBox;
+	QMessageBox msgBox(this);
 	msgBox.setWindowTitle("Delete file");
 	msgBox.setText(QString("Do you want to delete '") + basename(m_image_path) + "' ?");
 	msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
