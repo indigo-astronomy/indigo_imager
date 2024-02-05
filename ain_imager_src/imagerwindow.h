@@ -130,6 +130,7 @@ public:
 	friend void update_agent_guider_focal_length_property(ImagerWindow *w, indigo_property *property);
 	friend void update_focus_setup_property(ImagerWindow *w, indigo_property *property);
 	friend void update_focus_estimator_property(ImagerWindow *w, indigo_property *property);
+	friend void update_agent_imager_batch_dithering(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *property);
 	friend void update_ccd_frame_property(ImagerWindow *w, indigo_property *property);
 	friend void update_wheel_slot_property(ImagerWindow *w, indigo_property *property);
@@ -149,7 +150,6 @@ public:
 	friend void update_mount_track(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_slew_rates(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_side_of_pier(ImagerWindow *w, indigo_property *property);
-	friend void update_agent_imager_dithering_property(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_gps_lon_lat_elev(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_gps_utc(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_gps_status(ImagerWindow *w, indigo_property *property);
@@ -275,6 +275,7 @@ public slots:
 	void on_ccd_image_format_selected(int index);
 	void on_frame_type_selected(int index);
 	void on_dither_agent_selected(int index);
+	void on_agent_guider_dithering_changed(int index);
 	void on_agent_imager_dithering_changed(int index);
 	void on_filter_selected(int index);
 	void on_cooler_onoff(bool state);
@@ -883,6 +884,7 @@ private:
 	void change_related_agent(const char *agent, const char *old_agent, const char *new_agent) const;
 	void set_related_mount_and_imager_agents() const;
 	void set_related_mount_guider_agent(const char *related_agent) const;
+	void change_agent_guider_dithering_property(const char *agent) const;
 	void change_agent_imager_dithering_property(const char *agent) const;
 	void change_agent_gain_property(const char *agent, QSpinBox *ccd_gain) const;
 	void change_agent_offset_property(const char *agent, QSpinBox *ccd_offset) const;

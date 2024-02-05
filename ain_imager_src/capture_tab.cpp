@@ -328,7 +328,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	connect(m_dither_agent_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_dither_agent_selected);
 
 	dither_row++;
-	label = new QLabel("Aggressivity (px):");
+	label = new QLabel("Ammount (px):");
 	dither_frame_layout->addWidget(label, dither_row, 0, 1, 3);
 	m_dither_aggr = new QSpinBox();
 	m_dither_aggr->setMaximum(100);
@@ -336,7 +336,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_dither_aggr->setValue(0);
 	m_dither_aggr->setEnabled(false);
 	dither_frame_layout->addWidget(m_dither_aggr , dither_row, 3);
-	connect(m_dither_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_imager_dithering_changed);
+	connect(m_dither_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_guider_dithering_changed);
 
 	dither_row++;
 	label = new QLabel("Settle timeout (s):");
@@ -347,7 +347,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_dither_to->setValue(0);
 	m_dither_to->setEnabled(false);
 	dither_frame_layout->addWidget(m_dither_to, dither_row, 3);
-	connect(m_dither_to, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_imager_dithering_changed);
+	connect(m_dither_to, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_agent_guider_dithering_changed);
 
 	dither_row++;
 	label = new QLabel("Skip frames:");
@@ -691,6 +691,17 @@ void ImagerWindow::on_dither_agent_selected(int index) {
 
 		indigo_debug("[SELECTED] %s '%s' %s -> %s\n", __FUNCTION__, selected_agent, old_agent, new_agent);
 		change_related_agent(selected_agent, old_agent, new_agent);
+	});
+}
+
+void ImagerWindow::on_agent_guider_dithering_changed(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_agent_guider_dithering_property(selected_agent);
 	});
 }
 

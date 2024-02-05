@@ -1022,13 +1022,9 @@ void update_focuser_temperature_compensation_steps(ImagerWindow *w, indigo_prope
 	}
 }
 
-void update_agent_imager_dithering_property(ImagerWindow *w, indigo_property *property) {
+void update_agent_imager_batch_dithering(ImagerWindow *w, indigo_property *property) {
 	for (int i = 0; i < property->count; i++) {
-		if (client_match_item(&property->items[i], AGENT_IMAGER_DITHERING_AGGRESSIVITY_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, w->m_dither_aggr);
-		} else if (client_match_item(&property->items[i], AGENT_IMAGER_DITHERING_TIME_LIMIT_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, w->m_dither_to);
-		} else if (client_match_item(&property->items[i], AGENT_IMAGER_DITHERING_SKIP_FRAMES_ITEM_NAME)) {
+		if (client_match_item(&property->items[i], AGENT_IMAGER_BATCH_FRAMES_TO_SKIP_BEFORE_DITHER_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_dither_skip);
 		}
 	}
@@ -1855,6 +1851,10 @@ void update_guider_settings(ImagerWindow *w, indigo_property *property) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_i_gain_dec);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_STACK_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_is);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_DITHERING_AMOUNT_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_dither_aggr);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_DITHERING_TIME_LIMIT_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_dither_to);
 		}
 	}
 }
@@ -2301,9 +2301,6 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox_filtered(this, property, "Guider Agent", m_dither_agent_select);
 	}
-	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_DITHERING_PROPERTY_NAME)) {
-		update_agent_imager_dithering_property(this, property);
-	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_POSITION_PROPERTY_NAME)) {
 		update_focuser_poition(this, property, true);
 	}
@@ -2346,6 +2343,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		/* do not update controls if AGENT_IMAGER_BATCH_PROPERTY is already defned */
 		indigo_property *p = properties.get(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME);
 		if (!p) update_agent_imager_batch_property(this, property);
+		update_agent_imager_batch_dithering(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME)) {
 		update_ccd_frame_property(this, property);
@@ -2674,9 +2672,6 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
 		change_combobox_selection_filtered(this, property, "Guider Agent", m_dither_agent_select);
 	}
-	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_DITHERING_PROPERTY_NAME)) {
-		update_agent_imager_dithering_property(this, property);
-	}
 	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME)) {
 		reset_filter_names(this, property);
 		indigo_property *p = properties.get(property->device, WHEEL_SLOT_PROPERTY_NAME);
@@ -2700,6 +2695,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME)) {
 		//update_agent_imager_batch_property(this, property);
+		update_agent_imager_batch_dithering(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME)) {
 		indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
@@ -3003,13 +2999,9 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_checkbox_state(m_focuser_failreturn_cbox, false);
 		set_enabled(m_focuser_failreturn_cbox, false);
 	}
-	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_DITHERING_PROPERTY_NAME) ||
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
-		set_spinbox_value(m_dither_aggr, 0);
-		set_enabled(m_dither_aggr, false);
-		set_spinbox_value(m_dither_to, 0);
-		set_enabled(m_dither_to, false);
 		set_spinbox_value(m_dither_skip, 0);
 		set_enabled(m_dither_skip, false);
 	}
@@ -3179,6 +3171,12 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		set_spinbox_value(m_guide_i_gain_dec, 0);
 		set_enabled(m_guide_i_gain_dec, false);
+
+		set_spinbox_value(m_dither_aggr, 0);
+		set_enabled(m_dither_aggr, false);
+
+		set_spinbox_value(m_dither_to, 0);
+		set_enabled(m_dither_to, false);
 
 		set_spinbox_value(m_guide_is, 0);
 		set_enabled(m_guide_is, false);
