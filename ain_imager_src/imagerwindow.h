@@ -118,6 +118,7 @@ public:
 	friend void reset_filter_names(ImagerWindow *w, indigo_property *property);
 	friend void update_cooler_onoff(ImagerWindow *w, indigo_property *property);
 	friend void update_cooler_power(ImagerWindow *w, indigo_property *property);
+	friend void update_agent_process_features(ImagerWindow *w, indigo_property *property);
 	friend void update_focuser_temperature(ImagerWindow *w, indigo_property *property);
 	friend void update_focuser_temperature_compensation_steps(ImagerWindow *w, indigo_property *property);
 	friend void update_focuser_mode(ImagerWindow *w, indigo_property *property);
@@ -274,7 +275,8 @@ public slots:
 	void on_ccd_mode_selected(int index);
 	void on_ccd_image_format_selected(int index);
 	void on_frame_type_selected(int index);
-	void on_dither_agent_selected(int index);
+	void on_imager_dithering_enable(int state);
+	void on_dither_strategy_selected(int index);
 	void on_agent_guider_dithering_changed(int index);
 	void on_agent_imager_dithering_changed(int index);
 	void on_filter_selected(int index);
@@ -567,7 +569,8 @@ private:
 	QComboBox *m_frame_type_select;
 	QComboBox *m_frame_format_select;
 	QComboBox *m_frame_size_select;
-	QComboBox *m_dither_agent_select;
+	QCheckBox *m_imager_dither_cbox;
+	QComboBox *m_dither_strategy_select;
 	QSpinBox  *m_roi_x, *m_roi_w;
 	QSpinBox  *m_roi_y, *m_roi_h;
 	QSpinBox  *m_dither_aggr;
@@ -860,6 +863,7 @@ private:
 	void change_config_agent_save(const char *agent, const char *config, bool autosave) const;
 	void change_config_agent_delete(const char *agent, const char *config) const;
 	void change_ccd_frame_property(const char *agent) const;
+	void change_guider_ditherung_strategy_property(const char *agent) const;
 	void change_ccd_exposure_property(const char *agent, QDoubleSpinBox *exp_time) const;
 	void change_solver_exposure_settings_property(const char *agent, QDoubleSpinBox *exp_time) const;
 	void change_ccd_abort_exposure_property(const char *agent) const;
@@ -883,6 +887,7 @@ private:
 	void request_file_remove(const char *agent, const char *file_name) const;
 	void change_related_agent(const char *agent, const char *old_agent, const char *new_agent) const;
 	void set_related_mount_and_imager_agents() const;
+	void set_related_imager_and_guider_agents() const;
 	void set_related_mount_guider_agent(const char *related_agent) const;
 	void change_agent_guider_dithering_property(const char *agent) const;
 	void change_agent_imager_dithering_property(const char *agent) const;

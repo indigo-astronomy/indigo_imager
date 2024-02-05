@@ -1069,6 +1069,20 @@ void update_agent_guider_focal_length_property(ImagerWindow *w, indigo_property 
 	}
 }
 
+void update_agent_process_features(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+
+	w->set_enabled(w->m_imager_dither_cbox, true);
+	w->set_checkbox_state(w->m_imager_dither_cbox, Qt::Unchecked);
+
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], AGENT_IMAGER_ENABLE_DITHERING_FEATURE_ITEM_NAME)) {
+			if (property->items[i].sw.value) w->set_checkbox_state(w->m_imager_dither_cbox, Qt::Checked);
+			break;
+		}
+	}
+}
+
 void update_focuser_poition(ImagerWindow *w, indigo_property *property, bool update_input = false) {
 	indigo_debug("change %s", property->name);
 	for (int i = 0; i < property->count; i++) {
@@ -2298,8 +2312,8 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		}
 		m_sequence_editor->populate_frame_select(frame_types);
 	}
-	if (client_match_device_property(property, selected_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
-		add_items_to_combobox_filtered(this, property, "Guider Agent", m_dither_agent_select);
+	if (client_match_device_property(property, selected_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {
+		update_agent_process_features(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_POSITION_PROPERTY_NAME)) {
 		update_focuser_poition(this, property, true);
@@ -2389,6 +2403,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 
 	// Guider Agent
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DITHERING_STRATEGY_PROPERTY_NAME)) {
+		add_items_to_combobox(this, property, m_dither_strategy_select);
+	}
 	if (client_match_device_property(property, selected_guider_agent, CCD_PREVIEW_PROPERTY_NAME)) {
 		QtConcurrent::run([=]() {
 			change_agent_ccd_peview(selected_guider_agent, (bool)conf.guider_save_bandwidth);
@@ -2669,8 +2686,8 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_TYPE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_frame_type_select);
 	}
-	if (client_match_device_property(property, selected_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
-		change_combobox_selection_filtered(this, property, "Guider Agent", m_dither_agent_select);
+	if (client_match_device_property(property, selected_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {
+		update_agent_process_features(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME)) {
 		reset_filter_names(this, property);
@@ -2732,6 +2749,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 
 	// Guider Agent
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DITHERING_STRATEGY_PROPERTY_NAME)) {
+		add_items_to_combobox(this, property, m_dither_strategy_select);
+	}
 	if (client_match_device_property(property, selected_guider_agent, CCD_MODE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_guider_frame_size_select);
 	}
@@ -2975,10 +2995,11 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		clear_combobox(m_frame_type_select);
 		m_sequence_editor->clear_frame_select();
 	}
-	if (client_match_device_property(property, selected_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME) ||
+	if (client_match_device_property(property, selected_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
-		clear_combobox(m_dither_agent_select);
+		set_checkbox_state(m_imager_dither_cbox, false);
+		set_enabled(m_imager_dither_cbox, false);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_ESTIMATOR_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
@@ -3089,6 +3110,11 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_guider_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		clear_combobox(m_guider_camera_select);
+	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DITHERING_STRATEGY_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		clear_combobox(m_dither_strategy_select);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {

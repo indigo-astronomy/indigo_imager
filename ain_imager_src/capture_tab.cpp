@@ -321,11 +321,16 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	dither_frame->setContentsMargins(0, 0, 0, 0);
 
 	int dither_row = 0;
-	label = new QLabel("Target:");
-	dither_frame_layout->addWidget(label, dither_row, 0);
-	m_dither_agent_select = new QComboBox();
-	dither_frame_layout->addWidget(m_dither_agent_select, dither_row, 1, 1, 3);
-	connect(m_dither_agent_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_dither_agent_selected);
+
+	m_imager_dither_cbox = new QCheckBox("Enable Dithering");
+	m_imager_dither_cbox->setEnabled(false);
+	set_ok(m_imager_dither_cbox);
+	dither_frame_layout->addWidget(m_imager_dither_cbox , dither_row, 0);
+	connect(m_imager_dither_cbox , &QPushButton::clicked, this, &ImagerWindow::on_imager_dithering_enable);
+
+	m_dither_strategy_select = new QComboBox();
+	dither_frame_layout->addWidget(m_dither_strategy_select, dither_row, 1, 1, 3);
+	connect(m_dither_strategy_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_dither_strategy_selected);
 
 	dither_row++;
 	label = new QLabel("Ammount (px):");
@@ -472,6 +477,7 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 			change_agent_abort_process_property(selected_agent);
 		} else {
 			set_related_mount_and_imager_agents();
+			set_related_imager_and_guider_agents();
 			QString obj_name;
 			if (is_sequence) {
 				obj_name = m_sequence_editor->get_sequence_name();
@@ -519,6 +525,7 @@ void ImagerWindow::on_preview_start_stop(bool clicked) {
 			change_ccd_abort_exposure_property(selected_agent);
 		} else {
 			set_related_mount_and_imager_agents();
+			set_related_imager_and_guider_agents();
 			QString obj_name = m_object_name->text();
 			add_fits_keyword_string(selected_agent, "OBJECT", obj_name);
 			change_agent_batch_property(selected_agent);
@@ -666,31 +673,26 @@ void ImagerWindow::on_frame_type_selected(int index) {
 }
 
 
-void ImagerWindow::on_dither_agent_selected(int index) {
+void ImagerWindow::on_imager_dithering_enable(int state) {
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
-		static char old_agent[INDIGO_NAME_SIZE];
-		static char new_agent[INDIGO_NAME_SIZE];
-
-		selected_agent[0] = '\0';
-		old_agent[0] = '\0';
-		new_agent[0] = '\0';
-
 		get_selected_imager_agent(selected_agent);
+		bool checked = m_imager_dither_cbox->checkState();
 
-		indigo_property *p = properties.get(selected_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
-		if (!p) return;
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 
-		for (int i = 0; i < p->count; i++) {
-			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Guider Agent", strlen("Guider Agent"))) {
-				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
-				break;
-			}
-		}
-		strncpy(new_agent, m_dither_agent_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+		indigo_change_switch_property_1(nullptr, selected_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME, AGENT_IMAGER_ENABLE_DITHERING_FEATURE_ITEM_NAME, checked);
+	});
+}
 
-		indigo_debug("[SELECTED] %s '%s' %s -> %s\n", __FUNCTION__, selected_agent, old_agent, new_agent);
-		change_related_agent(selected_agent, old_agent, new_agent);
+void ImagerWindow::on_dither_strategy_selected(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[MODE CHANGE SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_guider_ditherung_strategy_property(selected_agent);
 	});
 }
 

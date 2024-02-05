@@ -92,6 +92,12 @@ void ImagerWindow::change_ccd_image_format_property(const char *agent) const {
 	indigo_change_switch_property_1(nullptr, agent, CCD_IMAGE_FORMAT_PROPERTY_NAME, selected_format, true);
 }
 
+void ImagerWindow::change_guider_ditherung_strategy_property(const char *agent) const {
+	static char selected_strategy[INDIGO_NAME_SIZE];
+	strncpy(selected_strategy, m_dither_strategy_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_DITHERING_STRATEGY_PROPERTY_NAME, selected_strategy, true);
+}
+
 void ImagerWindow::change_ccd_upload_property(const char *agent, const char *item_name) const {
 	static char item[INDIGO_NAME_SIZE];
 	strncpy(item, item_name, INDIGO_NAME_SIZE);
@@ -174,6 +180,66 @@ void ImagerWindow::set_related_mount_guider_agent(const char *related_agent) con
 		if (change) {
 			indigo_debug("[RELATED GUIDER AGENT] %s '%s' %s -> %s\n", __FUNCTION__, selected_mount_agent, old_agent, related_agent_trimmed);
 			change_related_agent(selected_mount_agent, old_agent, related_agent_trimmed);
+		}
+	}
+}
+
+void ImagerWindow::set_related_imager_and_guider_agents() const {
+	// Select related guider agent
+	char selected_imager_agent[INDIGO_NAME_SIZE] = {0};
+	char selected_imager_agent_trimmed[INDIGO_NAME_SIZE] = {0};
+	char selected_guider_agent[INDIGO_NAME_SIZE] = {0};
+	char selected_guider_agent_trimmed[INDIGO_NAME_SIZE] = {0};
+	char old_agent[INDIGO_NAME_SIZE] = {0};
+
+	get_selected_imager_agent(selected_imager_agent);
+	get_selected_guider_agent(selected_guider_agent);
+
+	strncpy(selected_imager_agent_trimmed, selected_imager_agent, INDIGO_NAME_SIZE);
+	strncpy(selected_guider_agent_trimmed, selected_guider_agent, INDIGO_NAME_SIZE);
+
+	char *service1 = strrchr(selected_guider_agent_trimmed, '@');
+	char *service2 = strrchr(selected_imager_agent_trimmed, '@');
+	if (service1 != nullptr && service2 != nullptr && !strcmp(service1, service2)) {
+		*(service1 - 1) = '\0';
+		*(service2 - 1) = '\0';
+	}
+
+	bool change = true;
+	old_agent[0] = '\0';
+	indigo_property *p = properties.get(selected_imager_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
+	if (p) {
+		for (int i = 0; i < p->count; i++) {
+			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Guider Agent", strlen("Guider Agent"))) {
+				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
+				if (!strcmp(old_agent, selected_guider_agent_trimmed)) {
+					change = false;
+					break;
+				}
+			}
+		}
+		if (change) {
+			indigo_debug("[RELATED GUIDER AGENT] %s '%s' %s -> %s\n", __FUNCTION__, selected_imager_agent, old_agent, selected_guider_agent_trimmed);
+			change_related_agent(selected_imager_agent, old_agent, selected_guider_agent_trimmed);
+		}
+	}
+
+	change = true;
+	old_agent[0] = '\0';
+	p = properties.get(selected_guider_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
+	if (p) {
+		for (int i = 0; i < p->count; i++) {
+			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Imager Agent", strlen("Imager Agent"))) {
+				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
+				if (!strcmp(old_agent, selected_imager_agent_trimmed)) {
+					change = false;
+					break;
+				}
+			}
+		}
+		if (change) {
+			indigo_debug("[RELATED IMAGER AGENT] %s '%s' %s -> %s\n", __FUNCTION__, selected_guider_agent, old_agent, selected_imager_agent_trimmed);
+			change_related_agent(selected_guider_agent, old_agent, selected_imager_agent_trimmed);
 		}
 	}
 }
