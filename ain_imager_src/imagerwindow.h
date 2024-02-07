@@ -145,7 +145,7 @@ public:
 	friend void update_mount_ra_dec(ImagerWindow *w, indigo_property *property, bool update_input);
 	friend void update_mount_az_alt(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_lst(ImagerWindow *w, indigo_property *property);
-	friend void update_mount_target_info(ImagerWindow *w, indigo_property *property);
+	friend void update_mount_display_coordinates(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_park(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_home(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_track(ImagerWindow *w, indigo_property *property);

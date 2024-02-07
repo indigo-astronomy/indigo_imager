@@ -287,22 +287,22 @@ void update_mount_lst(ImagerWindow *w, indigo_property *property) {
 	w->set_widget_state(w->m_mount_lst_label, property->state);
 }
 
-void update_mount_target_info(ImagerWindow *w, indigo_property *property) {
+void update_mount_display_coordinates(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("change %s", property->name);
 	QString ttr_str, transit_str;
 	double rise = 0, set = 0, ttr = 0;
 	for (int i = 0; i < property->count; i++) {
-		if (client_match_item(&property->items[i], MOUNT_TARGET_INFO_TIME_TO_TRANSIT_ITEM_NAME)) {
+		if (client_match_item(&property->items[i], AGENT_MOUNT_DISPLAY_COORDINATES_TIME_TO_TRANSIT_ITEM_NAME)) {
 			ttr = property->items[i].number.value;
 			ttr_str = QString(indigo_dtos(ttr, "%d:%02d:%02d"));
 		}
-		if (client_match_item(&property->items[i], MOUNT_TARGET_INFO_TRANSIT_TIME_ITEM_NAME)) {
+		if (client_match_item(&property->items[i], AGENT_MOUNT_DISPLAY_COORDINATES_TRANSIT_ITEM_NAME)) {
 			transit_str = QString(indigo_dtos(property->items[i].number.value, "%d:%02d:%02d"));
 		}
-		if (client_match_item(&property->items[i], MOUNT_TARGET_INFO_RISE_TIME_ITEM_NAME)) {
+		if (client_match_item(&property->items[i], AGENT_MOUNT_DISPLAY_COORDINATES_RISE_ITEM_NAME)) {
 			rise = property->items[i].number.value;
 		}
-		if (client_match_item(&property->items[i], MOUNT_TARGET_INFO_SET_TIME_ITEM_NAME)) {
+		if (client_match_item(&property->items[i], AGENT_MOUNT_DISPLAY_COORDINATES_SET_ITEM_NAME)) {
 			set = property->items[i].number.value;
 		}
 
@@ -2482,8 +2482,8 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_LST_TIME_PROPERTY_NAME)) {
 		update_mount_lst(this, property);
 	}
-	if (client_match_device_property(property, selected_mount_agent, MOUNT_TARGET_INFO_PROPERTY_NAME)) {
-		update_mount_target_info(this, property);
+	if (client_match_device_property(property, selected_mount_agent, AGENT_MOUNT_DISPLAY_COORDINATES_PROPERTY_NAME)) {
+		update_mount_display_coordinates(this, property);
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_PARK_PROPERTY_NAME)) {
 		update_mount_park(this, property);
@@ -2807,8 +2807,8 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_LST_TIME_PROPERTY_NAME)) {
 		update_mount_lst(this, property);
 	}
-	if (client_match_device_property(property, selected_mount_agent, MOUNT_TARGET_INFO_PROPERTY_NAME)) {
-		update_mount_target_info(this, property);
+	if (client_match_device_property(property, selected_mount_agent, AGENT_MOUNT_DISPLAY_COORDINATES_PROPERTY_NAME)) {
+		update_mount_display_coordinates(this, property);
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_PARK_PROPERTY_NAME)) {
 		update_mount_park(this, property);
