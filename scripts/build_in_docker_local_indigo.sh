@@ -26,7 +26,7 @@ RUN apt-get -y update && apt-get -y install wget unzip build-essential autoconf 
 RUN echo 'deb [trusted=yes] https://indigo-astronomy.github.io/indigo_ppa/ppa indigo main' >>/etc/apt/sources.list
 RUN apt-get update
 COPY indigo-$4-$3.deb .
-RUN apt-get -y install ./indigo-2.0-271-$3.deb
+RUN apt-get -y install ./indigo-2.0-$4-$3.deb
 COPY ain-imager-$2.tar.gz .
 RUN tar -zxf ain-imager-$2.tar.gz
 RUN rm ain-imager-$2.tar.gz

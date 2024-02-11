@@ -254,6 +254,17 @@ void ViewerWindow::open_image(QString file_name) {
 		m_imager_viewer->setImageStats(stats);
 		m_imager_viewer->centerReference();
 
+		/*
+		indigo_raw_header raw_header;
+		file = fopen("test_guide.raw", "wb");
+		raw_header.signature = INDIGO_RAW_MONO16;
+		raw_header.width = m_preview_image->width();
+		raw_header.height = m_preview_image->height();
+		fwrite(&raw_header, sizeof(indigo_raw_header), 1, file);
+		fwrite(m_preview_image->m_raw_data, m_preview_image->m_width*m_preview_image->m_height*2, 1, file);
+		fclose(file);
+		*/
+	
 		char info[256] = {};
 		int w = m_preview_image->width();
 		int h = m_preview_image->height();
