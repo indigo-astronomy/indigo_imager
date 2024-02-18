@@ -374,7 +374,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	create_telescope_tab(telescope_frame);
 
 	QFrame *solver_frame = new QFrame;
-	m_tools_tabbar->addTab(solver_frame, "&Solver");
+	m_tools_tabbar->addTab(solver_frame, "Sol&ver");
 	create_solver_tab(solver_frame);
 
 	/*
