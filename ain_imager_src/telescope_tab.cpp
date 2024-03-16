@@ -427,14 +427,14 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	dial->setValue(180);
 	dial->setToolTip("Rotator position");
 	dial->setNotchTarget(6);
-	dial->setStyleSheet("background-color: #404040");
+	//dial->setStyleSheet("background-color: #404040");
 	//dial->setReadOnly(true);
 	rotator_frame_layout->addWidget(dial, rotator_row, 0, 4, 1);
 
-	//spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
-	//solve_frame_layout->addItem(spacer, rotator_row, 0, 1, 4);
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	rotator_frame_layout->addItem(spacer, rotator_row, 0, 1, 4);
 
-	//rotator_row++;
+	rotator_row++;
 	label = new QLabel("Position:");
 	rotator_frame_layout->addWidget(label, rotator_row, 1, 1, 1);
 
@@ -451,8 +451,10 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	rotator_frame_layout->addWidget(m_rotator_position_label, rotator_row, 1, 2, 2);
 
 	QDoubleSpinBox *m_rotator_position = new QDoubleSpinBox();
-	m_rotator_position->setMaximum(1000000);
-	m_rotator_position->setMinimum(-1000000);
+	m_rotator_position->setMaximum(360);
+	m_rotator_position->setMinimum(0);
+	m_rotator_position->setDecimals(3);
+	m_rotator_position->setWrapping(true);
 	m_rotator_position->setValue(0);
 	//m_focus_position->setEnabled(false);
 
@@ -485,6 +487,31 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_rotator_in_button->setToolTip("Relative move in");
 	rotator_frame_layout->addWidget(m_rotator_in_button, rotator_row, 5);
 	//connect(m_focusing_in_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_in);
+
+	rotator_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	rotator_frame_layout->addItem(spacer, rotator_row, 0, 1, 4);
+
+	rotator_row++;
+	label = new QLabel("Field derotation:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	rotator_frame_layout->addWidget(label, rotator_row, 0, 1, 5);
+
+	rotator_row++;
+	label = new QLabel("Rot. Rate:");
+	label->setToolTip("Rotation rate for Alt/Az mounts");
+	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	rotator_frame_layout->addWidget(label, rotator_row, 0, 1, 1);
+
+	QLabel *m_mount_ror_label = new QLabel("00.000 \"/s");
+	m_mount_ror_label->setAlignment(Qt::AlignCenter);
+	set_ok(m_mount_ror_label);
+	rotator_frame_layout->addWidget(m_mount_ror_label, rotator_row, 1, 1, 2);
+
+	QCheckBox *m_mount_derotate_cbox = new QCheckBox("Start derotation");
+	m_mount_derotate_cbox->setEnabled(false);
+	rotator_frame_layout->addWidget(m_mount_derotate_cbox, rotator_row, 3, 1, 3);
+	//connect(m_mount_sync_time_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_sync_time);
 
 	QFrame *site_frame = new QFrame();
 	telescope_tabbar->addTab(site_frame, "Site");
