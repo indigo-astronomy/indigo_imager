@@ -54,6 +54,7 @@ class QIndigoServers;
 #include <QCheckBox>
 #include <QStandardPaths>
 #include <QDir>
+#include <QDial>
 #include <QDateTime>
 #include <QFileDialog>
 #include <QTableView>
@@ -741,6 +742,7 @@ private:
 	QCheckBox *m_mount_find_rate_cbox;
 	QCheckBox *m_mount_max_rate_cbox;
 	QComboBox *m_mount_gps_select;
+	QComboBox *m_mount_rotator_select;
 	QComboBox *m_mount_joystick_select;
 	QComboBox *m_mount_coord_source_select;
 	QLabel *m_mount_latitude;

@@ -391,7 +391,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_imager_viewer->setToolTip("No Image");
 	m_imager_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
 	form_layout->addWidget((QWidget*)m_imager_viewer);
-	m_imager_viewer->setMinimumWidth(PROPERTY_AREA_MIN_WIDTH);
+	m_imager_viewer->setMinimumWidth(IMAGE_AREA_MIN_WIDTH);
 	m_imager_viewer->setStretch(conf.preview_stretch_level);
 	m_imager_viewer->setDebayer(conf.preview_bayer_pattern);
 	m_imager_viewer->setBalance(conf.preview_color_balance);

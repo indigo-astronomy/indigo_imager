@@ -29,7 +29,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	capture_frame_layout->setAlignment(Qt::AlignTop);
 	capture_frame->setLayout(capture_frame_layout);
 	capture_frame->setFrameShape(QFrame::StyledPanel);
-	capture_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
+	capture_frame->setMinimumWidth(TOOLBAR_MIN_WIDTH);
 	capture_frame->setContentsMargins(0, 0, 0, 0);
 
 	int row = 0;

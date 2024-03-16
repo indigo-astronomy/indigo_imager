@@ -32,7 +32,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 
 	guider_frame->setLayout(guider_frame_layout);
 	guider_frame->setFrameShape(QFrame::StyledPanel);
-	guider_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
+	guider_frame->setMinimumWidth(TOOLBAR_MIN_WIDTH);
 	guider_frame->setContentsMargins(0, 0, 0, 0);
 
 	int row = 0;

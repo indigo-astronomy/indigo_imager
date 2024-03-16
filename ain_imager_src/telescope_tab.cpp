@@ -37,7 +37,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 
 	telescope_frame->setLayout(telescope_frame_layout);
 	telescope_frame->setFrameShape(QFrame::StyledPanel);
-	telescope_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
+	telescope_frame->setMinimumWidth(TOOLBAR_MIN_WIDTH);
 	telescope_frame->setContentsMargins(0, 0, 0, 0);
 
 	int row = 0;
@@ -401,6 +401,90 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_mount_solve_and_sync_button->setIcon(QIcon(":resource/calibrate.png"));
 	toolbox->addWidget(m_mount_solve_and_sync_button);
 	connect(m_mount_solve_and_sync_button , &QPushButton::clicked, this, &ImagerWindow::on_mount_solve_and_sync);
+
+	QFrame *rotator_frame = new QFrame();
+	telescope_tabbar->addTab(rotator_frame, "Rotator");
+
+	QGridLayout *rotator_frame_layout = new QGridLayout();
+	rotator_frame_layout->setAlignment(Qt::AlignTop);
+	rotator_frame->setLayout(rotator_frame_layout);
+	rotator_frame->setFrameShape(QFrame::StyledPanel);
+	rotator_frame->setContentsMargins(0, 0, 0, 0);
+
+	int rotator_row = 0;
+	label = new QLabel("Rotator:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	rotator_frame_layout->addWidget(label, rotator_row, 0);
+	m_mount_rotator_select = new QComboBox();
+	rotator_frame_layout->addWidget(m_mount_rotator_select, rotator_row, 1, 1, 5);
+	//connect(m_mount_rotator_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_mount_gps_selected);
+
+	rotator_row++;
+	QDial *dial = new QDial(this);
+	dial->setRange(0, 360);
+	dial->setWrapping(true);
+	dial->setNotchesVisible(true);
+	dial->setValue(180);
+	dial->setToolTip("Rotator position");
+	dial->setNotchTarget(6);
+	dial->setStyleSheet("background-color: #404040");
+	//dial->setReadOnly(true);
+	rotator_frame_layout->addWidget(dial, rotator_row, 0, 4, 1);
+
+	//spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	//solve_frame_layout->addItem(spacer, rotator_row, 0, 1, 4);
+
+	//rotator_row++;
+	label = new QLabel("Position:");
+	rotator_frame_layout->addWidget(label, rotator_row, 1, 1, 1);
+
+	rotator_row++;
+	QLabel *m_rotator_position_label = new QLabel("0.000");
+	font = m_rotator_position_label->font();
+	font.setPointSize(font.pointSize() + 2);
+	//font.setBold(true);
+	m_rotator_position_label->setFont(font);
+	set_ok(m_rotator_position_label);
+	m_rotator_position_label->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
+	m_rotator_position_label->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+	m_rotator_position_label->setMinimumWidth(50);
+	rotator_frame_layout->addWidget(m_rotator_position_label, rotator_row, 1, 2, 2);
+
+	QDoubleSpinBox *m_rotator_position = new QDoubleSpinBox();
+	m_rotator_position->setMaximum(1000000);
+	m_rotator_position->setMinimum(-1000000);
+	m_rotator_position->setValue(0);
+	//m_focus_position->setEnabled(false);
+
+	rotator_frame_layout->addWidget(m_rotator_position, rotator_row, 3, 1, 2);
+
+	QToolButton *m_rotator_position_button = new QToolButton(this);
+	m_rotator_position_button->setToolTip(tr("Go to absolute position / Abort move"));
+	m_rotator_position_button->setIcon(QIcon(":resource/play.png"));
+	rotator_frame_layout->addWidget(m_rotator_position_button, rotator_row, 5);
+	//QObject::connect(m_focus_position_button, &QToolButton::clicked, this, &ImagerWindow::on_focuser_position_changed);
+
+	rotator_row++;
+	QDoubleSpinBox *m_rotator_rel = new QDoubleSpinBox();
+	m_rotator_rel->setMaximum(100000);
+	m_rotator_rel->setMinimum(0);
+	m_rotator_rel->setValue(0);
+	m_rotator_rel->setEnabled(false);
+	rotator_frame_layout->addWidget(m_rotator_rel, rotator_row, 3);
+
+	QToolButton *m_rotator_out_button = new QToolButton(this);
+	m_rotator_out_button->setStyleSheet("min-width: 15px");
+	m_rotator_out_button->setIcon(QIcon(":resource/focus_in.png"));
+	m_rotator_out_button->setToolTip("Relative move out");
+	rotator_frame_layout->addWidget(m_rotator_out_button, rotator_row, 4);
+	//connect(m_focusing_out_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_out);
+
+	QToolButton *m_rotator_in_button = new QToolButton(this);
+	m_rotator_in_button->setStyleSheet("min-width: 15px");
+	m_rotator_in_button->setIcon(QIcon(":resource/focus_out.png"));
+	m_rotator_in_button->setToolTip("Relative move in");
+	rotator_frame_layout->addWidget(m_rotator_in_button, rotator_row, 5);
+	//connect(m_focusing_in_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_in);
 
 	QFrame *site_frame = new QFrame();
 	telescope_tabbar->addTab(site_frame, "Site");

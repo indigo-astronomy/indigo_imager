@@ -29,9 +29,7 @@
 #define PATH_LEN PATH_MAX
 #endif
 
-#define PROPERTY_AREA_MIN_WIDTH 500
-#define CAMERA_FRAME_MIN_WIDTH 390
-#define PREVIEW_WIDTH 550
+#define IMAGE_AREA_MIN_WIDTH 500
 
 #define CONFIG_FILENAME "indigo_viewer.conf"
 

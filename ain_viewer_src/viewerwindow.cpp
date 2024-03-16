@@ -174,7 +174,7 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_imager_viewer = new ImageViewer(this, true);
 	m_imager_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
 	form_layout->addWidget((QWidget*)m_imager_viewer);
-	m_imager_viewer->setMinimumWidth(PROPERTY_AREA_MIN_WIDTH);
+	m_imager_viewer->setMinimumWidth(IMAGE_AREA_MIN_WIDTH);
 	rootLayout->addWidget(form_panel);
 
 	m_imager_viewer->setStretch(conf.preview_stretch_level);
@@ -261,10 +261,10 @@ void ViewerWindow::open_image(QString file_name) {
 		raw_header.width = m_preview_image->width();
 		raw_header.height = m_preview_image->height();
 		fwrite(&raw_header, sizeof(indigo_raw_header), 1, file);
-		fwrite(m_preview_image->m_raw_data, m_preview_image->m_width*m_preview_image->m_height*2, 1, file);
+		fwrite(m_preview_image->m_raw_data, raw_header.width*raw_header.height*2, 1, file);
 		fclose(file);
 		*/
-	
+
 		char info[256] = {};
 		int w = m_preview_image->width();
 		int h = m_preview_image->height();

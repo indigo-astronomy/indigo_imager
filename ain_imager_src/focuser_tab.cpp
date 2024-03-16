@@ -37,7 +37,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 
 	focuser_frame->setLayout(focuser_frame_layout);
 	focuser_frame->setFrameShape(QFrame::StyledPanel);
-	focuser_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
+	focuser_frame->setMinimumWidth(TOOLBAR_MIN_WIDTH);
 	focuser_frame->setContentsMargins(0, 0, 0, 0);
 
 	int row = 0;

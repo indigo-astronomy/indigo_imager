@@ -42,7 +42,7 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 
 	solver_frame->setLayout(solver_frame_layout);
 	solver_frame->setFrameShape(QFrame::StyledPanel);
-	solver_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
+	solver_frame->setMinimumWidth(TOOLBAR_MIN_WIDTH);
 	solver_frame->setContentsMargins(0, 0, 0, 0);
 
 	int row = 0;

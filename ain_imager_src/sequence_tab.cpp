@@ -27,7 +27,7 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	sequence_frame_layout->setAlignment(Qt::AlignTop);
 	sequence_frame->setLayout(sequence_frame_layout);
 	sequence_frame->setFrameShape(QFrame::StyledPanel);
-	sequence_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
+	sequence_frame->setMinimumWidth(TOOLBAR_MIN_WIDTH);
 	sequence_frame->setContentsMargins(0, 0, 0, 0);
 
 	int row = 0;
