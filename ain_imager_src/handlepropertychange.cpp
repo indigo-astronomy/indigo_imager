@@ -1140,6 +1140,16 @@ void update_rotator_poition(ImagerWindow *w, indigo_property *property, bool upd
 	}
 }
 
+void update_rotator_reverse(ImagerWindow *w, indigo_property *property) {
+	w->set_enabled(w->m_rotator_reverse_cbox, true);
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], ROTATOR_DIRECTION_REVERSED_ITEM_NAME)) {
+			w->set_checkbox_checked(w->m_rotator_reverse_cbox, property->items[i].sw.value);
+			break;
+		}
+	}
+}
+
 void update_imager_selection_property(ImagerWindow *w, indigo_property *property) {
 	double x = 0, y = 0;
 	int size = 0;
@@ -2576,6 +2586,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, ROTATOR_RELATIVE_MOVE_PROPERTY_NAME)) {
 		update_rotator_poition(this, property);
 	}
+	if (client_match_device_property(property, selected_mount_agent, ROTATOR_DIRECTION_PROPERTY_NAME)) {
+		update_rotator_reverse(this, property);
+	}
 
 	// Astrometry Agent
 	if (client_match_device_property(property, selected_solver_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
@@ -2909,6 +2922,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, ROTATOR_RELATIVE_MOVE_PROPERTY_NAME)) {
 		update_rotator_poition(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, ROTATOR_DIRECTION_PROPERTY_NAME)) {
+		update_rotator_reverse(this, property);
 	}
 
 	// Solver Agent
@@ -3463,6 +3479,12 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("REMOVE %s", property->name);
 		set_spinbox_value(m_rotator_relative, 0);
 		set_enabled(m_rotator_relative, false);
+	}
+	if (client_match_device_property(property, selected_mount_agent, ROTATOR_DIRECTION_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		set_checkbox_state(m_rotator_reverse_cbox, false);
+		set_enabled(m_rotator_reverse_cbox, false);
 	}
 
 	// Solver Agent

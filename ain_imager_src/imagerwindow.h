@@ -125,6 +125,7 @@ public:
 	friend void update_focuser_mode(ImagerWindow *w, indigo_property *property);
 	friend void update_focuser_poition(ImagerWindow *w, indigo_property *property, bool uppdate_input);
 	friend void update_rotator_poition(ImagerWindow *w, indigo_property *property, bool uppdate_input);
+	friend void update_rotator_reverse(ImagerWindow *w, indigo_property *property);
 	friend void update_imager_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_gain_offset_property(ImagerWindow *w, indigo_property *property);
@@ -387,6 +388,7 @@ public slots:
 	void on_image_source3_selected(int index);
 
 	void on_rotator_selected(int index);
+	void on_rotator_reverse_changed(bool clicked);
 	void on_rotator_position_changed();
 	void on_rotator_position_dial_changed(int value);
 	void on_rotator_plus_move();

@@ -444,7 +444,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_rotator_reverse_cbox->setToolTip("Reverse dirction of the rotator");
 	m_rotator_reverse_cbox->setEnabled(false);
 	rotator_frame_layout->addWidget(m_rotator_reverse_cbox, rotator_row, 3, 1, 3);
-	//connect(m_rotator_reverse_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_agent_set_pa_refraction);
+	connect(m_rotator_reverse_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_rotator_reverse_changed);
 
 	rotator_row++;
 	m_rotator_position_label = new QLabel("0.000°");
@@ -1350,6 +1350,20 @@ void ImagerWindow::on_rotator_selected(int index) {
 
 		static bool values[] = { true };
 		indigo_change_switch_property(nullptr, selected_agent, FILTER_ROTATOR_LIST_PROPERTY_NAME, 1, items, values);
+	});
+}
+
+void ImagerWindow::on_rotator_reverse_changed(bool clicked) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		if (clicked) {
+			indigo_change_switch_property_1(nullptr, selected_agent, ROTATOR_DIRECTION_PROPERTY_NAME, ROTATOR_DIRECTION_REVERSED_ITEM_NAME, true);
+		} else {
+			indigo_change_switch_property_1(nullptr, selected_agent, ROTATOR_DIRECTION_PROPERTY_NAME, ROTATOR_DIRECTION_NORMAL_ITEM_NAME, true);
+		}
 	});
 }
 
