@@ -402,6 +402,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	toolbox->addWidget(m_mount_solve_and_sync_button);
 	connect(m_mount_solve_and_sync_button , &QPushButton::clicked, this, &ImagerWindow::on_mount_solve_and_sync);
 
+	// ROTATOR TAB
 	QFrame *rotator_frame = new QFrame();
 	telescope_tabbar->addTab(rotator_frame, "Rotator");
 
@@ -415,21 +416,23 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	label = new QLabel("Rotator:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	rotator_frame_layout->addWidget(label, rotator_row, 0);
-	m_mount_rotator_select = new QComboBox();
-	rotator_frame_layout->addWidget(m_mount_rotator_select, rotator_row, 1, 1, 5);
-	//connect(m_mount_rotator_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_mount_gps_selected);
+	m_rotator_select = new QComboBox();
+	rotator_frame_layout->addWidget(m_rotator_select, rotator_row, 1, 1, 5);
+	connect(m_rotator_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_rotator_selected);
 
 	rotator_row++;
-	QDial *dial = new QDial(this);
-	dial->setRange(0, 360);
-	dial->setWrapping(true);
-	dial->setNotchesVisible(true);
-	dial->setValue(180);
-	dial->setToolTip("Rotator position");
-	dial->setNotchTarget(6);
-	//dial->setStyleSheet("background-color: #404040");
-	//dial->setReadOnly(true);
-	rotator_frame_layout->addWidget(dial, rotator_row, 0, 4, 1);
+	m_rotator_position_dial = new QDial(this);
+	m_rotator_position_dial->setRange(0, 360);
+	m_rotator_position_dial->setWrapping(true);
+	m_rotator_position_dial->setNotchesVisible(true);
+	m_rotator_position_dial->setValue(180);
+	m_rotator_position_dial->setToolTip("Rotator position");
+	set_ok(m_rotator_position_dial);
+	m_rotator_position_dial->setNotchTarget(6);
+	//m_mount_rotator_position_dial->setStyleSheet("background-color: #404040");
+	//m_mount_rotator_position_dial->setReadOnly(true);
+	rotator_frame_layout->addWidget(m_rotator_position_dial, rotator_row, 0, 4, 1);
+	connect(m_rotator_position_dial, &QDial::valueChanged, this, &ImagerWindow::on_rotator_position_dial_changed);
 
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	rotator_frame_layout->addItem(spacer, rotator_row, 0, 1, 4);
@@ -438,8 +441,14 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	label = new QLabel("Position:");
 	rotator_frame_layout->addWidget(label, rotator_row, 1, 1, 1);
 
+	m_rotator_reverse_cbox = new QCheckBox("Reverse direction");
+	m_rotator_reverse_cbox->setToolTip("Reverse dirction of the rotator");
+	m_rotator_reverse_cbox->setEnabled(false);
+	rotator_frame_layout->addWidget(m_rotator_reverse_cbox, rotator_row, 3, 1, 3);
+	//connect(m_rotator_reverse_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_agent_set_pa_refraction);
+
 	rotator_row++;
-	QLabel *m_rotator_position_label = new QLabel("0.000");
+	m_rotator_position_label = new QLabel("0.000°");
 	font = m_rotator_position_label->font();
 	font.setPointSize(font.pointSize() + 2);
 	//font.setBold(true);
@@ -450,7 +459,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_rotator_position_label->setMinimumWidth(50);
 	rotator_frame_layout->addWidget(m_rotator_position_label, rotator_row, 1, 2, 2);
 
-	QDoubleSpinBox *m_rotator_position = new QDoubleSpinBox();
+	m_rotator_position = new QDoubleSpinBox();
 	m_rotator_position->setMaximum(360);
 	m_rotator_position->setMinimum(0);
 	m_rotator_position->setDecimals(3);
@@ -460,34 +469,36 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 
 	rotator_frame_layout->addWidget(m_rotator_position, rotator_row, 3, 1, 2);
 
-	QToolButton *m_rotator_position_button = new QToolButton(this);
+	m_rotator_position_button = new QToolButton(this);
 	m_rotator_position_button->setToolTip(tr("Go to absolute position / Abort move"));
 	m_rotator_position_button->setIcon(QIcon(":resource/play.png"));
 	rotator_frame_layout->addWidget(m_rotator_position_button, rotator_row, 5);
-	//QObject::connect(m_focus_position_button, &QToolButton::clicked, this, &ImagerWindow::on_focuser_position_changed);
+	QObject::connect(m_rotator_position_button, &QToolButton::clicked, this, &ImagerWindow::on_rotator_position_changed);
 
 	rotator_row++;
-	QDoubleSpinBox *m_rotator_rel = new QDoubleSpinBox();
-	m_rotator_rel->setMaximum(100000);
-	m_rotator_rel->setMinimum(0);
-	m_rotator_rel->setValue(0);
-	m_rotator_rel->setEnabled(false);
-	rotator_frame_layout->addWidget(m_rotator_rel, rotator_row, 3);
+	m_rotator_relative = new QDoubleSpinBox();
+	m_rotator_relative->setMaximum(180.0);
+	m_rotator_relative->setMinimum(0);
+	m_rotator_relative->setValue(0);
+	m_rotator_relative->setDecimals(3);
+	m_rotator_relative->setEnabled(false);
+	rotator_frame_layout->addWidget(m_rotator_relative, rotator_row, 3);
 
-	QToolButton *m_rotator_out_button = new QToolButton(this);
-	m_rotator_out_button->setStyleSheet("min-width: 15px");
-	m_rotator_out_button->setIcon(QIcon(":resource/focus_in.png"));
-	m_rotator_out_button->setToolTip("Relative move out");
-	rotator_frame_layout->addWidget(m_rotator_out_button, rotator_row, 4);
+	m_rotator_ccw_button = new QToolButton(this);
+	m_rotator_ccw_button->setStyleSheet("min-width: 15px");
+	m_rotator_ccw_button->setIcon(QIcon(":resource/focus_in.png"));
+	m_rotator_ccw_button->setToolTip("Relative move counter clockwise");
+	rotator_frame_layout->addWidget(m_rotator_ccw_button, rotator_row, 4);
 	//connect(m_focusing_out_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_out);
 
-	QToolButton *m_rotator_in_button = new QToolButton(this);
-	m_rotator_in_button->setStyleSheet("min-width: 15px");
-	m_rotator_in_button->setIcon(QIcon(":resource/focus_out.png"));
-	m_rotator_in_button->setToolTip("Relative move in");
-	rotator_frame_layout->addWidget(m_rotator_in_button, rotator_row, 5);
+	m_rotator_cw_button = new QToolButton(this);
+	m_rotator_cw_button->setStyleSheet("min-width: 15px");
+	m_rotator_cw_button->setIcon(QIcon(":resource/focus_out.png"));
+	m_rotator_cw_button->setToolTip("Relative move clockwise");
+	rotator_frame_layout->addWidget(m_rotator_cw_button, rotator_row, 5);
 	//connect(m_focusing_in_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_in);
 
+	/*
 	rotator_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	rotator_frame_layout->addItem(spacer, rotator_row, 0, 1, 4);
@@ -503,16 +514,18 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	rotator_frame_layout->addWidget(label, rotator_row, 0, 1, 1);
 
-	QLabel *m_mount_ror_label = new QLabel("00.000 \"/s");
-	m_mount_ror_label->setAlignment(Qt::AlignCenter);
-	set_ok(m_mount_ror_label);
-	rotator_frame_layout->addWidget(m_mount_ror_label, rotator_row, 1, 1, 2);
+	QLabel *m_rotator_ror_label = new QLabel("00.000 \"/s");
+	m_rotator_ror_label->setAlignment(Qt::AlignCenter);
+	set_ok(m_rotator_ror_label);
+	rotator_frame_layout->addWidget(m_rotator_ror_label, rotator_row, 1, 1, 2);
 
-	QCheckBox *m_mount_derotate_cbox = new QCheckBox("Start derotation");
-	m_mount_derotate_cbox->setEnabled(false);
-	rotator_frame_layout->addWidget(m_mount_derotate_cbox, rotator_row, 3, 1, 3);
+	QCheckBox *m_rotator_derotate_cbox = new QCheckBox("Start derotation");
+	m_rotator_derotate_cbox->setEnabled(false);
+	rotator_frame_layout->addWidget(m_rotator_derotate_cbox, rotator_row, 3, 1, 3);
 	//connect(m_mount_sync_time_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_sync_time);
+	*/
 
+	// SITE TAB
 	QFrame *site_frame = new QFrame();
 	telescope_tabbar->addTab(site_frame, "Site");
 	QGridLayout *site_frame_layout = new QGridLayout();
@@ -523,7 +536,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 
 	int site_row = 0;
 	label = new QLabel("Source:");
-	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	site_frame_layout->addWidget(label, site_row, 0);
 	m_mount_coord_source_select = new QComboBox();
 	site_frame_layout->addWidget(m_mount_coord_source_select, site_row, 1, 1, 3);
@@ -1320,4 +1333,47 @@ void ImagerWindow::on_custom_object_remove() {
 	} else {
 		indigo_debug("%s -> keep %s\n", __FUNCTION__, obj_id.toUtf8().constData());
 	}
+}
+
+void ImagerWindow::on_rotator_selected(int index) {
+	QtConcurrent::run([=]() {
+		static char selected_rotator[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
+		QString q_rotator_str = m_rotator_select->currentText();
+		if (q_rotator_str.compare("No rotator") == 0) {
+			strcpy(selected_rotator, "NONE");
+		} else {
+			strncpy(selected_rotator, q_rotator_str.toUtf8().constData(), INDIGO_NAME_SIZE);
+		}
+		get_selected_mount_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_rotator);
+		static const char * items[] = { selected_rotator };
+
+		static bool values[] = { true };
+		indigo_change_switch_property(nullptr, selected_agent, FILTER_ROTATOR_LIST_PROPERTY_NAME, 1, items, values);
+	});
+}
+
+void ImagerWindow::on_rotator_position_changed() {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+
+		indigo_property *rotator_position = properties.get(selected_agent, ROTATOR_POSITION_PROPERTY_NAME);
+		if (!rotator_position) {
+			return;
+		}
+		if (rotator_position->state != INDIGO_BUSY_STATE) {
+			change_rotator_position_property(selected_agent);
+		} else {
+			indigo_change_switch_property_1(nullptr, selected_agent, ROTATOR_ABORT_MOTION_PROPERTY_NAME, ROTATOR_ABORT_MOTION_ITEM_NAME, true);
+		}
+	});
+}
+
+void ImagerWindow::on_rotator_position_dial_changed(int value) {
+	value = fmod(value + (3600000) - 180, 360);
+	indigo_debug("%s -> %d\n", __FUNCTION__, value);
+	set_spinbox_value(m_rotator_position, value);
 }

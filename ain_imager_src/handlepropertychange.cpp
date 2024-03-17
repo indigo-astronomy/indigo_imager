@@ -1110,6 +1110,35 @@ void update_focuser_poition(ImagerWindow *w, indigo_property *property, bool upd
 	}
 }
 
+void update_rotator_poition(ImagerWindow *w, indigo_property *property, bool update_input = false) {
+	indigo_debug("change %s", property->name);
+	for (int i = 0; i < property->count; i++) {
+		if (update_input && client_match_item(&property->items[i], ROTATOR_POSITION_ITEM_NAME)) {
+			indigo_debug("change target %s = %f", property->items[i].name, property->items[i].number.target);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_rotator_position);
+			w->set_spinbox_value(w->m_rotator_position, property->items[i].number.target);
+		}
+		if (client_match_item(&property->items[i], ROTATOR_RELATIVE_MOVE_ITEM_NAME)) {
+			w->set_widget_state(w->m_rotator_relative, property->state);
+			indigo_debug("change %s = %f", property->items[i].name, property->items[i].number.value);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_rotator_relative);
+		}
+		if (client_match_item(&property->items[i], ROTATOR_POSITION_ITEM_NAME)) {
+			w->set_widget_state(w->m_rotator_position_label, property->state);
+			w->set_widget_state(w->m_rotator_position_dial, property->state);
+			char position[INDIGO_VALUE_SIZE];
+			snprintf(position, INDIGO_VALUE_SIZE, "%.3f°", property->items[i].number.value);
+			w->set_text(w->m_rotator_position_label, position);
+			w->set_dial_value(w->m_rotator_position_dial, property->items[i].number.value + 180);
+		}
+	}
+	if (property->state == INDIGO_BUSY_STATE) {
+		w->m_rotator_position_button->setIcon(QIcon(":resource/stop.png"));
+	} else {
+		w->m_rotator_position_button->setIcon(QIcon(":resource/play.png"));
+	}
+}
+
 void update_imager_selection_property(ImagerWindow *w, indigo_property *property) {
 	double x = 0, y = 0;
 	int size = 0;
@@ -2537,6 +2566,15 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, AGENT_SET_HOST_TIME_PROPERTY_NAME)) {
 		update_mount_agent_sync_time(this, property);
 	}
+	if (client_match_device_property(property, selected_mount_agent, FILTER_ROTATOR_LIST_PROPERTY_NAME)) {
+		add_items_to_combobox(this, property, m_rotator_select);
+	}
+	if (client_match_device_property(property, selected_mount_agent, ROTATOR_POSITION_PROPERTY_NAME)) {
+		update_rotator_poition(this, property, true);
+	}
+	if (client_match_device_property(property, selected_mount_agent, ROTATOR_RELATIVE_MOVE_PROPERTY_NAME)) {
+		update_rotator_poition(this, property);
+	}
 
 	// Astrometry Agent
 	if (client_match_device_property(property, selected_solver_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
@@ -2861,6 +2899,15 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, AGENT_SET_HOST_TIME_PROPERTY_NAME)) {
 		update_mount_agent_sync_time(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, FILTER_ROTATOR_LIST_PROPERTY_NAME)) {
+		change_combobox_selection(this, property, m_rotator_select);
+	}
+	if (client_match_device_property(property, selected_mount_agent, ROTATOR_POSITION_PROPERTY_NAME)) {
+		update_rotator_poition(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, ROTATOR_RELATIVE_MOVE_PROPERTY_NAME)) {
+		update_rotator_poition(this, property);
 	}
 
 	// Solver Agent
@@ -3397,6 +3444,24 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		set_checkbox_state(m_mount_sync_time_cbox, Qt::Unchecked);
 		set_enabled(m_mount_sync_time_cbox, false);
+	}
+	if (client_match_device_property(property, selected_mount_agent, FILTER_ROTATOR_LIST_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		clear_combobox(m_rotator_select);
+	}
+	if (client_match_device_property(property, selected_mount_agent, ROTATOR_POSITION_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("REMOVE %s", property->name);
+		set_text(m_rotator_position_label, "0.000°");
+		set_widget_state(m_rotator_position_label, INDIGO_OK_STATE);
+		set_widget_state(m_rotator_position_dial, INDIGO_OK_STATE);
+	}
+	if (client_match_device_property(property, selected_mount_agent, ROTATOR_RELATIVE_MOVE_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("REMOVE %s", property->name);
+		set_spinbox_value(m_rotator_relative, 0);
+		set_enabled(m_rotator_relative, false);
 	}
 
 	// Solver Agent

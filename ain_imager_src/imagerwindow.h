@@ -124,6 +124,7 @@ public:
 	friend void update_focuser_temperature_compensation_steps(ImagerWindow *w, indigo_property *property);
 	friend void update_focuser_mode(ImagerWindow *w, indigo_property *property);
 	friend void update_focuser_poition(ImagerWindow *w, indigo_property *property, bool uppdate_input);
+	friend void update_rotator_poition(ImagerWindow *w, indigo_property *property, bool uppdate_input);
 	friend void update_imager_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_gain_offset_property(ImagerWindow *w, indigo_property *property);
@@ -178,6 +179,7 @@ signals:
 	void set_guider_label(int state, const char *text);
 	void set_spinbox_value(QSpinBox *widget, double value);
 	void set_spinbox_value(QDoubleSpinBox *widget, double value);
+	void set_dial_value(QDial *widget, double value);
 	void configure_spinbox(QSpinBox *widget, indigo_item *item, int perm);
 	void configure_spinbox(QDoubleSpinBox *widget, indigo_item *item, int perm);
 	void set_checkbox_checked(QCheckBox *widget, bool checked);
@@ -384,6 +386,10 @@ public slots:
 	void on_image_source2_selected(int index);
 	void on_image_source3_selected(int index);
 
+	void on_rotator_selected(int index);
+	void on_rotator_position_changed();
+	void on_rotator_position_dial_changed(int value);
+
 	void on_solver_agent_selected(int index);
 	void on_solver_ra_dec_hints_changed(bool clicked);
 	void on_solver_hints_changed(int value);
@@ -446,6 +452,12 @@ public slots:
 	};
 
 	void on_set_spinbox_value(QDoubleSpinBox *widget, double value) {
+		widget->blockSignals(true);
+		widget->setValue(value);
+		widget->blockSignals(false);
+	};
+
+	void on_set_dial_value(QDial *widget, double value) {
 		widget->blockSignals(true);
 		widget->setValue(value);
 		widget->blockSignals(false);
@@ -766,6 +778,16 @@ private:
 	QPushButton *m_mount_solve_and_center_button;
 	QPushButton *m_mount_solve_and_sync_button;
 
+	QComboBox *m_rotator_select;
+	QDial *m_rotator_position_dial;
+	QCheckBox *m_rotator_reverse_cbox;
+	QLabel *m_rotator_position_label;
+	QDoubleSpinBox *m_rotator_position;
+	QToolButton *m_rotator_position_button;
+	QDoubleSpinBox *m_rotator_relative;
+	QToolButton *m_rotator_ccw_button;
+	QToolButton *m_rotator_cw_button;
+
 	//QCheckBox *m_mount_use_solver_cbox;
 	QComboBox *m_solver_source_select2;
 	QDoubleSpinBox *m_solver_exposure2;
@@ -936,6 +958,8 @@ private:
 	void change_mount_agent_equatorial(const char *agent, bool sync=false) const;
 	void change_mount_agent_abort(const char *agent) const;
 	void change_mount_agent_location(const char *agent, QString property_prefix) const;
+
+	void change_rotator_position_property(const char *agent) const;
 
 	void change_solver_agent_hints_property(const char *agent) const;
 	void clear_solver_agent_releated_agents(const char *agent) const;

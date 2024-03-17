@@ -451,6 +451,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(this, &ImagerWindow::set_lineedit_text, this, &ImagerWindow::on_set_lineedit_text);
 	connect(this, QOverload<QDoubleSpinBox*, double>::of(&ImagerWindow::set_spinbox_value), this, QOverload<QDoubleSpinBox*, double>::of(&ImagerWindow::on_set_spinbox_value));
 	connect(this, QOverload<QSpinBox*, double>::of(&ImagerWindow::set_spinbox_value), this, QOverload<QSpinBox*, double>::of(&ImagerWindow::on_set_spinbox_value));
+	connect(this, QOverload<QDial*, double>::of(&ImagerWindow::set_dial_value), this, QOverload<QDial*, double>::of(&ImagerWindow::on_set_dial_value));
 	connect(this, QOverload<QDoubleSpinBox*, indigo_item*, int>::of(&ImagerWindow::configure_spinbox), this, QOverload<QDoubleSpinBox*, indigo_item*, int>::of(&ImagerWindow::on_configure_spinbox));
 	connect(this, QOverload<QSpinBox*, indigo_item*, int>::of(&ImagerWindow::configure_spinbox), this, QOverload<QSpinBox*, indigo_item*, int>::of(&ImagerWindow::on_configure_spinbox));
 	connect(this, QOverload<QLabel*, QString>::of(&ImagerWindow::set_text), this, QOverload<QLabel*, QString>::of(&ImagerWindow::on_set_text));
