@@ -1120,8 +1120,9 @@ void update_rotator_poition(ImagerWindow *w, indigo_property *property, bool upd
 		}
 		if (client_match_item(&property->items[i], ROTATOR_RELATIVE_MOVE_ITEM_NAME)) {
 			w->set_widget_state(w->m_rotator_relative, property->state);
-			indigo_debug("change %s = %f", property->items[i].name, property->items[i].number.value);
+			indigo_debug("change %s = %f", property->items[i].name, property->items[i].number.target);
 			configure_spinbox(w, &property->items[i], property->perm, w->m_rotator_relative);
+			w->set_spinbox_value(w->m_rotator_relative, abs(property->items[i].number.target));
 		}
 		if (client_match_item(&property->items[i], ROTATOR_POSITION_ITEM_NAME)) {
 			w->set_widget_state(w->m_rotator_position_label, property->state);

@@ -429,7 +429,6 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_rotator_position_dial->setToolTip("Rotator position");
 	set_ok(m_rotator_position_dial);
 	m_rotator_position_dial->setNotchTarget(6);
-	//m_mount_rotator_position_dial->setStyleSheet("background-color: #404040");
 	//m_mount_rotator_position_dial->setReadOnly(true);
 	rotator_frame_layout->addWidget(m_rotator_position_dial, rotator_row, 0, 4, 1);
 	connect(m_rotator_position_dial, &QDial::valueChanged, this, &ImagerWindow::on_rotator_position_dial_changed);
@@ -484,19 +483,19 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_rotator_relative->setEnabled(false);
 	rotator_frame_layout->addWidget(m_rotator_relative, rotator_row, 3);
 
-	m_rotator_ccw_button = new QToolButton(this);
-	m_rotator_ccw_button->setStyleSheet("min-width: 15px");
-	m_rotator_ccw_button->setIcon(QIcon(":resource/focus_in.png"));
-	m_rotator_ccw_button->setToolTip("Relative move counter clockwise");
-	rotator_frame_layout->addWidget(m_rotator_ccw_button, rotator_row, 4);
-	//connect(m_focusing_out_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_out);
+	m_rotator_minus_button = new QToolButton(this);
+	m_rotator_minus_button->setStyleSheet("min-width: 15px");
+	m_rotator_minus_button->setIcon(QIcon(":resource/zoom-out.png"));
+	m_rotator_minus_button->setToolTip("Relative move counter clockwise (-)");
+	rotator_frame_layout->addWidget(m_rotator_minus_button, rotator_row, 4);
+	connect(m_rotator_minus_button, &QToolButton::clicked, this, &ImagerWindow::on_rotator_minus_move);
 
-	m_rotator_cw_button = new QToolButton(this);
-	m_rotator_cw_button->setStyleSheet("min-width: 15px");
-	m_rotator_cw_button->setIcon(QIcon(":resource/focus_out.png"));
-	m_rotator_cw_button->setToolTip("Relative move clockwise");
-	rotator_frame_layout->addWidget(m_rotator_cw_button, rotator_row, 5);
-	//connect(m_focusing_in_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_in);
+	m_rotator_plus_button = new QToolButton(this);
+	m_rotator_plus_button->setStyleSheet("min-width: 15px");
+	m_rotator_plus_button->setIcon(QIcon(":resource/zoom-in.png"));
+	m_rotator_plus_button->setToolTip("Relative move clockwise (+)");
+	rotator_frame_layout->addWidget(m_rotator_plus_button, rotator_row, 5);
+	connect(m_rotator_plus_button, &QToolButton::clicked, this, &ImagerWindow::on_rotator_plus_move);
 
 	/*
 	rotator_row++;
@@ -1376,4 +1375,26 @@ void ImagerWindow::on_rotator_position_dial_changed(int value) {
 	value = fmod(value + (3600000) - 180, 360);
 	indigo_debug("%s -> %d\n", __FUNCTION__, value);
 	set_spinbox_value(m_rotator_position, value);
+}
+
+void ImagerWindow::on_rotator_plus_move() {
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+		static double move;
+		move = (double)m_rotator_relative->value();
+		indigo_change_number_property_1(nullptr, selected_agent, ROTATOR_RELATIVE_MOVE_PROPERTY_NAME, ROTATOR_RELATIVE_MOVE_ITEM_NAME, move);
+	});
+}
+
+void ImagerWindow::on_rotator_minus_move() {
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+		static double move;
+		move = (double)-m_rotator_relative->value();
+		indigo_change_number_property_1(nullptr, selected_agent, ROTATOR_RELATIVE_MOVE_PROPERTY_NAME, ROTATOR_RELATIVE_MOVE_ITEM_NAME, move);
+	});
 }

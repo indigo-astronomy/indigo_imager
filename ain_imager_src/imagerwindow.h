@@ -389,6 +389,8 @@ public slots:
 	void on_rotator_selected(int index);
 	void on_rotator_position_changed();
 	void on_rotator_position_dial_changed(int value);
+	void on_rotator_plus_move();
+	void on_rotator_minus_move();
 
 	void on_solver_agent_selected(int index);
 	void on_solver_ra_dec_hints_changed(bool clicked);
@@ -785,8 +787,8 @@ private:
 	QDoubleSpinBox *m_rotator_position;
 	QToolButton *m_rotator_position_button;
 	QDoubleSpinBox *m_rotator_relative;
-	QToolButton *m_rotator_ccw_button;
-	QToolButton *m_rotator_cw_button;
+	QToolButton *m_rotator_minus_button;
+	QToolButton *m_rotator_plus_button;
 
 	//QCheckBox *m_mount_use_solver_cbox;
 	QComboBox *m_solver_source_select2;
