@@ -390,6 +390,7 @@ public slots:
 	void on_rotator_selected(int index);
 	void on_rotator_reverse_changed(bool clicked);
 	void on_rotator_position_changed();
+	void on_rotator_sync();
 	void on_rotator_position_dial_changed(int value);
 	void on_rotator_plus_move();
 	void on_rotator_minus_move();
@@ -788,6 +789,7 @@ private:
 	QLabel *m_rotator_position_label;
 	QDoubleSpinBox *m_rotator_position;
 	QToolButton *m_rotator_position_button;
+	QToolButton *m_rotator_sync_button;
 	QDoubleSpinBox *m_rotator_relative;
 	QToolButton *m_rotator_minus_button;
 	QToolButton *m_rotator_plus_button;
@@ -964,6 +966,7 @@ private:
 	void change_mount_agent_location(const char *agent, QString property_prefix) const;
 
 	void change_rotator_position_property(const char *agent) const;
+	void change_rotator_sync_property(const char *agent) const;
 
 	void change_solver_agent_hints_property(const char *agent) const;
 	void clear_solver_agent_releated_agents(const char *agent) const;

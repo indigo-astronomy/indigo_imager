@@ -466,13 +466,19 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_rotator_position->setValue(0);
 	//m_focus_position->setEnabled(false);
 
-	rotator_frame_layout->addWidget(m_rotator_position, rotator_row, 3, 1, 2);
+	rotator_frame_layout->addWidget(m_rotator_position, rotator_row, 3, 1, 1);
 
 	m_rotator_position_button = new QToolButton(this);
 	m_rotator_position_button->setToolTip(tr("Go to absolute position / Abort move"));
 	m_rotator_position_button->setIcon(QIcon(":resource/play.png"));
-	rotator_frame_layout->addWidget(m_rotator_position_button, rotator_row, 5);
+	rotator_frame_layout->addWidget(m_rotator_position_button, rotator_row, 4);
 	QObject::connect(m_rotator_position_button, &QToolButton::clicked, this, &ImagerWindow::on_rotator_position_changed);
+
+	m_rotator_sync_button = new QToolButton(this);
+	m_rotator_sync_button->setToolTip(tr("Sync rotator position"));
+	m_rotator_sync_button->setIcon(QIcon(":resource/calibrate.png"));
+	rotator_frame_layout->addWidget(m_rotator_sync_button, rotator_row, 5);
+	QObject::connect(m_rotator_sync_button, &QToolButton::clicked, this, &ImagerWindow::on_rotator_sync);
 
 	rotator_row++;
 	m_rotator_relative = new QDoubleSpinBox();
@@ -1382,6 +1388,35 @@ void ImagerWindow::on_rotator_position_changed() {
 		} else {
 			indigo_change_switch_property_1(nullptr, selected_agent, ROTATOR_ABORT_MOTION_PROPERTY_NAME, ROTATOR_ABORT_MOTION_ITEM_NAME, true);
 		}
+	});
+}
+
+void ImagerWindow::on_rotator_sync() {
+	if (conf.require_confirmation) {
+		char guider_agent[INDIGO_NAME_SIZE];
+		get_selected_guider_agent(guider_agent);
+		indigo_property *agent_start_process = properties.get(guider_agent, AGENT_START_PROCESS_PROPERTY_NAME);
+		if (agent_start_process && agent_start_process->state != INDIGO_BUSY_STATE ) {
+			QMessageBox msgBox(this);
+			msgBox.setWindowTitle("Synchronize rotator");
+			msgBox.setText(QString("Set the entered position as current?"));
+			msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+			msgBox.setDefaultButton(QMessageBox::Yes);
+			if (QMessageBox::No == msgBox.exec()) {
+				return;
+			}
+		}
+	}
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+
+		indigo_property *rotator_position = properties.get(selected_agent, ROTATOR_POSITION_PROPERTY_NAME);
+		if (!rotator_position) {
+			return;
+		}
+		change_rotator_sync_property(selected_agent);
 	});
 }
 

@@ -1209,3 +1209,10 @@ void ImagerWindow::change_rotator_position_property(const char *agent) const {
 	position = (double)m_rotator_position->value();
 	indigo_change_number_property_1(nullptr, agent, ROTATOR_POSITION_PROPERTY_NAME, ROTATOR_POSITION_ITEM_NAME, position);
 }
+
+void ImagerWindow::change_rotator_sync_property(const char *agent) const {
+	indigo_change_switch_property_1(nullptr, agent, ROTATOR_ON_POSITION_SET_PROPERTY_NAME, ROTATOR_ON_POSITION_SET_SYNC_ITEM_NAME, true);
+	static double position;
+	position = (double)m_rotator_position->value();
+	indigo_change_number_property_1(nullptr, agent, ROTATOR_POSITION_PROPERTY_NAME, ROTATOR_POSITION_ITEM_NAME, position);
+}
