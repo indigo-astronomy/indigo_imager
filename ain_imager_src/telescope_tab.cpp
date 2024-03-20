@@ -503,7 +503,6 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	rotator_frame_layout->addWidget(m_rotator_plus_button, rotator_row, 5);
 	connect(m_rotator_plus_button, &QToolButton::clicked, this, &ImagerWindow::on_rotator_plus_move);
 
-	/*
 	rotator_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	rotator_frame_layout->addItem(spacer, rotator_row, 0, 1, 4);
@@ -511,24 +510,39 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	rotator_row++;
 	label = new QLabel("Field derotation:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	rotator_frame_layout->addWidget(label, rotator_row, 0, 1, 5);
+	rotator_frame_layout->addWidget(label, rotator_row, 0, 1, 3);
+
+	m_derotation_status_label = new QLabel("");
+	m_derotation_status_label->setTextFormat(Qt::RichText);
+	m_derotation_status_label->setText("<img src=\":resource/led-grey.png\"> Idle");
+	rotator_frame_layout->addWidget(m_derotation_status_label, rotator_row, 3, 1, 3);
 
 	rotator_row++;
-	label = new QLabel("Rot. Rate:");
-	label->setToolTip("Rotation rate for Alt/Az mounts");
+	label = new QLabel("Parall. angle:");
+	label->setToolTip("Parallactic angle of the object");
 	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	rotator_frame_layout->addWidget(label, rotator_row, 0, 1, 1);
 
-	QLabel *m_rotator_ror_label = new QLabel("00.000 \"/s");
+	m_rotator_pa_label = new QLabel("0° 00' 00.0\"");
+	m_rotator_pa_label->setAlignment(Qt::AlignCenter);
+	set_ok(m_rotator_pa_label);
+	rotator_frame_layout->addWidget(m_rotator_pa_label, rotator_row, 1, 1, 2);
+
+	m_rotator_derotate_cbox = new QCheckBox("Start derotation");
+	m_rotator_derotate_cbox->setEnabled(false);
+	rotator_frame_layout->addWidget(m_rotator_derotate_cbox, rotator_row, 3, 1, 3);
+	connect(m_rotator_derotate_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_rotator_derotate);
+
+	rotator_row++;
+	label = new QLabel("Rot. Rate:");
+	label->setToolTip("Derotation rate for Alt/Az mounts");
+	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	rotator_frame_layout->addWidget(label, rotator_row, 0, 1, 1);
+
+	m_rotator_ror_label = new QLabel("00.000 \"/s");
 	m_rotator_ror_label->setAlignment(Qt::AlignCenter);
 	set_ok(m_rotator_ror_label);
 	rotator_frame_layout->addWidget(m_rotator_ror_label, rotator_row, 1, 1, 2);
-
-	QCheckBox *m_rotator_derotate_cbox = new QCheckBox("Start derotation");
-	m_rotator_derotate_cbox->setEnabled(false);
-	rotator_frame_layout->addWidget(m_rotator_derotate_cbox, rotator_row, 3, 1, 3);
-	//connect(m_mount_sync_time_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_mount_sync_time);
-	*/
 
 	// SITE TAB
 	QFrame *site_frame = new QFrame();
@@ -1369,6 +1383,20 @@ void ImagerWindow::on_rotator_reverse_changed(bool clicked) {
 			indigo_change_switch_property_1(nullptr, selected_agent, ROTATOR_DIRECTION_PROPERTY_NAME, ROTATOR_DIRECTION_REVERSED_ITEM_NAME, true);
 		} else {
 			indigo_change_switch_property_1(nullptr, selected_agent, ROTATOR_DIRECTION_PROPERTY_NAME, ROTATOR_DIRECTION_NORMAL_ITEM_NAME, true);
+		}
+	});
+}
+
+void ImagerWindow::on_rotator_derotate(bool clicked) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		if (clicked) {
+			indigo_change_switch_property_1(nullptr, selected_agent, AGENT_FIELD_DEROTATION_PROPERTY_NAME , AGENT_FIELD_DEROTATION_ENABLED_ITEM_NAME, true);
+		} else {
+			indigo_change_switch_property_1(nullptr, selected_agent, AGENT_FIELD_DEROTATION_PROPERTY_NAME , AGENT_FIELD_DEROTATION_DISABLED_ITEM_NAME, true);
 		}
 	});
 }

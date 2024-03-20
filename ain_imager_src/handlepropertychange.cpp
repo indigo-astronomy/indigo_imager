@@ -305,7 +305,12 @@ void update_mount_display_coordinates(ImagerWindow *w, indigo_property *property
 		if (client_match_item(&property->items[i], AGENT_MOUNT_DISPLAY_COORDINATES_SET_ITEM_NAME)) {
 			set = property->items[i].number.value;
 		}
-
+		if (client_match_item(&property->items[i], AGENT_MOUNT_DISPLAY_COORDINATES_PARALLACTIC_ANGLE_ITEM_NAME)) {
+			w->set_text(w->m_rotator_pa_label, QString(indigo_dtos(property->items[i].number.value, "%d° %02d' %04.1f\"")));
+		}
+		if (client_match_item(&property->items[i], AGENT_MOUNT_DISPLAY_COORDINATES_DEROTATION_RATE_ITEM_NAME)) {
+			w->set_text(w->m_rotator_ror_label, QString("%1 \"/s").arg(property->items[i].number.value, 0, 'f', 3));
+		}
 	}
 	w->set_text(w->m_mount_ttr_label, ttr_str);
 	if (ttr < 5.0/60) {  // 5 min
@@ -1146,6 +1151,27 @@ void update_rotator_reverse(ImagerWindow *w, indigo_property *property) {
 		if (client_match_item(&property->items[i], ROTATOR_DIRECTION_REVERSED_ITEM_NAME)) {
 			w->set_checkbox_checked(w->m_rotator_reverse_cbox, property->items[i].sw.value);
 			break;
+		}
+	}
+}
+
+void update_rotator_derotation(ImagerWindow *w, indigo_property *property) {
+	w->set_enabled(w->m_rotator_derotate_cbox, true);
+	bool enabled = false;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], AGENT_FIELD_DEROTATION_ENABLED_ITEM_NAME)) {
+			enabled = property->items[i].sw.value;
+			break;
+		}
+	}
+	w->set_checkbox_checked(w->m_rotator_derotate_cbox, enabled);
+	if(property->state == INDIGO_ALERT_STATE) {
+		w->set_text(w->m_derotation_status_label, "<img src=\":resource/led-red.png\"> Failed");
+	} else {
+		if (enabled) {
+			w->set_text(w->m_derotation_status_label, "<img src=\":resource/led-green.png\"> Derotating");
+		} else {
+			w->set_text(w->m_derotation_status_label, "<img src=\":resource/led-grey.png\"> Stopped");
 		}
 	}
 }
@@ -2589,6 +2615,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, ROTATOR_DIRECTION_PROPERTY_NAME)) {
 		update_rotator_reverse(this, property);
 	}
+	if (client_match_device_property(property, selected_mount_agent, AGENT_FIELD_DEROTATION_PROPERTY_NAME)) {
+		update_rotator_derotation(this, property);
+	}
 
 	// Astrometry Agent
 	if (client_match_device_property(property, selected_solver_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
@@ -2925,6 +2954,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, ROTATOR_DIRECTION_PROPERTY_NAME)) {
 		update_rotator_reverse(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, AGENT_FIELD_DEROTATION_PROPERTY_NAME)) {
+		update_rotator_derotation(this, property);
 	}
 
 	// Solver Agent
@@ -3486,6 +3518,14 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_checkbox_state(m_rotator_reverse_cbox, false);
 		set_enabled(m_rotator_reverse_cbox, false);
 	}
+	if (client_match_device_property(property, selected_mount_agent, AGENT_FIELD_DEROTATION_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		set_checkbox_state(m_rotator_derotate_cbox, false);
+		set_enabled(m_rotator_derotate_cbox, false);
+		set_text(m_derotation_status_label, "<img src=\":resource/led-grey.png\"> Idle");
+	}
+
 
 	// Solver Agent
 	if (client_match_device_property(property, selected_solver_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME) ||

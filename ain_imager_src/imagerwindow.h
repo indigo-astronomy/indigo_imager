@@ -126,6 +126,7 @@ public:
 	friend void update_focuser_poition(ImagerWindow *w, indigo_property *property, bool uppdate_input);
 	friend void update_rotator_poition(ImagerWindow *w, indigo_property *property, bool uppdate_input);
 	friend void update_rotator_reverse(ImagerWindow *w, indigo_property *property);
+	friend void update_rotator_derotation(ImagerWindow *w, indigo_property *property);
 	friend void update_imager_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_gain_offset_property(ImagerWindow *w, indigo_property *property);
@@ -389,6 +390,7 @@ public slots:
 
 	void on_rotator_selected(int index);
 	void on_rotator_reverse_changed(bool clicked);
+	void on_rotator_derotate(bool clicked);
 	void on_rotator_position_changed();
 	void on_rotator_sync();
 	void on_rotator_position_dial_changed(int value);
@@ -793,6 +795,11 @@ private:
 	QDoubleSpinBox *m_rotator_relative;
 	QToolButton *m_rotator_minus_button;
 	QToolButton *m_rotator_plus_button;
+
+	QLabel *m_derotation_status_label;
+	QLabel *m_rotator_pa_label;
+	QLabel *m_rotator_ror_label;
+	QCheckBox *m_rotator_derotate_cbox;
 
 	//QCheckBox *m_mount_use_solver_cbox;
 	QComboBox *m_solver_source_select2;
