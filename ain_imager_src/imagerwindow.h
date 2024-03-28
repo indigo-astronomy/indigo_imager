@@ -641,8 +641,11 @@ private:
 	QSpinBox  *m_focus_star_radius;
 	QComboBox *m_focuser_subframe_select;
 	QComboBox *m_focuser_reverse_select;
+	QLabel    *m_initial_step_label;
 	QSpinBox  *m_initial_step;
+	QLabel    *m_final_step_label;
 	QSpinBox  *m_final_step;
+	QSpinBox  *m_ucurve_samples;
 	QSpinBox  *m_focus_backlash;
 	QDoubleSpinBox  *m_focus_bl_overshoot;
 	QSpinBox  *m_focus_stack;

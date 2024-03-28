@@ -345,8 +345,8 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
 
 	settings_row++;
-	label = new QLabel("Initial Step:");
-	settings_frame_layout->addWidget(label, settings_row, 0);
+	m_initial_step_label = new QLabel("Initial step:");
+	settings_frame_layout->addWidget(m_initial_step_label, settings_row, 0);
 	m_initial_step = new QSpinBox();
 	m_initial_step->setMaximum(1000000);
 	m_initial_step->setMinimum(0);
@@ -354,14 +354,22 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_initial_step->setEnabled(false);
 	settings_frame_layout->addWidget(m_initial_step , settings_row, 1);
 
-	label = new QLabel("Final step:");
-	settings_frame_layout->addWidget(label, settings_row, 2);
+	m_final_step_label = new QLabel("Final step:");
+	settings_frame_layout->addWidget(m_final_step_label, settings_row, 2);
 	m_final_step = new QSpinBox();
 	m_final_step->setMaximum(100000);
 	m_final_step->setMinimum(0);
 	m_final_step->setValue(0);
 	m_final_step->setEnabled(false);
 	settings_frame_layout->addWidget(m_final_step, settings_row, 3);
+
+	m_ucurve_samples = new QSpinBox();
+	m_ucurve_samples->setMaximum(100000);
+	m_ucurve_samples->setMinimum(0);
+	m_ucurve_samples->setValue(0);
+	m_ucurve_samples->setEnabled(false);
+	m_ucurve_samples->hide();
+	settings_frame_layout->addWidget(m_ucurve_samples, settings_row, 3);
 
 	settings_row++;
 	label = new QLabel("Backlash:");

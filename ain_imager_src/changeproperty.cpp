@@ -537,22 +537,24 @@ void ImagerWindow::change_agent_focus_params_property(const char *agent, bool se
 	static const char *items[] = {
 		AGENT_IMAGER_FOCUS_INITIAL_ITEM_NAME,
 		AGENT_IMAGER_FOCUS_FINAL_ITEM_NAME,
+		AGENT_IMAGER_FOCUS_UCURVE_SAMPLES_ITEM_NAME,
 		AGENT_IMAGER_FOCUS_STACK_ITEM_NAME,
 		AGENT_IMAGER_FOCUS_REPEAT_ITEM_NAME,
 		AGENT_IMAGER_FOCUS_DELAY_ITEM_NAME,
 		AGENT_IMAGER_FOCUS_BACKLASH_ITEM_NAME
 	};
-	static double values[6];
+	static double values[7];
 	values[0] = (double)m_initial_step->value();
 	values[1] = (double)m_final_step->value();
-	values[2] = (double)m_focus_stack->value();
-	values[3] = 0;
+	values[2] = (double)m_ucurve_samples->value();
+	values[3] = (double)m_focus_stack->value();
 	values[4] = 0;
-	values[5] = (double)m_focus_backlash->value();
+	values[5] = 0;
+	values[6] = (double)m_focus_backlash->value();
 	if (set_backlash) {
-		indigo_change_number_property(nullptr, agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME, 6, items, values);
+		indigo_change_number_property(nullptr, agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME, 7, items, values);
 	} else {
-		indigo_change_number_property(nullptr, agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME, 5, items, values);
+		indigo_change_number_property(nullptr, agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME, 6, items, values);
 	}
 }
 
