@@ -591,7 +591,7 @@ double SequenceEditor::approximate_duration() {
 
 	for (int row = 0; row < row_count; row++) {
 		Batch b = m_model.get_batch(row);
-		duration += (b.exposure().toDouble() + b.delay().toDouble()) * b.count().toDouble() + 10 * b.focus().toDouble();
+		duration += b.approximate_duration();
 	}
 
 	int repeat = m_repeat_box->value();

@@ -21,6 +21,7 @@
 
 #include <QtGui>
 #include <QtWidgets>
+#include <QTime>
 
 class Batch {
 	bool m_empty;
@@ -114,6 +115,10 @@ public:
 	QString mode() const { return m_mode; }
 	QString frame() const { return m_frame; }
 	QString focus() const { return m_focus; }
+
+	double approximate_duration() const {
+		return (m_exposure.toDouble() + m_delay.toDouble()) * m_count.toDouble() + 10 * m_focus.toDouble();
+	}
 
 	QString to_property_value() const {
 		QString batch_str;
@@ -218,26 +223,26 @@ public:
 
 	QVariant data(const QModelIndex &index, int role) const override {
 		if (role != Qt::DisplayRole && role != Qt::EditRole && role != Qt::ToolTipRole) return {};
-		const auto &sequence = m_data[index.row()];
-		if (sequence.is_empty()) {
+		const auto &batch = m_data[index.row()];
+		if (batch.is_empty()) {
 			return {};
 		}
 		switch (index.column()) {
-			case 0: return sequence.filter();
-			case 1: return sequence.exposure();
-			case 2: return sequence.delay();
-			case 3: return sequence.count();
-			case 4: return sequence.mode();
-			case 5: return sequence.frame();
-			case 6: return sequence.focus();
+			case 0: return batch.filter();
+			case 1: return batch.exposure();
+			case 2: return batch.delay();
+			case 3: return batch.count();
+			case 4: return batch.mode();
+			case 5: return batch.frame();
+			case 6: return batch.focus();
 			default: return {};
 		};
 		return {};
 	}
 
 	QVariant headerData(int section, Qt::Orientation orientation, int role) const override {
-		if ((orientation != Qt::Horizontal && orientation != Qt::Vertical) || role != Qt::DisplayRole) return {};
-		if (orientation == Qt::Horizontal) {
+		if ((orientation != Qt::Horizontal && orientation != Qt::Vertical) || (role != Qt::DisplayRole && role != Qt::ToolTipRole)) return {};
+		if (orientation == Qt::Horizontal && role != Qt::ToolTipRole) {
 			switch (section) {
 				case 0: return "Filter";
 				case 1: return "Exposure";
@@ -250,11 +255,22 @@ public:
 			}
 		}
 		if (orientation == Qt::Vertical) {
-			if (section + 1 == current_section) {
-				return  QString().number(section + 1) + " 🠶";
-				//return  QString().number(section + 1) + " ▶";
+			if (role == Qt::ToolTipRole) {
+				const auto &batch = m_data[section];
+				if (batch.is_empty()) {
+					return {};
+				}
+				double duration = batch.approximate_duration();
+				QTime time = QTime(0, 0).addSecs(duration);
+				QString duration_string = time.toString("hh:mm:ss");
+				return QString("Batch %1 approximate duration: %2").arg(QString::number(section + 1), duration_string);
 			} else {
-				return  QString().number(section + 1) + "   ";
+				if (section + 1 == current_section) {
+					return  QString().number(section + 1) + " 🠶";
+					//return  QString().number(section + 1) + " ▶";
+				} else {
+					return  QString().number(section + 1) + "   ";
+				}
 			}
 		}
 		return {};
