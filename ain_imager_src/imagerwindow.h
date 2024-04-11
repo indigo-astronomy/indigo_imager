@@ -262,9 +262,6 @@ public slots:
 	void on_guider_cb_changed(int balance);
 	void on_guider_stretch_changed(int level);
 
-	void on_focus_show_fwhm();
-	void on_focus_show_hfd();
-
 	void on_antialias_view(bool status);
 	void on_statistics_show(bool enabled);
 	void on_imager_show_reference(bool status);
@@ -669,7 +666,6 @@ private:
 	QLabel     *m_focus_graph_label;
 	QFrame     *m_hfd_stats_frame;
 	QFrame     *m_contrast_stats_frame;
-	QVector<double> m_focus_fwhm_data;
 	QVector<double> m_focus_hfd_data;
 	QVector<double> m_focus_contrast_data;
 	QVector<double> *m_focus_display_data;

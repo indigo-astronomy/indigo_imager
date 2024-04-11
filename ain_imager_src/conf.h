@@ -51,7 +51,7 @@ typedef enum {
 } color_balance;
 
 typedef enum {
-	SHOW_FWHM = 0,
+	SHOW_FWHM = 0,  // Not used any more
 	SHOW_HFD = 1,
 	SHOW_CONTRAST = 2,
 } focuser_display_data;
@@ -91,7 +91,7 @@ typedef struct {
 	int focuser_subframe;
 	preview_stretch guider_stretch_level;
 	bool guider_antialiasing_enabled;
-	focuser_display_data focuser_display;
+	focuser_display_data focuser_display;    // Not used any more
 	guider_display_data guider_display;
 	bool guider_save_log;
 	bool indigo_save_log;

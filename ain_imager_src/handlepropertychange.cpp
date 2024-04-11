@@ -1270,8 +1270,7 @@ void update_focus_estimator_property(ImagerWindow *w, indigo_property *property)
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_ESTIMATOR_HFD_PEAK_ITEM_NAME)) {
 			if (property->items[i].sw.value) {
-				w->select_focuser_data(conf.focuser_display);
-				w->m_focus_fwhm_data.clear();
+				w->select_focuser_data(SHOW_HFD);
 				w->m_focus_hfd_data.clear();
 				w->show_widget(w->m_contrast_stats_frame, false);
 				w->show_widget(w->m_hfd_stats_frame, true);
@@ -1295,8 +1294,7 @@ void update_focus_estimator_property(ImagerWindow *w, indigo_property *property)
 			}
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_ESTIMATOR_UCURVE_ITEM_NAME)) {
 			if (property->items[i].sw.value) {
-				w->select_focuser_data(conf.focuser_display);
-				w->m_focus_fwhm_data.clear();
+				w->select_focuser_data(SHOW_HFD);
 				w->m_focus_hfd_data.clear();
 				w->show_widget(w->m_contrast_stats_frame, false);
 				w->show_widget(w->m_hfd_stats_frame, true);
@@ -1605,14 +1603,11 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	} else if (focusing_running || preview_running) {
 		if (frames_complete != prev_frame) {
 			if (frames_complete == 0) {
-				w->m_focus_fwhm_data.clear();
 				w->m_focus_hfd_data.clear();
 				w->m_focus_contrast_data.clear();
 				best_hfd = 0;
 				best_contrast = 0;
 			}
-			if (FWHM != 0) w->m_focus_fwhm_data.append(FWHM);
-			if (w->m_focus_fwhm_data.size() > 100) w->m_focus_fwhm_data.removeFirst();
 			if (HFD != 0) {
 				w->m_focus_hfd_data.append(HFD);
 				if (HFD < best_hfd || best_hfd == 0) best_hfd = HFD;

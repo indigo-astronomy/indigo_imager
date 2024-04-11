@@ -190,7 +190,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 
 	stats_row++;
 	m_focus_graph = new FocusGraph();
-	m_focus_graph->redraw_data(m_focus_fwhm_data);
+	m_focus_graph->redraw_data(m_focus_hfd_data);
 	m_focus_graph->setMinimumHeight(230);
 	stats_frame_layout->addWidget(m_focus_graph, stats_row, 0);
 
@@ -495,10 +495,7 @@ void ImagerWindow::on_focus_estimator_selected(int index) {
 
 void ImagerWindow::select_focuser_data(focuser_display_data show) {
 	switch (show) {
-		case SHOW_FWHM:
-			m_focus_display_data = &m_focus_fwhm_data;
-			set_text(m_focus_graph_label, "Focus FWHM (px):");
-			break;
+		case SHOW_FWHM:  // FWHM is not shown any more
 		case SHOW_HFD:
 			m_focus_display_data = &m_focus_hfd_data;
 			set_text(m_focus_graph_label, "Focus HFD (px):");
@@ -659,8 +656,7 @@ void ImagerWindow::on_focus_start_stop(bool clicked) {
 		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
 			change_agent_abort_process_property(selected_agent);
 		} else {
-			m_focus_fwhm_data.clear();
-			//m_focus_graph->redraw_data(m_focus_fwhm_data);
+			m_focus_hfd_data.clear();
 			change_agent_star_selection(selected_agent);
 			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			change_agent_batch_property_for_focus(selected_agent);

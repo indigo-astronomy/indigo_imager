@@ -223,26 +223,9 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu->addSeparator();
 
-	sub_menu = menu->addMenu("Peak/HFD &Focuser Graph");
-
-	QActionGroup *graph_group = new QActionGroup(this);
-	graph_group->setExclusive(true);
-
-	act = sub_menu->addAction("&FWHM");
-	act->setCheckable(true);
-	if (conf.focuser_display == SHOW_FWHM) act->setChecked(true);
-	connect(act, &QAction::triggered, this, &ImagerWindow::on_focus_show_fwhm);
-	graph_group->addAction(act);
-
-	act = sub_menu->addAction("&HFD");
-	act->setCheckable(true);
-	if (conf.focuser_display == SHOW_HFD) act->setChecked(true);
-	connect(act, &QAction::triggered, this, &ImagerWindow::on_focus_show_hfd);
-	graph_group->addAction(act);
-
 	sub_menu = menu->addMenu("&Guider Graph");
 
-	graph_group = new QActionGroup(this);
+	QActionGroup *graph_group = new QActionGroup(this);
 	graph_group->setExclusive(true);
 
 	act = sub_menu->addAction("&RA / Dec Drift (pixels)");
@@ -1285,26 +1268,6 @@ void ImagerWindow::on_statistics_show(bool enabled) {
 void ImagerWindow::on_antialias_guide_view(bool status) {
 	conf.guider_antialiasing_enabled = status;
 	m_guider_viewer->enableAntialiasing(status);
-	write_conf();
-	indigo_debug("%s\n", __FUNCTION__);
-}
-
-void ImagerWindow::on_focus_show_fwhm() {
-	conf.focuser_display = SHOW_FWHM;
-	if (m_focus_display_data != &m_focus_contrast_data) {
-		select_focuser_data(conf.focuser_display);
-		if (m_focus_display_data) m_focus_graph->redraw_data(*m_focus_display_data);
-	}
-	write_conf();
-	indigo_debug("%s\n", __FUNCTION__);
-}
-
-void ImagerWindow::on_focus_show_hfd() {
-	conf.focuser_display = SHOW_HFD;
-	if (m_focus_display_data != &m_focus_contrast_data) {
-		select_focuser_data(conf.focuser_display);
-		if (m_focus_display_data) m_focus_graph->redraw_data(*m_focus_display_data);
-	}
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
