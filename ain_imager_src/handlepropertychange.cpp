@@ -1623,6 +1623,10 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			if (w->m_focus_display_data) {
 				double max = *std::max_element(w->m_focus_display_data->constBegin(), w->m_focus_display_data->constEnd());
 				double min = *std::min_element(w->m_focus_display_data->constBegin(), w->m_focus_display_data->constEnd());
+				if (max == min) {
+					max = max + 0.3;
+					min = min - 0.3;
+				}
 				double margin = (max - min) * 0.05;
 				w->m_focus_graph->set_yaxis_range(min - margin, max + margin);
 				w->m_focus_graph->redraw_data(*(w->m_focus_display_data));
