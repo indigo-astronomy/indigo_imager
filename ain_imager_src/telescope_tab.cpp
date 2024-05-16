@@ -212,30 +212,35 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	slew_frame_layout->addWidget(move_button, slew_row + 0, slew_col + 1);
 	connect(move_button, &QPushButton::pressed, this, &ImagerWindow::on_mount_move_north);
 	connect(move_button, &QPushButton::released, this, &ImagerWindow::on_mount_stop_north);
+	move_button->setShortcut(QKeySequence("W"));
 
 	move_button = new QPushButton("W");
 	move_button->setStyleSheet("min-width: 20px");
 	slew_frame_layout->addWidget(move_button, slew_row + 1, slew_col + 0);
 	connect(move_button, &QPushButton::pressed, this, &ImagerWindow::on_mount_move_west);
 	connect(move_button, &QPushButton::released, this, &ImagerWindow::on_mount_stop_west);
+	move_button->setShortcut(QKeySequence("A"));
 
 	move_button = new QPushButton("");
 	move_button->setStyleSheet("min-width: 20px");
 	move_button->setIcon(QIcon(":resource/stop.png"));
 	slew_frame_layout->addWidget(move_button, slew_row + 1, slew_col + 1);
 	connect(move_button, &QPushButton::clicked, this, &ImagerWindow::on_mount_abort);
+	move_button->setShortcut(QKeySequence("Space"));
 
 	move_button = new QPushButton("E");
 	move_button->setStyleSheet("min-width: 20px");
 	slew_frame_layout->addWidget(move_button, slew_row + 1, slew_col + 2);
 	connect(move_button, &QPushButton::pressed, this, &ImagerWindow::on_mount_move_east);
 	connect(move_button, &QPushButton::released, this, &ImagerWindow::on_mount_stop_east);
+	move_button->setShortcut(QKeySequence("D"));
 
 	move_button = new QPushButton("S");
 	move_button->setStyleSheet("min-width: 20px");
 	slew_frame_layout->addWidget(move_button, slew_row + 2, slew_col + 1);
 	connect(move_button, &QPushButton::pressed, this, &ImagerWindow::on_mount_move_south);
 	connect(move_button, &QPushButton::released, this, &ImagerWindow::on_mount_stop_south);
+	move_button->setShortcut(QKeySequence("S"));
 
 	slew_col = 0;
 	slew_row = 3;
