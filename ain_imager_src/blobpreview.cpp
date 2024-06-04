@@ -114,7 +114,7 @@ bool blob_preview_cache::add(QString &key, preview_image *preview) {
 bool blob_preview_cache::recreate(QString &key, indigo_item *item, const stretch_config_t sconfig) {
 	pthread_mutex_lock(&preview_mutex);
 	preview_image *preview = _get(key);
-	if (preview != nullptr) {
+	if (preview != nullptr && item != nullptr) {
 		//indigo_debug("recreate preview: %s(%s) == %p, %.5f\n", __FUNCTION__, key.toUtf8().constData(), stretch->clip_white);
 		preview_image *new_preview = create_preview(item, sconfig);
 		_remove(key);
