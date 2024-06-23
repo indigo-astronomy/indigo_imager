@@ -88,7 +88,7 @@ bool blob_preview_cache::create(indigo_property *property, indigo_item *item, co
 	QString key = create_key(property, item);
 	_remove(property, item);
 	preview_image *preview = create_preview(property, item, sconfig);
-	//indigo_debug("preview: %s(%s) == %p, %.5f\n", __FUNCTION__, key.toUtf8().constData(), stretch->clip_white);
+	//indigo_debug("preview: %s(%s) == %p", __FUNCTION__, key.toUtf8().constData(), preview);
 	if (preview != nullptr) {
 		insert(key, preview);
 		pthread_mutex_unlock(&preview_mutex);

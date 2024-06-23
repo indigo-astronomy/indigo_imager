@@ -17,6 +17,8 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+#include <QtConcurrent/QtConcurrent>
+#include <QAtomicInt>
 #include <indigo/indigo_client.h>
 #include "indigoclient.h"
 #include "conf.h"
@@ -71,30 +73,64 @@ static indigo_result client_attach(indigo_client *client) {
 	return INDIGO_OK;
 }
 
+static QAtomicInt guider_downloading(0);
+static QAtomicInt imager_downloading(0);
+static QAtomicInt imager_downloading_saved_frame(0);
+static QAtomicInt else_downloading(0);
+
+static bool download_blob_async(indigo_property *property, QAtomicInt *downloading) {
+	if (!downloading->testAndSetAcquire(0, 1)) {
+		indigo_debug("Task is already running, skipping...");
+		return false;
+	}
+
+	QtConcurrent::run([property, downloading]() {
+		for (int row = 0; row < property->count; row++) {
+			indigo_item *blob_item = (indigo_item*)malloc(sizeof(indigo_item));
+			memcpy(blob_item, &property->items[row], sizeof(indigo_item));
+			blob_item->blob.value = nullptr;
+			if (*property->items[row].blob.url && indigo_populate_http_blob_item(blob_item)) {
+				property->items[row].blob.value = nullptr;
+				indigo_error("BLOB: %s.%s URL received (%s, %ld bytes)...\n", property->device, property->name, blob_item->blob.url, blob_item->blob.size);
+				emit(IndigoClient::instance().create_preview(property, blob_item));
+			} else {
+				if (blob_item->blob.value) free(blob_item->blob.value);
+				free(blob_item);
+			}
+		}
+		downloading->store(0);
+	});
+
+	return true;
+}
 
 static void handle_blob_property(indigo_property *property) {
+	static char error_message[] = "Error: Download is not fast enough, skipping frame.";
 	if (property->state == INDIGO_OK_STATE && property->perm != INDIGO_WO_PERM) {
-		if (!strncmp(property->device, "Guider Agent", 12)) {
+		if (!strncmp(property->device, "Imager Agent", 12)) {
+			if (!strncmp(property->name, CCD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+				if (!download_blob_async(property, &imager_downloading)) {
+					IndigoClient::instance().m_logger->log(property, error_message);
+				}
+			} else if (!strncmp(property->name, AGENT_IMAGER_DOWNLOAD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+				if (!download_blob_async(property, &imager_downloading_saved_frame)) {
+					IndigoClient::instance().m_logger->log(property, error_message);
+				}
+			} else if (!strncmp(property->name, CCD_PREVIEW_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+				// for the time being we are not interested in preview images
+			}
+		} else if (!strncmp(property->device, "Guider Agent", 12)) {
 			if ((!strncmp(property->name, CCD_PREVIEW_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) && (conf.guider_save_bandwidth == 0)) {
 				return;
 			}
 			if ((!strncmp(property->name, CCD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) && (conf.guider_save_bandwidth > 0)) {
 				return;
 			}
-		}
-		for (int row = 0; row < property->count; row++) {
-			// cache item to pass it with create_preview() signal
-			indigo_item *blob_item = (indigo_item*)malloc(sizeof(indigo_item));
-			memcpy(blob_item, &property->items[row], sizeof(indigo_item));
-			blob_item->blob.value = nullptr;
-			if (*property->items[row].blob.url && indigo_populate_http_blob_item(blob_item)) {
-				property->items[row].blob.value = nullptr;
-				indigo_debug("Image %s.%s URL received (%s, %ld bytes)...\n", property->device, property->name, blob_item->blob.url, blob_item->blob.size);
-				emit(IndigoClient::instance().create_preview(property, blob_item));
-			} else {
-				if (blob_item->blob.value) free(blob_item->blob.value);
-				free(blob_item);
+			if (!download_blob_async(property, &guider_downloading)) {
+				IndigoClient::instance().m_logger->log(property, error_message);
 			}
+		} else {
+			download_blob_async(property, &else_downloading);
 		}
 	} else if(property->state == INDIGO_BUSY_STATE && property->perm != INDIGO_WO_PERM) {
 		for (int row = 0; row < property->count; row++) {
@@ -106,7 +142,6 @@ static void handle_blob_property(indigo_property *property) {
 		}
 	}
 }
-
 
 static indigo_result client_define_property(indigo_client *client, indigo_device *device, indigo_property *property, const char *message) {
 	Q_UNUSED(device);

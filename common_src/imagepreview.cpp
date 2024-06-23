@@ -898,7 +898,7 @@ void stretch_preview(preview_image *img, const stretch_config_t sconfig) {
 
 preview_image* create_preview(indigo_property *property, indigo_item *item, const stretch_config_t sconfig) {
 	preview_image *preview = nullptr;
-	if (property->type == INDIGO_BLOB_VECTOR && property->state == INDIGO_OK_STATE) {
+	if (property->type == INDIGO_BLOB_VECTOR ) { //&& property->state == INDIGO_OK_STATE) {
 		preview = create_preview(item, sconfig);
 	}
 	return preview;
