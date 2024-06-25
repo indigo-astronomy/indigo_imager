@@ -102,6 +102,7 @@ void IndigoClient::update_save_blob(indigo_property *property)	 {
 				}
 			}
 			m_is_exposing = sequence_running || batch_running;
+			//indigo_error("Exposing: %d (%d, %d)\n", m_is_exposing, sequence_running, batch_running);
 		}
 	} else if (client_match_device_prefix_property(property, "Imager Agent", AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
 		bool pause_sw = false;
@@ -114,8 +115,9 @@ void IndigoClient::update_save_blob(indigo_property *property)	 {
 			}
 		}
 		m_is_paused = (pause_wait_sw || pause_sw) ? true : false;
+		//indigo_error("Paused: %d (%d, %d)\n", m_is_paused, pause_sw, pause_wait_sw);
 	}
-	m_save_blob = m_is_exposing && !m_is_paused;
+	m_save_blob = m_is_exposing; // && !m_is_paused;
 }
 
 static QAtomicInt guider_downloading(0);
