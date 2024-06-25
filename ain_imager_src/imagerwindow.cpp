@@ -706,7 +706,7 @@ void ImagerWindow::on_tab_changed(int index) {
 
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item, bool save_blob) {
 	char selected_agent[INDIGO_VALUE_SIZE];
-	if (item == nullptr || item->blob.value == nullptr || property->state == INDIGO_ALERT_STATE ) {
+	if (item == nullptr || item->blob.value == nullptr) {
 		return;
 	}
 
