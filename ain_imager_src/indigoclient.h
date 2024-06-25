@@ -21,6 +21,7 @@
 #define INDIGOCLIENT_H
 
 #include <QObject>
+#include <QAtomicInt>
 #include <indigo/indigo_bus.h>
 #include "logger.h"
 
@@ -36,7 +37,7 @@ public:
 	bool m_blobs_enabled;
 
 public:
-	IndigoClient() {
+	IndigoClient() : guider_downloading(0), imager_downloading(0), imager_downloading_saved_frame(0), other_downloading(0) {
 		m_logger = &Logger::instance();
 		m_blobs_enabled = false;
 		m_save_blob = false;
@@ -62,6 +63,12 @@ public:
 	bool m_save_blob;
 	bool m_is_exposing;
 	bool m_is_paused;
+
+	QAtomicInt guider_downloading;
+	QAtomicInt imager_downloading;
+	QAtomicInt imager_downloading_saved_frame;
+	QAtomicInt other_downloading;
+
 	Logger* m_logger;
 
 signals:

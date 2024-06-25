@@ -18,7 +18,6 @@
 
 
 #include <QtConcurrent/QtConcurrent>
-#include <QAtomicInt>
 #include <indigo/indigo_client.h>
 #include "indigoclient.h"
 #include "conf.h"
@@ -120,10 +119,6 @@ void IndigoClient::update_save_blob(indigo_property *property)	 {
 	m_save_blob = m_is_exposing; // && !m_is_paused;
 }
 
-static QAtomicInt guider_downloading(0);
-static QAtomicInt imager_downloading(0);
-static QAtomicInt imager_downloading_saved_frame(0);
-static QAtomicInt else_downloading(0);
 
 static bool download_blob_async(indigo_property *property, QAtomicInt *downloading, bool save_blob = false) {
 	if (!downloading->testAndSetAcquire(0, 1)) {
@@ -152,16 +147,17 @@ static bool download_blob_async(indigo_property *property, QAtomicInt *downloadi
 }
 
 static void handle_blob_property(indigo_property *property) {
+	IndigoClient &client = IndigoClient::instance();
 	static char error_message[] = "Error: Download is not fast enough, skipping frame.";
 	if (property->state == INDIGO_OK_STATE && property->perm != INDIGO_WO_PERM) {
 		if (!strncmp(property->device, "Imager Agent", 12)) {
 			if (!strncmp(property->name, CCD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
-				if (!download_blob_async(property, &imager_downloading, IndigoClient::instance().m_save_blob)) {
-					IndigoClient::instance().m_logger->log(property, error_message);
+				if (!download_blob_async(property, &client.imager_downloading, IndigoClient::instance().m_save_blob)) {
+					client.m_logger->log(property, error_message);
 				}
 			} else if (!strncmp(property->name, AGENT_IMAGER_DOWNLOAD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
-				if (!download_blob_async(property, &imager_downloading_saved_frame, true)) {
-					IndigoClient::instance().m_logger->log(property, error_message);
+				if (!download_blob_async(property, &client.imager_downloading_saved_frame, true)) {
+					client.m_logger->log(property, error_message);
 				}
 			} else if (!strncmp(property->name, CCD_PREVIEW_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
 				// for the time being we are not interested in preview images
@@ -173,19 +169,19 @@ static void handle_blob_property(indigo_property *property) {
 			if ((!strncmp(property->name, CCD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) && (conf.guider_save_bandwidth > 0)) {
 				return;
 			}
-			if (!download_blob_async(property, &guider_downloading)) {
-				IndigoClient::instance().m_logger->log(property, error_message);
+			if (!download_blob_async(property, &client.guider_downloading)) {
+				client.m_logger->log(property, error_message);
 			}
 		} else {
-			download_blob_async(property, &else_downloading, IndigoClient::instance().m_save_blob);
+			download_blob_async(property, &client.other_downloading, client.m_save_blob);
 		}
 	} else if(property->state == INDIGO_BUSY_STATE && property->perm != INDIGO_WO_PERM) {
 		for (int row = 0; row < property->count; row++) {
-			emit(IndigoClient::instance().obsolete_preview(property, &property->items[row]));
+			emit(client.obsolete_preview(property, &property->items[row]));
 		}
 	} else {
 		for (int row = 0; row < property->count; row++) {
-			emit(IndigoClient::instance().no_preview(property, &property->items[row]));
+			emit(client.no_preview(property, &property->items[row]));
 		}
 	}
 }
