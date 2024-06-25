@@ -1435,10 +1435,8 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 					bool paused = false;
 					if (pause_wait_sw || pause_sw) paused = true;
 					exposure_running = (sequence_item || start_p->items[i].sw.value) && !paused;
-					w->m_save_blob = exposure_running;
 				} else {
 					exposure_running = false;
-					w->m_save_blob = exposure_running;
 				}
 			} else if (!strcmp(start_p->items[i].name, AGENT_IMAGER_START_FOCUSING_ITEM_NAME)) {
 				focusing_running = start_p->items[i].sw.value;
@@ -1446,8 +1444,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 				preview_running = start_p->items[i].sw.value;
 			}
 		}
-	} else {
-		w->m_save_blob = false;
 	}
 
 	//indigo_error("exposure = %d, focusing = %d, preview = %d, stats_p->state = %d, start_p->state = %d", exposure_running, focusing_running, preview_running, stats_p->state, start_p->state);
@@ -2477,7 +2473,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME)) {
 		define_ccd_exposure_property(this, property);
 		indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
-		if (!m_save_blob && p && p->state != INDIGO_BUSY_STATE ) {
+		if (!IndigoClient::instance().m_save_blob && p && p->state != INDIGO_BUSY_STATE ) {
 			update_ccd_exposure(this, property);
 		}
 	}
@@ -2818,7 +2814,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME)) {
 		indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
-		if (!m_save_blob && p && p->state != INDIGO_BUSY_STATE ) {
+		if (!IndigoClient::instance().m_save_blob && p && p->state != INDIGO_BUSY_STATE ) {
 			update_ccd_exposure(this, property);
 		}
 	}

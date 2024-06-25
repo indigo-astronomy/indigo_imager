@@ -169,7 +169,6 @@ public:
 	friend int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property);
 	friend void update_solver_agent_pa_settings(ImagerWindow *w, indigo_property *property);
 
-	bool m_save_blob;
 	bool m_is_sequence;
 
 signals:
@@ -266,7 +265,7 @@ public slots:
 	void on_statistics_show(bool enabled);
 	void on_imager_show_reference(bool status);
 	void on_antialias_guide_view(bool status);
-	void on_create_preview(indigo_property *property, indigo_item *item);
+	void on_create_preview(indigo_property *property, indigo_item *item, bool save_blob);
 	void on_obsolete_preview(indigo_property *property, indigo_item *item);
 	void on_remove_preview(indigo_property *property, indigo_item *item);
 

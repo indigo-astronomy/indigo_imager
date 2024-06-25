@@ -60,6 +60,20 @@ bool client_match_device_property(indigo_property *property, const char *device_
 	return (!strncmp(property->name, property_name, INDIGO_NAME_SIZE) && !strncmp(property->device, device_name, INDIGO_NAME_SIZE));
 }
 
+bool client_match_device_prefix_property(indigo_property *property, const char *device_name_prefix, const char *property_name) {
+	if (property_name == nullptr && device_name_prefix == nullptr) return false;
+
+	if (property_name == nullptr) {
+		return (!strncmp(property->device, device_name_prefix, strlen(device_name_prefix)));
+	}
+
+	if (device_name_prefix == nullptr) {
+		return (!strncmp(property->name, property_name, INDIGO_NAME_SIZE));
+	}
+
+	return (!strncmp(property->name, property_name, INDIGO_NAME_SIZE) && !strncmp(property->device, device_name_prefix, strlen(device_name_prefix)));
+}
+
 
 bool client_match_device_no_property(indigo_property *property, const char *device_name) {
 	if (device_name == nullptr) return false;
@@ -73,18 +87,49 @@ static indigo_result client_attach(indigo_client *client) {
 	return INDIGO_OK;
 }
 
+void IndigoClient::update_save_blob(indigo_property *property)	 {
+	if (client_match_device_prefix_property(property, "Imager Agent", AGENT_START_PROCESS_PROPERTY_NAME)) {
+		if(property->state != INDIGO_BUSY_STATE) {
+			m_is_exposing = false;
+		} else {
+			bool sequence_running = false;
+			bool batch_running = false;
+			for (int i = 0; i < property->count; i++) {
+				if (client_match_item(&property->items[i], AGENT_IMAGER_START_SEQUENCE_ITEM_NAME)) {
+					sequence_running = property->items[i].sw.value;
+				} else if(client_match_item(&property->items[i], AGENT_IMAGER_START_EXPOSURE_ITEM_NAME)) {
+					batch_running = property->items[i].sw.value;
+				}
+			}
+			m_is_exposing = sequence_running || batch_running;
+		}
+	} else if (client_match_device_prefix_property(property, "Imager Agent", AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
+		bool pause_sw = false;
+		bool pause_wait_sw = false;
+		for (int i = 0; i < property->count; i++) {
+			if (client_match_item(&property->items[i], AGENT_PAUSE_PROCESS_WAIT_ITEM_NAME)) {
+				pause_wait_sw = property->items[i].sw.value;
+			} else if (client_match_item(&property->items[i], AGENT_PAUSE_PROCESS_ITEM_NAME)) {
+				pause_sw = property->items[i].sw.value;
+			}
+		}
+		m_is_paused = (pause_wait_sw || pause_sw) ? true : false;
+	}
+	m_save_blob = m_is_exposing && !m_is_paused;
+}
+
 static QAtomicInt guider_downloading(0);
 static QAtomicInt imager_downloading(0);
 static QAtomicInt imager_downloading_saved_frame(0);
 static QAtomicInt else_downloading(0);
 
-static bool download_blob_async(indigo_property *property, QAtomicInt *downloading) {
+static bool download_blob_async(indigo_property *property, QAtomicInt *downloading, bool save_blob = false) {
 	if (!downloading->testAndSetAcquire(0, 1)) {
 		indigo_debug("Task is already running, skipping...");
 		return false;
 	}
 
-	QtConcurrent::run([property, downloading]() {
+	QtConcurrent::run([property, downloading, save_blob]() {
 		for (int row = 0; row < property->count; row++) {
 			indigo_item *blob_item = (indigo_item*)malloc(sizeof(indigo_item));
 			memcpy(blob_item, &property->items[row], sizeof(indigo_item));
@@ -92,7 +137,7 @@ static bool download_blob_async(indigo_property *property, QAtomicInt *downloadi
 			if (*property->items[row].blob.url && indigo_populate_http_blob_item(blob_item)) {
 				property->items[row].blob.value = nullptr;
 				indigo_error("BLOB: %s.%s URL received (%s, %ld bytes)...\n", property->device, property->name, blob_item->blob.url, blob_item->blob.size);
-				emit(IndigoClient::instance().create_preview(property, blob_item));
+				emit(IndigoClient::instance().create_preview(property, blob_item, save_blob));
 			} else {
 				if (blob_item->blob.value) free(blob_item->blob.value);
 				free(blob_item);
@@ -109,11 +154,11 @@ static void handle_blob_property(indigo_property *property) {
 	if (property->state == INDIGO_OK_STATE && property->perm != INDIGO_WO_PERM) {
 		if (!strncmp(property->device, "Imager Agent", 12)) {
 			if (!strncmp(property->name, CCD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
-				if (!download_blob_async(property, &imager_downloading)) {
+				if (!download_blob_async(property, &imager_downloading, IndigoClient::instance().m_save_blob)) {
 					IndigoClient::instance().m_logger->log(property, error_message);
 				}
 			} else if (!strncmp(property->name, AGENT_IMAGER_DOWNLOAD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
-				if (!download_blob_async(property, &imager_downloading_saved_frame)) {
+				if (!download_blob_async(property, &imager_downloading_saved_frame, true)) {
 					IndigoClient::instance().m_logger->log(property, error_message);
 				}
 			} else if (!strncmp(property->name, CCD_PREVIEW_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
@@ -130,7 +175,7 @@ static void handle_blob_property(indigo_property *property) {
 				IndigoClient::instance().m_logger->log(property, error_message);
 			}
 		} else {
-			download_blob_async(property, &else_downloading);
+			download_blob_async(property, &else_downloading, IndigoClient::instance().m_save_blob);
 		}
 	} else if(property->state == INDIGO_BUSY_STATE && property->perm != INDIGO_WO_PERM) {
 		for (int row = 0; row < property->count; row++) {
@@ -147,6 +192,8 @@ static indigo_result client_define_property(indigo_client *client, indigo_device
 	Q_UNUSED(device);
 
 	if (!processed_device(property->device)) return INDIGO_OK;
+
+	IndigoClient::instance().update_save_blob(property);
 
 	if (property->type == INDIGO_BLOB_VECTOR) {
 		if (device->version < INDIGO_VERSION_2_0)
@@ -174,6 +221,8 @@ static indigo_result client_update_property(indigo_client *client, indigo_device
 	Q_UNUSED(device);
 
 	if (!processed_device(property->device)) return INDIGO_OK;
+
+	IndigoClient::instance().update_save_blob(property);
 
 	if (property->type == INDIGO_BLOB_VECTOR) {
 		handle_blob_property(property);

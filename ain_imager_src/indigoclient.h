@@ -39,6 +39,9 @@ public:
 	IndigoClient() {
 		m_logger = &Logger::instance();
 		m_blobs_enabled = false;
+		m_save_blob = false;
+		m_is_exposing = true;
+		m_is_paused = false;
 	}
 
 	~IndigoClient() {
@@ -55,7 +58,12 @@ public:
 
 	void start(char *name);
 	void stop();
+	void update_save_blob(indigo_property *property);
+	bool m_save_blob;
+	bool m_is_exposing;
+	bool m_is_paused;
 	Logger* m_logger;
+
 signals:
 	/* No copy of the property will be made with this signals.
 	   Do not free().
@@ -68,7 +76,7 @@ signals:
 	/* property is always NULL */
 	void message_sent(indigo_property* property, char *message_copy);
 
-	void create_preview(indigo_property* property, indigo_item *blob_item_copy);
+	void create_preview(indigo_property* property, indigo_item *blob_item_copy, bool save_blob);
 	void obsolete_preview(indigo_property* property, indigo_item *item);
 	void remove_preview(indigo_property* property, indigo_item *item);
 	void no_preview(indigo_property* property, indigo_item *item);

@@ -62,7 +62,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_config_dialog = new QConfigDialog(this);
 	m_add_object_dialog = new QAddCustomObject(this);
 
-	m_save_blob = false;
 	m_is_sequence = false;
 	m_indigo_item = nullptr;
 	m_guide_log = nullptr;
@@ -705,7 +704,7 @@ void ImagerWindow::on_tab_changed(int index) {
 	}
 }
 
-void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item){
+void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item, bool save_blob) {
 	char selected_agent[INDIGO_VALUE_SIZE];
 	if (item == nullptr || item->blob.value == nullptr || property->state == INDIGO_ALERT_STATE ) {
 		return;
@@ -732,7 +731,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 			m_imager_viewer->setText(QString("Unsaved") + QString(m_indigo_item->blob.format));
 			m_imager_viewer->setToolTip(QString("Unsaved") + QString(m_indigo_item->blob.format));
 		}
-		if (m_save_blob && strcasecmp(".raw", m_indigo_item->blob.format)) save_blob_item(m_indigo_item);
+		if (save_blob && strcasecmp(".raw", m_indigo_item->blob.format)) save_blob_item(m_indigo_item);
 	} else if (
 		get_selected_imager_agent(selected_agent) &&
 		client_match_device_property(property, selected_agent, AGENT_IMAGER_DOWNLOAD_IMAGE_PROPERTY_NAME)
