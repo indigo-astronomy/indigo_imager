@@ -84,6 +84,8 @@ signals:
 	void message_sent(indigo_property* property, char *message_copy);
 
 	void create_preview(indigo_property* property, indigo_item *blob_item_copy, bool save_blob);
+	void imager_download_started();
+	void imager_download_completed();
 	void obsolete_preview(indigo_property* property, indigo_item *item);
 	void remove_preview(indigo_property* property, indigo_item *item);
 	void no_preview(indigo_property* property, indigo_item *item);

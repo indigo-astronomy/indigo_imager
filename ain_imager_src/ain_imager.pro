@@ -101,7 +101,8 @@ RESOURCES += \
 	../resource/histogram.png \
 	../resource/error.wav \
 	../resource/ok.wav \
-	../resource/warning.wav
+	../resource/warning.wav \
+	../resource/spinner.gif
 
 
 # Additional import path used to resolve QML modules in Qt Creator\'s code model

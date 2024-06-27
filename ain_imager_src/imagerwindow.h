@@ -61,6 +61,7 @@ class QIndigoServers;
 #include <QThread>
 #include <QtConcurrentRun>
 #include <QProcess>
+#include <QMovie>
 #include "focusgraph.h"
 #include "sequence_editor.h"
 #include "syncutils.h"
@@ -603,6 +604,8 @@ private:
 	QPushButton *m_pause_button;
 	QProgressBar *m_exposure_progress;
 	QProgressBar *m_process_progress;
+	QLabel *m_download_label;
+	QMovie *m_download_spinner;
 	QDoubleSpinBox *m_set_temp;
 	QLineEdit *m_current_temp;
 	QLineEdit *m_cooler_pwr;

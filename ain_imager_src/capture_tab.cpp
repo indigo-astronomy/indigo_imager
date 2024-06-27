@@ -34,7 +34,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 
 	int row = 0;
 	m_agent_imager_select = new QComboBox();
-	capture_frame_layout->addWidget(m_agent_imager_select, row, 0, 1, 4);
+	capture_frame_layout->addWidget(m_agent_imager_select, row, 0, 1, 6);
 	//connect(m_agent_imager_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_agent_selected);
 	connect(m_agent_imager_select, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ImagerWindow::on_agent_selected);
 
@@ -44,7 +44,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	capture_frame_layout->addWidget(label, row, 0);
 	m_camera_select = new QComboBox();
-	capture_frame_layout->addWidget(m_camera_select, row, 1, 1, 3);
+	capture_frame_layout->addWidget(m_camera_select, row, 1, 1, 5);
 	connect(m_camera_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_camera_selected);
 
 	// Filter wheel selection
@@ -53,7 +53,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	capture_frame_layout->addWidget(label, row, 0);
 	m_wheel_select = new QComboBox();
-	capture_frame_layout->addWidget(m_wheel_select, row, 1, 1, 3);
+	capture_frame_layout->addWidget(m_wheel_select, row, 1, 1, 5);
 	connect(m_wheel_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_wheel_selected);
 
 	row++;
@@ -65,11 +65,11 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	label = new QLabel("Frame:");
 	capture_frame_layout->addWidget(label, row, 0);
 	m_frame_size_select = new QComboBox();
-	capture_frame_layout->addWidget(m_frame_size_select, row, 1, 1, 2);
+	capture_frame_layout->addWidget(m_frame_size_select, row, 1, 1, 3);
 	connect(m_frame_size_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_ccd_mode_selected);
 
 	m_frame_type_select = new QComboBox();
-	capture_frame_layout->addWidget(m_frame_type_select, row, 3);
+	capture_frame_layout->addWidget(m_frame_type_select, row, 4, 1, 2);
 	connect(m_frame_type_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_frame_type_selected);
 
 	// Exposure time
@@ -81,18 +81,18 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_exposure_time->setMaximum(10000);
 	m_exposure_time->setMinimum(0);
 	m_exposure_time->setValue(1);
-	capture_frame_layout->addWidget(m_exposure_time, row, 1);
+	capture_frame_layout->addWidget(m_exposure_time, row, 1, 1, 2);
 
 	//label = new QLabel(QChar(0x0394)+QString("t:"));
 	label = new QLabel("Delay (s):");
-	capture_frame_layout->addWidget(label, row, 2);
+	capture_frame_layout->addWidget(label, row, 3);
 	m_exposure_delay = new QDoubleSpinBox();
 	m_exposure_delay->setDecimals(3);
 	m_exposure_delay->setMaximum(10000);
 	m_exposure_delay->setMinimum(0);
 	m_exposure_delay->setValue(0);
 	//m_exposure_delay->setEnabled(false);
-	capture_frame_layout->addWidget(m_exposure_delay, row, 3);
+	capture_frame_layout->addWidget(m_exposure_delay, row, 4, 1, 2);
 
 	// Frame count
 	row++;
@@ -103,12 +103,12 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_frame_count->setMinimum(-1);
 	m_frame_count->setSpecialValueText("∞");
 	m_frame_count->setValue(1);
-	capture_frame_layout->addWidget(m_frame_count, row, 1);
+	capture_frame_layout->addWidget(m_frame_count, row, 1, 1, 2);
 
 	label = new QLabel("Filter:");
-	capture_frame_layout->addWidget(label, row, 2);
+	capture_frame_layout->addWidget(label, row, 3);
 	m_filter_select = new QComboBox();
-	capture_frame_layout->addWidget(m_filter_select, row, 3);
+	capture_frame_layout->addWidget(m_filter_select, row, 4, 1, 2);
 	connect(m_filter_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_filter_selected);
 
 	// Frame prefix
@@ -118,7 +118,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_object_name = new QLineEdit();
 	m_object_name->setPlaceholderText("Image file prefix e.g. M16, M33 ...");
 	m_object_name->setToolTip("Object name or any text that will be used as a file name prefix.\nIf empty images will not be saved.");
-	capture_frame_layout->addWidget(m_object_name, row, 1, 1, 3);
+	capture_frame_layout->addWidget(m_object_name, row, 1, 1, 5);
 	connect(m_object_name, &QLineEdit::textChanged, this, &ImagerWindow::on_object_name_changed);
 
 	row++;
@@ -135,7 +135,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	QHBoxLayout *toolbox = new QHBoxLayout(toolbar);
 	toolbar->setContentsMargins(1,1,1,1);
 	toolbox->setContentsMargins(1,1,1,1);
-	capture_frame_layout->addWidget(toolbar, row, 0, 1, 4);
+	capture_frame_layout->addWidget(toolbar, row, 0, 1, 6);
 
 	m_preview_button = new QPushButton("Preview");
 	m_preview_button->setStyleSheet("min-width: 30px");
@@ -163,18 +163,29 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 
 	row++;
 	m_exposure_progress = new QProgressBar();
-	capture_frame_layout->addWidget(m_exposure_progress, row, 0, 1, 4);
+	capture_frame_layout->addWidget(m_exposure_progress, row, 0, 1, 5);
 	m_exposure_progress->setFormat("Exposure: Idle");
 	m_exposure_progress->setMaximum(1);
 	m_exposure_progress->setValue(0);
 
+	const int spinner_size = 32;
+	m_download_label = new QLabel(this);
+	m_download_label->setFixedSize(spinner_size, spinner_size);
+	m_download_label->setAlignment(Qt::AlignCenter);
+	m_download_label->setToolTip("Image download progress");
+	m_download_label->setStyleSheet(QString("QLabel { background-color: #272727; border-radius: %1px; }").arg(spinner_size / 2));
+	capture_frame_layout->addWidget(m_download_label, row, 5, 2, 1);
+	m_download_spinner = new QMovie(":resource/spinner.gif");
+	m_download_spinner->setScaledSize(m_download_label->size() * 0.7);
+	m_download_label->setMovie(m_download_spinner);
+	m_download_label->clear();
+
 	row++;
 	m_process_progress = new QProgressBar();
-	capture_frame_layout->addWidget(m_process_progress, row, 0, 1, 4);
+	capture_frame_layout->addWidget(m_process_progress, row, 0, 1, 5);
 	m_process_progress->setMaximum(1);
 	m_process_progress->setValue(0);
 	m_process_progress->setFormat("Process: Idle");
-
 
 	row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -187,7 +198,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	QHBoxLayout *cooler_box = new QHBoxLayout(cooler_bar);
 	cooler_box->setContentsMargins(0,0,0,0);
 
-	capture_frame_layout->addWidget(cooler_bar, row, 0, 1, 4);
+	capture_frame_layout->addWidget(cooler_bar, row, 0, 1, 6);
 	cooler_bar->setContentsMargins(0,0,0,6);
 
 	label = new QLabel("Cooler (°C):");
@@ -232,7 +243,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	row++;
 	// Tools tabbar
 	QTabWidget *capture_tabbar = new QTabWidget;
-	capture_frame_layout->addWidget(capture_tabbar, row, 0, 1, 4);
+	capture_frame_layout->addWidget(capture_tabbar, row, 0, 1, 6);
 
 	// image frame
 	QFrame *image_frame = new QFrame();

@@ -467,6 +467,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(&IndigoClient::instance(), &IndigoClient::property_changed, this, &ImagerWindow::on_message_sent);
 	connect(&IndigoClient::instance(), &IndigoClient::property_deleted, this, &ImagerWindow::on_message_sent);
 	connect(&IndigoClient::instance(), &IndigoClient::message_sent, this, &ImagerWindow::on_message_sent);
+	connect(&IndigoClient::instance(), &IndigoClient::imager_download_started, this, [this]() { m_download_label->setMovie(m_download_spinner); m_download_spinner->start(); });
+	connect(&IndigoClient::instance(), &IndigoClient::imager_download_completed, this, [this]() { m_download_spinner->stop(); m_download_label->clear(); });
 
 	connect(&IndigoClient::instance(), &IndigoClient::property_defined, this, &ImagerWindow::on_property_define, Qt::BlockingQueuedConnection);
 	connect(&IndigoClient::instance(), &IndigoClient::property_changed, this, &ImagerWindow::on_property_change, Qt::BlockingQueuedConnection);
@@ -733,7 +735,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		}
 		if (save_blob && strcasecmp(".raw", m_indigo_item->blob.format)) {
 			save_blob_item(m_indigo_item);
-			indigo_error("save_blob_item: %s", m_indigo_item->blob.format);
+			indigo_log("save_blob_item: %s", m_indigo_item->blob.format);
 		}
 	} else if (
 		get_selected_imager_agent(selected_agent) &&

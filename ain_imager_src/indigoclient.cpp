@@ -121,26 +121,34 @@ void IndigoClient::update_save_blob(indigo_property *property)	 {
 
 
 static bool download_blob_async(indigo_property *property, QAtomicInt *downloading, bool save_blob = false) {
+	IndigoClient &client = IndigoClient::instance();
 	if (!downloading->testAndSetAcquire(0, 1)) {
 		indigo_debug("Task is already running, skipping...");
 		return false;
 	}
 
+	if( downloading == &client.imager_downloading) {
+		emit(client.imager_download_started());
+	}
 	QtConcurrent::run([property, downloading, save_blob]() {
+		IndigoClient &client = IndigoClient::instance();
 		for (int row = 0; row < property->count; row++) {
 			indigo_item *blob_item = (indigo_item*)malloc(sizeof(indigo_item));
 			memcpy(blob_item, &property->items[row], sizeof(indigo_item));
 			blob_item->blob.value = nullptr;
 			if (*property->items[row].blob.url && indigo_populate_http_blob_item(blob_item)) {
 				property->items[row].blob.value = nullptr;
-				indigo_error("BLOB: %s.%s URL received (%s, %ld bytes)...\n", property->device, property->name, blob_item->blob.url, blob_item->blob.size);
-				emit(IndigoClient::instance().create_preview(property, blob_item, save_blob));
+				indigo_log("BLOB: %s.%s URL received (%s, %ld bytes)...\n", property->device, property->name, blob_item->blob.url, blob_item->blob.size);
+				emit(client.create_preview(property, blob_item, save_blob));
 			} else {
 				if (blob_item->blob.value) free(blob_item->blob.value);
 				free(blob_item);
 			}
 		}
 		downloading->store(0);
+		if( downloading == &client.imager_downloading) {
+			emit(client.imager_download_completed());
+		}
 	});
 
 	return true;
@@ -170,7 +178,7 @@ static void handle_blob_property(indigo_property *property) {
 				return;
 			}
 			if (!download_blob_async(property, &client.guider_downloading)) {
-				client.m_logger->log(property, error_message);
+				indigo_error(error_message);
 			}
 		} else {
 			download_blob_async(property, &client.other_downloading, client.m_save_blob);
