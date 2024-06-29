@@ -733,6 +733,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 			m_imager_viewer->setText(QString("Unsaved") + QString(m_indigo_item->blob.format));
 			m_imager_viewer->setToolTip(QString("Unsaved") + QString(m_indigo_item->blob.format));
 		}
+		indigo_debug("save_blob: %d", save_blob);
 		if (save_blob && strcasecmp(".raw", m_indigo_item->blob.format)) {
 			save_blob_item(m_indigo_item);
 			indigo_log("save_blob_item: %s", m_indigo_item->blob.format);

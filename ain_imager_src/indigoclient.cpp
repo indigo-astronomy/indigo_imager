@@ -101,22 +101,10 @@ void IndigoClient::update_save_blob(indigo_property *property)	 {
 				}
 			}
 			m_is_exposing = sequence_running || batch_running;
-			//indigo_error("Exposing: %d (%d, %d)\n", m_is_exposing, sequence_running, batch_running);
+			indigo_error("Exposing: %d (%d, %d)\n", m_is_exposing, sequence_running, batch_running);
 		}
-	} else if (client_match_device_prefix_property(property, "Imager Agent", AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
-		bool pause_sw = false;
-		bool pause_wait_sw = false;
-		for (int i = 0; i < property->count; i++) {
-			if (client_match_item(&property->items[i], AGENT_PAUSE_PROCESS_WAIT_ITEM_NAME)) {
-				pause_wait_sw = property->items[i].sw.value;
-			} else if (client_match_item(&property->items[i], AGENT_PAUSE_PROCESS_ITEM_NAME)) {
-				pause_sw = property->items[i].sw.value;
-			}
-		}
-		m_is_paused = (pause_wait_sw || pause_sw) ? true : false;
-		//indigo_error("Paused: %d (%d, %d)\n", m_is_paused, pause_sw, pause_wait_sw);
 	}
-	m_save_blob = m_is_exposing; // && !m_is_paused;
+	m_save_blob = m_is_exposing;
 }
 
 

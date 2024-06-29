@@ -42,7 +42,6 @@ public:
 		m_blobs_enabled = false;
 		m_save_blob = false;
 		m_is_exposing = true;
-		m_is_paused = false;
 	}
 
 	~IndigoClient() {
@@ -62,7 +61,6 @@ public:
 	void update_save_blob(indigo_property *property);
 	bool m_save_blob;
 	bool m_is_exposing;
-	bool m_is_paused;
 
 	QAtomicInt guider_downloading;
 	QAtomicInt imager_downloading;
