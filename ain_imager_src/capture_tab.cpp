@@ -508,7 +508,12 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 			if (is_sequence) {
 				QList<QString> batches;
 				QString sequence;
+				char end_time[256];
 				m_sequence_editor->generate_sequence(sequence, batches);
+				int approx_time = (int)(m_sequence_editor->approximate_duration()*3600);
+				get_time_after(end_time, approx_time, "Estimated sequence completion: %d %b %H:%M");
+				Logger::instance().log(nullptr, end_time);
+
 				change_imager_agent_sequence(selected_agent, sequence, batches);
 				change_agent_focus_params_property(selected_agent, false);
 				change_agent_start_sequence_property(selected_agent);

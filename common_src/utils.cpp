@@ -107,6 +107,34 @@ void get_date_jd(char *date_str) {
 #endif
 }
 
+void get_time_after(char *time_str, const int seconds, const char *format) {
+	assert(time_str != nullptr);
+	struct timeval tmnow;
+
+	char time_format[255] = {0};
+	if (format == NULL || format[0] == '\0') {
+		strcpy(time_format, "%H:%M:%S");
+	} else {
+		strncpy(time_format, format, 255);
+	}
+
+	gettimeofday(&tmnow, NULL);
+	tmnow.tv_sec += seconds;
+#if defined(INDIGO_WINDOWS)
+	struct tm *lt;
+	time_t rawtime;
+	lt = localtime((const time_t *) &(tmnow.tv_sec));
+	if (lt == NULL) {
+		time(&rawtime);
+		rawtime += seconds;
+		lt = localtime(&rawtime);
+	}
+	strftime(time_str, 255, time_format, lt);
+#else
+	strftime(time_str, 255, time_format, localtime((const time_t *) &tmnow.tv_sec));
+#endif
+}
+
 void get_time(char *time_str) {
 	assert(time_str != nullptr);
 	struct timeval tmnow;

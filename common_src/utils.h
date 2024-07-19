@@ -26,6 +26,7 @@ int get_number_of_cores();
 void get_timestamp(char *timestamp_str);
 void get_date(char *date_str);
 void get_date_jd(char *date_str);
+void get_time_after(char *time_str, int seconds, const char *format);
 void get_time(char *time_str);
 
 void get_current_output_dir(char *output_dir, char *prefix = nullptr);
