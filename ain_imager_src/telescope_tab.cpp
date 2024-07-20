@@ -331,6 +331,11 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	connect(m_remove_object_button, &QToolButton::clicked, this, &ImagerWindow::on_custom_object_remove);
 
 	obj_row++;
+	m_custom_objects_only_cbox = new QCheckBox("Custom objects only");
+	obj_frame_layout->addWidget(m_custom_objects_only_cbox, obj_row, 1, 1, 4, Qt::AlignRight);
+	connect(m_custom_objects_only_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_custom_objects_only_checked);
+
+	obj_row++;
 	m_object_list = new QListWidget();
 	m_object_list->setStyleSheet("QListWidget {border: 1px solid #404040;}");
 	obj_frame_layout->addWidget(m_object_list, obj_row, 0, 1, 5);
@@ -1155,6 +1160,9 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 	QString name;
 	char obj_name_c[INDIGO_VALUE_SIZE];
 	char tooltip_c[INDIGO_VALUE_SIZE];
+
+	indigo_debug("%s -> %s\n", __FUNCTION__, obj_name.toUtf8().constData());
+
 	m_object_list->clear();
 	strncpy(obj_name_c, obj_name.toUtf8().data(), INDIGO_VALUE_SIZE);
 
@@ -1181,6 +1189,8 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 			//indigo_debug("%s -> %s = %s (custom)\n", __FUNCTION__, obj_name_c, name.toUtf8().constData());
 		}
 	}
+
+	if (m_custom_objects_only_cbox->isChecked()) return;
 
 	indigo_dso_entry *dso = &indigo_dso_data[0];
 	while (dso->id) {
@@ -1248,7 +1258,10 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 		}
 		star++;
 	}
-	indigo_debug("%s -> %s\n", __FUNCTION__, obj_name.toUtf8().constData());
+}
+
+void ImagerWindow::on_custom_objects_only_checked(bool checked) {
+	on_object_search_changed(m_object_search_line->text());
 }
 
 void ImagerWindow::on_object_search_entered() {

@@ -407,6 +407,7 @@ public slots:
 	void on_custom_object_add();
 	void on_custom_object_added(CustomObject object);
 	void on_custom_object_remove();
+	void on_custom_objects_only_checked(bool checked);
 	void on_mount_agent_set_pa_settings(double value);
 	void on_mount_agent_set_pa_refraction(bool clicked);
 
@@ -779,6 +780,7 @@ private:
 	QLabel *m_gps_status;
 	QListWidget *m_object_list;
 	QLineEdit *m_object_search_line;
+	QCheckBox *m_custom_objects_only_cbox;
 	QToolButton *m_add_object_button;
 	QToolButton *m_remove_object_button;
 
