@@ -586,7 +586,7 @@ double SequenceEditor::approximate_duration() {
 	double duration = 0;
 
 	if (row_count <= 0) {
-		return duration;
+		return -1.0;
 	}
 
 	for (int row = 0; row < row_count; row++) {
