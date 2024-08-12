@@ -101,7 +101,7 @@ void IndigoClient::update_save_blob(indigo_property *property)	 {
 				}
 			}
 			m_is_exposing = sequence_running || batch_running;
-			indigo_error("Exposing: %d (%d, %d)\n", m_is_exposing, sequence_running, batch_running);
+			indigo_debug("Exposing: %d (%d, %d)\n", m_is_exposing, sequence_running, batch_running);
 		}
 	}
 	m_save_blob = m_is_exposing;

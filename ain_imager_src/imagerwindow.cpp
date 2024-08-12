@@ -467,8 +467,29 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(&IndigoClient::instance(), &IndigoClient::property_changed, this, &ImagerWindow::on_message_sent);
 	connect(&IndigoClient::instance(), &IndigoClient::property_deleted, this, &ImagerWindow::on_message_sent);
 	connect(&IndigoClient::instance(), &IndigoClient::message_sent, this, &ImagerWindow::on_message_sent);
-	connect(&IndigoClient::instance(), &IndigoClient::imager_download_started, this, [this]() { m_download_label->setMovie(m_download_spinner); m_download_spinner->start(); });
-	connect(&IndigoClient::instance(), &IndigoClient::imager_download_completed, this, [this]() { m_download_spinner->stop(); m_download_label->clear(); });
+
+	connect(
+		&IndigoClient::instance(),
+		&IndigoClient::imager_download_started,
+		this,
+		[this]() {
+			// we need to get the filter name and frame when we start the download
+			// otherwise they can be changed before download is completed
+			m_filter_name = m_filter_select->currentText().trimmed();
+			m_frame_type = m_frame_type_select->currentText().trimmed();
+			m_download_label->setMovie(m_download_spinner);
+			m_download_spinner->start();
+		}
+	);
+	connect(
+		&IndigoClient::instance(),
+		&IndigoClient::imager_download_completed,
+		this,
+		[this]() {
+			m_download_spinner->stop();
+			m_download_label->clear();
+		}
+	);
 
 	connect(&IndigoClient::instance(), &IndigoClient::property_defined, this, &ImagerWindow::on_property_define, Qt::BlockingQueuedConnection);
 	connect(&IndigoClient::instance(), &IndigoClient::property_changed, this, &ImagerWindow::on_property_change, Qt::BlockingQueuedConnection);
@@ -889,8 +910,8 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 	if (auto_construct) {
 		object_name = m_object_name_str.trimmed();
 		if (object_name == "") object_name = DEFAULT_OBJECT_NAME;
-		QString filter_name = m_filter_select->currentText().trimmed();
-		QString frame_type = m_frame_type_select->currentText().trimmed();
+		QString filter_name = m_filter_name;
+		QString frame_type = m_frame_type;
 		QDateTime date = date.currentDateTime();
 		QString date_str = date.toString("yyyy-MM-dd");
 

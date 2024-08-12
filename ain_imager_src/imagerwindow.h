@@ -622,6 +622,8 @@ private:
 	QString m_object_name_str;
 	QStringList m_files_to_download;
 	QStringList m_files_to_remove;
+	QString m_filter_name;
+	QString m_frame_type;
 
 	// Sequence tabbar
 	QProgressBar *m_seq_exposure_progress;
