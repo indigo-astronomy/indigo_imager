@@ -3,7 +3,7 @@ CONFIG += c++11 debug
 
 unix:mac {
 	CONFIG += app_bundle
-	ICON=../resource/ain_viewer.icns
+	ICON=$$PWD/../resource/ain_viewer.icns
 }
 
 QMAKE_CXXFLAGS += -O3
@@ -24,36 +24,36 @@ DEFINES += QT_DEPRECATED_WARNINGS QZEROCONF_STATIC
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-	main.cpp \
-	textdialog.cpp \
-	viewerwindow.cpp \
-	../common_src/coordconv.c \
-	../common_src/utils.cpp \
-	../common_src/imagepreview.cpp \
-	../common_src/imageviewer.cpp \
-	../common_src/image_stats.cpp \
-	../common_src/fits.c \
-	../common_src/raw_to_fits.c \
-	../common_src/xisf.c \
-	../common_src/xml.c \
-	../common_src/dslr_raw.c \
-	../common_src/stretcher.cpp
+	$$PWD/main.cpp \
+	$$PWD/textdialog.cpp \
+	$$PWD/viewerwindow.cpp \
+	$$PWD/../common_src/coordconv.c \
+	$$PWD/../common_src/utils.cpp \
+	$$PWD/../common_src/imagepreview.cpp \
+	$$PWD/../common_src/imageviewer.cpp \
+	$$PWD/../common_src/image_stats.cpp \
+	$$PWD/../common_src/fits.c \
+	$$PWD/../common_src/raw_to_fits.c \
+	$$PWD/../common_src/xisf.c \
+	$$PWD/../common_src/xml.c \
+	$$PWD/../common_src/dslr_raw.c \
+	$$PWD/../common_src/stretcher.cpp
 
 RESOURCES += \
-	../qdarkstyle/style.qrc \
-	../resource/control_panel.qss \
-	../resource/ain_viewer.png \
-	../resource/previous.png \
-	../resource/next.png \
-	../resource/indigo_logo.png \
-	../resource/zoom-fit-best.png \
-	../resource/zoom-original.png \
-	../resource/bonjour_service.png \
-	../resource/manual_service.png \
-	../resource/no-preview.png \
-	../resource/zoom-in.png \
-	../resource/zoom-out.png \
-	../resource/histogram.png
+	$$PWD/../qdarkstyle/style.qrc \
+	$$PWD/../resource/control_panel.qss \
+	$$PWD/../resource/ain_viewer.png \
+	$$PWD/../resource/previous.png \
+	$$PWD/../resource/next.png \
+	$$PWD/../resource/indigo_logo.png \
+	$$PWD/../resource/zoom-fit-best.png \
+	$$PWD/../resource/zoom-original.png \
+	$$PWD/../resource/bonjour_service.png \
+	$$PWD/../resource/manual_service.png \
+	$$PWD/../resource/no-preview.png \
+	$$PWD/../resource/zoom-in.png \
+	$$PWD/../resource/zoom-out.png \
+	$$PWD/../resource/histogram.png
 
 
 # Additional import path used to resolve QML modules in Qt Creator\'s code model
@@ -68,49 +68,56 @@ else: unix:!android: target.path = /usr/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
-	viewerwindow.h \
-	textdialog.h \
-	conf.h \
-	../common_src/version.h \
-	../common_src/utils.h \
-	../common_src/image_preview_lut.h \
-	../common_src/imagepreview.h \
-	../common_src/imageviewer.h \
-	../common_src/image_stats.h \
-	../common_src/fits.h \
-	../common_src/raw_to_fits.h \
-	../common_src/xisf.h \
-	../common_src/xml.h \
-	../common_src/pixelformat.h \
-	../common_src/coordconv.h \
-	../common_src/dslr_raw.h \
-	../common_src/stretcher.h
+	$$PWD/viewerwindow.h \
+	$$PWD/textdialog.h \
+	$$PWD/conf.h \
+	$$PWD/../common_src/version.h \
+	$$PWD/../common_src/utils.h \
+	$$PWD/../common_src/image_preview_lut.h \
+	$$PWD/../common_src/imagepreview.h \
+	$$PWD/../common_src/imageviewer.h \
+	$$PWD/../common_src/image_stats.h \
+	$$PWD/../common_src/fits.h \
+	$$PWD/../common_src/raw_to_fits.h \
+	$$PWD/../common_src/xisf.h \
+	$$PWD/../common_src/xml.h \
+	$$PWD/../common_src/pixelformat.h \
+	$$PWD/../common_src/coordconv.h \
+	$$PWD/../common_src/dslr_raw.h \
+	$$PWD/../common_src/stretcher.h
 
 #unix:!mac {
 #    CONFIG += link_pkgconfig
 #    PKGCONFIG += indigo
 #}
 
-INCLUDEPATH += "../indigo/indigo_libs" + "../external" + "../external/qtzeroconf/" + "../external/libraw/" + "../external/lz4/" + "../common_src" + "../ain_viewer_src"
-LIBS += -L"../external/libraw/lib" -L"../../external/libraw/lib" -L"../../external/lz4" -L"../external/lz4" -lraw -lz
+INCLUDEPATH += "$$PWD/../indigo/indigo_libs "\
+			   "$$PWD/../external" \
+			   "$$PWD/../external/qtzeroconf/" \
+			   "$$PWD/../external/libraw/" \
+			   "$$PWD/../external/lz4/" \
+			   "$$PWD/../common_src" \
+			   "$$PWD/../ain_viewer_src"
+
+LIBS += -L"$$PWD/../external/libraw/lib" -L"$$PWD/../../external/libraw/lib" -"L$$PWD/../../external/lz4" -L"$$PWD/../external/lz4" -lraw -lz
 
 unix:!mac {
-	INCLUDEPATH += "../external/libjpeg"
-	LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -l:libindigo.a -lz -ljpeg -l:liblz4.a
+	INCLUDEPATH += "$$PWD/../external/libjpeg"
+	LIBS += -L"$$PWD/../external/libjpeg/.libs" -"L$$PWD/../indigo/build/lib" -l:libindigo.a -lz -ljpeg -l:liblz4.a
 	#LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -lindigo -ljpeg -l:liblz4.a
 }
 
 unix:mac {
-	INCLUDEPATH += "../external/libjpeg"
-	LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -lindigo -ljpeg -llz4
+	INCLUDEPATH += "$$PWD/../external/libjpeg"
+	LIBS += -L"$$PWD/../external/libjpeg/.libs" -L"$$PWD/../indigo/build/lib" -lindigo -ljpeg -llz4
 }
 
 DISTFILES += \
-	README.md \
-	LICENCE.md \
+	$$PWD/README.md \
+	$$PWD/LICENCE.md
 
 win32 {
 	DEFINES += INDIGO_WINDOWS
-	INCLUDEPATH += ../../external/indigo_sdk/include
-	LIBS += -llz4 ../../external/indigo_sdk/lib/libindigo_client.lib -lws2_32
+	INCLUDEPATH += $$PWD/../../external/indigo_sdk/include
+	LIBS += -llz4 $$PWD/../../external/indigo_sdk/lib/libindigo_client.lib -lws2_32
 }
