@@ -91,7 +91,7 @@ HEADERS += \
 #    PKGCONFIG += indigo
 #}
 
-INCLUDEPATH += "$$PWD/../indigo/indigo_libs "\
+INCLUDEPATH += "$$PWD/../indigo/indigo_libs" \
 			   "$$PWD/../external" \
 			   "$$PWD/../external/qtzeroconf/" \
 			   "$$PWD/../external/libraw/" \
