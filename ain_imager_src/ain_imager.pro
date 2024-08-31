@@ -150,16 +150,17 @@ HEADERS += \
 	$$PWD/../common_src/image_stats.h \
 	$$PWD/../common_src/dslr_raw.h
 
-INCLUDEPATH += "$$PWD/../indigo/indigo_libs" \
-			   "$$PWD/../external" \
-			   "$$PWD/../external/libraw/" \
-			   "$$PWD/../external/lz4/" \
-			   "$$PWD/../common_src" \
-			   "$$PWD/../object_data" \
-			   "$$PWD/../ain_imager_src"
+INCLUDEPATH += \
+	"$$PWD/../indigo/indigo_libs" \
+	"$$PWD/../external" \
+	"$$PWD/../external/libraw/" \
+	"$$PWD/../external/lz4/" \
+	"$$PWD/../common_src" \
+	"$$PWD/../object_data" \
+	"$$PWD/../ain_imager_src"
 
 unix:!mac | win32 {
-	LIBS += -L"$$PWD/../external/libraw/lib" -L"$$PWD/../../external/libraw/lib" -L"$$PWD/../external/lz4" -L"$$PWD/../../external/lz4" -lraw -lz
+	LIBS += -L"$$PWD/../external/libraw/lib" -L"$$PWD/../external/lz4" -lraw -lz
 }
 
 unix {
@@ -167,8 +168,9 @@ unix {
 }
 
 unix:mac {
-	LIBS += -L"$$PWD/../external/libraw/lib" -L"$$PWD/../external/lz4" -lraw -lz \
-			-L"$$PWD/../external/libjpeg/.libs" -L"$$PWD/../indigo/build/lib" -lindigo -ljpeg -llz4
+	LIBS += \
+		-L"$$PWD/../external/libraw/lib" -L"$$PWD/../external/lz4" -lraw -lz \
+		-L"$$PWD/../external/libjpeg/.libs" -L"$$PWD/../indigo/build/lib" -lindigo -ljpeg -llz4
 }
 
 unix:!mac {
@@ -181,6 +183,6 @@ DISTFILES += \
 
 win32 {
 	DEFINES += INDIGO_WINDOWS
-	INCLUDEPATH += $$PWD/../../external/indigo_sdk/include
-	LIBS += -llz4 $$PWD/../../external/indigo_sdk/lib/libindigo_client.lib -lws2_32
+	INCLUDEPATH += "$$PWD/../external/indigo_sdk/include"
+	LIBS += -llz4 "$$PWD/../external/indigo_sdk/lib/libindigo_client.lib" -lws2_32
 }

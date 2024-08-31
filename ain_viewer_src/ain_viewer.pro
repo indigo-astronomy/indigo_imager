@@ -91,20 +91,21 @@ HEADERS += \
 #    PKGCONFIG += indigo
 #}
 
-INCLUDEPATH += "$$PWD/../indigo/indigo_libs" \
-			   "$$PWD/../external" \
-			   "$$PWD/../external/qtzeroconf/" \
-			   "$$PWD/../external/libraw/" \
-			   "$$PWD/../external/lz4/" \
-			   "$$PWD/../common_src" \
-			   "$$PWD/../ain_viewer_src"
+INCLUDEPATH += \
+	"$$PWD/../indigo/indigo_libs" \
+	"$$PWD/../external" \
+	"$$PWD/../external/qtzeroconf/" \
+	"$$PWD/../external/libraw/" \
+	"$$PWD/../external/lz4/" \
+	"$$PWD/../common_src" \
+	"$$PWD/../ain_viewer_src"
 
-LIBS += -L"$$PWD/../external/libraw/lib" -L"$$PWD/../../external/libraw/lib" -"L$$PWD/../../external/lz4" -L"$$PWD/../external/lz4" -lraw -lz
+LIBS += -L"$$PWD/../external/libraw/lib" -L"$$PWD/../external/lz4" -lraw -lz
 
 unix:!mac {
 	INCLUDEPATH += "$$PWD/../external/libjpeg"
-	LIBS += -L"$$PWD/../external/libjpeg/.libs" -"L$$PWD/../indigo/build/lib" -l:libindigo.a -lz -ljpeg -l:liblz4.a
-	#LIBS += -L"../external/libjpeg/.libs" -L"../indigo/build/lib" -lindigo -ljpeg -l:liblz4.a
+	LIBS += -L"$$PWD/../external/libjpeg/.libs" -L"$$PWD/../indigo/build/lib" -l:libindigo.a -lz -ljpeg -l:liblz4.a
+	#LIBS += -L"$$PWD/../external/libjpeg/.libs" -L"$$PWD/../indigo/build/lib" -lindigo -ljpeg -l:liblz4.a
 }
 
 unix:mac {
@@ -118,6 +119,6 @@ DISTFILES += \
 
 win32 {
 	DEFINES += INDIGO_WINDOWS
-	INCLUDEPATH += $$PWD/../../external/indigo_sdk/include
-	LIBS += -llz4 $$PWD/../../external/indigo_sdk/lib/libindigo_client.lib -lws2_32
+	INCLUDEPATH += "$$PWD/../external/indigo_sdk/include"
+	LIBS += -llz4 "$$PWD/../external/indigo_sdk/lib/libindigo_client.lib" -lws2_32
 }
