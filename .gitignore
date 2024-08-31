@@ -32,6 +32,12 @@ external/libjpeg/missing
 external/libjpeg/rdjpgcom
 external/libjpeg/wrjpgcom
 
+external/libraw/lib/libraw.a
+
+external/lz4/*.a
+external/lz4/*.so
+external/lz4/*.so.*
+
 ain_imager_src/Makefile*
 ain_imager_src/ain_imager
 ain_imager_src/moc/*
@@ -57,7 +63,10 @@ windows/ain_viewer_32
 windows/ain_viewer_64
 windows/Outout
 
-
+qrc_*.cpp
 
 *.deb
 
+#QtCreator
+build
+*pro.user

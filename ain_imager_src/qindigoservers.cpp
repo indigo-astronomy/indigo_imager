@@ -133,14 +133,14 @@ void QIndigoServers::onAddManualService() {
 		indigo_debug("Trying to add empty service!");
 		return;
 	}
-	QStringList parts = service_str.split(':', QString::SkipEmptyParts);
+	QStringList parts = service_str.split(':', Qt::SkipEmptyParts);
 	if (parts.size() > 2) {
 		indigo_error("%s(): Service format error.\n",__FUNCTION__);
 		return;
 	} else if (parts.size() == 2) {
 		port = atoi(parts.at(1).toUtf8().constData());
 	}
-	QStringList parts2 = parts.at(0).split('@', QString::SkipEmptyParts);
+	QStringList parts2 = parts.at(0).split('@', Qt::SkipEmptyParts);
 	if (parts2.size() > 2) {
 		indigo_error("%s(): Service format error.\n",__FUNCTION__);
 		return;

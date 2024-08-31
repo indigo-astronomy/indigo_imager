@@ -6,15 +6,15 @@
 
 class FocusGraph : public QCustomPlot
 {
-    Q_OBJECT
+	Q_OBJECT
 public:
-    explicit FocusGraph(QWidget *parent = 0);
+	explicit FocusGraph(QWidget *parent = 0);
 
 signals:
 
 public slots:
-     void set_yaxis_range(double min, double max);
-     void redraw_data(QVector<double> data);
+	 void set_yaxis_range(double min, double max);
+	 void redraw_data(QVector<double> data);
 	 void redraw_data2(QVector<double> data1, QVector<double> data2);
 };
 

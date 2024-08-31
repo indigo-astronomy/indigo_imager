@@ -5,6 +5,7 @@
 #include <image_stats.h>
 #include <imagepreview.h>
 #include <QGraphicsPixmapItem>
+#include <QEnterEvent>
 
 QT_BEGIN_NAMESPACE
 class QLabel;
@@ -122,7 +123,7 @@ signals:
 	void nextRequested();
 
 protected:
-	void enterEvent(QEvent *event) override;
+	void enterEvent(QEnterEvent *event) override;
 	void leaveEvent(QEvent *event) override;
 	void resizeEvent(QResizeEvent *event) override;
 	void showEvent(QShowEvent *event) override;

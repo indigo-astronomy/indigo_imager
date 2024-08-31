@@ -19,8 +19,8 @@
 #include <QLabel>
 #include "qaddcustomobject.h"
 #include <indigo/indigo_bus.h>
-#include <QRegExp>
-#include <widget_state.h>
+#include <QRegularExpression>
+#include "widget_state.h"
 
 QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
 	setWindowTitle("Add Object");
@@ -141,16 +141,16 @@ void QAddCustomObject::onAddCustomObject() {
 		set_ok(m_dec_line);
 	}
 
-	QRegExp ra_re("\\d*:?\\d*:?\\d*\\.?\\d*");
+	QRegularExpression ra_re("\\d*:?\\d*:?\\d*\\.?\\d*");
 	double ra = indigo_stod(ra_str.toUtf8().data());
-	if (ra < 0 || ra > 24 || !ra_re.exactMatch(ra_str)) {
+	if (ra < 0 || ra > 24 || !ra_re.match(ra_str).hasMatch()) {
 		indigo_debug("Right ascenstion is not valid");
 		set_alert(m_ra_line);
 		error = true;
 	}
-	QRegExp dec_re("[+-]?\\d*:?\\d*:?\\d*\\.?\\d*");
+	QRegularExpression dec_re("[+-]?\\d*:?\\d*:?\\d*\\.?\\d*");
 	double dec = indigo_stod(dec_str.toUtf8().data());
-	if (dec < -90 || dec > 90 || !dec_re.exactMatch(dec_str)) {
+	if (dec < -90 || dec > 90 || !dec_re.match(dec_str).hasMatch()) {
 		indigo_debug("Declination is not valid");
 		set_alert(m_dec_line);
 		error = true;

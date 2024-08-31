@@ -34,9 +34,9 @@ public:
 protected:
 	void wheelEvent(QWheelEvent *event) override {
 		if (event->modifiers() == Qt::NoModifier) {
-			if (event->delta() > 0)
+			if (event->angleDelta().y() > 0)
 				m_viewer->zoomIn();
-			else if (event->delta() < 0)
+			else if (event->angleDelta().y() < 0)
 				m_viewer->zoomOut();
 			event->accept();
 		} else {
@@ -44,7 +44,7 @@ protected:
 		}
 	}
 
-	void enterEvent(QEvent *event) override {
+	void enterEvent(QEnterEvent *event) override {
 		QGraphicsView::enterEvent(event);
 		viewport()->setCursor(Qt::CrossCursor);
 	}
@@ -429,7 +429,7 @@ void ImageViewer::showZoom() {
 		m_pixel_value->setText(QString());
 	} else {
 		QString s;
-		s.sprintf("%.0f%%", m_zoom_level);
+		s.asprintf("%.0f%%", m_zoom_level);
 		m_pixel_value->setText(s);
 	}
 }
@@ -458,8 +458,8 @@ void ImageViewer::moveResizeSelection(double x, double y, int size) {
 	m_selection_p.setY(y);
 
 	if (!m_pixmap->pixmap().isNull() && ((cor_x < 0) || (cor_y < 0) ||
-	    (cor_x > m_pixmap->pixmap().width() - size + 1) ||
-	    (cor_y > m_pixmap->pixmap().height() - size + 1))) {
+		(cor_x > m_pixmap->pixmap().width() - size + 1) ||
+		(cor_y > m_pixmap->pixmap().height() - size + 1))) {
 		m_selection->setVisible(false);
 		return;
 	}
@@ -479,8 +479,8 @@ void ImageViewer::moveSelection(double x, double y) {
 	double cor_y = y - (br.height() - 1) / 2.0;
 
 	if (!m_pixmap->pixmap().isNull() && ((cor_x < 0) || (cor_y < 0) ||
-	    (cor_x > m_pixmap->pixmap().width() - (int)br.width() + 1) ||
-	    (cor_y > m_pixmap->pixmap().height() - (int)br.height() + 1))) {
+		(cor_x > m_pixmap->pixmap().width() - (int)br.width() + 1) ||
+		(cor_y > m_pixmap->pixmap().height() - (int)br.height() + 1))) {
 		return;
 	}
 	indigo_debug("%s(): %.2f -> %.2f, %.2f -> %.2f, %d", __FUNCTION__, x, cor_x, y, cor_y, (int)br.width()-1);
@@ -709,20 +709,20 @@ void ImageViewer::addTool(QWidget *tool) {
 void ImageViewer::setMatrix() {
 	qreal scale = m_zoom_level / 100.0;
 
-	QMatrix matrix;
+	QTransform matrix;
 	matrix.scale(scale, scale);
 
-	m_view->setMatrix(matrix);
-	emit zoomChanged(m_view->matrix().m11());
+	m_view->setTransform(matrix);
+	emit zoomChanged(m_view->transform().m11());
 }
 
 void ImageViewer::zoomFit() {
 	m_view->fitInView(m_pixmap, Qt::KeepAspectRatio);
-	m_zoom_level = (100.0 * m_view->matrix().m11());
+	m_zoom_level = (100.0 * m_view->transform().m11());
 	showZoom();
 	indigo_debug("Zoom FIT = %.2f", m_zoom_level);
 	m_fit = true;
-	emit zoomChanged(m_view->matrix().m11());
+	emit zoomChanged(m_view->transform().m11());
 }
 
 void ImageViewer::zoomOriginal() {
@@ -791,21 +791,21 @@ void ImageViewer::mouseAt(double x, double y) {
 		int res = m_pixmap->image().wcs_data(x, y, &ra, &dec);
 		QString s;
 		if (res != -1 && m_show_wcs) {
-			s.sprintf("%.0f%% [%5.1f, %5.1f] (%s, %s) ", m_zoom_level, x, y, indigo_dtos(ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(dec, "%+d° %02d' %04.1f\""));
+			s.asprintf("%.0f%% [%5.1f, %5.1f] (%s, %s) ", m_zoom_level, x, y, indigo_dtos(ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(dec, "%+d° %02d' %04.1f\""));
 		} else {
 			if (pix_format == PIX_FMT_INDEX) {
-				s.sprintf("%.0f%% [%5.1f, %5.1f]", m_zoom_level, x, y);
+				s.asprintf("%.0f%% [%5.1f, %5.1f]", m_zoom_level, x, y);
 			} else if (pix_format == PIX_FMT_F32 || pix_format == PIX_FMT_RGBF){
 				if (g == -1) {
-					s.sprintf("%.0f%% [%5.1f, %5.1f] (%.6f)", m_zoom_level, x, y, r);
+					s.asprintf("%.0f%% [%5.1f, %5.1f] (%.6f)", m_zoom_level, x, y, r);
 				} else {
-					s.sprintf("%.0f%% [%5.1f, %5.1f] (%.6f, %.6f, %.6f)", m_zoom_level, x, y, r, g, b);
+					s.asprintf("%.0f%% [%5.1f, %5.1f] (%.6f, %.6f, %.6f)", m_zoom_level, x, y, r, g, b);
 				}
 			} else {
 				if (g == -1) {
-					s.sprintf("%.0f%% [%5.1f, %5.1f] (%5.0f)", m_zoom_level, x, y, r);
+					s.asprintf("%.0f%% [%5.1f, %5.1f] (%5.0f)", m_zoom_level, x, y, r);
 				} else {
-					s.sprintf("%.0f%% [%5.1f, %5.1f] (%5.0f, %5.0f, %5.0f)", m_zoom_level, x, y, r, g, b);
+					s.asprintf("%.0f%% [%5.1f, %5.1f] (%5.0f, %5.0f, %5.0f)", m_zoom_level, x, y, r, g, b);
 				}
 			}
 		}
@@ -830,13 +830,13 @@ void ImageViewer::mouseRightPressAt(double x, double y, Qt::KeyboardModifiers mo
 	}
 }
 
-void ImageViewer::enterEvent(QEvent *event) {
-    QFrame::enterEvent(event);
-    if (m_bar_mode == ToolBarMode::AutoHidden) {
-        m_toolbar->show();
-        if (m_fit)
-            zoomFit();
-    }
+void ImageViewer::enterEvent(QEnterEvent *event) {
+	QFrame::enterEvent(event);
+	if (m_bar_mode == ToolBarMode::AutoHidden) {
+		m_toolbar->show();
+		if (m_fit)
+			zoomFit();
+	}
 }
 
 void ImageViewer::leaveEvent(QEvent *event) {
