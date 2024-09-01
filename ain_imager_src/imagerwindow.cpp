@@ -34,7 +34,7 @@
 #include "version.h"
 #include <imageviewer.h>
 #include <image_stats.h>
-#include <QSound>
+#include <QSoundEffect>
 #include <QFileInfo>
 
 void write_conf();
@@ -642,18 +642,23 @@ bool ImagerWindow::show_preview_in_guider_viewer(QString &key) {
 
 void ImagerWindow::play_sound(int alarm) {
 	if (conf.sound_notification_level) {
+		QSoundEffect sound_effect;
 		switch (alarm) {
 		case AIN_NO_SOUND:
 			return;
 		case AIN_ALERT_SOUND:
-			QSound::play(":/resource/error.wav");
+
+			sound_effect.setSource(QUrl::fromLocalFile(":/resource/error.wav"));
+			sound_effect.play();
 			return;
 		case AIN_WARNING_SOUND:
-			QSound::play(":/resource/warning.wav");
+			sound_effect.setSource(QUrl::fromLocalFile(":/resource/warning.wav"));
+			sound_effect.play();
 			return;
 		case AIN_OK_SOUND:
 			if (conf.sound_notification_level > AIN_WARNING_SOUND) {
-				QSound::play(":/resource/ok.wav");
+				sound_effect.setSource(QUrl::fromLocalFile(":/resource/ok.wav"));
+				sound_effect.play();
 			}
 			return;
 		}
@@ -1495,6 +1500,7 @@ void ImagerWindow::on_about_act() {
 		AIN_VERSION
 		" (" + QString::number(platform_bits) + "bit) <br>"
 		"<br>INDIGO framework version " + QString(indigo_version) + "<br>"
+		"<br>Qt version: " + QT_VERSION_STR + "<br>"
 		"<br>"
 		"Author:<br>"
 		"Rumen G.Bogdanovski<br>"

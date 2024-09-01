@@ -72,11 +72,11 @@ public Q_SLOTS:
 	void onRequestSaveServices();
 
 private:
-    int findService(const QByteArray &name);
+	int findService(const QByteArray &name);
 
 	Logger* m_logger;
 	bool m_auto_connect;
-    QList<QIndigoService*> m_services;
+	QList<QIndigoService*> m_services;
 };
 
 inline QServiceModel& QServiceModel::instance() {

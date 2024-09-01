@@ -1,0 +1,3 @@
+[*.{cpp,h,qrc}]
+indent_style = tab
+indent_size = tab
