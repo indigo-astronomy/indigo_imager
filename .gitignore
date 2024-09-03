@@ -32,6 +32,13 @@ external/libjpeg/missing
 external/libjpeg/rdjpgcom
 external/libjpeg/wrjpgcom
 
+external/indigo_sdk/lib
+external/libraw/lib
+external/lz4/dll
+external/lz4/liblz4.a
+external/lz4/liblz4-dll.rc
+
+
 ain_imager_src/Makefile*
 ain_imager_src/ain_imager
 ain_imager_src/moc/*
@@ -55,7 +62,8 @@ windows/ain_imager_32
 windows/ain_imager_64
 windows/ain_viewer_32
 windows/ain_viewer_64
-windows/Outout
+windows/Output
+
 
 
 
