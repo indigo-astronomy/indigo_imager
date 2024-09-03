@@ -27,7 +27,6 @@
 class QIndigoService {
 
 public:
-	QIndigoService(const QIndigoService &other);
 	QIndigoService(QByteArray name, QByteArray host, int port);
 	QIndigoService(QByteArray name, QByteArray host, int port, bool connect, bool is_manual_service = true);
 	virtual ~QIndigoService();
