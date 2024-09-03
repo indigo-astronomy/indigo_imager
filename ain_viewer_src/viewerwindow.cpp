@@ -754,6 +754,7 @@ void ViewerWindow::on_about_act() {
 		"Version "
 		AIN_VERSION
 		" (" + QString::number(platform_bits) + "bit) <br>"
+		"<br>Qt version: " + QT_VERSION_STR + "<br>"
 		"<br>"
 		"Author:<br>"
 		"Rumen G.Bogdanovski<br>"

@@ -1495,6 +1495,7 @@ void ImagerWindow::on_about_act() {
 		AIN_VERSION
 		" (" + QString::number(platform_bits) + "bit) <br>"
 		"<br>INDIGO framework version " + QString(indigo_version) + "<br>"
+		"<br>Qt version: " + QT_VERSION_STR + "<br>"
 		"<br>"
 		"Author:<br>"
 		"Rumen G.Bogdanovski<br>"
