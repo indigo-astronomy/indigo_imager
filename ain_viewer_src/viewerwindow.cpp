@@ -31,6 +31,7 @@
 #include <dslr_raw.h>
 #include <image_stats.h>
 #include <xisf.h>
+#include <QDateTime>
 
 
 void write_conf();
@@ -432,11 +433,9 @@ void ViewerWindow::on_image_info_act() {
 			text->append(QString("<b>ISO Speed:</b> ") + QString::number(image_info.iso_speed, 'f', 0));
 			text->append(QString("<b>Image Dimensions:</b> ") + QString::number(image_info.iwidth) + " x " + QString::number(image_info.iheight));
 			if (image_info.timestamp != 0) {
-				char time_str[64];
-				struct tm tm;
-				localtime_r(&image_info.timestamp, &tm);
-				strftime(time_str, sizeof(time_str), "%d-%m-%Y %H:%M:%S", &tm);
-				text->append(QString("<b>Acquisition time:</b> ") + time_str);
+				QDateTime dateTime = QDateTime::fromSecsSinceEpoch(image_info.timestamp);
+				QString formattedTime = dateTime.toString("dd-MM-yyyy HH:mm:ss");
+				text->append(QString("<b>Acquisition time:</b> ") + formattedTime);
 				text->append("");
 			}
 			if (image_info.artist[0] != '\0') {

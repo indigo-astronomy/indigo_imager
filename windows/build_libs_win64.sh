@@ -13,6 +13,6 @@ mingw32-make CC=gcc
 cd ../../windows
 
 cd ../external/indigo_sdk
-rm -r lib/
+rm -rf lib/
 mkdir lib/
 cp -r lib64/* lib/
