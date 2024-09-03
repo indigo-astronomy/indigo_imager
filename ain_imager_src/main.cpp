@@ -23,6 +23,7 @@
 #include <QTextStream>
 #include <QVersionNumber>
 #include "imagerwindow.h"
+#include "version.h"
 #include <conf.h>
 
 conf_t conf;
