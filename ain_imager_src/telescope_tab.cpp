@@ -1226,13 +1226,12 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 	}
 
 	indigo_star_entry *star = &indigo_star_data[0];
-	QRegExp hip_re("HIP\\d+");
-	hip_re.setCaseSensitivity(Qt::CaseInsensitive);
+	QRegularExpression hip_re(QRegularExpression::anchoredPattern("HIP\\d+"), QRegularExpression::CaseInsensitiveOption);
 	while (star->hip) {
 		QString star_name = "HIP" + QString::number(star->hip);
 		if (
 			(star->name && QString(star->name).contains(obj_name_c, Qt::CaseInsensitive)) ||
-			(hip_re.exactMatch(obj_name) && star_name.contains(obj_name_c, Qt::CaseInsensitive))
+			(hip_re.match(obj_name).hasMatch() && star_name.contains(obj_name_c, Qt::CaseInsensitive))
 		) {
 			data = star_name;
 			if (star->name == nullptr || star->name[0] == '\0') {
