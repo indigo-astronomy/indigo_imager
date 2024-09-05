@@ -714,7 +714,6 @@ void ImageViewer::setMatrix() {
 
 	m_view->setTransform(matrix);
 	emit zoomChanged(m_view->transform().m11());
-	emit zoomChanged(m_view->matrix().m11());
 }
 
 void ImageViewer::zoomFit() {
