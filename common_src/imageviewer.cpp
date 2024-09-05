@@ -709,20 +709,20 @@ void ImageViewer::addTool(QWidget *tool) {
 void ImageViewer::setMatrix() {
 	qreal scale = m_zoom_level / 100.0;
 
-	QMatrix matrix;
+	QTransform matrix;
 	matrix.scale(scale, scale);
 
-	m_view->setMatrix(matrix);
-	emit zoomChanged(m_view->matrix().m11());
+	m_view->setTransform(matrix);
+	emit zoomChanged(m_view->transform().m11());
 }
 
 void ImageViewer::zoomFit() {
 	m_view->fitInView(m_pixmap, Qt::KeepAspectRatio);
-	m_zoom_level = (100.0 * m_view->matrix().m11());
+	m_zoom_level = (100.0 * m_view->transform().m11());
 	showZoom();
 	indigo_debug("Zoom FIT = %.2f", m_zoom_level);
 	m_fit = true;
-	emit zoomChanged(m_view->matrix().m11());
+	emit zoomChanged(m_view->transform().m11());
 }
 
 void ImageViewer::zoomOriginal() {
