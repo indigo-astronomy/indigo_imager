@@ -1226,7 +1226,7 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 	}
 
 	indigo_star_entry *star = &indigo_star_data[0];
-	QRegularExpression hip_re("HIP\\d+", QRegularExpression::CaseInsensitiveOption);
+	QRegularExpression hip_re(QRegularExpression::anchoredPattern("HIP\\d+"), QRegularExpression::CaseInsensitiveOption);
 	while (star->hip) {
 		QString star_name = "HIP" + QString::number(star->hip);
 		if (
