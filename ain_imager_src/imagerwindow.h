@@ -419,7 +419,7 @@ public slots:
 	void on_custom_object_populate() {
 		QString ra_str(indigo_dtos(m_mount_ra, "%d:%02d:%04.1f"));
 		QString dec_str(indigo_dtos(m_mount_dec, "%d:%02d:%04.1f"));
-		m_add_object_dialog->populate(QString(), ra_str, dec_str, -100, QString());
+		m_add_object_dialog->populate(QString::null, ra_str, dec_str, -100, QString::null);
 	}
 
 	void on_set_enabled(QWidget *widget, bool enabled) {
