@@ -41,7 +41,19 @@ SOURCES += \
 
 RESOURCES += \
 	$$PWD/../qdarkstyle/style.qrc \
-	$$PWD/../resource/ain_viewer.qrc
+	$$PWD/../resource/control_panel.qss \
+	$$PWD/../resource/ain_viewer.png \
+	$$PWD/../resource/previous.png \
+	$$PWD/../resource/next.png \
+	$$PWD/../resource/indigo_logo.png \
+	$$PWD/../resource/zoom-fit-best.png \
+	$$PWD/../resource/zoom-original.png \
+	$$PWD/../resource/bonjour_service.png \
+	$$PWD/../resource/manual_service.png \
+	$$PWD/../resource/no-preview.png \
+	$$PWD/../resource/zoom-in.png \
+	$$PWD/../resource/zoom-out.png \
+	$$PWD/../resource/histogram.png
 
 
 # Additional import path used to resolve QML modules in Qt Creator\'s code model

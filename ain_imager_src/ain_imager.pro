@@ -63,7 +63,46 @@ SOURCES += \
 
 RESOURCES += \
 	$$PWD/../qdarkstyle/style.qrc \
-	$$PWD/../resource/ain_viewer.qrc
+	$$PWD/../resource/control_panel.qss \
+	$$PWD/../resource/appicon.png \
+	$$PWD/../resource/indigo_logo.png \
+	$$PWD/../resource/save.png \
+	$$PWD/../resource/delete.png \
+	$$PWD/../resource/zoom-fit-best.png \
+	$$PWD/../resource/zoom-original.png \
+	$$PWD/../resource/bonjour_service.png \
+	$$PWD/../resource/manual_service.png \
+	$$PWD/../resource/no-preview.png \
+	$$PWD/../resource/led-red.png \
+	$$PWD/../resource/led-grey.png \
+	$$PWD/../resource/led-green.png \
+	$$PWD/../resource/led-orange.png \
+	$$PWD/../resource/led-red-cb.png \
+	$$PWD/../resource/led-green-cb.png \
+	$$PWD/../resource/led-orange-cb.png \
+	$$PWD/../resource/stop.png \
+	$$PWD/../resource/play.png \
+	$$PWD/../resource/pause.png \
+	$$PWD/../resource/record.png \
+	$$PWD/../resource/focus.png \
+	$$PWD/../resource/calibrate.png \
+	$$PWD/../resource/guide.png \
+	$$PWD/../resource/focus_in.png \
+	$$PWD/../resource/focus_out.png \
+	$$PWD/../resource/previous.png \
+	$$PWD/../resource/next.png \
+	$$PWD/../resource/zoom-in.png \
+	$$PWD/../resource/zoom-out.png \
+	$$PWD/../resource/arrow-up.png \
+	$$PWD/../resource/arrow-down.png \
+	$$PWD/../resource/edit.png \
+	$$PWD/../resource/folder.png \
+	$$PWD/../resource/download.png \
+	$$PWD/../resource/histogram.png \
+	$$PWD/../resource/error.wav \
+	$$PWD/../resource/ok.wav \
+	$$PWD/../resource/warning.wav \
+	$$PWD/../resource/spinner.gif
 
 
 # Additional import path used to resolve QML modules in Qt Creator\'s code model
