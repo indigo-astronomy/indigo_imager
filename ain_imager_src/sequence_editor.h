@@ -67,9 +67,9 @@ public:
 		m_frame{"*"},
 		m_focus{"*"}
 	{
-		QStringList list = batch_string.split(';', Qt::SkipEmptyParts);
+		QStringList list = batch_string.split(';', QString::SkipEmptyParts);
 		for(int i = 0; i < list.length(); i++) {
-			QStringList key_val = list[i].split('=', Qt::SkipEmptyParts);
+			QStringList key_val = list[i].split('=', QString::SkipEmptyParts);
 			if (key_val.length() <= 2) {
 				QString key = key_val[0].trimmed();
 				if (!key.compare("filter")) {
