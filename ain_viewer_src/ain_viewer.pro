@@ -40,8 +40,8 @@ SOURCES += \
 	$$PWD/../common_src/stretcher.cpp
 
 RESOURCES += \
-		../qdarkstyle/style.qrc \
-		../resource/ain_viewer.qrc \
+	$$PWD/../qdarkstyle/style.qrc \
+	$$PWD/../resource/ain_viewer.qrc \
 
 
 

@@ -62,8 +62,8 @@ SOURCES += \
 
 
 RESOURCES += \
-		../qdarkstyle/style.qrc \
-		../resource/ain_imager.qrc
+	$$PWD/../qdarkstyle/style.qrc \
+	$$PWD/../resource/ain_imager.qrc
 
 
 # Additional import path used to resolve QML modules in Qt Creator\'s code model
