@@ -133,7 +133,7 @@ static bool download_blob_async(indigo_property *property, QAtomicInt *downloadi
 				free(blob_item);
 			}
 		}
-		downloading->storeRelaxed(0);
+		downloading->storeRelease(0);
 		if( downloading == &client.imager_downloading) {
 			emit(client.imager_download_completed());
 		}
