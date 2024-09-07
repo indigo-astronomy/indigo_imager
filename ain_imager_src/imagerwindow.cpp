@@ -1390,7 +1390,11 @@ void ImagerWindow::on_indigo_save_log(bool status) {
 		indigo_log("On Windows INDIGO log can not be stopped for the current session, it will take effect on Ain restart.");
 #endif
 	}
-	indigo_debug("%s\n", __FUNCTION__);
+	int major, minor, build;
+	if (indigo_get_log_level() >= INDIGO_LOG_DEBUG) {
+		indigo_get_version(&major, &minor, &build);
+		indigo_debug("%s: Ain Imager v.%s using INDIGO framework v.%d.%d-%d (Qt v.%s)", __FUNCTION__, AIN_VERSION, major, minor, build, QT_VERSION_STR);
+	}
 }
 
 void ImagerWindow::on_log_error() {

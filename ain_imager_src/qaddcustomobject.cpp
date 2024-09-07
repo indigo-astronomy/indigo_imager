@@ -17,9 +17,9 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QLabel>
-#include "qaddcustomobject.h"
-#include <indigo/indigo_bus.h>
 #include <QRegularExpression>
+#include <indigo/indigo_bus.h>
+#include "qaddcustomobject.h"
 #include "widget_state.h"
 
 QAddCustomObject::QAddCustomObject(QWidget *parent) : QDialog(parent) {
@@ -141,14 +141,14 @@ void QAddCustomObject::onAddCustomObject() {
 		set_ok(m_dec_line);
 	}
 
-	QRegularExpression ra_re("\\d*:?\\d*:?\\d*\\.?\\d*");
+	QRegularExpression ra_re(QRegularExpression::anchoredPattern("\\d*:?\\d*:?\\d*\\.?\\d*"));
 	double ra = indigo_stod(ra_str.toUtf8().data());
 	if (ra < 0 || ra > 24 || !ra_re.match(ra_str).hasMatch()) {
 		indigo_debug("Right ascenstion is not valid");
 		set_alert(m_ra_line);
 		error = true;
 	}
-	QRegularExpression dec_re("[+-]?\\d*:?\\d*:?\\d*\\.?\\d*");
+	QRegularExpression dec_re(QRegularExpression::anchoredPattern("[+-]?\\d*:?\\d*:?\\d*\\.?\\d*"));
 	double dec = indigo_stod(dec_str.toUtf8().data());
 	if (dec < -90 || dec > 90 || !dec_re.match(dec_str).hasMatch()) {
 		indigo_debug("Declination is not valid");

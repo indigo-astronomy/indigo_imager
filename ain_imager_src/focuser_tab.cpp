@@ -143,9 +143,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	temperature_compensation_frame_layout->setColumnStretch(0, 1);
 	temperature_compensation_frame_layout->setColumnStretch(1, 0);
 	temperature_compensation_frame_layout->setColumnStretch(2, 0);
-	QMargins margins = temperature_compensation_frame_layout->contentsMargins();
-	margins.setTop(0);
-	temperature_compensation_frame_layout->setContentsMargins(margins);
+	temperature_compensation_frame_layout->setContentsMargins(0, 0, 0, 0);
 
 	m_temperature_compensation_frame->setLayout(temperature_compensation_frame_layout);
 	m_temperature_compensation_frame->setFrameShape(QFrame::StyledPanel);
