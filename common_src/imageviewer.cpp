@@ -429,7 +429,7 @@ void ImageViewer::showZoom() {
 		m_pixel_value->setText(QString());
 	} else {
 		QString s;
-		s.sprintf("%.0f%%", m_zoom_level);
+		s = QString("%1%").arg(m_zoom_level, 0, 'f', 0);
 		m_pixel_value->setText(s);
 	}
 }
@@ -785,27 +785,56 @@ void ImageViewer::zoomOut() {
 
 void ImageViewer::mouseAt(double x, double y) {
 	if (m_pixmap && m_pixmap->image().valid(x,y)) {
-		double r,g,b;
+		double r=0, g=0, b=0;
 		double ra, dec;
 		int pix_format = m_pixmap->image().pixel_value(x, y, r, g, b);
 		int res = m_pixmap->image().wcs_data(x, y, &ra, &dec);
 		QString s;
 		if (res != -1 && m_show_wcs) {
-			s.sprintf("%.0f%% [%5.1f, %5.1f] (%s, %s) ", m_zoom_level, x, y, indigo_dtos(ra / 15, "%dh %02d' %04.1f\""), indigo_dtos(dec, "%+d° %02d' %04.1f\""));
+			s = QString("%1% [%2, %3] (%4, %5) ")
+				.arg(m_zoom_level, 0, 'f', 0)
+				.arg(x, 5, 'f', 1)
+				.arg(y, 5, 'f', 1)
+				.arg(indigo_dtos(ra / 15, "%dh %02d' %04.1f\""))
+				.arg(indigo_dtos(dec, "%+d° %02d' %04.1f\""));
 		} else {
 			if (pix_format == PIX_FMT_INDEX) {
-				s.sprintf("%.0f%% [%5.1f, %5.1f]", m_zoom_level, x, y);
+				s = QString("%1% [%2, %3]")
+					.arg(m_zoom_level, 0, 'f', 0)
+					.arg(x, 5, 'f', 1)
+					.arg(y, 5, 'f', 1);
+
 			} else if (pix_format == PIX_FMT_F32 || pix_format == PIX_FMT_RGBF){
 				if (g == -1) {
-					s.sprintf("%.0f%% [%5.1f, %5.1f] (%.6f)", m_zoom_level, x, y, r);
+					s = QString("%1% [%2, %3] (%4)")
+						.arg(m_zoom_level, 0, 'f', 0)
+						.arg(x, 5, 'f', 1)
+						.arg(y, 5, 'f', 1)
+						.arg(r, 0, 'f', 6);
 				} else {
-					s.sprintf("%.0f%% [%5.1f, %5.1f] (%.6f, %.6f, %.6f)", m_zoom_level, x, y, r, g, b);
+					s = QString("%1% [%2, %3] (%4, %5, %6)")
+						.arg(m_zoom_level, 0, 'f', 0)
+						.arg(x, 5, 'f', 1)
+						.arg(y, 5, 'f', 1)
+						.arg(r, 0, 'f', 6)
+						.arg(g, 0, 'f', 6)
+						.arg(b, 0, 'f', 6);
 				}
 			} else {
 				if (g == -1) {
-					s.sprintf("%.0f%% [%5.1f, %5.1f] (%5.0f)", m_zoom_level, x, y, r);
+					s = QString("%1% [%2, %3] (%4)")
+						.arg(m_zoom_level, 0, 'f', 0)
+						.arg(x, 5, 'f', 1)
+						.arg(y, 5, 'f', 1)
+						.arg(r, 5, 'f', 0);
 				} else {
-					s.sprintf("%.0f%% [%5.1f, %5.1f] (%5.0f, %5.0f, %5.0f)", m_zoom_level, x, y, r, g, b);
+					s = QString("%1% [%2, %3] (%4, %5, %6)")
+						.arg(m_zoom_level, 0, 'f', 0)
+						.arg(x, 5, 'f', 1)
+						.arg(y, 5, 'f', 1)
+						.arg(r, 5, 'f', 0)
+						.arg(g, 5, 'f', 0)
+						.arg(b, 5, 'f', 0);
 				}
 			}
 		}
