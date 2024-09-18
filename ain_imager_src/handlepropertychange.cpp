@@ -1616,7 +1616,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			if (w->m_focus_contrast_data.size() > 100) w->m_focus_contrast_data.removeFirst();
 
 			//w->m_focus_display_data = &w->m_focus_contrast_data;
-			if (w->m_focus_display_data) {
+			if (w->m_focus_display_data && !w->m_focus_display_data->empty()) {
 				double max = *std::max_element(w->m_focus_display_data->constBegin(), w->m_focus_display_data->constEnd());
 				double min = *std::min_element(w->m_focus_display_data->constBegin(), w->m_focus_display_data->constEnd());
 				if (max == min) {
