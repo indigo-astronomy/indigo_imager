@@ -202,7 +202,9 @@ signals:
 	void remove_combobox_item(QComboBox *combobox, int index);
 
 	void show_focuser_selection(bool show);
+	void show_focuser_extra_selection(bool show);
 	void move_resize_focuser_selection(double x, double y, int size);
+	void move_resize_focuser_extra_selection(QList<QPointF> &point_list, int size);
 
 	void show_guider_selection(bool show);
 	void move_resize_guider_selection(double x, double y, int size);

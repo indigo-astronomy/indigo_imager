@@ -368,7 +368,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(m_tools_tabbar, &QTabWidget::currentChanged, this, &ImagerWindow::on_tab_changed);
 
 	// Image viewer
-	m_imager_viewer = new ImageViewer(this);
+	m_imager_viewer = new ImageViewer(this, false, false);
 	m_imager_viewer->setText("No Image");
 	m_imager_viewer->setToolTip("No Image");
 	m_imager_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
@@ -410,6 +410,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(m_guider_viewer, &ImageViewer::BalanceChanged, this, &ImagerWindow::on_guider_cb_changed);
 
 	connect(this, &ImagerWindow::move_resize_focuser_selection, m_imager_viewer, &ImageViewer::moveResizeSelection);
+	connect(this, &ImagerWindow::move_resize_focuser_extra_selection, m_imager_viewer, &ImageViewer::moveResizeExtraSelection);
+	connect(this, &ImagerWindow::show_focuser_extra_selection, m_imager_viewer, &ImageViewer::showExtraSelection);
 	connect(this, &ImagerWindow::show_focuser_selection, m_imager_viewer, &ImageViewer::showSelection);
 	connect(this, &ImagerWindow::move_resize_guider_selection, m_guider_viewer, &ImageViewer::moveResizeSelection);
 	connect(this, &ImagerWindow::move_resize_guider_extra_selection, m_guider_viewer, &ImageViewer::moveResizeExtraSelection);
@@ -720,9 +722,11 @@ void ImagerWindow::on_tab_changed(int index) {
 	}
 	if (index == FOCUSER_TAB) {
 		m_imager_viewer->showSelection(true);
+		m_imager_viewer->showExtraSelection(true);
 		m_imager_viewer->showReference(false);
 	} else {
 		m_imager_viewer->showSelection(false);
+		m_imager_viewer->showExtraSelection(false);
 		m_imager_viewer->showReference(conf.imager_show_reference);
 	}
 }
