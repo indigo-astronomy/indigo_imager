@@ -368,7 +368,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(m_tools_tabbar, &QTabWidget::currentChanged, this, &ImagerWindow::on_tab_changed);
 
 	// Image viewer
-	m_imager_viewer = new ImageViewer(this, false, false);
+	m_imager_viewer = new ImageViewer(this);
 	m_imager_viewer->setText("No Image");
 	m_imager_viewer->setToolTip("No Image");
 	m_imager_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
