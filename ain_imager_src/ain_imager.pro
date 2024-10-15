@@ -131,7 +131,7 @@ unix {
 unix:mac {
 	LIBS += \
 		-L"$$PWD/../external/libraw/lib" -L"$$PWD/../external/lz4" -lraw -lz \
-		-L"$$PWD/../external/libjpeg/.libs" -L"$$PWD/../indigo/build/lib" -lindigo -ljpeg -llz4
+		-L"$$PWD/../external/libjpeg/.libs" -L"$$PWD/../indigo/build/lib" -lindigo -ljpeg $$PWD/../external/lz4/liblz4.a
 }
 
 unix:!mac {

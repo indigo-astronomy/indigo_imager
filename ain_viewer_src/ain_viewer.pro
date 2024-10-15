@@ -99,7 +99,7 @@ unix:!mac {
 
 unix:mac {
 	INCLUDEPATH += "$$PWD/../external/libjpeg"
-	LIBS += -L"$$PWD/../external/libjpeg/.libs" -L"$$PWD/../indigo/build/lib" -lindigo -ljpeg -llz4
+	LIBS += -L"$$PWD/../external/libjpeg/.libs" -L"$$PWD/../indigo/build/lib" -lindigo -ljpeg $$PWD/../external/lz4/liblz4.a
 }
 
 DISTFILES += \
