@@ -2181,7 +2181,7 @@ void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 	window_log(log_line, state);
 }
 
-void condigure_guider_overlays(ImagerWindow *w, char *device, indigo_property *property) {
+void configure_guider_overlays(ImagerWindow *w, char *device, indigo_property *property) {
 	if (device == nullptr) return;
 
 	indigo_property *p = nullptr;
@@ -2558,17 +2558,26 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME)) {
 		update_guider_selection_property(this, property);
 		set_enabled(m_guider_subframe_select, true);
-		QtConcurrent::run([=]() {
-			change_guider_agent_subframe(selected_guider_agent);
-		});
-		condigure_guider_overlays(this, property->device, nullptr);
+		// change sugframe only if it is different from current
+		int current_subframe = 0;
+		for (int i = 0; i < property->count; i++) {
+			if (client_match_item(&property->items[i], AGENT_GUIDER_SELECTION_SUBFRAME_ITEM_NAME)) {
+				current_subframe = (int)property->items[i].number.value;
+			}
+		}
+		if (m_guider_subframe_select->currentIndex() * 5 != current_subframe) {
+			QtConcurrent::run([=]() {
+				change_guider_agent_subframe(selected_guider_agent);
+			});
+		}
+		configure_guider_overlays(this, property->device, nullptr);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_STATS_PROPERTY_NAME)) {
 		update_guider_stats(this, property);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_detection_mode_select);
-		condigure_guider_overlays(this, property->device, property);
+		configure_guider_overlays(this, property->device, property);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_dec_guiding_select);
@@ -2908,7 +2917,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_detection_mode_select);
-		condigure_guider_overlays(this, property->device, property);
+		configure_guider_overlays(this, property->device, property);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_dec_guiding_select);

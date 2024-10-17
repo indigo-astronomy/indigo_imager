@@ -162,7 +162,7 @@ public:
 	friend void update_mount_lon_lat(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_utc(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_agent_sync_time(ImagerWindow *w, indigo_property *property);
-	friend void condigure_guider_overlays(ImagerWindow *w, char *device, indigo_property *property);
+	friend void configure_guider_overlays(ImagerWindow *w, char *device, indigo_property *property);
 	friend void log_guide_header(ImagerWindow *w, char *device_name);
 	friend void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property);
 	friend void update_solver_agent_hints(ImagerWindow *w, indigo_property *property);
