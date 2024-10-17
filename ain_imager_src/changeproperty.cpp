@@ -483,6 +483,7 @@ void ImagerWindow::change_guider_agent_edge_clipping(const char *agent) const {
 }
 
 void ImagerWindow::change_focuser_subframe(const char *agent) const {
+	indigo_error("change_focuser_subframe");
 	static const char *items[] = {
 		AGENT_IMAGER_SELECTION_SUBFRAME_ITEM_NAME
 	};
