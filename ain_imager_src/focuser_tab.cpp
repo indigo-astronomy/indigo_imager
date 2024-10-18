@@ -279,28 +279,25 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	settings_frame_layout->addWidget(m_focuser_exposure_time, settings_row, 2, 1, 2);
 
 	settings_row++;
-	label = new QLabel("Focus mode:");
-	settings_frame_layout->addWidget(label, settings_row, 0, 1, 2);
+	label = new QLabel("Estimator:");
+	settings_frame_layout->addWidget(label, settings_row, 0, 1 ,1);
+	m_focus_estimator_select = new QComboBox();
+	settings_frame_layout->addWidget(m_focus_estimator_select, settings_row, 1, 1, 2);
+	connect(m_focus_estimator_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focus_estimator_selected);
+
 	m_focus_mode_select = new QComboBox();
 	m_focus_mode_select->addItem("Manual");
 	m_focus_mode_select->addItem("Auto");
-	settings_frame_layout->addWidget(m_focus_mode_select, settings_row, 2, 1, 2);
+	settings_frame_layout->addWidget(m_focus_mode_select, settings_row, 3, 1, 1);
 	m_focus_mode_select->setCurrentIndex(conf.focus_mode);
 	connect(m_focus_mode_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focus_mode_selected);
-
-	settings_row++;
-	label = new QLabel("Focus estimator:");
-	settings_frame_layout->addWidget(label, settings_row, 0, 1 ,2);
-	m_focus_estimator_select = new QComboBox();
-	settings_frame_layout->addWidget(m_focus_estimator_select, settings_row, 2, 1, 2);
-	connect(m_focus_estimator_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_focus_estimator_selected);
 
 	settings_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	settings_frame_layout->addItem(spacer, settings_row, 0);
 
 	settings_row++;
-	label = new QLabel("Selection (Peak/HFD):");
+	label = new QLabel("Selection:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	settings_frame_layout->addWidget(label, settings_row, 0, 1, 4);
 
@@ -325,8 +322,19 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	connect(m_star_y, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_selection_changed);
 
 	settings_row++;
-	label = new QLabel("Selection radius (px):");
-	settings_frame_layout->addWidget(label, settings_row, 0, 1, 3);
+
+	label = new QLabel("Star count:");
+	settings_frame_layout->addWidget(label, settings_row, 0);
+	m_focus_star_count = new QSpinBox();
+	m_focus_star_count->setMaximum(100000);
+	m_focus_star_count->setMinimum(0);
+	m_focus_star_count->setValue(0);
+	m_focus_star_count->setEnabled(false);
+	settings_frame_layout->addWidget(m_focus_star_count, settings_row, 1);
+	connect(m_focus_star_count, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_focuser_selection_star_count_changed);
+
+	label = new QLabel("Radius (px):");
+	settings_frame_layout->addWidget(label, settings_row, 2);
 	m_focus_star_radius = new QSpinBox();
 	m_focus_star_radius->setMaximum(100000);
 	m_focus_star_radius->setMinimum(0);
@@ -334,6 +342,20 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focus_star_radius->setEnabled(false);
 	settings_frame_layout->addWidget(m_focus_star_radius, settings_row, 3);
 	connect(m_focus_star_radius, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_focuser_selection_radius_changed);
+
+	settings_row++;
+	spacer = new QSpacerItem(1, 5, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	settings_frame_layout->addItem(spacer, settings_row, 0);
+
+	settings_row++;
+	button = new QPushButton("Clear star selection");
+	button->setStyleSheet("min-width: 30px");
+	button->setToolTip("Keyboard shortcut: Shift+Backspace");
+	settings_frame_layout->addWidget(button, settings_row, 0, 1, 4);
+
+	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_focuser_clear_selection);
+	QShortcut *shortcut = new QShortcut(QKeySequence("Shift+Backspace"), this);
+	connect(shortcut, &QShortcut::activated, this, [this](){this->on_focuser_clear_selection(true);});
 
 	settings_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -584,6 +606,24 @@ void ImagerWindow::on_focuser_selection_radius_changed(int value) {
 		get_selected_imager_agent(selected_agent);
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_agent_star_selection(selected_agent);
+	});
+}
+
+void ImagerWindow::on_focuser_selection_star_count_changed(int value) {
+	QtConcurrent::run([=]() {
+		char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_agent_star_count(selected_agent);
+	});
+}
+
+void ImagerWindow::on_focuser_clear_selection(bool clicked) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		indigo_change_switch_property_1(nullptr, selected_agent, AGENT_START_PROCESS_PROPERTY_NAME, AGENT_GUIDER_CLEAR_SELECTION_ITEM_NAME, true);
 	});
 }
 

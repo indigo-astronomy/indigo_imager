@@ -272,6 +272,10 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	connect(m_guide_star_count, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_selection_star_count_changed);
 
 	settings_row++;
+	spacer = new QSpacerItem(1, 5, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	settings_frame_layout->addItem(spacer, settings_row, 0);
+
+	settings_row++;
 	button = new QPushButton("Clear star selection");
 	button->setStyleSheet("min-width: 30px");
 	button->setToolTip("Keyboard shortcut: Ctrl+Backspace");

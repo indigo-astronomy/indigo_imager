@@ -301,6 +301,8 @@ public slots:
 	void on_focus_estimator_selected(int index);
 	void on_selection_changed(double value);
 	void on_focuser_selection_radius_changed(int value);
+	void on_focuser_selection_star_count_changed(int value);
+	void on_focuser_clear_selection(bool clicked);
 	void on_focuser_position_changed();
 	void on_image_right_click(double x, double y, Qt::KeyboardModifiers modifiers);
 	void on_image_right_click_ra_dec(double ra, double dec, double telescope_ra, double telescope_dec, Qt::KeyboardModifiers mdifiers);
@@ -643,6 +645,7 @@ private:
 	QDoubleSpinBox  *m_star_x;
 	QDoubleSpinBox  *m_star_y;
 	QSpinBox  *m_focus_star_radius;
+	QSpinBox  *m_focus_star_count;
 	QComboBox *m_focuser_subframe_select;
 	QComboBox *m_focuser_reverse_select;
 	QLabel    *m_initial_step_label;
@@ -943,6 +946,7 @@ private:
 	void change_agent_start_preview_property(const char *agent) const;
 	void change_agent_start_focusing_property(const char *agent) const;
 	void change_agent_star_selection(const char *agent) const;
+	void change_agent_star_count(const char *agent) const;
 	void change_agent_focus_params_property(const char *agent, bool set_backlash) const;
 	void change_agent_focuser_bl_overshoot(const char *agent) const;
 	void change_focuser_steps_property(const char *agent) const;

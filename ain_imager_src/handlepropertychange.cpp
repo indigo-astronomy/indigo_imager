@@ -1189,7 +1189,7 @@ void update_imager_selection_property(ImagerWindow *w, indigo_property *property
 			configure_spinbox(w, &property->items[i], property->perm, w->m_star_y);
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_SELECTION_STAR_COUNT_ITEM_NAME)) {
 			count = property->items[i].number.value;
-			//configure_spinbox(w, &property->items[i], property->perm, w->m_focuser_star_count);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_focus_star_count);
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_SELECTION_RADIUS_ITEM_NAME)) {
 			double max = property->items[i].number.value * 2 + 2;
 			size = (int)round(property->items[i].number.value * 2 + 1);
@@ -3231,6 +3231,9 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		set_spinbox_value(m_focus_star_radius, 0);
 		set_enabled(m_focus_star_radius, false);
+
+		set_spinbox_value(m_focus_star_count, 0);
+		set_enabled(m_focus_star_count, false);
 
 		set_enabled(m_focuser_subframe_select, false);
 	}
