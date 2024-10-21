@@ -410,6 +410,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(m_guider_viewer, &ImageViewer::BalanceChanged, this, &ImagerWindow::on_guider_cb_changed);
 
 	connect(this, &ImagerWindow::move_resize_focuser_selection, m_imager_viewer, &ImageViewer::moveResizeSelection);
+	connect(this, &ImagerWindow::move_resize_focuser_extra_selection, m_imager_viewer, &ImageViewer::moveResizeExtraSelection);
+	connect(this, &ImagerWindow::show_focuser_extra_selection, m_imager_viewer, &ImageViewer::showExtraSelection);
 	connect(this, &ImagerWindow::show_focuser_selection, m_imager_viewer, &ImageViewer::showSelection);
 	connect(this, &ImagerWindow::move_resize_guider_selection, m_guider_viewer, &ImageViewer::moveResizeSelection);
 	connect(this, &ImagerWindow::move_resize_guider_extra_selection, m_guider_viewer, &ImageViewer::moveResizeExtraSelection);
@@ -725,9 +727,11 @@ void ImagerWindow::on_tab_changed(int index) {
 	}
 	if (index == FOCUSER_TAB) {
 		m_imager_viewer->showSelection(true);
+		m_imager_viewer->showExtraSelection(true);
 		m_imager_viewer->showReference(false);
 	} else {
 		m_imager_viewer->showSelection(false);
+		m_imager_viewer->showExtraSelection(false);
 		m_imager_viewer->showReference(conf.imager_show_reference);
 	}
 }
@@ -758,6 +762,8 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 			indigo_debug("m_imager_viewer = %p", m_imager_viewer);
 			m_imager_viewer->setText(QString("Unsaved") + QString(m_indigo_item->blob.format));
 			m_imager_viewer->setToolTip(QString("Unsaved") + QString(m_indigo_item->blob.format));
+			int size = (int)round(m_focus_star_radius->value() * 2 + 1);
+			move_resize_focuser_selection(m_star_x->value(), m_star_y->value(), size);
 		}
 		indigo_debug("save_blob: %d", save_blob);
 		if (save_blob && strcasecmp(".raw", m_indigo_item->blob.format)) {
@@ -847,6 +853,8 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 			if (show_preview_in_guider_viewer(key)) {
 				indigo_debug("m_guider_viewer = %p", m_guider_viewer);
 				//m_guider_viewer->setText(QString("Guider: image") + QString(item->blob.format));
+				int size = (int)round(m_guide_star_radius->value() * 2 + 1);
+				move_resize_guider_selection(m_guide_star_x->value(), m_guide_star_y->value(), size);
 			}
 		} else {
 			preview_cache.remove(property, item);

@@ -1179,6 +1179,7 @@ void update_rotator_derotation(ImagerWindow *w, indigo_property *property) {
 void update_imager_selection_property(ImagerWindow *w, indigo_property *property) {
 	double x = 0, y = 0;
 	int size = 0;
+	int count = 1;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_IMAGER_SELECTION_X_ITEM_NAME)) {
 			x = property->items[i].number.value;
@@ -1186,6 +1187,9 @@ void update_imager_selection_property(ImagerWindow *w, indigo_property *property
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_SELECTION_Y_ITEM_NAME)) {
 			y = property->items[i].number.value;
 			configure_spinbox(w, &property->items[i], property->perm, w->m_star_y);
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_SELECTION_STAR_COUNT_ITEM_NAME)) {
+			count = property->items[i].number.value;
+			configure_spinbox(w, &property->items[i], property->perm, w->m_focus_star_count);
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_SELECTION_RADIUS_ITEM_NAME)) {
 			double max = property->items[i].number.value * 2 + 2;
 			size = (int)round(property->items[i].number.value * 2 + 1);
@@ -1193,6 +1197,30 @@ void update_imager_selection_property(ImagerWindow *w, indigo_property *property
 			configure_spinbox(w, &property->items[i], property->perm, w->m_focus_star_radius);
 		}
 	}
+
+	QList<QPointF> s_list;
+	if (count > 1) {
+		for (int i = 2; i <= count; i++) {
+			char name[INDIGO_NAME_SIZE];
+
+			sprintf(name, "%s_%d", AGENT_IMAGER_SELECTION_X_ITEM_NAME, i);
+			indigo_item *item = indigo_get_item(property, name);
+			double x = 0;
+			if (item) x = item->number.value;
+
+			sprintf(name, "%s_%d", AGENT_IMAGER_SELECTION_Y_ITEM_NAME, i);
+			item = indigo_get_item(property, name);
+			double y = 0;
+			if (item) y = item->number.value;
+
+			if (x > 0 && y > 0) {
+				QPointF sel(x, y);
+				s_list.append(sel);
+			}
+		}
+		w->move_resize_focuser_extra_selection(s_list, size);
+	}
+	w->move_resize_focuser_extra_selection(s_list, size);
 	w->move_resize_focuser_selection(x, y, size);
 }
 
@@ -2153,7 +2181,7 @@ void ImagerWindow::on_window_log(indigo_property* property, char *message) {
 	window_log(log_line, state);
 }
 
-void condigure_guider_overlays(ImagerWindow *w, char *device, indigo_property *property) {
+void configure_guider_overlays(ImagerWindow *w, char *device, indigo_property *property) {
 	if (device == nullptr) return;
 
 	indigo_property *p = nullptr;
@@ -2422,9 +2450,19 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME)) {
 		update_imager_selection_property(this, property);
 		set_enabled(m_focuser_subframe_select, true);
-		QtConcurrent::run([=]() {
-			change_focuser_subframe(selected_agent);
-		});
+
+		// change sugframe only if it is different from current
+		int current_subframe = 0;
+		for (int i = 0; i < property->count; i++) {
+			if (client_match_item(&property->items[i], AGENT_IMAGER_SELECTION_SUBFRAME_ITEM_NAME)) {
+				current_subframe = (int)property->items[i].number.value;
+			}
+		}
+		if (m_focuser_subframe_select->currentIndex() * 5 != current_subframe) {
+			QtConcurrent::run([=]() {
+				change_focuser_subframe(selected_agent);
+			});
+		}
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_FOCUS_PROPERTY_NAME)) {
 		update_focus_setup_property(this, property);
@@ -2520,17 +2558,26 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME)) {
 		update_guider_selection_property(this, property);
 		set_enabled(m_guider_subframe_select, true);
-		QtConcurrent::run([=]() {
-			change_guider_agent_subframe(selected_guider_agent);
-		});
-		condigure_guider_overlays(this, property->device, nullptr);
+		// change sugframe only if it is different from current
+		int current_subframe = 0;
+		for (int i = 0; i < property->count; i++) {
+			if (client_match_item(&property->items[i], AGENT_GUIDER_SELECTION_SUBFRAME_ITEM_NAME)) {
+				current_subframe = (int)property->items[i].number.value;
+			}
+		}
+		if (m_guider_subframe_select->currentIndex() * 5 != current_subframe) {
+			QtConcurrent::run([=]() {
+				change_guider_agent_subframe(selected_guider_agent);
+			});
+		}
+		configure_guider_overlays(this, property->device, nullptr);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_STATS_PROPERTY_NAME)) {
 		update_guider_stats(this, property);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_detection_mode_select);
-		condigure_guider_overlays(this, property->device, property);
+		configure_guider_overlays(this, property->device, property);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_dec_guiding_select);
@@ -2870,7 +2917,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_detection_mode_select);
-		condigure_guider_overlays(this, property->device, property);
+		configure_guider_overlays(this, property->device, property);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_dec_guiding_select);
@@ -3184,6 +3231,9 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		set_spinbox_value(m_focus_star_radius, 0);
 		set_enabled(m_focus_star_radius, false);
+
+		set_spinbox_value(m_focus_star_count, 0);
+		set_enabled(m_focus_star_count, false);
 
 		set_enabled(m_focuser_subframe_select, false);
 	}

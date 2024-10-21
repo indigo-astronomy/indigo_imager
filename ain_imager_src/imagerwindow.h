@@ -162,7 +162,7 @@ public:
 	friend void update_mount_lon_lat(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_utc(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_agent_sync_time(ImagerWindow *w, indigo_property *property);
-	friend void condigure_guider_overlays(ImagerWindow *w, char *device, indigo_property *property);
+	friend void configure_guider_overlays(ImagerWindow *w, char *device, indigo_property *property);
 	friend void log_guide_header(ImagerWindow *w, char *device_name);
 	friend void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property);
 	friend void update_solver_agent_hints(ImagerWindow *w, indigo_property *property);
@@ -202,7 +202,9 @@ signals:
 	void remove_combobox_item(QComboBox *combobox, int index);
 
 	void show_focuser_selection(bool show);
+	void show_focuser_extra_selection(bool show);
 	void move_resize_focuser_selection(double x, double y, int size);
+	void move_resize_focuser_extra_selection(QList<QPointF> &point_list, int size);
 
 	void show_guider_selection(bool show);
 	void move_resize_guider_selection(double x, double y, int size);
@@ -299,6 +301,8 @@ public slots:
 	void on_focus_estimator_selected(int index);
 	void on_selection_changed(double value);
 	void on_focuser_selection_radius_changed(int value);
+	void on_focuser_selection_star_count_changed(int value);
+	void on_focuser_clear_selection(bool clicked);
 	void on_focuser_position_changed();
 	void on_image_right_click(double x, double y, Qt::KeyboardModifiers modifiers);
 	void on_image_right_click_ra_dec(double ra, double dec, double telescope_ra, double telescope_dec, Qt::KeyboardModifiers mdifiers);
@@ -641,6 +645,7 @@ private:
 	QDoubleSpinBox  *m_star_x;
 	QDoubleSpinBox  *m_star_y;
 	QSpinBox  *m_focus_star_radius;
+	QSpinBox  *m_focus_star_count;
 	QComboBox *m_focuser_subframe_select;
 	QComboBox *m_focuser_reverse_select;
 	QLabel    *m_initial_step_label;
@@ -941,6 +946,7 @@ private:
 	void change_agent_start_preview_property(const char *agent) const;
 	void change_agent_start_focusing_property(const char *agent) const;
 	void change_agent_star_selection(const char *agent) const;
+	void change_agent_star_count(const char *agent) const;
 	void change_agent_focus_params_property(const char *agent, bool set_backlash) const;
 	void change_agent_focuser_bl_overshoot(const char *agent) const;
 	void change_focuser_steps_property(const char *agent) const;

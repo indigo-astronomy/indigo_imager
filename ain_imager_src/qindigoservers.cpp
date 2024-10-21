@@ -18,7 +18,13 @@
 
 
 #include "qindigoservers.h"
-#include <QRegularExpressionValidator>;
+#include <QRegularExpressionValidator>
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#define QT_SKIP_EMPTY_PARTS Qt::SkipEmptyParts
+#else
+#define QT_SKIP_EMPTY_PARTS QString::SkipEmptyParts
+#endif
 
 QIndigoServers::QIndigoServers(QWidget *parent): QDialog(parent)
 {
@@ -133,14 +139,14 @@ void QIndigoServers::onAddManualService() {
 		indigo_debug("Trying to add empty service!");
 		return;
 	}
-	QStringList parts = service_str.split(':', Qt::SkipEmptyParts);
+	QStringList parts = service_str.split(':', QT_SKIP_EMPTY_PARTS);
 	if (parts.size() > 2) {
 		indigo_error("%s(): Service format error.\n",__FUNCTION__);
 		return;
 	} else if (parts.size() == 2) {
 		port = atoi(parts.at(1).toUtf8().constData());
 	}
-	QStringList parts2 = parts.at(0).split('@', Qt::SkipEmptyParts);
+	QStringList parts2 = parts.at(0).split('@', QT_SKIP_EMPTY_PARTS);
 	if (parts2.size() > 2) {
 		indigo_error("%s(): Service format error.\n",__FUNCTION__);
 		return;
