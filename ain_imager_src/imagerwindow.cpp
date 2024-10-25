@@ -68,6 +68,9 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_guider_process = 0;
 	m_stderr = dup(STDERR_FILENO);
 
+	m_has_clear_focuser_selection = false;
+	m_has_clear_guider_selection = false;
+
 	//  Set central widget of window
 	QWidget *central = new QWidget;
 	setCentralWidget(central);
@@ -684,15 +687,6 @@ void ImagerWindow::show_selected_preview_in_solver_tab(QString &solver_source) {
 	}
 }
 
-enum {
-	CAPTURE_TAB = 0,
-	SEQUENCE_TAB = 1,
-	FOCUSER_TAB = 2,
-	GUIDER_TAB = 3,
-	TELESCOPE_TAB = 4,
-	SOLVER_TAB = 5
-};
-
 void ImagerWindow::on_tab_changed(int index) {
 	if (index == CAPTURE_TAB || index == FOCUSER_TAB || index == TELESCOPE_TAB) {
 		if (m_visible_viewer != m_imager_viewer) {
@@ -726,8 +720,16 @@ void ImagerWindow::on_tab_changed(int index) {
 		show_selected_preview_in_solver_tab(solver_source);
 	}
 	if (index == FOCUSER_TAB) {
-		m_imager_viewer->showSelection(true);
-		m_imager_viewer->showExtraSelection(true);
+		if (m_max_focus_stars <= 0) {
+			m_imager_viewer->showSelection(false);
+			m_imager_viewer->showExtraSelection(false);
+		} else if (m_max_focus_stars == 1) {
+			m_imager_viewer->showSelection(true);
+			m_imager_viewer->showExtraSelection(false);
+		} else {
+			m_imager_viewer->showSelection(true);
+			m_imager_viewer->showExtraSelection(true);
+		}
 		m_imager_viewer->showReference(false);
 	} else {
 		m_imager_viewer->showSelection(false);

@@ -623,7 +623,7 @@ void ImagerWindow::on_focuser_clear_selection(bool clicked) {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-		indigo_change_switch_property_1(nullptr, selected_agent, AGENT_START_PROCESS_PROPERTY_NAME, AGENT_GUIDER_CLEAR_SELECTION_ITEM_NAME, true);
+		clear_imager_agent_star_selection(selected_agent);
 	});
 }
 
