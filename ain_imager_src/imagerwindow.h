@@ -683,6 +683,9 @@ private:
 	QCheckBox *m_temperature_compensation_cbox;
 	QFrame    *m_temperature_compensation_frame;
 	QSpinBox  *m_focuser_temperature_compensation_steps;
+	int       m_max_focus_stars;
+
+	bool m_has_clear_focuser_selection;
 
 	// Guider tab
 	QComboBox *m_agent_guider_select;
@@ -744,6 +747,8 @@ private:
 
 	FILE *m_guide_log;
 	int m_guider_process;
+
+	bool m_has_clear_guider_selection;
 
 	// Telescope tab
 	QComboBox *m_agent_mount_select;
@@ -957,6 +962,7 @@ private:
 	void change_focus_estimator_property(const char *agent) const;
 	void change_focuser_reverse_property(const char *agent) const;
 	void change_focuser_temperature_compensation_steps(const char *agent) const;
+	void clear_imager_agent_star_selection(const char *agent) const;
 
 	void select_focuser_data(focuser_display_data show);
 	void exposure_start_stop(bool clicked, bool is_sequence);
@@ -1031,6 +1037,15 @@ private:
 		msgBox.setText(message);
 		msgBox.exec();
 	};
+};
+
+enum {
+	CAPTURE_TAB = 0,
+	SEQUENCE_TAB = 1,
+	FOCUSER_TAB = 2,
+	GUIDER_TAB = 3,
+	TELESCOPE_TAB = 4,
+	SOLVER_TAB = 5
 };
 
 #endif // IMAGERWINDOW_H

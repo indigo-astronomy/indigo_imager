@@ -1438,6 +1438,12 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 
 	if (stats_p == nullptr || start_p == nullptr) return;
 
+	for (int i = 0; i < start_p->count; i++) {
+		if (!strcmp(start_p->items[i].name, AGENT_IMAGER_CLEAR_SELECTION_ITEM_NAME)) {
+			w->m_has_clear_focuser_selection = true;
+		}
+	}
+
 	if (start_p && start_p->state == INDIGO_BUSY_STATE ) {
 		bool sequence_item = false;
 		for (int i = 0; i < start_p->count; i++) {
@@ -1474,7 +1480,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		}
 	}
 
-	//indigo_error("exposure = %d, focusing = %d, preview = %d, stats_p->state = %d, start_p->state = %d", exposure_running, focusing_running, preview_running, stats_p->state, start_p->state);
+	w->m_max_focus_stars = 3; // if the server does not have MAX_STARS_TO_USE item show all selections
 
 	for (int i = 0; i < stats_p->count; i++) {
 		if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_FWHM_ITEM_NAME)) {
@@ -1516,6 +1522,11 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_PHASE_ITEM_NAME)) {
 			phase = (int)stats_p->items[i].number.value;
 			has_phase = true;
+		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_MAX_STARS_TO_USE_ITEM_NAME)) {
+			w->m_max_focus_stars = stats_p->items[i].number.value;
+			if (w->m_tools_tabbar->currentIndex() == FOCUSER_TAB) {
+				w->on_tab_changed(w->m_tools_tabbar->currentIndex());
+			}
 		}
 	}
 	char drift_str[50];
@@ -2103,6 +2114,13 @@ void log_guide_header(ImagerWindow *w, char *device_name) {
 
 void agent_guider_start_process_change(ImagerWindow *w, indigo_property *property) {
 	char time_str[255];
+
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], AGENT_GUIDER_CLEAR_SELECTION_ITEM_NAME)) {
+			w->m_has_clear_guider_selection = true;
+		}
+	}
+
 	if (property->state==INDIGO_BUSY_STATE) {
 		for (int i = 0; i < property->count; i++) {
 			indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
@@ -3220,6 +3238,10 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_text(m_current_temp, "");
 		set_enabled(m_set_temp, false);
 	}
+	if (client_match_device_property(property, selected_agent, AGENT_START_PROCESS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		m_has_clear_focuser_selection = false;
+	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 
@@ -3419,7 +3441,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 	if (client_match_device_property(property, selected_guider_agent, AGENT_START_PROCESS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
-		// Nothing yet
+		m_has_clear_guider_selection = false;
 	}
 
 	if (client_match_device_property(property, selected_guider_agent, CCD_GAIN_PROPERTY_NAME) ||
