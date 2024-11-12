@@ -288,7 +288,9 @@ typedef struct indigo_device {
 	indigo_device *master_device;       ///< if the device provides many logical devices, this must point to one of the locical devices, otherwise is safe to be NULL
 	indigo_result last_result;          ///< result of last bus operation
 	indigo_version version;             ///< device version
-	indigo_token access_token;					///< allow change request with correct access token only
+	indigo_token access_token;			///< allow change request with correct access token only
+	void *match_patterns;               ///< device matching patterns
+	int match_patterns_count;           ///< device matching patterns count
 
 	/** callback called when device is attached to bus
 	 */
@@ -318,6 +320,8 @@ typedef struct indigo_device {
 	INDIGO_OK, \
 	INDIGO_VERSION_LEGACY, \
 	0L, \
+	NULL, \
+	0, \
 	attach_cb, \
 	enumerate_properties_cb, \
 	change_property_cb, \
@@ -825,6 +829,14 @@ static inline void *indigo_safe_realloc_copy(void *pointer, size_t size, void *f
 static inline void indigo_safe_free(void *pointer) {
 	if (pointer)
 		free(pointer);
+}
+
+static inline char *indigo_safe_strncpy(char *dst, const char *src, size_t size) {
+    if (size > 0) {
+		dst[size - 1] = '\0';
+        strncpy(dst, src, size - 1);
+    }
+	return dst;
 }
 
 #define INDIGO_BUFFER_SIZE (128 * 1024)
