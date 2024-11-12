@@ -652,6 +652,7 @@ private:
 	QSpinBox  *m_initial_step;
 	QLabel    *m_final_step_label;
 	QSpinBox  *m_final_step;
+	QSpinBox  *m_ucurve_step;
 	QSpinBox  *m_ucurve_samples;
 	QSpinBox  *m_focus_backlash;
 	QDoubleSpinBox  *m_focus_bl_overshoot;
