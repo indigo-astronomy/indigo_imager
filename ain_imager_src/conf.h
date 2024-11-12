@@ -54,6 +54,7 @@ typedef enum {
 	SHOW_FWHM = 0,  // Not used any more
 	SHOW_HFD = 1,
 	SHOW_CONTRAST = 2,
+	SHOW_BAHTINOV = 3,
 } focuser_display_data;
 
 typedef enum {

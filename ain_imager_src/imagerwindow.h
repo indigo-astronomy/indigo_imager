@@ -663,6 +663,7 @@ private:
 	QSpinBox  *m_focus_steps;
 	QLabel    *m_FWHM_label;
 	QLabel    *m_HFD_label;
+	QLabel    *m_bahtinov_label;
 	QLabel    *m_peak_label;
 	QLabel    *m_contrast_label;
 	QLabel    *m_drift_label;
@@ -677,8 +678,10 @@ private:
 	QLabel     *m_focus_graph_label;
 	QFrame     *m_hfd_stats_frame;
 	QFrame     *m_contrast_stats_frame;
+	QFrame     *m_bahtinov_stats_frame;
 	QVector<double> m_focus_hfd_data;
 	QVector<double> m_focus_contrast_data;
+	QVector<double> m_focus_bahtinov_data;
 	QVector<double> *m_focus_display_data;
 	QLineEdit *m_focuser_temperature;
 	QCheckBox *m_temperature_compensation_cbox;
