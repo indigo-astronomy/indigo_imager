@@ -92,6 +92,7 @@ int main(int argc, char *argv[]) {
 	conf.statistics_enabled = false;
 	conf.preview_bayer_pattern = 0;
 	conf.require_confirmation = false;
+	conf.compact_window_layout = false;
 	read_conf();
 
 	if (!conf.use_system_locale) qunsetenv("LC_NUMERIC");

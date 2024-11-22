@@ -229,6 +229,7 @@ public slots:
 	void on_blobs_changed(bool status);
 	void on_save_noname_images_changed(bool status);
 	void on_restore_window_size_changed(bool status);
+	void on_compact_window_layout_changed(bool enabled);
 	void on_require_confirmtion(bool status);
 	void on_bonjour_changed(bool status);
 	void on_use_suffix_changed(bool status);
@@ -583,6 +584,10 @@ private:
 	QTabWidget *m_tools_tabbar;
 
 	bool is_control_panel_running;
+
+	// layouts
+	QVBoxLayout *m_property_layout;
+	QVBoxLayout *m_form_layout;
 
 	// Capture tab
 	QComboBox *m_agent_imager_select;
