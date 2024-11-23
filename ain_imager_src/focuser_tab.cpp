@@ -99,6 +99,10 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	connect(m_focusing_in_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_in);
 
 	row++;
+	spacer = new QSpacerItem(1, 5, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	focuser_frame_layout->addItem(spacer, row, 0);
+
+	row++;
 	QWidget *toolbar = new QWidget;
 	QHBoxLayout *toolbox = new QHBoxLayout(toolbar);
 	toolbar->setContentsMargins(1,1,1,1);
@@ -134,6 +138,10 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focusing_progress->setMaximum(1);
 	m_focusing_progress->setValue(0);
 	m_focusing_progress->setFormat("Focusing: Idle");
+
+	row++;
+	spacer = new QSpacerItem(1, 5, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	focuser_frame_layout->addItem(spacer, row, 0);
 
 	row++;
 	m_temperature_compensation_frame = new QFrame();

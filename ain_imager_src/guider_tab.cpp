@@ -59,7 +59,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	connect(m_guider_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_selected);
 
 	row++;
-	QSpacerItem *spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	QSpacerItem *spacer = new QSpacerItem(1, 5, QSizePolicy::Expanding, QSizePolicy::Fixed);
 	guider_frame_layout->addItem(spacer, row, 0);
 
 	row++;
@@ -94,7 +94,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_guider_stop);
 
 	row++;
-	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	spacer = new QSpacerItem(1, 5, QSizePolicy::Expanding, QSizePolicy::Fixed);
 	guider_frame_layout->addItem(spacer, row, 0);
 
 	row++;
