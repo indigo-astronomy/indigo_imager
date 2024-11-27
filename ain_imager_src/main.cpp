@@ -21,12 +21,13 @@
 #include <QStandardPaths>
 #include <QTextStream>
 #include <QVersionNumber>
-#include <QSocketNotifier>
-#include <signal.h>
+
 #ifdef INDIGO_WINDOWS
 #include <QTimer>
 #include <windows.h>
 #else
+#include <QSocketNotifier>
+#include <signal.h>
 #include <unistd.h>
 #endif
 
