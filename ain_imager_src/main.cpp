@@ -24,6 +24,7 @@
 #include <QSocketNotifier>
 #include <signal.h>
 #ifdef INDIGO_WINDOWS
+#include <QTimer>
 #include <windows.h>
 #else
 #include <unistd.h>
@@ -50,11 +51,13 @@ void handle_sigpipe(int) {
 	write(sigpipe_fd[1], &a, sizeof(a));
 }
 #else
+void write_conf();
+
 BOOL WINAPI console_handler(DWORD signal) {
 	if (signal == CTRL_C_EVENT) {
 		write_conf();
 		indigo_error("Configuration saved. Exiting...");
-		QCoreApplication::quit();
+		QTimer::singleShot(0, qApp, &QCoreApplication::quit);
 		return TRUE;
 	}
 	return FALSE;
