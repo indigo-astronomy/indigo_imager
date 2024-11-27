@@ -49,6 +49,16 @@ void handle_sigpipe(int) {
 	char a = 1;
 	write(sigpipe_fd[1], &a, sizeof(a));
 }
+#else
+BOOL WINAPI console_handler(DWORD signal) {
+	if (signal == CTRL_C_EVENT) {
+		write_conf();
+		indigo_error("Configuration saved. Exiting...");
+		QCoreApplication::quit();
+		return TRUE;
+	}
+	return FALSE;
+}
 #endif
 
 void write_conf() {
@@ -207,17 +217,7 @@ int main(int argc, char *argv[]) {
 		sn_int->setEnabled(true);
 	});
 #else
-	// Windows-specific signal handling for Ctrl+C
-	BOOL WINAPI consoleHandler(DWORD signal) {
-		if (signal == CTRL_C_EVENT) {
-			write_conf();
-			indigo_error("Configuration saved. Exiting...");
-			QCoreApplication::quit();
-			return TRUE;
-		}
-		return FALSE;
-	}
-	if (!SetConsoleCtrlHandler(consoleHandler, TRUE)) {
+	if (!SetConsoleCtrlHandler(console_handler, TRUE)) {
 		indigo_debug("Could not set control handler");
 	}
 #endif
