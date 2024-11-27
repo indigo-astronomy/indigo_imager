@@ -867,11 +867,11 @@ void ImagerWindow::sync_remote_files() {
 	indigo_property *p = properties.get(selected_agent, AGENT_IMAGER_DOWNLOAD_FILES_PROPERTY_NAME);
 	if (p) {
 		for (int i = 0; i < p->count; i++) {
-			if (sutil.needs_sync(p->items[i].label)) {
-				m_files_to_download.append(p->items[i].label);
-				indigo_debug("Remote file: %s", p->items[i].label);
+			if (sutil.needs_sync(p->items[i].name)) {
+				m_files_to_download.append(p->items[i].name);
+				indigo_debug("Remote file: %s", p->items[i].name);
 			} else {
-				indigo_debug("Downloaded:  %s", p->items[i].label);
+				indigo_debug("Downloaded:  %s", p->items[i].name);
 			}
 
 		}

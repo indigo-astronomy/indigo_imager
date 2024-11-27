@@ -54,6 +54,7 @@ typedef enum {
 	SHOW_FWHM = 0,  // Not used any more
 	SHOW_HFD = 1,
 	SHOW_CONTRAST = 2,
+	SHOW_BAHTINOV = 3,
 } focuser_display_data;
 
 typedef enum {
@@ -112,6 +113,7 @@ typedef struct {
 	bool statistics_enabled;
 	uint32_t preview_bayer_pattern; /* BAYER_PAT_XXXX from image_preview_lut.h */
 	bool require_confirmation;
+	bool compact_window_layout;
 	char unused[100];
 } conf_t;
 

@@ -22,6 +22,10 @@
 #include <QStandardPaths>
 #include <QTextStream>
 #include <QVersionNumber>
+
+#include <signal.h>
+#include <unistd.h>
+
 #include "imagerwindow.h"
 #include "version.h"
 #include <conf.h>
@@ -92,6 +96,7 @@ int main(int argc, char *argv[]) {
 	conf.statistics_enabled = false;
 	conf.preview_bayer_pattern = 0;
 	conf.require_confirmation = false;
+	conf.compact_window_layout = false;
 	read_conf();
 
 	if (!conf.use_system_locale) qunsetenv("LC_NUMERIC");
@@ -143,6 +148,8 @@ int main(int argc, char *argv[]) {
 
 	ImagerWindow imager_window;
 	imager_window.show();
+
+	signal(SIGPIPE, SIG_IGN);
 
 	return app.exec();
 }

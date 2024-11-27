@@ -1278,12 +1278,14 @@ void update_guider_selection_property(ImagerWindow *w, indigo_property *property
 void update_focus_setup_property(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("Set %s", property->name);
 	for (int i = 0; i < property->count; i++) {
-		if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_INITIAL_ITEM_NAME)) {
+		if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_ITERATIVE_INITIAL_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_initial_step);
-		} else if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_FINAL_ITEM_NAME)) {
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_ITERATIVE_FINAL_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_final_step);
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_UCURVE_SAMPLES_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_ucurve_samples);
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_UCURVE_STEP_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_ucurve_step);
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_BACKLASH_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_focus_backlash);
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_BACKLASH_OVERSHOOT_ITEM_NAME)) {
@@ -1301,11 +1303,14 @@ void update_focus_estimator_property(ImagerWindow *w, indigo_property *property)
 				w->select_focuser_data(SHOW_HFD);
 				w->m_focus_hfd_data.clear();
 				w->show_widget(w->m_contrast_stats_frame, false);
+				w->show_widget(w->m_bahtinov_stats_frame, false);
 				w->show_widget(w->m_hfd_stats_frame, true);
 				w->set_text(w->m_initial_step_label, "Initial step:");
 				w->set_text(w->m_final_step_label, "Final step:");
+				w->show_widget(w->m_initial_step, true);
 				w->show_widget(w->m_final_step, true);
 				w->show_widget(w->m_ucurve_samples, false);
+				w->show_widget(w->m_ucurve_step, false);
 				w->m_focus_graph->redraw_data(*(w->m_focus_display_data));
 			}
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_ESTIMATOR_RMS_CONTRAST_ITEM_NAME)) {
@@ -1313,11 +1318,14 @@ void update_focus_estimator_property(ImagerWindow *w, indigo_property *property)
 				w->select_focuser_data(SHOW_CONTRAST);
 				w->m_focus_contrast_data.clear();
 				w->show_widget(w->m_hfd_stats_frame, false);
+				w->show_widget(w->m_bahtinov_stats_frame, false);
 				w->show_widget(w->m_contrast_stats_frame, true);
 				w->set_text(w->m_initial_step_label, "Initial step:");
 				w->set_text(w->m_final_step_label, "Final step:");
+				w->show_widget(w->m_initial_step, true);
 				w->show_widget(w->m_final_step, true);
 				w->show_widget(w->m_ucurve_samples, false);
+				w->show_widget(w->m_ucurve_step, false);
 				w->m_focus_graph->redraw_data(*(w->m_focus_display_data));
 			}
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_ESTIMATOR_UCURVE_ITEM_NAME)) {
@@ -1325,11 +1333,29 @@ void update_focus_estimator_property(ImagerWindow *w, indigo_property *property)
 				w->select_focuser_data(SHOW_HFD);
 				w->m_focus_hfd_data.clear();
 				w->show_widget(w->m_contrast_stats_frame, false);
+				w->show_widget(w->m_bahtinov_stats_frame, false);
 				w->show_widget(w->m_hfd_stats_frame, true);
 				w->set_text(w->m_initial_step_label, "Sample step:");
 				w->set_text(w->m_final_step_label, "Samples:");
+				w->show_widget(w->m_initial_step, false);
 				w->show_widget(w->m_final_step, false);
 				w->show_widget(w->m_ucurve_samples, true);
+				w->show_widget(w->m_ucurve_step, true);
+				w->m_focus_graph->redraw_data(*(w->m_focus_display_data));
+			}
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_FOCUS_ESTIMATOR_BAHTINOV_ITEM_NAME)) {
+			if (property->items[i].sw.value) {
+				w->select_focuser_data(SHOW_BAHTINOV);
+				w->m_focus_bahtinov_data.clear();
+				w->show_widget(w->m_hfd_stats_frame, false);
+				w->show_widget(w->m_contrast_stats_frame, false);
+				w->show_widget(w->m_bahtinov_stats_frame, true);
+				w->set_text(w->m_initial_step_label, "Initial step:");
+				w->set_text(w->m_final_step_label, "Final step:");
+				w->show_widget(w->m_initial_step, true);
+				w->show_widget(w->m_final_step, true);
+				w->show_widget(w->m_ucurve_samples, false);
+				w->show_widget(w->m_ucurve_step, false);
 				w->m_focus_graph->redraw_data(*(w->m_focus_display_data));
 			}
 		}
@@ -1418,8 +1444,8 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	static bool focusing_running = false;
 	static bool preview_running = false;
 	static int prev_frame = -1;
-	static double best_hfd = 0, best_contrast = 0;
-	double FWHM = 0, HFD = 0, contrast = 0;
+	static double best_hfd = 0, best_contrast = 0, best_bahtinov = 0;
+	double FWHM = 0, HFD = 0, contrast = 0, bahtinov = 0;
 	int phase = INDIGO_IMAGER_PHASE_IDLE;
 	bool has_phase = false;
 
@@ -1493,6 +1519,11 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			 char hfd_str[50];
 			 snprintf(hfd_str, 50, "%.2f / %.2f", HFD, best_hfd);
 			 w->set_text(w->m_HFD_label, hfd_str);
+		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_BAHTINOV_ITEM_NAME)) {
+			bahtinov = stats_p->items[i].number.value;
+			char bahtinov_str[50];
+			snprintf(bahtinov_str, 50, "%.2f / %.2f", bahtinov, best_bahtinov);
+			w->set_text(w->m_bahtinov_label, bahtinov_str);
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_PEAK_ITEM_NAME)) {
 			int peak = (int)stats_p->items[i].number.value;
 			char peak_str[50];
@@ -1640,14 +1671,23 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			if (frames_complete == 0) {
 				w->m_focus_hfd_data.clear();
 				w->m_focus_contrast_data.clear();
+				w->m_focus_bahtinov_data.clear();
 				best_hfd = 0;
 				best_contrast = 0;
+				best_bahtinov = 0;
 			}
 			if (HFD != 0) {
 				w->m_focus_hfd_data.append(HFD);
 				if (HFD < best_hfd || best_hfd == 0) best_hfd = HFD;
 			}
 			if (w->m_focus_hfd_data.size() > 100) w->m_focus_hfd_data.removeFirst();
+
+			if (bahtinov != 0) {
+				w->m_focus_bahtinov_data.append(bahtinov);
+				if(fabs(bahtinov) < fabs(best_bahtinov) || best_bahtinov == 0) best_bahtinov = bahtinov;
+			}
+			if (w->m_focus_bahtinov_data.size() > 100) w->m_focus_bahtinov_data.removeFirst();
+
 			if (contrast != 0) {
 				w->m_focus_contrast_data.append(contrast * 100);
 				if (contrast > best_contrast) best_contrast = contrast;
@@ -2324,8 +2364,8 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 				int build;
 				char message[255];
 				sscanf(item->text.value, "%d.%d-%d", &version_major, &version_minor, &build);
-				if (build < 271 && !properties.get(property->device, SERVER_INFO_PROPERTY_NAME)) { /* show warning only once per connection */
-					sprintf(message, "WARNING: Some features will not work on '%s' running Indigo %s as Ain requires 2.0-271 or newer!", property->device, item->text.value);
+				if (build < 298 && !properties.get(property->device, SERVER_INFO_PROPERTY_NAME)) { /* show warning only once per connection */
+					sprintf(message, "WARNING: Some features will not work on '%s' running Indigo %s as Ain requires 2.0-298 or newer!", property->device, item->text.value);
 					window_log(message, INDIGO_BUSY_STATE);
 				}
 			}
@@ -3184,6 +3224,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		select_focuser_data(conf.focuser_display);
 		show_widget(m_hfd_stats_frame, true);
+		show_widget(m_bahtinov_stats_frame, false);
 		show_widget(m_contrast_stats_frame, false);
 		clear_combobox(m_focus_estimator_select);
 	}
@@ -3320,6 +3361,10 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_spinbox_value(m_ucurve_samples, 0);
 		set_enabled(m_ucurve_samples, false);
 		show_widget(m_ucurve_samples, false);
+
+		set_spinbox_value(m_ucurve_step, 0);
+		set_enabled(m_ucurve_step, false);
+		show_widget(m_ucurve_step, false);
 
 		set_spinbox_value(m_focus_backlash, 0);
 		set_enabled(m_focus_backlash, false);

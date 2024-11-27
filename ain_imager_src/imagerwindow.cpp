@@ -44,18 +44,19 @@ void write_conf();
 ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	setWindowTitle(tr("Ain INDIGO Imager"));
 	if (!conf.restore_window_size || conf.window_width == 0 || conf.window_height == 0) {
-		resize(1200, 768);
+		adjustSize();
+		resize(1200, height());
 	} else {
 		resize(conf.window_width, conf.window_height);
 	}
 
 	QIcon icon(":resource/appicon.png");
-	this->setWindowIcon(icon);
+	setWindowIcon(icon);
 
 	QFile f(":resource/control_panel.qss");
 	f.open(QFile::ReadOnly | QFile::Text);
 	QTextStream ts(&f);
-	this->setStyleSheet(ts.readAll());
+	setStyleSheet(ts.readAll());
 	f.close();
 
 	mIndigoServers = new QIndigoServers(this);
@@ -162,6 +163,11 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setCheckable(true);
 	act->setChecked(conf.restore_window_size);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_restore_window_size_changed);
+
+	act = menu->addAction(tr("&Compact window layout"));
+	act->setCheckable(true);
+	act->setChecked(conf.compact_window_layout);
+	connect(act, &QAction::toggled, this, &ImagerWindow::on_compact_window_layout_changed);
 
 	act = menu->addAction(tr("Require user &confirmation"));
 	act->setCheckable(true);
@@ -313,18 +319,18 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	// Create properties viewing area
 	QWidget *view = new QWidget;
-	QVBoxLayout *propertyLayout = new QVBoxLayout;
-	propertyLayout->setSpacing(5);
-	propertyLayout->setContentsMargins(5, 5, 5, 5);
-	propertyLayout->setSizeConstraint(QLayout::SetMinimumSize);
-	view->setLayout(propertyLayout);
+	m_property_layout = new QVBoxLayout;
+	m_property_layout->setSpacing(2);
+	m_property_layout->setContentsMargins(5, 5, 5, 5);
+	m_property_layout->setSizeConstraint(QLayout::SetMinimumSize);
+	view->setLayout(m_property_layout);
 	rootLayout->addWidget(view);
 
 	QWidget *form_panel = new QWidget();
-	QVBoxLayout *form_layout = new QVBoxLayout();
-	form_layout->setSpacing(0);
-	form_layout->setContentsMargins(1, 0, 0, 0);
-	form_panel->setLayout(form_layout);
+	m_form_layout = new QVBoxLayout();
+	m_form_layout->setSpacing(2);
+	m_form_layout->setContentsMargins(1, 0, 0, 0);
+	form_panel->setLayout(m_form_layout);
 
 	// Tools Panel
 	QWidget *tools_panel = new QWidget;
@@ -375,7 +381,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_imager_viewer->setText("No Image");
 	m_imager_viewer->setToolTip("No Image");
 	m_imager_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
-	form_layout->addWidget((QWidget*)m_imager_viewer);
+	m_form_layout->addWidget((QWidget*)m_imager_viewer, 85);
 	m_imager_viewer->setMinimumWidth(IMAGE_AREA_MIN_WIDTH);
 	m_imager_viewer->setStretch(conf.preview_stretch_level);
 	m_imager_viewer->setDebayer(conf.preview_bayer_pattern);
@@ -399,8 +405,14 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	hSplitter->setStretchFactor(0, 10);
 	hSplitter->setStretchFactor(1, 90);
 
-	propertyLayout->addWidget(hSplitter, 85);
-	propertyLayout->addWidget(mLog, 15);
+	m_property_layout->addWidget(hSplitter, 85);
+
+	// Log viewer
+	if (conf.compact_window_layout) {
+		m_form_layout->addWidget(mLog, 15);
+	} else {
+		m_property_layout->addWidget(mLog, 15);
+	}
 
 	mServiceModel = &QServiceModel::instance();
 	indigo_debug("servicemodel %p", mServiceModel);
@@ -1185,6 +1197,26 @@ void ImagerWindow::on_sound_notifications_all() {
 void ImagerWindow::on_restore_window_size_changed(bool status) {
 	conf.restore_window_size = status;
 	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_compact_window_layout_changed(bool enabled) {
+	conf.compact_window_layout = enabled;
+	write_conf();
+
+	if (m_form_layout->indexOf(mLog) != -1 && !enabled) {
+		m_form_layout->removeWidget(mLog);
+		m_property_layout->addWidget(mLog, 15);
+	} else if (m_property_layout->indexOf(mLog) != -1 && enabled) {
+		m_property_layout->removeWidget(mLog);
+		m_form_layout->addWidget(mLog, 15);
+	}
+
+	m_form_layout->update();
+	m_property_layout->update();
+	mLog->update();
+	this->update();
+
 	indigo_debug("%s\n", __FUNCTION__);
 }
 

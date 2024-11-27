@@ -229,6 +229,7 @@ public slots:
 	void on_blobs_changed(bool status);
 	void on_save_noname_images_changed(bool status);
 	void on_restore_window_size_changed(bool status);
+	void on_compact_window_layout_changed(bool enabled);
 	void on_require_confirmtion(bool status);
 	void on_bonjour_changed(bool status);
 	void on_use_suffix_changed(bool status);
@@ -584,6 +585,10 @@ private:
 
 	bool is_control_panel_running;
 
+	// layouts
+	QVBoxLayout *m_property_layout;
+	QVBoxLayout *m_form_layout;
+
 	// Capture tab
 	QComboBox *m_agent_imager_select;
 	QComboBox *m_camera_select;
@@ -652,6 +657,7 @@ private:
 	QSpinBox  *m_initial_step;
 	QLabel    *m_final_step_label;
 	QSpinBox  *m_final_step;
+	QSpinBox  *m_ucurve_step;
 	QSpinBox  *m_ucurve_samples;
 	QSpinBox  *m_focus_backlash;
 	QDoubleSpinBox  *m_focus_bl_overshoot;
@@ -662,6 +668,7 @@ private:
 	QSpinBox  *m_focus_steps;
 	QLabel    *m_FWHM_label;
 	QLabel    *m_HFD_label;
+	QLabel    *m_bahtinov_label;
 	QLabel    *m_peak_label;
 	QLabel    *m_contrast_label;
 	QLabel    *m_drift_label;
@@ -676,8 +683,10 @@ private:
 	QLabel     *m_focus_graph_label;
 	QFrame     *m_hfd_stats_frame;
 	QFrame     *m_contrast_stats_frame;
+	QFrame     *m_bahtinov_stats_frame;
 	QVector<double> m_focus_hfd_data;
 	QVector<double> m_focus_contrast_data;
+	QVector<double> m_focus_bahtinov_data;
 	QVector<double> *m_focus_display_data;
 	QLineEdit *m_focuser_temperature;
 	QCheckBox *m_temperature_compensation_cbox;

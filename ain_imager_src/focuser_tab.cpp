@@ -99,6 +99,10 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	connect(m_focusing_in_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_in);
 
 	row++;
+	spacer = new QSpacerItem(1, 5, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	focuser_frame_layout->addItem(spacer, row, 0);
+
+	row++;
 	QWidget *toolbar = new QWidget;
 	QHBoxLayout *toolbox = new QHBoxLayout(toolbar);
 	toolbar->setContentsMargins(1,1,1,1);
@@ -134,6 +138,10 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_focusing_progress->setMaximum(1);
 	m_focusing_progress->setValue(0);
 	m_focusing_progress->setFormat("Focusing: Idle");
+
+	row++;
+	spacer = new QSpacerItem(1, 5, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	focuser_frame_layout->addItem(spacer, row, 0);
 
 	row++;
 	m_temperature_compensation_frame = new QFrame();
@@ -200,7 +208,6 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	contrast_stats_frame_layout->setAlignment(Qt::AlignTop);
 	m_contrast_stats_frame->setLayout(contrast_stats_frame_layout);
 	m_contrast_stats_frame->setFrameShape(QFrame::StyledPanel);
-	//stats_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
 	m_contrast_stats_frame->setContentsMargins(0, 0, 0, 0);
 	contrast_stats_frame_layout->setColumnStretch(0, 1);
 	contrast_stats_frame_layout->setColumnStretch(1, 1);
@@ -217,13 +224,32 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	contrast_stats_frame_layout->addWidget(m_contrast_label, contrast_stats_row, 1);
 	m_contrast_stats_frame->hide();
 
-	stats_row++;
+	m_bahtinov_stats_frame = new QFrame();
+	QGridLayout *bahtinov_stats_frame_layout = new QGridLayout();
+	bahtinov_stats_frame_layout->setAlignment(Qt::AlignTop);
+	m_bahtinov_stats_frame->setLayout(bahtinov_stats_frame_layout);
+	m_bahtinov_stats_frame->setFrameShape(QFrame::StyledPanel);
+	m_bahtinov_stats_frame->setContentsMargins(0, 0, 0, 0);
+	bahtinov_stats_frame_layout->setColumnStretch(0, 1);
+	bahtinov_stats_frame_layout->setColumnStretch(1, 1);
+	bahtinov_stats_frame_layout->setColumnStretch(2, 2);
+	stats_frame_layout->addWidget(m_bahtinov_stats_frame, stats_row, 0);
+
+	int bahtinov_stats_row = 0;
+	label = new QLabel("Bahtinov error (c/b):");
+	label->setToolTip("Bahtinov error (current/best)");
+	bahtinov_stats_frame_layout->addWidget(label, bahtinov_stats_row, 0);
+	m_bahtinov_label = new QLabel();
+	m_bahtinov_label->setToolTip("Bahtinov error (current/best)");
+	m_bahtinov_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	bahtinov_stats_frame_layout->addWidget(m_bahtinov_label, bahtinov_stats_row, 1);
+	m_bahtinov_stats_frame->hide();
+
 	m_hfd_stats_frame = new QFrame();
 	QGridLayout *hfd_stats_frame_layout = new QGridLayout();
 	hfd_stats_frame_layout->setAlignment(Qt::AlignTop);
 	m_hfd_stats_frame->setLayout(hfd_stats_frame_layout);
 	m_hfd_stats_frame->setFrameShape(QFrame::StyledPanel);
-	//stats_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
 	m_hfd_stats_frame->setContentsMargins(0, 0, 0, 0);
 	stats_frame_layout->addWidget(m_hfd_stats_frame, stats_row, 0);
 
@@ -376,6 +402,14 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	m_initial_step->setEnabled(false);
 	settings_frame_layout->addWidget(m_initial_step , settings_row, 1);
 
+	m_ucurve_step = new QSpinBox();
+	m_ucurve_step->setMaximum(100000);
+	m_ucurve_step->setMinimum(0);
+	m_ucurve_step->setValue(0);
+	m_ucurve_step->setEnabled(false);
+	m_ucurve_step->hide();
+	settings_frame_layout->addWidget(m_ucurve_step, settings_row, 1);
+
 	m_final_step_label = new QLabel("Final step:");
 	settings_frame_layout->addWidget(m_final_step_label, settings_row, 2);
 	m_final_step = new QSpinBox();
@@ -521,6 +555,10 @@ void ImagerWindow::select_focuser_data(focuser_display_data show) {
 		case SHOW_HFD:
 			m_focus_display_data = &m_focus_hfd_data;
 			set_text(m_focus_graph_label, "Focus HFD (px):");
+			break;
+		case SHOW_BAHTINOV:
+			m_focus_display_data = &m_focus_bahtinov_data;
+			set_text(m_focus_graph_label, "Bahtinov error (px):");
 			break;
 		case SHOW_CONTRAST:
 			m_focus_display_data = &m_focus_contrast_data;
@@ -697,6 +735,7 @@ void ImagerWindow::on_focus_start_stop(bool clicked) {
 			change_agent_abort_process_property(selected_agent);
 		} else {
 			m_focus_hfd_data.clear();
+			m_focus_bahtinov_data.clear();
 			change_agent_star_selection(selected_agent);
 			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			change_agent_batch_property_for_focus(selected_agent);

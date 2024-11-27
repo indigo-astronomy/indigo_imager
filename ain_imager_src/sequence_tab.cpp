@@ -43,7 +43,7 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	sequence_frame_layout->addWidget(m_seq_imager_viewer, row, 0, 1, 4);
 
 	row++;
-	QSpacerItem *spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	QSpacerItem *spacer = new QSpacerItem(1, 5, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	sequence_frame_layout->addItem(spacer, row, 0);
 
 	row++;
@@ -73,7 +73,7 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 
 
 	row++;
-	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	spacer = new QSpacerItem(1, 5, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	sequence_frame_layout->addItem(spacer, row, 0);
 
 	row++;
