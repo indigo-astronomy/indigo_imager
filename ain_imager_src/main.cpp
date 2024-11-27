@@ -23,7 +23,10 @@
 #include <QVersionNumber>
 #include <QSocketNotifier>
 #include <signal.h>
-#ifndef INDIGO_WINDOWS
+#ifdef INDIGO_WINDOWS
+#include <QTimer>
+#include <windows.h>
+#else
 #include <unistd.h>
 #endif
 
@@ -34,8 +37,32 @@
 conf_t conf;
 char config_path[PATH_LEN];
 
+#ifndef INDIGO_WINDOWS
 int sigpipe_fd[2];
 int sigint_fd[2];
+
+void handle_sigint(int) {
+	char a = 1;
+	write(sigint_fd[1], &a, sizeof(a));
+}
+
+void handle_sigpipe(int) {
+	char a = 1;
+	write(sigpipe_fd[1], &a, sizeof(a));
+}
+#else
+void write_conf();
+
+BOOL WINAPI console_handler(DWORD signal) {
+	if (signal == CTRL_C_EVENT) {
+		write_conf();
+		indigo_error("Configuration saved. Exiting...");
+		QTimer::singleShot(0, qApp, &QCoreApplication::quit);
+		return TRUE;
+	}
+	return FALSE;
+}
+#endif
 
 void write_conf() {
 	char filename[PATH_LEN];
@@ -55,16 +82,6 @@ void read_conf() {
 		fread(&conf, sizeof(conf), 1, file);
 		fclose(file);
 	}
-}
-
-void handle_sigint(int) {
-	char a = 1;
-	write(sigint_fd[1], &a, sizeof(a));
-}
-
-void handle_sigpipe(int) {
-	char a = 1;
-	write(sigpipe_fd[1], &a, sizeof(a));
 }
 
 int main(int argc, char *argv[]) {
@@ -145,7 +162,7 @@ int main(int argc, char *argv[]) {
 	font.setStyleHint(QFont::SansSerif);
 
 	app.setFont(font);
-	//qDebug() << "Font: " << app.font().family() << app.font().pointSize();
+	//qDebug() << "Font: " << app.font().family() << app.font().pointSize() << app.font().weight();
 
 	QVersionNumber running_version = QVersionNumber::fromString(qVersion());
 	QVersionNumber threshod_version(5, 13, 0);
@@ -163,7 +180,7 @@ int main(int argc, char *argv[]) {
 	imager_window.show();
 
 #ifndef INDIGO_WINDOWS
-	// Ignore SIGPIPE on Unix systems to avoid process termination
+	// Handle SIGPIPE on Unix-like systems to prevent application crash
 	if (pipe(sigpipe_fd)) {
 		indigo_error("Couldn't create pipe for SIGPIPE");
 	}
@@ -181,7 +198,6 @@ int main(int argc, char *argv[]) {
 		indigo_debug("SIGPIPE caught");
 		sn_pipe->setEnabled(true);
 	});
-#endif
 
 	// Handle SIGINT (Ctrl+C) to save config and exit
 	if (pipe(sigint_fd)) {
@@ -203,6 +219,11 @@ int main(int argc, char *argv[]) {
 		QCoreApplication::quit();
 		sn_int->setEnabled(true);
 	});
+#else
+	if (!SetConsoleCtrlHandler(console_handler, TRUE)) {
+		indigo_debug("Could not set control handler");
+	}
+#endif
 
 	return app.exec();
 }
