@@ -570,7 +570,7 @@ void ImagerWindow::change_agent_focus_params_property(const char *agent, bool se
 		AGENT_IMAGER_FOCUS_DELAY_ITEM_NAME,
 		AGENT_IMAGER_FOCUS_BACKLASH_ITEM_NAME
 	};
-	static double values[7];
+	static double values[8];
 	values[0] = (double)m_initial_step->value();
 	values[1] = (double)m_final_step->value();
 	values[2] = (double)m_ucurve_step->value();
