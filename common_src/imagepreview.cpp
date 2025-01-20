@@ -442,6 +442,7 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 	res = fits_process_data(raw_fits_buffer, fits_size, &header, fits_data);
 	if (res != FITS_OK) {
 		indigo_error("FITS: Error processing data");
+		free(fits_data);
 		return nullptr;
 	}
 
@@ -453,8 +454,8 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 	preview_image *img = create_preview(header.naxisn[0], header.naxisn[1],
 	        pix_format, fits_data, sconfig);
 
-	free(fits_data);
 	indigo_debug("FITS_END: fits_data = %p", fits_data);
+	free(fits_data);
 	return img;
 }
 
