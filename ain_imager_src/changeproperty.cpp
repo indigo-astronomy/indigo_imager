@@ -570,7 +570,7 @@ void ImagerWindow::change_agent_focus_params_property(const char *agent, bool se
 		AGENT_IMAGER_FOCUS_DELAY_ITEM_NAME,
 		AGENT_IMAGER_FOCUS_BACKLASH_ITEM_NAME
 	};
-	static double values[7];
+	static double values[8];
 	values[0] = (double)m_initial_step->value();
 	values[1] = (double)m_final_step->value();
 	values[2] = (double)m_ucurve_step->value();
@@ -850,7 +850,7 @@ void ImagerWindow::change_solver_agent_hints_property(const char *agent) const {
 		AGENT_PLATESOLVER_HINTS_DEPTH_ITEM_NAME,
 		AGENT_PLATESOLVER_HINTS_CPU_LIMIT_ITEM_NAME
 	};
-	static double values[7];
+	static double values[8];
 	values[0] = indigo_stod((char*)m_solver_ra_hint->text().trimmed().toStdString().c_str());
 	values[1] = indigo_stod((char*)m_solver_dec_hint->text().trimmed().toStdString().c_str());
 	values[2] = (double)m_solver_radius_hint->value();
@@ -925,7 +925,7 @@ void ImagerWindow::disable_auto_solving(const char *agent) const {
 	//indigo_change_switch_property_1(nullptr, agent, AGENT_PLATESOLVER_SYNC_PROPERTY_NAME, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME, true);
 }
 
-void ImagerWindow::change_agent_start_process(const char *agent, char *item) const {
+void ImagerWindow::change_agent_start_process(const char *agent, const char *item) const {
 	indigo_change_switch_property_1(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, item, true);
 }
 

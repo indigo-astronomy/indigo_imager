@@ -56,7 +56,7 @@ public:
 		return m_blobs_enabled;
 	};
 
-	void start(char *name);
+	void start(const char *name);
 	void stop();
 	void update_save_blob(indigo_property *property);
 	bool m_save_blob;
