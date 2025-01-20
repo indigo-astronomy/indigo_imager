@@ -899,7 +899,7 @@ private:
 	//char *m_image_formrat;
 	QString m_selected_filter;
 
-	void window_log(char *message, int state = INDIGO_OK_STATE);
+	void window_log(const char *message, int state = INDIGO_OK_STATE);
 
 	void change_jpeg_settings_property(
 		const char *agent,
