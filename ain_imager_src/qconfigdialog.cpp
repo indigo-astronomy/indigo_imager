@@ -117,6 +117,7 @@ QConfigDialog::QConfigDialog(QWidget *parent) : QDialog(parent) {
 }
 
 void QConfigDialog::onAgentChangedCB(int index) {
+	Q_UNUSED(index);
 	emit(agentChanged(m_config_agent_select->currentText()));
 }
 
