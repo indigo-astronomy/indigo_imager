@@ -1432,7 +1432,7 @@ void update_wheel_slot_property(ImagerWindow *w, indigo_property *property) {
 }
 
 void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *property) {
-	double exp_elapsed, exp_time = 1;
+	double exp_elapsed = 0, exp_time = 1;
 	double drift_x, drift_y;
 	int frames_complete = 0, frames_total = 0, batches_complete = 0, batches_total = 0, batch_index = 0;
 	static bool exposure_running = false;
