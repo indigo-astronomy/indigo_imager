@@ -850,7 +850,7 @@ void ImagerWindow::change_solver_agent_hints_property(const char *agent) const {
 		AGENT_PLATESOLVER_HINTS_DEPTH_ITEM_NAME,
 		AGENT_PLATESOLVER_HINTS_CPU_LIMIT_ITEM_NAME
 	};
-	static double values[7];
+	static double values[8];
 	values[0] = indigo_stod((char*)m_solver_ra_hint->text().trimmed().toStdString().c_str());
 	values[1] = indigo_stod((char*)m_solver_dec_hint->text().trimmed().toStdString().c_str());
 	values[2] = (double)m_solver_radius_hint->value();
