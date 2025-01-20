@@ -221,7 +221,7 @@ public slots:
 	void on_preview_start_stop(bool clicked);
 	void on_abort(bool clicked);
 	void on_pause(bool clicked);
-	void on_window_log(indigo_property* property, char *message);
+	void on_window_log(indigo_property* property, const char *message);
 	void on_property_define(indigo_property* property, char *message);
 	void on_property_change(indigo_property* property, char *message);
 	void on_property_delete(indigo_property* property, char *message);
