@@ -298,7 +298,7 @@ indigo_client client = {
 	client_detach
 };
 
-void IndigoClient::start(char *name) {
+void IndigoClient::start(const char *name) {
 	indigo_start();
 	strncpy(client.name, name, INDIGO_NAME_SIZE);
 	indigo_attach_client(&client);
