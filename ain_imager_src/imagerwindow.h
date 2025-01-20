@@ -931,7 +931,7 @@ private:
 	void change_ccd_mode_property(const char *agent, QComboBox *frame_size_select) const;
 	void change_ccd_image_format_property(const char *agent) const;
 	void change_ccd_frame_type_property(const char *agent) const;
-	void change_agent_start_process(const char *agent, char *item) const;
+	void change_agent_start_process(const char *agent, const char *item) const;
 	void change_agent_batch_property(const char *agent) const;
 	void change_agent_batch_property_for_focus(const char *agent) const;
 	void change_agent_start_exposure_property(const char *agent) const;
