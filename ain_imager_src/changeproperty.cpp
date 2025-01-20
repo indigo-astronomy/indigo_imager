@@ -925,7 +925,7 @@ void ImagerWindow::disable_auto_solving(const char *agent) const {
 	//indigo_change_switch_property_1(nullptr, agent, AGENT_PLATESOLVER_SYNC_PROPERTY_NAME, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME, true);
 }
 
-void ImagerWindow::change_agent_start_process(const char *agent, char *item) const {
+void ImagerWindow::change_agent_start_process(const char *agent, const char *item) const {
 	indigo_change_switch_property_1(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, item, true);
 }
 

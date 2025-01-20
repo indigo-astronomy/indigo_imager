@@ -221,7 +221,7 @@ public slots:
 	void on_preview_start_stop(bool clicked);
 	void on_abort(bool clicked);
 	void on_pause(bool clicked);
-	void on_window_log(indigo_property* property, char *message);
+	void on_window_log(indigo_property* property, const char *message);
 	void on_property_define(indigo_property* property, char *message);
 	void on_property_change(indigo_property* property, char *message);
 	void on_property_delete(indigo_property* property, char *message);
@@ -899,7 +899,7 @@ private:
 	//char *m_image_formrat;
 	QString m_selected_filter;
 
-	void window_log(char *message, int state = INDIGO_OK_STATE);
+	void window_log(const char *message, int state = INDIGO_OK_STATE);
 
 	void change_jpeg_settings_property(
 		const char *agent,
@@ -931,7 +931,7 @@ private:
 	void change_ccd_mode_property(const char *agent, QComboBox *frame_size_select) const;
 	void change_ccd_image_format_property(const char *agent) const;
 	void change_ccd_frame_type_property(const char *agent) const;
-	void change_agent_start_process(const char *agent, char *item) const;
+	void change_agent_start_process(const char *agent, const char *item) const;
 	void change_agent_batch_property(const char *agent) const;
 	void change_agent_batch_property_for_focus(const char *agent) const;
 	void change_agent_start_exposure_property(const char *agent) const;
@@ -1010,7 +1010,7 @@ private:
 
 	void update_solver_widgets_at_start(const char *image_agent, const char *solver_agent);
 
-	void mount_agent_set_switch_async(char *property, char *item, bool move);
+	void mount_agent_set_switch_async(const char *property, const char *item, bool move);
 
 	bool get_solver_relations(char *selected_mount_agent, char* selected_solver_agent, char *selected_image_agent, char *selected_solver_source, QComboBox *solver_source_select);
 	void trigger_solve_and_sync(bool recenter);

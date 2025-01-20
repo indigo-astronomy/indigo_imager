@@ -968,7 +968,7 @@ void ImagerWindow::on_mount_home(int state) {
 	});
 }
 
-void ImagerWindow::mount_agent_set_switch_async(char *property, char *item, bool move) {
+void ImagerWindow::mount_agent_set_switch_async(const char *property, const char *item, bool move) {
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_mount_agent(selected_agent);

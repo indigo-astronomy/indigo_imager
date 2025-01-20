@@ -2223,7 +2223,7 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 }
 
 
-void ImagerWindow::on_window_log(indigo_property* property, char *message) {
+void ImagerWindow::on_window_log(indigo_property* property, const char *message) {
 	char log_line[512];
 	int state = INDIGO_OK_STATE;
 

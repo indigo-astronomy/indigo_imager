@@ -27,7 +27,7 @@ QString property_cache::create_key(indigo_property *property) {
 	return key;
 }
 
-QString property_cache::create_key(char *device_name, char *property_name) {
+QString property_cache::create_key(const char *device_name, const char *property_name) {
 	QString key(device_name);
 	key.append(".");
 	key.append(property_name);
@@ -93,7 +93,7 @@ indigo_property* property_cache::get(indigo_property *property) {
 }
 
 
-indigo_property* property_cache::get(char *device_name, char *property_name) {
+indigo_property* property_cache::get(const char *device_name, const char *property_name) {
 	pthread_mutex_lock(&property_mutex);
 	QString key = create_key(device_name, property_name);
 	if (contains(key)) {
@@ -107,7 +107,7 @@ indigo_property* property_cache::get(char *device_name, char *property_name) {
 	return nullptr;
 }
 
-indigo_item* property_cache::get_item(char *device_name, char *property_name, char *item_name) {
+indigo_item* property_cache::get_item(const char *device_name, const char *property_name, const char *item_name) {
 	pthread_mutex_lock(&property_mutex);
 	QString key = create_key(device_name, property_name);
 	if (contains(key)) {
@@ -125,7 +125,7 @@ indigo_item* property_cache::get_item(char *device_name, char *property_name, ch
 	return nullptr;
 }
 
-indigo_item* property_cache::get_item(indigo_property *property, char *item_name) {
+indigo_item* property_cache::get_item(indigo_property *property, const char *item_name) {
 	pthread_mutex_lock(&property_mutex);
 	pthread_mutex_unlock(&property_mutex);
 	for (int i = 0; i< property->count; i++) {
