@@ -819,6 +819,7 @@ void ImagerWindow::on_mount_polar_align_stop() {
 }
 
 void ImagerWindow::on_mount_joystick_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_joystick[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
 		QString q_joystick_str = m_mount_joystick_select->currentText();
@@ -838,6 +839,7 @@ void ImagerWindow::on_mount_joystick_selected(int index) {
 }
 
 void ImagerWindow::on_mount_agent_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		// Clear controls
 		indigo_property *property = (indigo_property*)malloc(sizeof(indigo_property));
@@ -851,6 +853,7 @@ void ImagerWindow::on_mount_agent_selected(int index) {
 }
 
 void ImagerWindow::on_mount_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_mount[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
 		QString q_mount_str = m_mount_select->currentText();
@@ -870,6 +873,7 @@ void ImagerWindow::on_mount_selected(int index) {
 }
 
 void ImagerWindow::on_mount_goto(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_mount_agent(selected_agent);
@@ -881,6 +885,7 @@ void ImagerWindow::on_mount_goto(int index) {
 }
 
 void ImagerWindow::on_mount_sync(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_mount_agent(selected_agent);
@@ -892,6 +897,7 @@ void ImagerWindow::on_mount_sync(int index) {
 }
 
 void ImagerWindow::on_mount_agent_set_pa_settings(double value) {
+	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_solver_agent(selected_agent);
@@ -903,6 +909,7 @@ void ImagerWindow::on_mount_agent_set_pa_settings(double value) {
 }
 
 void ImagerWindow::on_mount_agent_set_pa_refraction(bool clicked) {
+	Q_UNUSED(clicked);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_solver_agent(selected_agent);
@@ -914,6 +921,7 @@ void ImagerWindow::on_mount_agent_set_pa_refraction(bool clicked) {
 }
 
 void ImagerWindow::on_mount_abort(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_mount_agent(selected_agent);
@@ -925,6 +933,7 @@ void ImagerWindow::on_mount_abort(int index) {
 }
 
 void ImagerWindow::on_mount_track(int state) {
+	Q_UNUSED(state);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_mount_agent(selected_agent);
@@ -941,6 +950,7 @@ void ImagerWindow::on_mount_track(int state) {
 }
 
 void ImagerWindow::on_mount_park(int state) {
+	Q_UNUSED(state);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_mount_agent(selected_agent);
@@ -957,6 +967,7 @@ void ImagerWindow::on_mount_park(int state) {
 }
 
 void ImagerWindow::on_mount_home(int state) {
+	Q_UNUSED(state);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_mount_agent(selected_agent);
@@ -1012,18 +1023,22 @@ void ImagerWindow::on_mount_stop_west() {
 }
 
 void ImagerWindow::on_mount_set_guide_rate(int state) {
+	Q_UNUSED(state);
 	mount_agent_set_switch_async(MOUNT_SLEW_RATE_PROPERTY_NAME, MOUNT_SLEW_RATE_GUIDE_ITEM_NAME, true);
 }
 
 void ImagerWindow::on_mount_set_center_rate(int state) {
+	Q_UNUSED(state);
 	mount_agent_set_switch_async(MOUNT_SLEW_RATE_PROPERTY_NAME, MOUNT_SLEW_RATE_CENTERING_ITEM_NAME, true);
 }
 
 void ImagerWindow::on_mount_set_find_rate(int state) {
+	Q_UNUSED(state);
 	mount_agent_set_switch_async(MOUNT_SLEW_RATE_PROPERTY_NAME, MOUNT_SLEW_RATE_FIND_ITEM_NAME, true);
 }
 
 void ImagerWindow::on_mount_set_max_rate(int state) {
+	Q_UNUSED(state);
 	mount_agent_set_switch_async(MOUNT_SLEW_RATE_PROPERTY_NAME, MOUNT_SLEW_RATE_MAX_ITEM_NAME, true);
 }
 
@@ -1032,6 +1047,7 @@ void ImagerWindow::on_mount_sync_time(int state) {
 }
 
 void ImagerWindow::on_mount_coord_source_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_source[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
 
@@ -1056,6 +1072,7 @@ void ImagerWindow::on_mount_set_coordinates_to_agent() {
 }
 
 void ImagerWindow::on_mount_gps_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_gps[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
 		QString q_gps_str = m_mount_gps_select->currentText();
@@ -1142,6 +1159,7 @@ void ImagerWindow::on_mount_recalculate_polar_error() {
 }
 
 void ImagerWindow::on_image_source2_selected(int index) {
+	Q_UNUSED(index);
 	QString solver_source = m_solver_source_select2->currentText();
 	strncpy(conf.solver_image_source2, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
 	indigo_debug("%s -> %s\n", __FUNCTION__, conf.solver_image_source2);
@@ -1149,6 +1167,7 @@ void ImagerWindow::on_image_source2_selected(int index) {
 }
 
 void ImagerWindow::on_image_source3_selected(int index) {
+	Q_UNUSED(index);
 	QString solver_source = m_solver_source_select3->currentText();
 	strncpy(conf.solver_image_source3, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
 	indigo_debug("%s -> %s\n", __FUNCTION__, conf.solver_image_source3);
@@ -1260,6 +1279,7 @@ void ImagerWindow::on_object_search_changed(const QString &obj_name) {
 }
 
 void ImagerWindow::on_custom_objects_only_checked(bool checked) {
+	Q_UNUSED(checked);
 	on_object_search_changed(m_object_search_line->text());
 }
 
@@ -1367,6 +1387,7 @@ void ImagerWindow::on_custom_object_remove() {
 }
 
 void ImagerWindow::on_rotator_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_rotator[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
 		QString q_rotator_str = m_rotator_select->currentText();

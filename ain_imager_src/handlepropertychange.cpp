@@ -829,8 +829,6 @@ void update_solver_agent_hints(ImagerWindow *w, indigo_property *property) {
 
 int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("change %s", property->name);
-	double alt_offset = 0;
-	double dec_offset = 0;
 	double total_error = 0;
 	double alt_error = 0;
 	double az_error = 0;
@@ -991,12 +989,9 @@ void update_focuser_temperature(ImagerWindow *w, indigo_property *property) {
 void update_focuser_mode(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("change %s", property->name);
 	bool automatic = false;
-	bool manual = false;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], FOCUSER_MODE_AUTOMATIC_ITEM_NAME)) {
 			automatic = property->items[i].sw.value;
-		} else if (client_match_item(&property->items[i], FOCUSER_MODE_MANUAL_ITEM_NAME)) {
-			manual = property->items[i].sw.value;
 		}
 	}
 	w->set_enabled(w->m_temperature_compensation_cbox, true);
@@ -1191,7 +1186,7 @@ void update_imager_selection_property(ImagerWindow *w, indigo_property *property
 			count = property->items[i].number.value;
 			configure_spinbox(w, &property->items[i], property->perm, w->m_focus_star_count);
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_SELECTION_RADIUS_ITEM_NAME)) {
-			double max = property->items[i].number.value * 2 + 2;
+			//double max = property->items[i].number.value * 2 + 2;
 			size = (int)round(property->items[i].number.value * 2 + 1);
 			//w->m_focus_graph->set_yaxis_range(0, max);
 			configure_spinbox(w, &property->items[i], property->perm, w->m_focus_star_radius);
@@ -1849,8 +1844,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	double rmse_ra = 0, rmse_dec = 0, dither_rmse = 0;
 	double rmse_ra_s = 0, rmse_dec_s = 0;
 	double d_x = 0, d_y = 0;
-	int size = 0, frame_count = -1;
-	bool is_guiding_process_on = false;
+	int frame_count = -1;
 	bool is_dithering = false;
 
 	for (int i = 0; i < property->count; i++) {
@@ -2288,6 +2282,7 @@ static void populateConfigItem(indigo_property *property, ConfigItem &configItem
 }
 
 void ImagerWindow::property_define(indigo_property* property, char *message) {
+	Q_UNUSED(message);
 	static char selected_agent[INDIGO_VALUE_SIZE];
 	static char selected_guider_agent[INDIGO_VALUE_SIZE];
 	static char selected_mount_agent[INDIGO_VALUE_SIZE];
@@ -2818,6 +2813,7 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 
 
 void ImagerWindow::on_property_change(indigo_property* property, char *message) {
+	Q_UNUSED(message);
 	char selected_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_mount_agent[INDIGO_VALUE_SIZE] = {0};
@@ -3116,6 +3112,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 }
 
 void ImagerWindow::property_delete(indigo_property* property, char *message) {
+	Q_UNUSED(message);
 	char selected_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_mount_agent[INDIGO_VALUE_SIZE] = {0};

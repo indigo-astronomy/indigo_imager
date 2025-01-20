@@ -627,6 +627,7 @@ void ImagerWindow::select_guider_data(guider_display_data show) {
 }
 
 void ImagerWindow::on_guider_agent_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		// Clear controls
 		indigo_property *property = (indigo_property*)malloc(sizeof(indigo_property));
@@ -640,6 +641,7 @@ void ImagerWindow::on_guider_agent_selected(int index) {
 }
 
 void ImagerWindow::on_guider_camera_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_camera[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
 		QString q_camera_str = m_guider_camera_select->currentText();
@@ -658,6 +660,7 @@ void ImagerWindow::on_guider_camera_selected(int index) {
 }
 
 void ImagerWindow::on_guider_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_guider[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
 		QString q_guider_str = m_guider_select->currentText();
@@ -677,6 +680,7 @@ void ImagerWindow::on_guider_selected(int index) {
 }
 
 void ImagerWindow::on_guider_selection_changed(double value) {
+	Q_UNUSED(value);
 	//int x = m_guide_star_x->value();
 	//int y = m_guide_star_y->value();
 	//m_guider_viewer->moveSelection(x, y);
@@ -693,6 +697,7 @@ void ImagerWindow::on_guider_selection_radius_changed(int value) {
 }
 
 void ImagerWindow::on_guider_selection_star_count_changed(int value) {
+	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
 		char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_guider_agent(selected_agent);
@@ -702,6 +707,7 @@ void ImagerWindow::on_guider_selection_star_count_changed(int value) {
 }
 
 void ImagerWindow::on_guider_edge_clipping_changed(int value) {
+	Q_UNUSED(value);
 	//int x = m_guide_star_x->value();
 	//int y = m_guide_star_y->value();
 
@@ -732,6 +738,7 @@ void ImagerWindow::on_guider_image_right_click(double x, double y) {
 
 
 void ImagerWindow::on_guider_preview_start_stop(bool clicked) {
+	Q_UNUSED(clicked);
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -750,6 +757,7 @@ void ImagerWindow::on_guider_preview_start_stop(bool clicked) {
 }
 
 void ImagerWindow::on_guider_calibrate_start_stop(bool clicked) {
+	Q_UNUSED(clicked);
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
 
 	if (conf.require_confirmation) {
@@ -786,6 +794,7 @@ void ImagerWindow::on_guider_calibrate_start_stop(bool clicked) {
 
 
 void ImagerWindow::on_guider_guide_start_stop(bool clicked) {
+	Q_UNUSED(clicked);
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -804,6 +813,7 @@ void ImagerWindow::on_guider_guide_start_stop(bool clicked) {
 }
 
 void ImagerWindow::on_guider_stop(bool clicked) {
+	Q_UNUSED(clicked);
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -817,6 +827,7 @@ void ImagerWindow::on_guider_stop(bool clicked) {
 }
 
 void ImagerWindow::on_detection_mode_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -828,6 +839,7 @@ void ImagerWindow::on_detection_mode_selected(int index) {
 }
 
 void ImagerWindow::on_dec_guiding_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -839,6 +851,7 @@ void ImagerWindow::on_dec_guiding_selected(int index) {
 }
 
 void ImagerWindow::on_guider_agent_exposure_changed(double value) {
+	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -851,6 +864,7 @@ void ImagerWindow::on_guider_agent_exposure_changed(double value) {
 
 
 void ImagerWindow::on_guider_agent_pulse_changed(double value) {
+	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -862,6 +876,7 @@ void ImagerWindow::on_guider_agent_pulse_changed(double value) {
 }
 
 void ImagerWindow::on_guider_agent_aggressivity_changed(int value) {
+	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -873,6 +888,7 @@ void ImagerWindow::on_guider_agent_aggressivity_changed(int value) {
 }
 
 void ImagerWindow::on_change_guider_agent_i_gain_changed(double value) {
+	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -888,6 +904,7 @@ void ImagerWindow::on_change_guider_agent_is_changed(int value) {
 }
 
 void ImagerWindow::on_guider_agent_callibration_changed(double value) {
+	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -899,6 +916,7 @@ void ImagerWindow::on_guider_agent_callibration_changed(double value) {
 }
 
 void ImagerWindow::on_guider_reverse_dec_changed(int state) {
+	Q_UNUSED(state);
 	QtConcurrent::run([=]() {
 		char selected_agent[INDIGO_NAME_SIZE];
 
@@ -910,6 +928,7 @@ void ImagerWindow::on_guider_reverse_dec_changed(int state) {
 }
 
 void ImagerWindow::on_guider_apply_backlash_changed(int state) {
+	Q_UNUSED(state);
 	QtConcurrent::run([=]() {
 		char selected_agent[INDIGO_NAME_SIZE];
 
@@ -947,6 +966,7 @@ void ImagerWindow::on_guider_subframe_changed(int index) {
 }
 
 void ImagerWindow::on_guider_clear_selection(bool clicked) {
+	Q_UNUSED(clicked);
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -957,6 +977,7 @@ void ImagerWindow::on_guider_clear_selection(bool clicked) {
 }
 
 void ImagerWindow::on_guider_ccd_mode_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -968,6 +989,7 @@ void ImagerWindow::on_guider_ccd_mode_selected(int index) {
 }
 
 void ImagerWindow::on_agent_guider_gain_changed(int value) {
+	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -979,6 +1001,7 @@ void ImagerWindow::on_agent_guider_gain_changed(int value) {
 }
 
 void ImagerWindow::on_agent_guider_offset_changed(int value) {
+	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -990,6 +1013,7 @@ void ImagerWindow::on_agent_guider_offset_changed(int value) {
 }
 
 void ImagerWindow::on_agent_guider_focal_length_changed(int value) {
+	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
