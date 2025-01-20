@@ -478,6 +478,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 }
 
 void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
+	Q_UNUSED(clicked);
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -530,6 +531,7 @@ void ImagerWindow::on_exposure_start_stop(bool clicked) {
 }
 
 void ImagerWindow::on_preview_start_stop(bool clicked) {
+	Q_UNUSED(clicked);
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -554,6 +556,7 @@ void ImagerWindow::on_preview_start_stop(bool clicked) {
 }
 
 void ImagerWindow::on_abort(bool clicked) {
+	Q_UNUSED(clicked);
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -569,6 +572,7 @@ void ImagerWindow::on_abort(bool clicked) {
 }
 
 void ImagerWindow::on_pause(bool clicked) {
+	Q_UNUSED(clicked);
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 
@@ -586,6 +590,7 @@ void ImagerWindow::on_pause(bool clicked) {
 }
 
 void ImagerWindow::on_agent_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		// Clear controls
 		indigo_property *property = (indigo_property*)malloc(sizeof(indigo_property));
@@ -615,6 +620,7 @@ void ImagerWindow::on_agent_selected(int index) {
 }
 
 void ImagerWindow::on_camera_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_camera[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
 		QString q_camera_str = m_camera_select->currentText();
@@ -633,6 +639,7 @@ void ImagerWindow::on_camera_selected(int index) {
 }
 
 void ImagerWindow::on_wheel_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_wheel[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
 		QString q_wheel_str = m_wheel_select->currentText();
@@ -652,6 +659,7 @@ void ImagerWindow::on_wheel_selected(int index) {
 }
 
 void ImagerWindow::on_ccd_mode_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -664,6 +672,7 @@ void ImagerWindow::on_ccd_mode_selected(int index) {
 
 
 void ImagerWindow::on_ccd_image_format_selected(int index) {
+	Q_UNUSED(index);
 	if (m_frame_format_select->currentData().toString() == "RAW") {
 		window_log("Warning: Indigo RAW format is for internal use, aquired images will not be auto saved.");
 	}
@@ -679,6 +688,7 @@ void ImagerWindow::on_ccd_image_format_selected(int index) {
 
 
 void ImagerWindow::on_frame_type_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -691,6 +701,7 @@ void ImagerWindow::on_frame_type_selected(int index) {
 
 
 void ImagerWindow::on_imager_dithering_enable(int state) {
+	Q_UNUSED(state);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
@@ -703,6 +714,7 @@ void ImagerWindow::on_imager_dithering_enable(int state) {
 }
 
 void ImagerWindow::on_dither_strategy_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -714,6 +726,7 @@ void ImagerWindow::on_dither_strategy_selected(int index) {
 }
 
 void ImagerWindow::on_agent_guider_dithering_changed(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -725,6 +738,7 @@ void ImagerWindow::on_agent_guider_dithering_changed(int index) {
 }
 
 void ImagerWindow::on_agent_imager_dithering_changed(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -736,6 +750,7 @@ void ImagerWindow::on_agent_imager_dithering_changed(int index) {
 }
 
 void ImagerWindow::on_agent_imager_gain_changed(int value) {
+	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -747,6 +762,7 @@ void ImagerWindow::on_agent_imager_gain_changed(int value) {
 }
 
 void ImagerWindow::on_agent_imager_offset_changed(int value) {
+	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -758,6 +774,7 @@ void ImagerWindow::on_agent_imager_offset_changed(int value) {
 }
 
 void ImagerWindow::on_agent_imager_binning_changed(int value) {
+	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -769,6 +786,7 @@ void ImagerWindow::on_agent_imager_binning_changed(int value) {
 }
 
 void ImagerWindow::on_filter_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -780,6 +798,7 @@ void ImagerWindow::on_filter_selected(int index) {
 }
 
 void ImagerWindow::on_cooler_onoff(bool state) {
+	Q_UNUSED(state);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 
@@ -791,6 +810,7 @@ void ImagerWindow::on_cooler_onoff(bool state) {
 }
 
 void ImagerWindow::on_temperature_set(double value) {
+	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -815,18 +835,21 @@ void ImagerWindow::on_object_name_changed(const QString &object_name) {
 }
 
 void ImagerWindow::on_save_image_on_server(int state) {
+	Q_UNUSED(state);
 	conf.save_images_on_server = m_save_image_on_server_cbox->checkState();
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
 void ImagerWindow::on_keep_image_on_server(int state) {
+	Q_UNUSED(state);
 	conf.keep_images_on_server = m_keep_image_on_server_cbox->checkState();
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
 void ImagerWindow::on_sync_remote_files(bool clicked) {
+	Q_UNUSED(clicked);
 	if (!conf.keep_images_on_server) {
 		remove_synced_remote_files();
 	}
@@ -834,6 +857,7 @@ void ImagerWindow::on_sync_remote_files(bool clicked) {
 }
 
 void ImagerWindow::on_remove_synced_remote_files(bool clicked) {
+	Q_UNUSED(clicked);
 	if (!conf.keep_images_on_server) {
 		remove_synced_remote_files();
 	} else {
