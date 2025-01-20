@@ -572,7 +572,7 @@ ImagerWindow::~ImagerWindow () {
 	delete m_add_object_dialog;
 }
 
-void ImagerWindow::window_log(char *message, int state) {
+void ImagerWindow::window_log(const char *message, int state) {
 	char timestamp[255];
 	char log_line[512];
 
