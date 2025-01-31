@@ -326,8 +326,8 @@ void IndigoSequenceItem::mousePressEvent(QMouseEvent *event) {
 
 		QDrag *drag = new QDrag(this);
 		drag->setMimeData(mimeData);
-		drag->setPixmap(this->grab());
 		showDragOverlay();
+		drag->setPixmap(this->grab());
 
 		Qt::DropAction dropAction = drag->exec(Qt::MoveAction);
 
