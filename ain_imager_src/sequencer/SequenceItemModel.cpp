@@ -14,7 +14,7 @@ void SequenceItemModel::initializeModel() {
 	widgetTypeMap = {
 		{"wait", {"Wait", {{0, {"Seconds", "QSpinBox"}}}}},
 		{"send_message", {"Send Message", {{0, {"Message", "QLineEdit"}}}}},
-		{"load_config", {"Load Config", {{0, {"Name", "QLineEdit"}}}}},
+		{"load_config", {"Load Config", {{0, {"Name", "QComboBox"}}}}},
 		{"load_driver", {"Load Driver", {{0, {"Name", "QLineEdit"}}}}},
 		{"unload_driver", {"Unload Driver", {{0, {"Name", "QLineEdit"}}}}},
 		//{"select_imager_agent", {"Select Imager Agent", {{0, {"Agent", "QComboBox"}}}}},
@@ -25,13 +25,14 @@ void SequenceItemModel::initializeModel() {
 		{"select_focuser", {"Select Focuser", {{0, {"Focuser", "QComboBox"}}}}},
 		{"select_rotator", {"Select Rotator", {{0, {"Rotator", "QComboBox"}}}}},
 		{"select_mount", {"Select Mount", {{0, {"Mount", "QComboBox"}}}}},
-		{"select_dome", {"Select Dome", {{0, {"Dome", "QComboBox"}}}}},
+		//{"select_dome", {"Select Dome", {{0, {"Dome", "QComboBox"}}}}},
 		{"select_gps", {"Select GPS", {{0, {"GPS", "QComboBox"}}}}},
 		{"select_guider_camera", {"Select Guider Camera", {{0, {"Camera", "QComboBox"}}}}},
 		{"select_guider", {"Select Guider", {{0, {"Guider", "QComboBox"}}}}},
 		{"select_frame_type_by_label", {"Select Frame Type", {{0, {"Frame Type", "QComboBox"}}}}},
 		{"select_image_format_by_label", {"Select Image Format", {{0, {"Image Format", "QComboBox"}}}}},
 		{"select_camera_mode_by_label", {"Select Camera Mode", {{0, {"Camera Mode", "QComboBox"}}}}},
+		{"select_filter_by_label", {"Select Filter", {{0, {"Filter", "QComboBox"}}}}},
 		{"set_gain", {"Set Gain", {{0, {"Value", "QSpinBox"}}}}},
 		{"set_offset", {"Set Offset", {{0, {"Value", "QSpinBox"}}}}},
 		{"set_gamma", {"Set Gamma", {{0, {"Value", "QSpinBox"}}}}},
@@ -45,7 +46,6 @@ void SequenceItemModel::initializeModel() {
 		{"disable_dithering", {"Disable Dithering", {}}},
 		{"enable_meridian_flip", {"Enable Meridian Flip", {{0, {"Use Solver", "QCheckBox"}}, {1, {"Time", "QSpinBox"}}}}},
 		{"disable_meridian_flip", {"Disable Meridian Flip", {}}},
-		{"select_filter_by_label", {"Select Filter", {{0, {"Filter", "QComboBox"}}}}},
 		{"set_directory", {"Set Directory", {{0, {"Directory", "QLineEdit"}}}}},
 		{"set_object_name", {"Set Object Name", {{0, {"Name", "QLineEdit"}}}}},
 		{"capture_batch", {"Capture Batch", {{0, {"Count", "QSpinBox"}}, {1, {"Exposure", "QDoubleSpinBox"}}}}},
@@ -144,6 +144,10 @@ void SequenceItemModel::setComboOptions(const QString& type, int paramId, const 
 			emit comboOptionsChanged(type, paramId, options);
 		}
 	}
+}
+
+void SequenceItemModel::clearComboOptions(const QString& type, int paramId) {
+	setComboOptions(type, paramId, QStringList());
 }
 
 QStringList SequenceItemModel::getComboOptions(const QString& type, int paramId) const {

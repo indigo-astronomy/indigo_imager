@@ -33,6 +33,7 @@ public:
 
 	const QMap<QString, WidgetTypeInfo>& getWidgetTypes() const;
 	void setComboOptions(const QString& type, int paramId, const QStringList& options);
+	void clearComboOptions(const QString& type, int paramId);
 	QStringList getComboOptions(const QString& type, int paramId) const;
 	void setNumericRange(const QString& type, int paramId, double min, double max);
 	QPair<double, double> getNumericRange(const QString& type, int paramId) const;
