@@ -36,6 +36,7 @@
 #include <image_stats.h>
 #include <QSound>
 #include <QFileInfo>
+//#include <IndigoSequence.h>
 
 void write_conf();
 
@@ -398,6 +399,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_guider_viewer->setVisible(false);
 
 	m_sequence_editor = new SequenceEditor();
+	m_sequence_editor2 = new IndigoSequence();
 
 	QSplitter* hSplitter = new QSplitter;
 	hSplitter->addWidget(tools_panel);
@@ -689,7 +691,7 @@ void ImagerWindow::show_selected_preview_in_solver_tab(QString &solver_source) {
 		m_visible_viewer = m_imager_viewer;
 		m_imager_viewer->setVisible(true);
 	}
-	if	(m_visible_viewer != m_sequence_editor) {
+	if	(m_visible_viewer != m_sequence_editor2) {
 		((ImageViewer*)m_visible_viewer)->showWCS(true);
 	}
 }
@@ -701,18 +703,18 @@ void ImagerWindow::on_tab_changed(int index) {
 			m_visible_viewer = m_imager_viewer;
 			m_imager_viewer->setVisible(true);
 			m_guider_viewer->setVisible(false);
-			m_sequence_editor->setVisible(false);
+			m_sequence_editor2->setVisible(false);
 		}
 
 		if (index == TELESCOPE_TAB) m_imager_viewer->showWCS(true);
 		else m_imager_viewer->showWCS(false);
 	} else if (index == SEQUENCE_TAB) {
-		if (m_visible_viewer != m_sequence_editor) {
-			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_sequence_editor);
-			m_visible_viewer = m_sequence_editor;
+		if (m_visible_viewer != m_sequence_editor2) {
+			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_sequence_editor2);
+			m_visible_viewer = m_sequence_editor2;
 			m_guider_viewer->setVisible(false);
 			m_imager_viewer->setVisible(false);
-			m_sequence_editor->setVisible(true);
+			m_sequence_editor2->setVisible(true);
 		}
 	} else if (index == GUIDER_TAB) {
 		if (m_visible_viewer != m_guider_viewer) {
@@ -720,7 +722,7 @@ void ImagerWindow::on_tab_changed(int index) {
 			m_visible_viewer = m_guider_viewer;
 			m_guider_viewer->setVisible(true);
 			m_imager_viewer->setVisible(false);
-			m_sequence_editor->setVisible(false);
+			m_sequence_editor2->setVisible(false);
 		}
 	} else if (index == SOLVER_TAB) {
 		QString solver_source = m_solver_source_select1->currentText();

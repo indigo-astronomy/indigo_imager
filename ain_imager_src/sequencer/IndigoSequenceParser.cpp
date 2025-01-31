@@ -1,0 +1,124 @@
+#include <QRegularExpression>
+#include <QString>
+#include <QStringList>
+#include <QVector>
+#include <QDebug>
+#include "SequenceItemModel.h"
+#include "IndigoSequenceParser.h"
+
+
+QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
+	// Remove comments
+	QRegularExpression commentRe(R"(//.*$)");
+	code.remove(commentRe);
+
+	QVector<FunctionCall> calls;
+	QRegularExpression re(R"((\w+)\.(\w+)\(([^)]*)\);|(\w+)\.repeat\((\d+),\s*function\s*\(\)\s*\{([^}]*)\}\);|var\s+(\w+)\s*=\s*new\s+Sequence\((\"[^\"]*\")?\);)");
+	QRegularExpressionMatchIterator it = re.globalMatch(code);
+
+	while (it.hasNext()) {
+		QRegularExpressionMatch match = it.next();
+		FunctionCall call;
+
+		if (!match.captured(4).isEmpty()) {
+			// Repeat function call with lambda
+			call.objectName = match.captured(4);
+			call.functionName = "repeat";
+			call.parameters.append(match.captured(5)); // The repeat count
+			call.parameters.append("lambda"); // Placeholder for the lambda function
+
+			QString nestedCode = match.captured(6).trimmed();
+			call.nestedCalls = parse(nestedCode);
+		} else if (!match.captured(7).isEmpty()) {
+			// Sequence object creation
+			call.objectName = match.captured(7);
+			call.functionName = "Sequence";
+			if (!match.captured(8).isEmpty()) {
+				call.parameters.append(match.captured(8));
+			}
+		} else {
+			// Regular function call
+			call.objectName = match.captured(1);
+			call.functionName = match.captured(2);
+			QString params = match.captured(3);
+			call.parameters = params.split(',', Qt::SkipEmptyParts);
+			for (QString& param : call.parameters) {
+				param = param.trimmed();
+			}
+		}
+
+		calls.append(call);
+	}
+
+	return calls;
+}
+
+bool IndigoSequenceParser::validateCalls(const QVector<FunctionCall>& calls) const {
+	const auto& widgetTypeMap = SequenceItemModel::instance().getWidgetTypes();
+
+	for (const FunctionCall& call : calls) {
+		if (call.functionName == "start") {
+			if (call.parameters.size() != 0) {
+				emit validationError(QString("start() does not accept parameters"));
+				return false;
+			}
+			continue;
+		}
+
+		if (call.functionName == "Sequence") {
+			if (call.parameters.size() > 1) {
+				emit validationError(QString("Sequence() accepts 0 or 1 parameter, got %1").arg(call.parameters.size()));
+				return false;
+			}
+			continue;
+		}
+
+		if (call.functionName == "repeat") {
+			if (!validateCalls(call.nestedCalls)) {
+				return false;
+			}
+			if (call.parameters.size() != 2) {
+				emit validationError(QString("repeat() accepts 2 parameters, got %1").arg(call.parameters.size()));
+				return false;
+			}
+			continue;
+		}
+
+		if (!widgetTypeMap.contains(call.functionName)) {
+			emit validationError(QString("%1() is not a valid function").arg(call.functionName));
+			return false;
+		}
+
+		const auto& widgetInfo = widgetTypeMap[call.functionName];
+		if (call.parameters.size() != widgetInfo.parameters.size()) {
+			emit validationError(QString("%1() accepts %2 parameters, got %3")
+				.arg(call.functionName)
+				.arg(widgetInfo.parameters.size())
+				.arg(call.parameters.size()));
+			return false;
+		}
+	}
+
+	return true;
+}
+
+QString IndigoSequenceParser::generate(const QVector<FunctionCall>& calls, int indent) const {
+	QString script;
+	QString indentStr(indent, '\t');
+
+	for (const FunctionCall& call : calls) {
+		if (call.functionName == "repeat") {
+			script += indentStr + call.objectName + "." + call.functionName + "(" + call.parameters[0] + ", function() {\n";
+			script += generate(call.nestedCalls, indent + 1);
+			script += indentStr + "});\n";
+		} else if (call.functionName == "Sequence") {
+			// Constructor call
+			script += indentStr + "var " + call.objectName + " = new Sequence(" + call.parameters.join(", ").trimmed() + ");\n";
+		} else {
+			// Regular method call
+			script += indentStr + call.objectName + "." + call.functionName + "(" + call.parameters.join(", ").trimmed() + ");\n";
+		}
+	}
+
+	return script;
+}

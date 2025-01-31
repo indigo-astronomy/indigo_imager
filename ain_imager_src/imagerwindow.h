@@ -68,6 +68,7 @@ class QIndigoServers;
 #include "customobjectmodel.h"
 #include "qaddcustomobject.h"
 #include "qconfigdialog.h"
+#include <IndigoSequence.h>
 
 class ImagerWindow : public QMainWindow {
 	Q_OBJECT
@@ -884,6 +885,7 @@ private:
 	indigo_item *m_indigo_item;
 
 	SequenceEditor *m_sequence_editor;
+	IndigoSequence *m_sequence_editor2;
 
 	QString m_image_key;
 	QString m_guider_key;
