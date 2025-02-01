@@ -173,6 +173,7 @@ void IndigoSequenceItem::addInputWidget(const QString &paramName, const QString 
 			auto range = model.getNumericRange(type, key);
 			spin->setRange(range.first, range.second);
 			spin->setSingleStep(model.getNumericIncrement(type, key));
+			spin->setToolTip(QString("%1, range: [%2, %3] step: %4").arg(paramName).arg(range.first).arg(range.second).arg(model.getNumericIncrement(type, key)));
 		}
 	} else if (paramType == "QDoubleSpinBox") {
 		QDoubleSpinBox* spin = qobject_cast<QDoubleSpinBox*>(input);
@@ -180,6 +181,7 @@ void IndigoSequenceItem::addInputWidget(const QString &paramName, const QString 
 			auto range = model.getNumericRange(type, key);
 			spin->setRange(range.first, range.second);
 			spin->setSingleStep(model.getNumericIncrement(type, key));
+			spin->setToolTip(QString("%1, range: [%2, %3] step: %4").arg(paramName).arg(range.first).arg(range.second).arg(model.getNumericIncrement(type, key)));
 		}
 	} else if (paramType == "QLinedit") {
 		QLineEdit* line = qobject_cast<QLineEdit*>(input);
@@ -611,10 +613,13 @@ void IndigoSequenceItem::contextMenuEvent(QContextMenuEvent *event) {
 void IndigoSequenceItem::updateNumericRange(int paramId, double min, double max) {
 	auto it = parameterWidgets.find(paramId);
 	if (it != parameterWidgets.end()) {
+		QString paramName = SequenceItemModel::instance().getWidgetTypes()[type].parameters[paramId].label;
 		if (QSpinBox* spin = qobject_cast<QSpinBox*>(it.value())) {
 			spin->setRange(min, max);
+			spin->setToolTip(QString("%1, range: [%2, %3] step: %4").arg(paramName).arg(min).arg(max).arg(spin->singleStep()));
 		} else if (QDoubleSpinBox* dspin = qobject_cast<QDoubleSpinBox*>(it.value())) {
 			dspin->setRange(min, max);
+			dspin->setToolTip(QString("%1, range: [%2, %3] step: %4").arg(paramName).arg(min).arg(max).arg(dspin->singleStep()));
 		}
 	}
 }
@@ -622,10 +627,13 @@ void IndigoSequenceItem::updateNumericRange(int paramId, double min, double max)
 void IndigoSequenceItem::updateNumericIncrement(int paramId, double increment) {
 	auto it = parameterWidgets.find(paramId);
 	if (it != parameterWidgets.end()) {
+		QString paramName = SequenceItemModel::instance().getWidgetTypes()[type].parameters[paramId].label;
 		if (QSpinBox* spin = qobject_cast<QSpinBox*>(it.value())) {
 			spin->setSingleStep(increment);
+			spin->setToolTip(QString("%1, range: [%2, %3] step: %4").arg(paramName).arg(spin->minimum()).arg(spin->maximum()).arg(increment));
 		} else if (QDoubleSpinBox* dspin = qobject_cast<QDoubleSpinBox*>(it.value())) {
 			dspin->setSingleStep(increment);
+			dspin->setToolTip(QString("%1, range: [%2, %3] step: %4").arg(paramName).arg(dspin->minimum()).arg(dspin->maximum()).arg(increment));
 		}
 	}
 }
