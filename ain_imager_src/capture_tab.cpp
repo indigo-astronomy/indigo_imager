@@ -492,7 +492,7 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 			set_related_imager_and_guider_agents();
 			QString obj_name;
 			if (is_sequence) {
-				obj_name = m_sequence_editor->get_sequence_name();
+				//obj_name = m_sequence_editor->get_sequence_name();
 			} else {
 				obj_name = m_object_name->text().trimmed();
 			}
@@ -509,8 +509,8 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 			if (is_sequence) {
 				QList<QString> batches;
 				QString sequence;
-				m_sequence_editor->generate_sequence(sequence, batches);
-				int approx_time = (int)(m_sequence_editor->approximate_duration()*3600);
+				//m_sequence_editor->generate_sequence(sequence, batches);
+				int approx_time = 0; //(int)(m_sequence_editor->approximate_duration()*3600);
 				if (approx_time >= 0) {
 					static char end_time[256];
 					get_time_after(end_time, approx_time, "Estimated sequence completion: %d %b %H:%M");

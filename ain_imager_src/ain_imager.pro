@@ -43,7 +43,6 @@ SOURCES += \
 	$$PWD/handlepropertychange.cpp \
 	$$PWD/focusgraph.cpp \
 	$$PWD/blobpreview.cpp \
-	$$PWD/sequence_editor.cpp \
 	$$PWD/sequence_tab.cpp \
 	$$PWD/syncutils.cpp \
 	$$PWD/qconfigdialog.cpp \
@@ -137,7 +136,6 @@ HEADERS += \
 	$$PWD/conf.h \
 	$$PWD/widget_state.h \
 	$$PWD/blobpreview.h \
-	$$PWD/sequence_editor.h \
 	$$PWD/syncutils.h \
 	$$PWD/qconfigdialog.h \
 	$$PWD/sequencer/IndigoSequence.h \

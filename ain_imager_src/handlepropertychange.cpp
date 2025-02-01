@@ -674,7 +674,7 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 		auto im = (preview_image &)w->m_guider_viewer->pixmapItem()->image();
 		im.set_wcs_data(ra * 15, dec, telescope_ra * 15, telescope_dec, angle, parity, scale);
 		w->m_guider_viewer->setImage(im);
-	} else if (w->m_visible_viewer != w->m_sequence_editor) {
+	} else if (w->m_visible_viewer != w->m_sequence_editor2) {
 		auto im = (preview_image &)((ImageViewer*)w->m_visible_viewer)->pixmapItem()->image();
 		// if solved from file set telescope ra and dec to solved
 		im.set_wcs_data(ra * 15, dec, ra * 15, dec, angle, parity, scale);
@@ -1582,7 +1582,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		w->set_widget_state(w->m_focusing_button, INDIGO_OK_STATE);
 		w->set_widget_state(w->m_focusing_preview_button, INDIGO_OK_STATE);
 		if (start_p->state == INDIGO_BUSY_STATE) {
-			w->m_sequence_editor->on_set_current_batch(batch_index);
+			//w->m_sequence_editor->on_set_current_batch(batch_index);
 			w->m_exposure_button->setIcon(QIcon(":resource/stop.png"));
 			w->m_seq_start_button->setIcon(QIcon(":resource/stop.png"));
 			w->set_enabled(w->m_exposure_button, true);
@@ -1616,7 +1616,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			w->m_seq_sequence_progress->setFormat("Sequence: batch %v of %m complete...");
 			indigo_debug("frames total = %d", frames_total);
 		} else if (start_p->state == INDIGO_OK_STATE) {
-			w->m_sequence_editor->on_set_current_batch(0);
+			//w->m_sequence_editor->on_set_current_batch(0);
 			w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
 			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 			w->set_enabled(w->m_exposure_button, true);
@@ -1641,7 +1641,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			w->m_seq_sequence_progress->setFormat("Sequence: Complete");
 			exposure_running = false;
 		} else {
-			w->m_sequence_editor->on_set_current_batch(0);
+			//w->m_sequence_editor->on_set_current_batch(0);
 			w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
 			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 			w->set_enabled(w->m_exposure_button, true);

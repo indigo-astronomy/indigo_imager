@@ -398,7 +398,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_guider_viewer->setBalance(conf.guider_color_balance);
 	m_guider_viewer->setVisible(false);
 
-	m_sequence_editor = new SequenceEditor();
 	m_sequence_editor2 = new IndigoSequence();
 
 	QSplitter* hSplitter = new QSplitter;
@@ -525,9 +524,9 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(m_imager_viewer, &ImageViewer::mouseRightPressRADec, this, &ImagerWindow::on_image_right_click_ra_dec);
 	connect(m_guider_viewer, &ImageViewer::mouseRightPress, this, &ImagerWindow::on_guider_image_right_click);
 
-	connect(m_sequence_editor, &SequenceEditor::sequence_updated, this, &ImagerWindow::on_sequence_updated);
-	connect(m_sequence_editor, &SequenceEditor::request_sequence, this, &ImagerWindow::on_request_sequence);
-	connect(m_sequence_editor, &SequenceEditor::sequence_name_set, this, &ImagerWindow::on_sequence_name_changed);
+	//connect(m_sequence_editor, &SequenceEditor::sequence_updated, this, &ImagerWindow::on_sequence_updated);
+	//connect(m_sequence_editor, &SequenceEditor::request_sequence, this, &ImagerWindow::on_request_sequence);
+	//connect(m_sequence_editor, &SequenceEditor::sequence_name_set, this, &ImagerWindow::on_sequence_name_changed);
 
 	connect(m_add_object_dialog, &QAddCustomObject::requestPopulate, this, &ImagerWindow::on_custom_object_populate);
 

@@ -63,7 +63,6 @@ class QIndigoServers;
 #include <QProcess>
 #include <QMovie>
 #include "focusgraph.h"
-#include "sequence_editor.h"
 #include "syncutils.h"
 #include "customobjectmodel.h"
 #include "qaddcustomobject.h"
@@ -884,7 +883,6 @@ private:
 
 	indigo_item *m_indigo_item;
 
-	SequenceEditor *m_sequence_editor;
 	IndigoSequence *m_sequence_editor2;
 
 	QString m_image_key;
