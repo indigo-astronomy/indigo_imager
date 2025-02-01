@@ -1,5 +1,7 @@
 #include "SequenceItemModel.h"
 
+//#include <QDebug>
+
 SequenceItemModel& SequenceItemModel::instance() {
 	static SequenceItemModel instance;
 	return instance;
@@ -35,7 +37,7 @@ void SequenceItemModel::initializeModel() {
 		{"select_filter_by_label", {"Select Filter", {{0, {"Filter", "QComboBox"}}}}},
 		{"set_gain", {"Set Gain", {{0, {"Value", "QSpinBox"}}}}},
 		{"set_offset", {"Set Offset", {{0, {"Value", "QSpinBox"}}}}},
-		{"set_gamma", {"Set Gamma", {{0, {"Value", "QSpinBox"}}}}},
+		//{"set_gamma", {"Set Gamma", {{0, {"Value", "QSpinBox"}}}}},
 		//{"select_program", {"Select Program", {{0, {"Name", "QComboBox"}}}}},
 		//{"select_aperture", {"Select Aperture", {{0, {"Name", "QComboBox"}}}}},
 		//{"select_shutter", {"Select Shutter", {{0, {"Name", "QComboBox"}}}}},
@@ -77,17 +79,17 @@ void SequenceItemModel::initializeModel() {
 	setNumericIncrement("wait", 0, 1.0);
 
 	// Camera settings
-	setNumericRange("set_gain", 0, 0, 1000);
+	setNumericRange("set_gain", 0, -1000, 10000);
 	setNumericIncrement("set_gain", 0, 1.0);
 
-	setNumericRange("set_offset", 0, 0, 1000);
+	setNumericRange("set_offset", 0, 0, 10000);
 	setNumericIncrement("set_offset", 0, 1.0);
 
-	setNumericRange("set_gamma", 0, 0, 100);
+	setNumericRange("set_gamma", 0, 0, 10000);
 	setNumericIncrement("set_gamma", 0, 1.0);
 
 	// Temperature control
-	setNumericRange("enable_cooler", 0, -150.0, 30.0);
+	setNumericRange("enable_cooler", 0, -200.0, 50.0);
 	setNumericIncrement("enable_cooler", 0, 0.5);
 
 	// Dithering parameters
@@ -103,34 +105,36 @@ void SequenceItemModel::initializeModel() {
 	setNumericIncrement("enable_meridian_flip", 1, 1.0);
 
 	// Capture parameters
-	setNumericRange("capture_batch", 1, -1, 65535);    // Count
+	setNumericRange("capture_batch", 0, -1, 65535);    // Count
+	setNumericIncrement("capture_batch", 0, 1.0);
+	setNumericRange("capture_batch", 1, 0, 7200); // Exposure
 	setNumericIncrement("capture_batch", 1, 1.0);
-	setNumericRange("capture_batch", 2, 0, 3600.0); // Exposure
-	setNumericIncrement("capture_batch", 2, 1.0);
 
 	// Focus parameters
-	setNumericRange("focus", 0, 0, 60.0);
+	setNumericRange("focus", 0, 0, 180.0);
 	setNumericIncrement("focus", 0, 0.1);
 
 	// Focus (continue on failure)
-	setNumericRange("focus_ignore_failure", 0, 0, 60.0);
+	setNumericRange("focus_ignore_failure", 0, 0, 180.0);
 	setNumericIncrement("focus_ignore_failure", 0, 0.1);
 
 	// Guiding parameters
-	setNumericRange("calibrate_guiding_exposure", 0, 0, 60.0);
+	setNumericRange("calibrate_guiding_exposure", 0, 0, 180.0);
 	setNumericIncrement("calibrate_guiding_exposure", 0, 0.1);
-	setNumericRange("start_guiding_exposure", 0, 0, 60.0);
+	setNumericRange("start_guiding_exposure", 0, 0, 180.0);
 	setNumericIncrement("start_guiding_exposure", 0, 0.1);
 
 	// Sync and goto
-	setNumericRange("sync_center", 0, 0, 60.0);
+	setNumericRange("sync_center", 0, 0, 180.0);
 	setNumericIncrement("sync_center", 0, 1.0);
-	setNumericRange("precise_goto", 0, 0, 60.0);
+	setNumericRange("precise_goto", 0, 0, 80.0);
 	setNumericIncrement("precise_goto", 0, 1.0);
 
 	// Repeat count
-	setNumericRange("repeat", 0, 1, 1000);
+	setNumericRange("repeat", 0, 0, 100000);
 	setNumericIncrement("repeat", 0, 1.0);
+
+	//qDebug() << "Initialized SequenceItemModel with" << widgetTypeMap.size() << "widget types";
 }
 
 const QMap<QString, SequenceItemModel::WidgetTypeInfo>& SequenceItemModel::getWidgetTypes() const {
@@ -160,6 +164,7 @@ QStringList SequenceItemModel::getComboOptions(const QString& type, int paramId)
 }
 
 void SequenceItemModel::setNumericRange(const QString& type, int paramId, double min, double max) {
+	//qDebug() << "Setting numeric range for" << type << "parameter" << paramId << "to" << min << "to" << max;
 	if (widgetTypeMap.contains(type)) {
 		if (widgetTypeMap[type].parameters.contains(paramId)) {
 			widgetTypeMap[type].parameters[paramId].numericRange = qMakePair(min, max);
@@ -178,6 +183,7 @@ QPair<double, double> SequenceItemModel::getNumericRange(const QString& type, in
 }
 
 void SequenceItemModel::setNumericIncrement(const QString& type, int paramId, double increment) {
+	//qDebug() << "Setting numeric increment for" << type << "parameter" << paramId << "to" << increment;
 	if (widgetTypeMap.contains(type)) {
 		if (widgetTypeMap[type].parameters.contains(paramId)) {
 			widgetTypeMap[type].parameters[paramId].numericIncrement = increment;
