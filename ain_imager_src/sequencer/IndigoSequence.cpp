@@ -565,42 +565,30 @@ const QVector<FunctionCall> IndigoSequence::functionCallsFromView(const QString&
 	return calls;
 }
 
-void IndigoSequence::saveSequence() {
-	// Get sequence name for default filename
-	QString defaultFileName = sequenceNameEdit->text().trimmed();
-	if (defaultFileName.isEmpty()) {
-		defaultFileName = "untitled_sequence";
+void IndigoSequence::loadScriptToView(const QString& script) {
+	IndigoSequenceParser parser;
+	QStringList validationErrors;
+
+	connect(&parser, &IndigoSequenceParser::validationError,
+		[&validationErrors](const QString& error) {
+			validationErrors.append(error);
+		});
+
+	QVector<FunctionCall> calls = parser.parse(script);
+
+	if (parser.validateCalls(calls)) {
+		viewFromFunctionCalls(calls);
+	} else {
+		QString errorMessage = tr("The sequence file contains the following errors:\n\n");
+		errorMessage += validationErrors.join("\n");
+		QMessageBox::critical(this, tr("Validation Error"), errorMessage);
 	}
-	defaultFileName += ".js";
+}
 
-	// Get user's home directory
-	QString homeDir = QDir::homePath();
-
-	// Show save dialog
-	QString fileName = QFileDialog::getSaveFileName(this,
-		tr("Save Sequence"),
-		QDir(homeDir).filePath(defaultFileName),
-		tr("JavaScript Files (*.js);;All Files (*)"));
-
-	if (fileName.isEmpty()) {
-		return;
-	}
-
-	// Generate script
+QString IndigoSequence::makeScriptFromView() const {
 	IndigoSequenceParser parser;
 	QVector<FunctionCall> calls = functionCallsFromView();
-	QString script = parser.generate(calls);
-
-	// Save to file
-	QFile file(fileName);
-	if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-		QMessageBox::critical(this, tr("Error"), tr("Could not save file: %1").arg(file.errorString()));
-		return;
-	}
-
-	QTextStream out(&file);
-	out << script;
-	file.close();
+	return parser.generate(calls);
 }
 
 void IndigoSequence::loadSequence() {
@@ -624,23 +612,38 @@ void IndigoSequence::loadSequence() {
 	QString script = in.readAll();
 	file.close();
 
-	IndigoSequenceParser parser;
-	QStringList validationErrors;
+	loadScriptToView(script);
+}
 
-	connect(&parser, &IndigoSequenceParser::validationError,
-		[&validationErrors](const QString& error) {
-			validationErrors.append(error);
-		});
-
-	QVector<FunctionCall> calls = parser.parse(script);
-
-	if (parser.validateCalls(calls)) {
-		viewFromFunctionCalls(calls);
-	} else {
-		QString errorMessage = tr("The sequence file contains the following errors:\n\n");
-		errorMessage += validationErrors.join("\n");
-		QMessageBox::critical(this, tr("Validation Error"), errorMessage);
+void IndigoSequence::saveSequence() {
+	QString defaultFileName = sequenceNameEdit->text().trimmed();
+	if (defaultFileName.isEmpty()) {
+		defaultFileName = "untitled_sequence";
 	}
+	defaultFileName += ".js";
+
+	QString homeDir = QDir::homePath();
+
+	QString fileName = QFileDialog::getSaveFileName(this,
+		tr("Save Sequence"),
+		QDir(homeDir).filePath(defaultFileName),
+		tr("JavaScript Files (*.js);;All Files (*)"));
+
+	if (fileName.isEmpty()) {
+		return;
+	}
+
+	QString script = makeScriptFromView();
+
+	QFile file(fileName);
+	if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+		QMessageBox::critical(this, tr("Error"), tr("Could not save file: %1").arg(file.errorString()));
+		return;
+	}
+
+	QTextStream out(&file);
+	out << script;
+	file.close();
 }
 
 void IndigoSequence::resizeEvent(QResizeEvent *event) {

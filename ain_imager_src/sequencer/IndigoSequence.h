@@ -33,6 +33,9 @@ public:
 	void saveSequence();
 	void loadSequence();
 
+	void loadScriptToView(const QString& script);
+	QString makeScriptFromView() const;
+
 	void setDragSourceWidget(IndigoSequenceItem* widget) { dragSourceWidget = widget; }
 	IndigoSequenceItem* getDragSourceWidget() const { return dragSourceWidget; }
 
