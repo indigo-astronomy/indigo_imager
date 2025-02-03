@@ -45,6 +45,8 @@ protected:
 	void dragMoveEvent(QDragMoveEvent *event) override;
 	void dragLeaveEvent(QDragLeaveEvent *event) override;
 	void dropEvent(QDropEvent *event) override;
+	void resizeEvent(QResizeEvent *event) override;
+	void paintEvent(QPaintEvent *event) override;
 	void showDropIndicator(int insertAt);
 	int determineInsertPosition(const QPoint &pos);
 	int getIndexOfItem(IndigoSequenceItem* item) const;
@@ -68,6 +70,7 @@ private:
 	QToolButton *m_download_sequence_button;
 	QToolButton *m_load_sequence_button;
 	QToolButton *m_save_sequence_button;
+	QLabel* overlayPrompt;
 };
 
 #endif // __INDIGOSEQUENCE_H

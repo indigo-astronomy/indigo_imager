@@ -77,6 +77,12 @@ IndigoSequence::IndigoSequence(QWidget *parent) : QWidget(parent) {
 
 	dragSourceWidget = nullptr;
 
+	// Create overlay label
+	overlayPrompt = new QLabel("Right-click to add items<br><br>Drag & drop to rearrange", this);
+	overlayPrompt->setAlignment(Qt::AlignCenter);
+	overlayPrompt->setStyleSheet("QLabel { background-color: rgba(255, 255, 255, 10); color: gray; font-size: 18px; }");
+	overlayPrompt->raise();
+
 	// Connect to model signals
 	connect(&SequenceItemModel::instance(), &SequenceItemModel::numericRangeChanged,
 			this, &IndigoSequence::onNumericRangeChanged);
@@ -84,7 +90,6 @@ IndigoSequence::IndigoSequence(QWidget *parent) : QWidget(parent) {
 			this, &IndigoSequence::onNumericIncrementChanged);
 	connect(&SequenceItemModel::instance(), &SequenceItemModel::comboOptionsChanged,
 			this, &IndigoSequence::onComboOptionsChanged);
-
 }
 
 void IndigoSequence::addItem(IndigoSequenceItem *item) {
@@ -351,7 +356,9 @@ void IndigoSequence::removeItem(IndigoSequenceItem* item) {
 	for (int i = 0; i < containerLayout->count(); ++i) {
 		QWidget* widget = containerLayout->itemAt(i)->widget();
 		if (widget == item) {
-			containerLayout->takeAt(i);
+			QLayoutItem* layoutItem = containerLayout->takeAt(i);
+			delete layoutItem->widget();
+			delete layoutItem;
 			break;
 		}
 	}
@@ -634,4 +641,14 @@ void IndigoSequence::loadSequence() {
 		errorMessage += validationErrors.join("\n");
 		QMessageBox::critical(this, tr("Validation Error"), errorMessage);
 	}
+}
+
+void IndigoSequence::resizeEvent(QResizeEvent *event) {
+	QWidget::resizeEvent(event);
+	overlayPrompt->setGeometry(scrollArea->geometry());
+}
+
+void IndigoSequence::paintEvent(QPaintEvent *event) {
+	QWidget::paintEvent(event);
+	overlayPrompt->setVisible(containerLayout->count() == 0);
 }
