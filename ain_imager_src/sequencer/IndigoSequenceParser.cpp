@@ -6,6 +6,12 @@
 #include "SequenceItemModel.h"
 #include "IndigoSequenceParser.h"
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#define QT_SKIP_EMPTY_PARTS Qt::SkipEmptyParts
+#else
+#define QT_SKIP_EMPTY_PARTS QString::SkipEmptyParts
+#endif
+
 
 QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
 	// Remove comments
@@ -41,7 +47,7 @@ QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
 			call.objectName = match.captured(1);
 			call.functionName = match.captured(2);
 			QString params = match.captured(3);
-			call.parameters = params.split(',', Qt::SkipEmptyParts);
+			call.parameters = params.split(',', QT_SKIP_EMPTY_PARTS);
 			for (QString& param : call.parameters) {
 				param = param.trimmed();
 			}
