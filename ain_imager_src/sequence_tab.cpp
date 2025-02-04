@@ -31,6 +31,12 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	sequence_frame->setContentsMargins(0, 0, 0, 0);
 
 	int row = 0;
+
+	m_agent_scripting_select = new QComboBox();
+	sequence_frame_layout->addWidget(m_agent_scripting_select, row, 0, 1, 4);
+	connect(m_agent_imager_select, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ImagerWindow::on_scripting_agent_selected);
+
+	row++;
 	QLabel *label = new QLabel("Image preview:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	sequence_frame_layout->addWidget(label, row, 0, 1, 4);
@@ -112,6 +118,20 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	m_seq_esimated_duration = new QLabel(QString("Sequence duration: ") + indigo_dtos(0, "%02d:%02d:%02.0f"));
 	m_seq_esimated_duration->setToolTip("This is approximate sequence duration as download, focusing, filter change etc., times are unpredicatble.");
 	sequence_frame_layout->addWidget(m_seq_esimated_duration, row, 0, 1, 4);
+}
+
+void ImagerWindow::on_scripting_agent_selected(int index) {
+	Q_UNUSED(index);
+	QtConcurrent::run([=]() {
+		// Clear controls
+		indigo_property *property = (indigo_property*)malloc(sizeof(indigo_property));
+		memset(property, 0, sizeof(indigo_property));
+		get_selected_scripting_agent(property->device);
+		property_delete(property, nullptr);
+		free(property);
+
+		indigo_enumerate_properties(nullptr, &INDIGO_ALL_PROPERTIES);
+	});
 }
 
 void ImagerWindow::on_sequence_updated() {

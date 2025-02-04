@@ -2304,6 +2304,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	static char selected_mount_agent[INDIGO_VALUE_SIZE];
 	static char selected_solver_agent[INDIGO_VALUE_SIZE];
 	static char selected_config_agent[INDIGO_VALUE_SIZE];
+	static char selected_scripting_agent[INDIGO_VALUE_SIZE];
 	static pthread_mutex_t l_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 	selected_agent[0] = '\0';
@@ -2311,6 +2312,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	selected_mount_agent[0] = '\0';
 	selected_solver_agent[0] = '\0';
 	selected_config_agent[0] = '\0';
+	selected_scripting_agent[0] = '\0';
 
 	indigo_debug("[PROPERTY DEFINE] %s(): %s.%s\n", __FUNCTION__, property->device, property->name);
 
@@ -2324,6 +2326,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			bool mount_not_loaded = true;
 			bool solver_not_loaded = true;
 			bool config_not_loaded = true;
+			bool scripting_not_loaded = true;
 
 			indigo_property *p = properties.get(property->device, "DRIVERS");
 			if (p) {
@@ -2332,6 +2335,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 				mount_not_loaded = !indigo_get_switch(p, "indigo_agent_mount");
 				solver_not_loaded = !indigo_get_switch(p, "indigo_agent_astrometry");
 				config_not_loaded = !indigo_get_switch(p, "indigo_agent_config");
+				scripting_not_loaded = !indigo_get_switch(p, "indigo_agent_scripting");
 			}
 			char *device_name = (char*)malloc(INDIGO_NAME_SIZE);
 			strncpy(device_name, property->device, INDIGO_NAME_SIZE);
@@ -2360,6 +2364,11 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 				if (config_not_loaded) {
 					static const char *items[] = { "DRIVER" };
 					static const char *values[] = { "indigo_agent_config" };
+					indigo_change_text_property(NULL, device_name, "LOAD", 1, items, values);
+				}
+				if (scripting_not_loaded) {
+					static const char *items[] = { "DRIVER" };
+					static const char *values[] = { "indigo_agent_scripting" };
 					indigo_change_text_property(NULL, device_name, "LOAD", 1, items, values);
 				}
 				pthread_mutex_unlock(&l_mutex);
@@ -2399,6 +2408,10 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		QString name = QString(property->device);
 		add_combobox_item(m_agent_solver_select, name, name);
 	}
+	if(!strncmp(property->device, "Scripting Agent", 15)) {
+		QString name = QString(property->device);
+		add_combobox_item(m_agent_scripting_select, name, name);
+	}
 	if ((!strncmp(property->device, "Configuration agent", 19) || !strncmp(property->device, "Configuration Agent", 19)) &&
 	   (!strcmp(property->name, AGENT_CONFIG_SETUP_PROPERTY_NAME))) {
 		ConfigItem configItem;
@@ -2410,6 +2423,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		(!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12)) &&
 		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11)) &&
 		(!get_selected_solver_agent(selected_solver_agent) || strncmp(property->device, "Astrometry Agent", 16)) &&
+		(!get_selected_scripting_agent(selected_scripting_agent) || strncmp(property->device, "Scripting Agent", 15)) &&
 		!get_selected_config_agent(selected_config_agent) &&
 		strncmp(property->device, "Configuration agent", 19) &&
 		strncmp(property->device, "Configuration Agent", 19)
@@ -2845,6 +2859,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	char selected_mount_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_solver_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_config_agent[INDIGO_VALUE_SIZE] = {0};
+	char selected_scripting_agent[INDIGO_VALUE_SIZE] = {0};
 
 	indigo_debug("[PROPERTY CHANGE] %s(): %s.%s\n", __FUNCTION__, property->device, property->name);
 
@@ -2859,6 +2874,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		(!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12)) &&
 		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11)) &&
 		(!get_selected_solver_agent(selected_solver_agent) || strncmp(property->device, "Astrometry Agent", 16)) &&
+		(!get_selected_scripting_agent(selected_scripting_agent) || strncmp(property->device, "Scripting Agent", 15)) &&
 		!get_selected_config_agent(selected_config_agent) &&
 		strncmp(property->device, "Configuration agent", 19) &&
 		strncmp(property->device, "Configuration Agent", 19)
@@ -3144,6 +3160,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	char selected_mount_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_solver_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_config_agent[INDIGO_VALUE_SIZE] = {0};
+	char selected_scripting_agent[INDIGO_VALUE_SIZE] = {0};
 
 	indigo_debug("[REMOVE REMOVE REMOVE REMOVE REMOVE] %s.%s\n", property->device, property->name);
 	if (
@@ -3151,6 +3168,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		(!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12)) &&
 		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11)) &&
 		(!get_selected_solver_agent(selected_solver_agent) || strncmp(property->device, "Astrometry Agent", 16)) &&
+		(!get_selected_scripting_agent(selected_scripting_agent) || strncmp(property->device, "Scripting Agent", 15)) &&
 		!get_selected_config_agent(selected_config_agent) &&
 		strncmp(property->device, "Configuration agent", 19) &&
 		strncmp(property->device, "Configuration Agent", 19)
@@ -3816,6 +3834,7 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 		(strncmp(property->device, "Astrometry Agent", 16)) &&
 		(strncmp(property->device, "Configuration agent", 19)) &&
 		(strncmp(property->device, "Configuration Agent", 19)) &&
+		(strncmp(property->device, "Scripting Agent", 15)) &&
 		(strncmp(property->device, "Server", 6))
 	) {
 		properties.remove(property);
@@ -3875,12 +3894,26 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 			remove_combobox_item(m_agent_solver_select, index);
 			if (selected_index == index) {
 				set_combobox_current_index(m_agent_solver_select, 0);
-				on_mount_agent_selected(0);
+				on_solver_agent_selected(0);
 			}
 			indigo_debug("[REMOVE solver agent] %s\n", name.toUtf8().data());
 		} else {
 			indigo_debug("[NOT FOUND solver agent] %s\n", name.toUtf8().data());
 		}
+
+		selected_index = m_agent_scripting_select->currentIndex();
+		index = m_agent_scripting_select->findText(name);
+		if (index >= 0) {
+			remove_combobox_item(m_agent_scripting_select, index);
+			if (selected_index == index) {
+				set_combobox_current_index(m_agent_scripting_select, 0);
+				on_scripting_agent_selected(0);
+			}
+			indigo_debug("[REMOVE scripting agent] %s\n", name.toUtf8().data());
+		} else {
+			indigo_debug("[NOT FOUND scripting agent] %s\n", name.toUtf8().data());
+		}
+
 	}
 	properties.remove(property);
 	free(property);

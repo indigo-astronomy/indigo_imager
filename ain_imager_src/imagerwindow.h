@@ -110,6 +110,13 @@ public:
 		return true;
 	};
 
+	bool get_selected_scripting_agent(char * selected_agent) const {
+		if (!selected_agent || !m_agent_scripting_select) return false;
+		strncpy(selected_agent, m_agent_scripting_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+		indigo_debug("SELECTED SCRIPTING AGENT = %s", selected_agent);
+		return true;
+	};
+
 	void play_sound(int alarm);
 
 	void property_delete(indigo_property* property, char *message);
@@ -295,6 +302,8 @@ public slots:
 	void on_keep_image_on_server(int state);
 	void on_sync_remote_files(bool clicked);
 	void on_remove_synced_remote_files(bool clicked);
+
+	void on_scripting_agent_selected(int index);
 
 	void on_focus_start_stop(bool clicked);
 	void on_focus_preview_start_stop(bool clicked);
@@ -635,6 +644,7 @@ private:
 	QString m_frame_type;
 
 	// Sequence tabbar
+	QComboBox *m_agent_scripting_select;
 	QProgressBar *m_seq_exposure_progress;
 	QProgressBar *m_seq_batch_progress;
 	QProgressBar *m_seq_sequence_progress;
