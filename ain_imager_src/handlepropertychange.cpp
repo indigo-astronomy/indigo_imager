@@ -188,7 +188,7 @@ void reset_filter_names(ImagerWindow *w, indigo_property *property) {
 		filters.append(filter_name);
 		w->add_combobox_item(w->m_filter_select, filter_name, QString(property->items[i].name));
 	}
-	SequenceItemModel::instance().setComboOptions("select_filter_by_label", 0, filters);
+	SequenceItemModel::instance().setComboOptions("select_filter", 0, filters);
 }
 
 void set_filter_selected(ImagerWindow *w, indigo_property *property) {
@@ -2495,15 +2495,15 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_frame_size_select);
-		add_items_to_sequence_model(property, "select_camera_mode_by_label", 0);
+		add_items_to_sequence_model(property, "select_camera_mode", 0);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_IMAGE_FORMAT_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_frame_format_select);
-		add_items_to_sequence_model(property, "select_image_format_by_label", 0);
+		add_items_to_sequence_model(property, "select_image_format", 0);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_TYPE_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_frame_type_select);
-		add_items_to_sequence_model(property, "select_frame_type_by_label", 0);
+		add_items_to_sequence_model(property, "select_frame_type", 0);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {
 		update_agent_process_features(this, property);
@@ -3248,21 +3248,21 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		clear_combobox(m_frame_size_select);
 
-		SequenceItemModel::instance().clearComboOptions("select_camera_mode_by_label", 0);
+		SequenceItemModel::instance().clearComboOptions("select_camera_mode", 0);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_IMAGE_FORMAT_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		clear_combobox(m_frame_format_select);
 
-		SequenceItemModel::instance().clearComboOptions("select_image_format_by_label", 0);
+		SequenceItemModel::instance().clearComboOptions("select_image_format", 0);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_TYPE_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		clear_combobox(m_frame_type_select);
 
-		SequenceItemModel::instance().clearComboOptions("select_frame_type_by_label", 0);
+		SequenceItemModel::instance().clearComboOptions("select_frame_type", 0);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
@@ -3313,7 +3313,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		clear_combobox(m_filter_select);
 
-		SequenceItemModel::instance().clearComboOptions("select_filter_by_label", 0);
+		SequenceItemModel::instance().clearComboOptions("select_filter", 0);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
