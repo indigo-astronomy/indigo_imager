@@ -69,8 +69,8 @@ void SequenceItemModel::initializeModel() {
 	};
 
 	// Set combo options
-	setComboOptions("select_frame_type_by_label", 0, {"Light", "Bias", "Dark", "Flat", "Dark Flat"});
-	setComboOptions("select_image_format_by_label", 0, {"FITS format" , "XISF format", "Raw Data", "JPEG format", "TIFF format", "PNG format"});
+	setComboOptions("select_frame_type", 0, {"Light", "Bias", "Dark", "Flat", "Dark Flat"});
+	setComboOptions("select_image_format", 0, {"FITS format" , "XISF format", "Raw Data", "JPEG format", "TIFF format", "PNG format"});
 
 	// Set default ranges and increments
 
