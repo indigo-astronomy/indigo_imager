@@ -80,7 +80,7 @@ IndigoSequence::IndigoSequence(QWidget *parent) : QWidget(parent) {
 	// Create overlay label
 	overlayPrompt = new QLabel("Right-click to add items<br><br>Drag & drop to rearrange", this);
 	overlayPrompt->setAlignment(Qt::AlignCenter);
-	overlayPrompt->setStyleSheet("QLabel { background-color: rgba(255, 255, 255, 10); color: gray; font-size: 18px; }");
+	overlayPrompt->setStyleSheet("QLabel { background-color: rgba(255, 255, 255, 10); color: gray; font-size: 20px; }");
 	overlayPrompt->raise();
 
 	// Connect to model signals
