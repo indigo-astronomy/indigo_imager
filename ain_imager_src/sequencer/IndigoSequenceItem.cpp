@@ -26,7 +26,7 @@ void IndigoSequenceItem::setupUI() {
 	frame->setFrameStyle(QFrame::Box | QFrame::Plain);
 	frame->setLineWidth(1);
 	frame->setObjectName("IndigoSequenceFrame");
-	if (type == "repeat") {
+	if (type == SC_REPEAT) {
 		//frame->setStyleSheet("QWidget#IndigoSequenceFrame { border: 1px solid #303030; }");
 	} else {
 		frame->setStyleSheet("QWidget#IndigoSequenceFrame { background-color: #252525; border: 1px solid #272727; }");
@@ -91,7 +91,7 @@ void IndigoSequenceItem::setupUI() {
 	outerLayout->setSpacing(2);
 	outerLayout->setAlignment(Qt::AlignTop);
 
-	if (type == "repeat") {
+	if (type == SC_REPEAT) {
 		repeatLayout = new QVBoxLayout();
 		repeatLayout->setSpacing(5);
 		repeatLayout->setContentsMargins(30, 5, 0, 5);
@@ -210,7 +210,7 @@ void IndigoSequenceItem::addInputWidget(const QString &paramName, const ParamWid
 }
 
 void IndigoSequenceItem::addItem(IndigoSequenceItem *item) {
-	if (type == "repeat" && repeatLayout) {
+	if (type == SC_REPEAT && repeatLayout) {
 		repeatLayout->addWidget(item);
 	}
 }
@@ -317,7 +317,7 @@ void IndigoSequenceItem::mousePressEvent(QMouseEvent *event) {
 		}
 		dataStream << parameters;
 
-		if (type == "repeat") {
+		if (type == SC_REPEAT) {
 			int nestedItemCount = repeatLayout->count();
 			dataStream << nestedItemCount;
 
@@ -355,7 +355,7 @@ void IndigoSequenceItem::mousePressEvent(QMouseEvent *event) {
 }
 
 void IndigoSequenceItem::clearItems() {
-	if (type == "repeat" && repeatLayout) {
+	if (type == SC_REPEAT && repeatLayout) {
 		while (repeatLayout->count() > 0) {
 			QLayoutItem* item = repeatLayout->takeAt(0);
 			if (item->widget()) {
@@ -367,14 +367,14 @@ void IndigoSequenceItem::clearItems() {
 }
 
 void IndigoSequenceItem::dragEnterEvent(QDragEnterEvent *event) {
-	if (type == "repeat" && event->mimeData()->hasFormat("application/x-indigosequenceitem")) {
+	if (type == SC_REPEAT && event->mimeData()->hasFormat("application/x-indigosequenceitem")) {
 		QByteArray itemData = event->mimeData()->data("application/x-indigosequenceitem");
 		QDataStream dataStream(&itemData, QIODevice::ReadOnly);
 		QString draggedType;
 		dataStream >> draggedType;
 
 		// Check if this would exceed nesting limit
-		if (draggedType == "repeat" && getNestingLevel() >= 0) {
+		if (draggedType == SC_REPEAT && getNestingLevel() >= 0) {
 			event->ignore();
 			return;
 		}
@@ -384,7 +384,7 @@ void IndigoSequenceItem::dragEnterEvent(QDragEnterEvent *event) {
 }
 
 void IndigoSequenceItem::dragMoveEvent(QDragMoveEvent *event) {
-	if (type == "repeat" && event->mimeData()->hasFormat("application/x-indigosequenceitem")) {
+	if (type == SC_REPEAT && event->mimeData()->hasFormat("application/x-indigosequenceitem")) {
 		event->acceptProposedAction();
 		int insertAt = determineInsertPosition(event->pos());
 		showDropIndicator(insertAt);
@@ -392,7 +392,7 @@ void IndigoSequenceItem::dragMoveEvent(QDragMoveEvent *event) {
 }
 
 void IndigoSequenceItem::dragLeaveEvent(QDragLeaveEvent *event) {
-	if (type == "repeat") {
+	if (type == SC_REPEAT) {
 		dropIndicator->setVisible(false);
 	}
 	QWidget::dragLeaveEvent(event);
@@ -410,14 +410,14 @@ bool IndigoSequenceItem::isAncestorOf(QWidget* possibleChild) const {
 }
 
 void IndigoSequenceItem::dropEvent(QDropEvent *event) {
-	if (type == "repeat" && event->mimeData()->hasFormat("application/x-indigosequenceitem")) {
+	if (type == SC_REPEAT && event->mimeData()->hasFormat("application/x-indigosequenceitem")) {
 		// Check nesting level
 		QByteArray itemData = event->mimeData()->data("application/x-indigosequenceitem");
 		QDataStream dataStream(&itemData, QIODevice::ReadOnly);
 		QString draggedType;
 		dataStream >> draggedType;
 
-		if (draggedType == "repeat" && getNestingLevel() >= 0) {
+		if (draggedType == SC_REPEAT && getNestingLevel() >= 0) {
 			event->ignore();
 			return;
 		}
@@ -539,7 +539,7 @@ int IndigoSequenceItem::getNestingLevel() const {
 	QWidget* parent = parentWidget();
 	while (parent) {
 		if (auto repeatItem = qobject_cast<IndigoSequenceItem*>(parent)) {
-			if (repeatItem->getType() == "repeat") {
+			if (repeatItem->getType() == SC_REPEAT) {
 				level++;
 			}
 		}
@@ -568,7 +568,7 @@ void IndigoSequenceItem::hideDragOverlay() {
 }
 
 void IndigoSequenceItem::contextMenuEvent(QContextMenuEvent *event) {
-	if (type != "repeat") {
+	if (type != SC_REPEAT) {
 		QWidget::contextMenuEvent(event);
 		return;
 	}
@@ -598,7 +598,7 @@ void IndigoSequenceItem::contextMenuEvent(QContextMenuEvent *event) {
 		QAction *action = new QAction(actionText, &contextMenu);
 		action->setData(it.key());
 	
-		if (it.key() == "repeat" && getNestingLevel() >= 0) {
+		if (it.key() == SC_REPEAT && getNestingLevel() >= 0) {
 			action->setEnabled(false);
 		}
 
@@ -665,7 +665,7 @@ void IndigoSequenceItem::updateComboOptions(int paramId, const QStringList& opti
 }
 
 void IndigoSequenceItem::updateNestedNumericRanges(const QString& type, int paramId, double min, double max) {
-	if (this->type == "repeat") {
+	if (this->type == SC_REPEAT) {
 		for (int i = 0; i < repeatLayout->count(); ++i) {
 			if (IndigoSequenceItem* item = qobject_cast<IndigoSequenceItem*>(repeatLayout->itemAt(i)->widget())) {
 				if (item->getType() == type) {
@@ -678,7 +678,7 @@ void IndigoSequenceItem::updateNestedNumericRanges(const QString& type, int para
 }
 
 void IndigoSequenceItem::updateNestedNumericIncrements(const QString& type, int paramId, double increment) {
-	if (this->type == "repeat") {
+	if (this->type == SC_REPEAT) {
 		for (int i = 0; i < repeatLayout->count(); ++i) {
 			if (IndigoSequenceItem* item = qobject_cast<IndigoSequenceItem*>(repeatLayout->itemAt(i)->widget())) {
 				if (item->getType() == type) {
@@ -691,7 +691,7 @@ void IndigoSequenceItem::updateNestedNumericIncrements(const QString& type, int 
 }
 
 void IndigoSequenceItem::updateNestedComboOptions(const QString& type, int paramId, const QStringList& options) {
-	if (this->type == "repeat") {
+	if (this->type == SC_REPEAT) {
 		for (int i = 0; i < repeatLayout->count(); ++i) {
 			if (IndigoSequenceItem* item = qobject_cast<IndigoSequenceItem*>(repeatLayout->itemAt(i)->widget())) {
 				if (item->getType() == type) {
@@ -720,7 +720,7 @@ void IndigoSequenceItem::setOk() {
 }
 
 void IndigoSequenceItem::setIteration(int count) {
-    if (type == "repeat" && iterationLabel) {
+    if (type == SC_REPEAT && iterationLabel) {
         iterationLabel->setText(QString("Iteration: %1").arg(count));
     }
 }

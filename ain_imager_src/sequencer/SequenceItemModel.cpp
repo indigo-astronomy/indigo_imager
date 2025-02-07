@@ -14,125 +14,122 @@ SequenceItemModel::SequenceItemModel() {
 void SequenceItemModel::initializeModel() {
 	// Initialize with existing types
 	widgetTypeMap = {
-		{"wait", {"Wait", {{0, {"Seconds", SpinBox}}}}},
-		{"send_message", {"Send Message", {{0, {"Message", LineEdit}}}}},
-		{"load_config", {"Load Config", {{0, {"Name", ComboBox}}}}},
-		{"load_driver", {"Load Driver", {{0, {"Name", LineEdit}}}}},
-		{"unload_driver", {"Unload Driver", {{0, {"Name", LineEdit}}}}},
+		{SC_WAIT, {"Wait", {{0, {"Seconds", SpinBox}}}}},
+		{SC_SEND_MESSAGE, {"Send Message", {{0, {"Message", LineEdit}}}}},
+		{SC_LOAD_CONFIG, {"Load Config", {{0, {"Name", ComboBox}}}}},
+		{SC_LOAD_DRIVER, {"Load Driver", {{0, {"Name", LineEdit}}}}},
+		{SC_UNLOAD_DRIVER, {"Unload Driver", {{0, {"Name", LineEdit}}}}},
 		//{"select_imager_agent", {"Select Imager Agent", {{0, {"Agent", "QComboBox"}}}}},
 		//{"select_mount_agent", {"Select Mount Agent", {{0, {"Agent", "QComboBox"}}}}},
 		//{"select_guider_agent", {"Select Guider Agent", {{0, {"Agent", "QComboBox"}}}}},
-		{"select_imager_camera", {"Select Imager Camera", {{0, {"Camera", ComboBox}}}}},
-		{"select_filter_wheel", {"Select Filter Wheel", {{0, {"Wheel", ComboBox}}}}},
-		{"select_focuser", {"Select Focuser", {{0, {"Focuser", ComboBox}}}}},
-		{"select_rotator", {"Select Rotator", {{0, {"Rotator", ComboBox}}}}},
-		{"select_mount", {"Select Mount", {{0, {"Mount", ComboBox}}}}},
+		{SC_SELECT_IMAGER_CAMERA, {"Select Imager Camera", {{0, {"Camera", ComboBox}}}}},
+		{SC_SELECT_FILTER_WHEEL, {"Select Filter Wheel", {{0, {"Wheel", ComboBox}}}}},
+		{SC_SELECT_FOCUSER, {"Select Focuser", {{0, {"Focuser", ComboBox}}}}},
+		{SC_SELECT_ROTATOR, {"Select Rotator", {{0, {"Rotator", ComboBox}}}}},
+		{SC_SELECT_MOUNT, {"Select Mount", {{0, {"Mount", ComboBox}}}}},
 		//{"select_dome", {"Select Dome", {{0, {"Dome", "QComboBox"}}}}},
-		{"select_gps", {"Select GPS", {{0, {"GPS", ComboBox}}}}},
-		{"select_guider_camera", {"Select Guider Camera", {{0, {"Camera", ComboBox}}}}},
-		{"select_guider", {"Select Guider", {{0, {"Guider", ComboBox}}}}},
-		{"select_frame_type", {"Select Frame Type", {{0, {"Frame Type", ComboBox}}}}},
-		{"select_image_format", {"Select Image Format", {{0, {"Image Format", ComboBox}}}}},
-		{"select_camera_mode", {"Select Camera Mode", {{0, {"Camera Mode", ComboBox}}}}},
-		{"select_filter", {"Select Filter", {{0, {"Filter", ComboBox}}}}},
-		{"set_gain", {"Set Gain", {{0, {"Value", SpinBox}}}}},
-		{"set_offset", {"Set Offset", {{0, {"Value", SpinBox}}}}},
+		{SC_SELECT_GPS, {"Select GPS", {{0, {"GPS", ComboBox}}}}},
+		{SC_SELECT_GUIDER_CAMERA, {"Select Guider Camera", {{0, {"Camera", ComboBox}}}}},
+		{SC_SELECT_GUIDER, {"Select Guider", {{0, {"Guider", ComboBox}}}}},
+		{SC_SELECT_FRAME_TYPE, {"Select Frame Type", {{0, {"Frame Type", ComboBox}}}}},
+		{SC_SELECT_IMAGE_FORMAT, {"Select Image Format", {{0, {"Image Format", ComboBox}}}}},
+		{SC_SELECT_CAMERA_MODE, {"Select Camera Mode", {{0, {"Camera Mode", ComboBox}}}}},
+		{SC_SELECT_FILTER, {"Select Filter", {{0, {"Filter", ComboBox}}}}},
+		{SC_SET_GAIN, {"Set Gain", {{0, {"Value", SpinBox}}}}},
+		{SC_SET_OFFSET, {"Set Offset", {{0, {"Value", SpinBox}}}}},
 		//{"set_gamma", {"Set Gamma", {{0, {"Value", "QSpinBox"}}}}},
 		//{"select_program", {"Select Program", {{0, {"Name", "QComboBox"}}}}},
 		//{"select_aperture", {"Select Aperture", {{0, {"Name", "QComboBox"}}}}},
 		//{"select_shutter", {"Select Shutter", {{0, {"Name", "QComboBox"}}}}},
 		//{"select_iso", {"Select ISO", {{0, {"Name", "QComboBox"}}}}},
-		{"enable_cooler", {"Enable Cooler", {{0, {"Temperature (°C)", DoubleSpinBox}}}}},
-		{"disable_cooler", {"Disable Cooler", {}}},
-		{"enable_dithering", {"Enable Dithering", {{0, {"Amount (px)", SpinBox}}, {1, {"Time Limit (s)", SpinBox}}, {2, {"Skip Frames", SpinBox}}}}},
-		{"disable_dithering", {"Disable Dithering", {}}},
-		{"enable_meridian_flip", {"Enable Meridian Flip", {{0, {"Use Solver", CheckBox}}, {1, {"Time", SpinBox}}}}},
-		{"disable_meridian_flip", {"Disable Meridian Flip", {}}},
-		{"set_directory", {"Set Directory", {{0, {"Directory", LineEdit}}}}},
-		{"set_object_name", {"Set Object Name", {{0, {"Name", LineEdit}}}}},
-		{"capture_batch", {"Capture Batch", {{0, {"Count", SpinBox}}, {1, {"Exposure (s)", DoubleSpinBox}}}}},
-		{"focus", {"Focus", {{0, {"Exposure (s)", DoubleSpinBox}}}}},
-		{"focus_ignore_failure", {"Focus (continue on failure)", {{0, {"Exposure (s)", DoubleSpinBox}}}}},
-		{"clear_focus_selection", {"Clear Focus Selection", {}}},
-		{"park", {"Park", {}}},
-		{"home", {"Home", {}}},
-		{"unpark", {"Unpark", {}}},
-		{"slew", {"Slew", {{0, {"RA", LineEditSG_RA}}, {1, {"Dec", LineEditSG_DEC}}}}},
-		{"wait_for_gps", {"Wait for GPS", {}}},
-		{"calibrate_guiding", {"Calibrate Guiding", {{0, {"Exposure (s)", DoubleSpinBox}}}}},
-		{"start_guiding", {"Start Guiding", {{0, {"Exposure (s)", DoubleSpinBox}}}}},
-		{"stop_guiding", {"Stop Guiding", {}}},
-		{"clear_guider_selection", {"Clear Guider Selection", {}}},
-		{"sync_center", {"Sync Center", {{0, {"Exposure (s)", DoubleSpinBox}}}}},
-		{"precise_goto", {"Precise Goto", {{0, {"Exposure (s)", DoubleSpinBox}}, {1, {"RA", LineEditSG_RA}}, {2, {"Dec", LineEditSG_DEC}}}}},
-		{"repeat", {"Repeat", {{0, {"Count", SpinBox}}}}}
+		{SC_ENABLE_COOLER, {"Enable Cooler", {{0, {"Temperature (°C)", DoubleSpinBox}}}}},
+		{SC_DISABLE_COOLER, {"Disable Cooler", {}}},
+		{SC_ENABLE_DITHERING, {"Enable Dithering", {{0, {"Amount (px)", SpinBox}}, {1, {"Time Limit (s)", SpinBox}}, {2, {"Skip Frames", SpinBox}}}}},
+		{SC_DISABLE_DITHERING, {"Disable Dithering", {}}},
+		{SC_ENABLE_MERIDIAN_FLIP, {"Enable Meridian Flip", {{0, {"Use Solver", CheckBox}}, {1, {"Time", SpinBox}}}}},
+		{SC_DISABLE_MERIDIAN_FLIP, {"Disable Meridian Flip", {}}},
+		{SC_SET_DIRECTORY, {"Set Directory", {{0, {"Directory", LineEdit}}}}},
+		{SC_SET_OBJECT_NAME, {"Set Object Name", {{0, {"Name", LineEdit}}}}},
+		{SC_CAPTURE_BATCH, {"Capture Batch", {{0, {"Count", SpinBox}}, {1, {"Exposure (s)", DoubleSpinBox}}}}},
+		{SC_FOCUS, {"Focus", {{0, {"Exposure (s)", DoubleSpinBox}}}}},
+		{SC_FOCUS_IGNORE_FAILURE, {"Focus (continue on failure)", {{0, {"Exposure (s)", DoubleSpinBox}}}}},
+		{SC_CLEAR_FOCUS_SELECTION, {"Clear Focus Selection", {}}},
+		{SC_PARK, {"Park", {}}},
+		{SC_HOME, {"Home", {}}},
+		{SC_UNPARK, {"Unpark", {}}},
+		{SC_SLEW, {"Slew", {{0, {"RA", LineEditSG_RA}}, {1, {"Dec", LineEditSG_DEC}}}}},
+		{SC_WAIT_FOR_GPS, {"Wait for GPS", {}}},
+		{SC_CALIBRATE_GUIDING, {"Calibrate Guiding", {{0, {"Exposure (s)", DoubleSpinBox}}}}},
+		{SC_START_GUIDING, {"Start Guiding", {{0, {"Exposure (s)", DoubleSpinBox}}}}},
+		{SC_STOP_GUIDING, {"Stop Guiding", {}}},
+		{SC_CLEAR_GUIDER_SELECTION, {"Clear Guider Selection", {}}},
+		{SC_SYNC_CENTER, {"Sync Center", {{0, {"Exposure (s)", DoubleSpinBox}}}}},
+		{SC_PRECISE_GOTO, {"Precise Goto", {{0, {"Exposure (s)", DoubleSpinBox}}, {1, {"RA", LineEditSG_RA}}, {2, {"Dec", LineEditSG_DEC}}}}},
+		{SC_REPEAT, {"Repeat", {{0, {"Count", SpinBox}}}}}
 	};
 
 	// Set combo options
-	setComboOptions("select_frame_type", 0, {"Light", "Bias", "Dark", "Flat", "Dark Flat"});
-	setComboOptions("select_image_format", 0, {"FITS format" , "XISF format", "Raw Data", "JPEG format", "TIFF format", "PNG format"});
+	setComboOptions(SC_SELECT_FRAME_TYPE, 0, {"Light", "Bias", "Dark", "Flat", "Dark Flat"});
+	setComboOptions(SC_SELECT_IMAGE_FORMAT, 0, {"FITS format" , "XISF format", "Raw Data", "JPEG format", "TIFF format", "PNG format"});
 
 	// Set default ranges and increments
 
 	// Time-related parameters
-	setNumericRange("wait", 0, 0, 3600);
-	setNumericIncrement("wait", 0, 1.0);
+	setNumericRange(SC_WAIT, 0, 0, 3600);
+	setNumericIncrement(SC_WAIT, 0, 1.0);
 
 	// Camera settings
-	setNumericRange("set_gain", 0, -1000, 10000);
-	setNumericIncrement("set_gain", 0, 1.0);
+	setNumericRange(SC_SET_GAIN, 0, -1000, 10000);
+	setNumericIncrement(SC_SET_GAIN, 0, 1.0);
 
-	setNumericRange("set_offset", 0, 0, 10000);
-	setNumericIncrement("set_offset", 0, 1.0);
-
-	setNumericRange("set_gamma", 0, 0, 10000);
-	setNumericIncrement("set_gamma", 0, 1.0);
+	setNumericRange(SC_SET_OFFSET, 0, 0, 10000);
+	setNumericIncrement(SC_SET_OFFSET, 0, 1.0);
 
 	// Temperature control
-	setNumericRange("enable_cooler", 0, -200.0, 50.0);
-	setNumericIncrement("enable_cooler", 0, 0.5);
+	setNumericRange(SC_ENABLE_COOLER, 0, -200.0, 50.0);
+	setNumericIncrement(SC_ENABLE_COOLER, 0, 0.5);
 
 	// Dithering parameters
-	setNumericRange("enable_dithering", 0, 0, 15);  // Amount
-	setNumericIncrement("enable_dithering", 0, 1.0);
-	setNumericRange("enable_dithering", 1, 0, 360); // Time limit
-	setNumericIncrement("enable_dithering", 1, 1.0);
-	setNumericRange("enable_dithering", 2, 0, 10);  // Skip frames
-	setNumericIncrement("enable_dithering", 2, 1.0);
+	setNumericRange(SC_ENABLE_DITHERING, 0, 0, 15);  // Amount
+	setNumericIncrement(SC_ENABLE_DITHERING, 0, 1.0);
+	setNumericRange(SC_ENABLE_DITHERING, 1, 0, 360); // Time limit
+	setNumericIncrement(SC_ENABLE_DITHERING, 1, 1.0);
+	setNumericRange(SC_ENABLE_DITHERING, 2, 0, 10);  // Skip frames
+	setNumericIncrement(SC_ENABLE_DITHERING, 2, 1.0);
 
 	// Meridian flip
-	setNumericRange("enable_meridian_flip", 1, 0, 3600);
-	setNumericIncrement("enable_meridian_flip", 1, 1.0);
+	setNumericRange(SC_ENABLE_MERIDIAN_FLIP, 1, 0, 3600);
+	setNumericIncrement(SC_ENABLE_MERIDIAN_FLIP, 1, 1.0);
 
 	// Capture parameters
-	setNumericRange("capture_batch", 0, -1, 65535);    // Count
-	setNumericIncrement("capture_batch", 0, 1.0);
-	setNumericRange("capture_batch", 1, 0, 7200); // Exposure
-	setNumericIncrement("capture_batch", 1, 1.0);
+	setNumericRange(SC_CAPTURE_BATCH, 0, -1, 65535);    // Count
+	setNumericIncrement(SC_CAPTURE_BATCH, 0, 1.0);
+	setNumericRange(SC_CAPTURE_BATCH, 1, 0, 7200); // Exposure
+	setNumericIncrement(SC_CAPTURE_BATCH, 1, 1.0);
 
 	// Focus parameters
-	setNumericRange("focus", 0, 0, 180.0);
-	setNumericIncrement("focus", 0, 0.1);
+	setNumericRange(SC_FOCUS, 0, 0, 180.0);
+	setNumericIncrement(SC_FOCUS, 0, 0.1);
 
 	// Focus (continue on failure)
-	setNumericRange("focus_ignore_failure", 0, 0, 180.0);
-	setNumericIncrement("focus_ignore_failure", 0, 0.1);
+	setNumericRange(SC_FOCUS_IGNORE_FAILURE, 0, 0, 180.0);
+	setNumericIncrement(SC_FOCUS_IGNORE_FAILURE, 0, 0.1);
 
 	// Guiding parameters
-	setNumericRange("calibrate_guiding_exposure", 0, 0, 180.0);
-	setNumericIncrement("calibrate_guiding_exposure", 0, 0.1);
-	setNumericRange("start_guiding_exposure", 0, 0, 180.0);
-	setNumericIncrement("start_guiding_exposure", 0, 0.1);
+	setNumericRange(SC_CALIBRATE_GUIDING, 0, 0, 180.0);
+	setNumericIncrement(SC_CALIBRATE_GUIDING, 0, 0.1);
+	setNumericRange(SC_START_GUIDING, 0, 0, 180.0);
+	setNumericIncrement(SC_START_GUIDING, 0, 0.1);
 
 	// Sync and goto
-	setNumericRange("sync_center", 0, 0, 180.0);
-	setNumericIncrement("sync_center", 0, 1.0);
-	setNumericRange("precise_goto", 0, 0, 80.0);
-	setNumericIncrement("precise_goto", 0, 1.0);
+	setNumericRange(SC_SYNC_CENTER, 0, 0, 180.0);
+	setNumericIncrement(SC_SYNC_CENTER, 0, 1.0);
+	setNumericRange(SC_PRECISE_GOTO, 0, 0, 80.0);
+	setNumericIncrement(SC_PRECISE_GOTO, 0, 1.0);
 
 	// Repeat count
-	setNumericRange("repeat", 0, 0, 100000);
-	setNumericIncrement("repeat", 0, 1.0);
+	setNumericRange(SC_REPEAT, 0, 0, 100000);
+	setNumericIncrement(SC_REPEAT, 0, 1.0);
 
 	//qDebug() << "Initialized SequenceItemModel with" << widgetTypeMap.size() << "widget types";
 }
