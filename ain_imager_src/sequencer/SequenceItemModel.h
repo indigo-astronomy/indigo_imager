@@ -7,17 +7,27 @@
 #include <QPair>
 #include <QObject>
 
+enum ParamWidget {
+	LineEdit,
+	SpinBox,
+	DoubleSpinBox,
+	ComboBox,
+	CheckBox,
+	LineEditSG_RA,
+	LineEditSG_DEC
+};
+
 class SequenceItemModel : public QObject {
 	Q_OBJECT
 public:
 	struct ParameterInfo {
 		QString label;
-		QString widgetType;
+		ParamWidget paramWidget;
 		QStringList comboOptions;
 		QPair<double, double> numericRange;
 		double numericIncrement;
 
-		ParameterInfo(const QString& l = "", const QString& w = "") : label(l), widgetType(w), numericRange(0.0, 100.0), numericIncrement(1.0) {}
+		ParameterInfo(const QString& l = "", ParamWidget w = LineEdit) : label(l), paramWidget(w), numericRange(0.0, 100.0), numericIncrement(1.0) {}
 	};
 
 	struct WidgetTypeInfo {

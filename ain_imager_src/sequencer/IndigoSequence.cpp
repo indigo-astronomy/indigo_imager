@@ -443,7 +443,7 @@ void IndigoSequence::viewFromFunctionCalls(const QVector<FunctionCall>& calls) {
 			const auto& widgetInfo = widgetTypes[call.functionName];
 			for (int i = 0; i < call.parameters.size() && i < widgetInfo.parameters.size(); ++i) {
 				const auto& paramInfo = widgetInfo.parameters[i];
-				if (paramInfo.widgetType == "QCheckBox") {
+				if (paramInfo.paramWidget == CheckBox) {
 					bool checked = call.parameters[i].toLower() == "true";
 					item->setParameter(i, checked);
 				} else {
@@ -461,7 +461,7 @@ void IndigoSequence::viewFromFunctionCalls(const QVector<FunctionCall>& calls) {
 						const auto& nestedWidgetInfo = widgetTypes[nestedCall.functionName];
 						for (int i = 0; i < nestedCall.parameters.size() && i < nestedWidgetInfo.parameters.size(); ++i) {
 							const auto& paramInfo = nestedWidgetInfo.parameters[i];
-							if (paramInfo.widgetType == "QCheckBox") {
+							if (paramInfo.paramWidget == CheckBox) {
 								bool checked = nestedCall.parameters[i].toLower() == "true";
 								nestedItem->setParameter(i, checked);
 							} else {
@@ -510,9 +510,10 @@ const QVector<FunctionCall> IndigoSequence::functionCallsFromView(const QString&
 				if (value.type() == QVariant::Bool) {
 					call.parameters.append(value.toBool() ? "true" : "false");
 				} else if (
-					paramIt.value().widgetType == "QLineEdit" ||
-					paramIt.value().widgetType == "QComboBox"
-				) {
+					paramIt.value().paramWidget == LineEdit ||
+					paramIt.value().paramWidget == ComboBox
+				)
+				{
 					QString escapedValue = value.toString().replace("\"", "\\\"");
 					escapedValue.replace("'", "\\'");
 					call.parameters.append(QString("\"%1\"").arg(escapedValue));
@@ -540,9 +541,10 @@ const QVector<FunctionCall> IndigoSequence::functionCallsFromView(const QString&
 						if (value.type() == QVariant::Bool) {
 							nestedCall.parameters.append(value.toBool() ? "true" : "false");
 						} else if (
-							paramIt.value().widgetType == "QLineEdit" ||
-							paramIt.value().widgetType == "QComboBox"
-						) {
+							paramIt.value().paramWidget == LineEdit ||
+							paramIt.value().paramWidget == ComboBox
+						)
+						{
 							QString escapedValue = value.toString().replace("\"", "\\\"");
 							escapedValue.replace("'", "\\'");
 							nestedCall.parameters.append(QString("\"%1\"").arg(escapedValue));

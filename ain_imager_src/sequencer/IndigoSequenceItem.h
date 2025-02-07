@@ -10,6 +10,7 @@
 #include <QVariant>
 #include <QFrame>
 #include <QMouseEvent>
+#include <SequenceItemModel.h>
 
 class IndigoSequenceItem : public QWidget {
 	Q_OBJECT
@@ -78,7 +79,7 @@ private:
 	QLabel *iterationLabel;
 
 	void setupUI();
-	void addInputWidget(const QString &paramName, const QString &paramType, int key);
+	void addInputWidget(const QString &paramName, ParamWidget paramWidget, int key);
 	void showDropIndicator(int yPos);
 	int determineInsertPosition(const QPoint &pos);
 	bool isAncestorOf(QWidget* possibleChild) const;

@@ -79,7 +79,7 @@ void IndigoSequenceItem::setupUI() {
 
 	QList<int> keys = typeInfo.parameters.keys();
 	for (int key : keys) {
-		addInputWidget(typeInfo.parameters[key].label, typeInfo.parameters[key].widgetType, key);
+		addInputWidget(typeInfo.parameters[key].label, typeInfo.parameters[key].paramWidget, key);
 	}
 
 	mainLayout->addWidget(deleteButton);
@@ -130,60 +130,70 @@ void IndigoSequenceItem::setupUI() {
 	setAcceptDrops(true);
 }
 
-void IndigoSequenceItem::addInputWidget(const QString &paramName, const QString &paramType, int key) {
+void IndigoSequenceItem::addInputWidget(const QString &paramName, const ParamWidget paramWidget, int key) {
 	QLabel *label = new QLabel(paramName+":", this);
 	label->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 	label->setStyleSheet("background: transparent;");
 	label->setContentsMargins(3, 0, 0, 0);
-	label->setToolTip(paramType);
 	QWidget *input = nullptr;
 
-	if (paramType == "QLineEditSG-RA") {
-		input = new QLineEditSG(QLineEditSG::RA, this);
-	} else if (paramType == "QLineEditSG-DEC") {
-		input = new QLineEditSG(QLineEditSG::DEC, this);
-	} else if (paramType == "QLineEdit") {
-		input = new QLineEdit(this);
-	} else if (paramType == "QSpinBox") {
-		input = new QSpinBox(this);
-	} else if (paramType == "QDoubleSpinBox") {
-		input = new QDoubleSpinBox(this);
-	} else if (paramType == "QComboBox") {
-		input = new QComboBox(this);
-	} else if (paramType == "QCheckBox") {
-		input = new QCheckBox(this);
-		input->setStyleSheet("QCheckBox { background: transparent; }");
+	switch(paramWidget) {
+		case LineEditSG_RA:
+			input = new QLineEditSG(QLineEditSG::RA, this);
+			break;
+		case LineEditSG_DEC:
+			input = new QLineEditSG(QLineEditSG::DEC, this);
+			break;
+		case LineEdit:
+			input = new QLineEdit(this);
+			break;
+		case SpinBox:
+			input = new QSpinBox(this);
+			break;
+		case DoubleSpinBox:
+			input = new QDoubleSpinBox(this);
+			break;
+		case ComboBox:
+			input = new QComboBox(this);
+			break;
+		case CheckBox:
+			input = new QCheckBox(this);
+			input->setStyleSheet("QCheckBox { background: transparent; }");
+			break;
 	}
 
 	const auto& model = SequenceItemModel::instance();
 
-	if (paramType == "QComboBox") {
+	if (paramWidget == ComboBox) {
 		QComboBox* combo = qobject_cast<QComboBox*>(input);
 		combo->setEditable(true);
 		combo->setInsertPolicy(QComboBox::NoInsert);
 		combo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-		//combo->setMinimumContentsLength(15); // Set minimum number of characters
 		combo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
 		if (combo) {
 			combo->addItems(model.getComboOptions(type, key));
 		}
-	} else if (paramType == "QSpinBox") {
+	} else if (paramWidget == SpinBox) {
 		QSpinBox* spin = qobject_cast<QSpinBox*>(input);
 		if (spin) {
 			auto range = model.getNumericRange(type, key);
 			spin->setRange(range.first, range.second);
 			spin->setSingleStep(model.getNumericIncrement(type, key));
-			spin->setToolTip(QString("%1, range: [%2, %3] step: %4").arg(paramName).arg(range.first).arg(range.second).arg(model.getNumericIncrement(type, key)));
+			spin->setToolTip(QString("%1, range: [%2, %3] step: %4")
+				.arg(paramName).arg(range.first).arg(range.second)
+				.arg(model.getNumericIncrement(type, key)));
 		}
-	} else if (paramType == "QDoubleSpinBox") {
+	} else if (paramWidget == DoubleSpinBox) {
 		QDoubleSpinBox* spin = qobject_cast<QDoubleSpinBox*>(input);
 		if (spin) {
 			auto range = model.getNumericRange(type, key);
 			spin->setRange(range.first, range.second);
 			spin->setSingleStep(model.getNumericIncrement(type, key));
-			spin->setToolTip(QString("%1, range: [%2, %3] step: %4").arg(paramName).arg(range.first).arg(range.second).arg(model.getNumericIncrement(type, key)));
+			spin->setToolTip(QString("%1, range: [%2, %3] step: %4")
+				.arg(paramName).arg(range.first).arg(range.second)
+				.arg(model.getNumericIncrement(type, key)));
 		}
-	} else if (paramType == "QLinedit") {
+	} else if (paramWidget == LineEdit) {
 		QLineEdit* line = qobject_cast<QLineEdit*>(input);
 		if (line) {
 			line->setMinimumWidth(50);
