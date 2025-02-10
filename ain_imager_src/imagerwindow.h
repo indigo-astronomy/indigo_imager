@@ -588,6 +588,7 @@ public slots:
 		line_edit->setText(text);
 		line_edit->blockSignals(false);
 	};
+
 private:
 	QTextEdit* mLog;
 	QTabWidget *m_tools_tabbar;
@@ -652,6 +653,7 @@ private:
 	QPushButton *m_seq_pause_button;
 	QLabel *m_seq_esimated_duration;
 	QLabel *m_imager_status_label;
+	QString m_sequencer_code;
 
 	// Focuser tabbar
 	QComboBox *m_focuser_select;
@@ -930,6 +932,8 @@ private:
 	void create_telescope_tab(QFrame *solver_frame);
 	void create_solver_tab(QFrame *telescope_frame);
 
+	void load_sequencer_code();
+
 	void change_config_agent_load(const char *agent, const char *config, bool unload) const;
 	void change_config_agent_save(const char *agent, const char *config, bool autosave) const;
 	void change_config_agent_delete(const char *agent, const char *config) const;
@@ -1031,7 +1035,7 @@ private:
 	void change_solver_goto_settings(const char *agent) const;
 	void trigger_precise_goto();
 
-	void change_imager_agent_sequence(const char *agent, QString sequence, QList<QString> batches) const;
+	void change_scripting_agent_sequence(const char *agent, QString sequence) const;
 
 	void select_guider_data(guider_display_data show);
 

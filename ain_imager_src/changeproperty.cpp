@@ -1187,50 +1187,58 @@ void ImagerWindow::change_solver_agent_pa_settings(const char *agent) const {
 
 #define MAX_ITEMS 256
 
-void ImagerWindow::change_imager_agent_sequence(const char *agent, QString sequence, QList<QString> batches) const {
+void ImagerWindow::change_scripting_agent_sequence(const char *agent, QString sequence) const {
 	static char items[MAX_ITEMS][INDIGO_NAME_SIZE] = {0};
 	static char values[MAX_ITEMS][INDIGO_VALUE_SIZE] = {0};
 	static char *items_ptr[MAX_ITEMS];
 	static char *values_ptr[MAX_ITEMS];
 
-	indigo_property *p = properties.get((char*)agent, AGENT_IMAGER_SEQUENCE_PROPERTY_NAME);
+	indigo_property *p = properties.get((char*)agent, AGENT_SCRIPTING_RUN_SCRIPT_PROPERTY_NAME);
 	if (p) {
-		int count = (p->count < MAX_ITEMS) ? p->count : MAX_ITEMS;
-		indigo_debug("%s(): MAX_ITEMS = %d, p->count = %d, count = %d", __FUNCTION__, MAX_ITEMS, p->count, count);
-
-		if (p->count < batches.size() + 1) {
-			char message[255];
-			snprintf(message, 254, "Warning: Maximum number of batches of '%s' reached, only %d of %d will be executed", agent, p->count - 1, batches.size());
-			Logger::instance().log(NULL, message);
-		}
-
-		// Sequence
-		strncpy(items[0], AGENT_IMAGER_SEQUENCE_ITEM_NAME, INDIGO_NAME_SIZE);
-		items_ptr[0] = items[0];
-		char *sequence_c = (char*)indigo_safe_malloc(sequence.size() + 1);
-		if (sequence_c != nullptr) {
-			strncpy(sequence_c, sequence.toStdString().c_str(), sequence.size() + 1);
-			values_ptr[0] = sequence_c;
-		} else {
-			strncpy(values[0], sequence.toStdString().c_str(), INDIGO_VALUE_SIZE);
-			values_ptr[0] = values[0];
-		}
-
-		// Batches
-		for (int i = 1; i < count; i++) {
-			sprintf(items[i], "%02d", i);
-			if (i-1 < batches.count()) {
-				strncpy(values[i], batches[i-1].toStdString().c_str(), INDIGO_VALUE_SIZE);
-			} else {
-				values[i][0] = '\0';
-			}
-			items_ptr[i] = items[i];
-			values_ptr[i] = values[i];
-		}
-		indigo_log("[SEQUENCE] %s '%s'\n", __FUNCTION__, agent);
-		indigo_change_text_property(nullptr, agent, AGENT_IMAGER_SEQUENCE_PROPERTY_NAME, p->count, (const char**)items_ptr, (const char**)values_ptr);
-		indigo_safe_free(sequence_c);
+		// Do Not run new scripts by default
+		indigo_change_switch_property_1(
+			nullptr,
+			agent,
+			AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME,
+			AGENT_SCRIPTING_ADD_SCRIPT_NAME_ITEM_NAME,
+			false
+		);
+		// Load sequencer code in the scripting agent
+		indigo_change_text_property_1_raw(
+			nullptr,
+			agent,
+			AGENT_SCRIPTING_RUN_SCRIPT_PROPERTY_NAME,
+			AGENT_SCRIPTING_RUN_SCRIPT_ITEM_NAME,
+			m_sequencer_code.toUtf8().constData()
+		);
 	}
+
+	p = properties.get((char*)agent, AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME);
+	if (p) {
+		for (int i = 0; i < p->count; i++) {
+			if (!strncmp(p->items[i].label, "AinSequence", INDIGO_NAME_SIZE)) {
+				// Delete Ain Sequence
+				indigo_change_text_property_1(
+					nullptr,
+					agent,
+					AGENT_SCRIPTING_DELETE_SCRIPT_PROPERTY_NAME,
+					AGENT_SCRIPTING_DELETE_SCRIPT_NAME_ITEM_NAME,
+					"AinSequence"
+				);
+				break;
+			}
+		}
+		static const char *items[] = {
+			AGENT_SCRIPTING_ADD_SCRIPT_NAME_ITEM_NAME,
+			AGENT_SCRIPTING_ADD_SCRIPT_ITEM_NAME
+		};
+		char *values[2];
+		//values[0] = "AinSequence";
+		//values[1] = sequence.toUtf8().data();
+		//indigo_change_text_property(nullptr, agent, AGENT_SCRIPTING_ADD_SCRIPT_PROPERTY_NAME, 2, items, (const char**)values);
+	}
+
+	indigo_log("[SEQUENCE] %s '%s'\n", __FUNCTION__, agent);
 }
 
 void ImagerWindow::change_rotator_position_property(const char *agent) const {

@@ -483,6 +483,9 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
+		static char selected_scripting_agent[INDIGO_NAME_SIZE];
+		get_selected_scripting_agent(selected_scripting_agent);
+
 
 		indigo_property *agent_start_process = properties.get(selected_agent, AGENT_START_PROCESS_PROPERTY_NAME);
 		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
@@ -507,16 +510,16 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 				change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 			}
 			if (is_sequence) {
-				QList<QString> batches;
-				QString sequence;
-				//m_sequence_editor->generate_sequence(sequence, batches);
 				int approx_time = 0; //(int)(m_sequence_editor->approximate_duration()*3600);
 				if (approx_time >= 0) {
 					static char end_time[256];
 					get_time_after(end_time, approx_time, "Estimated sequence completion: %d %b %H:%M");
 					Logger::instance().log(nullptr, end_time);
 				}
-				change_imager_agent_sequence(selected_agent, sequence, batches);
+				change_scripting_agent_sequence(
+					selected_scripting_agent,
+					m_sequence_editor2->makeScriptFromView()
+				);
 				change_agent_focus_params_property(selected_agent, false);
 				change_agent_start_sequence_property(selected_agent);
 			} else {

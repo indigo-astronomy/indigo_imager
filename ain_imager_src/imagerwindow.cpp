@@ -415,6 +415,10 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 		m_property_layout->addWidget(mLog, 15);
 	}
 
+	// Load sequencer code from resource
+	load_sequencer_code();
+	// indigo_error("%s", m_sequencer_code.toUtf8().data());
+
 	mServiceModel = &QServiceModel::instance();
 	indigo_debug("servicemodel %p", mServiceModel);
 	mServiceModel->enable_auto_connect(conf.auto_connect);
@@ -571,6 +575,17 @@ ImagerWindow::~ImagerWindow () {
 	delete mServiceModel;
 	delete m_custom_object_model;
 	delete m_add_object_dialog;
+}
+
+void ImagerWindow::load_sequencer_code() {
+	QFile sf(":/scripts/Sequencer.js");
+	if (!sf.open(QFile::ReadOnly | QFile::Text)) {
+		indigo_error("Can't open sequencer script resource '%s'!", sf.fileName().toUtf8().data());
+		return;
+	}
+	QTextStream ss(&sf);
+	m_sequencer_code = ss.readAll();
+	sf.close();
 }
 
 void ImagerWindow::window_log(const char *message, int state) {
