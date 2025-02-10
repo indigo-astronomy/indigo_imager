@@ -1232,10 +1232,14 @@ void ImagerWindow::change_scripting_agent_sequence(const char *agent, QString se
 			AGENT_SCRIPTING_ADD_SCRIPT_NAME_ITEM_NAME,
 			AGENT_SCRIPTING_ADD_SCRIPT_ITEM_NAME
 		};
-		char *values[2];
-		//values[0] = "AinSequence";
-		//values[1] = sequence.toUtf8().data();
-		//indigo_change_text_property(nullptr, agent, AGENT_SCRIPTING_ADD_SCRIPT_PROPERTY_NAME, 2, items, (const char**)values);
+		static char *script;
+		script = (char*)indigo_safe_malloc_copy(sequence.length() + 1, sequence.toUtf8().data());
+		static char *values[2];
+		values[0] = "AinSequence";
+		values[1] = script;
+		indigo_error("script = %s", script);
+		indigo_change_text_property(nullptr, agent, AGENT_SCRIPTING_ADD_SCRIPT_PROPERTY_NAME, 2, items, (const char**)values);
+		indigo_safe_free(script);
 	}
 
 	indigo_log("[SEQUENCE] %s '%s'\n", __FUNCTION__, agent);
