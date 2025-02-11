@@ -596,7 +596,23 @@ void ImagerWindow::change_agent_start_exposure_property(const char *agent) const
 }
 
 void ImagerWindow::change_agent_start_sequence_property(const char *agent) const {
-	change_agent_start_process(agent, AGENT_IMAGER_START_SEQUENCE_ITEM_NAME);
+	indigo_property *p = properties.get(agent, AGENT_SCRIPTING_EXECUTE_SCRIPT_PROPERTY_NAME);
+	if (p) {
+		for (int i = 0; i < p->count; i++) {
+			if (!strcmp(p->items[i].label, "AinSequence")) {
+				indigo_change_switch_property_1(
+					nullptr,
+					agent,
+					AGENT_SCRIPTING_EXECUTE_SCRIPT_PROPERTY_NAME,
+					p->items[i].name,
+					true
+				);
+				indigo_error("Sequence started %s", p->items[i].name);
+				return;
+			}
+		}
+	}
+	indigo_error("Sequence not found");
 }
 
 void ImagerWindow::change_agent_start_focusing_property(const char *agent) const {

@@ -92,6 +92,30 @@ IndigoSequence::IndigoSequence(QWidget *parent) : QWidget(parent) {
 			this, &IndigoSequence::onComboOptionsChanged);
 }
 
+
+int IndigoSequence::itemCount() const {
+	int totalCount = 0;
+
+	for (int i = 0; i < containerLayout->count(); ++i) {
+		IndigoSequenceItem* item = qobject_cast<IndigoSequenceItem*>(containerLayout->itemAt(i)->widget());
+		if (!item) continue;
+
+		totalCount++;
+
+		if (item->getType() == "repeat") {
+			QVBoxLayout* repeatLayout = item->getRepeatLayout();
+			for (int j = 0; j < repeatLayout->count(); ++j) {
+				IndigoSequenceItem* nestedItem = qobject_cast<IndigoSequenceItem*>(repeatLayout->itemAt(j)->widget());
+				if (nestedItem) {
+					totalCount++;
+				}
+			}
+		}
+	}
+
+	return totalCount;
+}
+
 void IndigoSequence::addItem(IndigoSequenceItem *item) {
 	containerLayout->addWidget(item);
 }

@@ -19,6 +19,7 @@ public:
 	void addItem(IndigoSequenceItem *item);
 	void removeItem(IndigoSequenceItem* item);
 
+	int itemCount() const;
 	QList<IndigoSequenceItem *> getItems() const;
 	IndigoSequenceItem* getItemAt(int index) const;
 

@@ -1852,6 +1852,61 @@ void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 	w->set_widget_state(w->m_preview_button, property->state);
 }
 
+void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property) {
+	indigo_error("update_scripting_sequence_state");
+	int sequence_step = -1;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], "STEP")) {
+			sequence_step = (int)property->items[i].number.value;
+		}
+	}
+	if (sequence_step >= 0 && property->state == INDIGO_BUSY_STATE) {
+		w->m_sequence_editor2->scrollToItem(sequence_step);
+		IndigoSequenceItem *seq_item = nullptr;
+		for (int i = 0; i < sequence_step; i++) {
+			seq_item = w->m_sequence_editor2->getItemAt(i);
+			if (seq_item) {
+				seq_item->setOk();
+			}
+		}
+		seq_item = w->m_sequence_editor2->getItemAt(sequence_step);
+		if (seq_item) {
+			seq_item->setBusy();
+		}
+		for (int i = sequence_step + 1; i < w->m_sequence_editor2->itemCount(); i++) {
+			seq_item = w->m_sequence_editor2->getItemAt(i);
+			if (seq_item) {
+				seq_item->setIdle();
+			}
+		}
+	} else if (property->state == INDIGO_OK_STATE) {
+		if(sequence_step >= 0) {
+			IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(sequence_step);
+			if (seq_item) {
+				seq_item->setOk();
+			}
+		} else {
+			for (int i = 0; i < w->m_sequence_editor2->itemCount(); i++) {
+				IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(i);
+				if (seq_item) {
+					seq_item->setIdle();
+				} else {
+					break;
+				}
+			}
+		}
+	} else if (property->state == INDIGO_ALERT_STATE) {
+		IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(sequence_step - 1);
+		if (seq_item) {
+			seq_item->setOk();
+		}
+		seq_item = w->m_sequence_editor2->getItemAt(sequence_step);
+		if (seq_item) {
+			seq_item->setAlert();
+		}
+	}
+}
+
 void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	double ref_x = 0, ref_y = 0;
 	double d_ra = 0, d_dec = 0;
@@ -2611,6 +2666,11 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_agent_imager_binning_property(this, property);
 	}
 
+	// Scripting Agent
+	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE")) {
+		update_scripting_sequence_state(this, property);
+	}
+
 	// Guider Agent
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DITHERING_STRATEGY_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_dither_strategy_select);
@@ -2987,6 +3047,11 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_agent, CCD_BIN_PROPERTY_NAME)) {
 		update_agent_imager_binning_property(this, property);
+	}
+
+	// Scripting Agent
+	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE")) {
+		update_scripting_sequence_state(this, property);
 	}
 
 	// Guider Agent
