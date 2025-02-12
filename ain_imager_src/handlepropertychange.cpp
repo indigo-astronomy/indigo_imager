@@ -1590,7 +1590,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		if (start_p->state == INDIGO_BUSY_STATE) {
 			//w->m_sequence_editor->on_set_current_batch(batch_index);
 			w->m_exposure_button->setIcon(QIcon(":resource/stop.png"));
-			w->m_seq_start_button->setIcon(QIcon(":resource/stop.png"));
 			w->set_enabled(w->m_exposure_button, true);
 			w->set_enabled(w->m_seq_start_button, true);
 			w->set_enabled(w->m_preview_button, false);
@@ -1617,14 +1616,10 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 				w->m_seq_batch_progress->setValue(frames_complete - 1);
 				w->m_seq_batch_progress->setFormat("Batch: exposure %v of %m complete...");
 			}
-			w->m_seq_sequence_progress->setRange(0, batches_total);
-			w->m_seq_sequence_progress->setValue(batches_complete - 1);
-			w->m_seq_sequence_progress->setFormat("Sequence: batch %v of %m complete...");
 			indigo_debug("frames total = %d", frames_total);
 		} else if (start_p->state == INDIGO_OK_STATE) {
 			//w->m_sequence_editor->on_set_current_batch(0);
 			w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
-			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 			w->set_enabled(w->m_exposure_button, true);
 			w->set_enabled(w->m_seq_start_button, true);
 			w->set_enabled(w->m_preview_button, true);
@@ -1642,14 +1637,10 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			w->m_seq_batch_progress->setRange(0, 100);
 			w->m_seq_batch_progress->setValue(100);
 			w->m_seq_batch_progress->setFormat("Batch: Complete");
-			w->m_seq_sequence_progress->setRange(0, 100);
-			w->m_seq_sequence_progress->setValue(100);
-			w->m_seq_sequence_progress->setFormat("Sequence: Complete");
 			exposure_running = false;
 		} else {
 			//w->m_sequence_editor->on_set_current_batch(0);
 			w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
-			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 			w->set_enabled(w->m_exposure_button, true);
 			w->set_enabled(w->m_seq_start_button, true);
 			w->set_enabled(w->m_preview_button, true);
@@ -1672,9 +1663,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 				w->m_process_progress->setFormat("Batch: exposure %v of %m complete");
 				w->m_seq_batch_progress->setFormat("Batch: exposure %v of %m complete");
 			}
-			w->m_seq_sequence_progress->setRange(0, batches_total);
-			w->m_seq_sequence_progress->setValue(batches_complete - 1);
-			w->m_seq_sequence_progress->setFormat("Sequence: batch %v of %m complete");
 			exposure_running = false;
 		}
 	} else if (focusing_running || preview_running) {
@@ -1721,7 +1709,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		}
 		w->set_widget_state(w->m_preview_button, INDIGO_OK_STATE);
 		w->set_widget_state(w->m_exposure_button, INDIGO_OK_STATE);
-		w->set_widget_state(w->m_seq_start_button, INDIGO_OK_STATE);
 		w->set_widget_state(w->m_focusing_preview_button, INDIGO_OK_STATE);
 		if (start_p->state == INDIGO_BUSY_STATE) {
 			w->set_enabled(w->m_preview_button, false);
@@ -1757,7 +1744,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		}
 	} else {
 		w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
-		w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 		w->set_enabled(w->m_preview_button, true);
 		w->set_enabled(w->m_exposure_button, true);
 		w->set_enabled(w->m_seq_start_button, true);
@@ -1797,7 +1783,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 
 	if (property == start_p) {
 		w->set_widget_state(w->m_exposure_button, start_p->state);
-		w->set_widget_state(w->m_seq_start_button, start_p->state);
 		w->set_widget_state(w->m_focusing_button, start_p->state);
 	}
 }
@@ -1856,15 +1841,40 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 	indigo_error("update_scripting_sequence_state");
 
 	int sequence_step = -1;
+	int progress = 0;
+	int progress_total = 0;
+	double exposure_complete = 0;
+	double exposure_total = 0;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], "STEP")) {
 			sequence_step = (int)property->items[i].number.value;
 		}
+		if (client_match_item(&property->items[i], "PROGRESS")) {
+			progress = (int)property->items[i].number.value;
+			indigo_error("progress = %d", progress);
+		}
+		if (client_match_item(&property->items[i], "PROGRESS_TOTAL")) {
+			progress_total = (int)property->items[i].number.value;
+			indigo_error("progress_total = %d", progress_total);
+		}
+		if (client_match_item(&property->items[i], "EXPOSURE")) {
+			exposure_complete = property->items[i].number.value;
+		}
+		if (client_match_item(&property->items[i], "EXPOSURE_TOTAL")) {
+			exposure_total = property->items[i].number.value;
+		}
 	}
+
+	int complete = (int)((double)progress / progress_total * 100 + 0.5);
+	indigo_error("complete = %d, progress = %f, progress_total = %f", complete, progress, progress_total);
+	w->m_seq_sequence_progress->setRange(0, 100);
 
 	indigo_error("sequence_step = %d", sequence_step);
 
 	if (sequence_step >= 0 && property->state == INDIGO_BUSY_STATE) {
+		w->set_widget_state(w->m_seq_start_button, INDIGO_BUSY_STATE);
+		w->m_seq_start_button->setIcon(QIcon(":resource/stop.png"));
+
 		w->m_sequence_editor2->scrollToItem(sequence_step);
 		IndigoSequenceItem *seq_item = nullptr;
 		for (int i = 0; i < sequence_step; i++) {
@@ -1883,6 +1893,8 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 				seq_item->setIdle();
 			}
 		}
+		w->m_seq_sequence_progress->setValue(complete);
+		w->m_seq_sequence_progress->setFormat("Sequence: %v\% complete");
 
 		indigo_property *p = properties.get(property->device, "LOOP_0");
 		if (p) {
@@ -1906,11 +1918,16 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			indigo_error("LOOP_0 not found");
 		}
 	} else if (property->state == INDIGO_OK_STATE) {
+		w->set_widget_state(w->m_seq_start_button, INDIGO_OK_STATE);
+		w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
+
 		if(sequence_step >= 0) {
 			IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(sequence_step);
 			if (seq_item) {
 				seq_item->setOk();
 			}
+			w->m_seq_sequence_progress->setValue(complete);
+			w->m_seq_sequence_progress->setFormat("Sequence: %v\% complete");
 		} else {
 			for (int i = 0; i < w->m_sequence_editor2->itemCount(); i++) {
 				IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(i);
@@ -1920,8 +1937,19 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 					break;
 				}
 			}
+			w->m_seq_exposure_progress->setRange(0, 1);
+			w->m_seq_exposure_progress->setValue(0);
+			w->m_seq_exposure_progress->setFormat("Exposure: Idle");
+			w->m_process_progress->setRange(0, 1);
+			w->m_process_progress->setValue(0);
+			w->m_process_progress->setFormat("Process: Idle");
+			w->m_seq_sequence_progress->setValue(0);
+			w->m_seq_sequence_progress->setFormat("Sequence: Idle");
 		}
 	} else if (property->state == INDIGO_ALERT_STATE) {
+		w->set_widget_state(w->m_seq_start_button, INDIGO_OK_STATE);
+		w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
+
 		IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(sequence_step - 1);
 		if (seq_item) {
 			seq_item->setOk();
@@ -1930,6 +1958,8 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 		if (seq_item) {
 			seq_item->setAlert();
 		}
+		w->m_seq_sequence_progress->setValue(complete);
+		w->m_seq_sequence_progress->setFormat("Sequence: Failed (%v\% cpmplete)");
 	}
 }
 
