@@ -1854,12 +1854,7 @@ void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 
 void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property) {
 	indigo_error("update_scripting_sequence_state");
-	indigo_property *p = properties.get(property->device, "LOOP_0");
-	if (p) {
-		indigo_error("LOOP_0 = %d", (int)p->items[0].number.value);
-	} else{
-		indigo_error("LOOP_0 not found");
-	}
+
 	int sequence_step = -1;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], "STEP")) {
@@ -1887,6 +1882,28 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			if (seq_item) {
 				seq_item->setIdle();
 			}
+		}
+
+		indigo_property *p = properties.get(property->device, "LOOP_0");
+		if (p) {
+			int loop_at_step = -1;
+			int loop_iteration = 0;
+			for (int i = 0; i < p->count; i++) {
+				if (client_match_item(&p->items[i], "STEP")) {
+					loop_at_step = (int)p->items[i].number.value;
+				}
+				if (client_match_item(&p->items[i], "COUNT")) {
+					loop_iteration = (int)p->items[i].number.value;
+				}
+			}
+			seq_item = w->m_sequence_editor2->getItemAt(loop_at_step);
+			if (seq_item) {
+				seq_item->setBusy();
+				seq_item->setIteration(loop_iteration);
+			}
+			indigo_error("LOOP_0 = %d", (int)p->items[0].number.value);
+		} else{
+			indigo_error("LOOP_0 not found");
 		}
 	} else if (property->state == INDIGO_OK_STATE) {
 		if(sequence_step >= 0) {
