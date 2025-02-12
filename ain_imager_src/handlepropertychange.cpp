@@ -1865,7 +1865,9 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 		}
 	}
 
-	int complete = (int)((double)progress / progress_total * 100 + 0.5);
+	//w->m_seq_esimated_duration->setText(QString("Sequence duration: ") + QString(indigo_dtos(exposure_total / 3600, "%02d:%02d:%02.0f")));
+
+	int complete = (progress_total != 0) ? (int)((double)progress / progress_total * 100 + 0.5) : 0;
 	indigo_error("complete = %d, progress = %f, progress_total = %f", complete, progress, progress_total);
 	w->m_seq_sequence_progress->setRange(0, 100);
 
@@ -1940,9 +1942,9 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			w->m_seq_exposure_progress->setRange(0, 1);
 			w->m_seq_exposure_progress->setValue(0);
 			w->m_seq_exposure_progress->setFormat("Exposure: Idle");
-			w->m_process_progress->setRange(0, 1);
-			w->m_process_progress->setValue(0);
-			w->m_process_progress->setFormat("Process: Idle");
+			w->m_seq_batch_progress->setRange(0, 1);
+			w->m_seq_batch_progress->setValue(0);
+			w->m_seq_batch_progress->setFormat("Process: Idle");
 			w->m_seq_sequence_progress->setValue(0);
 			w->m_seq_sequence_progress->setFormat("Sequence: Idle");
 		}
@@ -2686,7 +2688,6 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_pause_process_property(this, property, m_pause_button);
-		update_agent_imager_pause_process_property(this, property, m_seq_pause_button);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_COOLER_PROPERTY_NAME)) {
 		update_cooler_onoff(this, property);
@@ -3086,7 +3087,6 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_pause_process_property(this, property, m_pause_button);
-		update_agent_imager_pause_process_property(this, property, m_seq_pause_button);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_COOLER_PROPERTY_NAME)) {
 		update_cooler_onoff(this, property);

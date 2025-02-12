@@ -229,6 +229,7 @@ public slots:
 	void on_preview_start_stop(bool clicked);
 	void on_abort(bool clicked);
 	void on_pause(bool clicked);
+	void on_reset(bool clicked);
 	void on_window_log(indigo_property* property, const char *message);
 	void on_property_define(indigo_property* property, char *message);
 	void on_property_change(indigo_property* property, char *message);
@@ -651,7 +652,7 @@ private:
 	QProgressBar *m_seq_batch_progress;
 	QProgressBar *m_seq_sequence_progress;
 	QPushButton *m_seq_start_button;
-	QPushButton *m_seq_pause_button;
+	QPushButton *m_seq_reset_button;
 	QLabel *m_seq_esimated_duration;
 	QLabel *m_imager_status_label;
 	QString m_sequencer_code;

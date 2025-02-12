@@ -65,11 +65,11 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	toolbox->addWidget(m_seq_start_button);
 	connect(m_seq_start_button, &QPushButton::clicked, this, &ImagerWindow::on_sequence_start_stop);
 
-	m_seq_pause_button = new QPushButton("Pause");
-	toolbox->addWidget(m_seq_pause_button);
-	m_seq_pause_button->setStyleSheet("min-width: 30px");
-	m_seq_pause_button->setIcon(QIcon(":resource/pause.png"));
-	connect(m_seq_pause_button, &QPushButton::clicked, this, &ImagerWindow::on_pause);
+	m_seq_reset_button = new QPushButton("Reset");
+	toolbox->addWidget(m_seq_reset_button);
+	m_seq_reset_button->setStyleSheet("min-width: 30px");
+	m_seq_reset_button->setIcon(QIcon(":resource/pause.png"));
+	connect(m_seq_reset_button, &QPushButton::clicked, this, &ImagerWindow::on_reset);
 
 	QPushButton *button = new QPushButton("Abort");
 	button->setStyleSheet("min-width: 30px");
@@ -193,4 +193,20 @@ void ImagerWindow::on_request_sequence() {
 void ImagerWindow::on_sequence_start_stop(bool clicked) {
 	//m_sequence_editor->clear_selection();
 	exposure_start_stop(clicked, true);
+}
+
+void ImagerWindow::on_reset(bool clicked) {
+	Q_UNUSED(clicked);
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+
+		static char selected_scripting_agent[INDIGO_NAME_SIZE];
+		get_selected_scripting_agent(selected_scripting_agent);
+
+
+		indigo_property *p = properties.get(selected_scripting_agent, "SEQUENCE_STATE");
+		if (p == nullptr || p->state == INDIGO_BUSY_STATE) return;
+
+		indigo_change_switch_property_1(nullptr, selected_scripting_agent, "SEQUENCE_RESET", "RESET", true);
+	});
 }
