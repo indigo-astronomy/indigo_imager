@@ -1854,12 +1854,21 @@ void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 
 void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property) {
 	indigo_error("update_scripting_sequence_state");
+	indigo_property *p = properties.get(property->device, "LOOP_0");
+	if (p) {
+		indigo_error("LOOP_0 = %d", (int)p->items[0].number.value);
+	} else{
+		indigo_error("LOOP_0 not found");
+	}
 	int sequence_step = -1;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], "STEP")) {
 			sequence_step = (int)property->items[i].number.value;
 		}
 	}
+
+	indigo_error("sequence_step = %d", sequence_step);
+
 	if (sequence_step >= 0 && property->state == INDIGO_BUSY_STATE) {
 		w->m_sequence_editor2->scrollToItem(sequence_step);
 		IndigoSequenceItem *seq_item = nullptr;
