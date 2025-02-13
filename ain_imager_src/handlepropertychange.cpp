@@ -1896,6 +1896,21 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 					seq_item->setIdle();
 				}
 			}
+
+			indigo_property *p = properties.get(property->device, "LOOP_0");
+			if (p) {
+				int loop_at_step = -1;
+				for (int i = 0; i < p->count; i++) {
+					if (client_match_item(&p->items[i], "STEP")) {
+						loop_at_step = (int)p->items[i].number.value;
+					}
+				}
+				seq_item = w->m_sequence_editor2->getItemAt(loop_at_step);
+				if (seq_item) {
+					seq_item->setBusy();
+				}
+			}
+
 			w->m_seq_sequence_progress->setValue(complete);
 			w->m_seq_sequence_progress->setFormat("Sequence: %v\% complete");
 		} else if (property->state == INDIGO_OK_STATE) {
