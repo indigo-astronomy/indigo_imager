@@ -1840,128 +1840,125 @@ void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property) {
 	indigo_error("update_scripting_sequence_state");
 
-	int sequence_step = -1;
-	int progress = 0;
-	int progress_total = 0;
-	double exposure_complete = 0;
-	double exposure_total = 0;
-	for (int i = 0; i < property->count; i++) {
-		if (client_match_item(&property->items[i], "STEP")) {
-			sequence_step = (int)property->items[i].number.value;
-		}
-		if (client_match_item(&property->items[i], "PROGRESS")) {
-			progress = (int)property->items[i].number.value;
-			indigo_error("progress = %d", progress);
-		}
-		if (client_match_item(&property->items[i], "PROGRESS_TOTAL")) {
-			progress_total = (int)property->items[i].number.value;
-			indigo_error("progress_total = %d", progress_total);
-		}
-		if (client_match_item(&property->items[i], "EXPOSURE")) {
-			exposure_complete = property->items[i].number.value;
-		}
-		if (client_match_item(&property->items[i], "EXPOSURE_TOTAL")) {
-			exposure_total = property->items[i].number.value;
-		}
-	}
-
-	//w->m_seq_esimated_duration->setText(QString("Sequence duration: ") + QString(indigo_dtos(exposure_total / 3600, "%02d:%02d:%02.0f")));
-
-	int complete = (progress_total != 0) ? (int)((double)progress / progress_total * 100 + 0.5) : 0;
-	indigo_error("complete = %d, progress = %f, progress_total = %f", complete, progress, progress_total);
-	w->m_seq_sequence_progress->setRange(0, 100);
-
-	indigo_error("sequence_step = %d", sequence_step);
-
-	if (sequence_step >= 0 && property->state == INDIGO_BUSY_STATE) {
-		w->set_widget_state(w->m_seq_start_button, INDIGO_BUSY_STATE);
-		w->m_seq_start_button->setIcon(QIcon(":resource/stop.png"));
-
-		w->m_sequence_editor2->scrollToItem(sequence_step);
-		IndigoSequenceItem *seq_item = nullptr;
-		for (int i = 0; i < sequence_step; i++) {
-			seq_item = w->m_sequence_editor2->getItemAt(i);
-			if (seq_item) {
-				seq_item->setOk();
+	if (!strcmp(property->name, "SEQUENCE_STATE")) {
+		int sequence_step = -1;
+		int progress = 0;
+		int progress_total = 0;
+		double exposure_complete = 0;
+		double exposure_total = 0;
+		for (int i = 0; i < property->count; i++) {
+			if (client_match_item(&property->items[i], "STEP")) {
+				sequence_step = (int)property->items[i].number.value;
+			}
+			if (client_match_item(&property->items[i], "PROGRESS")) {
+				progress = (int)property->items[i].number.value;
+				indigo_error("progress = %d", progress);
+			}
+			if (client_match_item(&property->items[i], "PROGRESS_TOTAL")) {
+				progress_total = (int)property->items[i].number.value;
+				indigo_error("progress_total = %d", progress_total);
+			}
+			if (client_match_item(&property->items[i], "EXPOSURE")) {
+				exposure_complete = property->items[i].number.value;
+			}
+			if (client_match_item(&property->items[i], "EXPOSURE_TOTAL")) {
+				exposure_total = property->items[i].number.value;
 			}
 		}
-		seq_item = w->m_sequence_editor2->getItemAt(sequence_step);
-		if (seq_item) {
-			seq_item->setBusy();
-		}
-		for (int i = sequence_step + 1; i < w->m_sequence_editor2->itemCount(); i++) {
-			seq_item = w->m_sequence_editor2->getItemAt(i);
-			if (seq_item) {
-				seq_item->setIdle();
-			}
-		}
-		w->m_seq_sequence_progress->setValue(complete);
-		w->m_seq_sequence_progress->setFormat("Sequence: %v\% complete");
 
-		indigo_property *p = properties.get(property->device, "LOOP_0");
-		if (p) {
-			int loop_at_step = -1;
-			int loop_iteration = 0;
-			for (int i = 0; i < p->count; i++) {
-				if (client_match_item(&p->items[i], "STEP")) {
-					loop_at_step = (int)p->items[i].number.value;
-				}
-				if (client_match_item(&p->items[i], "COUNT")) {
-					loop_iteration = (int)p->items[i].number.value;
+		//w->m_seq_esimated_duration->setText(QString("Sequence duration: ") + QString(indigo_dtos(exposure_total / 3600, "%02d:%02d:%02.0f")));
+
+		int complete = (progress_total != 0) ? (int)((double)progress / progress_total * 100 + 0.5) : 0;
+		indigo_error("complete = %d, progress = %f, progress_total = %f", complete, progress, progress_total);
+		w->m_seq_sequence_progress->setRange(0, 100);
+
+		indigo_error("sequence_step = %d", sequence_step);
+
+		if (sequence_step >= 0 && property->state == INDIGO_BUSY_STATE) {
+			w->set_widget_state(w->m_seq_start_button, INDIGO_BUSY_STATE);
+			w->m_seq_start_button->setIcon(QIcon(":resource/stop.png"));
+
+			w->m_sequence_editor2->scrollToItem(sequence_step);
+			IndigoSequenceItem *seq_item = nullptr;
+			for (int i = 0; i < sequence_step; i++) {
+				seq_item = w->m_sequence_editor2->getItemAt(i);
+				if (seq_item) {
+					seq_item->setOk();
 				}
 			}
-			seq_item = w->m_sequence_editor2->getItemAt(loop_at_step);
+			seq_item = w->m_sequence_editor2->getItemAt(sequence_step);
 			if (seq_item) {
 				seq_item->setBusy();
-				seq_item->setIteration(loop_iteration);
 			}
-			indigo_error("LOOP_0 = %d", (int)p->items[0].number.value);
-		} else{
-			indigo_error("LOOP_0 not found");
-		}
-	} else if (property->state == INDIGO_OK_STATE) {
-		w->set_widget_state(w->m_seq_start_button, INDIGO_OK_STATE);
-		w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
-
-		if(sequence_step >= 0) {
-			IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(sequence_step);
-			if (seq_item) {
-				seq_item->setOk();
+			for (int i = sequence_step + 1; i < w->m_sequence_editor2->itemCount(); i++) {
+				seq_item = w->m_sequence_editor2->getItemAt(i);
+				if (seq_item) {
+					seq_item->setIdle();
+				}
 			}
 			w->m_seq_sequence_progress->setValue(complete);
 			w->m_seq_sequence_progress->setFormat("Sequence: %v\% complete");
-		} else {
-			for (int i = 0; i < w->m_sequence_editor2->itemCount(); i++) {
-				IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(i);
-				if (seq_item) {
-					seq_item->setIdle();
-				} else {
-					break;
-				}
-			}
-			w->m_seq_exposure_progress->setRange(0, 1);
-			w->m_seq_exposure_progress->setValue(0);
-			w->m_seq_exposure_progress->setFormat("Exposure: Idle");
-			w->m_seq_batch_progress->setRange(0, 1);
-			w->m_seq_batch_progress->setValue(0);
-			w->m_seq_batch_progress->setFormat("Process: Idle");
-			w->m_seq_sequence_progress->setValue(0);
-			w->m_seq_sequence_progress->setFormat("Sequence: Idle");
-		}
-	} else if (property->state == INDIGO_ALERT_STATE) {
-		w->set_widget_state(w->m_seq_start_button, INDIGO_OK_STATE);
-		w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
+		} else if (property->state == INDIGO_OK_STATE) {
+			w->set_widget_state(w->m_seq_start_button, INDIGO_OK_STATE);
+			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 
-		IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(sequence_step - 1);
-		if (seq_item) {
-			seq_item->setOk();
+			if(sequence_step >= 0) {
+				IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(sequence_step);
+				if (seq_item) {
+					seq_item->setOk();
+				}
+				w->m_seq_sequence_progress->setValue(complete);
+				w->m_seq_sequence_progress->setFormat("Sequence: %v\% complete");
+			} else {
+				for (int i = 0; i < w->m_sequence_editor2->itemCount(); i++) {
+					IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(i);
+					if (seq_item) {
+						seq_item->setIdle();
+					} else {
+						break;
+					}
+				}
+				w->m_seq_exposure_progress->setRange(0, 1);
+				w->m_seq_exposure_progress->setValue(0);
+				w->m_seq_exposure_progress->setFormat("Exposure: Idle");
+				w->m_seq_batch_progress->setRange(0, 1);
+				w->m_seq_batch_progress->setValue(0);
+				w->m_seq_batch_progress->setFormat("Process: Idle");
+				w->m_seq_sequence_progress->setValue(0);
+				w->m_seq_sequence_progress->setFormat("Sequence: Idle");
+			}
+		} else if (property->state == INDIGO_ALERT_STATE) {
+			w->set_widget_state(w->m_seq_start_button, INDIGO_OK_STATE);
+			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
+
+			IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(sequence_step - 1);
+			if (seq_item) {
+				seq_item->setOk();
+			}
+			seq_item = w->m_sequence_editor2->getItemAt(sequence_step);
+			if (seq_item) {
+				seq_item->setAlert();
+			}
+			w->m_seq_sequence_progress->setValue(complete);
+			w->m_seq_sequence_progress->setFormat("Sequence: Failed (%v\% cpmplete)");
 		}
-		seq_item = w->m_sequence_editor2->getItemAt(sequence_step);
-		if (seq_item) {
-			seq_item->setAlert();
+	} else if (!strcmp(property->name, "LOOP_0")) {
+		int loop_iteration = -1;
+		int loop_at_step = -1;
+		for (int i = 0; i < property->count; i++) {
+			if (client_match_item(&property->items[i], "STEP")) {
+				loop_at_step = (int)property->items[i].number.value;
+			}
+			if (client_match_item(&property->items[i], "COUNT")) {
+				loop_iteration = (int)property->items[i].number.value;
+			}
 		}
-		w->m_seq_sequence_progress->setValue(complete);
-		w->m_seq_sequence_progress->setFormat("Sequence: Failed (%v\% cpmplete)");
+		IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(loop_at_step);
+		if (seq_item) {
+			seq_item->setBusy();
+			seq_item->setIteration(loop_iteration);
+		}
+		indigo_error("LOOP_0 step = %d iteration = %d", loop_at_step, loop_iteration);
 	}
 }
 
@@ -2724,7 +2721,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 
 	// Scripting Agent
-	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE")) {
+	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE") ||
+	    client_match_device_property(property, selected_scripting_agent, "LOOP_0")) {
+		indigo_error("Scripting Agent: %s", property->name);
 		update_scripting_sequence_state(this, property);
 	}
 
@@ -3106,7 +3105,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 
 	// Scripting Agent
-	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE")) {
+	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE") ||
+	    client_match_device_property(property, selected_scripting_agent, "LOOP_0")) {
+		indigo_error("Scripting Agent: %s", property->name);
 		update_scripting_sequence_state(this, property);
 	}
 
