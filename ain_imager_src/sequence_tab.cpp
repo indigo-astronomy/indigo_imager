@@ -115,7 +115,7 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	sequence_frame_layout->addItem(spacer, row, 0);
 
 	row++;
-	m_seq_esimated_duration = new QLabel(QString("Sequence duration: ") + indigo_dtos(0, "%02d:%02d:%02.0f"));
+	m_seq_esimated_duration = new QLabel(QString("Total exposure: ") + indigo_dtos(0, "%02d:%02d:%02.0f"));
 	m_seq_esimated_duration->setToolTip("This is approximate sequence duration as download, focusing, filter change etc., times are unpredicatble.");
 	sequence_frame_layout->addWidget(m_seq_esimated_duration, row, 0, 1, 4);
 }
@@ -136,7 +136,7 @@ void ImagerWindow::on_scripting_agent_selected(int index) {
 
 void ImagerWindow::on_sequence_updated() {
 	double duration = 0; // m_sequence_editor->approximate_duration();
-	m_seq_esimated_duration->setText(QString("Sequence duration: ") + QString(indigo_dtos(duration, "%02d:%02d:%02.0f")));
+	m_seq_esimated_duration->setText(QString("Total exposure: ") + QString(indigo_dtos(duration, "%02d:%02d:%02.0f")));
 }
 
 void ImagerWindow::on_sequence_name_changed(const QString &object_name) {
@@ -155,43 +155,36 @@ void ImagerWindow::on_sequence_name_changed(const QString &object_name) {
 
 void ImagerWindow::on_request_sequence() {
 	indigo_debug("Sequence requested");
-	static char selected_agent[INDIGO_NAME_SIZE];
-	get_selected_imager_agent(selected_agent);
 
-	QString name;
 	QString sequence;
-	QList<QString> batches;
+	static char selected_agent[INDIGO_NAME_SIZE];
+	get_selected_scripting_agent(selected_agent);
 
-	indigo_property *p = properties.get(selected_agent, CCD_FITS_HEADERS_PROPERTY_NAME);
+	char sequence_script[INDIGO_NAME_SIZE] = {0};
+	indigo_property *p = nullptr;
+
+	for (int i = 0; i < 32; i++) {
+		snprintf(sequence_script, sizeof(sequence_script), AGENT_SCRIPTING_SCRIPT_PROPERTY_NAME, i);
+		p = properties.get(selected_agent, sequence_script);
+		if (p && !strcmp(p->label, "AinSequence")) {
+			break;
+		}
+	}
+
 	if (p) {
 		for (int i = 0; i < p->count; i++) {
-			if (client_match_item(&p->items[i], "OBJECT")) {
-				name = QString(p->items[i].text.value).trimmed().remove("\'");
+			if (client_match_item(&p->items[i], AGENT_SCRIPTING_SCRIPT_ITEM_NAME)) {
+				sequence = indigo_get_text_item_value(&p->items[i]);
 				break;
 			}
 		}
+		m_sequence_editor2->loadScriptToView(sequence);
 	}
-
-	p = properties.get(selected_agent, AGENT_IMAGER_SEQUENCE_PROPERTY_NAME);
-	if (p) {
-		for (int i = 0; i < p->count; i++) {
-			if (client_match_item(&p->items[i], AGENT_IMAGER_SEQUENCE_ITEM_NAME)) {
-				sequence = indigo_get_text_item_value(&p->items[i]);
-			} else {
-				QString batch(indigo_get_text_item_value(&p->items[i]));
-				if (!batch.isEmpty()) {
-					batches.append(batch);
-				};
-			}
-		}
-		//m_sequence_editor->set_sequence(name, sequence, batches);
-	}
-	double duration = 0; //m_sequence_editor->approximate_duration();
-	m_seq_esimated_duration->setText(QString("Sequence duration: ") + indigo_dtos(duration, "%02d:%02d:%02.0f"));
+	//double duration = 0; //m_sequence_editor->approximate_duration();
+	//m_seq_esimated_duration->setText(QString("Sequence duration: ") + indigo_dtos(duration, "%02d:%02d:%02.0f"));
 }
 
 void ImagerWindow::on_sequence_start_stop(bool clicked) {
-	//m_sequence_editor->clear_selection();
 	exposure_start_stop(clicked, true);
 }
 

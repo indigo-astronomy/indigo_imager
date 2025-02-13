@@ -62,7 +62,7 @@ IndigoSequence::IndigoSequence(QWidget *parent) : QWidget(parent) {
 	toolbox->addStretch();
 	m_download_sequence_button = new QToolButton(this);
 	m_download_sequence_button->setIcon(QIcon(":resource/download.png"));
-	m_download_sequence_button->setToolTip("Download sequence from server");
+	m_download_sequence_button->setToolTip("Download active sequence from server");
 	toolbox->addWidget(m_download_sequence_button);
 	connect(m_download_sequence_button, &QToolButton::clicked, this, [this]() {
 		emit requestSequence();
