@@ -427,7 +427,7 @@ public slots:
 	void on_mount_agent_set_pa_settings(double value);
 	void on_mount_agent_set_pa_refraction(bool clicked);
 
-	void on_sequence_updated();
+	void on_recalculate_exposure();
 	void on_request_sequence();
 
 	void on_tab_changed(int index);

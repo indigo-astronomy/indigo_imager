@@ -52,6 +52,8 @@ public:
 	void saveSequence();
 	void loadSequence();
 
+	double totalExposure() const;
+
 	void loadScriptToView(const QString& script);
 	QString makeScriptFromView() const;
 

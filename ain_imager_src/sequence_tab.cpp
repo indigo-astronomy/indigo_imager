@@ -65,10 +65,10 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	toolbox->addWidget(m_seq_start_button);
 	connect(m_seq_start_button, &QPushButton::clicked, this, &ImagerWindow::on_sequence_start_stop);
 
-	m_seq_reset_button = new QPushButton("Reset");
+	m_seq_reset_button = new QPushButton("⟳ Reset");
 	toolbox->addWidget(m_seq_reset_button);
 	m_seq_reset_button->setStyleSheet("min-width: 30px");
-	m_seq_reset_button->setIcon(QIcon(":resource/pause.png"));
+	//m_seq_reset_button->setIcon(QIcon(":resource/pause.png"));
 	connect(m_seq_reset_button, &QPushButton::clicked, this, &ImagerWindow::on_reset);
 
 	QPushButton *button = new QPushButton("Abort");
@@ -117,7 +117,16 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	row++;
 	m_seq_esimated_duration = new QLabel(QString("Total exposure: ") + indigo_dtos(0, "%02d:%02d:%02.0f"));
 	m_seq_esimated_duration->setToolTip("This is approximate sequence duration as download, focusing, filter change etc., times are unpredicatble.");
-	sequence_frame_layout->addWidget(m_seq_esimated_duration, row, 0, 1, 4);
+	sequence_frame_layout->addWidget(m_seq_esimated_duration, row, 0, 1, 3);
+
+	QToolButton *tbutton = new QToolButton();
+	//tbutton->setIcon(QIcon(":resource/download.png"));
+	//tbutton->setText("⟳");
+	tbutton->setText("Σ");
+	tbutton->setToolTip("Calculate sequence total exposure");
+	sequence_frame_layout->addWidget(tbutton, row, 3);
+	connect(tbutton, &QToolButton::clicked, this, &ImagerWindow::on_recalculate_exposure);
+
 }
 
 void ImagerWindow::on_scripting_agent_selected(int index) {
@@ -134,9 +143,9 @@ void ImagerWindow::on_scripting_agent_selected(int index) {
 	});
 }
 
-void ImagerWindow::on_sequence_updated() {
-	double duration = 0; // m_sequence_editor->approximate_duration();
-	m_seq_esimated_duration->setText(QString("Total exposure: ") + QString(indigo_dtos(duration, "%02d:%02d:%02.0f")));
+void ImagerWindow::on_recalculate_exposure() {
+	double totalExposure = m_sequence_editor2->totalExposure();
+	m_seq_esimated_duration->setText(QString("Total exposure: ") + QString(indigo_dtos(totalExposure / 3600, "%02d:%02d:%02.0f")));
 }
 
 void ImagerWindow::on_sequence_name_changed(const QString &object_name) {
@@ -180,8 +189,7 @@ void ImagerWindow::on_request_sequence() {
 		}
 		m_sequence_editor2->loadScriptToView(sequence);
 	}
-	//double duration = 0; //m_sequence_editor->approximate_duration();
-	//m_seq_esimated_duration->setText(QString("Sequence duration: ") + indigo_dtos(duration, "%02d:%02d:%02.0f"));
+	on_recalculate_exposure();
 }
 
 void ImagerWindow::on_sequence_start_stop(bool clicked) {

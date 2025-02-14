@@ -699,3 +699,33 @@ void IndigoSequence::paintEvent(QPaintEvent *event) {
 	QWidget::paintEvent(event);
 	overlayPrompt->setVisible(containerLayout->count() == 0);
 }
+
+double IndigoSequence::totalExposure() const {
+	double totalExposureTime = 0.0;
+
+	for (int i = 0; i < containerLayout->count(); ++i) {
+		IndigoSequenceItem* item = qobject_cast<IndigoSequenceItem*>(containerLayout->itemAt(i)->widget());
+		if (!item) continue;
+
+		if (item->getType() == SC_CAPTURE_BATCH) {
+			int count = item->getParameter(0).toInt();
+			double exposure = item->getParameter(1).toDouble();
+			totalExposureTime += count * exposure;
+		} else if (item->getType() == SC_REPEAT) {
+			int repeatCount = item->getParameter(0).toInt();
+			QVBoxLayout* repeatLayout = item->getRepeatLayout();
+			for (int j = 0; j < repeatLayout->count(); ++j) {
+				IndigoSequenceItem* nestedItem = qobject_cast<IndigoSequenceItem*>(repeatLayout->itemAt(j)->widget());
+				if (!nestedItem) continue;
+
+				if (nestedItem->getType() == SC_CAPTURE_BATCH) {
+					int count = nestedItem->getParameter(0).toInt();
+					double exposure = nestedItem->getParameter(1).toDouble();
+					totalExposureTime += repeatCount * count * exposure;
+				}
+			}
+		}
+	}
+
+	return totalExposureTime;
+}
