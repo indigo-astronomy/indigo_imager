@@ -507,18 +507,13 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 		// Start sequence or exposure
 		set_related_mount_and_imager_agents();
 		set_related_imager_and_guider_agents();
-		QString obj_name;
-		if (is_sequence) {
-			//obj_name = m_sequence_editor->get_sequence_name();
-		} else {
-			obj_name = m_object_name->text().trimmed();
-		}
-		m_object_name_str = obj_name;
-		add_fits_keyword_string(selected_imager_agent, "OBJECT", obj_name);
+
+		m_object_name_str = m_object_name->text().trimmed();
+		//add_fits_keyword_string(selected_imager_agent, "OBJECT", m_object_name_str);
 		change_agent_batch_property(selected_imager_agent);
 		change_ccd_frame_property(selected_imager_agent);
+		change_ccd_localmode_property(selected_imager_agent, m_object_name_str);
 		if(conf.save_images_on_server) {
-			change_ccd_localmode_property(selected_imager_agent, obj_name);
 			change_ccd_upload_property(selected_imager_agent, CCD_UPLOAD_MODE_BOTH_ITEM_NAME);
 		} else {
 			change_ccd_upload_property(selected_imager_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);

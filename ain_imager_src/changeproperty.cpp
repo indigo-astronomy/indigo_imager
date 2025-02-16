@@ -105,17 +105,24 @@ void ImagerWindow::change_ccd_upload_property(const char *agent, const char *ite
 }
 
 void ImagerWindow::change_ccd_localmode_property(const char *agent, const QString &object_name) {
-	static char filename_template[INDIGO_VALUE_SIZE];
-	if (object_name.isEmpty()) {
+	QString object;
+	if (object_name.trimmed().isEmpty() || object_name.trimmed() == DEFAULT_OBJECT_NAME) {
 		m_object_name_str = QString(DEFAULT_OBJECT_NAME);
+		object = "";
 	} else {
 		m_object_name_str = object_name.trimmed();
+		object = m_object_name_str;
 	}
-	strcpy(filename_template, m_object_name_str.toStdString().c_str());
-	strcat(filename_template, "_%-D_%F_%C_%M");
-	indigo_debug("filename template = %s", filename_template);
 
-	indigo_change_text_property_1_raw(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, CCD_LOCAL_MODE_PREFIX_ITEM_NAME, filename_template);
+	static const char *items[] = {
+		CCD_LOCAL_MODE_OBJECT_ITEM_NAME,
+		CCD_LOCAL_MODE_PREFIX_ITEM_NAME
+	};
+	char *values[] {
+		(char *)object.toStdString().c_str(),
+		"%o_%-D_%F_%C_%M"
+	};
+	indigo_change_text_property(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, 2, items, (const char **)values);
 }
 
 void ImagerWindow::add_fits_keyword_string(const char *agent, const char *keyword, const QString &value) const {

@@ -1787,6 +1787,14 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	}
 }
 
+void update_ccd_local_mode(ImagerWindow *w, indigo_property *property) {
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], CCD_LOCAL_MODE_OBJECT_ITEM_NAME)) {
+			w->m_object_name_str = QString(property->items[i].text.value);
+		}
+	}
+}
+
 void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 	double exp_elapsed, exp_time = 1;
 
@@ -2575,6 +2583,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 
 	// Imager Agent
+	if (client_match_device_property(property, selected_agent, CCD_LOCAL_MODE_PROPERTY_NAME)) {
+		update_ccd_local_mode(this, property);
+	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SEQUENCE_SIZE_PROPERTY_NAME)) {
 		indigo_item *item = indigo_get_item(property, AGENT_IMAGER_SEQUENCE_SIZE_ITEM_NAME);
 		if (item && item->number.max > item->number.value) {
@@ -3022,6 +3033,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 
 	// Imager Agent
+	if (client_match_device_property(property, selected_agent, CCD_LOCAL_MODE_PROPERTY_NAME)) {
+		update_ccd_local_mode(this, property);
+	}
 	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_camera_select);
 	}
