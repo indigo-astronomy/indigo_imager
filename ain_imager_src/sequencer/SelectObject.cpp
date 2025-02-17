@@ -176,3 +176,8 @@ void SelectObject::updateObjectList(const QString &text) {
 		star++;
 	}
 }
+
+void SelectObject::showEvent(QShowEvent *event) {
+	QFrame::showEvent(event);
+	m_object_search_line->setFocus();
+}

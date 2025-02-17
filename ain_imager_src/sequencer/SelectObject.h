@@ -42,6 +42,9 @@ public:
 signals:
 	void objectSelected(const QString &name, double ra, double dec);
 
+protected:
+	void showEvent(QShowEvent *event) override;
+
 private slots:
 	void onSearchTextChanged(const QString &text);
 	void onSearchEntered();
