@@ -1790,7 +1790,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 void update_ccd_local_mode(ImagerWindow *w, indigo_property *property) {
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], CCD_LOCAL_MODE_OBJECT_ITEM_NAME)) {
-			w->m_object_name_str = QString(property->items[i].text.value);
+			w->m_remote_object_name = QString(property->items[i].text.value);
 		}
 	}
 }

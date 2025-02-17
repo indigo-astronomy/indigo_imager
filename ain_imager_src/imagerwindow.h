@@ -641,11 +641,12 @@ private:
 	QPushButton *m_sync_files_button;
 	QPushButton *m_remove_synced_files_button;
 	QProgressBar *m_download_progress;
-	QString m_object_name_str;
+	QString m_remote_object_name;
 	QStringList m_files_to_download;
 	QStringList m_files_to_remove;
 	QString m_filter_name;
 	QString m_frame_type;
+	QString m_object_name_str;
 
 	// Sequence tabbar
 	QComboBox *m_agent_scripting_select;

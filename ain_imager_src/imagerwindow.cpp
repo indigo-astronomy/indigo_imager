@@ -497,6 +497,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 		[this]() {
 			// we need to get the filter name and frame when we start the download
 			// otherwise they can be changed before download is completed
+			m_object_name_str = m_remote_object_name.trimmed();
 			m_filter_name = m_filter_select->currentText().trimmed();
 			m_frame_type = m_frame_type_select->currentText().trimmed();
 			m_download_label->setMovie(m_download_spinner);
