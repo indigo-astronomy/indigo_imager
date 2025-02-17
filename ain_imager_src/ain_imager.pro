@@ -46,6 +46,7 @@ SOURCES += \
 	$$PWD/sequence_tab.cpp \
 	$$PWD/syncutils.cpp \
 	$$PWD/qconfigdialog.cpp \
+	$$PWD/sequencer/SelectObject.cpp \
 	$$PWD/sequencer/IndigoSequence.cpp \
 	$$PWD/sequencer/IndigoSequenceItem.cpp \
 	$$PWD/sequencer/SequenceItemModel.cpp \
@@ -139,6 +140,7 @@ HEADERS += \
 	$$PWD/blobpreview.h \
 	$$PWD/syncutils.h \
 	$$PWD/qconfigdialog.h \
+	$$PWD/sequencer/SelectObject.h \
 	$$PWD/sequencer/IndigoSequence.h \
 	$$PWD/sequencer/IndigoSequenceItem.h \
 	$$PWD/sequencer/SequenceItemModel.h \

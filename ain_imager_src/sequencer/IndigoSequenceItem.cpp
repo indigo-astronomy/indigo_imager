@@ -32,6 +32,7 @@
 #include <QMimeData>
 #include <QPainter>
 #include <QWidgetAction>
+#include "SelectObject.h"
 
 IndigoSequenceItem::IndigoSequenceItem(const QString &type, QWidget *parent)
 	: QWidget(parent), type(type), overlay(nullptr) {
@@ -224,6 +225,44 @@ void IndigoSequenceItem::addInputWidget(const QString &paramName, const ParamWid
 		}
 		mainLayout->addWidget(input);
 		parameterWidgets[key] = input;
+
+		int raIndex = -1;
+		int decIndex = -1;
+		const auto& parameters = model.getWidgetTypes()[type].parameters;
+		for (auto it = parameters.begin(); it != parameters.end(); ++it) {
+			if (it.value().paramWidget == LineEditSG_RA) {
+				raIndex = it.key();
+			} else if (it.value().paramWidget == LineEditSG_DEC) {
+				decIndex = it.key();
+			}
+		}
+
+		if (raIndex != -1 && decIndex != -1 && paramWidget == LineEditSG_DEC) {
+			QToolButton *selectObjectButton = new QToolButton(this);
+			selectObjectButton->setIcon(QIcon(":resource/calibrate.png")); // Unicode for magnifying glass
+			selectObjectButton->setToolTip("Select object from database");
+			connect(selectObjectButton, &QToolButton::clicked, this, [this, selectObjectButton, raIndex, decIndex]() {
+				QMenu *menu = new QMenu(this);
+				SelectObject *selectObjectWidget = new SelectObject(this);
+				QWidgetAction *widgetAction = new QWidgetAction(menu);
+				widgetAction->setDefaultWidget(selectObjectWidget);
+				menu->addAction(widgetAction);
+
+				connect(selectObjectWidget, &SelectObject::objectSelected, this, [this, menu, raIndex, decIndex](const QString &name, double ra, double dec) {
+					Q_UNUSED(name);
+					if (QLineEditSG *raInput = qobject_cast<QLineEditSG*>(parameterWidgets[raIndex])) {
+						raInput->setValue(ra);
+					}
+					if (QLineEditSG *decInput = qobject_cast<QLineEditSG*>(parameterWidgets[decIndex])) {
+						decInput->setValue(dec);
+					}
+					menu->close();
+				});
+
+				menu->exec(selectObjectButton->mapToGlobal(QPoint(0, selectObjectButton->height())));
+			});
+			mainLayout->addWidget(selectObjectButton);
+		}
 	}
 }
 
