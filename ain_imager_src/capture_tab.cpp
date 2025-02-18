@@ -957,11 +957,11 @@ void ImagerWindow::remove_synced_remote_files() {
 	indigo_property *p = properties.get(selected_agent, AGENT_IMAGER_DOWNLOAD_FILES_PROPERTY_NAME);
 	if (p) {
 		for (int i = 0; i < p->count; i++) {
-			if (!sutil.needs_sync(p->items[i].label) && sutil.syncable(p->items[i].label)) {
-				m_files_to_remove.append(p->items[i].label);
-				indigo_debug("To remove: %s", p->items[i].label);
+			if (!sutil.needs_sync(p->items[i].name) && sutil.syncable(p->items[i].name)) {
+				m_files_to_remove.append(p->items[i].name);
+				indigo_debug("To remove: %s", p->items[i].name);
 			} else {
-				indigo_debug("To keep:   %s", p->items[i].label);
+				indigo_debug("To keep:   %s", p->items[i].name);
 			}
 		}
 	}
