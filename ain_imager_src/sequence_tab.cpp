@@ -116,7 +116,7 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 
 	row++;
 	m_seq_esimated_duration = new QLabel(QString("Total exposure: ") + indigo_dtos(0, "%02d:%02d:%02.0f"));
-	m_seq_esimated_duration->setToolTip("This is approximate sequence duration as download, focusing, filter change etc., times are unpredicatble.");
+	m_seq_esimated_duration->setToolTip("This is the total exposure time of the composed sequence.");
 	sequence_frame_layout->addWidget(m_seq_esimated_duration, row, 0, 1, 3);
 
 	QToolButton *tbutton = new QToolButton();
