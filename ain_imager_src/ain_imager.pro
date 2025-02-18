@@ -107,6 +107,10 @@ RESOURCES += \
 	$$PWD/../resource/folder.png \
 	$$PWD/../resource/download.png \
 	$$PWD/../resource/histogram.png \
+	$$PWD/../resource/loop-grey.png \
+	$$PWD/../resource/loop-orange.png \
+	$$PWD/../resource/loop-green.png \
+	$$PWD/../resource/loop-red.png \
 	$$PWD/../resource/error.wav \
 	$$PWD/../resource/ok.wav \
 	$$PWD/../resource/warning.wav \

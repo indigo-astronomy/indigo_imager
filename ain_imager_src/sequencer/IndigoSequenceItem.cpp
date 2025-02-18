@@ -60,7 +60,8 @@ void IndigoSequenceItem::setupUI() {
 	}
 
 	statusLabel = new QLabel(this);
-	statusLabel->setPixmap(QPixmap(":/resource/led-grey.png"));
+	setIdle();
+
 	statusLabel->setContentsMargins(5, 0, 0, 0);
 	statusLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
 	statusLabel->setStyleSheet("background: transparent;");
@@ -117,7 +118,8 @@ void IndigoSequenceItem::setupUI() {
 		outerLayout->addLayout(repeatLayout);
 
 		// Add iteration label
-		iterationLabel = new QLabel("Iteration: 0", this);
+		iterationLabel = new QLabel(this);
+		setIteration(0);
 		iterationLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 		iterationLabel->setStyleSheet("background: transparent;");
 		mainLayout->insertWidget(mainLayout->indexOf(deleteButton) - 2, iterationLabel);
@@ -761,23 +763,39 @@ void IndigoSequenceItem::updateNestedComboOptions(const QString& type, int param
 }
 
 void IndigoSequenceItem::setIdle() {
-	statusLabel->setPixmap(QPixmap(":/resource/led-grey.png"));
+	if (type == SC_REPEAT) {
+		statusLabel->setPixmap(QPixmap(":/resource/loop-grey.png"));
+	} else {
+		statusLabel->setPixmap(QPixmap(":/resource/led-grey.png"));
+	}
 }
 
 void IndigoSequenceItem::setBusy() {
-	statusLabel->setPixmap(QPixmap(":/resource/led-orange.png"));
+	if (type == SC_REPEAT) {
+		statusLabel->setPixmap(QPixmap(":/resource/loop-orange.png"));
+	} else {
+		statusLabel->setPixmap(QPixmap(":/resource/led-orange.png"));
+	}
 }
 
 void IndigoSequenceItem::setAlert() {
-	statusLabel->setPixmap(QPixmap(":/resource/led-red.png"));
+	if (type == SC_REPEAT) {
+		statusLabel->setPixmap(QPixmap(":/resource/loop-red.png"));
+	} else {
+		statusLabel->setPixmap(QPixmap(":/resource/led-red.png"));
+	}
 }
 
 void IndigoSequenceItem::setOk() {
-	statusLabel->setPixmap(QPixmap(":/resource/led-green.png"));
+	if (type == SC_REPEAT) {
+		statusLabel->setPixmap(QPixmap(":/resource/loop-green.png"));
+	} else {
+		statusLabel->setPixmap(QPixmap(":/resource/led-green.png"));
+	}
 }
 
 void IndigoSequenceItem::setIteration(int count) {
-    if (type == SC_REPEAT && iterationLabel) {
-        iterationLabel->setText(QString("Iteration: %1").arg(count));
-    }
+	if (type == SC_REPEAT && iterationLabel) {
+		iterationLabel->setText(QString("Iteration: <b>%1</b>").arg(count));
+	}
 }

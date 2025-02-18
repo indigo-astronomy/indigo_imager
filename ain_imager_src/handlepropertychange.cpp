@@ -1952,6 +1952,7 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			seq_item->setBusy();
 			seq_item->setIteration(loop_iteration);
 		}
+		indigo_error("Loop at step %d, iteration %d", loop_at_step, loop_iteration);
 	}
 }
 
