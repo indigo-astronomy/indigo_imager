@@ -75,6 +75,7 @@ RESOURCES += \
 	$$PWD/../resource/indigo_logo.png \
 	$$PWD/../resource/save.png \
 	$$PWD/../resource/delete.png \
+	$$PWD/../resource/find.png \
 	$$PWD/../resource/zoom-fit-best.png \
 	$$PWD/../resource/zoom-original.png \
 	$$PWD/../resource/bonjour_service.png \

@@ -239,7 +239,7 @@ void IndigoSequenceItem::addInputWidget(const QString &paramName, const ParamWid
 
 		if (raIndex != -1 && decIndex != -1 && paramWidget == LineEditSG_DEC) {
 			QToolButton *selectObjectButton = new QToolButton(this);
-			selectObjectButton->setIcon(QIcon(":resource/calibrate.png")); // Unicode for magnifying glass
+			selectObjectButton->setIcon(QIcon(":resource/find.png"));
 			selectObjectButton->setToolTip("Select object from database");
 			connect(selectObjectButton, &QToolButton::clicked, this, [this, selectObjectButton, raIndex, decIndex]() {
 				QMenu *menu = new QMenu(this);
