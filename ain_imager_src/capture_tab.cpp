@@ -519,10 +519,10 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 			change_ccd_upload_property(selected_imager_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
 		}
 		if (is_sequence) {
-			int approx_time = 0; //(int)(m_sequence_editor->approximate_duration()*3600);
+			int approx_time = m_sequence_editor2->totalExposure();
 			if (approx_time >= 0) {
 				static char end_time[256];
-				get_time_after(end_time, approx_time, "Estimated sequence completion: %d %b %H:%M");
+				get_time_after(end_time, approx_time, "Optimistic time of sequence completion: %d %b %H:%M");
 				Logger::instance().log(nullptr, end_time);
 			}
 			change_scripting_agent_sequence(
