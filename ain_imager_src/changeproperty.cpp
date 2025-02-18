@@ -515,7 +515,6 @@ void ImagerWindow::change_guider_agent_edge_clipping(const char *agent) const {
 }
 
 void ImagerWindow::change_focuser_subframe(const char *agent) const {
-	indigo_error("change_focuser_subframe");
 	static const char *items[] = {
 		AGENT_IMAGER_SELECTION_SUBFRAME_ITEM_NAME
 	};
@@ -614,12 +613,12 @@ void ImagerWindow::change_agent_start_sequence_property(const char *agent) const
 					p->items[i].name,
 					true
 				);
-				indigo_error("Sequence started %s", p->items[i].name);
+				indigo_debug("Sequence started %s", p->items[i].name);
 				return;
 			}
 		}
 	}
-	indigo_error("Sequence not found");
+	indigo_debug("Sequence not found");
 }
 
 void ImagerWindow::change_agent_start_focusing_property(const char *agent) const {
@@ -1261,12 +1260,9 @@ void ImagerWindow::change_scripting_agent_sequence(const char *agent, QString se
 		static char *values[2];
 		values[0] = "AinSequence";
 		values[1] = script;
-		//indigo_error("script = %s", script);
 		indigo_change_text_property(nullptr, agent, AGENT_SCRIPTING_ADD_SCRIPT_PROPERTY_NAME, 2, items, (const char**)values);
 		indigo_safe_free(script);
 	}
-
-	indigo_log("[SEQUENCE] %s '%s'\n", __FUNCTION__, agent);
 }
 
 void ImagerWindow::change_rotator_position_property(const char *agent) const {

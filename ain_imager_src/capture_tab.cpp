@@ -485,7 +485,7 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 		get_selected_imager_agent(selected_imager_agent);
 		static char selected_scripting_agent[INDIGO_NAME_SIZE];
 		get_selected_scripting_agent(selected_scripting_agent);
-		indigo_error("start_stop: %s %s", selected_imager_agent, selected_scripting_agent);
+		indigo_debug("start_stop: %s %s", selected_imager_agent, selected_scripting_agent);
 
 		// Stop sequence or exposure if running
 		if (is_sequence) {
@@ -576,7 +576,7 @@ void ImagerWindow::on_abort(bool clicked) {
 		indigo_property *p = properties.get(selected_scripting_agent, "SEQUENCE_STATE");
 		if(p && p->state == INDIGO_BUSY_STATE) {
 			change_agent_abort_process_property(selected_scripting_agent);
-			indigo_error("# Sequence is running, aborting it.");
+			indigo_debug("Sequence is running, aborting it.");
 		} else {
 			static char selected_imager_agent[INDIGO_NAME_SIZE];
 			get_selected_imager_agent(selected_imager_agent);
@@ -584,10 +584,10 @@ void ImagerWindow::on_abort(bool clicked) {
 			indigo_property *p = properties.get(selected_imager_agent, AGENT_START_PROCESS_PROPERTY_NAME);
 			if (p && p->state == INDIGO_BUSY_STATE ) {
 				change_agent_abort_process_property(selected_imager_agent);
-				indigo_error("# Process is running, aborting it.");
+				indigo_debug("Process is running, aborting it.");
 			} else {
 				change_ccd_abort_exposure_property(selected_imager_agent);
-				indigo_error("# Exposure is running, aborting it.");
+				indigo_debug("Exposure is running, aborting it.");
 			}
 		}
 	});

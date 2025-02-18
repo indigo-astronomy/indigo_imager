@@ -1817,7 +1817,6 @@ void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 }
 
 void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property) {
-	indigo_error("update_scripting_sequence_state");
 
 	if (!strcmp(property->name, "SEQUENCE_STATE")) {
 		int sequence_step = -1;
@@ -1831,11 +1830,9 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			}
 			if (client_match_item(&property->items[i], "PROGRESS")) {
 				progress = (int)property->items[i].number.value;
-				indigo_error("progress = %d", progress);
 			}
 			if (client_match_item(&property->items[i], "PROGRESS_TOTAL")) {
 				progress_total = (int)property->items[i].number.value;
-				indigo_error("progress_total = %d", progress_total);
 			}
 			if (client_match_item(&property->items[i], "EXPOSURE")) {
 				exposure_complete = property->items[i].number.value;
@@ -1846,10 +1843,7 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 		}
 
 		int complete = (progress_total != 0) ? (int)((double)progress / progress_total * 100 + 0.5) : 0;
-		indigo_error("complete = %d, progress = %f, progress_total = %f", complete, progress, progress_total);
 		w->m_seq_sequence_progress->setRange(0, 100);
-
-		indigo_error("sequence_step = %d", sequence_step);
 
 		if (sequence_step >= 0 && property->state == INDIGO_BUSY_STATE) {
 
@@ -1958,7 +1952,6 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			seq_item->setBusy();
 			seq_item->setIteration(loop_iteration);
 		}
-		indigo_error("LOOP_0 step = %d iteration = %d", loop_at_step, loop_iteration);
 	}
 }
 
@@ -2726,7 +2719,6 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	// Scripting Agent
 	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE") ||
 	    client_match_device_property(property, selected_scripting_agent, "LOOP_0")) {
-		indigo_error("Scripting Agent: %s", property->name);
 		update_scripting_sequence_state(this, property);
 	}
 
@@ -3113,7 +3105,6 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	// Scripting Agent
 	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE") ||
 	    client_match_device_property(property, selected_scripting_agent, "LOOP_0")) {
-		indigo_error("Scripting Agent: %s", property->name);
 		update_scripting_sequence_state(this, property);
 	}
 
