@@ -1458,7 +1458,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	static double best_hfd = 0, best_contrast = 0, best_bahtinov = 0;
 	double FWHM = 0, HFD = 0, contrast = 0, bahtinov = 0;
 	int phase = INDIGO_IMAGER_PHASE_IDLE;
-	bool has_phase = false;
 
 	indigo_item *exposure_item = properties.get_item(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME, AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME);
 	if (exposure_item) exp_time = exposure_item->number.target;
@@ -1563,7 +1562,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			batch_index = (int)stats_p->items[i].number.value;
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_PHASE_ITEM_NAME)) {
 			phase = (int)stats_p->items[i].number.value;
-			has_phase = true;
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_MAX_STARS_TO_USE_ITEM_NAME)) {
 			w->m_max_focus_stars = stats_p->items[i].number.value;
 			if (w->m_tools_tabbar->currentIndex() == FOCUSER_TAB) {
@@ -1754,33 +1752,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		exposure_running = false;
 	}
 
-	if (has_phase) {
-		switch (phase) {
-			case INDIGO_IMAGER_PHASE_IDLE:
-				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-grey.png\"> Idle");
-				break;
-			case INDIGO_IMAGER_PHASE_SETTING_FILTER:
-				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Changing filter");
-				break;
-			case INDIGO_IMAGER_PHASE_FOCUSING:
-				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Focusing");
-				break;
-			case INDIGO_IMAGER_PHASE_CAPTURING:
-				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Capturing");
-				break;
-			case INDIGO_IMAGER_PHASE_DITHERING:
-				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Dithering");
-				break;
-			case INDIGO_IMAGER_PHASE_WAITING:
-				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Waiting");
-				break;
-			default:
-				break;
-		}
-	} else {
-		w->set_text(w->m_imager_status_label, "");
-	}
-
 	if (property == start_p) {
 		w->set_widget_state(w->m_exposure_button, start_p->state);
 		w->set_widget_state(w->m_focusing_button, start_p->state);
@@ -1919,10 +1890,11 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 					seq_item->setBusy();
 				}
 			}
-
+			w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> In progress");
 			w->m_seq_sequence_progress->setValue(complete);
 			w->m_seq_sequence_progress->setFormat("Sequence: %v\% complete");
 		} else if (property->state == INDIGO_OK_STATE) {
+			w->set_text(w->m_imager_status_label, "<img src=\":resource/led-green.png\"> Complete");
 			w->set_text(w->m_seq_esimated_duration, QString("Total exposure: ") + QString(indigo_dtos(0, "%02d:%02d:%02.0f")));
 			w->set_widget_state(w->m_seq_start_button, INDIGO_OK_STATE);
 			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
@@ -1943,6 +1915,7 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 						break;
 					}
 				}
+				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-grey.png\"> Idle");
 				w->m_seq_exposure_progress->setRange(0, 1);
 				w->m_seq_exposure_progress->setValue(0);
 				w->m_seq_exposure_progress->setFormat("Exposure: Idle");
@@ -1965,6 +1938,7 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			if (seq_item) {
 				seq_item->setAlert();
 			}
+			w->set_text(w->m_imager_status_label, "<img src=\":resource/led-red.png\"> Failed");
 			w->m_seq_sequence_progress->setValue(complete);
 			w->m_seq_sequence_progress->setFormat("Sequence: Failed (%v\% cpmplete)");
 		}
