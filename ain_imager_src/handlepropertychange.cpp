@@ -1864,26 +1864,41 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			if (seq_item) {
 				seq_item->setBusy();
 			}
-			for (int i = sequence_step + 1; i < w->m_sequence_editor2->itemCount(); i++) {
+
+			int item_count = w->m_sequence_editor2->itemCount();
+
+			for (int i = sequence_step + 1; i < item_count; i++) {
 				seq_item = w->m_sequence_editor2->getItemAt(i);
 				if (seq_item) {
 					seq_item->setIdle();
 				}
 			}
 
+			int loop_iteration = -1;
+			int loop_at_step = -1;
 			indigo_property *p = properties.get(property->device, "LOOP_0");
 			if (p) {
-				int loop_at_step = -1;
 				for (int i = 0; i < p->count; i++) {
 					if (client_match_item(&p->items[i], "STEP")) {
 						loop_at_step = (int)p->items[i].number.value;
 					}
-				}
-				seq_item = w->m_sequence_editor2->getItemAt(loop_at_step);
-				if (seq_item) {
-					seq_item->setBusy();
+					if (client_match_item(&p->items[i], "COUNT")) {
+						loop_iteration = (int)p->items[i].number.value;
+					}
 				}
 			}
+			for (int i = 0; i < item_count; i++) {
+				seq_item = w->m_sequence_editor2->getItemAt(i);
+				if (seq_item) {
+					if (i == loop_at_step) {
+						seq_item->setBusy();
+						seq_item->setIteration(loop_iteration + 1);
+					} else {
+						seq_item->setIteration(0);
+					}
+				}
+			}
+
 			w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> In progress");
 			w->m_seq_sequence_progress->setValue(complete);
 			w->m_seq_sequence_progress->setFormat("Sequence: %v\% complete");
@@ -1937,22 +1952,7 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			w->m_seq_sequence_progress->setFormat("Sequence: Failed (%v\% cpmplete)");
 		}
 	} else if (!strcmp(property->name, "LOOP_0")) {
-		int loop_iteration = -1;
-		int loop_at_step = -1;
-		for (int i = 0; i < property->count; i++) {
-			if (client_match_item(&property->items[i], "STEP")) {
-				loop_at_step = (int)property->items[i].number.value;
-			}
-			if (client_match_item(&property->items[i], "COUNT")) {
-				loop_iteration = (int)property->items[i].number.value;
-			}
-		}
-		IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(loop_at_step);
-		if (seq_item) {
-			seq_item->setBusy();
-			seq_item->setIteration(loop_iteration);
-		}
-		indigo_error("Loop at step %d, iteration %d", loop_at_step, loop_iteration);
+		/* nothing yet */
 	}
 }
 
