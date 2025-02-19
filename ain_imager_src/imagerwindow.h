@@ -151,6 +151,7 @@ public:
 	friend void update_ccd_local_mode(ImagerWindow *w, indigo_property *property);
 	friend void update_ccd_exposure(ImagerWindow *w, indigo_property *property);
 	friend void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property);
+	friend void handle_scripting_on_load_script(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_stats(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_settings(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_apply_dec_backlash(ImagerWindow *w, indigo_property *property);

@@ -1956,6 +1956,42 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 	}
 }
 
+void handle_scripting_on_load_script(ImagerWindow *w, indigo_property *property) {
+	bool enable_new = false;
+	bool ain_sequence = false;
+	int ain_sequence_index = -1;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], AGENT_SCRIPTING_ADD_SCRIPT_PROPERTY_NAME)) {
+			enable_new = property->items[i].sw.value;
+		}
+		if (!strcmp(property->items[i].label, "AinSequence")) {
+			ain_sequence = property->items[i].sw.value;
+			ain_sequence_index = i;
+		}
+	}
+
+	QtConcurrent::run([=]() {
+		if (enable_new) {
+			indigo_change_switch_property_1(
+				nullptr,
+				property->device,
+				AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME,
+				AGENT_SCRIPTING_ADD_SCRIPT_PROPERTY_NAME,
+				false
+			);
+		}
+		if (ain_sequence && ain_sequence_index >= 0) {
+			indigo_change_switch_property_1(
+				nullptr,
+				property->device,
+				AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME,
+				property->items[ain_sequence_index].name,
+				false
+			);
+		}
+	});
+}
+
 void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	double ref_x = 0, ref_y = 0;
 	double d_ra = 0, d_dec = 0;
@@ -2722,6 +2758,10 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	    client_match_device_property(property, selected_scripting_agent, "LOOP_0")) {
 		update_scripting_sequence_state(this, property);
 	}
+	if (client_match_device_property(property, selected_scripting_agent, AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME)) {
+		// new scripts and AinSequence should not be added to auto start by default
+		handle_scripting_on_load_script(this, property);
+	}
 
 	// Guider Agent
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DITHERING_STRATEGY_PROPERTY_NAME)) {
@@ -3107,6 +3147,10 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE") ||
 	    client_match_device_property(property, selected_scripting_agent, "LOOP_0")) {
 		update_scripting_sequence_state(this, property);
+	}
+	if (client_match_device_property(property, selected_scripting_agent, AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME)) {
+		// new scripts and AinSequence should not be added to auto start by default
+		handle_scripting_on_load_script(this, property);
 	}
 
 	// Guider Agent
