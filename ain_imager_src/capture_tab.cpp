@@ -847,7 +847,7 @@ void ImagerWindow::on_object_name_changed(const QString &object_name) {
 		return;
 	}
 	QtConcurrent::run([=]() {
-		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		indigo_error("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
 
