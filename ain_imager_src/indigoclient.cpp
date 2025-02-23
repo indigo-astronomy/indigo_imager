@@ -187,12 +187,26 @@ static indigo_result client_define_property(indigo_client *client, indigo_device
 
 	if (!processed_device(property->device)) return INDIGO_OK;
 
-	IndigoClient::instance().update_save_blob(property);
+	IndigoClient &client_instance = IndigoClient::instance();
+
+	client_instance.update_save_blob(property);
 
 	if (property->type == INDIGO_BLOB_VECTOR) {
+		//reset download flags
+		if (!strncmp(property->device, "Imager Agent", 12)) {
+			if (!strncmp(property->name, CCD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+				client_instance.imager_downloading.store(0);
+			} else if (!strncmp(property->name, AGENT_IMAGER_DOWNLOAD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+				client_instance.imager_downloading_saved_frame.store(0);
+			}
+		} else if (!strncmp(property->device, "Guider Agent", 12)) {
+			client_instance.guider_downloading.store(0);
+		} else {
+			client_instance.other_downloading.store(0);
+		}
 		if (device->version < INDIGO_VERSION_2_0)
-			IndigoClient::instance().m_logger->log(property, "BLOB can be used in INDI legacy mode");
-		if (IndigoClient::instance().blobs_enabled()) { // Enagle blob and let adapter decide URL or ALSO
+			client_instance.m_logger->log(property, "BLOB can be used in INDI legacy mode");
+		if (client_instance.blobs_enabled()) { // Enagle blob and let adapter decide URL or ALSO
 				indigo_enable_blob(client, property, INDIGO_ENABLE_BLOB);
 		}
 		handle_blob_property(property);
