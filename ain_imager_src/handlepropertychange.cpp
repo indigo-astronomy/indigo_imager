@@ -1842,6 +1842,20 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			}
 		}
 
+		int loop_iteration = -1;
+		int loop_at_step = -1;
+		indigo_property *p = properties.get(property->device, "LOOP_0");
+		if (p) {
+			for (int i = 0; i < p->count; i++) {
+				if (client_match_item(&p->items[i], "STEP")) {
+					loop_at_step = (int)p->items[i].number.value;
+				}
+				if (client_match_item(&p->items[i], "COUNT")) {
+					loop_iteration = (int)p->items[i].number.value;
+				}
+			}
+		}
+
 		int complete = (progress_total != 0) ? (int)((double)progress / progress_total * 100 + 0.5) : 0;
 		w->m_seq_sequence_progress->setRange(0, 100);
 
@@ -1874,19 +1888,6 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 				}
 			}
 
-			int loop_iteration = -1;
-			int loop_at_step = -1;
-			indigo_property *p = properties.get(property->device, "LOOP_0");
-			if (p) {
-				for (int i = 0; i < p->count; i++) {
-					if (client_match_item(&p->items[i], "STEP")) {
-						loop_at_step = (int)p->items[i].number.value;
-					}
-					if (client_match_item(&p->items[i], "COUNT")) {
-						loop_iteration = (int)p->items[i].number.value;
-					}
-				}
-			}
 			for (int i = 0; i < item_count; i++) {
 				seq_item = w->m_sequence_editor2->getItemAt(i);
 				if (seq_item) {
@@ -1909,10 +1910,14 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 
 			if(sequence_step >= 0) {
-				IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(sequence_step);
-				if (seq_item) {
-					seq_item->setOk();
+				int item_count = w->m_sequence_editor2->itemCount();
+				for (int i = 0; i < item_count; i++) {
+					IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(i);
+					if (seq_item) {
+						seq_item->setOk();
+					}
 				}
+
 				w->m_seq_sequence_progress->setValue(complete);
 				w->m_seq_sequence_progress->setFormat("Sequence: %v\% complete");
 			} else {
@@ -1946,6 +1951,12 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			seq_item = w->m_sequence_editor2->getItemAt(sequence_step);
 			if (seq_item) {
 				seq_item->setAlert();
+			}
+			if (loop_at_step >= 0) {
+				seq_item = w->m_sequence_editor2->getItemAt(loop_at_step);
+				if (seq_item) {
+					seq_item->setAlert();
+				}
 			}
 			w->set_text(w->m_imager_status_label, "<img src=\":resource/led-red.png\"> Failed");
 			w->m_seq_sequence_progress->setValue(complete);
