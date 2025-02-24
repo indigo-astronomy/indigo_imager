@@ -31,6 +31,7 @@ bool processed_device(char *device) {
 		strncmp(device, "Astrometry Agent", 16) &&
 		strncmp(device, "Configuration agent", 19) &&
 		strncmp(device, "Configuration Agent", 19) &&
+		strncmp(device, "Scripting Agent", 15) &&
 		strncmp(device, "Server", 6)
 	) {
 		return false;

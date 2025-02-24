@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Rumen G.Bogdanovski
+// Copyright (c) 2025 Rumen G.Bogdanovski
 // All rights reserved.
 //
 // You can use this software under the terms of 'INDIGO Astronomy
@@ -16,30 +16,22 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifndef __QLINEREDITSG_H
+#define __QLINEREDITSG_H
 
-#ifndef CUSTOMOBJECT_H
-#define CUSTOMOBJECT_H
+#include <QLineEdit>
+#include "SexagesimalConverter.h"
 
-#include <QObject>
-#include <QString>
-
-class CustomObject {
+class QLineEditSG : public QLineEdit {
+	Q_OBJECT
 public:
-	QString m_name;
-	double m_ra;
-	double m_dec;
-	double m_mag;
- 	QString m_description;
+	enum Mode { RA, DEC };
+	explicit QLineEditSG(Mode mode, QWidget* parent = nullptr);
+	void setValue(double value);
+	double value() const;
 
-	CustomObject(QString name, double ra, double dec, double mag = 0, QString description = "");
-
-	virtual ~CustomObject();
-
-	bool operator==(const CustomObject &other) const;
-	bool operator!=(const CustomObject &other) const;
-	bool matchObject(QString part_name);
+private:
+	Mode mode;
 };
 
-Q_DECLARE_METATYPE(CustomObject*)
-
-#endif // CUSTOMOBJECT_H
+#endif // __QLINEREDITSG_H

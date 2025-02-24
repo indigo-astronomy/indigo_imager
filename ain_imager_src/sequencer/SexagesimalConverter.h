@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Rumen G.Bogdanovski
+// Copyright (c) 2025 Rumen G.Bogdanovski
 // All rights reserved.
 //
 // You can use this software under the terms of 'INDIGO Astronomy
@@ -16,30 +16,27 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifndef __SEXAGESIMALCONVERTER_H
+#define __SEXAGESIMALCONVERTER_H
 
-#ifndef CUSTOMOBJECT_H
-#define CUSTOMOBJECT_H
-
-#include <QObject>
 #include <QString>
+#include <QRegularExpression>
 
-class CustomObject {
+class SexagesimalConverter {
 public:
-	QString m_name;
-	double m_ra;
-	double m_dec;
-	double m_mag;
- 	QString m_description;
+	static double stringToDouble(const QString& str, bool* ok = nullptr);
+	static QString doubleToString(double value, int decimals = 2, bool showPlusSign = false);
 
-	CustomObject(QString name, double ra, double dec, double mag = 0, QString description = "");
+private:
+	static bool validateComponents(int degrees, int minutes, double seconds, QString& errorMsg);
+	static const QRegularExpression fullFormat;    // dd:mm:ss.ff
+	static const QRegularExpression fullNoDecFormat;   // dd:mm:ss
+	static const QRegularExpression shortFormat;  // dd:mm.ff
+	static const QRegularExpression shortNoDecFormat;   // dd:mm
+	static const QRegularExpression decimalFormat; // dd.ff
 
-	virtual ~CustomObject();
-
-	bool operator==(const CustomObject &other) const;
-	bool operator!=(const CustomObject &other) const;
-	bool matchObject(QString part_name);
+	static const int MAX_MINUTES = 59;
+	static const int MAX_SECONDS = 59;
 };
 
-Q_DECLARE_METATYPE(CustomObject*)
-
-#endif // CUSTOMOBJECT_H
+#endif // __SEXAGESIMALCONVERTER_H

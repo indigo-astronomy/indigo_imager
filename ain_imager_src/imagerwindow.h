@@ -63,11 +63,11 @@ class QIndigoServers;
 #include <QProcess>
 #include <QMovie>
 #include "focusgraph.h"
-#include "sequence_editor.h"
 #include "syncutils.h"
 #include "customobjectmodel.h"
 #include "qaddcustomobject.h"
 #include "qconfigdialog.h"
+#include <IndigoSequence.h>
 
 class ImagerWindow : public QMainWindow {
 	Q_OBJECT
@@ -110,6 +110,13 @@ public:
 		return true;
 	};
 
+	bool get_selected_scripting_agent(char * selected_agent) const {
+		if (!selected_agent || !m_agent_scripting_select) return false;
+		strncpy(selected_agent, m_agent_scripting_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+		indigo_debug("SELECTED SCRIPTING AGENT = %s", selected_agent);
+		return true;
+	};
+
 	void play_sound(int alarm);
 
 	void property_delete(indigo_property* property, char *message);
@@ -141,7 +148,10 @@ public:
 	friend void update_ccd_frame_property(ImagerWindow *w, indigo_property *property);
 	friend void update_wheel_slot_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *property);
+	friend void update_ccd_local_mode(ImagerWindow *w, indigo_property *property);
 	friend void update_ccd_exposure(ImagerWindow *w, indigo_property *property);
+	friend void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property);
+	friend void handle_scripting_on_load_script(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_stats(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_settings(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_apply_dec_backlash(ImagerWindow *w, indigo_property *property);
@@ -221,6 +231,7 @@ public slots:
 	void on_preview_start_stop(bool clicked);
 	void on_abort(bool clicked);
 	void on_pause(bool clicked);
+	void on_reset(bool clicked);
 	void on_window_log(indigo_property* property, const char *message);
 	void on_property_define(indigo_property* property, char *message);
 	void on_property_change(indigo_property* property, char *message);
@@ -295,6 +306,8 @@ public slots:
 	void on_keep_image_on_server(int state);
 	void on_sync_remote_files(bool clicked);
 	void on_remove_synced_remote_files(bool clicked);
+
+	void on_scripting_agent_selected(int index);
 
 	void on_focus_start_stop(bool clicked);
 	void on_focus_preview_start_stop(bool clicked);
@@ -416,7 +429,7 @@ public slots:
 	void on_mount_agent_set_pa_settings(double value);
 	void on_mount_agent_set_pa_refraction(bool clicked);
 
-	void on_sequence_updated();
+	void on_recalculate_exposure();
 	void on_request_sequence();
 
 	void on_tab_changed(int index);
@@ -579,6 +592,7 @@ public slots:
 		line_edit->setText(text);
 		line_edit->blockSignals(false);
 	};
+
 private:
 	QTextEdit* mLog;
 	QTabWidget *m_tools_tabbar;
@@ -628,20 +642,23 @@ private:
 	QPushButton *m_sync_files_button;
 	QPushButton *m_remove_synced_files_button;
 	QProgressBar *m_download_progress;
-	QString m_object_name_str;
+	QString m_remote_object_name;
 	QStringList m_files_to_download;
 	QStringList m_files_to_remove;
 	QString m_filter_name;
 	QString m_frame_type;
+	QString m_object_name_str;
 
 	// Sequence tabbar
+	QComboBox *m_agent_scripting_select;
 	QProgressBar *m_seq_exposure_progress;
 	QProgressBar *m_seq_batch_progress;
 	QProgressBar *m_seq_sequence_progress;
 	QPushButton *m_seq_start_button;
-	QPushButton *m_seq_pause_button;
+	QPushButton *m_seq_reset_button;
 	QLabel *m_seq_esimated_duration;
 	QLabel *m_imager_status_label;
+	QString m_sequencer_code;
 
 	// Focuser tabbar
 	QComboBox *m_focuser_select;
@@ -883,7 +900,7 @@ private:
 
 	indigo_item *m_indigo_item;
 
-	SequenceEditor *m_sequence_editor;
+	IndigoSequence *m_sequence_editor2;
 
 	QString m_image_key;
 	QString m_guider_key;
@@ -919,6 +936,8 @@ private:
 	void create_guider_tab(QFrame *guider_frame);
 	void create_telescope_tab(QFrame *solver_frame);
 	void create_solver_tab(QFrame *telescope_frame);
+
+	void load_sequencer_code();
 
 	void change_config_agent_load(const char *agent, const char *config, bool unload) const;
 	void change_config_agent_save(const char *agent, const char *config, bool autosave) const;
@@ -1021,7 +1040,7 @@ private:
 	void change_solver_goto_settings(const char *agent) const;
 	void trigger_precise_goto();
 
-	void change_imager_agent_sequence(const char *agent, QString sequence, QList<QString> batches) const;
+	void change_scripting_agent_sequence(const char *agent, QString sequence) const;
 
 	void select_guider_data(guider_display_data show);
 

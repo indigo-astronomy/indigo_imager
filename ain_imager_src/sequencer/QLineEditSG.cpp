@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Rumen G.Bogdanovski
+// Copyright (c) 2025 Rumen G.Bogdanovski
 // All rights reserved.
 //
 // You can use this software under the terms of 'INDIGO Astronomy
@@ -16,30 +16,20 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include "QLineEditSG.h"
+#include <QRegularExpressionValidator>
+#include <QDebug>
 
-#ifndef CUSTOMOBJECT_H
-#define CUSTOMOBJECT_H
+QLineEditSG::QLineEditSG(Mode mode, QWidget* parent) : QLineEdit(parent), mode(mode) {
+}
 
-#include <QObject>
-#include <QString>
+void QLineEditSG::setValue(double value) {
+	QString text = SexagesimalConverter::doubleToString(value, 2, mode == DEC);
+	setText(text);
+}
 
-class CustomObject {
-public:
-	QString m_name;
-	double m_ra;
-	double m_dec;
-	double m_mag;
- 	QString m_description;
-
-	CustomObject(QString name, double ra, double dec, double mag = 0, QString description = "");
-
-	virtual ~CustomObject();
-
-	bool operator==(const CustomObject &other) const;
-	bool operator!=(const CustomObject &other) const;
-	bool matchObject(QString part_name);
-};
-
-Q_DECLARE_METATYPE(CustomObject*)
-
-#endif // CUSTOMOBJECT_H
+double QLineEditSG::value() const {
+	bool ok;
+	double val = SexagesimalConverter::stringToDouble(text(), &ok);
+	return ok ? val : 0.0;
+}

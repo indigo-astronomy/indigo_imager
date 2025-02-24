@@ -43,10 +43,16 @@ SOURCES += \
 	$$PWD/handlepropertychange.cpp \
 	$$PWD/focusgraph.cpp \
 	$$PWD/blobpreview.cpp \
-	$$PWD/sequence_editor.cpp \
 	$$PWD/sequence_tab.cpp \
 	$$PWD/syncutils.cpp \
 	$$PWD/qconfigdialog.cpp \
+	$$PWD/sequencer/SelectObject.cpp \
+	$$PWD/sequencer/IndigoSequence.cpp \
+	$$PWD/sequencer/IndigoSequenceItem.cpp \
+	$$PWD/sequencer/SequenceItemModel.cpp \
+	$$PWD/sequencer/IndigoSequenceParser.cpp \
+	$$PWD/sequencer/SexagesimalConverter.cpp \
+	$$PWD/sequencer/QLineEditSG.cpp \
 	$$PWD/../common_src/coordconv.c \
 	$$PWD/../object_data/indigo_cat_data.c \
 	$$PWD/../common_src/utils.cpp \
@@ -62,12 +68,14 @@ SOURCES += \
 
 
 RESOURCES += \
+	$$PWD/scripts/Sequencer.js \
 	$$PWD/../qdarkstyle/style.qrc \
 	$$PWD/../resource/control_panel.qss \
 	$$PWD/../resource/appicon.png \
 	$$PWD/../resource/indigo_logo.png \
 	$$PWD/../resource/save.png \
 	$$PWD/../resource/delete.png \
+	$$PWD/../resource/find.png \
 	$$PWD/../resource/zoom-fit-best.png \
 	$$PWD/../resource/zoom-original.png \
 	$$PWD/../resource/bonjour_service.png \
@@ -99,6 +107,10 @@ RESOURCES += \
 	$$PWD/../resource/folder.png \
 	$$PWD/../resource/download.png \
 	$$PWD/../resource/histogram.png \
+	$$PWD/../resource/loop-grey.png \
+	$$PWD/../resource/loop-orange.png \
+	$$PWD/../resource/loop-green.png \
+	$$PWD/../resource/loop-red.png \
 	$$PWD/../resource/error.wav \
 	$$PWD/../resource/ok.wav \
 	$$PWD/../resource/warning.wav \
@@ -131,9 +143,15 @@ HEADERS += \
 	$$PWD/conf.h \
 	$$PWD/widget_state.h \
 	$$PWD/blobpreview.h \
-	$$PWD/sequence_editor.h \
 	$$PWD/syncutils.h \
 	$$PWD/qconfigdialog.h \
+	$$PWD/sequencer/SelectObject.h \
+	$$PWD/sequencer/IndigoSequence.h \
+	$$PWD/sequencer/IndigoSequenceItem.h \
+	$$PWD/sequencer/SequenceItemModel.h \
+	$$PWD/sequencer/IndigoSequenceParser.h \
+	$$PWD/sequencer/SexagesimalConverter.h \
+	$$PWD/sequencer/QLineEditSG.h \
 	$$PWD/../common_src/version.h \
 	$$PWD/../object_data/indigo_cat_data.h \
 	$$PWD/../common_src/utils.h \
@@ -157,7 +175,8 @@ INCLUDEPATH += \
 	"$$PWD/../external/lz4/" \
 	"$$PWD/../common_src" \
 	"$$PWD/../object_data" \
-	"$$PWD/../ain_imager_src"
+	"$$PWD/../ain_imager_src" \
+	"$$PWD/../ain_imager_src/sequencer"
 
 unix:!mac | win32 {
 	LIBS += -L"$$PWD/../external/libraw/lib" -L"$$PWD/../external/lz4" -lraw -lz

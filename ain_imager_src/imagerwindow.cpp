@@ -36,6 +36,7 @@
 #include <image_stats.h>
 #include <QSound>
 #include <QFileInfo>
+//#include <IndigoSequence.h>
 
 void write_conf();
 
@@ -397,7 +398,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_guider_viewer->setBalance(conf.guider_color_balance);
 	m_guider_viewer->setVisible(false);
 
-	m_sequence_editor = new SequenceEditor();
+	m_sequence_editor2 = new IndigoSequence();
 
 	QSplitter* hSplitter = new QSplitter;
 	hSplitter->addWidget(tools_panel);
@@ -413,6 +414,10 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	} else {
 		m_property_layout->addWidget(mLog, 15);
 	}
+
+	// Load sequencer code from resource
+	load_sequencer_code();
+	// indigo_error("%s", m_sequencer_code.toUtf8().data());
 
 	mServiceModel = &QServiceModel::instance();
 	indigo_debug("servicemodel %p", mServiceModel);
@@ -492,6 +497,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 		[this]() {
 			// we need to get the filter name and frame when we start the download
 			// otherwise they can be changed before download is completed
+			m_object_name_str = m_remote_object_name.trimmed();
 			m_filter_name = m_filter_select->currentText().trimmed();
 			m_frame_type = m_frame_type_select->currentText().trimmed();
 			m_download_label->setMovie(m_download_spinner);
@@ -523,9 +529,9 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(m_imager_viewer, &ImageViewer::mouseRightPressRADec, this, &ImagerWindow::on_image_right_click_ra_dec);
 	connect(m_guider_viewer, &ImageViewer::mouseRightPress, this, &ImagerWindow::on_guider_image_right_click);
 
-	connect(m_sequence_editor, &SequenceEditor::sequence_updated, this, &ImagerWindow::on_sequence_updated);
-	connect(m_sequence_editor, &SequenceEditor::request_sequence, this, &ImagerWindow::on_request_sequence);
-	connect(m_sequence_editor, &SequenceEditor::sequence_name_set, this, &ImagerWindow::on_sequence_name_changed);
+	//connect(m_sequence_editor, &SequenceEditor::sequence_updated, this, &ImagerWindow::on_sequence_updated);
+	connect(m_sequence_editor2, &IndigoSequence::requestSequence, this, &ImagerWindow::on_request_sequence);
+	//connect(m_sequence_editor, &SequenceEditor::sequence_name_set, this, &ImagerWindow::on_sequence_name_changed);
 
 	connect(m_add_object_dialog, &QAddCustomObject::requestPopulate, this, &ImagerWindow::on_custom_object_populate);
 
@@ -570,6 +576,17 @@ ImagerWindow::~ImagerWindow () {
 	delete mServiceModel;
 	delete m_custom_object_model;
 	delete m_add_object_dialog;
+}
+
+void ImagerWindow::load_sequencer_code() {
+	QFile sf(":/scripts/Sequencer.js");
+	if (!sf.open(QFile::ReadOnly | QFile::Text)) {
+		indigo_error("Can't open sequencer script resource '%s'!", sf.fileName().toUtf8().data());
+		return;
+	}
+	QTextStream ss(&sf);
+	m_sequencer_code = ss.readAll();
+	sf.close();
 }
 
 void ImagerWindow::window_log(const char *message, int state) {
@@ -689,7 +706,7 @@ void ImagerWindow::show_selected_preview_in_solver_tab(QString &solver_source) {
 		m_visible_viewer = m_imager_viewer;
 		m_imager_viewer->setVisible(true);
 	}
-	if	(m_visible_viewer != m_sequence_editor) {
+	if	(m_visible_viewer != m_sequence_editor2) {
 		((ImageViewer*)m_visible_viewer)->showWCS(true);
 	}
 }
@@ -701,18 +718,18 @@ void ImagerWindow::on_tab_changed(int index) {
 			m_visible_viewer = m_imager_viewer;
 			m_imager_viewer->setVisible(true);
 			m_guider_viewer->setVisible(false);
-			m_sequence_editor->setVisible(false);
+			m_sequence_editor2->setVisible(false);
 		}
 
 		if (index == TELESCOPE_TAB) m_imager_viewer->showWCS(true);
 		else m_imager_viewer->showWCS(false);
 	} else if (index == SEQUENCE_TAB) {
-		if (m_visible_viewer != m_sequence_editor) {
-			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_sequence_editor);
-			m_visible_viewer = m_sequence_editor;
+		if (m_visible_viewer != m_sequence_editor2) {
+			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_sequence_editor2);
+			m_visible_viewer = m_sequence_editor2;
 			m_guider_viewer->setVisible(false);
 			m_imager_viewer->setVisible(false);
-			m_sequence_editor->setVisible(true);
+			m_sequence_editor2->setVisible(true);
 		}
 	} else if (index == GUIDER_TAB) {
 		if (m_visible_viewer != m_guider_viewer) {
@@ -720,7 +737,7 @@ void ImagerWindow::on_tab_changed(int index) {
 			m_visible_viewer = m_guider_viewer;
 			m_guider_viewer->setVisible(true);
 			m_imager_viewer->setVisible(false);
-			m_sequence_editor->setVisible(false);
+			m_sequence_editor2->setVisible(false);
 		}
 	} else if (index == SOLVER_TAB) {
 		QString solver_source = m_solver_source_select1->currentText();
