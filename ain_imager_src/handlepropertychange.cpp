@@ -2752,7 +2752,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME)) {
 		define_ccd_exposure_property(this, property);
 		indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
-		if (!IndigoClient::instance().m_save_blob && p && p->state != INDIGO_BUSY_STATE ) {
+		if (!IndigoClient::instance().is_exposing(property->device) && p && p->state != INDIGO_BUSY_STATE ) {
 			update_ccd_exposure(this, property);
 		}
 	}
@@ -3123,7 +3123,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME)) {
 		indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
-		if (!IndigoClient::instance().m_save_blob && p && p->state != INDIGO_BUSY_STATE ) {
+		if (!IndigoClient::instance().is_exposing(property->device) && p && p->state != INDIGO_BUSY_STATE ) {
 			update_ccd_exposure(this, property);
 		}
 	}
