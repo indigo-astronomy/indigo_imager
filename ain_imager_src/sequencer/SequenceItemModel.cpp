@@ -37,15 +37,11 @@ void SequenceItemModel::initializeModel() {
 		{SC_LOAD_CONFIG, {"Load Config", {{0, {"Name", ComboBox}}}}},
 		{SC_LOAD_DRIVER, {"Load Driver", {{0, {"Name", LineEdit}}}}},
 		{SC_UNLOAD_DRIVER, {"Unload Driver", {{0, {"Name", LineEdit}}}}},
-		//{"select_imager_agent", {"Select Imager Agent", {{0, {"Agent", "QComboBox"}}}}},
-		//{"select_mount_agent", {"Select Mount Agent", {{0, {"Agent", "QComboBox"}}}}},
-		//{"select_guider_agent", {"Select Guider Agent", {{0, {"Agent", "QComboBox"}}}}},
 		{SC_SELECT_IMAGER_CAMERA, {"Select Imager Camera", {{0, {"Camera", ComboBox}}}}},
 		{SC_SELECT_FILTER_WHEEL, {"Select Filter Wheel", {{0, {"Wheel", ComboBox}}}}},
 		{SC_SELECT_FOCUSER, {"Select Focuser", {{0, {"Focuser", ComboBox}}}}},
 		{SC_SELECT_ROTATOR, {"Select Rotator", {{0, {"Rotator", ComboBox}}}}},
 		{SC_SELECT_MOUNT, {"Select Mount", {{0, {"Mount", ComboBox}}}}},
-		//{"select_dome", {"Select Dome", {{0, {"Dome", "QComboBox"}}}}},
 		{SC_SELECT_GPS, {"Select GPS", {{0, {"GPS", ComboBox}}}}},
 		{SC_SELECT_GUIDER_CAMERA, {"Select Guider Camera", {{0, {"Camera", ComboBox}}}}},
 		{SC_SELECT_GUIDER, {"Select Guider", {{0, {"Guider", ComboBox}}}}},
@@ -55,11 +51,6 @@ void SequenceItemModel::initializeModel() {
 		{SC_SELECT_FILTER, {"Select Filter", {{0, {"Filter", ComboBox}}}}},
 		{SC_SET_GAIN, {"Set Gain", {{0, {"Value", SpinBox}}}}},
 		{SC_SET_OFFSET, {"Set Offset", {{0, {"Value", SpinBox}}}}},
-		//{"set_gamma", {"Set Gamma", {{0, {"Value", "QSpinBox"}}}}},
-		//{"select_program", {"Select Program", {{0, {"Name", "QComboBox"}}}}},
-		//{"select_aperture", {"Select Aperture", {{0, {"Name", "QComboBox"}}}}},
-		//{"select_shutter", {"Select Shutter", {{0, {"Name", "QComboBox"}}}}},
-		//{"select_iso", {"Select ISO", {{0, {"Name", "QComboBox"}}}}},
 		{SC_ENABLE_COOLER, {"Enable Cooler", {{0, {"Temperature (°C)", DoubleSpinBox}}}}},
 		{SC_DISABLE_COOLER, {"Disable Cooler", {}}},
 		{SC_ENABLE_DITHERING, {"Enable Dithering", {{0, {"Amount (px)", SpinBox}}, {1, {"Time Limit (s)", SpinBox}}, {2, {"Skip Frames", SpinBox}}}}},
@@ -85,6 +76,16 @@ void SequenceItemModel::initializeModel() {
 		{SC_PRECISE_GOTO, {"Precise Goto", {{0, {"Exposure (s)", DoubleSpinBox}}, {1, {"RA", LineEditSG_RA}}, {2, {"Dec", LineEditSG_DEC}}}}},
 		{SC_REPEAT, {"Repeat", {{0, {"Count", SpinBox}}}}}
 	};
+
+	//{"select_imager_agent", {"Select Imager Agent", {{0, {"Agent", "QComboBox"}}}}},
+	//{"select_mount_agent", {"Select Mount Agent", {{0, {"Agent", "QComboBox"}}}}},
+	//{"select_guider_agent", {"Select Guider Agent", {{0, {"Agent", "QComboBox"}}}}},
+	//{"select_dome", {"Select Dome", {{0, {"Dome", "QComboBox"}}}}},
+	//{"set_gamma", {"Set Gamma", {{0, {"Value", "QSpinBox"}}}}},
+	//{"select_program", {"Select Program", {{0, {"Name", "QComboBox"}}}}},
+	//{"select_aperture", {"Select Aperture", {{0, {"Name", "QComboBox"}}}}},
+	//{"select_shutter", {"Select Shutter", {{0, {"Name", "QComboBox"}}}}},
+	//{"select_iso", {"Select ISO", {{0, {"Name", "QComboBox"}}}}},
 
 	// Set combo options
 	setComboOptions(SC_SELECT_FRAME_TYPE, 0, {"Light", "Bias", "Dark", "Flat", "Dark Flat"});
@@ -146,7 +147,7 @@ void SequenceItemModel::initializeModel() {
 	setNumericIncrement(SC_PRECISE_GOTO, 0, 1.0);
 
 	// Repeat count
-	setNumericRange(SC_REPEAT, 0, 0, 100000);
+	setNumericRange(SC_REPEAT, 0, 1, 100000);
 	setNumericIncrement(SC_REPEAT, 0, 1.0);
 
 	//qDebug() << "Initialized SequenceItemModel with" << widgetTypeMap.size() << "widget types";
