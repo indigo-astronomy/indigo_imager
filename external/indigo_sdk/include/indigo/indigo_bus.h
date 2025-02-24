@@ -557,6 +557,10 @@ extern void indigo_init_light_item(indigo_item *item, const char *name, const ch
  */
 extern void indigo_init_blob_item(indigo_item *item, const char *name, const char *label);
 
+/** download BLOB for given url.
+ */
+extern bool indigo_download_blob(char *url, void **value, long *size, char *format);
+
 /** populate BLOB item if url is given.
  */
 extern bool indigo_populate_http_blob_item(indigo_item *blob_item);
@@ -595,11 +599,11 @@ extern void indigo_set_switch(indigo_property *property, indigo_item *item, bool
 
 /** Get item.
  */
-extern indigo_item *indigo_get_item(indigo_property *property, char *item_name);
+extern indigo_item *indigo_get_item(indigo_property *property, const char *item_name);
 
 /** Get switch item value.
  */
-extern bool indigo_get_switch(indigo_property *property, char *item_name);
+extern bool indigo_get_switch(indigo_property *property, const char *item_name);
 
 /** Copy item values from other property into property (optionally including property state).
  */
@@ -723,7 +727,7 @@ extern double indigo_stod(char *string);
 
 /** Convert double to sexagesimal string.
  */
-extern char* indigo_dtos(double value, char *format);
+extern char* indigo_dtos(double value, const char *format);
 
 /** Sleeps for specified number of microseconds.
  */
@@ -751,6 +755,8 @@ extern void indigo_set_text_item_value(indigo_item *item, const char *value);
 
 #define indigo_copy_name(target, source) { memset(target, 0, INDIGO_NAME_SIZE); strncpy(target, source, INDIGO_NAME_SIZE - 1); }
 #define indigo_copy_value(target, source) { memset(target, 0, INDIGO_VALUE_SIZE); strncpy(target, source, INDIGO_VALUE_SIZE - 1); }
+
+#define indigo_define_matching_property(template); if (indigo_property_match(template, property)) indigo_define_property(device, template, NULL)
 
 /** Property representing all properties of all devices (used for enumeration broadcast).
  */
@@ -827,8 +833,9 @@ static inline void *indigo_safe_realloc_copy(void *pointer, size_t size, void *f
 }
 
 static inline void indigo_safe_free(void *pointer) {
-	if (pointer)
+	if (pointer) {
 		free(pointer);
+	}
 }
 
 static inline char *indigo_safe_strncpy(char *dst, const char *src, size_t size) {
