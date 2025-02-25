@@ -220,13 +220,28 @@ void IndigoSequence::contextMenuEvent(QContextMenuEvent *event) {
 	int insertAt = determineInsertPosition(contextMenuPos);
 	showDropIndicator(insertAt);
 
+	// Add categories
+	QMap<QString, QMenu*> submenus;
+	const auto& submenuMetadata = SequenceItemModel::instance().getSubmenuMetadata();
+	for (const auto& key : submenuMetadata.keys()) {
+		submenus[key] = contextMenu.addMenu(key);
+	}
+
+	// Add actions
 	const auto& widgetTypes = SequenceItemModel::instance().getWidgetTypes();
 	for (auto it = widgetTypes.begin(); it != widgetTypes.end(); ++it) {
 		QString actionText = it.value().label;
 		QAction *action = new QAction(actionText, &contextMenu);
 		action->setData(it.key());
+
 		connect(action, &QAction::triggered, this, &IndigoSequence::addItemFromMenu);
-		contextMenu.addAction(action);
+
+		for (const auto& key : submenuMetadata.keys()) {
+			if (submenuMetadata[key].contains(it.key())) {
+				submenus[key]->addAction(action);
+				break;
+			}
+		}
 	}
 
 	contextMenu.exec(event->globalPos());

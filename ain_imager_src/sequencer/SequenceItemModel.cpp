@@ -40,7 +40,7 @@ void SequenceItemModel::initializeModel() {
 		{SC_SELECT_IMAGER_CAMERA, {"Select Imager Camera", {{0, {"Camera", ComboBox}}}}},
 		{SC_SELECT_FILTER_WHEEL, {"Select Filter Wheel", {{0, {"Wheel", ComboBox}}}}},
 		{SC_SELECT_FOCUSER, {"Select Focuser", {{0, {"Focuser", ComboBox}}}}},
-		{SC_SELECT_ROTATOR, {"Select Rotator", {{0, {"Rotator", ComboBox}}}}},
+		//{SC_SELECT_ROTATOR, {"Select Rotator", {{0, {"Rotator", ComboBox}}}}},
 		{SC_SELECT_MOUNT, {"Select Mount", {{0, {"Mount", ComboBox}}}}},
 		{SC_SELECT_GPS, {"Select GPS", {{0, {"GPS", ComboBox}}}}},
 		{SC_SELECT_GUIDER_CAMERA, {"Select Guider Camera", {{0, {"Camera", ComboBox}}}}},
@@ -86,6 +86,67 @@ void SequenceItemModel::initializeModel() {
 	//{"select_aperture", {"Select Aperture", {{0, {"Name", "QComboBox"}}}}},
 	//{"select_shutter", {"Select Shutter", {{0, {"Name", "QComboBox"}}}}},
 	//{"select_iso", {"Select ISO", {{0, {"Name", "QComboBox"}}}}},
+
+	submenuMetadataMap = {
+		{"Capture", {
+			SC_SELECT_CAMERA_MODE,
+			SC_SELECT_IMAGE_FORMAT,
+			SC_SELECT_FRAME_TYPE,
+			SC_SET_DIRECTORY,
+			SC_SET_OBJECT_NAME,
+			SC_SET_GAIN,
+			SC_SET_OFFSET,
+			SC_ENABLE_COOLER,
+			SC_DISABLE_COOLER,
+			SC_CAPTURE_BATCH
+		}},
+		{"Filter", {
+			SC_SELECT_FILTER
+		}},
+		{"Loop", {
+			SC_REPEAT
+		}},
+		{"Mount", {
+			SC_SLEW,
+			SC_PARK,SC_UNPARK,
+			SC_HOME,
+			SC_SYNC_CENTER,
+			SC_PRECISE_GOTO,
+			SC_ENABLE_MERIDIAN_FLIP,
+			SC_DISABLE_MERIDIAN_FLIP
+		}},
+		{"Guiding", {
+			SC_CALIBRATE_GUIDING,
+			SC_START_GUIDING,
+			SC_STOP_GUIDING,
+			SC_CLEAR_GUIDER_SELECTION,
+			SC_ENABLE_DITHERING,
+			SC_DISABLE_DITHERING
+		}},
+		{"Focusing", {
+			SC_FOCUS,
+			SC_FOCUS_IGNORE_FAILURE,
+			SC_CLEAR_FOCUS_SELECTION
+		}},
+		{"Devices", {
+			SC_SELECT_FOCUSER,
+			SC_SELECT_GPS,
+			SC_SELECT_GUIDER_CAMERA,
+			SC_SELECT_GUIDER,
+			SC_SELECT_MOUNT,
+			SC_SELECT_IMAGER_CAMERA,
+			SC_SELECT_FILTER_WHEEL
+		}},
+		{"Other", {
+			SC_WAIT,
+			SC_SEND_MESSAGE,
+			SC_LOAD_CONFIG,
+			SC_LOAD_DRIVER,
+			SC_UNLOAD_DRIVER,
+			//SC_SELECT_ROTATOR,
+			SC_WAIT_FOR_GPS
+		}}
+	};
 
 	// Set combo options
 	setComboOptions(SC_SELECT_FRAME_TYPE, 0, {"Light", "Bias", "Dark", "Flat", "Dark Flat"});
@@ -157,6 +218,10 @@ const QMap<QString, SequenceItemModel::WidgetTypeInfo>& SequenceItemModel::getWi
 	return widgetTypeMap;
 }
 
+const QMap<QString, QStringList>& SequenceItemModel::getSubmenuMetadata() {
+	return submenuMetadataMap;
+}
+
 void SequenceItemModel::setComboOptions(const QString& type, int paramId, const QStringList& options) {
 	if (widgetTypeMap.contains(type)) {
 		if (widgetTypeMap[type].parameters.contains(paramId)) {
@@ -216,4 +281,3 @@ double SequenceItemModel::getNumericIncrement(const QString& type, int paramId) 
 	}
 	return 1.0; // Default increment
 }
-

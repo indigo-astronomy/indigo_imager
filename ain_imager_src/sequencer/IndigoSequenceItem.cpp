@@ -650,13 +650,20 @@ void IndigoSequenceItem::contextMenuEvent(QContextMenuEvent *event) {
 	int insertAt = determineInsertPosition(menuPos);
 	showDropIndicator(insertAt);
 
-	// Add menu items from model
+	// Add categories
+	QMap<QString, QMenu*> submenus;
+	const auto& submenuMetadata = SequenceItemModel::instance().getSubmenuMetadata();
+	for (const auto& key : submenuMetadata.keys()) {
+		submenus[key] = contextMenu.addMenu(key);
+	}
+
+	// Add actions
 	const auto& widgetTypes = SequenceItemModel::instance().getWidgetTypes();
 	for (auto it = widgetTypes.begin(); it != widgetTypes.end(); ++it) {
 		QString actionText = it.value().label;
 		QAction *action = new QAction(actionText, &contextMenu);
 		action->setData(it.key());
-	
+
 		if (it.key() == SC_REPEAT && getNestingLevel() >= 0) {
 			action->setEnabled(false);
 		}
@@ -672,7 +679,13 @@ void IndigoSequenceItem::contextMenuEvent(QContextMenuEvent *event) {
 			int insertAt = determineInsertPosition(event->pos());
 			repeatLayout->insertWidget(insertAt, item);
 		});
-		contextMenu.addAction(action);
+
+		for (const auto& key : submenuMetadata.keys()) {
+			if (submenuMetadata[key].contains(it.key())) {
+				submenus[key]->addAction(action);
+				break;
+			}
+		}
 	}
 
 	contextMenu.exec(event->globalPos());

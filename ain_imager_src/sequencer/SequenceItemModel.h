@@ -106,6 +106,8 @@ public:
 	SequenceItemModel& operator=(const SequenceItemModel&) = delete;
 
 	const QMap<QString, WidgetTypeInfo>& getWidgetTypes() const;
+	const QMap<QString, QStringList>& getSubmenuMetadata();
+
 	void setComboOptions(const QString& type, int paramId, const QStringList& options);
 	void clearComboOptions(const QString& type, int paramId);
 	QStringList getComboOptions(const QString& type, int paramId) const;
@@ -123,6 +125,7 @@ private:
 	SequenceItemModel();
 	void initializeModel();
 	QMap<QString, WidgetTypeInfo> widgetTypeMap;
+	QMap<QString, QStringList> submenuMetadataMap;
 };
 
 #endif // __SEQUENCEITEMMODEL_H
