@@ -654,9 +654,9 @@ void IndigoSequenceItem::contextMenuEvent(QContextMenuEvent *event) {
 	QMap<QString, QMenu*> submenus;
 	const auto& submenuCategories = SequenceItemModel::instance().getCategories();
 	//const auto& categoryIcons = SequenceItemModel::instance().getCategoryIcons();
-	for (const auto& key : submenuCategories.keys()) {
+	for (const auto& category : submenuCategories) {
 		//submenus[key] = contextMenu.addMenu(categoryIcons[key], key);
-		submenus[key] = contextMenu.addMenu(key);
+		submenus[category.first] = contextMenu.addMenu(category.first);
 	}
 
 	// Add actions
@@ -682,9 +682,9 @@ void IndigoSequenceItem::contextMenuEvent(QContextMenuEvent *event) {
 			repeatLayout->insertWidget(insertAt, item);
 		});
 
-		for (const auto& key : submenuCategories.keys()) {
-			if (submenuCategories[key].contains(it.key())) {
-				submenus[key]->addAction(action);
+		for (const auto& category : submenuCategories) {
+			if (category.second.contains(it.key())) {
+				submenus[category.first]->addAction(action);
 				break;
 			}
 		}

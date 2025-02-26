@@ -88,7 +88,7 @@ void SequenceItemModel::initializeModel() {
 	//{"select_shutter", {"Select Shutter", {{0, {"Name", "QComboBox"}}}}},
 	//{"select_iso", {"Select ISO", {{0, {"Name", "QComboBox"}}}}},
 
-	categoriesMap = {
+	categoriesList = {
 		{"Capture", {
 			SC_SELECT_CAMERA_MODE,
 			SC_SELECT_IMAGE_FORMAT,
@@ -239,9 +239,10 @@ const QMap<QString, SequenceItemModel::WidgetTypeInfo>& SequenceItemModel::getWi
 	return widgetTypeMap;
 }
 
-const QMap<QString, QStringList>& SequenceItemModel::getCategories() const {
-	return categoriesMap;
+const QLinkedList<QPair<QString, QStringList>>& SequenceItemModel::getCategories() const {
+	return categoriesList;
 }
+
 
 /*
 const QMap<QString, QIcon>& SequenceItemModel::getCategoryIcons() const {

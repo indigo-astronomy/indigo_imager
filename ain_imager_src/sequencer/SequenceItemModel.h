@@ -21,6 +21,8 @@
 
 #include <QString>
 #include <QMap>
+#include <QLinkedList>
+#include <QPair>
 #include <QStringList>
 #include <QPair>
 #include <QObject>
@@ -108,7 +110,7 @@ public:
 	SequenceItemModel& operator=(const SequenceItemModel&) = delete;
 
 	const QMap<QString, WidgetTypeInfo>& getWidgetTypes() const;
-	const QMap<QString, QStringList>& getCategories() const;
+	const QLinkedList<QPair<QString, QStringList>>& getCategories() const;
 	//const QMap<QString, QIcon>& getCategoryIcons() const;
 
 	void setComboOptions(const QString& type, int paramId, const QStringList& options);
@@ -128,7 +130,8 @@ private:
 	SequenceItemModel();
 	void initializeModel();
 	QMap<QString, WidgetTypeInfo> widgetTypeMap;
-	QMap<QString, QStringList> categoriesMap;
+	QLinkedList<QPair<QString, QStringList>> categoriesList;
+
 	//QMap<QString, QIcon> categoryIcons;
 };
 
