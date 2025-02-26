@@ -87,7 +87,7 @@ void SequenceItemModel::initializeModel() {
 	//{"select_shutter", {"Select Shutter", {{0, {"Name", "QComboBox"}}}}},
 	//{"select_iso", {"Select ISO", {{0, {"Name", "QComboBox"}}}}},
 
-	submenuMetadataMap = {
+	categoriesMap = {
 		{"Capture", {
 			SC_SELECT_CAMERA_MODE,
 			SC_SELECT_IMAGE_FORMAT,
@@ -147,6 +147,19 @@ void SequenceItemModel::initializeModel() {
 			SC_WAIT_FOR_GPS
 		}}
 	};
+
+	/*
+	categoryIcons = {
+		{"Capture", QIcon(":/resource/capture.png")},
+		{"Filter", QIcon(":/resource/filter.png")},
+		{"Loop", QIcon(":resource/loop-grey.png")},
+		{"Mount", QIcon(":/resource/mount.png")},
+		{"Guiding", QIcon(":/resource/guiding.png")},
+		{"Focusing", QIcon(":/resource/focusing.png")},
+		{"Devices", QIcon(":/resource/devices.png")},
+		{"Other", QIcon(":/resource/other.png")}
+	};
+	*/
 
 	// Set combo options
 	setComboOptions(SC_SELECT_FRAME_TYPE, 0, {"Light", "Bias", "Dark", "Flat", "Dark Flat"});
@@ -218,9 +231,15 @@ const QMap<QString, SequenceItemModel::WidgetTypeInfo>& SequenceItemModel::getWi
 	return widgetTypeMap;
 }
 
-const QMap<QString, QStringList>& SequenceItemModel::getSubmenuMetadata() {
-	return submenuMetadataMap;
+const QMap<QString, QStringList>& SequenceItemModel::getCategories() const {
+	return categoriesMap;
 }
+
+/*
+const QMap<QString, QIcon>& SequenceItemModel::getCategoryIcons() const {
+	return categoryIcons;
+}
+*/
 
 void SequenceItemModel::setComboOptions(const QString& type, int paramId, const QStringList& options) {
 	if (widgetTypeMap.contains(type)) {

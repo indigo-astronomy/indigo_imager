@@ -24,6 +24,7 @@
 #include <QStringList>
 #include <QPair>
 #include <QObject>
+#include <QIcon>
 
 #define cs(str) (const char*)(str)
 // Sequence command constants
@@ -106,7 +107,8 @@ public:
 	SequenceItemModel& operator=(const SequenceItemModel&) = delete;
 
 	const QMap<QString, WidgetTypeInfo>& getWidgetTypes() const;
-	const QMap<QString, QStringList>& getSubmenuMetadata();
+	const QMap<QString, QStringList>& getCategories() const;
+	//const QMap<QString, QIcon>& getCategoryIcons() const;
 
 	void setComboOptions(const QString& type, int paramId, const QStringList& options);
 	void clearComboOptions(const QString& type, int paramId);
@@ -125,7 +127,8 @@ private:
 	SequenceItemModel();
 	void initializeModel();
 	QMap<QString, WidgetTypeInfo> widgetTypeMap;
-	QMap<QString, QStringList> submenuMetadataMap;
+	QMap<QString, QStringList> categoriesMap;
+	//QMap<QString, QIcon> categoryIcons;
 };
 
 #endif // __SEQUENCEITEMMODEL_H
