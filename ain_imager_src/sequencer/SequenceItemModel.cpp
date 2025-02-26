@@ -40,7 +40,7 @@ void SequenceItemModel::initializeModel() {
 		{SC_SELECT_IMAGER_CAMERA, {"Select Imager Camera", {{0, {"Camera", ComboBox}}}}},
 		{SC_SELECT_FILTER_WHEEL, {"Select Filter Wheel", {{0, {"Wheel", ComboBox}}}}},
 		{SC_SELECT_FOCUSER, {"Select Focuser", {{0, {"Focuser", ComboBox}}}}},
-		//{SC_SELECT_ROTATOR, {"Select Rotator", {{0, {"Rotator", ComboBox}}}}},
+		{SC_SELECT_ROTATOR, {"Select Rotator", {{0, {"Rotator", ComboBox}}}}},
 		{SC_SELECT_MOUNT, {"Select Mount", {{0, {"Mount", ComboBox}}}}},
 		{SC_SELECT_GPS, {"Select GPS", {{0, {"GPS", ComboBox}}}}},
 		{SC_SELECT_GUIDER_CAMERA, {"Select Guider Camera", {{0, {"Camera", ComboBox}}}}},
@@ -138,6 +138,7 @@ void SequenceItemModel::initializeModel() {
 			SC_SELECT_GUIDER_CAMERA,
 			SC_SELECT_GUIDER,
 			SC_SELECT_MOUNT,
+			SC_SELECT_ROTATOR,
 			SC_SELECT_IMAGER_CAMERA,
 			SC_SELECT_FILTER_WHEEL
 		}},
@@ -226,6 +227,10 @@ void SequenceItemModel::initializeModel() {
 	// Repeat count
 	setNumericRange(SC_REPEAT, 0, 1, 100000);
 	setNumericIncrement(SC_REPEAT, 0, 1.0);
+
+	// Rotator angle
+	setNumericRange(SC_SET_ROTATOR_ANGLE, 0, -180, 360.0);
+	setNumericIncrement(SC_SET_ROTATOR_ANGLE, 0, 1.0);
 
 	//qDebug() << "Initialized SequenceItemModel with" << widgetTypeMap.size() << "widget types";
 }

@@ -1131,6 +1131,8 @@ void update_rotator_poition(ImagerWindow *w, indigo_property *property, bool upd
 			indigo_debug("change target %s = %f", property->items[i].name, property->items[i].number.target);
 			configure_spinbox(w, &property->items[i], property->perm, w->m_rotator_position);
 			w->set_spinbox_value(w->m_rotator_position, property->items[i].number.target);
+			SequenceItemModel::instance().setNumericRange(SC_SET_ROTATOR_ANGLE, 0, property->items[i].number.min, property->items[i].number.max);
+			SequenceItemModel::instance().setNumericIncrement(SC_SET_ROTATOR_ANGLE, 0, property->items[i].number.step);
 		}
 		if (client_match_item(&property->items[i], ROTATOR_RELATIVE_MOVE_ITEM_NAME)) {
 			w->set_widget_state(w->m_rotator_relative, property->state);
@@ -3899,6 +3901,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_text(m_rotator_position_label, "0.000°");
 		set_widget_state(m_rotator_position_label, INDIGO_OK_STATE);
 		set_widget_state(m_rotator_position_dial, INDIGO_OK_STATE);
+		SequenceItemModel::instance().setNumericRange(SC_SET_ROTATOR_ANGLE, 0, -180, 360);
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_ROTATOR_ANGLE, 0, 10);
 	}
 	if (client_match_device_property(property, selected_mount_agent, ROTATOR_RELATIVE_MOVE_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
