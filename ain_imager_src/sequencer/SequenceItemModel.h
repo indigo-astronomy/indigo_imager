@@ -70,6 +70,7 @@
 #define SC_CLEAR_GUIDER_SELECTION   cs("clear_guider_selection")
 #define SC_SYNC_CENTER              cs("sync_center")
 #define SC_PRECISE_GOTO             cs("precise_goto")
+#define SC_SET_ROTATOR_ANGLE        cs("set_rotator_angle")
 #define SC_REPEAT                   cs("repeat")
 
 enum ParamWidget {

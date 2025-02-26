@@ -74,6 +74,7 @@ void SequenceItemModel::initializeModel() {
 		{SC_CLEAR_GUIDER_SELECTION, {"Clear Guider Selection", {}}},
 		{SC_SYNC_CENTER, {"Sync Center", {{0, {"Exposure (s)", DoubleSpinBox}}}}},
 		{SC_PRECISE_GOTO, {"Precise Goto", {{0, {"Exposure (s)", DoubleSpinBox}}, {1, {"RA", LineEditSG_RA}}, {2, {"Dec", LineEditSG_DEC}}}}},
+		{SC_SET_ROTATOR_ANGLE, {"Set Rotator Angle", {{0, {"Angle(°)", DoubleSpinBox}}}}},
 		{SC_REPEAT, {"Repeat", {{0, {"Count", SpinBox}}}}}
 	};
 
@@ -123,10 +124,13 @@ void SequenceItemModel::initializeModel() {
 			SC_ENABLE_DITHERING,
 			SC_DISABLE_DITHERING
 		}},
-		{"Focusing", {
+		{"Focuser", {
 			SC_FOCUS,
 			SC_FOCUS_IGNORE_FAILURE,
 			SC_CLEAR_FOCUS_SELECTION
+		}},
+		{"Rotator", {
+			SC_SET_ROTATOR_ANGLE
 		}},
 		{"Devices", {
 			SC_SELECT_FOCUSER,
@@ -143,7 +147,6 @@ void SequenceItemModel::initializeModel() {
 			SC_LOAD_CONFIG,
 			SC_LOAD_DRIVER,
 			SC_UNLOAD_DRIVER,
-			//SC_SELECT_ROTATOR,
 			SC_WAIT_FOR_GPS
 		}}
 	};
