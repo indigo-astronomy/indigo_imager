@@ -223,10 +223,10 @@ void IndigoSequence::contextMenuEvent(QContextMenuEvent *event) {
 	// Add categories
 	QMap<QString, QMenu*> submenus;
 	const auto& submenuCategories = SequenceItemModel::instance().getCategories();
-	// const auto& categoryIcons = SequenceItemModel::instance().getCategoryIcons();
+	const auto& categoryIcons = SequenceItemModel::instance().getCategoryIcons();
 	for (const auto& category : submenuCategories) {
-		//submenus[key] = contextMenu.addMenu(categoryIcons[key], key);
-		submenus[category.first] = contextMenu.addMenu(category.first);
+		submenus[category.first] = contextMenu.addMenu(categoryIcons[category.first], category.first);
+		//submenus[category.first] = contextMenu.addMenu(category.first);
 	}
 
 	// Add actions

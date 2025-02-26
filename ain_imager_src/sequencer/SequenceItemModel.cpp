@@ -152,18 +152,17 @@ void SequenceItemModel::initializeModel() {
 		}}
 	};
 
-	/*
 	categoryIcons = {
-		{"Capture", QIcon(":/resource/capture.png")},
-		{"Filter", QIcon(":/resource/filter.png")},
-		{"Loop", QIcon(":resource/loop-grey.png")},
-		{"Mount", QIcon(":/resource/mount.png")},
-		{"Guiding", QIcon(":/resource/guiding.png")},
-		{"Focusing", QIcon(":/resource/focusing.png")},
-		{"Devices", QIcon(":/resource/devices.png")},
-		{"Other", QIcon(":/resource/other.png")}
+		{"Capture", QIcon(":resource/shutter-grey.png")},
+		{"Filter", QIcon(":resource/wheel-grey.png")},
+		{"Loop", QIcon(":resource/menu-loop-grey.png")},
+		{"Mount", QIcon(":resource/mount-grey.png")},
+		{"Guiding", QIcon(":resource/guider-grey.png")},
+		{"Focuser", QIcon(":resource/focuser-grey.png")},
+		{"Rotator", QIcon(":resource/rotator-grey.png")},
+		{"Devices", QIcon(":resource/server.png")},
+		{"Other", QIcon(":resource/led-grey-dev.png")}
 	};
-	*/
 
 	// Set combo options
 	setComboOptions(SC_SELECT_FRAME_TYPE, 0, {"Light", "Bias", "Dark", "Flat", "Dark Flat"});
@@ -243,12 +242,9 @@ const QLinkedList<QPair<QString, QStringList>>& SequenceItemModel::getCategories
 	return categoriesList;
 }
 
-
-/*
 const QMap<QString, QIcon>& SequenceItemModel::getCategoryIcons() const {
 	return categoryIcons;
 }
-*/
 
 void SequenceItemModel::setComboOptions(const QString& type, int paramId, const QStringList& options) {
 	if (widgetTypeMap.contains(type)) {

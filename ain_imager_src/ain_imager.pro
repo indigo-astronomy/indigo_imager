@@ -111,6 +111,15 @@ RESOURCES += \
 	$$PWD/../resource/loop-orange.png \
 	$$PWD/../resource/loop-green.png \
 	$$PWD/../resource/loop-red.png \
+	$$PWD/../resource/menu-loop-grey.png \
+	$$PWD/../resource/wheel-grey.png \
+	$$PWD/../resource/rotator-grey.png \
+	$$PWD/../resource/shutter-grey.png \
+	$$PWD/../resource/mount-grey.png \
+	$$PWD/../resource/focuser-grey.png \
+	$$PWD/../resource/guider-grey.png \
+	$$PWD/../resource/led-grey-dev.png \
+	$$PWD/../resource/server.png \
 	$$PWD/../resource/error.wav \
 	$$PWD/../resource/ok.wav \
 	$$PWD/../resource/warning.wav \

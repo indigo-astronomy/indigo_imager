@@ -111,7 +111,7 @@ public:
 
 	const QMap<QString, WidgetTypeInfo>& getWidgetTypes() const;
 	const QLinkedList<QPair<QString, QStringList>>& getCategories() const;
-	//const QMap<QString, QIcon>& getCategoryIcons() const;
+	const QMap<QString, QIcon>& getCategoryIcons() const;
 
 	void setComboOptions(const QString& type, int paramId, const QStringList& options);
 	void clearComboOptions(const QString& type, int paramId);
@@ -132,7 +132,7 @@ private:
 	QMap<QString, WidgetTypeInfo> widgetTypeMap;
 	QLinkedList<QPair<QString, QStringList>> categoriesList;
 
-	//QMap<QString, QIcon> categoryIcons;
+	QMap<QString, QIcon> categoryIcons;
 };
 
 #endif // __SEQUENCEITEMMODEL_H
