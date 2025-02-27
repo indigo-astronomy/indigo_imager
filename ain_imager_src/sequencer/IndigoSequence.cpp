@@ -225,15 +225,21 @@ void IndigoSequence::contextMenuEvent(QContextMenuEvent *event) {
 	const auto& submenuCategories = SequenceItemModel::instance().getCategories();
 	const auto& categoryIcons = SequenceItemModel::instance().getCategoryIcons();
 	for (const auto& category : submenuCategories) {
-		submenus[category.first] = contextMenu.addMenu(categoryIcons[category.first], category.first);
-		//submenus[category.first] = contextMenu.addMenu(category.first);
+		if (category.first == __SEPARATOR__) {
+			contextMenu.addSeparator();
+		} else {
+			submenus[category.first] = contextMenu.addMenu(categoryIcons[category.first], category.first);
+			//submenus[category.first] = contextMenu.addMenu(category.first);
+		}
 	}
 
 	// Add actions
 	const auto& widgetTypes = SequenceItemModel::instance().getWidgetTypes();
 	for (const auto& category : submenuCategories) {
 		for (const auto& type : category.second) {
-			if (widgetTypes.contains(type)) {
+			if (type == __SEPARATOR__) {
+				submenus[category.first]->addSeparator();
+			} else if (widgetTypes.contains(type)) {
 				QString actionText = widgetTypes[type].label;
 				QAction *action = new QAction(actionText, &contextMenu);
 				action->setData(type);

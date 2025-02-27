@@ -74,6 +74,7 @@
 #define SC_PRECISE_GOTO             cs("precise_goto")
 #define SC_SET_ROTATOR_ANGLE        cs("set_rotator_angle")
 #define SC_REPEAT                   cs("repeat")
+#define __SEPARATOR__               cs("__separator__")
 
 enum ParamWidget {
 	LineEdit,

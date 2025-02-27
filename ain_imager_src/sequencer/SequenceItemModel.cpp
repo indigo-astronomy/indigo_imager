@@ -92,13 +92,17 @@ void SequenceItemModel::initializeModel() {
 		{"Capture", {
 			SC_SET_OBJECT_NAME,
 			SC_CAPTURE_BATCH,
+			__SEPARATOR__,
 			SC_ENABLE_COOLER,
 			SC_DISABLE_COOLER,
+			__SEPARATOR__,
 			SC_SELECT_FRAME_TYPE,
 			SC_SELECT_CAMERA_MODE,
 			SC_SELECT_IMAGE_FORMAT,
+			__SEPARATOR__,
 			SC_SET_GAIN,
 			SC_SET_OFFSET,
+			__SEPARATOR__,
 			SC_SET_DIRECTORY
 		}},
 		{"Filter Wheel", {
@@ -113,16 +117,20 @@ void SequenceItemModel::initializeModel() {
 			SC_CALIBRATE_GUIDING,
 			SC_START_GUIDING,
 			SC_STOP_GUIDING,
+			__SEPARATOR__,
 			SC_ENABLE_DITHERING,
 			SC_DISABLE_DITHERING,
+			__SEPARATOR__,
 			SC_CLEAR_GUIDER_SELECTION
 		}},
 		{"Mount", {
 			SC_SLEW,
 			SC_PRECISE_GOTO,
 			SC_SYNC_CENTER,
+			__SEPARATOR__,
 			SC_ENABLE_MERIDIAN_FLIP,
 			SC_DISABLE_MERIDIAN_FLIP,
+			__SEPARATOR__,
 			SC_PARK,
 			SC_UNPARK,
 			SC_HOME
@@ -130,9 +138,11 @@ void SequenceItemModel::initializeModel() {
 		{"Rotator", {
 			SC_SET_ROTATOR_ANGLE
 		}},
+		{__SEPARATOR__, {}},
 		{"Loop", {
 			SC_REPEAT
 		}},
+		{__SEPARATOR__, {}},
 		{"Devices", {
 			SC_SELECT_IMAGER_CAMERA,
 			SC_SELECT_FILTER_WHEEL,
@@ -147,8 +157,10 @@ void SequenceItemModel::initializeModel() {
 			SC_WAIT,
 			SC_SEND_MESSAGE,
 			SC_WAIT_FOR_GPS,
+			__SEPARATOR__,
 			SC_LOAD_DRIVER,
 			SC_UNLOAD_DRIVER,
+			__SEPARATOR__,
 			SC_LOAD_CONFIG
 		}}
 	};
