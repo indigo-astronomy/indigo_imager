@@ -231,17 +231,16 @@ void IndigoSequence::contextMenuEvent(QContextMenuEvent *event) {
 
 	// Add actions
 	const auto& widgetTypes = SequenceItemModel::instance().getWidgetTypes();
-	for (auto it = widgetTypes.begin(); it != widgetTypes.end(); ++it) {
-		QString actionText = it.value().label;
-		QAction *action = new QAction(actionText, &contextMenu);
-		action->setData(it.key());
+	for (const auto& category : submenuCategories) {
+		for (const auto& type : category.second) {
+			if (widgetTypes.contains(type)) {
+				QString actionText = widgetTypes[type].label;
+				QAction *action = new QAction(actionText, &contextMenu);
+				action->setData(type);
 
-		connect(action, &QAction::triggered, this, &IndigoSequence::addItemFromMenu);
+				connect(action, &QAction::triggered, this, &IndigoSequence::addItemFromMenu);
 
-		for (const auto& category : submenuCategories) {
-			if (category.second.contains(it.key())) {
 				submenus[category.first]->addAction(action);
-				break;
 			}
 		}
 	}

@@ -90,78 +90,79 @@ void SequenceItemModel::initializeModel() {
 
 	categoriesList = {
 		{"Capture", {
-			SC_SELECT_CAMERA_MODE,
-			SC_SELECT_IMAGE_FORMAT,
-			SC_SELECT_FRAME_TYPE,
-			SC_SET_DIRECTORY,
 			SC_SET_OBJECT_NAME,
-			SC_SET_GAIN,
-			SC_SET_OFFSET,
+			SC_CAPTURE_BATCH,
 			SC_ENABLE_COOLER,
 			SC_DISABLE_COOLER,
-			SC_CAPTURE_BATCH
+			SC_SELECT_FRAME_TYPE,
+			SC_SELECT_CAMERA_MODE,
+			SC_SELECT_IMAGE_FORMAT,
+			SC_SET_GAIN,
+			SC_SET_OFFSET,
+			SC_SET_DIRECTORY
 		}},
-		{"Filter", {
+		{"Filter Wheel", {
 			SC_SELECT_FILTER
-		}},
-		{"Loop", {
-			SC_REPEAT
-		}},
-		{"Mount", {
-			SC_SLEW,
-			SC_PARK,SC_UNPARK,
-			SC_HOME,
-			SC_SYNC_CENTER,
-			SC_PRECISE_GOTO,
-			SC_ENABLE_MERIDIAN_FLIP,
-			SC_DISABLE_MERIDIAN_FLIP
-		}},
-		{"Guiding", {
-			SC_CALIBRATE_GUIDING,
-			SC_START_GUIDING,
-			SC_STOP_GUIDING,
-			SC_CLEAR_GUIDER_SELECTION,
-			SC_ENABLE_DITHERING,
-			SC_DISABLE_DITHERING
 		}},
 		{"Focuser", {
 			SC_FOCUS,
 			SC_FOCUS_IGNORE_FAILURE,
 			SC_CLEAR_FOCUS_SELECTION
 		}},
+		{"Guider", {
+			SC_CALIBRATE_GUIDING,
+			SC_START_GUIDING,
+			SC_STOP_GUIDING,
+			SC_ENABLE_DITHERING,
+			SC_DISABLE_DITHERING,
+			SC_CLEAR_GUIDER_SELECTION
+		}},
+		{"Mount", {
+			SC_SLEW,
+			SC_PRECISE_GOTO,
+			SC_SYNC_CENTER,
+			SC_ENABLE_MERIDIAN_FLIP,
+			SC_DISABLE_MERIDIAN_FLIP,
+			SC_PARK,
+			SC_UNPARK,
+			SC_HOME
+		}},
 		{"Rotator", {
 			SC_SET_ROTATOR_ANGLE
 		}},
+		{"Loop", {
+			SC_REPEAT
+		}},
 		{"Devices", {
+			SC_SELECT_IMAGER_CAMERA,
+			SC_SELECT_FILTER_WHEEL,
 			SC_SELECT_FOCUSER,
-			SC_SELECT_GPS,
 			SC_SELECT_GUIDER_CAMERA,
 			SC_SELECT_GUIDER,
 			SC_SELECT_MOUNT,
-			SC_SELECT_ROTATOR,
-			SC_SELECT_IMAGER_CAMERA,
-			SC_SELECT_FILTER_WHEEL
+			SC_SELECT_GPS,
+			SC_SELECT_ROTATOR
 		}},
-		{"Other", {
+		{"Misc", {
 			SC_WAIT,
 			SC_SEND_MESSAGE,
-			SC_LOAD_CONFIG,
+			SC_WAIT_FOR_GPS,
 			SC_LOAD_DRIVER,
 			SC_UNLOAD_DRIVER,
-			SC_WAIT_FOR_GPS
+			SC_LOAD_CONFIG
 		}}
 	};
 
 	categoryIcons = {
 		{"Capture", QIcon(":resource/shutter-grey.png")},
-		{"Filter", QIcon(":resource/wheel-grey.png")},
+		{"Filter Wheel", QIcon(":resource/wheel-grey.png")},
 		{"Loop", QIcon(":resource/menu-loop-grey.png")},
 		{"Mount", QIcon(":resource/mount-grey.png")},
-		{"Guiding", QIcon(":resource/guider-grey.png")},
+		{"Guider", QIcon(":resource/guider-grey.png")},
 		{"Focuser", QIcon(":resource/focuser-grey.png")},
 		{"Rotator", QIcon(":resource/rotator-grey.png")},
 		{"Devices", QIcon(":resource/server.png")},
-		{"Other", QIcon(":resource/led-grey-dev.png")}
+		{"Misc", QIcon(":resource/led-grey-dev.png")}
 	};
 
 	// Set combo options
