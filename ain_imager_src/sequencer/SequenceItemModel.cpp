@@ -89,7 +89,7 @@ void SequenceItemModel::initializeModel() {
 	//{"select_iso", {"Select ISO", {{0, {"Name", "QComboBox"}}}}},
 
 	categoriesList = {
-		{"Capture", {
+		{CC_CAPTURE, {
 			SC_SET_OBJECT_NAME,
 			SC_CAPTURE_BATCH,
 			__SEPARATOR__,
@@ -105,15 +105,15 @@ void SequenceItemModel::initializeModel() {
 			__SEPARATOR__,
 			SC_SET_DIRECTORY
 		}},
-		{"Filter Wheel", {
+		{CC_FILTER_WHEEL, {
 			SC_SELECT_FILTER
 		}},
-		{"Focuser", {
+		{CC_FOCUSER, {
 			SC_FOCUS,
 			SC_FOCUS_IGNORE_FAILURE,
 			SC_CLEAR_FOCUS_SELECTION
 		}},
-		{"Guider", {
+		{CC_GUIDER, {
 			SC_CALIBRATE_GUIDING,
 			SC_START_GUIDING,
 			SC_STOP_GUIDING,
@@ -123,7 +123,7 @@ void SequenceItemModel::initializeModel() {
 			__SEPARATOR__,
 			SC_CLEAR_GUIDER_SELECTION
 		}},
-		{"Mount", {
+		{CC_MOUNT, {
 			SC_SLEW,
 			SC_PRECISE_GOTO,
 			SC_SYNC_CENTER,
@@ -135,15 +135,15 @@ void SequenceItemModel::initializeModel() {
 			SC_UNPARK,
 			SC_HOME
 		}},
-		{"Rotator", {
+		{CC_ROTATOR, {
 			SC_SET_ROTATOR_ANGLE
 		}},
 		{__SEPARATOR__, {}},
-		{"Loop", {
+		{CC_LOOP, {
 			SC_REPEAT
 		}},
 		{__SEPARATOR__, {}},
-		{"Devices", {
+		{CC_DEVICES, {
 			SC_SELECT_IMAGER_CAMERA,
 			SC_SELECT_FILTER_WHEEL,
 			SC_SELECT_FOCUSER,
@@ -153,7 +153,7 @@ void SequenceItemModel::initializeModel() {
 			SC_SELECT_GPS,
 			SC_SELECT_ROTATOR
 		}},
-		{"Misc", {
+		{CC_MISC, {
 			SC_WAIT,
 			SC_SEND_MESSAGE,
 			SC_WAIT_FOR_GPS,
@@ -166,15 +166,15 @@ void SequenceItemModel::initializeModel() {
 	};
 
 	categoryIcons = {
-		{"Capture", QIcon(":resource/shutter-grey.png")},
-		{"Filter Wheel", QIcon(":resource/wheel-grey.png")},
-		{"Loop", QIcon(":resource/menu-loop-grey.png")},
-		{"Mount", QIcon(":resource/mount-grey.png")},
-		{"Guider", QIcon(":resource/guider-grey.png")},
-		{"Focuser", QIcon(":resource/focuser-grey.png")},
-		{"Rotator", QIcon(":resource/rotator-grey.png")},
-		{"Devices", QIcon(":resource/server.png")},
-		{"Misc", QIcon(":resource/led-grey-dev.png")}
+		{CC_CAPTURE, QIcon(":resource/shutter-grey.png")},
+		{CC_FILTER_WHEEL, QIcon(":resource/wheel-grey.png")},
+		{CC_LOOP, QIcon(":resource/menu-loop-grey.png")},
+		{CC_MOUNT, QIcon(":resource/mount-grey.png")},
+		{CC_GUIDER, QIcon(":resource/guider-grey.png")},
+		{CC_FOCUSER, QIcon(":resource/focuser-grey.png")},
+		{CC_ROTATOR, QIcon(":resource/rotator-grey.png")},
+		{CC_DEVICES, QIcon(":resource/server.png")},
+		{CC_MISC, QIcon(":resource/led-grey-dev.png")}
 	};
 
 	// Set combo options

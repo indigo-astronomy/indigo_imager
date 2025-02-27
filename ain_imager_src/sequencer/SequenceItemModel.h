@@ -74,6 +74,17 @@
 #define SC_PRECISE_GOTO             cs("precise_goto")
 #define SC_SET_ROTATOR_ANGLE        cs("set_rotator_angle")
 #define SC_REPEAT                   cs("repeat")
+
+#define CC_CAPTURE                  cs("Capture")
+#define CC_FILTER_WHEEL             cs("Filter Wheel")
+#define CC_LOOP                     cs("Loop")
+#define CC_MOUNT                    cs("Mount")
+#define CC_GUIDER                   cs("Guider")
+#define CC_FOCUSER                  cs("Focuser")
+#define CC_ROTATOR                  cs("Rotator")
+#define CC_DEVICES                  cs("Devices")
+#define CC_MISC                     cs("Misc")
+
 #define __SEPARATOR__               cs("__separator__")
 
 enum ParamWidget {
