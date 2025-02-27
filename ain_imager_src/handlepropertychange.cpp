@@ -1104,6 +1104,8 @@ void update_focuser_poition(ImagerWindow *w, indigo_property *property, bool upd
 			indigo_debug("change target %s = %f", property->items[i].name, property->items[i].number.target);
 			configure_spinbox(w, &property->items[i], property->perm, w->m_focus_position);
 			w->set_spinbox_value(w->m_focus_position, property->items[i].number.target);
+			SequenceItemModel::instance().setNumericRange(SC_SET_FOCUSER_POSITION, 0, property->items[i].number.min, property->items[i].number.max);
+			SequenceItemModel::instance().setNumericIncrement(SC_SET_FOCUSER_POSITION, 0, property->items[i].number.step);
 		}
 		if (client_match_item(&property->items[i], FOCUSER_STEPS_ITEM_NAME)) {
 			w->set_widget_state(w->m_focus_steps, property->state);
@@ -3369,6 +3371,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("REMOVE %s", property->name);
 		set_text(m_focus_position_label, "0");
 		set_widget_state(m_focus_position_label, INDIGO_OK_STATE);
+		SequenceItemModel::instance().setNumericRange(SC_SET_FOCUSER_POSITION, 0, 0, 100000);
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_FOCUSER_POSITION, 0, 1);
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_STEPS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
@@ -3563,6 +3567,19 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		set_spinbox_value(m_imager_bin_y, 0);
 		set_enabled(m_imager_bin_y, false);
+	}
+
+	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE") ||
+	    client_match_device_no_property(property, selected_scripting_agent)) {
+		/*
+		int item_count = m_sequence_editor2->itemCount();
+		for (int i = 0; i < item_count; i++) {
+			auto seq_item = m_sequence_editor2->getItemAt(i);
+			if (seq_item) {
+				seq_item->setIdle();
+			}
+		}
+		*/
 	}
 
 	// Guider Agent
