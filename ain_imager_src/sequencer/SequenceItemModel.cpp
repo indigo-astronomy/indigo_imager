@@ -63,6 +63,7 @@ void SequenceItemModel::initializeModel() {
 		{SC_FOCUS, {"Focus", {{0, {"Exposure (s)", DoubleSpinBox}}}}},
 		{SC_FOCUS_IGNORE_FAILURE, {"Focus (continue on failure)", {{0, {"Exposure (s)", DoubleSpinBox}}}}},
 		{SC_CLEAR_FOCUS_SELECTION, {"Clear Focus Selection", {}}},
+		{SC_SET_FOCUSER_POSITION, {"Set Focuser Position", {{0, {"Position", DoubleSpinBox}}}}},
 		{SC_PARK, {"Park", {}}},
 		{SC_HOME, {"Home", {}}},
 		{SC_UNPARK, {"Unpark", {}}},
@@ -111,6 +112,7 @@ void SequenceItemModel::initializeModel() {
 		{CC_FOCUSER, {
 			SC_FOCUS,
 			SC_FOCUS_IGNORE_FAILURE,
+			SC_SET_FOCUSER_POSITION,
 			SC_CLEAR_FOCUS_SELECTION
 		}},
 		{CC_GUIDER, {
@@ -223,6 +225,10 @@ void SequenceItemModel::initializeModel() {
 	// Focus (continue on failure)
 	setNumericRange(SC_FOCUS_IGNORE_FAILURE, 0, 0, 180.0);
 	setNumericIncrement(SC_FOCUS_IGNORE_FAILURE, 0, 0.1);
+
+	// Focuser position
+	setNumericRange(SC_SET_FOCUSER_POSITION, 0, 0, 100000);
+	setNumericIncrement(SC_SET_FOCUSER_POSITION, 0, 1.0);
 
 	// Guiding parameters
 	setNumericRange(SC_CALIBRATE_GUIDING, 0, 0, 180.0);

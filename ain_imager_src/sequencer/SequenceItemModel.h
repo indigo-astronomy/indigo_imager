@@ -61,6 +61,7 @@
 #define SC_FOCUS                    cs("focus")
 #define SC_FOCUS_IGNORE_FAILURE     cs("focus_ignore_failure")
 #define SC_CLEAR_FOCUS_SELECTION    cs("clear_focus_selection")
+#define SC_SET_FOCUSER_POSITION     cs("set_focuser_position")
 #define SC_PARK                     cs("park")
 #define SC_HOME                     cs("home")
 #define SC_UNPARK                   cs("unpark")

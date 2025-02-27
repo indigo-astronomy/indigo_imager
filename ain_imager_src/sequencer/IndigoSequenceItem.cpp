@@ -48,7 +48,7 @@ void IndigoSequenceItem::setupUI() {
 	if (type == SC_REPEAT) {
 		//frame->setStyleSheet("QWidget#IndigoSequenceFrame { border: 1px solid #303030; }");
 	} else {
-		frame->setStyleSheet("QWidget#IndigoSequenceFrame { background-color: #252525; border: 1px solid #272727; }");
+		frame->setStyleSheet("QWidget#IndigoSequenceFrame { background-color: #282828; border: 1px solid #292929; }");
 	}
 	frame->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
 
