@@ -64,9 +64,9 @@ void SequenceItemModel::initializeModel() {
 		{SC_FOCUS_IGNORE_FAILURE, {"Focus (continue on failure)", {{0, {"Exposure (s)", DoubleSpinBox}}}}},
 		{SC_CLEAR_FOCUS_SELECTION, {"Clear Focus Selection", {}}},
 		{SC_SET_FOCUSER_POSITION, {"Set Focuser Position", {{0, {"Position", DoubleSpinBox}}}}},
-		{SC_PARK, {"Park", {}}},
-		{SC_HOME, {"Home", {}}},
-		{SC_UNPARK, {"Unpark", {}}},
+		{SC_PARK, {"Park Mount", {}}},
+		{SC_HOME, {"Home Mount", {}}},
+		{SC_UNPARK, {"Unpark Mount", {}}},
 		{SC_SLEW, {"Slew", {{0, {"RA", LineEditSG_RA}}, {1, {"Dec", LineEditSG_DEC}}}}},
 		{SC_WAIT_FOR_GPS, {"Wait for GPS", {}}},
 		{SC_CALIBRATE_GUIDING, {"Calibrate Guiding", {{0, {"Exposure (s)", DoubleSpinBox}}}}},
@@ -213,7 +213,7 @@ void SequenceItemModel::initializeModel() {
 	setNumericIncrement(SC_ENABLE_MERIDIAN_FLIP, 1, 1.0);
 
 	// Capture parameters
-	setNumericRange(SC_CAPTURE_BATCH, 0, -1, 65535);    // Count
+	setNumericRange(SC_CAPTURE_BATCH, 0, 0, 65535);    // Count
 	setNumericIncrement(SC_CAPTURE_BATCH, 0, 1.0);
 	setNumericRange(SC_CAPTURE_BATCH, 1, 0, 7200); // Exposure
 	setNumericIncrement(SC_CAPTURE_BATCH, 1, 1.0);
