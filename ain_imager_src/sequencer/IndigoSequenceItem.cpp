@@ -654,14 +654,24 @@ void IndigoSequenceItem::contextMenuEvent(QContextMenuEvent *event) {
 	QMap<QString, QMenu*> submenus;
 	const auto& submenuCategories = SequenceItemModel::instance().getCategories();
 	const auto& categoryIcons = SequenceItemModel::instance().getCategoryIcons();
+	int maxWidth = 0;
+	QFontMetrics fm(captionLabel->font());
 	for (const auto& category : submenuCategories) {
 		if (category.first == __SEPARATOR__) {
 			contextMenu.addSeparator();
 		} else {
 			submenus[category.first] = contextMenu.addMenu(categoryIcons[category.first], category.first);
 			//submenus[category.first] = contextMenu.addMenu(category.first);
+			QAction *menuAction = submenus[category.first]->menuAction();
+			QFont boldFontMenu = menuAction->font();
+			boldFontMenu.setBold(true);
+			menuAction->setFont(boldFontMenu);
+			//submenus[category.first]->setFont(boldFontMenu);
+			int itemWidth = fm.horizontalAdvance(category.first);
+			maxWidth = qMax(maxWidth, itemWidth);
 		}
 	}
+	contextMenu.setMinimumWidth(maxWidth + 75);
 
 	// Add actions
 	const auto& widgetTypes = SequenceItemModel::instance().getWidgetTypes();
