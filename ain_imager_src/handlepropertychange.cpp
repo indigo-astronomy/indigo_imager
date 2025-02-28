@@ -1398,7 +1398,7 @@ void define_ccd_exposure_property(ImagerWindow *w, indigo_property *property) {
 		if (client_match_item(&property->items[i], CCD_EXPOSURE_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_preview_exposure_time);
 			SequenceItemModel::instance().setNumericRange(SC_CAPTURE_BATCH, 1, property->items[i].number.min, property->items[i].number.max);
-			SequenceItemModel::instance().setNumericIncrement(SC_CAPTURE_BATCH, 1, property->items[i].number.value);
+			SequenceItemModel::instance().setNumericIncrement(SC_CAPTURE_BATCH, 1, property->items[i].number.step);
 		}
 	}
 	w->set_spinbox_value(w->m_preview_exposure_time, preview_time);
@@ -2745,7 +2745,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		for(int i = 0; i < property->count; i++) {
 			if (client_match_item(&property->items[i], CCD_TEMPERATURE_ITEM_NAME)) {
 				SequenceItemModel::instance().setNumericRange(SC_ENABLE_COOLER, 0, property->items[i].number.min, property->items[i].number.max);
-				SequenceItemModel::instance().setNumericIncrement(SC_ENABLE_COOLER, 0, property->items[i].number.value);
+				SequenceItemModel::instance().setNumericIncrement(SC_ENABLE_COOLER, 0, property->items[i].number.step);
 			}
 		}
 	}
