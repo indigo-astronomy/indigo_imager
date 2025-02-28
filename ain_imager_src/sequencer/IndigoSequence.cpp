@@ -206,6 +206,9 @@ void IndigoSequence::contextMenuEvent(QContextMenuEvent *event) {
 	QMenu contextMenu(this);
 	contextMenuPos = event->pos();
 
+	int insertAt = determineInsertPosition(contextMenuPos);
+	showDropIndicator(insertAt);
+
 	QLabel *captionLabel = new QLabel("Select Action :", this);
 	QFont boldFont = captionLabel->font();
 	boldFont.setBold(true);
@@ -216,9 +219,6 @@ void IndigoSequence::contextMenuEvent(QContextMenuEvent *event) {
 	captionAction->setDefaultWidget(captionLabel);
 	contextMenu.addAction(captionAction);
 	contextMenu.addSeparator();
-
-	int insertAt = determineInsertPosition(contextMenuPos);
-	showDropIndicator(insertAt);
 
 	// Add categories
 	QMap<QString, QMenu*> submenus;

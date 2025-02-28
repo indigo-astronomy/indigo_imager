@@ -80,6 +80,7 @@ protected:
 	void contextMenuEvent(QContextMenuEvent *event) override;
 
 private slots:
+	void addItemFromMenu();
 	void removeWidget();
 
 private:
@@ -91,6 +92,7 @@ private:
 	QVBoxLayout *outerLayout;
 	QFrame *frame;
 	QFrame *dropIndicator;
+	QPoint contextMenuPos;
 	QWidget *overlay;
 	QMap<int, QWidget *> parameterWidgets;
 	QVBoxLayout *repeatLayout; // Layout for nested IndigoSequenceItems

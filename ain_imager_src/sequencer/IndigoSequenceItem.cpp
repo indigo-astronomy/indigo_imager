@@ -633,7 +633,11 @@ void IndigoSequenceItem::contextMenuEvent(QContextMenuEvent *event) {
 	}
 
 	QMenu contextMenu(this);
-	QPoint menuPos = event->pos();
+	contextMenuPos = event->pos();
+
+	// Determine insert position and show indicator
+	int insertAt = determineInsertPosition(contextMenuPos);
+	showDropIndicator(insertAt);
 
 	// Add centered bold caption with padding
 	QLabel *captionLabel = new QLabel("Select Action :", this);
@@ -645,10 +649,6 @@ void IndigoSequenceItem::contextMenuEvent(QContextMenuEvent *event) {
 	QWidgetAction *captionAction = new QWidgetAction(&contextMenu);
 	captionAction->setDefaultWidget(captionLabel);
 	contextMenu.addAction(captionAction);
-
-	// Determine insert position and show indicator
-	int insertAt = determineInsertPosition(menuPos);
-	showDropIndicator(insertAt);
 
 	// Add categories
 	QMap<QString, QMenu*> submenus;
@@ -688,17 +688,7 @@ void IndigoSequenceItem::contextMenuEvent(QContextMenuEvent *event) {
 					action->setEnabled(false);
 				}
 
-				connect(action, &QAction::triggered, this, [this, event]() {
-					QAction *action = qobject_cast<QAction *>(sender());
-					if (!action) return;
-
-					QString itemType = action->data().toString();
-					IndigoSequenceItem *item = new IndigoSequenceItem(itemType, this);
-
-					// Determine position to insert using the stored position
-					int insertAt = determineInsertPosition(event->pos());
-					repeatLayout->insertWidget(insertAt, item);
-				});
+				connect(action, &QAction::triggered, this, &IndigoSequenceItem::addItemFromMenu);
 
 				submenus[category.first]->addAction(action);
 			}
@@ -707,6 +697,18 @@ void IndigoSequenceItem::contextMenuEvent(QContextMenuEvent *event) {
 
 	contextMenu.exec(event->globalPos());
 	dropIndicator->setVisible(false);
+}
+
+void IndigoSequenceItem::addItemFromMenu() {
+	QAction *action = qobject_cast<QAction *>(sender());
+	if (!action) return;
+
+	QString itemType = action->data().toString();
+	IndigoSequenceItem *item = new IndigoSequenceItem(itemType, this);
+
+	// Determine position to insert using the stored position
+	int insertAt = determineInsertPosition(contextMenuPos);
+	repeatLayout->insertWidget(insertAt, item);
 }
 
 void IndigoSequenceItem::updateNumericRange(int paramId, double min, double max) {
