@@ -32,13 +32,29 @@
 
 
 QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
-	// Remove comments
+	const char lpMarker[] = "&<L*";
+	const char rpMarker[] = "&>R*";
+
+	// remove comments
 	QRegularExpression commentRe(R"(//.*$)");
 	code.remove(commentRe);
 
+	// replace parentheses in strings with markers as they confuse parser
+	QString processedCode = code;
+	QRegularExpression stringRe(R"(\"[^\"]*\"|\'[^\']*\')");
+	QRegularExpressionMatchIterator stringIt = stringRe.globalMatch(code);
+
+	while (stringIt.hasNext()) {
+		QRegularExpressionMatch stringMatch = stringIt.next();
+		QString originalStr = stringMatch.captured(0);
+		QString replacedStr = originalStr;
+		replacedStr.replace("(", lpMarker).replace(")", rpMarker);
+		processedCode.replace(originalStr, replacedStr);
+	}
+
 	QVector<FunctionCall> calls;
 	QRegularExpression re(R"((\w+)\.(\w+)\(([^)]*)\);|(\w+)\.repeat\((\d+),\s*function\s*\(\)\s*\{([^}]*)\}\);|var\s+(\w+)\s*=\s*new\s+Sequence\((\"[^\"]*\")?\);)");
-	QRegularExpressionMatchIterator it = re.globalMatch(code);
+	QRegularExpressionMatchIterator it = re.globalMatch(processedCode);
 
 	while (it.hasNext()) {
 		QRegularExpressionMatch match = it.next();
@@ -68,6 +84,8 @@ QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
 			call.parameters = params.split(',', QT_SKIP_EMPTY_PARTS);
 			for (QString& param : call.parameters) {
 				param = param.trimmed();
+				// restore parentheses in parameters
+				param.replace(lpMarker, "(").replace(rpMarker, ")");
 			}
 		}
 
