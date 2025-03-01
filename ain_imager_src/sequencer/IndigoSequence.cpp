@@ -37,7 +37,7 @@
 #include <QMessageBox>
 #include <QTextStream>
 
-IndigoSequence::IndigoSequence(QWidget *parent) : QWidget(parent) {
+IndigoSequence::IndigoSequence(QWidget *parent) : QWidget(parent), isEnabledState(true), dragSourceWidget(nullptr) {
 	layout = new QVBoxLayout(this);
 	scrollArea = new QScrollArea(this);
 	container = new QWidget(scrollArea);
@@ -108,6 +108,8 @@ IndigoSequence::IndigoSequence(QWidget *parent) : QWidget(parent) {
 			this, &IndigoSequence::onNumericIncrementChanged);
 	connect(&SequenceItemModel::instance(), &SequenceItemModel::comboOptionsChanged,
 			this, &IndigoSequence::onComboOptionsChanged);
+
+	connect(this, &IndigoSequence::enable, this, &IndigoSequence::setEnabledState);
 }
 
 
@@ -203,6 +205,8 @@ void IndigoSequence::scrollToItem(int index) {
 }
 
 void IndigoSequence::contextMenuEvent(QContextMenuEvent *event) {
+	if (!isEnabledState) return;
+
 	QMenu contextMenu(this);
 	contextMenuPos = event->pos();
 
@@ -235,7 +239,7 @@ void IndigoSequence::contextMenuEvent(QContextMenuEvent *event) {
 			QFont boldFontMenu = menuAction->font();
 			boldFontMenu.setBold(true);
 			menuAction->setFont(boldFontMenu);
-			//submenus[category.first]->setFont(boldFontMenu);
+
 			int itemWidth = fm.horizontalAdvance(category.first);
 			maxWidth = qMax(maxWidth, itemWidth);
 		}
@@ -276,12 +280,16 @@ void IndigoSequence::addItemFromMenu() {
 }
 
 void IndigoSequence::dragEnterEvent(QDragEnterEvent *event) {
+	if (!isEnabledState) return;
+
 	if (event->mimeData()->hasFormat("application/x-indigosequenceitem")) {
 		event->acceptProposedAction();
 	}
 }
 
 void IndigoSequence::dragMoveEvent(QDragMoveEvent *event) {
+	if (!isEnabledState) return;
+
 	if (event->mimeData()->hasFormat("application/x-indigosequenceitem")) {
 		event->acceptProposedAction();
 		int insertAt = determineInsertPosition(event->pos());
@@ -290,6 +298,8 @@ void IndigoSequence::dragMoveEvent(QDragMoveEvent *event) {
 }
 
 void IndigoSequence::dropEvent(QDropEvent *event) {
+	if (!isEnabledState) return;
+
 	dropIndicator->setVisible(false);
 	if (dragSourceWidget) {
 		dragSourceWidget->hideDragOverlay();
@@ -759,4 +769,19 @@ double IndigoSequence::totalExposure() const {
 	}
 
 	return totalExposureTime;
+}
+
+void IndigoSequence::setEnabledState(bool enabled) {
+	isEnabledState = enabled;
+
+	for (int i = 0; i < containerLayout->count(); ++i) {
+		IndigoSequenceItem* sequencerItem = qobject_cast<IndigoSequenceItem*>(containerLayout->itemAt(i)->widget());
+		if (sequencerItem) {
+			emit sequencerItem->enable(enabled);
+		}
+	}
+
+	m_download_sequence_button->setEnabled(enabled);
+	m_load_sequence_button->setEnabled(enabled);
+	sequenceNameEdit->setEnabled(enabled);
 }

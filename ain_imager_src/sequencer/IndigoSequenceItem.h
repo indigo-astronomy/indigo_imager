@@ -71,6 +71,12 @@ public:
 		QMap<int, ParameterInfo> parameters;
 	};
 
+signals:
+	void enable(bool enabled);
+
+public slots:
+	void setEnabledState(bool enabled);
+
 protected:
 	void mousePressEvent(QMouseEvent *event) override;
 	void dragEnterEvent(QDragEnterEvent *event) override;
@@ -97,6 +103,8 @@ private:
 	QMap<int, QWidget *> parameterWidgets;
 	QVBoxLayout *repeatLayout; // Layout for nested IndigoSequenceItems
 	QLabel *iterationLabel;
+
+	bool isEnabledState;
 
 	void setupUI();
 	void addInputWidget(const QString &paramName, ParamWidget paramWidget, int key);

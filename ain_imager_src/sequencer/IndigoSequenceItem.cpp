@@ -35,9 +35,12 @@
 #include "SelectObject.h"
 
 IndigoSequenceItem::IndigoSequenceItem(const QString &type, QWidget *parent)
-	: QWidget(parent), type(type), overlay(nullptr) {
+	: QWidget(parent), type(type), overlay(nullptr), isEnabledState(true) {
 	setObjectName(type); // Set the object name to the type
 	setupUI();
+
+	// Connect the enable signal to the setEnabledState slot
+	connect(this, &IndigoSequenceItem::enable, this, &IndigoSequenceItem::setEnabledState);
 }
 
 void IndigoSequenceItem::setupUI() {
@@ -339,6 +342,7 @@ QVariant IndigoSequenceItem::getParameter(const int paramID) const {
 }
 
 void IndigoSequenceItem::removeWidget() {
+	if(!isEnabledState) return;
 	delete this;
 }
 
@@ -426,6 +430,8 @@ void IndigoSequenceItem::clearItems() {
 }
 
 void IndigoSequenceItem::dragEnterEvent(QDragEnterEvent *event) {
+	if (!isEnabledState) return;
+
 	if (type == SC_REPEAT && event->mimeData()->hasFormat("application/x-indigosequenceitem")) {
 		QByteArray itemData = event->mimeData()->data("application/x-indigosequenceitem");
 		QDataStream dataStream(&itemData, QIODevice::ReadOnly);
@@ -443,6 +449,8 @@ void IndigoSequenceItem::dragEnterEvent(QDragEnterEvent *event) {
 }
 
 void IndigoSequenceItem::dragMoveEvent(QDragMoveEvent *event) {
+	if (!isEnabledState) return;
+
 	if (type == SC_REPEAT && event->mimeData()->hasFormat("application/x-indigosequenceitem")) {
 		event->acceptProposedAction();
 		int insertAt = determineInsertPosition(event->pos());
@@ -469,6 +477,8 @@ bool IndigoSequenceItem::isAncestorOf(QWidget* possibleChild) const {
 }
 
 void IndigoSequenceItem::dropEvent(QDropEvent *event) {
+	if (!isEnabledState) return;
+
 	if (type == SC_REPEAT && event->mimeData()->hasFormat("application/x-indigosequenceitem")) {
 		// Check nesting level
 		QByteArray itemData = event->mimeData()->data("application/x-indigosequenceitem");
@@ -627,6 +637,8 @@ void IndigoSequenceItem::hideDragOverlay() {
 }
 
 void IndigoSequenceItem::contextMenuEvent(QContextMenuEvent *event) {
+	if (!isEnabledState) return;
+
 	if (type != SC_REPEAT) {
 		QWidget::contextMenuEvent(event);
 		return;
@@ -829,5 +841,32 @@ void IndigoSequenceItem::setOk() {
 void IndigoSequenceItem::setIteration(int count) {
 	if (type == SC_REPEAT && iterationLabel) {
 		iterationLabel->setText(QString("Iteration: <b>%1</b>").arg(count));
+	}
+}
+
+void IndigoSequenceItem::setEnabledState(bool enabled) {
+	isEnabledState = enabled;
+	for (auto it = parameterWidgets.begin(); it != parameterWidgets.end(); ++it) {
+		QWidget *widget = it.value();
+		if (QLineEdit *lineEdit = qobject_cast<QLineEdit*>(widget)) {
+			lineEdit->setEnabled(enabled);
+		} else if (QSpinBox *spinBox = qobject_cast<QSpinBox*>(widget)) {
+			spinBox->setEnabled(enabled);
+		} else if (QDoubleSpinBox *doubleSpinBox = qobject_cast<QDoubleSpinBox*>(widget)) {
+			doubleSpinBox->setEnabled(enabled);
+		} else if (QComboBox *comboBox = qobject_cast<QComboBox*>(widget)) {
+			comboBox->setEnabled(enabled);
+		} else if (QCheckBox *checkBox = qobject_cast<QCheckBox*>(widget)) {
+			checkBox->setEnabled(enabled);
+		}
+	}
+
+	if (type == SC_REPEAT && repeatLayout) {
+		for (int i = 0; i < repeatLayout->count(); ++i) {
+			IndigoSequenceItem* nestedItem = qobject_cast<IndigoSequenceItem*>(repeatLayout->itemAt(i)->widget());
+			if (nestedItem) {
+				emit nestedItem->enable(enabled);
+			}
+		}
 	}
 }

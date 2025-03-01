@@ -193,6 +193,7 @@ void ImagerWindow::on_request_sequence() {
 }
 
 void ImagerWindow::on_sequence_start_stop(bool clicked) {
+	m_sequence_editor2->enable(true);
 	exposure_start_stop(clicked, true);
 }
 
@@ -207,6 +208,8 @@ void ImagerWindow::on_reset(bool clicked) {
 
 		indigo_property *p = properties.get(selected_scripting_agent, "SEQUENCE_STATE");
 		if (p == nullptr || p->state == INDIGO_BUSY_STATE) return;
+
+		m_sequence_editor2->enable(true);
 
 		indigo_change_switch_property_1(nullptr, selected_scripting_agent, "SEQUENCE_RESET", "RESET", true);
 	});

@@ -62,6 +62,10 @@ public:
 
 signals:
 	void requestSequence();
+	void enable(bool enabled);
+
+public slots:
+	void setEnabledState(bool enabled);
 
 protected:
 	void contextMenuEvent(QContextMenuEvent *event) override;
@@ -95,6 +99,8 @@ private:
 	QToolButton *m_load_sequence_button;
 	QToolButton *m_save_sequence_button;
 	QLabel* overlayPrompt;
+
+	bool isEnabledState;
 };
 
 #endif // __INDIGOSEQUENCE_H
