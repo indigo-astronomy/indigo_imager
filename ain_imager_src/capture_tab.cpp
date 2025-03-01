@@ -529,8 +529,8 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 			// set aditional agent reations needed for sequence
 			static char selected_mount_agent[INDIGO_NAME_SIZE];
 			get_selected_mount_agent(selected_mount_agent);
-			set_related_solver_agent(selected_imager_agent, "Imager Agent");
-			set_related_solver_agent(selected_mount_agent, "Mount Agent");
+			set_related_solver_agent(selected_imager_agent);
+			set_related_solver_agent(selected_mount_agent);
 
 			change_scripting_agent_sequence(
 				selected_scripting_agent,

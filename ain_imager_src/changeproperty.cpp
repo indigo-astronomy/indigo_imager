@@ -206,23 +206,30 @@ void ImagerWindow::set_related_mount_guider_agent(const char *related_agent) con
 	}
 }
 
-void ImagerWindow::set_related_solver_agent(const char *related_agent, const char *agent_prefix) const {
+void ImagerWindow::set_related_solver_agent(const char *related_agent) const {
 	// Select related agent
 	char selected_solver_agent[INDIGO_NAME_SIZE] = {0};
 	char selected_solver_agent_trimmed[INDIGO_NAME_SIZE] = {0};
 	char related_agent_trimmed[INDIGO_NAME_SIZE] = {0};
 	char old_agent[INDIGO_NAME_SIZE] = {0};
+	char agent_prefix[INDIGO_NAME_SIZE] = {0};
 
 	get_selected_solver_agent(selected_solver_agent);
 
 	strncpy(selected_solver_agent_trimmed, selected_solver_agent, INDIGO_NAME_SIZE);
 	strncpy(related_agent_trimmed, related_agent, INDIGO_NAME_SIZE);
+	strncpy(agent_prefix, related_agent, INDIGO_NAME_SIZE);
 
 	char *service1 = strrchr(related_agent_trimmed, '@');
 	char *service2 = strrchr(selected_solver_agent_trimmed, '@');
 	if (service1 != nullptr && service2 != nullptr && !strcmp(service1, service2)) {
 		*(service1 - 1) = '\0';
 		*(service2 - 1) = '\0';
+	}
+
+	char *service3 = strchr(agent_prefix, '@');
+	if (service3 != nullptr) {
+		*(service3 - 1) = '\0';
 	}
 
 	bool change = true;
@@ -239,7 +246,7 @@ void ImagerWindow::set_related_solver_agent(const char *related_agent, const cha
 			}
 		}
 		if (change) {
-			indigo_debug("[RELATED AGENT] %s '%s' %s -> %s\n", __FUNCTION__, selected_solver_agent, old_agent, related_agent_trimmed);
+			indigo_error("[RELATED AGENT] %s '%s' %s -> %s (prefix '%s')\n", __FUNCTION__, selected_solver_agent, old_agent, related_agent_trimmed, agent_prefix);
 			change_related_agent(selected_solver_agent, old_agent, related_agent_trimmed);
 		}
 	}
