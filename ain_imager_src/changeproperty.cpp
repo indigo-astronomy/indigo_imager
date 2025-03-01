@@ -206,6 +206,45 @@ void ImagerWindow::set_related_mount_guider_agent(const char *related_agent) con
 	}
 }
 
+void ImagerWindow::set_related_solver_agent(const char *related_agent, const char *agent_prefix) const {
+	// Select related agent
+	char selected_solver_agent[INDIGO_NAME_SIZE] = {0};
+	char selected_solver_agent_trimmed[INDIGO_NAME_SIZE] = {0};
+	char related_agent_trimmed[INDIGO_NAME_SIZE] = {0};
+	char old_agent[INDIGO_NAME_SIZE] = {0};
+
+	get_selected_solver_agent(selected_solver_agent);
+
+	strncpy(selected_solver_agent_trimmed, selected_solver_agent, INDIGO_NAME_SIZE);
+	strncpy(related_agent_trimmed, related_agent, INDIGO_NAME_SIZE);
+
+	char *service1 = strrchr(related_agent_trimmed, '@');
+	char *service2 = strrchr(selected_solver_agent_trimmed, '@');
+	if (service1 != nullptr && service2 != nullptr && !strcmp(service1, service2)) {
+		*(service1 - 1) = '\0';
+		*(service2 - 1) = '\0';
+	}
+
+	bool change = true;
+	old_agent[0] = '\0';
+	indigo_property *p = properties.get(selected_solver_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
+	if (p) {
+		for (int i = 0; i < p->count; i++) {
+			if (p->items[i].sw.value && !strncmp(p->items[i].name, agent_prefix, strlen(agent_prefix))) {
+				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
+				if (!strcmp(old_agent, related_agent_trimmed)) {
+					change = false;
+					break;
+				}
+			}
+		}
+		if (change) {
+			indigo_debug("[RELATED AGENT] %s '%s' %s -> %s\n", __FUNCTION__, selected_solver_agent, old_agent, related_agent_trimmed);
+			change_related_agent(selected_solver_agent, old_agent, related_agent_trimmed);
+		}
+	}
+}
+
 void ImagerWindow::set_related_imager_and_guider_agents() const {
 	// Select related guider agent
 	char selected_imager_agent[INDIGO_NAME_SIZE] = {0};

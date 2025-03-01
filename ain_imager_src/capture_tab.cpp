@@ -525,6 +525,13 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 				get_time_after(end_time, approx_time, "Optimistic time of sequence completion: %d %b %H:%M");
 				Logger::instance().log(nullptr, end_time);
 			}
+
+			// set aditional agent reations needed for sequence
+			static char selected_mount_agent[INDIGO_NAME_SIZE];
+			get_selected_mount_agent(selected_mount_agent);
+			set_related_solver_agent(selected_imager_agent, "Imager Agent");
+			set_related_solver_agent(selected_mount_agent, "Mount Agent");
+
 			change_scripting_agent_sequence(
 				selected_scripting_agent,
 				m_sequence_editor2->makeScriptFromView()

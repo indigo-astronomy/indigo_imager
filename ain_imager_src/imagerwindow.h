@@ -967,6 +967,7 @@ private:
 	void request_file_remove(const char *agent, const char *file_name) const;
 	void change_related_agent(const char *agent, const char *old_agent, const char *new_agent) const;
 	void set_related_mount_and_imager_agents() const;
+	void set_related_solver_agent(const char *related_agent, const char *agent_prefix) const;
 	void set_related_imager_and_guider_agents() const;
 	void set_related_mount_guider_agent(const char *related_agent) const;
 	void change_agent_guider_dithering_property(const char *agent) const;
