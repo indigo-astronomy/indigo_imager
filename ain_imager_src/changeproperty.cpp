@@ -167,61 +167,37 @@ void ImagerWindow::request_file_remove(const char *agent, const char *file_name)
 	indigo_change_text_property_1_raw(nullptr, agent, AGENT_IMAGER_DELETE_FILE_PROPERTY_NAME, AGENT_IMAGER_DELETE_FILE_ITEM_NAME, file_name);
 }
 
-void ImagerWindow::set_related_mount_guider_agent(const char *related_agent) const {
-	// Select related guider agent
-	char selected_mount_agent[INDIGO_NAME_SIZE] = {0};
-	char selected_mount_agent_trimmed[INDIGO_NAME_SIZE] = {0};
-	char related_agent_trimmed[INDIGO_NAME_SIZE] = {0};
-	char old_agent[INDIGO_NAME_SIZE] = {0};
-
-	get_selected_mount_agent(selected_mount_agent);
-
-	strncpy(selected_mount_agent_trimmed, selected_mount_agent, INDIGO_NAME_SIZE);
-	strncpy(related_agent_trimmed, related_agent, INDIGO_NAME_SIZE);
-
-	char *service1 = strrchr(related_agent_trimmed, '@');
-	char *service2 = strrchr(selected_mount_agent_trimmed, '@');
-	if (service1 != nullptr && service2 != nullptr && !strcmp(service1, service2)) {
-		*(service1 - 1) = '\0';
-		*(service2 - 1) = '\0';
-	}
-
-	bool change = true;
-	old_agent[0] = '\0';
-	indigo_property *p = properties.get(selected_mount_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
-	if (p) {
-		for (int i = 0; i < p->count; i++) {
-			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Guider Agent", strlen("Guider Agent"))) {
-				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
-				if (!strcmp(old_agent, related_agent_trimmed)) {
-					change = false;
-					break;
-				}
-			}
-		}
-		if (change) {
-			indigo_debug("[RELATED GUIDER AGENT] %s '%s' %s -> %s\n", __FUNCTION__, selected_mount_agent, old_agent, related_agent_trimmed);
-			change_related_agent(selected_mount_agent, old_agent, related_agent_trimmed);
-		}
-	}
-}
-
 void ImagerWindow::set_related_solver_agent(const char *related_agent) const {
 	// Select related agent
 	char selected_solver_agent[INDIGO_NAME_SIZE] = {0};
-	char selected_solver_agent_trimmed[INDIGO_NAME_SIZE] = {0};
 	char related_agent_trimmed[INDIGO_NAME_SIZE] = {0};
-	char old_agent[INDIGO_NAME_SIZE] = {0};
 	char agent_prefix[INDIGO_NAME_SIZE] = {0};
 
 	get_selected_solver_agent(selected_solver_agent);
 
-	strncpy(selected_solver_agent_trimmed, selected_solver_agent, INDIGO_NAME_SIZE);
+	strncpy(related_agent_trimmed, related_agent, INDIGO_NAME_SIZE);
+	strncpy(agent_prefix, related_agent, INDIGO_NAME_SIZE);
+
+	char *service = strrchr(related_agent_trimmed, '@');
+	if (service != nullptr) {
+		*(service - 1) = '\0';
+	}
+
+	set_agent_releated_agent(selected_solver_agent, related_agent_trimmed, true);
+}
+
+void ImagerWindow::set_related_agent(const char *agent, const char *related_agent) const {
+	char agent_trimmed[INDIGO_NAME_SIZE] = {0};
+	char related_agent_trimmed[INDIGO_NAME_SIZE] = {0};
+	char old_agent[INDIGO_NAME_SIZE] = {0};
+	char agent_prefix[INDIGO_NAME_SIZE] = {0};
+
+	strncpy(agent_trimmed, agent, INDIGO_NAME_SIZE);
 	strncpy(related_agent_trimmed, related_agent, INDIGO_NAME_SIZE);
 	strncpy(agent_prefix, related_agent, INDIGO_NAME_SIZE);
 
 	char *service1 = strrchr(related_agent_trimmed, '@');
-	char *service2 = strrchr(selected_solver_agent_trimmed, '@');
+	char *service2 = strrchr(agent_trimmed, '@');
 	if (service1 != nullptr && service2 != nullptr && !strcmp(service1, service2)) {
 		*(service1 - 1) = '\0';
 		*(service2 - 1) = '\0';
@@ -234,7 +210,7 @@ void ImagerWindow::set_related_solver_agent(const char *related_agent) const {
 
 	bool change = true;
 	old_agent[0] = '\0';
-	indigo_property *p = properties.get(selected_solver_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
+	indigo_property *p = properties.get(agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
 	if (p) {
 		for (int i = 0; i < p->count; i++) {
 			if (p->items[i].sw.value && !strncmp(p->items[i].name, agent_prefix, strlen(agent_prefix))) {
@@ -246,130 +222,33 @@ void ImagerWindow::set_related_solver_agent(const char *related_agent) const {
 			}
 		}
 		if (change) {
-			indigo_error("[RELATED AGENT] %s '%s' %s -> %s (prefix '%s')\n", __FUNCTION__, selected_solver_agent, old_agent, related_agent_trimmed, agent_prefix);
-			change_related_agent(selected_solver_agent, old_agent, related_agent_trimmed);
+			indigo_error("[SET RELATED AGENT] %s '%s' chnaged '%s' -> '%s' (prefix '%s')\n", __FUNCTION__, agent, old_agent, related_agent_trimmed, agent_prefix);
+			change_related_agent(agent, old_agent, related_agent_trimmed);
 		}
 	}
 }
 
-void ImagerWindow::set_related_imager_and_guider_agents() const {
-	// Select related guider agent
-	char selected_imager_agent[INDIGO_NAME_SIZE] = {0};
-	char selected_imager_agent_trimmed[INDIGO_NAME_SIZE] = {0};
-	char selected_guider_agent[INDIGO_NAME_SIZE] = {0};
-	char selected_guider_agent_trimmed[INDIGO_NAME_SIZE] = {0};
-	char old_agent[INDIGO_NAME_SIZE] = {0};
-
-	get_selected_imager_agent(selected_imager_agent);
-	get_selected_guider_agent(selected_guider_agent);
-
-	strncpy(selected_imager_agent_trimmed, selected_imager_agent, INDIGO_NAME_SIZE);
-	strncpy(selected_guider_agent_trimmed, selected_guider_agent, INDIGO_NAME_SIZE);
-
-	char *service1 = strrchr(selected_guider_agent_trimmed, '@');
-	char *service2 = strrchr(selected_imager_agent_trimmed, '@');
-	if (service1 != nullptr && service2 != nullptr && !strcmp(service1, service2)) {
-		*(service1 - 1) = '\0';
-		*(service2 - 1) = '\0';
-	}
-
-	bool change = true;
-	old_agent[0] = '\0';
-	indigo_property *p = properties.get(selected_imager_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
-	if (p) {
-		for (int i = 0; i < p->count; i++) {
-			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Guider Agent", strlen("Guider Agent"))) {
-				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
-				if (!strcmp(old_agent, selected_guider_agent_trimmed)) {
-					change = false;
-					break;
-				}
-			}
-		}
-		if (change) {
-			indigo_debug("[RELATED GUIDER AGENT] %s '%s' %s -> %s\n", __FUNCTION__, selected_imager_agent, old_agent, selected_guider_agent_trimmed);
-			change_related_agent(selected_imager_agent, old_agent, selected_guider_agent_trimmed);
-		}
-	}
-
-	change = true;
-	old_agent[0] = '\0';
-	p = properties.get(selected_guider_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
-	if (p) {
-		for (int i = 0; i < p->count; i++) {
-			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Imager Agent", strlen("Imager Agent"))) {
-				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
-				if (!strcmp(old_agent, selected_imager_agent_trimmed)) {
-					change = false;
-					break;
-				}
-			}
-		}
-		if (change) {
-			indigo_debug("[RELATED IMAGER AGENT] %s '%s' %s -> %s\n", __FUNCTION__, selected_guider_agent, old_agent, selected_imager_agent_trimmed);
-			change_related_agent(selected_guider_agent, old_agent, selected_imager_agent_trimmed);
-		}
-	}
-}
-
-void ImagerWindow::set_related_mount_and_imager_agents() const {
-	// Select related imager and mount agent
+void ImagerWindow::set_base_agent_relations() const {
 	char selected_mount_agent[INDIGO_NAME_SIZE] = {0};
 	char selected_imager_agent[INDIGO_NAME_SIZE] = {0};
-	char selected_mount_agent_trimmed[INDIGO_NAME_SIZE] = {0};
-	char selected_imager_agent_trimmed[INDIGO_NAME_SIZE] = {0};
-	char old_agent[INDIGO_NAME_SIZE] = {0};
-
+	char selected_guider_agent[INDIGO_NAME_SIZE] = {0};
+	char selected_solver_agent[INDIGO_NAME_SIZE] = {0};
 	get_selected_mount_agent(selected_mount_agent);
 	get_selected_imager_agent(selected_imager_agent);
+	get_selected_guider_agent(selected_guider_agent);
+	get_selected_solver_agent(selected_solver_agent);
 
-	strncpy(selected_mount_agent_trimmed, selected_mount_agent, INDIGO_NAME_SIZE);
-	strncpy(selected_imager_agent_trimmed, selected_imager_agent, INDIGO_NAME_SIZE);
+	set_related_agent(selected_mount_agent, selected_imager_agent);
+	set_related_agent(selected_imager_agent, selected_mount_agent);
 
-	char *service1 = strrchr(selected_imager_agent_trimmed, '@');
-	char *service2 = strrchr(selected_mount_agent_trimmed, '@');
-	if (service1 != nullptr && service2 != nullptr && !strcmp(service1, service2)) {
-		*(service1 - 1) = '\0';
-		*(service2 - 1) = '\0';
-	}
+	set_related_agent(selected_imager_agent, selected_guider_agent);
+	set_related_agent(selected_guider_agent, selected_imager_agent);
 
-	bool change = true;
-	old_agent[0] = '\0';
-	indigo_property *p = properties.get(selected_mount_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
-	if (p) {
-		for (int i = 0; i < p->count; i++) {
-			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Imager Agent", strlen("Imager Agent"))) {
-				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
-				if (!strcmp(old_agent, selected_imager_agent_trimmed)) {
-					change = false;
-					break;
-				}
-			}
-		}
-		if (change) {
-			indigo_debug("[RELATED IMAGER AGENT] %s '%s' %s -> %s\n", __FUNCTION__, selected_mount_agent, old_agent, selected_imager_agent_trimmed);
-			change_related_agent(selected_mount_agent, old_agent, selected_imager_agent_trimmed);
-		}
-	}
+	set_related_agent(selected_solver_agent, selected_mount_agent);
+	set_related_agent(selected_mount_agent, selected_solver_agent);
 
-	change = true;
-	old_agent[0] = '\0';
-	p = properties.get(selected_imager_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
-	if (p) {
-		for (int i = 0; i < p->count; i++) {
-			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Mount Agent", strlen("Mount Agent"))) {
-				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
-				if (!strcmp(old_agent, selected_mount_agent_trimmed)) {
-					change = false;
-					break;
-				}
-			}
-		}
-		if (change) {
-			indigo_debug("[RELATED MOUNT AGENT] %s '%s' %s -> %s\n", __FUNCTION__, selected_imager_agent, old_agent, selected_mount_agent_trimmed);
-			change_related_agent(selected_imager_agent, old_agent, selected_mount_agent_trimmed);
-		}
-	}
+	set_related_agent(selected_mount_agent, selected_guider_agent);
+	set_related_agent(selected_guider_agent, selected_mount_agent);
 }
 
 void ImagerWindow::change_related_agent(const char *agent, const char *old_agent, const char *new_agent) const {

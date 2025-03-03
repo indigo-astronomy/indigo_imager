@@ -966,10 +966,14 @@ private:
 	void request_file_download(const char *agent, const char *file_name) const;
 	void request_file_remove(const char *agent, const char *file_name) const;
 	void change_related_agent(const char *agent, const char *old_agent, const char *new_agent) const;
-	void set_related_mount_and_imager_agents() const;
+
+	void set_related_agent(const char *agent, const char *related_agent) const;
+	void set_base_agent_relations() const;
 	void set_related_solver_agent(const char *related_agent) const;
-	void set_related_imager_and_guider_agents() const;
-	void set_related_mount_guider_agent(const char *related_agent) const;
+
+	// related_aget should be with trimmed service
+	void set_agent_releated_agent(const char *agent, const char *related_agent, bool select) const;
+
 	void change_agent_guider_dithering_property(const char *agent) const;
 	void change_agent_imager_dithering_property(const char *agent) const;
 	void change_agent_gain_property(const char *agent, QSpinBox *ccd_gain) const;
@@ -1025,7 +1029,6 @@ private:
 	void clear_solver_agent_releated_agents(const char *agent) const;
 	void change_solver_agent_abort(const char *agent) const;
 
-	void set_agent_releated_agent(const char *agent, const char *related_agent, bool select) const;
 	void disable_auto_solving(const char *agent) const;
 
 	void update_solver_widgets_at_start(const char *image_agent, const char *solver_agent);

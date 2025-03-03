@@ -505,8 +505,7 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 		}
 
 		// Start sequence or exposure
-		set_related_mount_and_imager_agents();
-		set_related_imager_and_guider_agents();
+		set_base_agent_relations();
 
 		m_object_name_str = m_object_name->text().trimmed();
 		//add_fits_keyword_string(selected_imager_agent, "OBJECT", m_object_name_str);
@@ -527,10 +526,8 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 			}
 
 			// set aditional agent reations needed for sequence
-			static char selected_mount_agent[INDIGO_NAME_SIZE];
-			get_selected_mount_agent(selected_mount_agent);
+
 			set_related_solver_agent(selected_imager_agent);
-			set_related_solver_agent(selected_mount_agent);
 
 			change_scripting_agent_sequence(
 				selected_scripting_agent,
@@ -561,8 +558,7 @@ void ImagerWindow::on_preview_start_stop(bool clicked) {
 		    ccd_exposure && ccd_exposure->state == INDIGO_BUSY_STATE) {
 			change_ccd_abort_exposure_property(selected_agent);
 		} else {
-			set_related_mount_and_imager_agents();
-			set_related_imager_and_guider_agents();
+			set_base_agent_relations();
 			QString obj_name = m_object_name->text();
 			add_fits_keyword_string(selected_agent, "OBJECT", obj_name);
 			change_agent_batch_property(selected_agent);
