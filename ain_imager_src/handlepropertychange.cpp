@@ -3575,6 +3575,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE") ||
 	    client_match_device_no_property(property, selected_scripting_agent)) {
+		emit m_sequence_editor2->enable(true);
 		/*
 		int item_count = m_sequence_editor2->itemCount();
 		for (int i = 0; i < item_count; i++) {
