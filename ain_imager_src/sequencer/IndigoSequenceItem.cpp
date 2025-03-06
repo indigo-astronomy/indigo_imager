@@ -247,6 +247,8 @@ void IndigoSequenceItem::addInputWidget(const QString &paramName, const ParamWid
 			selectObjectButton->setIcon(QIcon(":resource/find.png"));
 			selectObjectButton->setToolTip("Select object from database");
 			connect(selectObjectButton, &QToolButton::clicked, this, [this, selectObjectButton, raIndex, decIndex]() {
+				if (!isEnabledState) return;
+
 				QMenu *menu = new QMenu(this);
 				SelectObject *selectObjectWidget = new SelectObject(this);
 				QWidgetAction *widgetAction = new QWidgetAction(menu);
