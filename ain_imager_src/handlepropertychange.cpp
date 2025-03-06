@@ -323,7 +323,9 @@ void update_mount_display_coordinates(ImagerWindow *w, indigo_property *property
 		}
 	}
 	w->set_text(w->m_mount_ttr_label, ttr_str);
-	if (ttr < 5.0/60) {  // 5 min
+	if (ttr < 0) { // < 0 means meridian passed
+		w->set_widget_state(w->m_mount_ttr_label, INDIGO_OK_STATE);
+	} else	if (ttr < 5.0/60) {  // 5 min
 		w->set_widget_state(w->m_mount_ttr_label, INDIGO_ALERT_STATE);
 	} else if (ttr < 20.0/60) { // 20 min
 		w->set_widget_state(w->m_mount_ttr_label, INDIGO_BUSY_STATE);
