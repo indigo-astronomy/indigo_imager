@@ -1867,6 +1867,17 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 
 		if (sequence_step >= 0 && property->state == INDIGO_BUSY_STATE) {
 			w->m_sequence_editor2->enable(false);
+			if (sequence_step == 0) {
+				w->m_seq_exposure_progress->setRange(0, 1);
+				w->m_seq_exposure_progress->setValue(0);
+				w->m_seq_exposure_progress->setFormat("Exposure: Idle");
+				w->m_seq_batch_progress->setRange(0, 1);
+				w->m_seq_batch_progress->setValue(0);
+				w->m_seq_batch_progress->setFormat("Process: Idle");
+				w->m_seq_sequence_progress->setValue(0);
+				w->m_seq_sequence_progress->setFormat("Sequence: Idle");
+			}
+
 			w->set_text(w->m_seq_esimated_duration, QString("Total exposure: ") + QString(indigo_dtos(exposure_total / 3600, "%02d:%02d:%02.0f")));
 
 			w->set_widget_state(w->m_seq_start_button, INDIGO_BUSY_STATE);
