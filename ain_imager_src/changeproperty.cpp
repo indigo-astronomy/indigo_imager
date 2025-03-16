@@ -762,20 +762,20 @@ void ImagerWindow::change_guider_agent_apply_dec_backlash(const char *agent) con
 }
 
 void ImagerWindow::change_mount_agent_equatorial(const char *agent, bool sync) const {
-	if (sync) {
-		indigo_change_switch_property_1(nullptr, agent, MOUNT_ON_COORDINATES_SET_PROPERTY_NAME, MOUNT_ON_COORDINATES_SET_SYNC_ITEM_NAME, true);
-	} else {
-		indigo_change_switch_property_1(nullptr, agent, MOUNT_ON_COORDINATES_SET_PROPERTY_NAME, MOUNT_ON_COORDINATES_SET_TRACK_ITEM_NAME, true);
-	}
-
 	static const char *items[] = {
-		MOUNT_EQUATORIAL_COORDINATES_RA_ITEM_NAME,
-		MOUNT_EQUATORIAL_COORDINATES_DEC_ITEM_NAME
+		AGENT_MOUNT_TARGET_COORDINATES_RA_ITEM_NAME,
+		AGENT_MOUNT_TARGET_COORDINATES_DEC_ITEM_NAME
 	};
 	static double values[2];
 	values[0] = indigo_stod((char*)m_mount_ra_input->text().trimmed().toStdString().c_str());
 	values[1] = indigo_stod((char*)m_mount_dec_input->text().trimmed().toStdString().c_str());
-	indigo_change_number_property(nullptr, agent, MOUNT_EQUATORIAL_COORDINATES_PROPERTY_NAME, 2, items, values);
+	indigo_change_number_property(nullptr, agent, AGENT_MOUNT_TARGET_COORDINATES_PROPERTY_NAME, 2, items, values);
+
+	if (sync) {
+		indigo_change_switch_property_1(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, AGENT_MOUNT_START_SYNC_ITEM_NAME, true);
+	} else {
+		indigo_change_switch_property_1(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, AGENT_MOUNT_START_SLEW_ITEM_NAME, true);
+	}
 }
 
 void ImagerWindow::change_mount_agent_location(const char *agent, QString property_prefix) const {
