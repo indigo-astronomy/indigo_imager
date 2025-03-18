@@ -37,6 +37,8 @@
 #define AIN_INDIGO_LOG_NAME_FORMAT "ain_indigo_%s.log"
 #define DEFAULT_OBJECT_NAME "unknown"
 
+#define AIN_SEQUENCE_NAME "AinSequence"
+
 typedef enum {
 	STRETCH_NONE = 0,
 	STRETCH_SLIGHT = 1,

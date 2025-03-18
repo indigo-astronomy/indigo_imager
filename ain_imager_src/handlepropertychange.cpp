@@ -1994,7 +1994,7 @@ void handle_scripting_on_load_script(ImagerWindow *w, indigo_property *property)
 		if (client_match_item(&property->items[i], AGENT_SCRIPTING_ADD_SCRIPT_PROPERTY_NAME)) {
 			enable_new = property->items[i].sw.value;
 		}
-		if (!strcmp(property->items[i].label, "AinSequence")) {
+		if (!strcmp(property->items[i].label, AIN_SEQUENCE_NAME)) {
 			ain_sequence = property->items[i].sw.value;
 			ain_sequence_index = i;
 		}

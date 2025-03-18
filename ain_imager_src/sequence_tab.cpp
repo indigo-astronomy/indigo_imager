@@ -175,7 +175,7 @@ void ImagerWindow::on_request_sequence() {
 	for (int i = 0; i < 32; i++) {
 		snprintf(sequence_script, sizeof(sequence_script), AGENT_SCRIPTING_SCRIPT_PROPERTY_NAME, i);
 		p = properties.get(selected_agent, sequence_script);
-		if (p && !strcmp(p->label, "AinSequence")) {
+		if (p && !strcmp(p->label, AIN_SEQUENCE_NAME)) {
 			break;
 		}
 	}

@@ -545,7 +545,7 @@ void ImagerWindow::change_agent_start_sequence_property(const char *agent) const
 	indigo_property *p = properties.get(agent, AGENT_SCRIPTING_EXECUTE_SCRIPT_PROPERTY_NAME);
 	if (p) {
 		for (int i = 0; i < p->count; i++) {
-			if (!strcmp(p->items[i].label, "AinSequence")) {
+			if (!strcmp(p->items[i].label, AIN_SEQUENCE_NAME)) {
 				indigo_change_switch_property_1(
 					nullptr,
 					agent,
@@ -1178,14 +1178,14 @@ void ImagerWindow::change_scripting_agent_sequence(const char *agent, QString se
 	p = properties.get((char*)agent, AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME);
 	if (p) {
 		for (int i = 0; i < p->count; i++) {
-			if (!strncmp(p->items[i].label, "AinSequence", INDIGO_NAME_SIZE)) {
+			if (!strncmp(p->items[i].label, AIN_SEQUENCE_NAME, INDIGO_NAME_SIZE)) {
 				// Delete Ain Sequence
 				indigo_change_text_property_1(
 					nullptr,
 					agent,
 					AGENT_SCRIPTING_DELETE_SCRIPT_PROPERTY_NAME,
 					AGENT_SCRIPTING_DELETE_SCRIPT_NAME_ITEM_NAME,
-					"AinSequence"
+					AIN_SEQUENCE_NAME
 				);
 				break;
 			}
@@ -1198,10 +1198,29 @@ void ImagerWindow::change_scripting_agent_sequence(const char *agent, QString se
 		static char *script;
 		script = (char*)indigo_safe_malloc_copy(sequence.length() + 1, sequence.toUtf8().data());
 		static char *values[2];
-		values[0] = "AinSequence";
+		values[0] = AIN_SEQUENCE_NAME;
 		values[1] = script;
 		indigo_change_text_property(nullptr, agent, AGENT_SCRIPTING_ADD_SCRIPT_PROPERTY_NAME, 2, items, (const char**)values);
 		indigo_safe_free(script);
+
+		// Wait for AinSequence to appear
+		bool found = false;
+		const int MAX_RETRYS = 20;
+		const int SLEEP_TIME = 100000;  // 0.1 sec
+		int retrys = 0;
+		do {
+			for (int i = 0; i < p->count; i++) {
+				if (!strncmp(p->items[i].label, AIN_SEQUENCE_NAME, INDIGO_NAME_SIZE)) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				indigo_debug("Waiting for %s to appear #%d", AIN_SEQUENCE_NAME, retrys);
+				indigo_usleep(SLEEP_TIME);
+			}
+			retrys++;
+		} while (!found || retrys > MAX_RETRYS);
 	}
 }
 
