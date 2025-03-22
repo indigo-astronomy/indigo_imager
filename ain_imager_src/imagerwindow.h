@@ -128,6 +128,7 @@ public:
 	friend void update_cooler_onoff(ImagerWindow *w, indigo_property *property);
 	friend void update_cooler_power(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_process_features(ImagerWindow *w, indigo_property *property);
+	friend void update_agent_imager_meridian_flip_label(ImagerWindow *w, indigo_property *property);
 	friend void update_focuser_temperature(ImagerWindow *w, indigo_property *property);
 	friend void update_focuser_temperature_compensation_steps(ImagerWindow *w, indigo_property *property);
 	friend void update_focuser_mode(ImagerWindow *w, indigo_property *property);
@@ -788,6 +789,7 @@ private:
 	QLabel *m_mount_alt_label;
 	QLabel *m_mount_ttr_label;
 	QLabel *m_mount_side_of_pier_label;
+	QLabel *m_mount_meridian_flip_label;
 	QLineEdit *m_mount_ra_input;
 	QLineEdit *m_mount_dec_input;
 	QPushButton *m_mount_goto_button;

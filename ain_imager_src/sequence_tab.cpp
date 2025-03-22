@@ -115,6 +115,15 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	sequence_frame_layout->addItem(spacer, row, 0);
 
 	row++;
+	m_mount_meridian_flip_label = new QLabel("Meridian flip: <b>OFF</b>");
+	set_ok(m_mount_meridian_flip_label);
+	sequence_frame_layout->addWidget(m_mount_meridian_flip_label, row, 0, 1, 4);
+
+	row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	sequence_frame_layout->addItem(spacer, row, 0);
+
+	row++;
 	m_seq_esimated_duration = new QLabel(QString("Total exposure: ") + indigo_dtos(0, "%02d:%02d:%02.0f"));
 	m_seq_esimated_duration->setToolTip("This is the total exposure time of the composed sequence.");
 	sequence_frame_layout->addWidget(m_seq_esimated_duration, row, 0, 1, 3);

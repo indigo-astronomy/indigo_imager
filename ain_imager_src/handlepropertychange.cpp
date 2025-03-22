@@ -25,6 +25,18 @@
 #include <QStringList>
 #include <SequenceItemModel.h>
 
+static void get_flip_string(bool flip_enambled, double flip_time, char *message) {
+	if (flip_enambled) {
+		if (flip_time < 0) {
+			snprintf(message, 100, "Meridian flip: <b>ON</b>, pause <b>%s</b> before transit", indigo_dtos(flip_time, "%02d:%02d:%02d"));
+		} else {
+			snprintf(message, 100, "Meridian flip: <b>ON</b>, pause <b>%s</b> after transit", indigo_dtos(flip_time, "%02d:%02d:%02d"));
+		}
+	} else {
+		strcpy(message, "Meridian flip: <b>OFF</b>");
+	}
+}
+
 template<typename W>
 static void configure_spinbox(ImagerWindow *w, indigo_item *item, int perm, W *widget) {
 	indigo_item *item_copy = nullptr;
@@ -1391,6 +1403,41 @@ void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *proper
 	}
 }
 
+void update_agent_imager_meridian_flip_label(ImagerWindow *w, indigo_property *property) {
+	indigo_error("Set %s", property->name);
+	indigo_property *features_p;
+	indigo_property *batch_p;
+	if (!strcmp(property->name, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {
+		features_p = property;
+		batch_p = properties.get(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME);
+	} else {
+		features_p = properties.get(property->device, AGENT_PROCESS_FEATURES_PROPERTY_NAME);
+		batch_p = property;
+	}
+
+	double flip_time = 0;
+	if (batch_p) {
+		for (int i = 0; i < batch_p->count; i++) {
+			if (client_match_item(&batch_p->items[i], AGENT_IMAGER_BATCH_PAUSE_AFTER_TRANSIT_ITEM_NAME)) {
+				flip_time = batch_p->items[i].number.value;
+				break;
+			}
+		}
+	}
+	bool flip_enabled = false;
+	if (features_p) {
+		for (int i = 0; i < features_p->count; i++) {
+			if (client_match_item(&features_p->items[i], AGENT_PAUSE_PROCESS_AFTER_TRANSIT_ITEM_NAME)) {
+				flip_enabled = features_p->items[i].sw.value;
+				break;
+			}
+		}
+	}
+
+	char message[100];
+	get_flip_string(flip_enabled, flip_time, message);
+	w->set_text(w->m_mount_meridian_flip_label, message);
+}
 
 void define_ccd_exposure_property(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("Set %s.%s", property->device, property->name);
@@ -2680,6 +2727,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {
 		update_agent_process_features(this, property);
+		update_agent_imager_meridian_flip_label(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_POSITION_PROPERTY_NAME)) {
 		update_focuser_poition(this, property, true);
@@ -2734,6 +2782,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		indigo_property *p = properties.get(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME);
 		if (!p) update_agent_imager_batch_property(this, property);
 		update_agent_imager_batch_dithering(this, property);
+		update_agent_imager_meridian_flip_label(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME)) {
 		update_ccd_frame_property(this, property);
@@ -3114,6 +3163,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {
 		update_agent_process_features(this, property);
+		update_agent_imager_meridian_flip_label(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME)) {
 		reset_filter_names(this, property);
@@ -3139,6 +3189,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME)) {
 		//update_agent_imager_batch_property(this, property);
 		update_agent_imager_batch_dithering(this, property);
+		update_agent_imager_meridian_flip_label(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME)) {
 		indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
@@ -3491,6 +3542,9 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		set_spinbox_value(m_dither_skip, 0);
 		set_enabled(m_dither_skip, false);
+		char message[100];
+		get_flip_string(0, 0, message);
+		set_text(m_mount_meridian_flip_label, message);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
