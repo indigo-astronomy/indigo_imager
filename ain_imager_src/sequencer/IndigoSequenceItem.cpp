@@ -204,6 +204,7 @@ void IndigoSequenceItem::addInputWidget(const QString &paramName, const ParamWid
 			auto range = model.getNumericRange(type, key);
 			spin->setRange(range.first, range.second);
 			spin->setSingleStep(model.getNumericIncrement(type, key));
+			spin->setValue(model.getNumericDefultValue(type, key));
 			spin->setToolTip(QString("%1, range: [%2, %3] step: %4")
 				.arg(paramName).arg(range.first).arg(range.second)
 				.arg(model.getNumericIncrement(type, key)));
@@ -214,6 +215,7 @@ void IndigoSequenceItem::addInputWidget(const QString &paramName, const ParamWid
 			auto range = model.getNumericRange(type, key);
 			spin->setRange(range.first, range.second);
 			spin->setSingleStep(model.getNumericIncrement(type, key));
+			spin->setValue(model.getNumericDefultValue(type, key));
 			spin->setToolTip(QString("%1, range: [%2, %3] step: %4")
 				.arg(paramName).arg(range.first).arg(range.second)
 				.arg(model.getNumericIncrement(type, key)));

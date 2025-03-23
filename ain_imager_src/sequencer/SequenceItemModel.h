@@ -106,6 +106,7 @@ public:
 		ParamWidget paramWidget;
 		QStringList comboOptions;
 		QPair<double, double> numericRange;
+		double numericDefaultValue;
 		double numericIncrement;
 
 		ParameterInfo(const QString& l = "", ParamWidget w = LineEdit) : label(l), paramWidget(w), numericRange(0.0, 100.0), numericIncrement(1.0) {}
@@ -133,6 +134,8 @@ public:
 	QPair<double, double> getNumericRange(const QString& type, int paramId) const;
 	void setNumericIncrement(const QString& type, int paramId, double increment);
 	double getNumericIncrement(const QString& type, int paramId) const;
+	void setNumericDefaultValue(const QString& type, int paramId, double value);
+	double getNumericDefultValue(const QString& type, int paramId) const;
 
 signals:
 	void numericRangeChanged(const QString& type, int paramId, double min, double max);

@@ -203,10 +203,15 @@ void SequenceItemModel::initializeModel() {
 	// Dithering parameters
 	setNumericRange(SC_ENABLE_DITHERING, 0, 0, 15);  // Amount
 	setNumericIncrement(SC_ENABLE_DITHERING, 0, 1.0);
+	setNumericDefaultValue(SC_ENABLE_DITHERING, 0, 3.0);
+
 	setNumericRange(SC_ENABLE_DITHERING, 1, 0, 360); // Time limit
 	setNumericIncrement(SC_ENABLE_DITHERING, 1, 1.0);
+	setNumericDefaultValue(SC_ENABLE_DITHERING, 1, 60.0);
+
 	setNumericRange(SC_ENABLE_DITHERING, 2, 0, 10);  // Skip frames
 	setNumericIncrement(SC_ENABLE_DITHERING, 2, 1.0);
+	setNumericDefaultValue(SC_ENABLE_DITHERING, 2, 0.0);
 
 	// Meridian flip
 	setNumericRange(SC_ENABLE_MERIDIAN_FLIP, 1, -1, 1);
@@ -215,40 +220,54 @@ void SequenceItemModel::initializeModel() {
 	// Capture parameters
 	setNumericRange(SC_CAPTURE_BATCH, 0, 0, 65535);    // Count
 	setNumericIncrement(SC_CAPTURE_BATCH, 0, 1.0);
+	setNumericDefaultValue(SC_CAPTURE_BATCH, 0, 1.0);
+
 	setNumericRange(SC_CAPTURE_BATCH, 1, 0, 7200); // Exposure
 	setNumericIncrement(SC_CAPTURE_BATCH, 1, 1.0);
+	setNumericDefaultValue(SC_CAPTURE_BATCH, 1, 60.0);
 
 	// Focus parameters
 	setNumericRange(SC_FOCUS, 0, 0, 180.0);
 	setNumericIncrement(SC_FOCUS, 0, 0.1);
+	setNumericDefaultValue(SC_FOCUS, 0, 1.0);
 
 	// Focus (continue on failure)
 	setNumericRange(SC_FOCUS_IGNORE_FAILURE, 0, 0, 180.0);
 	setNumericIncrement(SC_FOCUS_IGNORE_FAILURE, 0, 0.1);
+	setNumericDefaultValue(SC_FOCUS_IGNORE_FAILURE, 0, 1.0);
 
 	// Focuser position
 	setNumericRange(SC_SET_FOCUSER_POSITION, 0, 0, 100000);
 	setNumericIncrement(SC_SET_FOCUSER_POSITION, 0, 1.0);
+	setNumericDefaultValue(SC_SET_FOCUSER_POSITION, 0, 0.0);
 
 	// Guiding parameters
 	setNumericRange(SC_CALIBRATE_GUIDING, 0, 0, 180.0);
 	setNumericIncrement(SC_CALIBRATE_GUIDING, 0, 0.1);
+	setNumericDefaultValue(SC_CALIBRATE_GUIDING, 0, 1.0);
+
 	setNumericRange(SC_START_GUIDING, 0, 0, 180.0);
 	setNumericIncrement(SC_START_GUIDING, 0, 0.1);
+	setNumericDefaultValue(SC_START_GUIDING, 0, 1.0);
 
 	// Sync and goto
 	setNumericRange(SC_SYNC_CENTER, 0, 0, 180.0);
 	setNumericIncrement(SC_SYNC_CENTER, 0, 1.0);
+	setNumericDefaultValue(SC_SYNC_CENTER, 0, 1.0);
+
 	setNumericRange(SC_PRECISE_GOTO, 0, 0, 80.0);
 	setNumericIncrement(SC_PRECISE_GOTO, 0, 1.0);
+	setNumericDefaultValue(SC_PRECISE_GOTO, 0, 1.0);
 
 	// Repeat count
 	setNumericRange(SC_REPEAT, 0, 1, 100000);
 	setNumericIncrement(SC_REPEAT, 0, 1.0);
+	setNumericDefaultValue(SC_REPEAT, 0, 1.0);
 
 	// Rotator angle
 	setNumericRange(SC_SET_ROTATOR_ANGLE, 0, -180, 360.0);
 	setNumericIncrement(SC_SET_ROTATOR_ANGLE, 0, 1.0);
+	setNumericDefaultValue(SC_SET_ROTATOR_ANGLE, 0, 0.0);
 
 	//qDebug() << "Initialized SequenceItemModel with" << widgetTypeMap.size() << "widget types";
 }
@@ -323,4 +342,21 @@ double SequenceItemModel::getNumericIncrement(const QString& type, int paramId) 
 		}
 	}
 	return 1.0; // Default increment
+}
+
+void SequenceItemModel::setNumericDefaultValue(const QString& type, int paramId, double value) {
+	if (widgetTypeMap.contains(type)) {
+		if (widgetTypeMap[type].parameters.contains(paramId)) {
+			widgetTypeMap[type].parameters[paramId].numericDefaultValue = value;
+		}
+	}
+}
+
+double SequenceItemModel::getNumericDefultValue(const QString& type, int paramId) const {
+	if (widgetTypeMap.contains(type)) {
+		if (widgetTypeMap[type].parameters.contains(paramId)) {
+			return widgetTypeMap[type].parameters[paramId].numericDefaultValue;
+		}
+	}
+	return 0.0; // Default value
 }
