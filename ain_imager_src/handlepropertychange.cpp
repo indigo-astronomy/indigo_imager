@@ -1404,7 +1404,7 @@ void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *proper
 }
 
 void update_agent_imager_meridian_flip_label(ImagerWindow *w, indigo_property *property) {
-	indigo_error("Set %s", property->name);
+	indigo_debug("Set %s", property->name);
 	indigo_property *features_p;
 	indigo_property *batch_p;
 	if (!strcmp(property->name, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {

@@ -492,14 +492,14 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 			indigo_property *agent_sequence_state = properties.get(selected_scripting_agent, "SEQUENCE_STATE");
 			if (agent_sequence_state && agent_sequence_state->state == INDIGO_BUSY_STATE) {
 				change_agent_abort_process_property(selected_imager_agent);
-				indigo_error("Sequence is running, aborting it.");
+				indigo_debug("Sequence is running, aborting it.");
 				return;
 			}
 		} else {
 			indigo_property *agent_start_process = properties.get(selected_imager_agent, AGENT_START_PROCESS_PROPERTY_NAME);
 			if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
 				change_agent_abort_process_property(selected_scripting_agent);
-				indigo_error("Exposure is running, aborting it.");
+				indigo_debug("Exposure is running, aborting it.");
 				return;
 			}
 		}
@@ -850,7 +850,7 @@ void ImagerWindow::on_object_name_changed(const QString &object_name) {
 		return;
 	}
 	QtConcurrent::run([=]() {
-		indigo_error("CALLED: %s\n", __FUNCTION__);
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
 

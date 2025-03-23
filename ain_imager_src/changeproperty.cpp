@@ -117,7 +117,7 @@ void ImagerWindow::change_ccd_localmode_property(const char *agent, const QStrin
 	if (p == nullptr) return;
 
 	if (indigo_get_item(p, CCD_LOCAL_MODE_OBJECT_ITEM_NAME) != nullptr) {
-		indigo_error("YES: Local mode object property is supported by the driver");
+		indigo_debug("LOCAL_MODE property has OBJECT item");
 		static const char *items[] = {
 			CCD_LOCAL_MODE_OBJECT_ITEM_NAME,
 			CCD_LOCAL_MODE_PREFIX_ITEM_NAME
@@ -128,13 +128,13 @@ void ImagerWindow::change_ccd_localmode_property(const char *agent, const QStrin
 		};
 		indigo_change_text_property(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, 2, items, (const char **)values);
 	} else {
-		indigo_error("NO: Local mode object property is not supported by the driver");
+		indigo_debug("LOCAL_MODE property does not have OBJECT item");
 		m_remote_object_name = object;
 		add_fits_keyword_string(agent, "OBJECT", m_object_name_str);
 
 		char value[INDIGO_VALUE_SIZE];
 		snprintf(value, INDIGO_VALUE_SIZE, "%s_%%-D_%%F_%%C_%%M", (char *)m_object_name_str.toStdString().c_str());
-		indigo_error("Setting prefix to: %s", value);
+		indigo_debug("Setting prefix to: %s", value);
 
 		indigo_change_text_property_1_raw(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, CCD_LOCAL_MODE_PREFIX_ITEM_NAME, value);
 	}
@@ -222,7 +222,7 @@ void ImagerWindow::set_related_agent(const char *agent, const char *related_agen
 			}
 		}
 		if (change) {
-			indigo_error("[SET RELATED AGENT] %s '%s' chnaged '%s' -> '%s' (prefix '%s')\n", __FUNCTION__, agent, old_agent, related_agent_trimmed, agent_prefix);
+			indigo_debug("[SET RELATED AGENT] %s '%s' chnaged '%s' -> '%s' (prefix '%s')\n", __FUNCTION__, agent, old_agent, related_agent_trimmed, agent_prefix);
 			change_related_agent(agent, old_agent, related_agent_trimmed);
 		}
 	}

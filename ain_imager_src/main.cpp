@@ -57,7 +57,7 @@ void write_conf();
 BOOL WINAPI console_handler(DWORD signal) {
 	if (signal == CTRL_C_EVENT) {
 		write_conf();
-		indigo_error("Configuration saved. Exiting...");
+		indigo_debug("Configuration saved. Exiting...");
 		QTimer::singleShot(0, qApp, &QCoreApplication::quit);
 		return TRUE;
 	}
