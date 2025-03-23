@@ -176,6 +176,7 @@ void IndigoSequenceItem::addInputWidget(const QString &paramName, const ParamWid
 			break;
 		case DoubleSpinBox:
 			input = new QDoubleSpinBox(this);
+			static_cast<QDoubleSpinBox*>(input)->setDecimals(3);
 			break;
 		case ComboBox:
 			input = new QComboBox(this);

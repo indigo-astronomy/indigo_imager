@@ -55,7 +55,7 @@ void SequenceItemModel::initializeModel() {
 		{SC_DISABLE_COOLER, {"Disable Camera Cooler", {}}},
 		{SC_ENABLE_DITHERING, {"Enable Dithering", {{0, {"Amount (px)", SpinBox}}, {1, {"Time Limit (s)", SpinBox}}, {2, {"Skip Frames", SpinBox}}}}},
 		{SC_DISABLE_DITHERING, {"Disable Dithering", {}}},
-		{SC_ENABLE_MERIDIAN_FLIP, {"Enable Meridian Flip", {{0, {"Use Solver", CheckBox}}, {1, {"Time", SpinBox}}}}},
+		{SC_ENABLE_MERIDIAN_FLIP, {"Enable Meridian Flip", {{0, {"Use Solver", CheckBox}}, {1, {"Time (h)", DoubleSpinBox}}}}},
 		{SC_DISABLE_MERIDIAN_FLIP, {"Disable Meridian Flip", {}}},
 		{SC_SET_DIRECTORY, {"Set Directory (on server)", {{0, {"Directory", LineEdit}}}}},
 		{SC_SET_OBJECT_NAME, {"Set Object Name", {{0, {"Name", LineEdit}}}}},
@@ -209,8 +209,8 @@ void SequenceItemModel::initializeModel() {
 	setNumericIncrement(SC_ENABLE_DITHERING, 2, 1.0);
 
 	// Meridian flip
-	setNumericRange(SC_ENABLE_MERIDIAN_FLIP, 1, 0, 3600);
-	setNumericIncrement(SC_ENABLE_MERIDIAN_FLIP, 1, 1.0);
+	setNumericRange(SC_ENABLE_MERIDIAN_FLIP, 1, -1, 1);
+	setNumericIncrement(SC_ENABLE_MERIDIAN_FLIP, 1, 0.05);
 
 	// Capture parameters
 	setNumericRange(SC_CAPTURE_BATCH, 0, 0, 65535);    // Count

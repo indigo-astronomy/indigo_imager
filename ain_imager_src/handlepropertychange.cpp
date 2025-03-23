@@ -28,7 +28,7 @@
 static void get_flip_string(bool flip_enambled, double flip_time, char *message) {
 	if (flip_enambled) {
 		if (flip_time < 0) {
-			snprintf(message, 100, "Meridian flip: <b>ON</b>, pause <b>%s</b> before transit", indigo_dtos(flip_time, "%02d:%02d:%02d"));
+			snprintf(message, 100, "Meridian flip: <b>ON</b>, pause <b>%s</b> before transit", indigo_dtos(-flip_time, "%02d:%02d:%02d"));
 		} else {
 			snprintf(message, 100, "Meridian flip: <b>ON</b>, pause <b>%s</b> after transit", indigo_dtos(flip_time, "%02d:%02d:%02d"));
 		}
