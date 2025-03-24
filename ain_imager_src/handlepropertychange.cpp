@@ -1905,6 +1905,7 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 				}
 				if (client_match_item(&p->items[i], "COUNT")) {
 					loop_iteration = (int)p->items[i].number.value;
+					//indigo_error("LOOP_0 -> iteration %d", loop_iteration);
 				}
 			}
 		}
@@ -1980,6 +1981,7 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 					IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(i);
 					if (seq_item) {
 						seq_item->setOk();
+						seq_item->setIteration(0); // in case of loop set iteration to 0
 					}
 				}
 
@@ -1990,6 +1992,7 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 					IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(i);
 					if (seq_item) {
 						seq_item->setIdle();
+						seq_item->setIteration(0); // in case of loop set iteration to 0
 					} else {
 						break;
 					}
