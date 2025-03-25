@@ -1538,7 +1538,7 @@ void ImagerWindow::on_acl_clear_act() {
 }
 
 void ImagerWindow::on_user_guide_act() {
-  QDesktopServices::openUrl(QUrl("https://github.com/indigo-astronomy/indigo_imager/blob/master/ain_users_guide/ain_users_guide.md", QUrl::TolerantMode));
+  QDesktopServices::openUrl(QUrl(AIN_USERS_GUIDE_URL, QUrl::TolerantMode));
 }
 
 void ImagerWindow::on_about_act() {

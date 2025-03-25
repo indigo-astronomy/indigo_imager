@@ -37,6 +37,8 @@
 #define AIN_INDIGO_LOG_NAME_FORMAT "ain_indigo_%s.log"
 #define DEFAULT_OBJECT_NAME "unknown"
 
+#define AIN_USERS_GUIDE_URL "https://github.com/indigo-astronomy/indigo_imager/blob/master/ain_users_guide/ain2_users_guide.md"
+
 #define AIN_SEQUENCE_NAME "AinSequence"
 
 typedef enum {
