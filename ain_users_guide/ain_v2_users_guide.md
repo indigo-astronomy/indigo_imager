@@ -190,7 +190,7 @@ Each sequence consists of actions, which will be executed sequentially. Each act
 #### Sequence name
 The sequence name should be specified in the text field in the sequence view.
 
-#### Add, remove, move up, move down and update actions
+#### Add, Remove, Move up, Move down and update actions
 To add a new Action to the sequence, the user should press the right mouse button at the position where it should be placed. A thin line (**Drop indicator**) will show the landing position and a menu will appear with all available actions:
 
 ![](images_v2/sequence_add.png)
@@ -279,7 +279,7 @@ The sequence being edited or loaded will be uploaded to the *Scripting Agent* on
 
 **NOTE:** Loading a sequence from a file or downloading it from the agent will replace the current sequence and unsaved changes will be lost.
 
-### Start, abort, reset, and sequence progress monitoring
+### Start, Abort, Reset and sequence progress monitoring
 
 The current sequence can be started with the **Run** button. This will also upload the current sequence to the *Scripting Agent* as described above.
 
