@@ -191,52 +191,70 @@ The sequence name should be specified in the text field in the sequence view.
 #### Add, remove, move up, move down and update actions
 To add a new Action to the sequence the user should press the right mouse button at the position where it should be placed. A thin line (**Drop indigcator**) will show the landing position and a menu will appear with all avaiable actions:
 
-- **Wait** - Suspends the sequence for a specified time in seconds.
-- **Send Message** - Sends a message with the specified content.
-- **Load Config** - Loads a configuration with the specified name.
-- **Load Driver** - Loads a driver with the specified name.
-- **Unload Driver** - Unloads a driver with the specified name.
-- **Select Imager Camera** - Selects an imager camera from the available options.
-- **Select Filter Wheel** - Selects a filter wheel from the available options.
-- **Select Focuser** - Selects a focuser from the available options.
-- **Select Rotator** - Selects a rotator from the available options.
-- **Select Mount** - Selects a mount from the available options.
-- **Select GPS** - Selects a GPS device from the available options.
-- **Select Guider Camera** - Selects a guider camera from the available options.
-- **Select Guider** - Selects a guider from the available options.
-- **Select Frame Type** - Selects the frame type from the available options.
-- **Select Image Format** - Selects the image format from the available options.
-- **Select Camera Mode** - Selects the camera mode from the available options.
-- **Select Filter** - Selects a filter from the available options.
-- **Set Camera Gain** - Sets the camera gain to the specified value.
-- **Set Camera Offset** - Sets the camera offset to the specified value.
-- **Enable Camera Cooler** - Enables the camera cooler and sets the temperature to the specified value in degrees Celsius.
-- **Disable Camera Cooler** - Disables the camera cooler.
-- **Enable Dithering** - Enables dithering with the specified amount in pixels, time limit in seconds, and skip frames.
-- **Disable Dithering** - Disables dithering.
-- **Enable Meridian Flip** - Enables meridian flip with the option to use a solver for precise centering with the specified offset from meridian in hours.
-- **Disable Meridian Flip** - Disables meridian flip.
-- **Set Object Name** - Sets the object name to the specified value.
-- **Capture Batch** - Captures a batch of images with the specified count and exposure time in seconds.
-- **Focus** - Focuses the camera with the specified exposure time in seconds.
-- **Focus (continue on failure)** - Focuses the camera with the specified exposure time in seconds and continues on failure.
-- **Clear Focus Selection** - Clears the focus selection.
-- **Set Focuser Position** - Sets the focuser position to the specified value.
-- **Park Mount** - Parks the mount.
-- **Home Mount** - Homes the mount.
-- **Unpark Mount** - Unparks the mount.
-- **Slew** - Slews the mount to the specified RA and Dec coordinates.
-- **Wait for GPS** - Waits for the GPS to acquire a signal.
-- **Calibrate Guiding** - Calibrates the guiding with the specified exposure time in seconds.
-- **Start Guiding** - Starts guiding with the specified exposure time in seconds.
-- **Stop Guiding** - Stops guiding.
-- **Clear Guider Selection** - Clears the guider selection.
-- **Sync Center** - Syncs the mount with the solved frame and centers to the target RA and Dec.
-- **Precise Goto** - Performs a precise goto with the specified exposure time in seconds, RA, and Dec coordinates.
-- **Set Rotator Angle** - Sets the rotator angle to the specified value in degrees.
-- **Repeat** - Repeats several actions for the specified count.
-
 ![](images_v2/sequence_add.png)
+
+- **Capture**
+  - **Set Object Name** - Sets the object name to the specified value.
+  - **Capture Batch** - Captures a batch of images with the specified count and exposure time in seconds.
+  - **Enable Camera Cooler** - Enables the camera cooler and sets the temperature to the specified value in degrees Celsius.
+  - **Disable Camera Cooler** - Disables the camera cooler.
+  - **Select Frame Type** - Selects the frame type from the available options.
+  - **Select Camera Mode** - Selects the camera mode from the available options.
+  - **Select Image Format** - Selects the image format from the available options.
+  - **Set Camera Gain** - Sets the camera gain to the specified value.
+  - **Set Camera Offset** - Sets the camera offset to the specified value.
+  - **Set Directory (on server)** - Sets the directory on the server to the specified path.
+
+- **Filter Wheel**
+  - **Select Filter** - Selects a filter from the available options.
+
+- **Focuser**
+  - **Focus** - Focuses the camera with the specified exposure time in seconds.
+  - **Focus (continue on failure)** - Focuses the camera with the specified exposure time in seconds and continues on failure.
+  - **Set Focuser Position** - Sets the focuser position to the specified value.
+  - **Clear Focus Selection** - Clears the focus selection.
+
+- **Guider**
+  - **Calibrate Guiding** - Calibrates the guiding with the specified exposure time in seconds.
+  - **Start Guiding** - Starts guiding with the specified exposure time in seconds.
+  - **Stop Guiding** - Stops guiding.
+  - **Enable Dithering** - Enables dithering with the specified amount in pixels, time limit in seconds, and skip frames.
+  - **Disable Dithering** - Disables dithering.
+  - **Clear Guider Selection** - Clears the guider selection.
+
+- **Mount**
+  - **Slew** - Slews the mount to the specified RA and Dec coordinates.
+  - **Precise Goto** - Performs a precise goto with the specified exposure time in seconds, RA, and Dec coordinates.
+  - **Sync Center** - Syncs the mount with the solved frame and centers to the target RA and Dec.
+  - **Enable Meridian Flip** - Enables meridian flip with the option to use a solver for precise centering with the specified offset from meridian in hours.
+  - **Disable Meridian Flip** - Disables meridian flip.
+  - **Park Mount** - Parks the mount.
+  - **Home Mount** - Homes the mount.
+  - **Unpark Mount** - Unparks the mount.
+
+- **Rotator**
+  - **Set Rotator Angle** - Sets the rotator angle to the specified value in degrees.
+
+- **Loop**
+  - **Repeat** - Repeats several actions for the specified count.
+
+- **Devices**
+  - **Select Imager Camera** - Selects an imager camera from the available options.
+  - **Select Filter Wheel** - Selects a filter wheel from the available options.
+  - **Select Focuser** - Selects a focuser from the available options.
+  - **Select Guider Camera** - Selects a guider camera from the available options.
+  - **Select Guider** - Selects a guider from the available options.
+  - **Select Mount** - Selects a mount from the available options.
+  - **Select GPS** - Selects a GPS device from the available options.
+  - **Select Rotator** - Selects a rotator from the available options.
+
+- **Misc**
+  - **Wait** - Suspends the sequence for a specified time in seconds.
+  - **Send Message** - Sends a message with the specified content.
+  - **Wait for GPS** - Waits for the GPS to acquire a signal.
+  - **Load Driver** - Loads a driver with the specified name.
+  - **Unload Driver** - Unloads a driver with the specified name.
+  - **Load Config** - Loads a configuration with the specified name.
 
 Once the action is placed placed the user should configure it accordingly. 
 
