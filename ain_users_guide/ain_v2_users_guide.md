@@ -299,7 +299,7 @@ Progress can be monitored using the three progress bars and the operation indica
 
 The **[&Sigma;]** button will update the total exposure time before the sequence is executed.
 
-**NOTE** Images aquired with a sequence are always saved on server.
+**NOTE:** Images aquired with a sequence are always saved on server.
 
 ## Focusing
 Focusing is a feature of the *Imager Agent* and it works with the selected imager agent.
