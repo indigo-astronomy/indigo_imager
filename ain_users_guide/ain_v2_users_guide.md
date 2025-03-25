@@ -38,10 +38,10 @@ The main window is divided into three main areas as seen in the picture below:
 
 Almost all widgets (buttons, drop-down menus, spin boxes, etc.) have tool-tips with information on what the widget does. In the case of numeric values, they also indicate the range of valid input.
 
-### Control area
+### Control Area
 This is the upper left area consisting of several tabs and sub-tabs. The control area is where all configuration is done and all processes are controlled, such as guiding, taking exposures, etc. It will be described in detail in the following chapters.
 
-### Image area
+### Image Area
 This is the upper right area of the main window. In this area, the most recently captured image will be displayed. It is context-dependent as follows:
 
 * In the **Capture**, **Focus**, and **Telescope** tabs, the last image from the main imaging camera will be displayed. Several overlays can be turned on or off such as image statistics (controlled by **Settings -> Show image statistics**) and image center mark (**Settings -> Show image center**).
@@ -62,15 +62,15 @@ When the image area is active, several shortcut keys can be used for zooming:
 * **'1'** zoom 1:1
 * **'f'** zoom to fit
 
-### Log area
+### Log Area
 The log area is the bottom part of the main window. In this area, all messages from the INDIGO framework will be displayed, preceded by a timestamp. There are three types of messages: *Information* - displayed in white, *Error* - displayed in red, and *Warning* - displayed in yellow. *Ain* does not display errors or warnings in dialog boxes; all errors, warnings, and messages are displayed in this log. In addition, each message can be accompanied by an audible notification. Audible notifications are enabled by **Settings -> Play sound notifications**.
 
 ## General Concepts
 
-### Data storage
+### Data Storage
 By default, Ain will store the files in a subdirectory of your home directory called "ain_data". Frames obtained on different dates will be saved in different subdirectories with the format "YYYY-MM-DD". The output directory changes automatically at noon, to keep the data from the same night in the same directory. The data directory can be changed from **File -> Select Data Directory**.
 
-### Widget color coding
+### Widget Color Coding
 *Ain Imager* uses colors to represent the states of the operations. Related widgets will be decorated differently depending on the status. **Default** color (or **green** in some cases) means that the operation is idle or finished successfully. **Red** means the operation failed or was canceled by the user. **Yellow** means the operation is in progress.
 
 For example:
@@ -87,7 +87,7 @@ For example:
 
 	![](images_v2/exposure_ok.png)
 
-## Connecting to INDIGO services
+## Connecting to INDIGO Services
 *Ain* will automatically discover all INDIGO services available on the network. Depending on **Settings -> Auto connect new services**, it will connect or not to the newly discovered services.
 
 Services can be managed from **File -> Available Services** as shown below.
@@ -132,19 +132,19 @@ The name of the object being photographed should be entered here. It is used as 
 ##### Cooler
 If the selected camera can report the sensor temperature, the current temperature will be shown. If the camera supports cooling, it can be enabled and disabled here along with setting the target temperature. If cooling, the cooler power will be displayed.
 
-### Image tab
+### Image Tab
 ![](images_v2/capture_image.png)
 
-##### Preview exposure
+##### Preview Exposure
 The time (in seconds) used to get a preview frame with the **Preview** button.
 
-##### Image format
+##### Image Format
 The image file formats supported by the camera driver will be listed here. They can be different for different cameras. The selected format will be used as a storage format for the saved images. **Raw data** format is a special case. It is supposed to be used by INDIGO internally, this is why batches and sequences will not save images taken as **Raw data** (as of Ain Imager version 0.99).
 
-##### Region of interest
+##### Region of Interest
 The region of interest (ROI) can be configured by specifying **X** and **Y** of the top left corner and **Width** and **Height** of the sub-frame.
 
-### Dithering tab
+### Dithering Tab
 INDIGO can dither between the frames and it is configured in this tab.
 
 ![](images_v2/capture_dithering.png)
@@ -152,24 +152,24 @@ INDIGO can dither between the frames and it is configured in this tab.
 ##### Enable Dithering
 Enables and disables dithering.
 
-##### Dithering strategy
+##### Dithering Strategy
 The dropdown menu lists the available dithering strategies to choose from.
 
 ##### Amount
 This value, in pixels, specifies the maximum number of pixels the frame should be shifted during dithering. The actual shift is a random value and this specifies the upper limit.
 
-##### Settle timeout
+##### Settle Timeout
 The settle timeout is in seconds. It specifies how much time to wait for the guiding to settle after dithering. If it has not settled before this timeout is up, a warning is issued and the imager agent will proceed with the next exposure.
 
 ##### Skip Frames
 Specifies how many frames to skip between dithering (0 means to dither after each frame).
 
-### Camera tab
+### Camera Tab
 In this tab, camera-specific parameters can be set: gain, offset, and binning.
 
 ![](images_v2/capture_camera.png)
 
-### Remote images tab
+### Remote Images Tab
 INDIGO services can work in the so-called "clientless" or "headless" mode. This means that the server can operate autonomously. To achieve that, the client must connect, configure the service to perform some specific task, start it, and disconnect. The server will store the data locally and when the client connects again it can download the acquired data. This mode is configured in this tab.
 
  ![](images_v2/capture_remoteimages.png)
@@ -184,19 +184,19 @@ Sequences are implemented in Ecma Script using the *INDIGO Scripting Agent* and 
 
 ![](images_v2/sequence_main.png)
 
-### Editing sequence
+### Editing Sequence
 Each sequence consists of actions, which will be executed sequentially. Each action is described by zero or several properties like: Filter, exposure time, frame type, etc.
 
-#### Sequence name
+#### Sequence Name
 The sequence name should be specified in the text field in the sequence view.
 
-#### Add, Remove, Move up, Move down and update actions
+#### Add, Remove, Move Up, Move Down and Update Actions
 To add a new Action to the sequence, the user should press the right mouse button at the position where it should be placed. A thin line (**Drop indicator**) will show the landing position and a menu will appear with all available actions:
 
 ![](images_v2/sequence_add.png)
 
 - **Capture**
-  - **Set Object Name** - Sets the object name to the specified value.
+  - **Set Object Name** - Sets the object name used as the image filename prefix and OBJECT keyword in the FITS header.
   - **Capture Batch** - Captures a batch of images with the specified count and exposure time in seconds.
   - **Enable Camera Cooler** - Enables the camera cooler and sets the temperature to the specified value in degrees Celsius.
   - **Disable Camera Cooler** - Disables the camera cooler.
@@ -266,7 +266,7 @@ Actions can be freely dragged and dropped. This way the actions can be rearrange
 
 In order to remove actions, press the **(x)** button on the right side of the action widget.
 
-#### Download sequence from the agent, load from file and save to file
+#### Download Sequence from the Agent, Load from File and Save to File
 The already loaded sequence can be downloaded from the selected *Scripting Agent* by clicking the download button (left button):
 
 ![](images_v2/sequence_download_load_save.png)
@@ -293,11 +293,13 @@ Clicking **Run** after abort will start from the beginning.
 
 Progress can be monitored using the three progress bars and the operation indicator as shown above. The first progress bar shows the elapsed time of each exposure. The second one shows the completed exposures in the current batch. The third one shows the sequence completion in percentages. Please note that the percentages represent the completed actions and are not related to time.
 
-**Meridian flip** will show if the meridian flip is enabled or disabled and if enabled it will give information on when it will happen as an offset from the transit time.
+**Meridian Flip** will show if the meridian flip is enabled or disabled and if enabled it will give information on when it will happen as an offset from the transit time.
 
 **Total Exposure** shows the total exposure time of all targets in the current sequence. It will be automatically calculated when the sequence is executed.
 
 The **[&Sigma;]** button will update the total exposure time before the sequence is executed.
+
+**NOTE** Images aquired with a sequence are always saved on server.
 
 ## Focusing
 Focusing is a feature of the *Imager Agent* and it works with the selected imager agent.
