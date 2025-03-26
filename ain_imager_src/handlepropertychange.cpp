@@ -1474,7 +1474,7 @@ void update_ccd_frame_property(ImagerWindow *w, indigo_property *property) {
 static void update_agent_imager_pause_process_property(ImagerWindow *w, indigo_property *property, QPushButton* pause_button) {
 	indigo_debug("Set %s", property->name);
 	for (int i = 0; i < property->count; i++) {
-		if (client_match_item(&property->items[i], AGENT_PAUSE_PROCESS_ITEM_NAME)) {
+		if (client_match_item(&property->items[i], AGENT_PAUSE_PROCESS_WAIT_ITEM_NAME)) {
 			if(property->state == INDIGO_BUSY_STATE) {
 				w->set_text(pause_button, "Resume");
 				set_busy(pause_button);
@@ -2834,6 +2834,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		// new scripts and AinSequence should not be added to auto start by default
 		handle_scripting_on_load_script(this, property);
 	}
+	if (client_match_device_property(property, selected_scripting_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
+		update_agent_imager_pause_process_property(this, property, m_seq_pause_button);
+	}
 
 	// Guider Agent
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DITHERING_STRATEGY_PROPERTY_NAME)) {
@@ -3225,6 +3228,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_scripting_agent, AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME)) {
 		// new scripts and AinSequence should not be added to auto start by default
 		handle_scripting_on_load_script(this, property);
+	}
+	if (client_match_device_property(property, selected_scripting_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
+		update_agent_imager_pause_process_property(this, property, m_seq_pause_button);
 	}
 
 	// Guider Agent

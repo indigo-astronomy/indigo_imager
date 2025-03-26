@@ -229,6 +229,7 @@ signals:
 public slots:
 	void on_exposure_start_stop(bool clicked);
 	void on_sequence_start_stop(bool clicked);
+	void on_sequence_pause(bool clicked);
 	void on_preview_start_stop(bool clicked);
 	void on_abort(bool clicked);
 	void on_pause(bool clicked);
@@ -656,6 +657,7 @@ private:
 	QProgressBar *m_seq_batch_progress;
 	QProgressBar *m_seq_sequence_progress;
 	QPushButton *m_seq_start_button;
+	QPushButton *m_seq_pause_button;
 	QPushButton *m_seq_reset_button;
 	QLabel *m_seq_esimated_duration;
 	QLabel *m_imager_status_label;
@@ -957,7 +959,7 @@ private:
 	void change_agent_batch_property_for_focus(const char *agent) const;
 	void change_agent_start_exposure_property(const char *agent) const;
 	void change_agent_start_sequence_property(const char *agent) const;
-	void change_agent_pause_process_property(const char *agent, bool wait_exposure) const;
+	void change_agent_pause_process_property(const char *agent, bool wait_exposure, bool enable = true) const;
 	void change_agent_abort_process_property(const char *agent) const;
 	void change_wheel_slot_property(const char *agent) const;
 	void change_cooler_onoff_property(const char *agent) const;
@@ -1020,7 +1022,7 @@ private:
 	void change_guider_agent_edge_clipping(const char *agent) const;
 	void change_agent_ccd_peview(const char *agent, bool enable) const;
 
-	void change_mount_agent_equatorial(const char *agent, bool sync=false) const;
+	void change_mount_agent_equatorial(const char *agent, bool sync = false) const;
 	void change_mount_agent_abort(const char *agent) const;
 	void change_mount_agent_location(const char *agent, QString property_prefix) const;
 

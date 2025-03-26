@@ -608,11 +608,12 @@ void ImagerWindow::change_focuser_focus_out_property(const char *agent) const {
 	indigo_change_switch_property(nullptr, agent, FOCUSER_DIRECTION_PROPERTY_NAME, 1, items, values);
 }
 
-void ImagerWindow::change_agent_pause_process_property(const char *agent, bool wait_exposure) const {
+void ImagerWindow::change_agent_pause_process_property(const char *agent, bool wait_exposure, bool pause) const {
+	//indigo_error("change_agent_pause_process_property: %s -> %s", agent, pause ? "true" : "false");
 	if(wait_exposure) {
-		indigo_change_switch_property_1(nullptr, agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME, AGENT_PAUSE_PROCESS_WAIT_ITEM_NAME, true);
+		indigo_change_switch_property_1(nullptr, agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME, AGENT_PAUSE_PROCESS_WAIT_ITEM_NAME, pause);
 	} else {
-		indigo_change_switch_property_1(nullptr, agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME, AGENT_PAUSE_PROCESS_ITEM_NAME, true);
+		indigo_change_switch_property_1(nullptr, agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME, AGENT_PAUSE_PROCESS_ITEM_NAME, pause);
 	}
 }
 
