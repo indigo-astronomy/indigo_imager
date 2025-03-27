@@ -279,9 +279,11 @@ The sequence being edited or loaded will be uploaded to the *Scripting Agent* on
 
 **NOTE:** Loading a sequence from a file or downloading it from the agent will replace the current sequence and unsaved changes will be lost.
 
-### Start, Abort, Reset and sequence progress monitoring
+### Start, Pause, Reset, Abort and sequence progress monitoring
 
 The current sequence can be started with the **Run** button. This will also upload the current sequence to the *Scripting Agent* as described above.
+
+**Pause** will wait for the current action or exposure to complete and will pause the execution of the sequence before the next action begins. Actions are considered atomic operations from the sequencer's point of view and cannot be paused in the middle of their execution. The only exception is the **Capture Batch** action, which can be paused between individual exposures within the batch.
 
 The **Abort** button will stop the current sequence. The completed actions will be decorated with green while the aborted one will be decorated red. 
 
