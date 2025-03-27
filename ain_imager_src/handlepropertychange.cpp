@@ -1472,10 +1472,10 @@ void update_ccd_frame_property(ImagerWindow *w, indigo_property *property) {
 
 
 static void update_agent_imager_pause_process_property(ImagerWindow *w, indigo_property *property, QPushButton* pause_button) {
-	indigo_debug("Set %s", property->name);
+	indigo_debug("Set %s.%s -> state %d", property->device, property->name, property->state);
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_PAUSE_PROCESS_WAIT_ITEM_NAME)) {
-			if(property->state == INDIGO_BUSY_STATE) {
+			if(property->state == INDIGO_BUSY_STATE && property->items[i].sw.value) {
 				w->set_text(pause_button, "Resume");
 				set_busy(pause_button);
 			} else {
