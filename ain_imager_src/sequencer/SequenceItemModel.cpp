@@ -76,7 +76,9 @@ void SequenceItemModel::initializeModel() {
 		{SC_SYNC_CENTER, {"Sync Center", {{0, {"Exposure (s)", DoubleSpinBox}}}}},
 		{SC_PRECISE_GOTO, {"Precise Goto", {{0, {"Exposure (s)", DoubleSpinBox}}, {1, {"RA", LineEditSG_RA}}, {2, {"Dec", LineEditSG_DEC}}}}},
 		{SC_SET_ROTATOR_ANGLE, {"Set Rotator Angle", {{0, {"Angle(°)", DoubleSpinBox}}}}},
-		{SC_REPEAT, {"Repeat", {{0, {"Count", SpinBox}}}}}
+		{SC_REPEAT, {"Repeat", {{0, {"Count", SpinBox}}}}},
+		{SC_SET_FITS_HEADER, {"Set FITS Header", {{0, {"Keyword", LineEdit}}, {1, {"", LineEdit}}}}},
+		{SC_REMOVE_FITS_HEADER, {"Remove FITS Header", {{0, {"Keyword", LineEdit}}}}}
 	};
 
 	//{"select_imager_agent", {"Select Imager Agent", {{0, {"Agent", "QComboBox"}}}}},
@@ -159,6 +161,9 @@ void SequenceItemModel::initializeModel() {
 			SC_WAIT,
 			SC_SEND_MESSAGE,
 			SC_WAIT_FOR_GPS,
+			__SEPARATOR__,
+			SC_SET_FITS_HEADER,
+			SC_REMOVE_FITS_HEADER,
 			__SEPARATOR__,
 			SC_LOAD_DRIVER,
 			SC_UNLOAD_DRIVER,

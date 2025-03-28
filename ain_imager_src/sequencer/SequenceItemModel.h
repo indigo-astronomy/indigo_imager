@@ -75,6 +75,8 @@
 #define SC_PRECISE_GOTO             cs("precise_goto")
 #define SC_SET_ROTATOR_ANGLE        cs("set_rotator_angle")
 #define SC_REPEAT                   cs("repeat")
+#define SC_SET_FITS_HEADER          cs("set_fits_header")
+#define SC_REMOVE_FITS_HEADER       cs("remove_fits_header")
 
 #define CC_CAPTURE                  cs("Capture")
 #define CC_FILTER_WHEEL             cs("Filter Wheel")
