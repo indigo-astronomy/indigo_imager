@@ -207,6 +207,11 @@ void IndigoSequence::scrollToItem(int index) {
 void IndigoSequence::contextMenuEvent(QContextMenuEvent *event) {
 	if (!isEnabledState) return;
 
+	// Only show context menu when right-clicking on the scroll area
+	if (!scrollArea->geometry().contains(event->pos())) {
+		return;
+	}
+
 	QMenu contextMenu(this);
 	contextMenuPos = event->pos();
 

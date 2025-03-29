@@ -77,7 +77,7 @@ void SequenceItemModel::initializeModel() {
 		{SC_PRECISE_GOTO, {"Precise Goto", {{0, {"Exposure (s)", DoubleSpinBox}}, {1, {"RA", LineEditSG_RA}}, {2, {"Dec", LineEditSG_DEC}}}}},
 		{SC_SET_ROTATOR_ANGLE, {"Set Rotator Angle", {{0, {"Angle(°)", DoubleSpinBox}}}}},
 		{SC_REPEAT, {"Repeat", {{0, {"Count", SpinBox}}}}},
-		{SC_SET_FITS_HEADER, {"Set FITS Header", {{0, {"Keyword", LineEdit}}, {1, {"", LineEdit}}}}},
+		{SC_SET_FITS_HEADER, {"Set FITS Header", {{0, {"Keyword", LineEdit}}, {1, {"Value", LineEdit}}}}},
 		{SC_REMOVE_FITS_HEADER, {"Remove FITS Header", {{0, {"Keyword", LineEdit}}}}}
 	};
 
