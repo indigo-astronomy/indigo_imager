@@ -114,7 +114,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu->addSeparator();
 
-	act = menu->addAction(tr("Select &Data Directroy..."));
+	act = menu->addAction(tr("Select &Data Directory..."));
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_data_directory_prefix_act);
 
 	menu->addSeparator();
