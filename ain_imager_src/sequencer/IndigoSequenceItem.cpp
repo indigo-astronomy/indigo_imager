@@ -883,6 +883,8 @@ void IndigoSequenceItem::setEnabledState(bool enabled) {
 			comboBox->setEnabled(enabled);
 		} else if (QCheckBox *checkBox = qobject_cast<QCheckBox*>(widget)) {
 			checkBox->setEnabled(enabled);
+		} else if (QDateTimeEdit *dateTimeEdit = qobject_cast<QDateTimeEdit*>(widget)) {
+			dateTimeEdit->setEnabled(enabled);
 		}
 	}
 
