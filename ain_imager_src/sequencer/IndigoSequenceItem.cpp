@@ -32,6 +32,7 @@
 #include <QMimeData>
 #include <QPainter>
 #include <QWidgetAction>
+#include <QDateTimeEdit>
 #include "SelectObject.h"
 
 IndigoSequenceItem::IndigoSequenceItem(const QString &type, QWidget *parent)
@@ -185,6 +186,17 @@ void IndigoSequenceItem::addInputWidget(const QString &paramName, const ParamWid
 			input = new QCheckBox(this);
 			input->setStyleSheet("QCheckBox { background: transparent; }");
 			break;
+		case DateTimeEdit:
+			input = new QDateTimeEdit(this);
+			QDateTimeEdit* dateTimeEdit = static_cast<QDateTimeEdit*>(input);
+			dateTimeEdit->setDisplayFormat("yyyy-MM-dd hh:mm:ss");
+			dateTimeEdit->setTimeSpec(Qt::UTC);
+			dateTimeEdit->setCurrentSection(QDateTimeEdit::MinuteSection);
+			QDateTime currentTimeUtc = QDateTime::currentDateTimeUtc();
+			QTime timeWithZeroSeconds(currentTimeUtc.time().hour(), currentTimeUtc.time().minute(), 0);
+			currentTimeUtc.setTime(timeWithZeroSeconds);
+			dateTimeEdit->setDateTime(currentTimeUtc);
+			break;
 	}
 
 	const auto& model = SequenceItemModel::instance();
@@ -319,6 +331,12 @@ void IndigoSequenceItem::setParameter(int paramName, const QVariant &value) {
 		comboBox->setCurrentText(value.toString());
 	} else if (QCheckBox *checkBox = qobject_cast<QCheckBox*>(widget)) {
 		checkBox->setChecked(value.toBool());
+	} else if (QDateTimeEdit *dateTimeEdit = qobject_cast<QDateTimeEdit*>(widget)) {
+		bool ok;
+		qint64 timestamp = value.toLongLong(&ok);
+		if (ok) {
+			dateTimeEdit->setDateTime(QDateTime::fromSecsSinceEpoch(timestamp));
+		}
 	}
 }
 
@@ -341,6 +359,8 @@ QVariant IndigoSequenceItem::getParameter(const int paramID) const {
 		return comboBox->currentText();
 	} else if (QCheckBox *checkBox = qobject_cast<QCheckBox *>(widget)) {
 		return checkBox->isChecked();
+	} else if (QDateTimeEdit *dateTimeEdit = qobject_cast<QDateTimeEdit *>(widget)) {
+		return dateTimeEdit->dateTime().toSecsSinceEpoch();
 	} else {
 		return QVariant();
 	}

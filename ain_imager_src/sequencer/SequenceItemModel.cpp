@@ -33,6 +33,7 @@ void SequenceItemModel::initializeModel() {
 	// Initialize with existing types
 	widgetTypeMap = {
 		{SC_WAIT, {"Wait", {{0, {"Seconds", SpinBox}}}}},
+		{SC_WAIT_UNTIL, {"Wait Until", {{0, {"Date Time (UTC)", DateTimeEdit}}}}},
 		{SC_SEND_MESSAGE, {"Send Message", {{0, {"Message", LineEdit}}}}},
 		{SC_LOAD_CONFIG, {"Load Config", {{0, {"Name", ComboBox}}}}},
 		{SC_LOAD_DRIVER, {"Load Driver", {{0, {"Name", LineEdit}}}}},
@@ -159,6 +160,7 @@ void SequenceItemModel::initializeModel() {
 		}},
 		{CC_MISC, {
 			SC_WAIT,
+			SC_WAIT_UNTIL,
 			SC_SEND_MESSAGE,
 			SC_WAIT_FOR_GPS,
 			__SEPARATOR__,

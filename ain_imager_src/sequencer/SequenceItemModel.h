@@ -31,6 +31,7 @@
 #define cs(str) (const char*)(str)
 // Sequence command constants
 #define SC_WAIT                     cs("wait")
+#define SC_WAIT_UNTIL               cs("wait_until")
 #define SC_SEND_MESSAGE             cs("send_message")
 #define SC_LOAD_CONFIG              cs("load_config")
 #define SC_LOAD_DRIVER              cs("load_driver")
@@ -97,7 +98,8 @@ enum ParamWidget {
 	ComboBox,
 	CheckBox,
 	LineEditSG_RA,
-	LineEditSG_DEC
+	LineEditSG_DEC,
+	DateTimeEdit
 };
 
 class SequenceItemModel : public QObject {

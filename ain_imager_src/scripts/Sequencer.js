@@ -26,6 +26,10 @@ Sequence.prototype.wait = function(seconds) {
 	this.sequence.push({ execute: 'wait(' + seconds + ')', step: this.step++, progress: this.progress++, exposure: this.exposure });
 };
 
+Sequence.prototype.wait_until = function(time) {
+	this.sequence.push({ execute: 'wait_until(' + time + ')', step: this.step++, progress: this.progress++, exposure: this.exposure });
+};
+
 Sequence.prototype.evaluate = function(code) {
 	this.sequence.push({ execute: 'evaluate("' + code + '")', step: this.step++, progress: this.progress++, exposure: this.exposure });
 };
@@ -748,6 +752,11 @@ var indigo_sequencer = {
 		this.wait_for_timer = indigo_set_timer(indigo_sequencer_next_handler, seconds);
 	},
 		
+	wait_until: function(time) {
+		indigo_send_message("Suspended until " + time);
+		this.wait_for_timer = indigo_set_timer_at(indigo_sequencer_next_handler, time);
+	},
+		
 	evaluate: function(code) {
 		eval(code);
 		indigo_set_timer(indigo_sequencer_next_handler, 0);
@@ -1283,7 +1292,7 @@ var indigo_sequencer = {
 		this.change_texts(agent, "CCD_SET_FITS_HEADER", { "KEYWORD": keyword, "VALUE": value });
 	},
 	
-	remove_fits_header: function(keyword) {
+	remove_fits_header: function(keyword, value) {
 		var agent = this.devices[2];
 		this.change_texts(agent, "CCD_REMOVE_FITS_HEADER", { "KEYWORD": keyword });
 	},

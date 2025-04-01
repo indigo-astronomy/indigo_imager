@@ -345,7 +345,7 @@ void update_mount_display_coordinates(ImagerWindow *w, indigo_property *property
 		w->set_widget_state(w->m_mount_ttr_label, INDIGO_OK_STATE);
 	}
 
-	QString tooltip_str = QString("<p><b>Rise / Transit / Set</b> (GMT)</p>");
+	QString tooltip_str = QString("<p><b>Rise / Transit / Set</b> (UTC)</p>");
 	if (rise == 0 && set == 0) { // never rises
 		tooltip_str +=
 			QString("Rise: never rises <br>") +
