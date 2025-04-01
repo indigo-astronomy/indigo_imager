@@ -335,7 +335,7 @@ void IndigoSequenceItem::setParameter(int paramName, const QVariant &value) {
 		bool ok;
 		qint64 timestamp = value.toLongLong(&ok);
 		if (ok) {
-			dateTimeEdit->setDateTime(QDateTime::fromSecsSinceEpoch(timestamp));
+			dateTimeEdit->setDateTime(QDateTime::fromSecsSinceEpoch(timestamp, Qt::UTC));
 		}
 	}
 }
