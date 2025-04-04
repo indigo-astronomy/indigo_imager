@@ -521,7 +521,7 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 			int approx_time = m_sequence_editor2->totalExposure();
 			if (approx_time >= 0) {
 				static char end_time[256];
-				get_time_after(end_time, approx_time, "Optimistic time of sequence completion: %d %b %H:%M UTC");
+				get_time_after(end_time, approx_time, "Optimistic time of sequence completion: %Y-%m-%d %H:%M UTC");
 				Logger::instance().log(nullptr, end_time);
 			}
 
