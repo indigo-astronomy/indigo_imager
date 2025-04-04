@@ -848,7 +848,7 @@ var indigo_sequencer = {
 
 	select_imager_camera: function(camera) {
 		var agent = this.devices[2];
-		if (camera == undefined)
+		if (camera == undefined || camera == "No camera")
 			camera = "NONE";
 		var property = indigo_devices[agent].FILTER_CCD_LIST;
 		if (property != null) {
@@ -868,7 +868,7 @@ var indigo_sequencer = {
 
 	select_filter_wheel: function(wheel) {
 		var agent = this.devices[2];
-		if (wheel == undefined)
+		if (wheel == undefined || wheel == "No wheel")
 			wheel = "NONE";
 		var property = indigo_devices[agent].FILTER_WHEEL_LIST;
 		if (property != null) {
@@ -888,7 +888,7 @@ var indigo_sequencer = {
 
 	select_focuser: function(focuser) {
 		var agent = this.devices[2];
-		if (focuser == undefined)
+		if (focuser == undefined || focuser == "No focuser")
 			focuser = "NONE";
 		var property = indigo_devices[agent].FILTER_FOCUSER_LIST;
 		if (property != null) {
@@ -908,7 +908,7 @@ var indigo_sequencer = {
 
 	select_rotator: function(rotator) {
 		var agent = this.devices[3];
-		if (rotator == undefined)
+		if (rotator == undefined || rotator == "No rotator")
 			rotator = "NONE";
 		var property = indigo_devices[agent].FILTER_ROTATOR_LIST;
 		if (property != null) {
@@ -928,7 +928,7 @@ var indigo_sequencer = {
 
 	select_mount: function(mount) {
 		var agent = this.devices[3];
-		if (mount == undefined)
+		if (mount == undefined || mount == "No mount")
 			mount = "NONE";
 		var property = indigo_devices[agent].FILTER_MOUNT_LIST;
 		if (property != null) {
@@ -948,7 +948,7 @@ var indigo_sequencer = {
 
 	select_dome: function(dome) {
 		var agent = this.devices[3];
-		if (dome == undefined)
+		if (dome == undefined || dome == "No dome")
 			dome = "NONE";
 		var property = indigo_devices[agent].FILTER_DOME_LIST;
 		if (property != null) {
@@ -968,7 +968,7 @@ var indigo_sequencer = {
 
 	select_gps: function(gps) {
 		var agent = this.devices[3];
-		if (gps == undefined)
+		if (gps == undefined || gps == "No GPS")
 			gps = "NONE";
 		var property = indigo_devices[agent].FILTER_GPS_LIST;
 		if (property != null) {
@@ -988,7 +988,7 @@ var indigo_sequencer = {
 
 	select_guider_camera: function(camera) {
 		var agent = this.devices[4];
-		if (camera == undefined)
+		if (camera == undefined || camera == "No camera")
 			camera = "NONE";
 		var property = indigo_devices[agent].FILTER_CCD_LIST;
 		if (property != null) {
@@ -1008,7 +1008,7 @@ var indigo_sequencer = {
 
 	select_guider: function(guider) {
 		var agent = this.devices[4];
-		if (guider == undefined)
+		if (guider == undefined || guider == "No guider")
 			guider = "NONE";
 		var property = indigo_devices[agent].FILTER_GUIDER_LIST;
 		if (property != null) {
