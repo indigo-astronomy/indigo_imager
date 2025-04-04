@@ -189,7 +189,7 @@ void IndigoSequenceItem::addInputWidget(const QString &paramName, const ParamWid
 		case DateTimeEdit:
 			input = new QDateTimeEdit(this);
 			QDateTimeEdit* dateTimeEdit = static_cast<QDateTimeEdit*>(input);
-			dateTimeEdit->setDisplayFormat("yyyy-MM-dd hh:mm:ss");
+			dateTimeEdit->setDisplayFormat(DATE_TIME_FORMAT);
 			dateTimeEdit->setTimeSpec(Qt::UTC);
 			dateTimeEdit->setCurrentSection(QDateTimeEdit::MinuteSection);
 			QDateTime currentTimeUtc = QDateTime::currentDateTimeUtc();
@@ -336,6 +336,8 @@ void IndigoSequenceItem::setParameter(int paramName, const QVariant &value) {
 		qint64 timestamp = value.toLongLong(&ok);
 		if (ok) {
 			dateTimeEdit->setDateTime(QDateTime::fromSecsSinceEpoch(timestamp, Qt::UTC));
+		} else {
+			dateTimeEdit->setDateTime(value.toDateTime());
 		}
 	}
 }
@@ -360,7 +362,7 @@ QVariant IndigoSequenceItem::getParameter(const int paramID) const {
 	} else if (QCheckBox *checkBox = qobject_cast<QCheckBox *>(widget)) {
 		return checkBox->isChecked();
 	} else if (QDateTimeEdit *dateTimeEdit = qobject_cast<QDateTimeEdit *>(widget)) {
-		return dateTimeEdit->dateTime().toSecsSinceEpoch();
+		return dateTimeEdit->dateTime().toString(DATE_TIME_FORMAT);
 	} else {
 		return QVariant();
 	}

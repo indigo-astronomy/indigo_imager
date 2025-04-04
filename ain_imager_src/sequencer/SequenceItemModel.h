@@ -91,6 +91,8 @@
 
 #define __SEPARATOR__               cs("__separator__")
 
+#define DATE_TIME_FORMAT            cs("yyyy-MM-dd hh:mm:ss")
+
 enum ParamWidget {
 	LineEdit,
 	SpinBox,

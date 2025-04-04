@@ -599,7 +599,8 @@ const QVector<FunctionCall> IndigoSequence::functionCallsFromView(const QString&
 					call.parameters.append(value.toBool() ? "true" : "false");
 				} else if (
 					paramIt.value().paramWidget == LineEdit ||
-					paramIt.value().paramWidget == ComboBox
+					paramIt.value().paramWidget == ComboBox ||
+					paramIt.value().paramWidget == DateTimeEdit
 				)
 				{
 					QString escapedValue = value.toString().replace("\"", "\\\"");
@@ -630,7 +631,8 @@ const QVector<FunctionCall> IndigoSequence::functionCallsFromView(const QString&
 							nestedCall.parameters.append(value.toBool() ? "true" : "false");
 						} else if (
 							paramIt.value().paramWidget == LineEdit ||
-							paramIt.value().paramWidget == ComboBox
+							paramIt.value().paramWidget == ComboBox ||
+							paramIt.value().paramWidget == DateTimeEdit
 						)
 						{
 							QString escapedValue = value.toString().replace("\"", "\\\"");
