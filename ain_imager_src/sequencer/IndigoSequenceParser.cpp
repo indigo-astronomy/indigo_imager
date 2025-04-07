@@ -35,8 +35,8 @@ QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
 	const char lpMarker[] = "&<L*";
 	const char rpMarker[] = "&>R*";
 
-	// remove comments
-	QRegularExpression commentRe(R"(//.*$)");
+	// remove comments (but preserve //* comments that disable calls)
+	QRegularExpression commentRe(R"(//(?!\*).*$)");
 	code.remove(commentRe);
 
 	// replace parentheses in strings with markers as they confuse parser
@@ -53,34 +53,46 @@ QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
 	}
 
 	QVector<FunctionCall> calls;
-	QRegularExpression re(R"((\w+)\.(\w+)\(([^)]*)\);|(\w+)\.repeat\((\d+),\s*function\s*\(\)\s*\{([^}]*)\}\);|var\s+(\w+)\s*=\s*new\s+Sequence\((\"[^\"]*\")?\);)");
+	// Updated regex pattern to capture optional "//*" at the beginning
+	QRegularExpression re(R"((?:\/\/\*)?\s*((?:\w+)\.(?:\w+)\((?:[^)]*)\);|(?:\w+)\.repeat\((?:\d+),\s*function\s*\(\)\s*\{(?:[^}]*)\}\);|var\s+(?:\w+)\s*=\s*new\s+Sequence\((?:\"[^\"]*\")?\);))");
 	QRegularExpressionMatchIterator it = re.globalMatch(processedCode);
 
 	while (it.hasNext()) {
 		QRegularExpressionMatch match = it.next();
-		FunctionCall call;
+		QString fullCall = match.captured(0);
+		QString callBody = match.captured(1);
 
-		if (!match.captured(4).isEmpty()) {
+		// Check if call is enabled or disabled
+		bool isDisabled = fullCall.trimmed().startsWith("//*");
+
+		// Now parse the call body using the original regex
+		QRegularExpression callRe(R"((\w+)\.(\w+)\(([^)]*)\);|(\w+)\.repeat\((\d+),\s*function\s*\(\)\s*\{([^}]*)\}\);|var\s+(\w+)\s*=\s*new\s+Sequence\((\"[^\"]*\")?\);)");
+		QRegularExpressionMatch callMatch = callRe.match(callBody);
+
+		FunctionCall call;
+		call.enabled = !isDisabled;
+
+		if (!callMatch.captured(4).isEmpty()) {
 			// Repeat function call with lambda
-			call.objectName = match.captured(4);
+			call.objectName = callMatch.captured(4);
 			call.functionName = "repeat";
-			call.parameters.append(match.captured(5)); // The repeat count
+			call.parameters.append(callMatch.captured(5)); // The repeat count
 			call.parameters.append("lambda"); // Placeholder for the lambda function
 
-			QString nestedCode = match.captured(6).trimmed();
+			QString nestedCode = callMatch.captured(6).trimmed();
 			call.nestedCalls = parse(nestedCode);
-		} else if (!match.captured(7).isEmpty()) {
+		} else if (!callMatch.captured(7).isEmpty()) {
 			// Sequence object creation
-			call.objectName = match.captured(7);
+			call.objectName = callMatch.captured(7);
 			call.functionName = "Sequence";
-			if (!match.captured(8).isEmpty()) {
-				call.parameters.append(match.captured(8));
+			if (!callMatch.captured(8).isEmpty()) {
+				call.parameters.append(callMatch.captured(8));
 			}
 		} else {
 			// Regular function call
-			call.objectName = match.captured(1);
-			call.functionName = match.captured(2);
-			QString params = match.captured(3);
+			call.objectName = callMatch.captured(1);
+			call.functionName = callMatch.captured(2);
+			QString params = callMatch.captured(3);
 			call.parameters = params.split(',', QT_SKIP_EMPTY_PARTS);
 			for (QString& param : call.parameters) {
 				param = param.trimmed();
@@ -149,16 +161,30 @@ QString IndigoSequenceParser::generate(const QVector<FunctionCall>& calls, int i
 	QString indentStr(indent, '\t');
 
 	for (const FunctionCall& call : calls) {
+		QString linePrefix = call.enabled ? indentStr : indentStr + "//* ";
+
 		if (call.functionName == "repeat") {
-			script += indentStr + call.objectName + "." + call.functionName + "(" + call.parameters[0] + ", function() {\n";
-			script += generate(call.nestedCalls, indent + 1);
-			script += indentStr + "});\n";
+			script += linePrefix + call.objectName + "." + call.functionName + "(" + call.parameters[0] + ", function() {\n";
+
+			// If this repeat is disabled, all nested calls should be generated as disabled
+			if (call.enabled) {
+				script += generate(call.nestedCalls, indent + 1);
+			} else {
+				// Create a temporary copy of nested calls with all marked as disabled
+				QVector<FunctionCall> disabledNestedCalls = call.nestedCalls;
+				for (auto& nestedCall : disabledNestedCalls) {
+					nestedCall.enabled = false;
+				}
+				script += generate(disabledNestedCalls, indent + 1);
+			}
+
+			script += linePrefix + "});\n";
 		} else if (call.functionName == "Sequence") {
 			// Constructor call
-			script += indentStr + "var " + call.objectName + " = new Sequence(" + call.parameters.join(", ").trimmed() + ");\n";
+			script += linePrefix + "var " + call.objectName + " = new Sequence(" + call.parameters.join(", ").trimmed() + ");\n";
 		} else {
 			// Regular method call
-			script += indentStr + call.objectName + "." + call.functionName + "(" + call.parameters.join(", ").trimmed() + ");\n";
+			script += linePrefix + call.objectName + "." + call.functionName + "(" + call.parameters.join(", ").trimmed() + ");\n";
 		}
 	}
 
