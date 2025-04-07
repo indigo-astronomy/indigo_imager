@@ -2669,6 +2669,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	// Imager Agent
 	if (client_match_device_property(property, selected_agent, CCD_LOCAL_MODE_PROPERTY_NAME)) {
 		update_ccd_local_mode(this, property);
+		QtConcurrent::run([=]() {
+			change_ccd_localmode_property(selected_agent, m_remote_object_name);
+		});
 	}
 	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_camera_select);
