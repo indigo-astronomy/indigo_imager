@@ -71,7 +71,7 @@ void IndigoSequenceItem::setupUI() {
 	statusButton->setFixedSize(20, 20);
 	statusButton->setStyleSheet("QToolButton { border: none; background: transparent; }");
 	statusButton->setContentsMargins(5, 0, 0, 0);
-	statusButton->setToolTip("Toggle omitted state");
+	statusButton->setToolTip("Toggle execution flag.\n* Item will be executed.");
 	connect(statusButton, &QToolButton::clicked, this, &IndigoSequenceItem::toggleOmitted);
 
 	setIdle(); // Initialize with idle icon
@@ -854,8 +854,10 @@ void IndigoSequenceItem::updateNestedComboOptions(const QString& type, int param
 }
 
 void IndigoSequenceItem::setIdle() {
-	if (m_omitted) {
-		statusButton->setIcon(QIcon(":/resource/suspended-grey.png"));
+	if (m_omitted && type == SC_REPEAT) {
+		statusButton->setIcon(QIcon(":/resource/led-blue-cb.png"));
+	} else if (m_omitted) {
+		statusButton->setIcon(QIcon(":/resource/led-blue.png"));
 	} else if (type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/loop-grey.png"));
 	} else {
@@ -864,9 +866,10 @@ void IndigoSequenceItem::setIdle() {
 }
 
 void IndigoSequenceItem::setBusy() {
-	if (m_omitted) {
-		// Keep the omitted icon even when in busy state
-		statusButton->setIcon(QIcon(":/resource/suspended-grey.png"));
+	if (m_omitted && type == SC_REPEAT) {
+		statusButton->setIcon(QIcon(":/resource/led-blue-cb.png"));
+	} else if (m_omitted) {
+		statusButton->setIcon(QIcon(":/resource/led-blue.png"));
 	} else if (type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/loop-orange.png"));
 	} else {
@@ -875,9 +878,10 @@ void IndigoSequenceItem::setBusy() {
 }
 
 void IndigoSequenceItem::setAlert() {
-	if (m_omitted) {
-		// Keep the omitted icon even when in alert state
-		statusButton->setIcon(QIcon(":/resource/suspended-grey.png"));
+	if (m_omitted && type == SC_REPEAT) {
+		statusButton->setIcon(QIcon(":/resource/led-blue-cb.png"));
+	} else if (m_omitted) {
+		statusButton->setIcon(QIcon(":/resource/led-blue.png"));
 	} else if (type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/loop-red.png"));
 	} else {
@@ -886,9 +890,10 @@ void IndigoSequenceItem::setAlert() {
 }
 
 void IndigoSequenceItem::setOk() {
-	if (m_omitted) {
-		// Keep the omitted icon even when in ok state
-		statusButton->setIcon(QIcon(":/resource/suspended-grey.png"));
+	if (m_omitted && type == SC_REPEAT) {
+		statusButton->setIcon(QIcon(":/resource/led-blue-cb.png"));
+	} else if (m_omitted) {
+		statusButton->setIcon(QIcon(":/resource/led-blue.png"));
 	} else if (type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/loop-green.png"));
 	} else {
@@ -936,7 +941,8 @@ void IndigoSequenceItem::setOmitted(bool omitted) {
 	if (m_omitted != omitted) {
 		m_omitted = omitted;
 		statusButton->setChecked(omitted);
-		updateStatusIcon();
+		statusButton->setToolTip(omitted ? "Toggle execution flag.\n* Item will NOT be executed." : "Toggle execution flag.\n* Item will be executed.");
+		setIdle();
 
 		// Propagate omitted state to nested items if this is a repeat block
 		if (type == SC_REPEAT && repeatLayout) {
@@ -957,14 +963,4 @@ void IndigoSequenceItem::toggleOmitted() {
 	}
 	bool newState = statusButton->isChecked();
 	setOmitted(newState);
-}
-
-void IndigoSequenceItem::updateStatusIcon() {
-	if (m_omitted) {
-		statusButton->setIcon(QIcon(":/resource/suspended-grey.png"));
-	} else if (type == SC_REPEAT) {
-		setIdle();
-	} else {
-		setIdle();
-	}
 }

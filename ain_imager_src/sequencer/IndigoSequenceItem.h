@@ -118,7 +118,6 @@ private:
 	bool isAncestorOf(QWidget* possibleChild) const;
 	int getNestingLevel() const;
 	int getIndexOfItem(IndigoSequenceItem* item) const;
-	void updateStatusIcon();
 };
 
 #endif // __INDIGOSEQUENCEITEM_H

@@ -85,9 +85,11 @@ RESOURCES += \
 	$$PWD/../resource/led-grey.png \
 	$$PWD/../resource/led-green.png \
 	$$PWD/../resource/led-orange.png \
+	$$PWD/../resource/led-blue.png \
 	$$PWD/../resource/led-red-cb.png \
 	$$PWD/../resource/led-green-cb.png \
 	$$PWD/../resource/led-orange-cb.png \
+	$$PWD/../resource/led-blue-cb.png \
 	$$PWD/../resource/stop.png \
 	$$PWD/../resource/play.png \
 	$$PWD/../resource/pause.png \
@@ -119,7 +121,6 @@ RESOURCES += \
 	$$PWD/../resource/focuser-grey.png \
 	$$PWD/../resource/guider-grey.png \
 	$$PWD/../resource/led-grey-dev.png \
-	$$PWD/../resource/suspended-grey.png \
 	$$PWD/../resource/server.png \
 	$$PWD/../resource/error.wav \
 	$$PWD/../resource/ok.wav \
