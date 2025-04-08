@@ -47,6 +47,9 @@ public:
 	void showDragOverlay();
 	void hideDragOverlay();
 
+	bool isOmitted() const { return m_omitted; }
+	void setOmitted(bool omitted);
+
 	void updateNumericRange(int paramId, double min, double max);
 	void updateNestedNumericRanges(const QString& type, int paramId, double min, double max);
 	void updateNumericIncrement(int paramId, double increment);
@@ -76,6 +79,7 @@ signals:
 
 public slots:
 	void setEnabledState(bool enabled);
+	void toggleOmitted();
 
 protected:
 	void mousePressEvent(QMouseEvent *event) override;
@@ -91,7 +95,7 @@ private slots:
 
 private:
 	QString type;
-	QLabel *statusLabel;
+	QToolButton *statusButton; // Changed from QLabel to QToolButton
 	QLabel *typeLabel;
 	QToolButton *deleteButton;
 	QHBoxLayout *mainLayout;
@@ -101,10 +105,11 @@ private:
 	QPoint contextMenuPos;
 	QWidget *overlay;
 	QMap<int, QWidget *> parameterWidgets;
-	QVBoxLayout *repeatLayout; // Layout for nested IndigoSequenceItems
+	QVBoxLayout *repeatLayout;
 	QLabel *iterationLabel;
 
 	bool isEnabledState;
+	bool m_omitted = false;
 
 	void setupUI();
 	void addInputWidget(const QString &paramName, ParamWidget paramWidget, int key);
@@ -113,6 +118,7 @@ private:
 	bool isAncestorOf(QWidget* possibleChild) const;
 	int getNestingLevel() const;
 	int getIndexOfItem(IndigoSequenceItem* item) const;
+	void updateStatusIcon();
 };
 
 #endif // __INDIGOSEQUENCEITEM_H

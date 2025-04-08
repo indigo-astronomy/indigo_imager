@@ -25,7 +25,7 @@
 #include <QObject>
 
 struct FunctionCall {
-	bool enabled;
+	bool omitted;
 	QString objectName;
 	QString functionName;
 	QStringList parameters;

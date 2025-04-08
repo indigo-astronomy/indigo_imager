@@ -36,11 +36,13 @@
 #include "SelectObject.h"
 
 IndigoSequenceItem::IndigoSequenceItem(const QString &type, QWidget *parent)
-	: QWidget(parent), type(type), overlay(nullptr), isEnabledState(true) {
-	setObjectName(type); // Set the object name to the type
+	: QWidget(parent), type(type), overlay(nullptr), isEnabledState(true), m_omitted(false) {
+	setObjectName(type);
 	setupUI();
 
-	// Connect the enable signal to the setEnabledState slot
+	// Initialize statusButton checked state
+	statusButton->setChecked(false);
+
 	connect(this, &IndigoSequenceItem::enable, this, &IndigoSequenceItem::setEnabledState);
 }
 
@@ -63,12 +65,16 @@ void IndigoSequenceItem::setupUI() {
 		typeInfo.label = type + "(): unknown call";
 	}
 
-	statusLabel = new QLabel(this);
-	setIdle();
+	// Replace statusLabel with statusButton
+	statusButton = new QToolButton(this);
+	statusButton->setCheckable(true);
+	statusButton->setFixedSize(20, 20);
+	statusButton->setStyleSheet("QToolButton { border: none; background: transparent; }");
+	statusButton->setContentsMargins(5, 0, 0, 0);
+	statusButton->setToolTip("Toggle omitted state");
+	connect(statusButton, &QToolButton::clicked, this, &IndigoSequenceItem::toggleOmitted);
 
-	statusLabel->setContentsMargins(5, 0, 0, 0);
-	statusLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
-	statusLabel->setStyleSheet("background: transparent;");
+	setIdle(); // Initialize with idle icon
 
 	typeLabel = new QLabel(typeInfo.label);
 	QFont boldFont = typeLabel->font();
@@ -79,10 +85,7 @@ void IndigoSequenceItem::setupUI() {
 	typeLabel->setStyleSheet("background: transparent;");
 
 	deleteButton = new QToolButton(this);
-	//deleteButton->setText(QString::fromUtf8("\u274C"));
 	deleteButton->setText(QString::fromUtf8("\u2715"));
-	//deleteButton->setText(QString::fromUtf8("\u2716"));
-	//deleteButton->setText(QString::fromUtf8("\u00D7"));
 	deleteButton->setIconSize(QSize(14, 14));
 	deleteButton->setFixedSize(22, 22);
 	deleteButton->setStyleSheet("QToolButton { \
@@ -97,7 +100,7 @@ void IndigoSequenceItem::setupUI() {
 	connect(deleteButton, &QToolButton::clicked, this, &IndigoSequenceItem::removeWidget);
 
 	mainLayout = new QHBoxLayout();
-	mainLayout->addWidget(statusLabel);
+	mainLayout->addWidget(statusButton);
 	mainLayout->addWidget(typeLabel);
 	mainLayout->addStretch();
 
@@ -374,6 +377,12 @@ void IndigoSequenceItem::removeWidget() {
 }
 
 void IndigoSequenceItem::mousePressEvent(QMouseEvent *event) {
+	// Prevent triggering a drag when clicking on status button
+	if (statusButton->geometry().contains(event->pos())) {
+		QWidget::mousePressEvent(event);
+		return;
+	}
+
 	if (event->button() == Qt::LeftButton) {
 		// Find IndigoSequence parent
 		IndigoSequence* parentSequence = nullptr;
@@ -400,6 +409,7 @@ void IndigoSequenceItem::mousePressEvent(QMouseEvent *event) {
 		QDataStream dataStream(&itemData, QIODevice::WriteOnly);
 
 		dataStream << type;
+		dataStream << m_omitted;
 
 		QVariantMap parameters;
 		for (auto it = parameterWidgets.begin(); it != parameterWidgets.end(); ++it) {
@@ -414,11 +424,15 @@ void IndigoSequenceItem::mousePressEvent(QMouseEvent *event) {
 			for (int i = 0; i < nestedItemCount; ++i) {
 				IndigoSequenceItem *nestedItem = qobject_cast<IndigoSequenceItem *>(repeatLayout->itemAt(i)->widget());
 				if (nestedItem) {
+					QString nestedType = nestedItem->getType();
+					dataStream << nestedType;
+					dataStream << nestedItem->isOmitted();
+
 					QVariantMap nestedParameters;
 					for (auto it = nestedItem->parameterWidgets.begin(); it != nestedItem->parameterWidgets.end(); ++it) {
 						nestedParameters[QString::number(it.key())] = nestedItem->getParameter(it.key());
 					}
-					dataStream << nestedItem->getType() << nestedParameters;
+					dataStream << nestedParameters;
 				}
 			}
 		}
@@ -511,7 +525,8 @@ void IndigoSequenceItem::dropEvent(QDropEvent *event) {
 		QByteArray itemData = event->mimeData()->data("application/x-indigosequenceitem");
 		QDataStream dataStream(&itemData, QIODevice::ReadOnly);
 		QString draggedType;
-		dataStream >> draggedType;
+		bool draggedIsOmitted;
+		dataStream >> draggedType >> draggedIsOmitted;
 
 		if (draggedType == SC_REPEAT && getNestingLevel() >= 0) {
 			event->ignore();
@@ -556,6 +571,8 @@ void IndigoSequenceItem::dropEvent(QDropEvent *event) {
 			return;
 		}
 
+		bool omittedState = draggedWidget->isOmitted();
+
 		// Determine position to insert
 		int insertAt = determineInsertPosition(event->pos());
 		int index = getIndexOfItem(draggedWidget);
@@ -568,6 +585,9 @@ void IndigoSequenceItem::dropEvent(QDropEvent *event) {
 		// Add to new parent
 		draggedWidget->setParent(this);
 		repeatLayout->insertWidget(insertAt, draggedWidget);
+
+		draggedWidget->setOmitted(omittedState);
+
 		draggedWidget->show();
 
 		event->setDropAction(Qt::MoveAction);
@@ -834,34 +854,45 @@ void IndigoSequenceItem::updateNestedComboOptions(const QString& type, int param
 }
 
 void IndigoSequenceItem::setIdle() {
-	if (type == SC_REPEAT) {
-		statusLabel->setPixmap(QPixmap(":/resource/loop-grey.png"));
+	if (m_omitted) {
+		statusButton->setIcon(QIcon(":/resource/suspended-grey.png"));
+	} else if (type == SC_REPEAT) {
+		statusButton->setIcon(QIcon(":/resource/loop-grey.png"));
 	} else {
-		statusLabel->setPixmap(QPixmap(":/resource/led-grey.png"));
+		statusButton->setIcon(QIcon(":/resource/led-grey.png"));
 	}
 }
 
 void IndigoSequenceItem::setBusy() {
-	if (type == SC_REPEAT) {
-		statusLabel->setPixmap(QPixmap(":/resource/loop-orange.png"));
+	if (m_omitted) {
+		// Keep the omitted icon even when in busy state
+		statusButton->setIcon(QIcon(":/resource/suspended-grey.png"));
+	} else if (type == SC_REPEAT) {
+		statusButton->setIcon(QIcon(":/resource/loop-orange.png"));
 	} else {
-		statusLabel->setPixmap(QPixmap(":/resource/led-orange.png"));
+		statusButton->setIcon(QIcon(":/resource/led-orange.png"));
 	}
 }
 
 void IndigoSequenceItem::setAlert() {
-	if (type == SC_REPEAT) {
-		statusLabel->setPixmap(QPixmap(":/resource/loop-red.png"));
+	if (m_omitted) {
+		// Keep the omitted icon even when in alert state
+		statusButton->setIcon(QIcon(":/resource/suspended-grey.png"));
+	} else if (type == SC_REPEAT) {
+		statusButton->setIcon(QIcon(":/resource/loop-red.png"));
 	} else {
-		statusLabel->setPixmap(QPixmap(":/resource/led-red.png"));
+		statusButton->setIcon(QIcon(":/resource/led-red.png"));
 	}
 }
 
 void IndigoSequenceItem::setOk() {
-	if (type == SC_REPEAT) {
-		statusLabel->setPixmap(QPixmap(":/resource/loop-green.png"));
+	if (m_omitted) {
+		// Keep the omitted icon even when in ok state
+		statusButton->setIcon(QIcon(":/resource/suspended-grey.png"));
+	} else if (type == SC_REPEAT) {
+		statusButton->setIcon(QIcon(":/resource/loop-green.png"));
 	} else {
-		statusLabel->setPixmap(QPixmap(":/resource/led-green.png"));
+		statusButton->setIcon(QIcon(":/resource/led-green.png"));
 	}
 }
 
@@ -897,5 +928,38 @@ void IndigoSequenceItem::setEnabledState(bool enabled) {
 				emit nestedItem->enable(enabled);
 			}
 		}
+	}
+}
+
+void IndigoSequenceItem::setOmitted(bool omitted) {
+	if (m_omitted != omitted) {
+		m_omitted = omitted;
+		statusButton->setChecked(omitted);
+		updateStatusIcon();
+
+		// Propagate omitted state to nested items if this is a repeat block
+		if (type == SC_REPEAT && repeatLayout) {
+			for (int i = 0; i < repeatLayout->count(); ++i) {
+				IndigoSequenceItem* nestedItem = qobject_cast<IndigoSequenceItem*>(repeatLayout->itemAt(i)->widget());
+				if (nestedItem) {
+					nestedItem->setOmitted(omitted);
+				}
+			}
+		}
+	}
+}
+
+void IndigoSequenceItem::toggleOmitted() {
+	bool newState = statusButton->isChecked();
+	setOmitted(newState);
+}
+
+void IndigoSequenceItem::updateStatusIcon() {
+	if (m_omitted) {
+		statusButton->setIcon(QIcon(":/resource/suspended-grey.png"));
+	} else if (type == SC_REPEAT) {
+		setIdle();
+	} else {
+		setIdle();
 	}
 }

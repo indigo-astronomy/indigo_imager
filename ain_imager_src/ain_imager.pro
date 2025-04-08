@@ -119,6 +119,7 @@ RESOURCES += \
 	$$PWD/../resource/focuser-grey.png \
 	$$PWD/../resource/guider-grey.png \
 	$$PWD/../resource/led-grey-dev.png \
+	$$PWD/../resource/suspended-grey.png \
 	$$PWD/../resource/server.png \
 	$$PWD/../resource/error.wav \
 	$$PWD/../resource/ok.wav \

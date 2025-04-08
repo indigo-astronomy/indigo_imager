@@ -315,8 +315,9 @@ void IndigoSequence::dropEvent(QDropEvent *event) {
 		QDataStream dataStream(&itemData, QIODevice::ReadOnly);
 
 		QString type;
+		bool isOmitted;
 		QVariantMap parameters;
-		dataStream >> type >> parameters;
+		dataStream >> type >> isOmitted >> parameters;
 
 		if (dragSourceWidget) {
 			// Clear existing nested items if it's a repeat widget
@@ -328,6 +329,8 @@ void IndigoSequence::dropEvent(QDropEvent *event) {
 			containerLayout->removeWidget(dragSourceWidget);
 			int insertAt = determineInsertPosition(event->pos());
 			containerLayout->insertWidget(insertAt, dragSourceWidget);
+
+			dragSourceWidget->setOmitted(isOmitted);
 
 			// Restore parameters
 			for (auto it = parameters.begin(); it != parameters.end(); ++it) {
@@ -341,10 +344,14 @@ void IndigoSequence::dropEvent(QDropEvent *event) {
 
 				for (int i = 0; i < nestedItemCount; ++i) {
 					QString nestedType;
+					bool nestedIsOmitted;
 					QVariantMap nestedParameters;
-					dataStream >> nestedType >> nestedParameters;
+					dataStream >> nestedType >> nestedIsOmitted >> nestedParameters;
 
 					IndigoSequenceItem *nestedItem = new IndigoSequenceItem(nestedType, dragSourceWidget);
+
+					nestedItem->setOmitted(nestedIsOmitted);
+
 					for (auto it = nestedParameters.begin(); it != nestedParameters.end(); ++it) {
 						nestedItem->setParameter(it.key().toInt(), it.value());
 					}
@@ -526,6 +533,8 @@ void IndigoSequence::viewFromFunctionCalls(const QVector<FunctionCall>& calls) {
 
 		IndigoSequenceItem* item = new IndigoSequenceItem(call.functionName, this);
 
+		item->setOmitted(call.omitted);
+
 		const auto& widgetTypes = SequenceItemModel::instance().getWidgetTypes();
 		if (widgetTypes.contains(call.functionName)) {
 			const auto& widgetInfo = widgetTypes[call.functionName];
@@ -545,6 +554,9 @@ void IndigoSequence::viewFromFunctionCalls(const QVector<FunctionCall>& calls) {
 			for (const FunctionCall& nestedCall : call.nestedCalls) {
 				if (nestedCall.functionName != "Sequence" && nestedCall.functionName != "start") {
 					IndigoSequenceItem* nestedItem = new IndigoSequenceItem(nestedCall.functionName, item);
+
+					nestedItem->setOmitted(nestedCall.omitted);
+
 					if (widgetTypes.contains(nestedCall.functionName)) {
 						const auto& nestedWidgetInfo = widgetTypes[nestedCall.functionName];
 						for (int i = 0; i < nestedCall.parameters.size() && i < nestedWidgetInfo.parameters.size(); ++i) {
@@ -572,6 +584,7 @@ const QVector<FunctionCall> IndigoSequence::functionCallsFromView(const QString&
 	FunctionCall constructorCall;
 	constructorCall.objectName = objectName;
 	constructorCall.functionName = "Sequence";
+	constructorCall.omitted = false; // Sequence constructor is never omitted
 
 	QString seqName = sequenceNameEdit->text().trimmed();
 	if (!seqName.isEmpty()) {
@@ -589,6 +602,7 @@ const QVector<FunctionCall> IndigoSequence::functionCallsFromView(const QString&
 		FunctionCall call;
 		call.objectName = objectName;
 		call.functionName = item->getType();
+		call.omitted = item->isOmitted();
 
 		const auto& widgetTypes = SequenceItemModel::instance().getWidgetTypes();
 		if (widgetTypes.contains(item->getType())) {
@@ -622,6 +636,7 @@ const QVector<FunctionCall> IndigoSequence::functionCallsFromView(const QString&
 				FunctionCall nestedCall;
 				nestedCall.objectName = objectName;
 				nestedCall.functionName = nestedItem->getType();
+				nestedCall.omitted = nestedItem->isOmitted();
 
 				if (widgetTypes.contains(nestedItem->getType())) {
 					const auto& nestedWidgetInfo = widgetTypes[nestedItem->getType()];
@@ -652,6 +667,7 @@ const QVector<FunctionCall> IndigoSequence::functionCallsFromView(const QString&
 	FunctionCall startCall;
 	startCall.objectName = objectName;
 	startCall.functionName = "start";
+	startCall.omitted = false;
 	calls.append(startCall);
 
 	return calls;

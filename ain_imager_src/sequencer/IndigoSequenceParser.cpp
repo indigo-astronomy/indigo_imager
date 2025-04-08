@@ -62,15 +62,14 @@ QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
 		QString fullCall = match.captured(0);
 		QString callBody = match.captured(1);
 
-		// Check if call is enabled or disabled
-		bool isDisabled = fullCall.trimmed().startsWith("//*");
+		bool isOmitted = fullCall.trimmed().startsWith("//*");
 
 		// Now parse the call body using the original regex
 		QRegularExpression callRe(R"((\w+)\.(\w+)\(([^)]*)\);|(\w+)\.repeat\((\d+),\s*function\s*\(\)\s*\{([^}]*)\}\);|var\s+(\w+)\s*=\s*new\s+Sequence\((\"[^\"]*\")?\);)");
 		QRegularExpressionMatch callMatch = callRe.match(callBody);
 
 		FunctionCall call;
-		call.enabled = !isDisabled;
+		call.omitted = isOmitted;
 
 		if (!callMatch.captured(4).isEmpty()) {
 			// Repeat function call with lambda
@@ -81,6 +80,13 @@ QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
 
 			QString nestedCode = callMatch.captured(6).trimmed();
 			call.nestedCalls = parse(nestedCode);
+
+			// If the parent repeat is omitted, mark all nested calls as omitted
+			if (isOmitted) {
+				for (auto& nestedCall : call.nestedCalls) {
+					nestedCall.omitted = true;
+				}
+			}
 		} else if (!callMatch.captured(7).isEmpty()) {
 			// Sequence object creation
 			call.objectName = callMatch.captured(7);
@@ -161,21 +167,22 @@ QString IndigoSequenceParser::generate(const QVector<FunctionCall>& calls, int i
 	QString indentStr(indent, '\t');
 
 	for (const FunctionCall& call : calls) {
-		QString linePrefix = call.enabled ? indentStr : indentStr + "//* ";
+		QString linePrefix = call.omitted ? indentStr + "//* " : indentStr;
 
 		if (call.functionName == "repeat") {
 			script += linePrefix + call.objectName + "." + call.functionName + "(" + call.parameters[0] + ", function() {\n";
 
 			// If this repeat is disabled, all nested calls should be generated as disabled
-			if (call.enabled) {
-				script += generate(call.nestedCalls, indent + 1);
-			} else {
+			if (call.omitted) {
 				// Create a temporary copy of nested calls with all marked as disabled
 				QVector<FunctionCall> disabledNestedCalls = call.nestedCalls;
 				for (auto& nestedCall : disabledNestedCalls) {
-					nestedCall.enabled = false;
+					nestedCall.omitted = true;
 				}
 				script += generate(disabledNestedCalls, indent + 1);
+			} else {
+				// Generate nested calls with the same indentation
+				script += generate(call.nestedCalls, indent + 1);
 			}
 
 			script += linePrefix + "});\n";
