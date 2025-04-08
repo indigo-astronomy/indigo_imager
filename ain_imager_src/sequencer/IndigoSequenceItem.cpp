@@ -904,6 +904,7 @@ void IndigoSequenceItem::setIteration(int count) {
 
 void IndigoSequenceItem::setEnabledState(bool enabled) {
 	isEnabledState = enabled;
+
 	for (auto it = parameterWidgets.begin(); it != parameterWidgets.end(); ++it) {
 		QWidget *widget = it.value();
 		if (QLineEdit *lineEdit = qobject_cast<QLineEdit*>(widget)) {
@@ -950,6 +951,10 @@ void IndigoSequenceItem::setOmitted(bool omitted) {
 }
 
 void IndigoSequenceItem::toggleOmitted() {
+	if (!isEnabledState) {
+		statusButton->setChecked(m_omitted);
+		return;
+	}
 	bool newState = statusButton->isChecked();
 	setOmitted(newState);
 }
