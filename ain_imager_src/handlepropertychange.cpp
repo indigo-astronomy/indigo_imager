@@ -1910,12 +1910,15 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			}
 		}
 
+		int executed_index = w->m_sequence_editor2->getItemIndexByExecutedStep(sequence_step);
+		int loop_at_index = w->m_sequence_editor2->getItemIndexByExecutedStep(loop_at_step);
+
 		int complete = (progress_total != 0) ? (int)((double)progress / progress_total * 100 + 0.5) : 0;
 		w->m_seq_sequence_progress->setRange(0, 100);
 
-		if (sequence_step >= 0 && property->state == INDIGO_BUSY_STATE) {
+		if (executed_index >= 0 && property->state == INDIGO_BUSY_STATE) {
 			w->m_sequence_editor2->enable(false);
-			if (sequence_step == 0) {
+			if (executed_index == 0) {
 				w->m_seq_exposure_progress->setRange(0, 1);
 				w->m_seq_exposure_progress->setValue(0);
 				w->m_seq_exposure_progress->setFormat("Exposure: Idle");
@@ -1931,22 +1934,22 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			w->set_widget_state(w->m_seq_start_button, INDIGO_BUSY_STATE);
 			w->m_seq_start_button->setIcon(QIcon(":resource/stop.png"));
 
-			w->m_sequence_editor2->scrollToItem(sequence_step);
+			w->m_sequence_editor2->scrollToItem(executed_index);
 			IndigoSequenceItem *seq_item = nullptr;
-			for (int i = 0; i < sequence_step; i++) {
+			for (int i = 0; i < executed_index; i++) {
 				seq_item = w->m_sequence_editor2->getItemAt(i);
 				if (seq_item) {
 					seq_item->setOk();
 				}
 			}
-			seq_item = w->m_sequence_editor2->getItemAt(sequence_step);
+			seq_item = w->m_sequence_editor2->getItemAt(executed_index);
 			if (seq_item) {
 				seq_item->setBusy();
 			}
 
 			int item_count = w->m_sequence_editor2->itemCount();
 
-			for (int i = sequence_step + 1; i < item_count; i++) {
+			for (int i = executed_index + 1; i < item_count; i++) {
 				seq_item = w->m_sequence_editor2->getItemAt(i);
 				if (seq_item) {
 					seq_item->setIdle();
@@ -1956,7 +1959,7 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			for (int i = 0; i < item_count; i++) {
 				seq_item = w->m_sequence_editor2->getItemAt(i);
 				if (seq_item) {
-					if (i == loop_at_step) {
+					if (i == loop_at_index) {
 						seq_item->setBusy();
 						seq_item->setIteration(loop_iteration + 1);
 					} else {
@@ -1975,7 +1978,8 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			w->set_widget_state(w->m_seq_start_button, INDIGO_OK_STATE);
 			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 
-			if(sequence_step >= 0) {
+			if(sequence_step >= 0) { // NOTE: should be sequence_step not executed_index
+				//indigo_error("SEQUENCE_STATE -> sequence step %d -> %d", sequence_step, executed_index);
 				int item_count = w->m_sequence_editor2->itemCount();
 				for (int i = 0; i < item_count; i++) {
 					IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(i);
@@ -2013,16 +2017,16 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			w->set_widget_state(w->m_seq_start_button, INDIGO_OK_STATE);
 			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 
-			IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(sequence_step - 1);
+			IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(executed_index - 1);
 			if (seq_item) {
 				seq_item->setOk();
 			}
-			seq_item = w->m_sequence_editor2->getItemAt(sequence_step);
+			seq_item = w->m_sequence_editor2->getItemAt(executed_index);
 			if (seq_item) {
 				seq_item->setAlert();
 			}
-			if (loop_at_step >= 0) {
-				seq_item = w->m_sequence_editor2->getItemAt(loop_at_step);
+			if (loop_at_index >= 0) {
+				seq_item = w->m_sequence_editor2->getItemAt(loop_at_index);
 				if (seq_item) {
 					seq_item->setAlert();
 				}

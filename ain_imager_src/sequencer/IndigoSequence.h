@@ -40,6 +40,7 @@ public:
 	int itemCount() const;
 	QList<IndigoSequenceItem *> getItems() const;
 	IndigoSequenceItem* getItemAt(int index) const;
+	int getItemIndexByExecutedStep(int executedIndex) const;
 
 	void scrollToItem(int index);
 
