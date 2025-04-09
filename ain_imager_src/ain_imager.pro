@@ -85,11 +85,11 @@ RESOURCES += \
 	$$PWD/../resource/led-grey.png \
 	$$PWD/../resource/led-green.png \
 	$$PWD/../resource/led-orange.png \
-	$$PWD/../resource/led-blue.png \
+	$$PWD/../resource/led-noexec.png \
 	$$PWD/../resource/led-red-cb.png \
 	$$PWD/../resource/led-green-cb.png \
 	$$PWD/../resource/led-orange-cb.png \
-	$$PWD/../resource/led-blue-cb.png \
+	$$PWD/../resource/led-noexec-cb.png \
 	$$PWD/../resource/stop.png \
 	$$PWD/../resource/play.png \
 	$$PWD/../resource/pause.png \

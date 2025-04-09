@@ -855,9 +855,9 @@ void IndigoSequenceItem::updateNestedComboOptions(const QString& type, int param
 
 void IndigoSequenceItem::setIdle() {
 	if (m_omitted && type == SC_REPEAT) {
-		statusButton->setIcon(QIcon(":/resource/led-blue-cb.png"));
+		statusButton->setIcon(QIcon(":/resource/led-noexec-cb.png"));
 	} else if (m_omitted) {
-		statusButton->setIcon(QIcon(":/resource/led-blue.png"));
+		statusButton->setIcon(QIcon(":/resource/led-noexec.png"));
 	} else if (type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/loop-grey.png"));
 	} else {
@@ -867,9 +867,9 @@ void IndigoSequenceItem::setIdle() {
 
 void IndigoSequenceItem::setBusy() {
 	if (m_omitted && type == SC_REPEAT) {
-		statusButton->setIcon(QIcon(":/resource/led-blue-cb.png"));
+		statusButton->setIcon(QIcon(":/resource/led-noexec-cb.png"));
 	} else if (m_omitted) {
-		statusButton->setIcon(QIcon(":/resource/led-blue.png"));
+		statusButton->setIcon(QIcon(":/resource/led-noexec.png"));
 	} else if (type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/loop-orange.png"));
 	} else {
@@ -879,9 +879,9 @@ void IndigoSequenceItem::setBusy() {
 
 void IndigoSequenceItem::setAlert() {
 	if (m_omitted && type == SC_REPEAT) {
-		statusButton->setIcon(QIcon(":/resource/led-blue-cb.png"));
+		statusButton->setIcon(QIcon(":/resource/led-noexec-cb.png"));
 	} else if (m_omitted) {
-		statusButton->setIcon(QIcon(":/resource/led-blue.png"));
+		statusButton->setIcon(QIcon(":/resource/led-noexec.png"));
 	} else if (type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/loop-red.png"));
 	} else {
@@ -891,9 +891,9 @@ void IndigoSequenceItem::setAlert() {
 
 void IndigoSequenceItem::setOk() {
 	if (m_omitted && type == SC_REPEAT) {
-		statusButton->setIcon(QIcon(":/resource/led-blue-cb.png"));
+		statusButton->setIcon(QIcon(":/resource/led-noexec-cb.png"));
 	} else if (m_omitted) {
-		statusButton->setIcon(QIcon(":/resource/led-blue.png"));
+		statusButton->setIcon(QIcon(":/resource/led-noexec.png"));
 	} else if (type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/loop-green.png"));
 	} else {
