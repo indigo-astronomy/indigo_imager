@@ -966,6 +966,7 @@ private:
 	void change_ccd_temperature_property(const char *agent) const;
 	void change_ccd_upload_property(const char *agent, const char *item_name) const;
 	void change_ccd_localmode_property(const char *agent, const QString &object_name);
+	void init_ccd_localmode_property(const char *agent);
 	void add_fits_keyword_string(const char *agent, const char *keyword, const QString &value) const;
 	void request_file_download(const char *agent, const char *file_name) const;
 	void request_file_remove(const char *agent, const char *file_name) const;

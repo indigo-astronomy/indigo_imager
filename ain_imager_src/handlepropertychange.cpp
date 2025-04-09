@@ -2670,7 +2670,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, CCD_LOCAL_MODE_PROPERTY_NAME)) {
 		update_ccd_local_mode(this, property);
 		QtConcurrent::run([=]() {
-			change_ccd_localmode_property(selected_agent, m_remote_object_name);
+			init_ccd_localmode_property(selected_agent);
 		});
 	}
 	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
