@@ -766,6 +766,10 @@ void IndigoSequenceItem::addItemFromMenu() {
 	QString itemType = action->data().toString();
 	IndigoSequenceItem *item = new IndigoSequenceItem(itemType, this);
 
+	if (isOmitted()) {
+		item->setOmitted(true);
+	}
+
 	// Determine position to insert using the stored position
 	int insertAt = determineInsertPosition(contextMenuPos);
 	repeatLayout->insertWidget(insertAt, item);
