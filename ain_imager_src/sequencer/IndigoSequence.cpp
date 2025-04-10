@@ -425,7 +425,9 @@ int IndigoSequence::determineInsertPosition(const QPoint &pos) {
 	int insertAt = containerLayout->count();
 	for (int i = 0; i < containerLayout->count(); ++i) {
 		QRect itemRect = containerLayout->itemAt(i)->widget()->geometry();
-		int itemMiddle = itemRect.top() + itemRect.height() / 2;
+		QMargins margins = containerLayout->contentsMargins();
+		int spacing = containerLayout->spacing();
+		int itemMiddle = itemRect.top() + spacing + margins.top() + itemRect.height() / 2;
 		if (dropPos.y() < itemMiddle) {
 			insertAt = i;
 			break;
