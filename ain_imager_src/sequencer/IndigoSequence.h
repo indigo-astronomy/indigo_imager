@@ -36,6 +36,7 @@ public:
 
 	void addItem(IndigoSequenceItem *item);
 	void removeItem(IndigoSequenceItem* item);
+	void setIdle();
 
 	int itemCount() const;
 	QList<IndigoSequenceItem *> getItems() const;

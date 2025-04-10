@@ -282,6 +282,7 @@ void IndigoSequence::addItemFromMenu() {
 
 	int insertAt = determineInsertPosition(contextMenuPos);
 	containerLayout->insertWidget(insertAt, item);
+	setIdle();
 }
 
 void IndigoSequence::dragEnterEvent(QDragEnterEvent *event) {
@@ -367,6 +368,7 @@ void IndigoSequence::dropEvent(QDropEvent *event) {
 			}
 			dragSourceWidget = nullptr;
 		}
+		setIdle();
 		event->acceptProposedAction();
 	}
 }
@@ -466,6 +468,7 @@ void IndigoSequence::removeItem(IndigoSequenceItem* item) {
 			break;
 		}
 	}
+	setIdle();
 }
 
 void IndigoSequence::onNumericRangeChanged(const QString& type, int paramId, double min, double max) {
@@ -857,4 +860,22 @@ int IndigoSequence::getItemIndexByExecutedStep(int executedIndex) const {
 		}
 	}
 	return -1;
+}
+
+void IndigoSequence::setIdle() {
+	for (int i = 0; i < containerLayout->count(); ++i) {
+		IndigoSequenceItem* item = qobject_cast<IndigoSequenceItem*>(containerLayout->itemAt(i)->widget());
+		if (!item) continue;
+
+		item->setIdle();
+		if (item->getType() == "repeat") {
+			QVBoxLayout* repeatLayout = item->getRepeatLayout();
+			for (int j = 0; j < repeatLayout->count(); ++j) {
+				IndigoSequenceItem* nestedItem = qobject_cast<IndigoSequenceItem*>(repeatLayout->itemAt(j)->widget());
+				if (nestedItem) {
+					nestedItem->setIdle();
+				}
+			}
+		}
+	}
 }

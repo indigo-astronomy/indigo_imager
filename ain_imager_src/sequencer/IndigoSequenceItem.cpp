@@ -373,6 +373,7 @@ QVariant IndigoSequenceItem::getParameter(const int paramID) const {
 
 void IndigoSequenceItem::removeWidget() {
 	if(!isEnabledState) return;
+	resetParentSequence();
 	delete this;
 }
 
@@ -591,6 +592,8 @@ void IndigoSequenceItem::dropEvent(QDropEvent *event) {
 
 		draggedWidget->show();
 
+		resetParentSequence();
+
 		event->setDropAction(Qt::MoveAction);
 		event->accept();
 		return;
@@ -773,6 +776,21 @@ void IndigoSequenceItem::addItemFromMenu() {
 	// Determine position to insert using the stored position
 	int insertAt = determineInsertPosition(contextMenuPos);
 	repeatLayout->insertWidget(insertAt, item);
+	resetParentSequence();
+}
+
+void IndigoSequenceItem::resetParentSequence() {
+	IndigoSequence* sequence = nullptr;
+	QWidget* parent = parentWidget();
+	while (parent) {
+		if (sequence = qobject_cast<IndigoSequence*>(parent)) {
+			break;
+		}
+		parent = parent->parentWidget();
+	}
+	if (sequence) {
+		sequence->setIdle();
+	}
 }
 
 void IndigoSequenceItem::updateNumericRange(int paramId, double min, double max) {

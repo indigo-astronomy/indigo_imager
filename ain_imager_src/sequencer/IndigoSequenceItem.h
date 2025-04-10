@@ -88,6 +88,7 @@ protected:
 	void dragLeaveEvent(QDragLeaveEvent *event) override;
 	void dropEvent(QDropEvent *event) override;
 	void contextMenuEvent(QContextMenuEvent *event) override;
+	void resetParentSequence();
 
 private slots:
 	void addItemFromMenu();
