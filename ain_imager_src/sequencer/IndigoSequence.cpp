@@ -330,6 +330,13 @@ void IndigoSequence::dropEvent(QDropEvent *event) {
 			int insertAt = determineInsertPosition(event->pos());
 			containerLayout->insertWidget(insertAt, dragSourceWidget);
 
+			// Check if the parent loop is omitted and propagate the omitted state
+			QWidget* parentWidget = dragSourceWidget->parentWidget();
+			IndigoSequenceItem* parentItem = qobject_cast<IndigoSequenceItem*>(parentWidget);
+			if (parentItem && parentItem->getType() == "repeat" && parentItem->isOmitted()) {
+				isOmitted = true;
+			}
+
 			dragSourceWidget->setOmitted(isOmitted);
 
 			// Restore parameters

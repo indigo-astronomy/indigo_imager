@@ -571,8 +571,6 @@ void IndigoSequenceItem::dropEvent(QDropEvent *event) {
 			return;
 		}
 
-		bool omittedState = draggedWidget->isOmitted();
-
 		// Determine position to insert
 		int insertAt = determineInsertPosition(event->pos());
 		int index = getIndexOfItem(draggedWidget);
@@ -586,7 +584,10 @@ void IndigoSequenceItem::dropEvent(QDropEvent *event) {
 		draggedWidget->setParent(this);
 		repeatLayout->insertWidget(insertAt, draggedWidget);
 
-		draggedWidget->setOmitted(omittedState);
+		// Propagate omitted state from parent loop
+		if (isOmitted()) {
+			draggedWidget->setOmitted(true);
+		}
 
 		draggedWidget->show();
 
