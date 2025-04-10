@@ -937,7 +937,7 @@ void IndigoSequenceItem::setEnabledState(bool enabled) {
 	}
 }
 
-void IndigoSequenceItem::setOmitted(bool omitted) {
+void IndigoSequenceItem::setOmitted(bool omitted, bool setChildren) {
 	if (m_omitted != omitted) {
 		m_omitted = omitted;
 		statusButton->setChecked(omitted);
@@ -945,12 +945,25 @@ void IndigoSequenceItem::setOmitted(bool omitted) {
 		setIdle();
 
 		// Propagate omitted state to nested items if this is a repeat block
-		if (type == SC_REPEAT && repeatLayout) {
+		if (type == SC_REPEAT && repeatLayout && setChildren) {
 			for (int i = 0; i < repeatLayout->count(); ++i) {
 				IndigoSequenceItem* nestedItem = qobject_cast<IndigoSequenceItem*>(repeatLayout->itemAt(i)->widget());
 				if (nestedItem) {
 					nestedItem->setOmitted(omitted);
 				}
+			}
+		}
+
+		// If this item is not omitted and in a repeat block, ensure the parent repeat block is also not omitted
+		if (!omitted) {
+			QWidget* parent = parentWidget();
+			while (parent) {
+				IndigoSequenceItem* parentItem = qobject_cast<IndigoSequenceItem*>(parent);
+				if (parentItem && parentItem->type == SC_REPEAT) {
+					parentItem->setOmitted(false, false);
+					break;
+				}
+				parent = parent->parentWidget();
 			}
 		}
 	}

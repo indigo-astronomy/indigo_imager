@@ -48,7 +48,7 @@ public:
 	void hideDragOverlay();
 
 	bool isOmitted() const { return m_omitted; }
-	void setOmitted(bool omitted);
+	void setOmitted(bool omitted, bool setChildren = true);
 
 	void updateNumericRange(int paramId, double min, double max);
 	void updateNestedNumericRanges(const QString& type, int paramId, double min, double max);
