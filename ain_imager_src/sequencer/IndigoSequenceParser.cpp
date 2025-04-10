@@ -35,14 +35,20 @@ QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
 	const char lpMarker[] = "&<L*";
 	const char rpMarker[] = "&>R*";
 
-	// remove comments (but preserve //* comments that disable calls)
-	QRegularExpression commentRe(R"(//(?!\*).*$)");
-	code.remove(commentRe);
+
+	QString processedCode = "";
+	QStringList lines = code.split('\n');
+	for (const QString& line : lines) {
+		// skip regular comments (not a //* - omitted item)
+		if (line.trimmed().startsWith("//") && !line.trimmed().startsWith("//*")) {
+			continue;
+		}
+		processedCode += line + "\n";
+	}
 
 	// replace parentheses in strings with markers as they confuse parser
-	QString processedCode = code;
 	QRegularExpression stringRe(R"(\"[^\"]*\"|\'[^\']*\')");
-	QRegularExpressionMatchIterator stringIt = stringRe.globalMatch(code);
+	QRegularExpressionMatchIterator stringIt = stringRe.globalMatch(processedCode);
 
 	while (stringIt.hasNext()) {
 		QRegularExpressionMatch stringMatch = stringIt.next();
