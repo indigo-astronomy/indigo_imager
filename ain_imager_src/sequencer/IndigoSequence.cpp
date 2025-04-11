@@ -781,7 +781,7 @@ double IndigoSequence::totalExposure() const {
 
 	for (int i = 0; i < containerLayout->count(); ++i) {
 		IndigoSequenceItem* item = qobject_cast<IndigoSequenceItem*>(containerLayout->itemAt(i)->widget());
-		if (!item) continue;
+		if (!item || item->isOmitted()) continue;
 
 		if (item->getType() == SC_CAPTURE_BATCH) {
 			int count = item->getParameter(0).toInt();
@@ -792,7 +792,7 @@ double IndigoSequence::totalExposure() const {
 			QVBoxLayout* repeatLayout = item->getRepeatLayout();
 			for (int j = 0; j < repeatLayout->count(); ++j) {
 				IndigoSequenceItem* nestedItem = qobject_cast<IndigoSequenceItem*>(repeatLayout->itemAt(j)->widget());
-				if (!nestedItem) continue;
+				if (!nestedItem || nestedItem->isOmitted()) continue;
 
 				if (nestedItem->getType() == SC_CAPTURE_BATCH) {
 					int count = nestedItem->getParameter(0).toInt();
