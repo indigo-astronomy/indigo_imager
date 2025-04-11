@@ -999,4 +999,5 @@ void IndigoSequenceItem::toggleOmitted() {
 	}
 	bool newState = statusButton->isChecked();
 	setOmitted(newState);
+	resetParentSequence();
 }
