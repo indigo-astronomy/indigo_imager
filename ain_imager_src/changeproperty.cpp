@@ -122,18 +122,21 @@ void ImagerWindow::change_ccd_localmode_property(const char *agent, const QStrin
 			CCD_LOCAL_MODE_OBJECT_ITEM_NAME,
 			CCD_LOCAL_MODE_PREFIX_ITEM_NAME
 		};
+
+		char object_cstr[INDIGO_VALUE_SIZE];
+		strncpy(object_cstr, m_object_name_str.toUtf8().constData(), INDIGO_VALUE_SIZE);
 		char *values[] {
-			(char *)object.toStdString().c_str(),
+			object_cstr,
 			"%o_%-D_%F_%C_%M"
 		};
 		indigo_change_text_property(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, 2, items, (const char **)values);
 	} else {
 		indigo_debug("LOCAL_MODE property does not have OBJECT item");
 		m_remote_object_name = object;
-		add_fits_keyword_string(agent, "OBJECT", m_object_name_str);
+		add_fits_keyword_string(agent, "OBJECT", m_object_name_str.toUtf8().constData());
 
 		char value[INDIGO_VALUE_SIZE];
-		snprintf(value, INDIGO_VALUE_SIZE, "%s_%%-D_%%F_%%C_%%M", (char *)m_object_name_str.toStdString().c_str());
+		snprintf(value, INDIGO_VALUE_SIZE, "%s_%%-D_%%F_%%C_%%M", (char *)m_object_name_str.toUtf8().constData());
 		indigo_debug("Setting prefix to: %s", value);
 
 		indigo_change_text_property_1_raw(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, CCD_LOCAL_MODE_PREFIX_ITEM_NAME, value);
