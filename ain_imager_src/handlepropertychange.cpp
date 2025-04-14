@@ -1905,7 +1905,6 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 				}
 				if (client_match_item(&p->items[i], "COUNT")) {
 					loop_iteration = (int)p->items[i].number.value;
-					//indigo_error("LOOP_0 -> iteration %d", loop_iteration);
 				}
 			}
 		}
@@ -1936,35 +1935,12 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 
 			w->m_sequence_editor2->scrollToItem(executed_index);
 			IndigoSequenceItem *seq_item = nullptr;
-			for (int i = 0; i < executed_index; i++) {
-				seq_item = w->m_sequence_editor2->getItemAt(i);
-				if (seq_item) {
-					seq_item->setOk();
-				}
-			}
-			seq_item = w->m_sequence_editor2->getItemAt(executed_index);
-			if (seq_item) {
-				seq_item->setBusy();
-			}
-
 			int item_count = w->m_sequence_editor2->itemCount();
 
 			for (int i = executed_index + 1; i < item_count; i++) {
 				seq_item = w->m_sequence_editor2->getItemAt(i);
 				if (seq_item) {
 					seq_item->setIdle();
-				}
-			}
-
-			for (int i = 0; i < item_count; i++) {
-				seq_item = w->m_sequence_editor2->getItemAt(i);
-				if (seq_item) {
-					if (i == loop_at_index) {
-						seq_item->setBusy();
-						seq_item->setIteration(loop_iteration + 1);
-					} else {
-						seq_item->setIteration(0);
-					}
 				}
 			}
 
@@ -1980,27 +1956,9 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 
 			if(sequence_step >= 0) { // NOTE: should be sequence_step not executed_index
 				//indigo_error("SEQUENCE_STATE -> sequence step %d -> %d", sequence_step, executed_index);
-				int item_count = w->m_sequence_editor2->itemCount();
-				for (int i = 0; i < item_count; i++) {
-					IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(i);
-					if (seq_item) {
-						seq_item->setOk();
-						seq_item->setIteration(0); // in case of loop set iteration to 0
-					}
-				}
-
 				w->m_seq_sequence_progress->setValue(complete);
 				w->m_seq_sequence_progress->setFormat("Sequence: %v\% complete");
 			} else {
-				for (int i = 0; i < w->m_sequence_editor2->itemCount(); i++) {
-					IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(i);
-					if (seq_item) {
-						seq_item->setIdle();
-						seq_item->setIteration(0); // in case of loop set iteration to 0
-					} else {
-						break;
-					}
-				}
 				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-grey.png\"> Idle");
 				w->m_seq_exposure_progress->setRange(0, 1);
 				w->m_seq_exposure_progress->setValue(0);
@@ -2017,26 +1975,39 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			w->set_widget_state(w->m_seq_start_button, INDIGO_OK_STATE);
 			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 
-			IndigoSequenceItem *seq_item = w->m_sequence_editor2->getItemAt(executed_index - 1);
-			if (seq_item) {
-				seq_item->setOk();
-			}
-			seq_item = w->m_sequence_editor2->getItemAt(executed_index);
-			if (seq_item) {
-				seq_item->setAlert();
-			}
-			if (loop_at_index >= 0) {
-				seq_item = w->m_sequence_editor2->getItemAt(loop_at_index);
-				if (seq_item) {
-					seq_item->setAlert();
-				}
-			}
 			w->set_text(w->m_imager_status_label, "<img src=\":resource/led-red.png\"> Failed");
 			w->m_seq_sequence_progress->setValue(complete);
 			w->m_seq_sequence_progress->setFormat("Sequence: Failed (%v\% cpmplete)");
 		}
-	} else if (!strcmp(property->name, "LOOP_0")) {
-		/* nothing yet */
+	} else if (!strcmp(property->name, "SEQUENCE_STEP_STATE")) {
+		for (int i = 0; i < property->count; i++) {
+			IndigoSequenceItem *seq_item = nullptr;
+			if(property->items[i].light.value == INDIGO_ALERT_STATE) {
+				int index = w->m_sequence_editor2->getItemIndexByExecutedStep(i);
+				seq_item = w->m_sequence_editor2->getItemAt(index);
+				if (seq_item) {
+					seq_item->setAlert();
+				}
+			} else if(property->items[i].light.value == INDIGO_OK_STATE) {
+				int index = w->m_sequence_editor2->getItemIndexByExecutedStep(i);
+				seq_item = w->m_sequence_editor2->getItemAt(index);
+				if (seq_item) {
+					seq_item->setOk();
+				}
+			} else if(property->items[i].light.value == INDIGO_BUSY_STATE) {
+				int index = w->m_sequence_editor2->getItemIndexByExecutedStep(i);
+				seq_item = w->m_sequence_editor2->getItemAt(index);
+				if (seq_item) {
+					seq_item->setBusy();
+				}
+			} else if(property->items[i].light.value == INDIGO_IDLE_STATE) {
+				int index = w->m_sequence_editor2->getItemIndexByExecutedStep(i);
+				seq_item = w->m_sequence_editor2->getItemAt(index);
+				if (seq_item) {
+					seq_item->setIdle();
+				}
+			}
+		}
 	}
 }
 
@@ -2834,7 +2805,8 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 
 	// Scripting Agent
 	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE") ||
-	    client_match_device_property(property, selected_scripting_agent, "LOOP_0")) {
+	    client_match_device_property(property, selected_scripting_agent, "LOOP_0") ||
+	    client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STEP_STATE")) {
 		update_scripting_sequence_state(this, property);
 	}
 	if (client_match_device_property(property, selected_scripting_agent, AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME)) {
@@ -3229,7 +3201,8 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 
 	// Scripting Agent
 	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE") ||
-	    client_match_device_property(property, selected_scripting_agent, "LOOP_0")) {
+	    client_match_device_property(property, selected_scripting_agent, "LOOP_0") ||
+	    client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STEP_STATE")) {
 		update_scripting_sequence_state(this, property);
 	}
 	if (client_match_device_property(property, selected_scripting_agent, AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME)) {
