@@ -110,6 +110,7 @@ IndigoSequence::IndigoSequence(QWidget *parent) : QWidget(parent), isEnabledStat
 			this, &IndigoSequence::onComboOptionsChanged);
 
 	connect(this, &IndigoSequence::enable, this, &IndigoSequence::setEnabledState);
+	connect(this, &IndigoSequence::setSequenceIdle, this, &IndigoSequence::setIdle);
 }
 
 

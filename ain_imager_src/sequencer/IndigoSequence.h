@@ -36,7 +36,6 @@ public:
 
 	void addItem(IndigoSequenceItem *item);
 	void removeItem(IndigoSequenceItem* item);
-	void setIdle();
 
 	int itemCount() const;
 	QList<IndigoSequenceItem *> getItems() const;
@@ -65,9 +64,11 @@ public:
 signals:
 	void requestSequence();
 	void enable(bool enabled);
+	void setSequenceIdle();
 
 public slots:
 	void setEnabledState(bool enabled);
+	void setIdle();
 
 protected:
 	void contextMenuEvent(QContextMenuEvent *event) override;
