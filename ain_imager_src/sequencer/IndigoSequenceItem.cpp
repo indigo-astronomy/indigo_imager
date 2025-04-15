@@ -82,7 +82,11 @@ void IndigoSequenceItem::setupUI() {
 	typeLabel->setFont(boldFont);
 	typeLabel->setContentsMargins(0, 0, 10, 0);
 	typeLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
-	typeLabel->setStyleSheet("background: transparent;");
+	if (type == SC_RECOVERY_POINT || type == SC_CONTINUE_ON_FAILURE || type == SC_ABORT_ON_FAILURE || type == SC_RECOVER_ON_FAILURE) {
+		typeLabel->setStyleSheet("color: grey; background: transparent;");
+	} else {
+		typeLabel->setStyleSheet("background: transparent;");
+	}
 
 	deleteButton = new QToolButton(this);
 	deleteButton->setText(QString::fromUtf8("\u2715"));
@@ -883,6 +887,8 @@ void IndigoSequenceItem::setIdle() {
 		statusButton->setIcon(QIcon(":/resource/led-noexec.png"));
 	} else if (type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/loop-grey.png"));
+	} else if (type == SC_RECOVERY_POINT || type == SC_CONTINUE_ON_FAILURE || type == SC_ABORT_ON_FAILURE || type == SC_RECOVER_ON_FAILURE) {
+		statusButton->setIcon(QIcon(":/resource/recovery_point.png"));
 	} else {
 		statusButton->setIcon(QIcon(":/resource/led-grey.png"));
 	}
@@ -895,6 +901,8 @@ void IndigoSequenceItem::setBusy() {
 		statusButton->setIcon(QIcon(":/resource/led-noexec.png"));
 	} else if (type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/loop-orange.png"));
+	} else if (type == SC_RECOVERY_POINT || type == SC_CONTINUE_ON_FAILURE || type == SC_ABORT_ON_FAILURE || type == SC_RECOVER_ON_FAILURE) {
+		statusButton->setIcon(QIcon(":/resource/recovery_point.png"));
 	} else {
 		statusButton->setIcon(QIcon(":/resource/led-orange.png"));
 	}
@@ -907,6 +915,8 @@ void IndigoSequenceItem::setAlert() {
 		statusButton->setIcon(QIcon(":/resource/led-noexec.png"));
 	} else if (type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/loop-red.png"));
+	} else if (type == SC_RECOVERY_POINT || type == SC_CONTINUE_ON_FAILURE || type == SC_ABORT_ON_FAILURE || type == SC_RECOVER_ON_FAILURE) {
+		statusButton->setIcon(QIcon(":/resource/recovery_point.png"));
 	} else {
 		statusButton->setIcon(QIcon(":/resource/led-red.png"));
 	}
@@ -919,6 +929,8 @@ void IndigoSequenceItem::setOk() {
 		statusButton->setIcon(QIcon(":/resource/led-noexec.png"));
 	} else if (type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/loop-green.png"));
+	} else if (type == SC_RECOVERY_POINT || type == SC_CONTINUE_ON_FAILURE || type == SC_ABORT_ON_FAILURE || type == SC_RECOVER_ON_FAILURE) {
+		statusButton->setIcon(QIcon(":/resource/recovery_point.png"));
 	} else {
 		statusButton->setIcon(QIcon(":/resource/led-green.png"));
 	}

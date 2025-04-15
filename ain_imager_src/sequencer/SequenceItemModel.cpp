@@ -78,6 +78,10 @@ void SequenceItemModel::initializeModel() {
 		{SC_PRECISE_GOTO, {"Precise Goto", {{0, {"Exposure (s)", DoubleSpinBox}}, {1, {"RA", LineEditSG_RA}}, {2, {"Dec", LineEditSG_DEC}}}}},
 		{SC_SET_ROTATOR_ANGLE, {"Set Rotator Angle", {{0, {"Angle(°)", DoubleSpinBox}}}}},
 		{SC_REPEAT, {"Repeat", {{0, {"Count", SpinBox}}}}},
+		{SC_CONTINUE_ON_FAILURE, {"Continue on Failure", {}}},
+		{SC_ABORT_ON_FAILURE, {"Abort on Failure", {}}},
+		{SC_RECOVER_ON_FAILURE, {"Recover on Failure", {}}},
+		{SC_RECOVERY_POINT, {"Recovery Point", {}}},
 		{SC_SET_FITS_HEADER, {"Set FITS Header", {{0, {"Keyword", LineEdit}}, {1, {"Value", LineEdit}}}}},
 		{SC_REMOVE_FITS_HEADER, {"Remove FITS Header", {{0, {"Keyword", LineEdit}}}}}
 	};
@@ -144,8 +148,14 @@ void SequenceItemModel::initializeModel() {
 			SC_SET_ROTATOR_ANGLE
 		}},
 		{__SEPARATOR__, {}},
-		{CC_LOOP, {
-			SC_REPEAT
+		{CC_FLOW_CONTROL, {
+			SC_REPEAT,
+			__SEPARATOR__,
+			SC_CONTINUE_ON_FAILURE,
+			SC_ABORT_ON_FAILURE,
+			__SEPARATOR__,
+			SC_RECOVER_ON_FAILURE,
+			SC_RECOVERY_POINT
 		}},
 		{__SEPARATOR__, {}},
 		{CC_DEVICES, {
@@ -177,7 +187,7 @@ void SequenceItemModel::initializeModel() {
 	categoryIcons = {
 		{CC_CAPTURE, QIcon(":resource/shutter-grey.png")},
 		{CC_FILTER_WHEEL, QIcon(":resource/wheel-grey.png")},
-		{CC_LOOP, QIcon(":resource/menu-loop-grey.png")},
+		{CC_FLOW_CONTROL, QIcon(":resource/menu-loop-grey.png")},
 		{CC_MOUNT, QIcon(":resource/mount-grey.png")},
 		{CC_GUIDER, QIcon(":resource/guider-grey.png")},
 		{CC_FOCUSER, QIcon(":resource/focuser-grey.png")},

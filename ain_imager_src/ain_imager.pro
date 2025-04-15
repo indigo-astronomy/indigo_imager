@@ -113,6 +113,7 @@ RESOURCES += \
 	$$PWD/../resource/loop-orange.png \
 	$$PWD/../resource/loop-green.png \
 	$$PWD/../resource/loop-red.png \
+	$$PWD/../resource/recovery_point.png \
 	$$PWD/../resource/menu-loop-grey.png \
 	$$PWD/../resource/wheel-grey.png \
 	$$PWD/../resource/rotator-grey.png \
