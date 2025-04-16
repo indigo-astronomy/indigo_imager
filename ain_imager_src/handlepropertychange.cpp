@@ -1895,22 +1895,7 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			}
 		}
 
-		int loop_iteration = -1;
-		int loop_at_step = -1;
-		indigo_property *p = properties.get(property->device, "LOOP_0");
-		if (p) {
-			for (int i = 0; i < p->count; i++) {
-				if (client_match_item(&p->items[i], "STEP")) {
-					loop_at_step = (int)p->items[i].number.value;
-				}
-				if (client_match_item(&p->items[i], "COUNT")) {
-					loop_iteration = (int)p->items[i].number.value;
-				}
-			}
-		}
-
 		int executed_index = w->m_sequence_editor2->getItemIndexByExecutedStep(sequence_step);
-		int loop_at_index = w->m_sequence_editor2->getItemIndexByExecutedStep(loop_at_step);
 
 		int complete = (progress_total != 0) ? (int)((double)progress / progress_total * 100 + 0.5) : 0;
 		w->m_seq_sequence_progress->setRange(0, 100);
@@ -1980,31 +1965,39 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			w->m_seq_sequence_progress->setFormat("Sequence: Failed (%v\% cpmplete)");
 		}
 	} else if (!strcmp(property->name, "SEQUENCE_STEP_STATE")) {
+		int loop_iteration = -1;
+		int loop_at_step = -1;
+		indigo_property *p = properties.get(property->device, "LOOP_0");
+		if (p) {
+			for (int i = 0; i < p->count; i++) {
+				if (client_match_item(&p->items[i], "STEP")) {
+					loop_at_step = (int)p->items[i].number.value;
+				}
+				if (client_match_item(&p->items[i], "COUNT")) {
+					loop_iteration = (int)p->items[i].number.value;
+				}
+			}
+		}
+		int loop_at_index = w->m_sequence_editor2->getItemIndexByExecutedStep(loop_at_step);
+
 		for (int i = 0; i < property->count; i++) {
 			IndigoSequenceItem *seq_item = nullptr;
-			if(property->items[i].light.value == INDIGO_ALERT_STATE) {
-				int index = w->m_sequence_editor2->getItemIndexByExecutedStep(i);
-				seq_item = w->m_sequence_editor2->getItemAt(index);
-				if (seq_item) {
+			int index = w->m_sequence_editor2->getItemIndexByExecutedStep(i);
+			seq_item = w->m_sequence_editor2->getItemAt(index);
+			if (seq_item) {
+				if (property->items[i].light.value == INDIGO_ALERT_STATE) {
 					seq_item->setAlert();
-				}
-			} else if(property->items[i].light.value == INDIGO_OK_STATE) {
-				int index = w->m_sequence_editor2->getItemIndexByExecutedStep(i);
-				seq_item = w->m_sequence_editor2->getItemAt(index);
-				if (seq_item) {
+				} else if (property->items[i].light.value == INDIGO_OK_STATE) {
 					seq_item->setOk();
-				}
-			} else if(property->items[i].light.value == INDIGO_BUSY_STATE) {
-				int index = w->m_sequence_editor2->getItemIndexByExecutedStep(i);
-				seq_item = w->m_sequence_editor2->getItemAt(index);
-				if (seq_item) {
+				} else if (property->items[i].light.value == INDIGO_BUSY_STATE) {
 					seq_item->setBusy();
-				}
-			} else if(property->items[i].light.value == INDIGO_IDLE_STATE) {
-				int index = w->m_sequence_editor2->getItemIndexByExecutedStep(i);
-				seq_item = w->m_sequence_editor2->getItemAt(index);
-				if (seq_item) {
+				} else if(property->items[i].light.value == INDIGO_IDLE_STATE) {
 					seq_item->setIdle();
+				}
+				if (i == loop_at_step) {
+					seq_item->setIteration(loop_iteration + 1);
+				} else {
+					seq_item->setIteration(0);
 				}
 			}
 		}
