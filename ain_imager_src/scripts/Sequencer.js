@@ -1,5 +1,13 @@
 // MARK: Sequence class
 
+const SCRIPTING_AGENT = 0;
+const CONFIGURATION_AGENT = 1;
+const IMAGER_AGENT = 2;
+const MOUNT_AGENT = 3;
+const GUIDER_AGENT = 4;
+const ASTROMETRY_AGENT = 5;
+const SERVER = 6;
+
 function Sequence(name) {
 	this.name = name == undefined ? "" : name;
 	this.step = 0;
@@ -8,6 +16,14 @@ function Sequence(name) {
 	this.exposure = 0;
 	this.sequence = [];
 	this.reset_loop_content_state = true;
+}
+
+Sequence.prototype.enable_reset_loop_content_state = function() {
+	this.reset_loop_content_state = true;
+}
+
+Sequence.prototype.disable_reset_loop_content_state = function() {
+	this.reset_loop_content_state = false;
 }
 
 Sequence.prototype.repeat = function(count, block) {
@@ -368,9 +384,9 @@ Sequence.prototype.set_rotator_angle = function(value) {
 };
 
 Sequence.prototype.start = function(imager_agent, mount_agent, guider_agent) {
-	indigo_sequencer.devices[2] = imager_agent == undefined ? "Imager Agent" : imager_agent;
-	indigo_sequencer.devices[3] = mount_agent == undefined ? "Mount Agent" : mount_agent;
-	indigo_sequencer.devices[4] = guider_agent == undefined ? "Guider Agent" : guider_agent;
+	indigo_sequencer.devices[IMAGER_AGENT] = imager_agent == undefined ? "Imager Agent" : imager_agent;
+	indigo_sequencer.devices[MOUNT_AGENT] = mount_agent == undefined ? "Mount Agent" : mount_agent;
+	indigo_sequencer.devices[GUIDER_AGENT] = guider_agent == undefined ? "Guider Agent" : guider_agent;
 	indigo_sequencer.start(this.sequence, this.name, this.progress, this.exposure);
 };
 
@@ -394,14 +410,14 @@ var indigo_flipper = {
 			indigo_log("waiting_for_sync_and_center " + property.name + " -> " + property.state);
 		else if (this.waiting_for_guiding)
 			indigo_log("waiting_for_guiding " + property.name + " -> " + property.state);
-		if (this.waiting_for_transit && property.device == this.devices[3] && property.name == "AGENT_MOUNT_DISPLAY_COORDINATES_PROPERTY") {
+		if (this.waiting_for_transit && property.device == this.devices[MOUNT_AGENT] && property.name == "AGENT_MOUNT_DISPLAY_COORDINATES_PROPERTY") {
 			if (property.items.TIME_TO_TRANSIT <= 0) {
 				indigo_send_message("Meridian flip started");
 				this.waiting_for_transit = false;
 				this.waiting_for_slew = true;
-				indigo_change_switch_property(this.devices[3], "AGENT_START_PROCESS", { SLEW: true});
+				indigo_change_switch_property(this.devices[MOUNT_AGENT], "AGENT_START_PROCESS", { SLEW: true});
 			}
-		} else if (this.waiting_for_slew && property.device == this.devices[3] && property.name == "AGENT_START_PROCESS") {
+		} else if (this.waiting_for_slew && property.device == this.devices[MOUNT_AGENT] && property.name == "AGENT_START_PROCESS") {
 			if (property.state == "Alert") {
 				delete indigo_event_handlers.indigo_flipper;
 				indigo_send_message("Meridian flip failed (due to slew failure)");
@@ -410,17 +426,17 @@ var indigo_flipper = {
 				this.waiting_for_slew = false;
 				if (this.use_solver) {
 					this.waiting_for_sync_and_center = true;
-					indigo_change_switch_property(this.devices[5], "AGENT_START_PROCESS", { CENTER: true});
+					indigo_change_switch_property(this.devices[ASTROMETRY_AGENT], "AGENT_START_PROCESS", { CENTER: true});
 				} else if (this.resume_guiding) {
 					this.waiting_for_guiding = true;
-					indigo_change_switch_property(this.devices[4], "AGENT_START_PROCESS", { GUIDING: true});
+					indigo_change_switch_property(this.devices[GUIDER_AGENT], "AGENT_START_PROCESS", { GUIDING: true});
 				} else {
 					delete indigo_event_handlers.indigo_flipper;
 					indigo_send_message("Meridian flip finished");
-					indigo_change_switch_property(this.devices[2], "AGENT_PAUSE_PROCESS", { PAUSE_AFTER_TRANSIT: false});
+					indigo_change_switch_property(this.devices[IMAGER_AGENT], "AGENT_PAUSE_PROCESS", { PAUSE_AFTER_TRANSIT: false});
 				}
 			}
-		} else if (this.waiting_for_sync_and_center && property.device == this.devices[5] && property.name == "AGENT_START_PROCESS") {
+		} else if (this.waiting_for_sync_and_center && property.device == this.devices[ASTROMETRY_AGENT] && property.name == "AGENT_START_PROCESS") {
 			if (property.state == "Alert") {
 				indigo_send_message("Meridian flip failed (due to sync & center failure)");
 				delete indigo_event_handlers.indigo_flipper;
@@ -429,14 +445,14 @@ var indigo_flipper = {
 				this.waiting_for_sync_and_center = false;
 				if (this.resume_guiding) {
 					this.waiting_for_guiding = true;
-					indigo_change_switch_property(this.devices[4], "AGENT_START_PROCESS", { GUIDING: true});
+					indigo_change_switch_property(this.devices[GUIDER_AGENT], "AGENT_START_PROCESS", { GUIDING: true});
 				} else {
 					delete indigo_event_handlers.indigo_flipper;
 					indigo_send_message("Meridian flip finished");
-					indigo_change_switch_property(this.devices[2], "AGENT_PAUSE_PROCESS", { PAUSE_AFTER_TRANSIT: false});
+					indigo_change_switch_property(this.devices[IMAGER_AGENT], "AGENT_PAUSE_PROCESS", { PAUSE_AFTER_TRANSIT: false});
 				}
 			}
-		} else if (this.waiting_for_guiding && property.device == this.devices[4] && property.name == "AGENT_START_PROCESS") {
+		} else if (this.waiting_for_guiding && property.device == this.devices[GUIDER_AGENT] && property.name == "AGENT_START_PROCESS") {
 			if (property.state == "Alert") {
 				indigo_send_message("Meridian flip failed (due to guiding failure)");
 				delete indigo_event_handlers.indigo_flipper;
@@ -444,13 +460,13 @@ var indigo_flipper = {
 			} else if (property.state == "Busy") {
 				delete indigo_event_handlers.indigo_flipper;
 				indigo_send_message("Meridian flip finished");
-				indigo_change_switch_property(this.devices[2], "AGENT_PAUSE_PROCESS", { PAUSE_AFTER_TRANSIT: false});
+				indigo_change_switch_property(this.devices[IMAGER_AGENT], "AGENT_PAUSE_PROCESS", { PAUSE_AFTER_TRANSIT: false});
 			}
 		}
 	},
 	
 	start: function(use_solver) {
-		var guider_agent = indigo_devices[this.devices[4]];
+		var guider_agent = indigo_devices[this.devices[GUIDER_AGENT]];
 		if (guider_agent != null) {
 			var guider_process = guider_agent.AGENT_START_PROCESS;
 			if (guider_process.items.CALIBRATION_AND_GUIDING || guider_process.items.GUIDING) {
@@ -497,6 +513,7 @@ var indigo_sequencer = {
 	wait_for_value_tolerance: null,
 	wait_for_timer: null,
 	ignore_failure: false,
+	allow_busy_state: false,
 	skip_to_recovery_point: false,
 	failure_handling: 0,
 	use_solver: false,
@@ -505,12 +522,12 @@ var indigo_sequencer = {
 	
 	update_step_state: function(step, state) {
 		this.step_states["" + step] = state;
-		indigo_update_light_property(this.devices[0], "SEQUENCE_STEP_STATE", this.step_states, "Ok");
+		indigo_update_light_property(this.devices[SCRIPTING_AGENT], "SEQUENCE_STEP_STATE", this.step_states, "Ok");
 	},
 	
 	on_update: function(property) {
 		if (this.sequence != null) {
-			if (property.device == this.devices[2] && property.name == "AGENT_PAUSE_PROCESS" && property.state == "Busy" && property.items.PAUSE_AFTER_TRANSIT) {
+			if (property.device == this.devices[IMAGER_AGENT] && property.name == "AGENT_PAUSE_PROCESS" && property.state == "Busy" && property.items.PAUSE_AFTER_TRANSIT) {
 				indigo_flipper.devices = this.devices;
 				indigo_flipper.start(this.use_solver);
 			} else if (property.device == this.wait_for_device && property.name == this.wait_for_property) {
@@ -530,18 +547,18 @@ var indigo_sequencer = {
 				if (property.state == "Alert") {
 					this.wait_for_device = null;
 					this.wait_for_property = null;
-					this.wait_for_property_state = "Ok";
 					this.wait_for_item = null;
 					this.wait_for_value = null;
 					this.wait_for_value_tolerance = null;
+					this.wait_for_property_state = "Ok";
 					this.failure(property.name + " reports alert");
 				} else if (property.state == this.wait_for_property_state) {
 					this.wait_for_device = null;
 					this.wait_for_property = null;
-					this.wait_for_property_state = "Ok";
 					this.wait_for_item = null;
 					this.wait_for_value = null;
 					this.wait_for_value_tolerance = null;
+					this.wait_for_property_state = "Ok";
 					this.ignore_failure = false;
 					indigo_set_timer(indigo_sequencer_next_ok_handler, 0);
 				}
@@ -550,43 +567,43 @@ var indigo_sequencer = {
 	},
 	
 	on_enumerate_properties: function(property) {
-		if (property.device == null || property.device == this.devices[0]) {
+		if (property.device == null || property.device == this.devices[SCRIPTING_AGENT]) {
 			if (property.name == null || property.name == "SEQUENCE_NAME") {
-				indigo_define_text_property(this.devices[0], "SEQUENCE_NAME", "Sequencer", "Sequence name", { NAME: this.name }, { NAME: { label: "Name" }}, "Ok", "RO");
+				indigo_define_text_property(this.devices[SCRIPTING_AGENT], "SEQUENCE_NAME", "Sequencer", "Sequence name", { NAME: this.name }, { NAME: { label: "Name" }}, "Ok", "RO");
 			}
 			if (property.name == null || property.name == "SEQUENCE_STATE") {
-				indigo_define_number_property(this.devices[0], "SEQUENCE_STATE", "Sequencer", "State", { STEP: this.step, PROGRESS: this.progress, PROGRESS_TOTAL: this.progress_total, EXPOSURE: this.exposure, EXPOSURE_TOTAL: this.exposure_total }, { STEP: { label: "Executing step", format: "%g", min: -1, max: 1000000, step: 1 }, PROGRESS: { label: "Progress", format: "%g", min: 0, max: 1000000, step: 1 }, PROGRESS_TOTAL: { label: "Progress total", format: "%g", min: 0, max: 1000000, step: 1 }, EXPOSURE: { label: "Exposure time elapsed", format: "%g", min: 0, max: 1000000, step: 1 }, EXPOSURE_TOTAL: { label: "Exposure time total", format: "%g", min: 0, max: 1000000, step: 1 }}, this.sequence_state, "RO");
+				indigo_define_number_property(this.devices[SCRIPTING_AGENT], "SEQUENCE_STATE", "Sequencer", "State", { STEP: this.step, PROGRESS: this.progress, PROGRESS_TOTAL: this.progress_total, EXPOSURE: this.exposure, EXPOSURE_TOTAL: this.exposure_total }, { STEP: { label: "Executing step", format: "%g", min: -1, max: 1000000, step: 1 }, PROGRESS: { label: "Progress", format: "%g", min: 0, max: 1000000, step: 1 }, PROGRESS_TOTAL: { label: "Progress total", format: "%g", min: 0, max: 1000000, step: 1 }, EXPOSURE: { label: "Exposure time elapsed", format: "%g", min: 0, max: 1000000, step: 1 }, EXPOSURE_TOTAL: { label: "Exposure time total", format: "%g", min: 0, max: 1000000, step: 1 }}, this.sequence_state, "RO");
 			}
 			if (property.name == null || property.name == "SEQUENCE_STEP_STATE") {
-				indigo_define_light_property(this.devices[0], "SEQUENCE_STEP_STATE", "Sequencer", "Step state", this.step_states, this.step_states_defs, "Ok");
+				indigo_define_light_property(this.devices[SCRIPTING_AGENT], "SEQUENCE_STEP_STATE", "Sequencer", "Step state", this.step_states, this.step_states_defs, "Ok");
 			}
 			if (property.name == null || property.name == "AGENT_ABORT_PROCESS") {
-				indigo_define_switch_property(this.devices[0], "AGENT_ABORT_PROCESS", "Sequencer", "Abort sequence", { ABORT: false }, { ABORT: { label: "Abort" }}, this.abort_state, "RW", "OneOfMany");
+				indigo_define_switch_property(this.devices[SCRIPTING_AGENT], "AGENT_ABORT_PROCESS", "Sequencer", "Abort sequence", { ABORT: false }, { ABORT: { label: "Abort" }}, this.abort_state, "RW", "OneOfMany");
 			}
 			if (property.name == null || property.name == "AGENT_PAUSE_PROCESS") {
-				indigo_define_switch_property(this.devices[0], "AGENT_PAUSE_PROCESS", "Sequencer", "Pause sequence", { PAUSE_WAIT: this.paused }, { PAUSE_WAIT: { label: "Pause (before next operation)" }}, this.pause_state, "RW", "OneOfMany");
+				indigo_define_switch_property(this.devices[SCRIPTING_AGENT], "AGENT_PAUSE_PROCESS", "Sequencer", "Pause sequence", { PAUSE_WAIT: this.paused }, { PAUSE_WAIT: { label: "Pause (before next operation)" }}, this.pause_state, "RW", "OneOfMany");
 			}
 			if (property.name == null || property.name == "SEQUENCE_RESET") {
-				indigo_define_switch_property(this.devices[0], "SEQUENCE_RESET", "Sequencer", "Reset sequence", { RESET: false }, { RESET: { label: "Reset" }}, "Ok", "RW", "OneOfMany");
+				indigo_define_switch_property(this.devices[SCRIPTING_AGENT], "SEQUENCE_RESET", "Sequencer", "Reset sequence", { RESET: false }, { RESET: { label: "Reset" }}, "Ok", "RW", "OneOfMany");
 			}
 			for (var i = 0; i < this.loop_level; i++) {
 				if (property.name == null || property.name == "LOOP_" + i) {
-					indigo_define_number_property(this.devices[0], "LOOP_" + i, "Sequencer", "Loop " + this.loop_level, { STEP: this.loop_step[i], COUNT: this.loop_count[i] }, { STEP: { label: "Loop at", format: "%g", min: 0, max: 10000, step: 1 }, COUNT: { label: "Itreations elapsed", format: "%g", min: 0, max: 10000, step: 1 }}, "Ok", "RO");
+					indigo_define_number_property(this.devices[SCRIPTING_AGENT], "LOOP_" + i, "Sequencer", "Loop " + this.loop_level, { STEP: this.loop_step[i], COUNT: this.loop_count[i] }, { STEP: { label: "Loop at", format: "%g", min: 0, max: 10000, step: 1 }, COUNT: { label: "Itreations elapsed", format: "%g", min: 0, max: 10000, step: 1 }}, "Ok", "RO");
 				}
 			}
 		}
 	},
 	
 	on_change_property: function(property) {
-		if (property.device == this.devices[0]) {
+		if (property.device == this.devices[SCRIPTING_AGENT]) {
 			if (property.name == "AGENT_ABORT_PROCESS") {
 				if (this.sequence != null) {
 					if (property.items.ABORT) {
-						indigo_update_switch_property(this.devices[0], "AGENT_ABORT_PROCESS", { ABORT: false }, this.abort_state = "Busy");
+						indigo_update_switch_property(this.devices[SCRIPTING_AGENT], "AGENT_ABORT_PROCESS", { ABORT: false }, this.abort_state = "Busy");
 						indigo_set_timer(indigo_sequencer_abort_handler, 0);
 					}
 				} else {
-					indigo_update_switch_property(this.devices[0], "AGENT_ABORT_PROCESS", { ABORT: false }, this.abort_state = "Alert");
+					indigo_update_switch_property(this.devices[SCRIPTING_AGENT], "AGENT_ABORT_PROCESS", { ABORT: false }, this.abort_state = "Alert");
 					this.abort_state = "Alert";
 				}
 			} else if (property.name == "AGENT_PAUSE_PROCESS") {
@@ -594,41 +611,40 @@ var indigo_sequencer = {
 					if (property.items.PAUSE_WAIT) {
 						if (!this.paused) {
 							if (this.capturing_batch) {
-								indigo_change_switch_property(this.devices[2], "AGENT_PAUSE_PROCESS", { "PAUSE_WAIT": true });
+								indigo_change_switch_property(this.devices[IMAGER_AGENT], "AGENT_PAUSE_PROCESS", { "PAUSE_WAIT": true });
 							}
 							this.paused = true;
-							indigo_update_switch_property(this.devices[0], "AGENT_PAUSE_PROCESS", { PAUSE_WAIT: true }, this.pause_state = "Busy");
+							indigo_update_switch_property(this.devices[SCRIPTING_AGENT], "AGENT_PAUSE_PROCESS", { PAUSE_WAIT: true }, this.pause_state = "Busy");
 							indigo_send_message("Sequence paused");
 						}
 					} else {
 						if (this.paused) {
 							if (this.capturing_batch) {
-								indigo_change_switch_property(this.devices[2], "AGENT_PAUSE_PROCESS", { "PAUSE_WAIT": false });
+								indigo_change_switch_property(this.devices[IMAGER_AGENT], "AGENT_PAUSE_PROCESS", { "PAUSE_WAIT": false });
 							}
 							this.paused = false;
-							indigo_update_switch_property(this.devices[0], "AGENT_PAUSE_PROCESS", { PAUSE_WAIT: false }, this.pause_state = "Ok");
+							indigo_update_switch_property(this.devices[SCRIPTING_AGENT], "AGENT_PAUSE_PROCESS", { PAUSE_WAIT: false }, this.pause_state = "Ok");
 							indigo_send_message("Sequence resumed");
 						}
 					}
 				} else {
 					this.paused = false;
-					indigo_update_switch_property(this.devices[0], "AGENT_PAUSE_PROCESS", { PAUSE_WAIT: false }, this.pause_state = "Alert");
+					indigo_update_switch_property(this.devices[SCRIPTING_AGENT], "AGENT_PAUSE_PROCESS", { PAUSE_WAIT: false }, this.pause_state = "Alert");
 				}
 			} else if (property.name == "SEQUENCE_RESET") {
 				if (property.items.RESET) {
 					this.step = -1;
-					indigo_update_number_property(this.devices[0], "SEQUENCE_STATE", { STEP: this.step }, this.sequence_state = "Ok");
+					indigo_update_number_property(this.devices[SCRIPTING_AGENT], "SEQUENCE_STATE", { STEP: this.step }, this.sequence_state = "Ok");
 					this.paused = false;
-					indigo_update_switch_property(this.devices[0], "AGENT_PAUSE_PROCESS", { PAUSE_WAIT: false }, this.pause_state = "Ok");
-					indigo_update_switch_property(this.devices[0], "AGENT_ABORT_PROCESS", { ABORT: false }, this.abort_state = "Ok");
+					indigo_update_switch_property(this.devices[SCRIPTING_AGENT], "AGENT_PAUSE_PROCESS", { PAUSE_WAIT: false }, this.pause_state = "Ok");
+					indigo_update_switch_property(this.devices[SCRIPTING_AGENT], "AGENT_ABORT_PROCESS", { ABORT: false }, this.abort_state = "Ok");
 					while (this.loop_level >= 0) {
-						indigo_delete_property(this.devices[0], "LOOP_" + this.loop_level--);
+						indigo_delete_property(this.devices[SCRIPTING_AGENT], "LOOP_" + this.loop_level--);
 					}
 					this.step_states = {};
 					this.step_states_defs = {};
-					indigo_delete_property(this.devices[0], "SEQUENCE_STEP_STATE");
-					indigo_define_light_property(this.devices[0], "SEQUENCE_STEP_STATE", "Sequencer", "Step state", this.step_states, this.step_states_defs, "Ok");
-					indigo_update_switch_property(this.devices[0], "SEQUENCE_RESET", { RESET: false }, "Ok");
+					indigo_redefine_light_property(this.devices[SCRIPTING_AGENT], "SEQUENCE_STEP_STATE", "Sequencer", "Step state", this.step_states, this.step_states_defs, "Ok");
+					indigo_update_switch_property(this.devices[SCRIPTING_AGENT], "SEQUENCE_RESET", { RESET: false }, "Ok");
 				}
 			}
 		}
@@ -644,18 +660,22 @@ var indigo_sequencer = {
 		this.sequence = null;
 		if (this.paused) {
 			this.paused = false;
-			indigo_update_switch_property(this.devices[0], "AGENT_PAUSE_PROCESS", { PAUSE_WAIT: false }, this.pause_state = "Ok");
+			indigo_update_switch_property(this.devices[SCRIPTING_AGENT], "AGENT_PAUSE_PROCESS", { PAUSE_WAIT: false }, this.pause_state = "Ok");
 		}
 		for (var device in this.devices) {
-			if (device != 0) {
-				if (this.devices[device].startsWith("Guider Agent")) {
-					// Do not abort guiding it may be started by the user!!!
+			if (device == 0) {
+				continue;
+			}
+			if (this.devices[device].startsWith("Guider Agent")) {
+				var property = indigo_devices[this.devices[device]].AGENT_START_PROCESS;
+				if (property != null && property.items.GUIDING) {
 					continue;
-				} else if (this.devices[device].startsWith("Astrometry Agent")) {
-					indigo_change_switch_property(this.devices[device], "AGENT_PLATESOLVER_ABORT", { "ABORT": true });
-				} else {
-					indigo_change_switch_property(this.devices[device], "AGENT_ABORT_PROCESS", { "ABORT": true });
 				}
+				indigo_change_switch_property(this.devices[device], "AGENT_ABORT_PROCESS", { "ABORT": true });
+			} else if (this.devices[device].startsWith("Astrometry Agent")) {
+				indigo_change_switch_property(this.devices[device], "AGENT_PLATESOLVER_ABORT", { "ABORT": true });
+			} else {
+				indigo_change_switch_property(this.devices[device], "AGENT_ABORT_PROCESS", { "ABORT": true });
 			}
 		}
 		if (this.wait_for_timer != null) {
@@ -663,8 +683,8 @@ var indigo_sequencer = {
 			this.wait_for_timer = null;
 		}
 		indigo_sequencer.update_step_state(indigo_sequencer.step, "Alert");
-		indigo_update_number_property(this.devices[0], "SEQUENCE_STATE", { STEP: this.step, PROGRESS: this.progress, PROGRESS_TOTAL: this.progress_total, EXPOSURE: this.exposure, EXPOSURE_TOTAL: this.exposure_total }, this.sequence_state = "Alert", "Sequence aborted");
-		indigo_update_switch_property(this.devices[0], "AGENT_ABORT_PROCESS", { ABORT: false }, this.abort_state = "Ok");
+		indigo_update_number_property(this.devices[SCRIPTING_AGENT], "SEQUENCE_STATE", { STEP: this.step, PROGRESS: this.progress, PROGRESS_TOTAL: this.progress_total, EXPOSURE: this.exposure, EXPOSURE_TOTAL: this.exposure_total }, this.sequence_state = "Alert", "Sequence aborted");
+		indigo_update_switch_property(this.devices[SCRIPTING_AGENT], "AGENT_ABORT_PROCESS", { ABORT: false }, this.abort_state = "Ok");
 	},
 	
 	start: function(sequence, name, progress_total, exposure_total) {
@@ -682,13 +702,13 @@ var indigo_sequencer = {
 			this.failure_handling = 0;
 			this.skip_to_recovery_point = false;
 			this.ignore_failure = false;
-			indigo_update_switch_property(this.devices[0], "AGENT_PAUSE_PROCESS", { PAUSE_WAIT: false }, this.pause_state = "Ok");
-			indigo_update_switch_property(this.devices[0], "AGENT_ABORT_PROCESS", { ABORT: false }, this.abort_state = "Ok");
-			indigo_update_number_property(this.devices[0], "SEQUENCE_STATE", { STEP: this.step, PROGRESS: this.progress, PROGRESS_TOTAL: this.progress_total, EXPOSURE: this.exposure, EXPOSURE_TOTAL: this.exposure_total }, this.sequence_state = "Busy");
+			indigo_update_switch_property(this.devices[SCRIPTING_AGENT], "AGENT_PAUSE_PROCESS", { PAUSE_WAIT: false }, this.pause_state = "Ok");
+			indigo_update_switch_property(this.devices[SCRIPTING_AGENT], "AGENT_ABORT_PROCESS", { ABORT: false }, this.abort_state = "Ok");
+			indigo_update_number_property(this.devices[SCRIPTING_AGENT], "SEQUENCE_STATE", { STEP: this.step, PROGRESS: this.progress, PROGRESS_TOTAL: this.progress_total, EXPOSURE: this.exposure, EXPOSURE_TOTAL: this.exposure_total }, this.sequence_state = "Busy");
 			this.name = name;
-			indigo_update_text_property(this.devices[0], "SEQUENCE_NAME", { NAME: this.name }, "Ok");
+			indigo_update_text_property(this.devices[SCRIPTING_AGENT], "SEQUENCE_NAME", { NAME: this.name }, "Ok");
 			while (this.loop_level >= 0) {
-				indigo_delete_property(this.devices[0], "LOOP_" + this.loop_level--);
+				indigo_delete_property(this.devices[SCRIPTING_AGENT], "LOOP_" + this.loop_level--);
 			}
 			this.sequence = sequence;
 			var last_step = -1;
@@ -699,17 +719,14 @@ var indigo_sequencer = {
 				if (entry.execute.startsWith("increment_loop(") || entry.execute.startsWith("exit_loop(")) {
 					continue;
 				}
-				//indigo_error(JSON.stringify(entry));
 				if (entry.step > last_step) {
 					last_step = entry.step;
 					var name = "" + last_step;
 					this.step_states[name] = "Idle";
-					//this.step_states_defs[name] = { label: entry.execute }
 					this.step_states_defs[name] = { label: name }
 				}
 			}
-			indigo_delete_property(this.devices[0], "SEQUENCE_STEP_STATE");
-			indigo_define_light_property(this.devices[0], "SEQUENCE_STEP_STATE", "Sequencer", "Step state", this.step_states, this.step_states_defs, "Ok");
+			indigo_redefine_light_property(this.devices[SCRIPTING_AGENT], "SEQUENCE_STEP_STATE", "Sequencer", "Step state", this.step_states, this.step_states_defs, "Ok");
 			indigo_send_message("Sequence started");
 			indigo_set_timer(indigo_sequencer_next_handler, 0.1);
 		}
@@ -732,7 +749,7 @@ var indigo_sequencer = {
 				if (current.execute == "exit_loop()") {
 					nesting--;
 					if (nesting <= 0) {
-						indigo_delete_property(this.devices[0], "LOOP_" + this.loop_level--);
+						indigo_delete_property(this.devices[SCRIPTING_AGENT], "LOOP_" + this.loop_level--);
 						this.loop_count.pop();
 					}
 				}
@@ -746,7 +763,7 @@ var indigo_sequencer = {
 				this.exposure = current.exposure;
 				this.capturing_batch = false;
 				indigo_log(current.execute);
-				indigo_update_number_property(this.devices[0], "SEQUENCE_STATE", { STEP: this.step, PROGRESS: this.progress, PROGRESS_TOTAL: this.progress_total, EXPOSURE: this.exposure, EXPOSURE_TOTAL: this.exposure_total }, this.sequence_state = "Busy");
+				indigo_update_number_property(this.devices[SCRIPTING_AGENT], "SEQUENCE_STATE", { STEP: this.step, PROGRESS: this.progress, PROGRESS_TOTAL: this.progress_total, EXPOSURE: this.exposure, EXPOSURE_TOTAL: this.exposure_total }, this.sequence_state = "Busy");
 				this.update_step_state(this.step, "Busy");
 				eval("indigo_sequencer." + current.execute);
 			} else {
@@ -755,13 +772,13 @@ var indigo_sequencer = {
 				this.sequence = null;
 				if (this.paused) {
 					this.paused = false;
-					indigo_update_switch_property(this.devices[0], "AGENT_PAUSE_PROCESS", { PAUSE_WAIT: false }, this.pause_state = "Ok");
+					indigo_update_switch_property(this.devices[SCRIPTING_AGENT], "AGENT_PAUSE_PROCESS", { PAUSE_WAIT: false }, this.pause_state = "Ok");
 				}
 				if (this.skip_to_recovery_point) {
-					indigo_update_number_property(this.devices[0], "SEQUENCE_STATE", { STEP: this.step, PROGRESS: this.progress, PROGRESS_TOTAL: this.progress_total, EXPOSURE: this.exposure, EXPOSURE_TOTAL: this.exposure_total }, this.sequence_state = "Alert");
+					indigo_update_number_property(this.devices[SCRIPTING_AGENT], "SEQUENCE_STATE", { STEP: this.step, PROGRESS: this.progress, PROGRESS_TOTAL: this.progress_total, EXPOSURE: this.exposure, EXPOSURE_TOTAL: this.exposure_total }, this.sequence_state = "Alert");
 					indigo_send_message("Sequence failed, no recovery point found");
 				} else {
-					indigo_update_number_property(this.devices[0], "SEQUENCE_STATE", { STEP: this.step, PROGRESS: this.progress, PROGRESS_TOTAL: this.progress_total, EXPOSURE: this.exposure, EXPOSURE_TOTAL: this.exposure_total }, this.sequence_state = "Ok");
+					indigo_update_number_property(this.devices[SCRIPTING_AGENT], "SEQUENCE_STATE", { STEP: this.step, PROGRESS: this.progress, PROGRESS_TOTAL: this.progress_total, EXPOSURE: this.exposure, EXPOSURE_TOTAL: this.exposure_total }, this.sequence_state = "Ok");
 					indigo_send_message("Sequence finished");
 				}
 			}
@@ -772,8 +789,8 @@ var indigo_sequencer = {
 		this.loop_level++;
 		this.loop_count.push(0);
 		this.loop_step.push(this.step);
-		indigo_define_number_property(this.devices[0], "LOOP_" + this.loop_level, "Sequencer", "Loop " + this.loop_step[this.loop_level], { STEP: this.step, COUNT: this.loop_count[this.loop_level] }, { STEP: { label: "Loop at", format: "%g", min: 0, max: 10000, step: 1 }, COUNT: { label: "Itreations elapsed", format: "%g", min: 0, max: 10000, step: 1 }}, "Ok", "RO");
-		indigo_set_timer(indigo_sequencer_next_handler, 0);
+		indigo_define_number_property(this.devices[SCRIPTING_AGENT], "LOOP_" + this.loop_level, "Sequencer", "Loop " + this.loop_step[this.loop_level], { STEP: this.step, COUNT: this.loop_count[this.loop_level] }, { STEP: { label: "Loop at", format: "%g", min: 0, max: 10000, step: 1 }, COUNT: { label: "Itreations elapsed", format: "%g", min: 0, max: 10000, step: 1 }}, "Ok", "RO");
+		indigo_set_timer(indigo_sequencer_next_handler, 0.1);
 	},
 	
 	reset_loop_content: function() {
@@ -793,15 +810,15 @@ var indigo_sequencer = {
 	},
 	
 	increment_loop: function(i) {
-		indigo_update_number_property(this.devices[0], "LOOP_" + this.loop_level, { COUNT: this.loop_count[this.loop_level] = i }, "Ok");
-		indigo_set_timer(indigo_sequencer_next_handler, 0);
+		indigo_update_number_property(this.devices[SCRIPTING_AGENT], "LOOP_" + this.loop_level, { COUNT: this.loop_count[this.loop_level] = i }, "Ok");
+		indigo_set_timer(indigo_sequencer_next_handler, 0.1);
 	},
 		
 	exit_loop: function() {
-		indigo_delete_property(this.devices[0], "LOOP_" + this.loop_level--);
+		indigo_delete_property(this.devices[SCRIPTING_AGENT], "LOOP_" + this.loop_level--);
 		this.loop_count.pop();
 		this.update_step_state(this.loop_step.pop(), "Ok");
-		indigo_set_timer(indigo_sequencer_next_handler, 0);
+		indigo_set_timer(indigo_sequencer_next_handler, 0.1);
 	},
 	
 	recovery_point: function(index) {
@@ -812,17 +829,18 @@ var indigo_sequencer = {
 		indigo_set_timer(indigo_sequencer_next_ok_handler, 0);
 	},
 	
-	set_switch: function(device, property_name, item, value, state, continue_if_busy) {
+	set_switch: function(device, property_name, item, value, state) {
 		var property = indigo_devices[device][property_name];
 		if (property == null) {
 			this.failure("Failed to set '" + property_name + "' on '" + device + "'");
 			return;
 		}
-
-		continue_if_busy = continue_if_busy == undefined ? false : continue_if_busy;
-		if (!continue_if_busy && property.state == "Busy") {
-			this.failure("Failed to set '" + property_name + "' '" + device + "' is busy");
-			return;
+		if (property.state == "Busy") {
+			if (!this.allow_busy_state) {
+				this.failure("Failed to set '" + property_name + "', '" + device + "' is busy");
+				return;
+			}
+			this.allow_busy_state = false;
 		}
 		var current_value = property.items[item];
 		if (current_value == null) {
@@ -836,13 +854,12 @@ var indigo_sequencer = {
 				}
 			}
 			if (!found) {
-				if (!property_name.conta)
 				this.failure("Failed to set '" + item + "' on '" + property_name + "'");
 				return;
 			}
 		}
-		if (current_value) {
-			if (!property_name.includes("_ON_")) {
+		if (current_value && value) {
+			if (!property_name.includes("_ON_") && property_name != "CCD_UPLOAD_MODE" ) {
 				this.warning("'" + property.item_defs[item].label + "' is already selected");
 			} else {
 				indigo_set_timer(indigo_sequencer_next_ok_handler, 0);
@@ -857,8 +874,8 @@ var indigo_sequencer = {
 		indigo_change_switch_property(device, property_name, items);
 	},
 
-	select_switch: function(device, property, item, state, continue_if_busy) {
-		this.set_switch(device, property, item, true, state, continue_if_busy);
+	select_switch: function(device, property, item, state) {
+		this.set_switch(device, property, item, true, state);
 	},
 	
 	deselect_switch: function(device, property, item) {
@@ -872,8 +889,11 @@ var indigo_sequencer = {
 			return;
 		}
 		if (property.state == "Busy") {
-			this.failure(device + " is busy");
-			return;
+			if (!this.allow_busy_state) {
+				this.failure("Failed to set '" + property_name + "', '" + device + "' is busy");
+				return;
+			}
+			this.allow_busy_state = false;
 		}
 		var empty = true;
 		for (var name in items) {
@@ -899,8 +919,11 @@ var indigo_sequencer = {
 			return;
 		}
 		if (property.state == "Busy") {
-			this.failure(device + " is busy");
-			return;
+			if (!this.allow_busy_state) {
+				this.failure("Failed to set '" + property_name + "', '" + device + "' is busy");
+				return;
+			}
+			this.allow_busy_state = false;
 		}
 		var empty = true;
 		for (var name in items) {
@@ -945,9 +968,9 @@ var indigo_sequencer = {
 			this.update_step_state(this.step, "Alert");
 			if (this.paused) {
 				this.paused = false;
-				indigo_update_switch_property(this.devices[0], "AGENT_PAUSE_PROCESS", { PAUSE_WAIT: false }, this.pause_state = "Ok");
+				indigo_update_switch_property(this.devices[SCRIPTING_AGENT], "AGENT_PAUSE_PROCESS", { PAUSE_WAIT: false }, this.pause_state = "Ok");
 			}
-			indigo_update_number_property(this.devices[0], "SEQUENCE_STATE", { STEP: this.step, PROGRESS: this.progress, PROGRESS_TOTAL: this.progress_total, EXPOSURE: this.exposure, EXPOSURE_TOTAL: this.exposure_total }, this.sequence_state = "Alert", "Sequence failed");
+			indigo_update_number_property(this.devices[SCRIPTING_AGENT], "SEQUENCE_STATE", { STEP: this.step, PROGRESS: this.progress, PROGRESS_TOTAL: this.progress_total, EXPOSURE: this.exposure, EXPOSURE_TOTAL: this.exposure_total }, this.sequence_state = "Alert", "Sequence failed");
 		}
 	},
 	
@@ -992,7 +1015,7 @@ var indigo_sequencer = {
 	},
 
 	load_config: function(name) {
-		this.select_switch(this.devices[1], "AGENT_CONFIG_LOAD", name);
+		this.select_switch(this.devices[CONFIGURATION_AGENT], "AGENT_CONFIG_LOAD", name);
 	},
 
 	load_driver: function(name) {
@@ -1004,17 +1027,17 @@ var indigo_sequencer = {
 	},
 	
 	select_imager_agent: function(agent) {
-		this.devices[2] = agent;
+		this.devices[IMAGER_AGENT] = agent;
 		indigo_set_timer(indigo_sequencer_next_ok_handler, 0);
 	},
 		
 	select_mount_agent: function(agent) {
-		this.devices[3] = agent;
+		this.devices[MOUNT_AGENT] = agent;
 		indigo_set_timer(indigo_sequencer_next_ok_handler, 0);
 	},
 		
 	select_guider_agent: function(agent) {
-		this.devices[4] = agent;
+		this.devices[GUIDER_AGENT] = agent;
 		indigo_set_timer(indigo_sequencer_next_ok_handler, 0);
 	},
 
@@ -1025,90 +1048,96 @@ var indigo_sequencer = {
 	},
 
 	select_imager_camera: function(camera) {
-		this.select_device(this.devices[2], "FILTER_CCD_LIST", camera);
+		this.select_device(this.devices[IMAGER_AGENT], "FILTER_CCD_LIST", camera);
 	},
 
 	select_filter_wheel: function(wheel) {
-		this.select_device(this.devices[2], "FILTER_WHEEL_LIST", wheel);
+		this.select_device(this.devices[IMAGER_AGENT], "FILTER_WHEEL_LIST", wheel);
 	},
 
 	select_focuser: function(focuser) {
-		this.select_device(this.devices[2], "FILTER_FOCUSER_LIST", focuser);
+		this.select_device(this.devices[IMAGER_AGENT], "FILTER_FOCUSER_LIST", focuser);
 	},
 
 	select_rotator: function(rotator) {
-		this.select_device(this.devices[3], "FILTER_ROTATOR_LIST", rotator);
+		this.select_device(this.devices[MOUNT_AGENT], "FILTER_ROTATOR_LIST", rotator);
 	},
 
 	select_mount: function(mount) {
-		this.select_device(this.devices[3], "FILTER_MOUNT_LIST", mount);
+		this.select_device(this.devices[MOUNT_AGENT], "FILTER_MOUNT_LIST", mount);
 	},
 
 	select_dome: function(dome) {
-		this.select_device(this.devices[3], "FILTER_DOME_LIST", dome);
+		this.select_device(this.devices[MOUNT_AGENT], "FILTER_DOME_LIST", dome);
 	},
 
 	select_gps: function(gps) {
-		this.select_device(this.devices[3], "FILTER_GPS_LIST", gps);
+		this.select_device(this.devices[MOUNT_AGENT], "FILTER_GPS_LIST", gps);
 	},
 
 	select_guider_camera: function(camera) {
-		this.select_device(this.devices[4], "FILTER_CCD_LIST", camera);
+		this.select_device(this.devices[GUIDER_AGENT], "FILTER_CCD_LIST", camera);
 	},
 
 	select_guider: function(guider) {
-		this.select_device(this.devices[4], "FILTER_GUIDER_LIST", guider);
+		this.select_device(this.devices[GUIDER_AGENT], "FILTER_GUIDER_LIST", guider);
 	},
 
 	select_frame_type: function(type) {
-		this.select_switch(this.devices[2], "CCD_FRAME_TYPE", type);
+		this.select_switch(this.devices[IMAGER_AGENT], "CCD_FRAME_TYPE", type);
 	},
 
 	select_image_format: function(format) {
-		this.select_switch(this.devices[2], "CCD_IMAGE_FORMAT", format);
+		this.select_switch(this.devices[IMAGER_AGENT], "CCD_IMAGE_FORMAT", format);
 	},
 
 	select_camera_mode: function(mode) {
-		this.select_switch(this.devices[2], "CCD_MODE", mode);
+		this.select_switch(this.devices[IMAGER_AGENT], "CCD_MODE", mode);
 	},
 
 	set_gain: function(value) {
-		this.change_numbers(this.devices[2], "CCD_GAIN", { GAIN: value });
+		this.change_numbers(this.devices[IMAGER_AGENT], "CCD_GAIN", { GAIN: value });
 	},
 
 	set_offset: function(value) {
-		this.change_numbers(this.devices[2], "CCD_OFFSET", { OFFSET: value });
+		this.change_numbers(this.devices[IMAGER_AGENT], "CCD_OFFSET", { OFFSET: value });
 	},
 
 	set_gamma: function(value) {
-		this.change_numbers(this.devices[2], "CCD_GAMMA", { GAMMA: value });
+		this.change_numbers(this.devices[IMAGER_AGENT], "CCD_GAMMA", { GAMMA: value });
 	},
 
 	select_program: function(program) {
-		this.select_switch(this.devices[2], "DSLR_PROGRAM", program);
+		this.select_switch(this.devices[IMAGER_AGENT], "DSLR_PROGRAM", program);
 	},
 
 	select_aperture: function(aperture) {
-		this.select_switch(this.devices[2], "DSLR_APERTURE", aperture);
+		this.select_switch(this.devices[IMAGER_AGENT], "DSLR_APERTURE", aperture);
 	},
 
 	select_shutter: function(shutter) {
-		this.select_switch(this.devices[2], "DSLR_SHUTTER", shutter);
+		this.select_switch(this.devices[IMAGER_AGENT], "DSLR_SHUTTER", shutter);
 	},
 
 	select_iso: function(iso) {
-		this.select_switch(this.devices[2], "DSLR_ISO", iso);
+		this.select_switch(this.devices[IMAGER_AGENT], "DSLR_ISO", iso);
 	},
 
 	select_cooler: function(name) {
-		this.select_switch(this.devices[2], "CCD_COOLER", name);
+		this.select_switch(this.devices[IMAGER_AGENT], "CCD_COOLER", name);
 	},
 	
 	set_temperature: function(temperature) {
+		// Allow large tolerance for the temperature. The property state will remain BUSY
+		// until temperature reaches the driver's tolerance. We need this because CCD_TEMPERATURE property
+		// is updated in a timer callback in CCD drivers and may take several seconds to become BUSY from OK
+		// after the value is set. This is why we need to monitor the item value until we are close to the
+		// target and only then monotor the property state.
 		this.wait_for_item = "TEMPERATURE";
 		this.wait_for_value = temperature;
-		this.wait_for_value_tolerance = 1; // Allow large tolerance for the temperature. The property state will remain "Busy" until temperature reaches the driver's tolerance.
-		this.change_numbers(this.devices[2], "CCD_TEMPERATURE", { TEMPERATURE: temperature });
+		this.wait_for_value_tolerance = 1;
+		this.allow_busy_state = true;
+		this.change_numbers(this.devices[IMAGER_AGENT], "CCD_TEMPERATURE", { TEMPERATURE: temperature });
 	},
 	
 	set_use_solver: function(use_solver) {
@@ -1117,39 +1146,39 @@ var indigo_sequencer = {
 	},
 	
 	set_pause_after_transit: function(time) {
-		this.change_numbers(this.devices[2], "AGENT_IMAGER_BATCH", { PAUSE_AFTER_TRANSIT: time });
+		this.change_numbers(this.devices[IMAGER_AGENT], "AGENT_IMAGER_BATCH", { PAUSE_AFTER_TRANSIT: time });
 	},
 	
 	set_imager_dithering: function(skip_frames) {
-		this.change_numbers(this.devices[2], "AGENT_IMAGER_BATCH", { FRAMES_TO_SKIP_BEFORE_DITHER: skip_frames });
+		this.change_numbers(this.devices[IMAGER_AGENT], "AGENT_IMAGER_BATCH", { FRAMES_TO_SKIP_BEFORE_DITHER: skip_frames });
 	},
 
 	set_fits_header: function(keyword, value) {
-		this.change_texts(this.devices[2], "CCD_SET_FITS_HEADER", { "KEYWORD": keyword, "VALUE": value });
+		this.change_texts(this.devices[IMAGER_AGENT], "CCD_SET_FITS_HEADER", { "KEYWORD": keyword, "VALUE": value });
 	},
 	
 	remove_fits_header: function(keyword, value) {
-		this.change_texts(this.devices[2], "CCD_REMOVE_FITS_HEADER", { "KEYWORD": keyword });
+		this.change_texts(this.devices[IMAGER_AGENT], "CCD_REMOVE_FITS_HEADER", { "KEYWORD": keyword });
 	},
 	
 	set_guider_dithering: function(amount, time_limit) {
-		this.change_numbers(this.devices[4], "AGENT_GUIDER_SETTINGS", { DITHERING_MAX_AMOUNT: amount, DITHERING_SETTLE_TIME_LIMIT: time_limit});
+		this.change_numbers(this.devices[GUIDER_AGENT], "AGENT_GUIDER_SETTINGS", { DITHERING_MAX_AMOUNT: amount, DITHERING_SETTLE_TIME_LIMIT: time_limit});
 	},
 
 	set_imager_feature: function(name, value) {
-		this.set_switch(this.devices[2], "AGENT_PROCESS_FEATURES", name, value);
+		this.set_switch(this.devices[IMAGER_AGENT], "AGENT_PROCESS_FEATURES", name, value);
 	},
 	
 	select_filter: function(filter) {
-		this.select_switch(this.devices[2], "AGENT_WHEEL_FILTER", filter);
+		this.select_switch(this.devices[IMAGER_AGENT], "AGENT_WHEEL_FILTER", filter);
 	},
 	
 	set_local_mode: function(directory, prefix, object) {
-		this.change_texts(this.devices[2], "CCD_LOCAL_MODE", { DIR: directory, PREFIX: prefix, OBJECT: object});
+		this.change_texts(this.devices[IMAGER_AGENT], "CCD_LOCAL_MODE", { DIR: directory, PREFIX: prefix, OBJECT: object});
 	},
 
 	save_batch: function() {
-		var agent = this.devices[2];
+		var agent = this.devices[IMAGER_AGENT];
 		var property = indigo_devices[agent].AGENT_IMAGER_BATCH;
 		if (property != null) {
 			this.saved_batch = property.items;
@@ -1160,61 +1189,61 @@ var indigo_sequencer = {
 	},
 
 	restore_batch: function() {
-		this.change_numbers(this.devices[2], "AGENT_IMAGER_BATCH", this.saved_batch);
+		this.change_numbers(this.devices[IMAGER_AGENT], "AGENT_IMAGER_BATCH", this.saved_batch);
 	},
 
 	set_upload_mode: function(mode) {
-		this.select_switch(this.devices[2], "CCD_UPLOAD_MODE", mode);
+		this.select_switch(this.devices[IMAGER_AGENT], "CCD_UPLOAD_MODE", mode);
 	},
 
 	set_batch: function(count, exposure) {
-		this.change_numbers(this.devices[2], "AGENT_IMAGER_BATCH", { COUNT: count, EXPOSURE: exposure});
+		this.change_numbers(this.devices[IMAGER_AGENT], "AGENT_IMAGER_BATCH", { COUNT: count, EXPOSURE: exposure});
 	},
 
 	capture_batch: function() {
 		this.capturing_batch = true;
-		this.select_switch(this.devices[2], "AGENT_START_PROCESS", "EXPOSURE");
+		this.select_switch(this.devices[IMAGER_AGENT], "AGENT_START_PROCESS", "EXPOSURE");
 	},
 
 	capture_stream: function() {
-		this.select_switch(this.devices[2], "AGENT_START_PROCESS", "STREAMING");
+		this.select_switch(this.devices[IMAGER_AGENT], "AGENT_START_PROCESS", "STREAMING");
 	},
 
 	set_focuser_mode: function(mode) {
-		this.select_switch(this.devices[2], "FOCUSER_MODE", mode);
+		this.select_switch(this.devices[IMAGER_AGENT], "FOCUSER_MODE", mode);
 	},
 	
 	focus: function(ignore_failure) {
 		this.ignore_failure = ignore_failure;
-		this.select_switch(this.devices[2], "AGENT_START_PROCESS", "FOCUSING");
+		this.select_switch(this.devices[IMAGER_AGENT], "AGENT_START_PROCESS", "FOCUSING");
 	},
 
 	clear_focuser_selection: function() {
-		this.select_switch(this.devices[2], "AGENT_START_PROCESS", "CLEAR_SELECTION");
+		this.select_switch(this.devices[IMAGER_AGENT], "AGENT_START_PROCESS", "CLEAR_SELECTION");
 	},
 	
 	unpark: function() {
-		this.select_switch(this.devices[3], "MOUNT_PARK", "UNPARKED");
+		this.select_switch(this.devices[MOUNT_AGENT], "MOUNT_PARK", "UNPARKED");
 	},
 	
 	set_coordinates: function(ra, dec) {
-		this.change_numbers(this.devices[3], "AGENT_MOUNT_EQUATORIAL_COORDINATES", { RA: ra, DEC: dec});
+		this.change_numbers(this.devices[MOUNT_AGENT], "AGENT_MOUNT_EQUATORIAL_COORDINATES", { RA: ra, DEC: dec});
 	},
 	
 	slew: function(ra, dec) {
-		this.select_switch(this.devices[3], "AGENT_START_PROCESS", "SLEW");
+		this.select_switch(this.devices[MOUNT_AGENT], "AGENT_START_PROCESS", "SLEW");
 	},
 	
 	park: function() {
-		this.select_switch(this.devices[3], "MOUNT_PARK", "PARKED");
+		this.select_switch(this.devices[MOUNT_AGENT], "MOUNT_PARK", "PARKED");
 	},
 	
 	home: function() {
-		this.select_switch(this.devices[3], "MOUNT_HOME", "HOME");
+		this.select_switch(this.devices[MOUNT_AGENT], "MOUNT_HOME", "HOME");
 	},
 
 	wait_for_gps: function() {
-		var agent = this.devices[3];
+		var agent = this.devices[MOUNT_AGENT];
 		var property = indigo_devices[agent].GPS_GEOGRAPHIC_COORDINATES;
 		if (property != null) {
 			if (property.state == "Busy") {
@@ -1230,55 +1259,56 @@ var indigo_sequencer = {
 	},
 	
 	set_guider_exposure: function(exposure) {
-		this.change_numbers(this.devices[4], "AGENT_GUIDER_SETTINGS", { EXPOSURE: exposure });
+		this.change_numbers(this.devices[GUIDER_AGENT], "AGENT_GUIDER_SETTINGS", { EXPOSURE: exposure });
 	},
 
 	calibrate_guiding: function() {
-		this.select_switch(this.devices[4], "AGENT_START_PROCESS", "CALIBRATION");
+		this.select_switch(this.devices[GUIDER_AGENT], "AGENT_START_PROCESS", "CALIBRATION");
 	},
 
 	start_guiding: function() {
-		this.select_switch(this.devices[4], "AGENT_START_PROCESS", "GUIDING", "Busy", true);
+		this.allow_busy_state = true;
+		this.select_switch(this.devices[GUIDER_AGENT], "AGENT_START_PROCESS", "GUIDING", "Busy");
 	},
 
 	stop_guiding: function() {
-		this.select_switch(this.devices[4], "AGENT_ABORT_PROCESS", "ABORT");
+		this.select_switch(this.devices[GUIDER_AGENT], "AGENT_ABORT_PROCESS", "ABORT");
 	},
 
 	clear_guider_selection: function() {
-		this.select_switch(this.devices[4], "AGENT_START_PROCESS", "CLEAR_SELECTION");
+		this.select_switch(this.devices[GUIDER_AGENT], "AGENT_START_PROCESS", "CLEAR_SELECTION");
 	},
 	
 	set_solver_exposure: function(exposure) {
-		this.change_numbers(this.devices[5], "AGENT_PLATESOLVER_EXPOSURE", { EXPOSURE: exposure });
+		this.change_numbers(this.devices[ASTROMETRY_AGENT], "AGENT_PLATESOLVER_EXPOSURE", { EXPOSURE: exposure });
 	},
 
 	set_solver_target: function(ra, dec) {
-		this.change_numbers(this.devices[5], "AGENT_PLATESOLVER_GOTO_SETTINGS", { RA: ra, DEC: dec });
+		this.change_numbers(this.devices[ASTROMETRY_AGENT], "AGENT_PLATESOLVER_GOTO_SETTINGS", { RA: ra, DEC: dec });
 	},
 
 	precise_goto: function() {
-		this.select_switch(this.devices[5], "AGENT_START_PROCESS", "PRECISE_GOTO");
+		this.select_switch(this.devices[ASTROMETRY_AGENT], "AGENT_START_PROCESS", "PRECISE_GOTO");
 	},
 
 	sync_center: function() {
-		this.select_switch(this.devices[5], "AGENT_START_PROCESS", "CENTER");
+		this.select_switch(this.devices[ASTROMETRY_AGENT], "AGENT_START_PROCESS", "CENTER");
 	},
 
 	set_rotator_goto: function() {
-		this.select_switch(this.devices[3], "ROTATOR_ON_POSITION_SET", "GOTO");
+		this.select_switch(this.devices[MOUNT_AGENT], "ROTATOR_ON_POSITION_SET", "GOTO");
 	},
 
 	set_rotator_angle: function(angle) {
-		this.change_numbers(this.devices[3], "ROTATOR_POSITION", { POSITION: angle });
+		this.change_numbers(this.devices[MOUNT_AGENT], "ROTATOR_POSITION", { POSITION: angle });
 	},
 
 	set_focuser_goto: function() {
-		this.select_switch(this.devices[2], "FOCUSER_ON_POSITION_SET", "GOTO");
+		this.select_switch(this.devices[IMAGER_AGENT], "FOCUSER_ON_POSITION_SET", "GOTO");
 	},
 
 	set_focuser_position: function(position) {
-		this.change_numbers( this.devices[2], "FOCUSER_POSITION", { POSITION: position });
+		this.change_numbers( this.devices[IMAGER_AGENT], "FOCUSER_POSITION", { POSITION: position });
 	}
 };
 
