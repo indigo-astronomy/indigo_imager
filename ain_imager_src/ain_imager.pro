@@ -114,6 +114,7 @@ RESOURCES += \
 	$$PWD/../resource/loop-green.png \
 	$$PWD/../resource/loop-red.png \
 	$$PWD/../resource/recovery_point.png \
+	$$PWD/../resource/recovery_policy.png \
 	$$PWD/../resource/menu-loop-grey.png \
 	$$PWD/../resource/wheel-grey.png \
 	$$PWD/../resource/rotator-grey.png \

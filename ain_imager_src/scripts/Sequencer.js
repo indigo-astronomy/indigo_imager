@@ -47,6 +47,14 @@ Sequence.prototype.repeat = function(count, block) {
 	}
 };
 
+Sequence.prototype.enable_verbose = function() {
+	this.sequence.push({ execute: 'set_verbose(true)', step: this.step++, progress: this.progress++, exposure: this.exposure });
+};
+
+Sequence.prototype.disable_verbose = function() {
+	this.sequence.push({ execute: 'set_verbose(false)', step: this.step++, progress: this.progress++, exposure: this.exposure });
+};
+
 Sequence.prototype.recovery_point = function() {
 	this.sequence.push({ execute: 'recovery_point(' + (++this.recovery_point_index) + ')', step: this.step++, progress: this.progress++, exposure: this.exposure });
 };
@@ -403,13 +411,13 @@ var indigo_flipper = {
 
 	on_update: function(property) {
 		if (this.waiting_for_transit)
-			indigo_log("waiting_for_transit " + property.name + " -> " + property.state);
+			indigo_log("waiting_for_transit " + property.name + " → " + property.state);
 		else if (this.waiting_for_slew)
-			indigo_log("waiting_for_slew " + property.name + " -> " + property.state);
+			indigo_log("waiting_for_slew " + property.name + " → " + property.state);
 		else if (this.waiting_for_sync_and_center)
-			indigo_log("waiting_for_sync_and_center " + property.name + " -> " + property.state);
+			indigo_log("waiting_for_sync_and_center " + property.name + " → " + property.state);
 		else if (this.waiting_for_guiding)
-			indigo_log("waiting_for_guiding " + property.name + " -> " + property.state);
+			indigo_log("waiting_for_guiding " + property.name + " → " + property.state);
 		if (this.waiting_for_transit && property.device == this.devices[MOUNT_AGENT] && property.name == "AGENT_MOUNT_DISPLAY_COORDINATES_PROPERTY") {
 			if (property.items.TIME_TO_TRANSIT <= 0) {
 				indigo_send_message("Meridian flip started");
@@ -511,11 +519,13 @@ var indigo_sequencer = {
 	wait_for_timer: null,
 	ignore_failure: false,
 	allow_busy_state: false,
+	allow_same_value: false,
 	skip_to_recovery_point: false,
 	failure_handling: 0,
 	use_solver: false,
 	paused: false,
 	capturing_batch: false,
+	verbose: true,
 	
 	update_step_state: function(step, state) {
 		this.step_states["" + step] = state;
@@ -528,7 +538,7 @@ var indigo_sequencer = {
 				indigo_flipper.devices = this.devices;
 				indigo_flipper.start(this.use_solver);
 			} else if (property.device == this.wait_for_device && property.name == this.wait_for_property) {
-				indigo_log("wait_for '" + property.device + "', '" + property.name + "' -> " + property.state);
+				indigo_log("wait_for '" + property.device + " → " + property.name + "' → " + property.state);
 				if (property.state == "Alert") {
 					this.wait_for_device = null;
 					this.wait_for_property = null;
@@ -796,7 +806,12 @@ var indigo_sequencer = {
 		this.update_step_state(this.loop_step.pop(), "Ok");
 		indigo_set_timer(indigo_sequencer_next_handler, 0.1);
 	},
-	
+
+	set_verbose: function(value) {
+		this.verbose = value;
+		indigo_set_timer(indigo_sequencer_next_handler, 0.1);
+	},
+
 	recovery_point: function(index) {
 		if (this.skip_to_recovery_point) {
 			this.skip_to_recovery_point = false;
@@ -813,7 +828,7 @@ var indigo_sequencer = {
 		}
 		if (property.state == "Busy") {
 			if (!this.allow_busy_state) {
-				this.failure("Failed to set '" + property_name + "', '" + device + "' is busy");
+				this.failure("Failed to set '" + property.label + "', '" + device + "' is busy");
 				return;
 			}
 			this.allow_busy_state = false;
@@ -830,15 +845,16 @@ var indigo_sequencer = {
 				}
 			}
 			if (!found) {
-				this.failure("Failed to set '" + item + "' on '" + property_name + "'");
+				this.failure("Failed to set '" + device + " → " + property.label + " → " + property.item_defs[item].label + "'");
 				return;
 			}
 		}
-		if (current_value && value) {
-			if (!property_name.includes("_ON_") && property_name != "CCD_UPLOAD_MODE" ) {
-				this.warning("'" + property.item_defs[item].label + "' is already selected");
-			} else {
+		if (current_value == value) {
+			if (this.allow_same_value) {
+				this.allow_same_value = false;
 				indigo_set_timer(indigo_sequencer_next_ok_handler, 0.1);
+			} else {
+				this.warning("'" + device + " → " + property.label + " → " + property.item_defs[item].label + "' is already " + (value ? "selected" : "unselected"));
 			}
 			return;
 		}
@@ -866,7 +882,7 @@ var indigo_sequencer = {
 		}
 		if (property.state == "Busy") {
 			if (!this.allow_busy_state) {
-				this.failure("Failed to set '" + property_name + "', '" + device + "' is busy");
+				this.failure("Failed to set '" + property.label + "', '" + device + "' is busy");
 				return;
 			}
 			this.allow_busy_state = false;
@@ -896,7 +912,7 @@ var indigo_sequencer = {
 		}
 		if (property.state == "Busy") {
 			if (!this.allow_busy_state) {
-				this.failure("Failed to set '" + property_name + "', '" + device + "' is busy");
+				this.failure("Failed to set '" + property.label + "', '" + device + "' is busy");
 				return;
 			}
 			this.allow_busy_state = false;
@@ -919,7 +935,9 @@ var indigo_sequencer = {
 	},
 	
 	warning: function(message) {
-		indigo_send_message(message);
+		if (this.verbose) {
+			indigo_send_message(message);
+		}
 		indigo_set_timer(indigo_sequencer_next_ok_handler, 0);
 	},
 	
@@ -1158,6 +1176,7 @@ var indigo_sequencer = {
 	},
 
 	set_upload_mode: function(mode) {
+		this.allow_same_value = true;
 		this.select_switch(this.devices[IMAGER_AGENT], "CCD_UPLOAD_MODE", mode);
 	},
 
@@ -1261,6 +1280,7 @@ var indigo_sequencer = {
 	},
 
 	set_rotator_goto: function() {
+		this.allow_same_value = true;
 		this.select_switch(this.devices[MOUNT_AGENT], "ROTATOR_ON_POSITION_SET", "GOTO");
 	},
 
@@ -1269,6 +1289,7 @@ var indigo_sequencer = {
 	},
 
 	set_focuser_goto: function() {
+		this.allow_same_value = true;
 		this.select_switch(this.devices[IMAGER_AGENT], "FOCUSER_ON_POSITION_SET", "GOTO");
 	},
 
