@@ -94,6 +94,7 @@ RESOURCES += \
 	$$PWD/../resource/play.png \
 	$$PWD/../resource/pause.png \
 	$$PWD/../resource/record.png \
+	$$PWD/../resource/reload.png \
 	$$PWD/../resource/focus.png \
 	$$PWD/../resource/calibrate.png \
 	$$PWD/../resource/guide.png \

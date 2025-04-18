@@ -71,10 +71,10 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	m_seq_pause_button->setIcon(QIcon(":resource/pause.png"));
 	connect(m_seq_pause_button, &QPushButton::clicked, this, &ImagerWindow::on_sequence_pause);
 
-	m_seq_reset_button = new QPushButton("⟳ Reset");
+	m_seq_reset_button = new QPushButton("Reset");
 	toolbox->addWidget(m_seq_reset_button);
 	m_seq_reset_button->setStyleSheet("min-width: 30px");
-	//m_seq_reset_button->setIcon(QIcon(":resource/pause.png"));
+	m_seq_reset_button->setIcon(QIcon(":resource/reload.png"));
 	connect(m_seq_reset_button, &QPushButton::clicked, this, &ImagerWindow::on_reset);
 
 	QPushButton *button = new QPushButton("Abort");
