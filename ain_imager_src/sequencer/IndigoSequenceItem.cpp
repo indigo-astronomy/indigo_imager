@@ -359,13 +359,13 @@ QVariant IndigoSequenceItem::getParameter(const int paramID) const {
 	if (QLineEditSG *sg = qobject_cast<QLineEditSG *>(widget)) {
 		return sg->value();
 	} else if (QLineEdit *lineEdit = qobject_cast<QLineEdit *>(widget)) {
-		return lineEdit->text();
+		return lineEdit->text().trimmed();
 	} else if (QSpinBox *spinBox = qobject_cast<QSpinBox *>(widget)) {
 		return spinBox->value();
 	} else if (QDoubleSpinBox *doubleSpinBox = qobject_cast<QDoubleSpinBox *>(widget)) {
 		return doubleSpinBox->value();
 	} else if (QComboBox *comboBox = qobject_cast<QComboBox *>(widget)) {
-		return comboBox->currentText();
+		return comboBox->currentText().trimmed();
 	} else if (QCheckBox *checkBox = qobject_cast<QCheckBox *>(widget)) {
 		return checkBox->isChecked();
 	} else if (QDateTimeEdit *dateTimeEdit = qobject_cast<QDateTimeEdit *>(widget)) {
