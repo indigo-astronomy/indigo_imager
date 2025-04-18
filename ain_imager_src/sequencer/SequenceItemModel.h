@@ -66,6 +66,8 @@
 #define SC_PARK                     cs("park")
 #define SC_HOME                     cs("home")
 #define SC_UNPARK                   cs("unpark")
+#define SC_ENABLE_TRACKING          cs("enable_tracking")
+#define SC_DISABLE_TRACKING         cs("disable_tracking")
 #define SC_SLEW                     cs("slew")
 #define SC_WAIT_FOR_GPS             cs("wait_for_gps")
 #define SC_CALIBRATE_GUIDING        cs("calibrate_guiding")
@@ -82,6 +84,8 @@
 #define SC_ABORT_ON_FAILURE         cs("abort_on_failure")
 #define SC_RECOVER_ON_FAILURE       cs("recover_on_failure")
 #define SC_RECOVERY_POINT           cs("recovery_point")
+#define SC_ENABLE_VERBOSE           cs("enable_verbose")
+#define SC_DISABLE_VERBOSE          cs("disable_verbose")
 
 #define CC_CAPTURE                  cs("Capture")
 #define CC_FILTER_WHEEL             cs("Filter Wheel")

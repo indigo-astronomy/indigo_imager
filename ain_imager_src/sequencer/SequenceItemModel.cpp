@@ -68,6 +68,8 @@ void SequenceItemModel::initializeModel() {
 		{SC_PARK, {"Park Mount", {}}},
 		{SC_HOME, {"Home Mount", {}}},
 		{SC_UNPARK, {"Unpark Mount", {}}},
+		{SC_ENABLE_TRACKING, {"Enable Tracking", {}}},
+		{SC_DISABLE_TRACKING, {"Disable Tracking", {}}},
 		{SC_SLEW, {"Slew", {{0, {"RA", LineEditSG_RA}}, {1, {"Dec", LineEditSG_DEC}}}}},
 		{SC_WAIT_FOR_GPS, {"Wait for GPS", {}}},
 		{SC_CALIBRATE_GUIDING, {"Calibrate Guiding", {{0, {"Exposure (s)", DoubleSpinBox}}}}},
@@ -83,7 +85,9 @@ void SequenceItemModel::initializeModel() {
 		{SC_RECOVER_ON_FAILURE, {"Recover on Failure", {}}},
 		{SC_RECOVERY_POINT, {"Recovery Point", {}}},
 		{SC_SET_FITS_HEADER, {"Set FITS Header", {{0, {"Keyword", LineEdit}}, {1, {"Value", LineEdit}}}}},
-		{SC_REMOVE_FITS_HEADER, {"Remove FITS Header", {{0, {"Keyword", LineEdit}}}}}
+		{SC_REMOVE_FITS_HEADER, {"Remove FITS Header", {{0, {"Keyword", LineEdit}}}}},
+		{SC_ENABLE_VERBOSE, {"Enable Verbose Logging", {}}},
+		{SC_DISABLE_VERBOSE, {"Disable Verbose Logging", {}}}
 	};
 
 	//{"select_imager_agent", {"Select Imager Agent", {{0, {"Agent", "QComboBox"}}}}},
@@ -142,7 +146,10 @@ void SequenceItemModel::initializeModel() {
 			__SEPARATOR__,
 			SC_PARK,
 			SC_UNPARK,
-			SC_HOME
+			SC_HOME,
+			__SEPARATOR__,
+			SC_ENABLE_TRACKING,
+			SC_DISABLE_TRACKING
 		}},
 		{CC_ROTATOR, {
 			SC_SET_ROTATOR_ANGLE
@@ -171,14 +178,18 @@ void SequenceItemModel::initializeModel() {
 		{CC_MISC, {
 			SC_WAIT,
 			SC_WAIT_UNTIL,
-			SC_SEND_MESSAGE,
 			SC_WAIT_FOR_GPS,
+			__SEPARATOR__,
+			SC_SEND_MESSAGE,
 			__SEPARATOR__,
 			SC_SET_FITS_HEADER,
 			SC_REMOVE_FITS_HEADER,
 			__SEPARATOR__,
 			SC_LOAD_DRIVER,
 			SC_UNLOAD_DRIVER,
+			__SEPARATOR__,
+			SC_ENABLE_VERBOSE,
+			SC_DISABLE_VERBOSE,
 			__SEPARATOR__,
 			SC_LOAD_CONFIG
 		}}
