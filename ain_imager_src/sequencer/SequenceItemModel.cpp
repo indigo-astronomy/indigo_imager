@@ -65,6 +65,8 @@ void SequenceItemModel::initializeModel() {
 		{SC_FOCUS_IGNORE_FAILURE, {"Focus (continue on failure)", {{0, {"Exposure (s)", DoubleSpinBox}}}}},
 		{SC_CLEAR_FOCUS_SELECTION, {"Clear Focus Selection", {}}},
 		{SC_SET_FOCUSER_POSITION, {"Set Focuser Position", {{0, {"Position", DoubleSpinBox}}}}},
+		{SC_SET_MANUAL_FOUSER_MODE, {"Disable Focuser Temperature Compensation", {}}},
+		{SC_SET_AUTOMATIC_FOCUSER_MODE, {"Enable Focuser Temperature Compensation", {}}},
 		{SC_PARK, {"Park Mount", {}}},
 		{SC_HOME, {"Home Mount", {}}},
 		{SC_UNPARK, {"Unpark Mount", {}}},
@@ -124,7 +126,10 @@ void SequenceItemModel::initializeModel() {
 			SC_FOCUS,
 			SC_FOCUS_IGNORE_FAILURE,
 			SC_SET_FOCUSER_POSITION,
-			SC_CLEAR_FOCUS_SELECTION
+			SC_CLEAR_FOCUS_SELECTION,
+			__SEPARATOR__,
+			SC_SET_MANUAL_FOUSER_MODE,
+			SC_SET_AUTOMATIC_FOCUSER_MODE
 		}},
 		{CC_GUIDER, {
 			SC_CALIBRATE_GUIDING,
