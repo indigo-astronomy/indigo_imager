@@ -1875,7 +1875,7 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 		int sequence_step = -1;
 		int progress = 0;
 		int progress_total = 0;
-		double exposure_complete = 0;
+		double exposure_elapsed = 0;
 		double exposure_total = 0;
 		for (int i = 0; i < property->count; i++) {
 			if (client_match_item(&property->items[i], "STEP")) {
@@ -1888,10 +1888,10 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 				progress_total = (int)property->items[i].number.value;
 			}
 			if (client_match_item(&property->items[i], "EXPOSURE")) {
-				exposure_complete = property->items[i].number.value;
+				exposure_elapsed = property->items[i].number.value / 3600.0;
 			}
 			if (client_match_item(&property->items[i], "EXPOSURE_TOTAL")) {
-				exposure_total = property->items[i].number.value;
+				exposure_total = property->items[i].number.value / 3600.0;
 			}
 		}
 
@@ -1913,7 +1913,12 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 				w->m_seq_sequence_progress->setFormat("Sequence: Idle");
 			}
 
-			w->set_text(w->m_seq_esimated_duration, QString("Total exposure: ") + QString(indigo_dtos(exposure_total / 3600, "%02d:%02d:%02.0f")));
+			w->set_text(
+				w->m_seq_esimated_duration, QString("Total exposure: ") +
+				QString(indigo_dtos(exposure_total, "%02d:%02d:%02.0f")) +
+				QString("    (") + QString(indigo_dtos(exposure_total - exposure_elapsed, "%02d:%02d:%02.0f")) +
+				QString(" remaining)")
+			);
 
 			w->set_widget_state(w->m_seq_start_button, INDIGO_BUSY_STATE);
 			w->m_seq_start_button->setIcon(QIcon(":resource/stop.png"));
@@ -1935,7 +1940,6 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 		} else if (property->state == INDIGO_OK_STATE) {
 			w->m_sequence_editor2->enable(true);
 			w->set_text(w->m_imager_status_label, "<img src=\":resource/led-green.png\"> Complete");
-			w->set_text(w->m_seq_esimated_duration, QString("Total exposure: ") + QString(indigo_dtos(0, "%02d:%02d:%02.0f")));
 			w->set_widget_state(w->m_seq_start_button, INDIGO_OK_STATE);
 			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 
@@ -1943,6 +1947,7 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 				//indigo_error("SEQUENCE_STATE -> sequence step %d -> %d", sequence_step, executed_index);
 				w->m_seq_sequence_progress->setValue(complete);
 				w->m_seq_sequence_progress->setFormat("Sequence: %v\% complete");
+				w->set_text(w->m_seq_esimated_duration, QString("Total exposure: ") + QString(indigo_dtos(exposure_total, "%02d:%02d:%02.0f")));
 			} else {
 				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-grey.png\"> Idle");
 				w->m_seq_exposure_progress->setRange(0, 1);
@@ -1953,10 +1958,11 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 				w->m_seq_batch_progress->setFormat("Process: Idle");
 				w->m_seq_sequence_progress->setValue(0);
 				w->m_seq_sequence_progress->setFormat("Sequence: Idle");
+				w->set_text(w->m_seq_esimated_duration, QString("Total exposure: ") + QString(indigo_dtos(0, "%02d:%02d:%02.0f")));
 			}
 		} else if (property->state == INDIGO_ALERT_STATE) {
 			w->m_sequence_editor2->enable(true);
-			w->set_text(w->m_seq_esimated_duration, QString("Total exposure: ") + QString(indigo_dtos(0, "%02d:%02d:%02.0f")));
+			w->set_text(w->m_seq_esimated_duration, QString("Total exposure: ") + QString(indigo_dtos(exposure_total, "%02d:%02d:%02.0f")));
 			w->set_widget_state(w->m_seq_start_button, INDIGO_OK_STATE);
 			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 
