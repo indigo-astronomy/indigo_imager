@@ -1,7 +1,7 @@
 # Ain INDIGO Imager - Users Guide
-*(Ain Imager v.2.0)*
+*(Ain Imager v.2.3)*
 
-Revision: 25.03.2025 (draft)
+Revision: 21.04.2025 (draft)
 
 Author: **Rumen G.Bogdanovski**
 
@@ -237,8 +237,12 @@ To add a new Action to the sequence, the user should press the right mouse butto
 - **Rotator**
   - **Set Rotator Angle** - Sets the rotator angle to the specified value in degrees.
 
-- **Loop**
-  - **Repeat** - Repeats several actions for the specified count.
+- **Flow Control**
+  - **Repeat** - Repeats a set of actions for a specified number of iterations.
+  - **Continue on Failure** - If an operation in the sequence fails, the execution will continue with the next action in the sequence.
+  - **Abort on Failure** - If an operation in the sequence fails, the entire sequence will be aborted. This is the default behavior.
+  - **Recover on Failure** - If an operation in the sequence fails, the execution will continue from the next defined **Recovery Point**.
+  - **Recovery Point** - Marks a point in the sequence to resume execution if **Recover on Failure** execution policy is set. It has no effect with **Abort on Failure** and **Continue on Failure**
 
 - **Devices**
   - **Select Imager Camera** - Selects an imager camera from the available options.
@@ -252,10 +256,15 @@ To add a new Action to the sequence, the user should press the right mouse butto
 
 - **Misc**
   - **Wait** - Suspends the sequence for a specified time in seconds.
-  - **Send Message** - Sends a message with the specified content.
+  - **Wait Until** - Suspend sequence execution until given date and time in UTC.
   - **Wait for GPS** - Waits for the GPS to acquire a signal.
+  - **Send Message** - Sends a message with the specified content.
+  - **Set FITS Header** - add/change keyword and value in the FITS header.
+  - **Remove FITS Headr** - remove keyword from FITS header.
   - **Load Driver** - Loads a driver with the specified name.
   - **Unload Driver** - Unloads a driver with the specified name.
+  - **Enable Verbose Logging** - Log more messages from the sequencer (default).
+  - **Disable Verbose Logging** - Log less messages from the sequencer.
   - **Load Config** - Loads a configuration with the specified name.
 
 Once the action is placed, the user should configure it accordingly. 
@@ -266,7 +275,38 @@ Actions can be freely dragged and dropped. This way the actions can be rearrange
 
 In order to remove actions, press the **(x)** button on the right side of the action widget.
 
+#### Enable and Disable Execution of Specific Actions
+
+You can enable or disable specific actions in a sequence by clicking on the status LED icon. When an action is disabled, the icon will change to indicate its disabled state. Disabled actions are visually represented as shown below:
+
+![](images_v2/disabled_action.png)
+
+- Disabling **Repeat** Action: If a **Repeat** action is disabled, all actions nested within it will also be disabled automatically.
+- Re-enabling Nested Actions: If you enable a single nested action within a disabled **Repeat** action, the **Repeat** action itself will also be enabled.
+
+This feature allows you to selectively include or exclude actions from execution without permanently removing them from the sequence.
+
+#### Sequence Flow Control
+
+There are three sequence execution policies: **Abort on Failure**, **Continue on Failure**, and **Recover on Failure**. Each policy takes effect for the actions following it in the sequence. Policies can be changed multiple times within a single sequence.
+
+While the first two policies are self-explanatory (as described above), **Recover on Failure** requires more attention. With this policy, if an action fails, execution will continue from the next defined **Recovery Point**. Multiple recovery points can be defined within a single sequence.
+
+Here is an example:
+![](images_v2/failed_sequence.png)
+
+In this example, we:
+1. Select and configure the camera, filter wheel, and mount
+2. Slew the mount to the target
+3. Start a loop to take a series of exposures with B and V filters
+4. Park the mount and unselect it
+5. Unselect the filter wheel
+6. Stop the camera cooler and unselect the camera
+
+The sequence fails because filter "B" doesn't exist in the selected filter wheel. According to the policy set at the beginning, the sequence should recover on failure. We defined a recovery point at the end of the sequence where we shut down the equipment. At this point, we change the policy to **Continue on Failure** because we want to complete the entire shutdown section regardless of whether some actions fail.
+
 #### Download Sequence from the Agent, Load from File and Save to File
+
 The already loaded sequence can be downloaded from the selected *Scripting Agent* by clicking the download button (left button):
 
 ![](images_v2/sequence_download_load_save.png)
