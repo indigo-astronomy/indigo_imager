@@ -292,7 +292,8 @@ There are three sequence execution policies: **Abort on Failure**, **Continue on
 
 While the first two policies are self-explanatory (as described above), **Recover on Failure** requires more attention. With this policy, if an action fails, execution will continue from the next defined **Recovery Point**. Multiple recovery points can be defined within a single sequence.
 
-Here is an example:
+Here is an example of using execution policies:
+
 ![](images_v2/failed_sequence.png)
 
 In this example, we:
