@@ -123,8 +123,6 @@ public:
 	void property_define(indigo_property* property, char *message);
 
 	friend void update_focus_failreturn(ImagerWindow *w, indigo_property *property);
-	friend void set_filter_selected(ImagerWindow *w, indigo_property *property);
-	friend void reset_filter_names(ImagerWindow *w, indigo_property *property);
 	friend void update_cooler_onoff(ImagerWindow *w, indigo_property *property);
 	friend void update_cooler_power(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_process_features(ImagerWindow *w, indigo_property *property);

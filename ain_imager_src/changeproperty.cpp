@@ -647,12 +647,9 @@ void ImagerWindow::change_agent_ccd_peview(const char *agent, bool enable) const
 }
 
 void ImagerWindow::change_wheel_slot_property(const char *agent) const {
-	static const char *items[] = {
-		WHEEL_SLOT_ITEM_NAME
-	};
-	static double values[1];
-	values[0] = (double)m_filter_select->currentIndex() + 1;
-	indigo_change_number_property(nullptr, agent, WHEEL_SLOT_PROPERTY_NAME, 1, items, values);
+	static char selected_filter[INDIGO_NAME_SIZE];
+	strncpy(selected_filter, m_filter_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	indigo_change_switch_property_1(nullptr, agent, AGENT_WHEEL_FILTER_PROPERTY_NAME, selected_filter, true);
 }
 
 void ImagerWindow::change_cooler_onoff_property(const char *agent) const {

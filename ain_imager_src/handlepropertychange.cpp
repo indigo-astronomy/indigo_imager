@@ -192,27 +192,6 @@ static void change_combobox_selection_filtered(ImagerWindow *w, indigo_property 
 	}
 }
 
-void reset_filter_names(ImagerWindow *w, indigo_property *property) {
-	w->clear_combobox(w->m_filter_select);
-	QList<QString>filters;
-	for (int i = 0; i < property->count; i++) {
-		QString filter_name = QString(property->items[i].text.value);
-		filters.append(filter_name);
-		w->add_combobox_item(w->m_filter_select, filter_name, QString(property->items[i].name));
-	}
-	SequenceItemModel::instance().setComboOptions(SC_SELECT_FILTER, 0, filters);
-}
-
-void set_filter_selected(ImagerWindow *w, indigo_property *property) {
-	for (int i = 0; i < property->count; i++) {
-		if (client_match_item(&property->items[i], WHEEL_SLOT_ITEM_NAME)) {
-			indigo_debug("SELECT: %s = %d\n", property->items[i].name, property->items[i].number.value);
-			w->set_combobox_current_index(w->m_filter_select, (int)property->items[i].number.value-1);
-			w->set_widget_state(w->m_filter_select, property->state);
-		}
-	}
-}
-
 void update_focus_failreturn(ImagerWindow *w, indigo_property *property) {
 	w->set_enabled(w->m_focuser_failreturn_cbox, true);
 	for (int i = 0; i < property->count; i++) {
@@ -1486,20 +1465,6 @@ static void update_agent_imager_pause_process_property(ImagerWindow *w, indigo_p
 	}
 }
 
-void update_wheel_slot_property(ImagerWindow *w, indigo_property *property) {
-	for (int i = 0; i < property->count; i++) {
-		if (client_match_item(&property->items[i], WHEEL_SLOT_ITEM_NAME)) {
-			indigo_property *p = properties.get(property->device, WHEEL_SLOT_NAME_PROPERTY_NAME);
-			unsigned int current_filter = (unsigned int)property->items[i].number.value - 1;
-			w->set_widget_state(w->m_filter_select, property->state);
-			if (p && current_filter < p->count) {
-				w->m_filter_select->setCurrentText(p->items[current_filter].text.value);
-				indigo_debug("[SELECT filter] %s\n", p->items[current_filter].label);
-			}
-		}
-	}
-}
-
 void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *property) {
 	double exp_elapsed = 0, exp_time = 1;
 	double drift_x, drift_y;
@@ -2757,13 +2722,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME)) {
 		update_ccd_frame_property(this, property);
 	}
-	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME)) {
-		reset_filter_names(this, property);
-		indigo_property *p = properties.get(property->device, WHEEL_SLOT_PROPERTY_NAME);
-		if (p) set_filter_selected(this, p);
-	}
-	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_PROPERTY_NAME)) {
-		set_filter_selected(this, property);
+	if (client_match_device_property(property, selected_agent, AGENT_WHEEL_FILTER_PROPERTY_NAME)) {
+		add_items_to_combobox(this, property, m_filter_select);
+		add_items_to_sequence_model(property, SC_SELECT_FILTER, 0);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_pause_process_property(this, property, m_pause_button);
@@ -3139,13 +3100,8 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		update_agent_process_features(this, property);
 		update_agent_imager_meridian_flip_label(this, property);
 	}
-	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME)) {
-		reset_filter_names(this, property);
-		indigo_property *p = properties.get(property->device, WHEEL_SLOT_PROPERTY_NAME);
-		if (p) set_filter_selected(this, p);
-	}
-	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_PROPERTY_NAME)) {
-		update_wheel_slot_property(this, property);
+	if (client_match_device_property(property, selected_agent, AGENT_WHEEL_FILTER_PROPERTY_NAME)) {
+		change_combobox_selection(this, property, m_filter_select);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME)) {
 		update_imager_selection_property(this, property);
@@ -3536,7 +3492,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_spinbox_value(m_roi_h, 0);
 		set_enabled(m_roi_h, false);
 	}
-	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME) ||
+	if (client_match_device_property(property, selected_agent, AGENT_WHEEL_FILTER_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		clear_combobox(m_filter_select);
