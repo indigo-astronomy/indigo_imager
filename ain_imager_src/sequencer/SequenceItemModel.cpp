@@ -50,6 +50,8 @@ void SequenceItemModel::initializeModel() {
 		{SC_SELECT_IMAGE_FORMAT, {"Select Image Format", {{0, {"Image Format", ComboBox}}}}},
 		{SC_SELECT_CAMERA_MODE, {"Select Camera Mode", {{0, {"Camera Mode", ComboBox}}}}},
 		{SC_SELECT_FILTER, {"Select Filter", {{0, {"Filter", ComboBox}}}}},
+		{SC_ENABLE_FITER_OFFSETS, {"Enable Filter Offsets", {}}},
+		{SC_DISABLE_FITER_OFFSETS, {"Disable Filter Offsets", {}}},
 		{SC_SET_GAIN, {"Set Camera Gain", {{0, {"Value", SpinBox}}}}},
 		{SC_SET_OFFSET, {"Set Camera Offset", {{0, {"Value", SpinBox}}}}},
 		{SC_ENABLE_COOLER, {"Enable Camera Cooler", {{0, {"Temperature (°C)", DoubleSpinBox}}}}},
@@ -120,7 +122,10 @@ void SequenceItemModel::initializeModel() {
 			SC_SET_DIRECTORY
 		}},
 		{CC_FILTER_WHEEL, {
-			SC_SELECT_FILTER
+			SC_SELECT_FILTER,
+			__SEPARATOR__,
+			SC_ENABLE_FITER_OFFSETS,
+			SC_DISABLE_FITER_OFFSETS,
 		}},
 		{CC_FOCUSER, {
 			SC_FOCUS,

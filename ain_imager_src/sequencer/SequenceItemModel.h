@@ -48,6 +48,8 @@
 #define SC_SELECT_IMAGE_FORMAT      cs("select_image_format")
 #define SC_SELECT_CAMERA_MODE       cs("select_camera_mode")
 #define SC_SELECT_FILTER            cs("select_filter")
+#define SC_ENABLE_FITER_OFFSETS     cs("enable_filter_offsets")
+#define SC_DISABLE_FITER_OFFSETS    cs("disable_filter_offsets")
 #define SC_SET_GAIN                 cs("set_gain")
 #define SC_SET_OFFSET               cs("set_offset")
 #define SC_ENABLE_COOLER            cs("enable_cooler")
