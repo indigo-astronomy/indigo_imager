@@ -47,7 +47,12 @@ public:
 public:
 	bool is_auto_service;
 	bool auto_connect;
+#ifdef INDIGO_VERSION_3
+	indigo_uni_handle *prev_handle;
+#else
 	int prev_socket;
+#endif
+
 };
 
 #endif // INDIGOSERVICE_H

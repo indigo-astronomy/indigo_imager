@@ -26,7 +26,11 @@ QIndigoService::QIndigoService(QByteArray name, QByteArray host, int port) :
 	m_server_entry(nullptr),
 	is_auto_service(false),
 	auto_connect(true),
+#ifdef INDIGO_VERSION_3
+	prev_handle(NULL) {
+#else
 	prev_socket(-1) {
+#endif
 }
 
 QIndigoService::QIndigoService(QByteArray name, QByteArray host, int port, bool connect, bool is_manual_service) :
@@ -36,7 +40,11 @@ QIndigoService::QIndigoService(QByteArray name, QByteArray host, int port, bool 
 	m_server_entry(nullptr),
 	is_auto_service(!is_manual_service),
 	auto_connect(connect),
+#ifdef INDIGO_VERSION_3
+	prev_handle(NULL) {
+#else
 	prev_socket(-1) {
+#endif
 }
 
 
@@ -46,7 +54,12 @@ QIndigoService::~QIndigoService() {
 
 bool QIndigoService::connect() {
 	int i = 5; /* 0.5 seconds */
+#ifdef INDIGO_VERSION_3
+	prev_handle = NULL;
+#else
 	prev_socket = -1;
+#endif
+
 	indigo_debug("%s(): %s %s %d\n",__FUNCTION__, m_name.constData(), m_host.constData(), m_port);
 	indigo_result res = indigo_connect_server(m_name.constData(), m_host.constData(), m_port, &m_server_entry);
 	indigo_debug("%s(): %s %s %d server_entry=%p\n",__FUNCTION__, m_name.constData(), m_host.constData(), m_port, m_server_entry);
