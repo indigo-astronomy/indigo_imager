@@ -28,6 +28,7 @@
 #include <imageviewer.h>
 #include <widget_state.h>
 #include <conf.h>
+#include <PolarAlignmentWidget/PolarAlignmentWidget.h>
 
 class QServiceModel;
 class QIndigoServers;
@@ -180,6 +181,9 @@ public:
 	friend void update_solver_agent_pa_settings(ImagerWindow *w, indigo_property *property);
 
 	bool m_is_sequence;
+
+	public:
+	void updatePolarAlignmentOverlay(double azError, double altError);
 
 signals:
 	void enable_blobs(bool on);
@@ -433,6 +437,8 @@ public slots:
 	void on_request_sequence();
 
 	void on_tab_changed(int index);
+
+	void onTelescopeSubTabChanged(int subTabIndex);
 
 	void on_custom_object_populate() {
 		QString ra_str(indigo_dtos(m_mount_ra, "%d:%02d:%04.1f"));
@@ -890,6 +896,8 @@ private:
 	QLabel *m_pa_error_az_label;
 	QLabel *m_pa_error_alt_label;
 	QLabel *m_pa_error_label;
+	PolarAlignmentWidget* m_polarAlignWidget;
+
 	QMutex m_property_mutex;
 
 	int m_stderr;
@@ -1024,6 +1032,8 @@ private:
 	void change_mount_agent_equatorial(const char *agent, bool sync = false) const;
 	void change_mount_agent_abort(const char *agent) const;
 	void change_mount_agent_location(const char *agent, QString property_prefix) const;
+
+	void togglePolarAlignmentOverlay(bool show);
 
 	void change_rotator_position_property(const char *agent) const;
 	void change_rotator_sync_property(const char *agent) const;

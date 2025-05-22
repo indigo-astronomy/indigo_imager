@@ -541,6 +541,12 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_imager_viewer->showReference(conf.imager_show_reference);
 	m_guider_viewer->enableAntialiasing(conf.guider_antialiasing_enabled);
 
+	// Create and setup the polar alignment widget
+	m_polarAlignWidget = new PolarAlignmentWidget(m_imager_viewer);
+	m_polarAlignWidget->setMinimumSize(200, 200);
+	m_polarAlignWidget->setStyleSheet("background-color: rgba(0, 0, 0, 120);"); // Semi-transparent background
+	m_polarAlignWidget->setVisible(false);      // Hidden by default
+
 	//  Start up the client
 	IndigoClient::instance().enable_blobs(conf.blobs_enabled);
 	IndigoClient::instance().start("INDIGO Imager");
@@ -576,6 +582,7 @@ ImagerWindow::~ImagerWindow () {
 	delete mServiceModel;
 	delete m_custom_object_model;
 	delete m_add_object_dialog;
+	delete m_polarAlignWidget;
 }
 
 void ImagerWindow::load_sequencer_code() {
@@ -721,8 +728,32 @@ void ImagerWindow::on_tab_changed(int index) {
 			m_sequence_editor2->setVisible(false);
 		}
 
-		if (index == TELESCOPE_TAB) m_imager_viewer->showWCS(true);
-		else m_imager_viewer->showWCS(false);
+		if (index == TELESCOPE_TAB) {
+			m_imager_viewer->showWCS(true);
+
+			// Get the telescope tab widget
+			QTabWidget* telescopeTabbar = nullptr;
+			if (m_tools_tabbar->currentIndex() == TELESCOPE_TAB &&
+				m_tools_tabbar->currentWidget()) {
+				// Find the nested QTabWidget inside the telescope tab
+				QList<QTabWidget*> childTabWidgets = m_tools_tabbar->currentWidget()->findChildren<QTabWidget*>();
+				if (!childTabWidgets.isEmpty()) {
+					telescopeTabbar = childTabWidgets.first();
+				}
+			}
+
+			// Show polar alignment overlay when in telescope tab and on the polar align sub-tab
+			bool showPolarOverlay = false;
+			if (telescopeTabbar) {
+				showPolarOverlay = (telescopeTabbar->currentIndex() >= 0 &&
+								  telescopeTabbar->tabText(telescopeTabbar->currentIndex()) == "Polar align");
+			}
+
+			togglePolarAlignmentOverlay(showPolarOverlay);
+		} else {
+			m_imager_viewer->showWCS(false);
+			togglePolarAlignmentOverlay(false);
+		}
 	} else if (index == SEQUENCE_TAB) {
 		if (m_visible_viewer != m_sequence_editor2) {
 			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_sequence_editor2);
@@ -760,6 +791,13 @@ void ImagerWindow::on_tab_changed(int index) {
 		m_imager_viewer->showExtraSelection(false);
 		m_imager_viewer->showReference(conf.imager_show_reference);
 	}
+
+	// Show polar alignment overlay only in telescope tab when viewing the polar alignment sub-tab
+	bool showPolarOverlay = (index == TELESCOPE_TAB &&
+	                       m_tools_tabbar->currentWidget() &&
+	                       m_tools_tabbar->tabText(m_tools_tabbar->currentIndex()) == "Polar align");
+
+	togglePolarAlignmentOverlay(showPolarOverlay);
 }
 
 void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *item, bool save_blob) {
@@ -1567,4 +1605,45 @@ void ImagerWindow::on_about_act() {
 	);
 	msgBox.exec();
 	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::togglePolarAlignmentOverlay(bool show) {
+	if (!m_polarAlignWidget)
+		return;
+
+	if (show) {
+		// Resize to maintain proportion relative to the viewer
+		int size = qMin(m_imager_viewer->width(), m_imager_viewer->height()) / 3;
+		int margin = 10;
+
+		// Position in the bottom left corner
+		m_polarAlignWidget->setGeometry(
+			margin,                              // Left position - close to left edge
+			m_imager_viewer->height() - size - margin, // Bottom position - close to bottom edge
+			size,
+			size);
+
+		// Set opacity to 50%
+		m_polarAlignWidget->setWidgetOpacity(0.5);
+	}
+
+	m_polarAlignWidget->setVisible(show);
+	m_polarAlignWidget->raise();  // Ensure it's on top
+}
+
+void ImagerWindow::updatePolarAlignmentOverlay(double azError, double altError) {
+	if (m_polarAlignWidget) {
+		m_polarAlignWidget->setErrors(altError, azError);
+	}
+}
+
+void ImagerWindow::onTelescopeSubTabChanged(int subTabIndex) {
+	if (m_tools_tabbar->currentIndex() == TELESCOPE_TAB) {
+		// Get the nested tab widget
+		QTabWidget* telescopeTabbar = qobject_cast<QTabWidget*>(sender());
+		if (telescopeTabbar) {
+			bool showPolarOverlay = (telescopeTabbar->tabText(subTabIndex) == "Polar align");
+			togglePolarAlignmentOverlay(showPolarOverlay);
+		}
+	}
 }

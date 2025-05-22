@@ -53,6 +53,7 @@ SOURCES += \
 	$$PWD/sequencer/IndigoSequenceParser.cpp \
 	$$PWD/sequencer/SexagesimalConverter.cpp \
 	$$PWD/sequencer/QLineEditSG.cpp \
+	$$PWD/PolarAlignmentWidget/PolarAlignmentWidget.cpp \
 	$$PWD/../common_src/coordconv.c \
 	$$PWD/../object_data/indigo_cat_data.c \
 	$$PWD/../common_src/utils.cpp \
@@ -166,6 +167,7 @@ HEADERS += \
 	$$PWD/sequencer/IndigoSequenceParser.h \
 	$$PWD/sequencer/SexagesimalConverter.h \
 	$$PWD/sequencer/QLineEditSG.h \
+	$$PWD/PolarAlignmentWidget/PolarAlignmentWidget.h \
 	$$PWD/../common_src/version.h \
 	$$PWD/../object_data/indigo_cat_data.h \
 	$$PWD/../common_src/utils.h \

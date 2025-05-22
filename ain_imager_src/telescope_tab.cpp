@@ -190,6 +190,9 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	QTabWidget *telescope_tabbar = new QTabWidget;
 	telescope_frame_layout->addWidget(telescope_tabbar, row, 0, 1, 4);
 
+	// Connect to the tab change signal
+	connect(telescope_tabbar, &QTabWidget::currentChanged, this, &ImagerWindow::onTelescopeSubTabChanged);
+
 	// image frame
 	QFrame *slew_frame = new QFrame();
 	telescope_tabbar->addTab(slew_frame, "Main");

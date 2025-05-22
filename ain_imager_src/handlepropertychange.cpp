@@ -876,10 +876,12 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 		sprintf(alt_correction_str, "N/A");
 		sprintf(az_correction_str, "N/A");
 		sprintf(total_error_str, "N/A");
+		w->updatePolarAlignmentOverlay(0, 0);
 	} else if (state == INDIGO_POLAR_ALIGN_RECALCULATE || property->state == INDIGO_OK_STATE) {
 		sprintf(alt_correction_str, "%+.2f'  move %s", alt_error * 60, alt_correction_up ? "Up ↑" : "Down ↓");
 		sprintf(az_correction_str, "%+.2f'  move %s", az_error * 60, az_correction_cw ? "C.W. ↻" : "C.C.W. ↺");
 		sprintf(total_error_str, "%.2f'", total_error * 60);
+		w->updatePolarAlignmentOverlay(az_error * 60, alt_error * 60);
 	}
 
 	char message[50] = "Idle";
