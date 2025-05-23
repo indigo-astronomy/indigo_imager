@@ -1654,6 +1654,12 @@ void ImagerWindow::updatePolarAlignmentOverlay(double azError, double altError) 
 	}
 }
 
+void ImagerWindow::showPolarAlignmentOverlayMarker(bool show) {
+	if (m_polarAlignWidget) {
+		m_polarAlignWidget->setMarkerVisible(show);
+	}
+}
+
 void ImagerWindow::onTelescopeSubTabChanged(int subTabIndex) {
 	if (m_tools_tabbar->currentIndex() == TELESCOPE_TAB) {
 		// Get the nested tab widget

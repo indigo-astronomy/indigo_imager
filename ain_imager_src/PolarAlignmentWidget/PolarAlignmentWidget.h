@@ -35,6 +35,9 @@ public:
 	QColor getLabelColor() const { return m_labelColor; }
 	qreal getWidgetOpacity() const { return m_widgetOpacity; }
 
+	void setMarkerVisible(bool visible);
+	bool isMarkerVisible() const { return m_showMarker; }
+
 protected:
 	void paintEvent(QPaintEvent *event) override;
 	void resizeEvent(QResizeEvent *event) override;
@@ -66,6 +69,8 @@ private:
 	QVector<ScaleLevel> m_scaleLevels;
 
 	int m_currentScaleIndex = 0;
+
+	bool m_showMarker = true;  // Visibility state of the marker and arrows
 
 	void initScaleLevels();
 	void updateScale();

@@ -184,6 +184,7 @@ public:
 
 	public:
 	void updatePolarAlignmentOverlay(double azError, double altError);
+	void showPolarAlignmentOverlayMarker(bool show);
 
 signals:
 	void enable_blobs(bool on);

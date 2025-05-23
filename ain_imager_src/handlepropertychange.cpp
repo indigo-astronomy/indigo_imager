@@ -876,22 +876,30 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 		sprintf(alt_correction_str, "N/A");
 		sprintf(az_correction_str, "N/A");
 		sprintf(total_error_str, "N/A");
-		w->updatePolarAlignmentOverlay(0, 0);
+		//w->updatePolarAlignmentOverlay(0, 0);
+		//w->showPolarAlignmentOverlayMarker(false);
 	} else if (state == INDIGO_POLAR_ALIGN_RECALCULATE || property->state == INDIGO_OK_STATE) {
 		sprintf(alt_correction_str, "%+.2f'  move %s", alt_error * 60, alt_correction_up ? "Up ↑" : "Down ↓");
 		sprintf(az_correction_str, "%+.2f'  move %s", az_error * 60, az_correction_cw ? "C.W. ↻" : "C.C.W. ↺");
 		sprintf(total_error_str, "%.2f'", total_error * 60);
-		w->updatePolarAlignmentOverlay(az_error * 60, alt_error * 60);
+		//w->updatePolarAlignmentOverlay(az_error * 60, alt_error * 60);
+		//w->showPolarAlignmentOverlayMarker(true);
 	}
 
 	char message[50] = "Idle";
 	switch (state) {
 	case INDIGO_POLAR_ALIGN_IDLE:
+		w->updatePolarAlignmentOverlay(0, 0);
+		w->showPolarAlignmentOverlayMarker(false);
 		break;
 	case INDIGO_POLAR_ALIGN_START:
+		w->updatePolarAlignmentOverlay(0, 0);
+		w->showPolarAlignmentOverlayMarker(false);
 		strcpy(message, "Slewing to initial position");
 		break;
 	case INDIGO_POLAR_ALIGN_REFERENCE_1:
+		w->updatePolarAlignmentOverlay(0, 0);
+		w->showPolarAlignmentOverlayMarker(false);
 		strcpy(message, "Measuring point 1");
 		break;
 	case INDIGO_POLAR_ALIGN_REFERENCE_2:
@@ -904,6 +912,8 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 		strcpy(message, "Recalculating");
 		break;
 	case INDIGO_POLAR_ALIGN_IN_PROGRESS:
+		w->updatePolarAlignmentOverlay(az_error * 60, alt_error * 60);
+		w->showPolarAlignmentOverlayMarker(true);
 		strcpy(message, "In progress");
 		break;
 	}

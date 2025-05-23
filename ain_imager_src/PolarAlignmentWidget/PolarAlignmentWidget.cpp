@@ -2,11 +2,11 @@
 #include <QPainterPath>  // Add this include
 
 PolarAlignmentWidget::PolarAlignmentWidget(QWidget *parent) : QWidget(parent) {
-    // Increase minimum width to accommodate both the graph and indicators
-    setMinimumSize(400, 240); // Wider to ensure space for indicators
-    setBackgroundRole(QPalette::Base);
-    setAutoFillBackground(true);
-    initScaleLevels();
+	// Increase minimum width to accommodate both the graph and indicators
+	setMinimumSize(400, 240); // Wider to ensure space for indicators
+	setBackgroundRole(QPalette::Base);
+	setAutoFillBackground(true);
+	initScaleLevels();
 }
 
 void PolarAlignmentWidget::initScaleLevels() {
@@ -34,6 +34,13 @@ void PolarAlignmentWidget::setMarkerColor(const QColor& color) {
 void PolarAlignmentWidget::setMarkerOpacity(qreal opacity) {
 	m_markerOpacity = qBound(0.0, opacity, 1.0);
 	update();
+}
+
+void PolarAlignmentWidget::setMarkerVisible(bool visible) {
+	if (m_showMarker != visible) {
+		m_showMarker = visible;
+		update();
+	}
 }
 
 void PolarAlignmentWidget::setBackgroundColor(const QColor& color) {
@@ -191,9 +198,9 @@ void PolarAlignmentWidget::drawLabels(QPainter &painter, double pixelRadius, dou
 
 	// Format label based on the value
 	if (value >= 60) {
-		label = QString("%1°").arg(value / 60.0, 0, 'f', 2);
+		label = QString("%1°").arg(value / 60.0, 0, 'f', 0);
 	} else {
-		label = QString("%1'").arg(value, 0, 'f', 2);
+		label = QString("%1'").arg(value, 0, 'f', 0);
 	}
 
 	painter.setPen(QPen(m_labelColor, 1.0));
@@ -221,6 +228,11 @@ void PolarAlignmentWidget::drawLabels(QPainter &painter, double pixelRadius, dou
 }
 
 void PolarAlignmentWidget::drawErrorMarker(QPainter &painter) {
+	// If marker is hidden, don't draw it
+	if (!m_showMarker) {
+		return;
+	}
+
 	const double markerSize = 6;
 	const double notchSize = 2;
 	QPointF markerPos = errorToPoint(m_altError, m_azError);
@@ -260,6 +272,45 @@ void PolarAlignmentWidget::drawErrorMarker(QPainter &painter) {
 }
 
 void PolarAlignmentWidget::drawDirectionIndicators(QPainter &painter) {
+	// If marker is hidden, don't draw direction indicators
+	if (!m_showMarker) {
+		// Draw zeros instead to indicate no errors
+		QPointF center = getCenter();
+		int size = getTargetSize();
+
+		painter.save();
+		int panelX = center.x() + size/2 + 20;
+		int centerY = height() / 2;
+		int verticalSpacing = 40;
+		int altY = centerY + verticalSpacing/2;
+		int azY = centerY - verticalSpacing/2;
+		int arrowX = panelX + 16;
+
+		QFont valueFont = painter.font();
+		valueFont.setPointSize(18);
+		valueFont.setBold(false);
+		painter.setFont(valueFont);
+
+		// Draw "0'" for both alt and az errors
+		QString zeroText = "0.00'";
+		painter.setPen(m_labelColor);
+
+		// Get font metrics for vertical alignment
+		QFontMetrics fm = painter.fontMetrics();
+		int textHeight = fm.height();
+
+		// Draw at the exact same positions as the normal values
+		int azTextY = azY + (textHeight/2 - fm.descent());
+		int altTextY = altY + (textHeight/2 - fm.descent());
+
+		painter.drawText(arrowX + 12 + 10, azTextY, zeroText);
+		painter.drawText(arrowX + 12 + 10, altTextY, zeroText);
+
+		painter.restore();
+		return;
+	}
+
+	// Original implementation follows...
 	QPointF center = getCenter();
 	int size = getTargetSize();
 
@@ -390,6 +441,11 @@ void PolarAlignmentWidget::drawDirectionIndicators(QPainter &painter) {
 }
 
 QString PolarAlignmentWidget::formatErrorValue(double value) const {
+	// If marker is hidden, always return "0" with proper formatting
+	if (!m_showMarker) {
+		return "0.00'";
+	}
+
 	QString direction;
 	double absValue = std::abs(value);
 
