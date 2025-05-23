@@ -302,7 +302,6 @@ void PolarAlignmentWidget::drawDirectionIndicators(QPainter &painter) {
 
 	// Create a panel on the right side
 	int panelX = center.x() + size/2 + 10;
-	int panelHeight = height() * 0.8;
 
 	// Setup font for values
 	QFont valueFont = painter.font();
@@ -316,23 +315,28 @@ void PolarAlignmentWidget::drawDirectionIndicators(QPainter &painter) {
 	int verticalSpacing = 40;   // Gap between indicators
 	int iconSize = 24;          // Larger square for entire arrow
 	int textMargin = 10;        // Space between arrow and text
+	int circleSize = 14;        // Size of the success indicator circle
 
 	// Calculate center point for both indicators to ensure perfect symmetry
 	int centerY = height() / 2;
 
-	// Swap positions - place Alt at bottom, Az at top for more intuitive mapping
 	int altY = centerY + verticalSpacing/2;  // Altitude now at bottom
 	int azY = centerY - verticalSpacing/2;   // Azimuth now at top
 
 	int arrowX = panelX + 16;   // Consistent X position for both arrows
 
-	// Get font metrics to calculate text positioning
 	painter.setFont(valueFont);
 	QFontMetrics fm = painter.fontMetrics();
 	int textHeight = fm.height();
 
-	// Draw Azimuth indicator (now at top position)
-	if (std::abs(m_azError) > 0.01) {
+	// Azimuth error indicator
+	if (std::abs(m_azError) <= 0.01) {
+		// Circle for perfect alignment
+		painter.setBrush(errorColor);
+		painter.setPen(Qt::NoPen);
+		painter.drawEllipse(QPointF(arrowX, azY), circleSize/2, circleSize/2);
+	} else {
+		// Directional arrow for larger errors
 		painter.setBrush(errorColor);
 		painter.setPen(Qt::NoPen);
 
@@ -355,6 +359,7 @@ void PolarAlignmentWidget::drawDirectionIndicators(QPainter &painter) {
 			painter.drawPolygon(rightArrow);
 		} else {
 			QPolygonF leftArrow;
+			// Shaft base
 			leftArrow
 				<< QPointF(arrowX + iconSize/2, azY - iconSize/6)
 				<< QPointF(arrowX + iconSize/2, azY + iconSize/6)
@@ -376,8 +381,14 @@ void PolarAlignmentWidget::drawDirectionIndicators(QPainter &painter) {
 	int azTextY = azY + (textHeight/2 - fm.descent());
 	painter.drawText(arrowX + iconSize/2 + textMargin, azTextY, azText);
 
-	// Draw Altitude indicator (now at bottom position)
-	if (std::abs(m_altError) > 0.01) {
+	// Altitude error indicator
+	if (std::abs(m_altError) <= 0.01) {
+		// Circle for perfect alignment
+		painter.setBrush(errorColor);
+		painter.setPen(Qt::NoPen);
+		painter.drawEllipse(QPointF(arrowX, altY), circleSize/2, circleSize/2);
+	} else {
+		// Directional arrow for larger errors
 		painter.setBrush(errorColor);
 		painter.setPen(Qt::NoPen);
 
@@ -400,6 +411,7 @@ void PolarAlignmentWidget::drawDirectionIndicators(QPainter &painter) {
 			painter.drawPolygon(upArrow);
 		} else {
 			QPolygonF downArrow;
+			// Shaft base
 			downArrow
 				<< QPointF(arrowX - iconSize/6, altY - iconSize/2)
 				<< QPointF(arrowX + iconSize/6, altY - iconSize/2)
