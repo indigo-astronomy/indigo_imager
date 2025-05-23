@@ -882,12 +882,14 @@ void ImageViewer::resizeEvent(QResizeEvent *event) {
 	QFrame::resizeEvent(event);
 	if (m_fit)
 		zoomFit();
+	emit viewerResized();
 }
 
 void ImageViewer::showEvent(QShowEvent *event) {
 	QFrame::showEvent(event);
 	if (m_fit)
 		zoomFit();
+	emit viewerShown();
 }
 
 void ImageViewer::stretchNone() {
@@ -1025,6 +1027,21 @@ void ImageViewer::setBalance(int balance) {
 			m_color_reference_act[COLOR_BALANCE_AUTO]->setChecked(true);
 			onAutoBalance();
 	}
+}
+
+QRect ImageViewer::getVisibleImageRect() const {
+	if (!m_pixmap || m_pixmap->pixmap().isNull()) {
+		return QRect();
+	}
+
+	QRectF sceneRect = m_view->mapFromScene(m_pixmap->sceneBoundingRect()).boundingRect();
+	QRect viewRect = m_view->viewport()->rect();
+	QRectF intersected = sceneRect.intersected(viewRect);
+
+	// Map to ImageViewer coordinates
+	QPoint topLeft = m_view->viewport()->mapTo(this, intersected.topLeft().toPoint());
+	QPoint bottomRight = m_view->viewport()->mapTo(this, intersected.bottomRight().toPoint());
+	return QRect(topLeft, bottomRight);
 }
 
 PixmapItem::PixmapItem(QGraphicsItem *parent) :

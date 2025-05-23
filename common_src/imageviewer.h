@@ -61,6 +61,8 @@ public:
 	void showStretchButton(bool show);
 	void showZoomButtons(bool show);
 
+	QRect getVisibleImageRect() const;
+
 public slots:
 	void setText(const QString &txt);
 	void setToolTip(const QString &txt);
@@ -120,6 +122,8 @@ signals:
 	void BalanceChanged(int balance);
 	void previousRequested();
 	void nextRequested();
+	void viewerResized();
+	void viewerShown();
 
 protected:
 	void enterEvent(QEvent *event) override;

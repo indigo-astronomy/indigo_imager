@@ -547,6 +547,16 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_polarAlignWidget->setStyleSheet("background-color: rgba(0, 0, 0, 120);"); // Semi-transparent background
 	m_polarAlignWidget->setVisible(false);      // Hidden by default
 
+
+	connect(m_imager_viewer, &ImageViewer::viewerResized, this, [this]() {
+		if (m_polarAlignWidget && m_polarAlignWidget->isVisible())
+			togglePolarAlignmentOverlay(true);
+	});
+	connect(m_imager_viewer, &ImageViewer::viewerShown, this, [this]() {
+		if (m_polarAlignWidget && m_polarAlignWidget->isVisible())
+			togglePolarAlignmentOverlay(true);
+	});
+
 	//  Start up the client
 	IndigoClient::instance().enable_blobs(conf.blobs_enabled);
 	IndigoClient::instance().start("INDIGO Imager");
@@ -1612,28 +1622,35 @@ void ImagerWindow::togglePolarAlignmentOverlay(bool show) {
 		return;
 
 	if (show) {
-		// Resize to maintain proportion relative to the viewer
-		int size = qMin(m_imager_viewer->width(), m_imager_viewer->height()) / 3;
-		int margin = 10;
+		// Get the visible image area in ImageViewer coordinates
+		QRect visibleRect = m_imager_viewer->getVisibleImageRect();
+		if (visibleRect.isEmpty()) {
+			m_polarAlignWidget->setVisible(false);
+			return;
+		}
 
-		// Position in the bottom left corner
-		m_polarAlignWidget->setGeometry(
-			margin,                              // Left position - close to left edge
-			m_imager_viewer->height() - size - margin, // Bottom position - close to bottom edge
-			size,
-			size);
+		int overlayWidth = static_cast<int>(visibleRect.width() * 0.4);
+		int overlayHeight = static_cast<int>(visibleRect.height() * 0.4);
 
-		// Set opacity to 50%
+		// Center the overlay in the visible image area
+		int x = visibleRect.x() + (visibleRect.width() - overlayWidth) / 2;
+		int y = visibleRect.y() + (visibleRect.height() - overlayHeight) / 2;
+
+		m_polarAlignWidget->setGeometry(x, y, overlayWidth, overlayHeight);
+		m_polarAlignWidget->setAttribute(Qt::WA_TransparentForMouseEvents, true);
 		m_polarAlignWidget->setWidgetOpacity(0.5);
+		m_polarAlignWidget->raise();
+		m_polarAlignWidget->setVisible(true);
+	} else {
+		m_polarAlignWidget->setVisible(false);
 	}
-
-	m_polarAlignWidget->setVisible(show);
-	m_polarAlignWidget->raise();  // Ensure it's on top
 }
 
 void ImagerWindow::updatePolarAlignmentOverlay(double azError, double altError) {
 	if (m_polarAlignWidget) {
 		m_polarAlignWidget->setErrors(altError, azError);
+		if (m_polarAlignWidget->isVisible())
+			togglePolarAlignmentOverlay(true); // reposition/resize if needed
 	}
 }
 
