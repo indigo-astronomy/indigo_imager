@@ -543,9 +543,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	// Create and setup the polar alignment widget
 	m_polarAlignWidget = new PolarAlignmentWidget(m_imager_viewer);
-	//m_polarAlignWidget->setMinimumSize(350, 220);
 	m_polarAlignWidget->setStyleSheet("background-color: rgba(0, 0, 0, 120);"); // Semi-transparent background
-	m_polarAlignWidget->setVisible(false);      // Hidden by default
+	m_polarAlignWidget->setVisible(false);
 
 
 	connect(m_imager_viewer, &ImageViewer::viewerResized, this, [this]() {
@@ -1620,8 +1619,8 @@ void ImagerWindow::togglePolarAlignmentOverlay(bool show) {
 			return;
 		}
 
-		int overlayWidth = static_cast<int>(visibleRect.width() * 0.4);
-		int overlayHeight = static_cast<int>(visibleRect.height() * 0.4);
+		const int overlayWidth = 380;
+		const int overlayHeight = 240;
 
 		// Center the overlay in the visible image area
 		int x = visibleRect.x() + (visibleRect.width() - overlayWidth) / 2;
