@@ -592,7 +592,6 @@ ImagerWindow::~ImagerWindow () {
 	delete mServiceModel;
 	delete m_custom_object_model;
 	delete m_add_object_dialog;
-	delete m_polarAlignWidget;
 }
 
 void ImagerWindow::load_sequencer_code() {
