@@ -1,10 +1,12 @@
 #include "PolarAlignmentWidget.h"
+#include <QPainterPath>  // Add this include
 
 PolarAlignmentWidget::PolarAlignmentWidget(QWidget *parent) : QWidget(parent) {
-	setMinimumSize(200, 200);
-	setBackgroundRole(QPalette::Base);
-	setAutoFillBackground(true);
-	initScaleLevels();
+    // Increase minimum width to accommodate both the graph and indicators
+    setMinimumSize(400, 240); // Wider to ensure space for indicators
+    setBackgroundRole(QPalette::Base);
+    setAutoFillBackground(true);
+    initScaleLevels();
 }
 
 void PolarAlignmentWidget::initScaleLevels() {
@@ -103,23 +105,36 @@ void PolarAlignmentWidget::updateScale() {
 
 void PolarAlignmentWidget::paintEvent(QPaintEvent *) {
 	QPainter painter(this);
-	
-	// Set quality rendering for all elements
-	painter.setRenderHints(QPainter::Antialiasing |
-						QPainter::TextAntialiasing |
-						QPainter::SmoothPixmapTransform, true);
 
-	// Apply global opacity to all painting operations
+	// Set quality rendering for all elements
+	painter.setRenderHints(
+		QPainter::Antialiasing |
+		QPainter::TextAntialiasing |
+		QPainter::SmoothPixmapTransform, true
+	);
+
+	// First draw the rounded rectangle background
+	int cornerRadius = 6;
+	painter.save();
+	// Apply global opacity to the background
 	painter.setOpacity(m_widgetOpacity);
 
+	// Create path for rounded rectangle
+	QPainterPath path;
+	path.addRoundedRect(rect(), cornerRadius, cornerRadius);
+
+	// Set the clip path to ensure all content stays within rounded borders
+	painter.setClipPath(path);
+
 	// Draw background
-	painter.fillRect(rect(), m_backgroundColor);
+	painter.fillPath(path, m_backgroundColor);
 
-	// Draw the target circles
+	// Continue with regular painting
 	drawTarget(painter);
-
-	// Draw the error marker
 	drawErrorMarker(painter);
+	drawDirectionIndicators(painter);
+
+	painter.restore();
 }
 
 void PolarAlignmentWidget::drawTarget(QPainter &painter) {
@@ -176,9 +191,9 @@ void PolarAlignmentWidget::drawLabels(QPainter &painter, double pixelRadius, dou
 
 	// Format label based on the value
 	if (value >= 60) {
-		label = QString("%1°").arg(value / 60.0, 0, 'f', 1);
+		label = QString("%1°").arg(value / 60.0, 0, 'f', 2);
 	} else {
-		label = QString("%1'").arg(value, 0, 'f', 0);
+		label = QString("%1'").arg(value, 0, 'f', 2);
 	}
 
 	painter.setPen(QPen(m_labelColor, 1.0));
@@ -244,6 +259,147 @@ void PolarAlignmentWidget::drawErrorMarker(QPainter &painter) {
 	painter.restore();
 }
 
+void PolarAlignmentWidget::drawDirectionIndicators(QPainter &painter) {
+	QPointF center = getCenter();
+	int size = getTargetSize();
+
+	painter.save();
+
+	// Create a panel on the right side
+	int panelX = center.x() + size/2 + 20;
+	int panelHeight = height() * 0.8;
+
+	// Setup font for values
+	QFont valueFont = painter.font();
+	valueFont.setPointSize(18);
+	valueFont.setBold(false);
+
+	// Get error-based color for arrows only
+	QColor errorColor = m_useErrorBasedColors ? getErrorBasedColor() : m_markerColor;
+
+	// Define spacing
+	int verticalSpacing = 40;   // Gap between indicators
+	int iconSize = 24;          // Larger square for entire arrow
+	int textMargin = 10;        // Space between arrow and text
+
+	// Calculate center point for both indicators to ensure perfect symmetry
+	int centerY = height() / 2;
+
+	// Swap positions - place Alt at bottom, Az at top for more intuitive mapping
+	int altY = centerY + verticalSpacing/2;  // Altitude now at bottom
+	int azY = centerY - verticalSpacing/2;   // Azimuth now at top
+
+	int arrowX = panelX + 16;   // Consistent X position for both arrows
+
+	// Get font metrics to calculate text positioning
+	painter.setFont(valueFont);
+	QFontMetrics fm = painter.fontMetrics();
+	int textHeight = fm.height();
+
+	// Draw Azimuth indicator (now at top position)
+	if (std::abs(m_azError) > 0.01) {
+		painter.setBrush(errorColor);
+		painter.setPen(Qt::NoPen);
+
+		QRect iconRect(arrowX - iconSize/2, azY - iconSize/2, iconSize, iconSize);
+
+		if (m_azError < 0) {
+			QPolygonF rightArrow;
+			// Shaft base
+			rightArrow
+				<< QPointF(arrowX - iconSize/2, azY - iconSize/6)
+				<< QPointF(arrowX - iconSize/2, azY + iconSize/6)
+				// Shaft middle
+				<< QPointF(arrowX, azY + iconSize/6)
+				// Arrow head
+				<< QPointF(arrowX, azY + iconSize/3)
+				<< QPointF(arrowX + iconSize/2, azY)
+				<< QPointF(arrowX, azY - iconSize/3)
+				<< QPointF(arrowX, azY - iconSize/6);
+
+			painter.drawPolygon(rightArrow);
+		} else {
+			QPolygonF leftArrow;
+			leftArrow
+				<< QPointF(arrowX + iconSize/2, azY - iconSize/6)
+				<< QPointF(arrowX + iconSize/2, azY + iconSize/6)
+				// Shaft middle
+				<< QPointF(arrowX, azY + iconSize/6)
+				// Arrow head
+				<< QPointF(arrowX, azY + iconSize/3)
+				<< QPointF(arrowX - iconSize/2, azY)
+				<< QPointF(arrowX, azY - iconSize/3)
+				<< QPointF(arrowX, azY - iconSize/6);
+
+			painter.drawPolygon(leftArrow);
+		}
+	}
+
+	QString azText = formatErrorValue(m_azError);
+	painter.setPen(m_labelColor);
+	painter.setFont(valueFont);
+	int azTextY = azY + (textHeight/2 - fm.descent());
+	painter.drawText(arrowX + iconSize/2 + textMargin, azTextY, azText);
+
+	// Draw Altitude indicator (now at bottom position)
+	if (std::abs(m_altError) > 0.01) {
+		painter.setBrush(errorColor);
+		painter.setPen(Qt::NoPen);
+
+		QRect iconRect(arrowX - iconSize/2, altY - iconSize/2, iconSize, iconSize);
+
+		if (m_altError < 0) {
+			QPolygonF upArrow;
+			// Shaft base
+			upArrow
+				<< QPointF(arrowX - iconSize/6, altY + iconSize/2)
+				<< QPointF(arrowX + iconSize/6, altY + iconSize/2)
+				// Shaft middle
+				<< QPointF(arrowX + iconSize/6, altY)
+				// Arrow head
+				<< QPointF(arrowX + iconSize/3, altY)
+				<< QPointF(arrowX, altY - iconSize/2)
+				<< QPointF(arrowX - iconSize/3, altY)
+				<< QPointF(arrowX - iconSize/6, altY);
+
+			painter.drawPolygon(upArrow);
+		} else {
+			QPolygonF downArrow;
+			downArrow
+				<< QPointF(arrowX - iconSize/6, altY - iconSize/2)
+				<< QPointF(arrowX + iconSize/6, altY - iconSize/2)
+				// Shaft middle
+				<< QPointF(arrowX + iconSize/6, altY)
+				// Arrow head
+				<< QPointF(arrowX + iconSize/3, altY)
+				<< QPointF(arrowX, altY + iconSize/2)
+				<< QPointF(arrowX - iconSize/3, altY)
+				<< QPointF(arrowX - iconSize/6, altY);
+
+			painter.drawPolygon(downArrow);
+		}
+	}
+
+	QString altText = formatErrorValue(m_altError);
+	painter.setPen(m_labelColor);
+	painter.setFont(valueFont);
+	int altTextY = altY + (textHeight/2 - fm.descent());
+	painter.drawText(arrowX + iconSize/2 + textMargin, altTextY, altText);
+
+	painter.restore();
+}
+
+QString PolarAlignmentWidget::formatErrorValue(double value) const {
+	QString direction;
+	double absValue = std::abs(value);
+
+	if (absValue >= 60) {
+		return QString("%1°").arg(absValue / 60.0, 0, 'f', 2);
+	} else {
+		return QString("%1'").arg(absValue, 0, 'f', 2);
+	}
+}
+
 QColor PolarAlignmentWidget::getErrorBasedColor() const {
 	double totalError = sqrt(m_altError * m_altError + m_azError * m_azError);
 
@@ -274,11 +430,25 @@ QPointF PolarAlignmentWidget::errorToPoint(double altError, double azError) cons
 }
 
 QPointF PolarAlignmentWidget::getCenter() const {
-	return QPointF(width() / 2, height() / 2);
+	// Calculate available space with consistent padding
+	int padding = qMin(width(), height()) * 0.1; // 10% padding
+
+	// Position the center with equal distance from left, top and bottom
+	return QPointF(padding + (getTargetSize() / 2), height() / 2);
 }
 
 int PolarAlignmentWidget::getTargetSize() const {
-	return static_cast<int>(std::min(width(), height()) * 0.90);
+	// Calculate available space with consistent padding
+	int padding = qMin(width(), height()) * 0.1;
+
+	// Maximum size would be the available height minus padding on both sides
+	int maxHeight = height() - (padding * 2);
+
+	// For width, we need to leave space for the indicators on the right
+	// Use about 50% of the widget width for the target
+	int maxWidth = qMin(static_cast<int>(width() * 0.5), maxHeight);
+
+	return maxWidth;
 }
 
 void PolarAlignmentWidget::resizeEvent(QResizeEvent *event) {

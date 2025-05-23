@@ -79,4 +79,7 @@ private:
 	QPointF getCenter() const;
 
 	QColor getErrorBasedColor() const;
+
+	void drawDirectionIndicators(QPainter &painter);
+	QString formatErrorValue(double value) const;
 };
