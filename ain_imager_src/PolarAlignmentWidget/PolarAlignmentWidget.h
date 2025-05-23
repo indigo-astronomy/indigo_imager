@@ -43,6 +43,7 @@ protected:
 	void resizeEvent(QResizeEvent *event) override;
 
 private:
+	int m_valueFontSize = 22;  // Font size for values
 	double m_altError = 0.0;  // Altitude error in arcminutes
 	double m_azError = 0.0;   // Azimuth error in arcminutes
 

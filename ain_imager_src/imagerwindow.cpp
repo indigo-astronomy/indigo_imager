@@ -543,7 +543,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	// Create and setup the polar alignment widget
 	m_polarAlignWidget = new PolarAlignmentWidget(m_imager_viewer);
-	m_polarAlignWidget->setMinimumSize(320, 200);
+	//m_polarAlignWidget->setMinimumSize(350, 220);
 	m_polarAlignWidget->setStyleSheet("background-color: rgba(0, 0, 0, 120);"); // Semi-transparent background
 	m_polarAlignWidget->setVisible(false);      // Hidden by default
 

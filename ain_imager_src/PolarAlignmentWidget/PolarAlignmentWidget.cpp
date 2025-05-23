@@ -1,9 +1,8 @@
 #include "PolarAlignmentWidget.h"
-#include <QPainterPath>  // Add this include
+#include <QPainterPath>
 
 PolarAlignmentWidget::PolarAlignmentWidget(QWidget *parent) : QWidget(parent) {
-	// Increase minimum width to accommodate both the graph and indicators
-	setMinimumSize(400, 240); // Wider to ensure space for indicators
+	setMinimumSize(360, 240);
 	setBackgroundRole(QPalette::Base);
 	setAutoFillBackground(true);
 	initScaleLevels();
@@ -113,27 +112,20 @@ void PolarAlignmentWidget::updateScale() {
 void PolarAlignmentWidget::paintEvent(QPaintEvent *) {
 	QPainter painter(this);
 
-	// Set quality rendering for all elements
 	painter.setRenderHints(
 		QPainter::Antialiasing |
 		QPainter::TextAntialiasing |
 		QPainter::SmoothPixmapTransform, true
 	);
 
-	// First draw the rounded rectangle background
+	// Set background color with rounded corners
 	int cornerRadius = 6;
 	painter.save();
-	// Apply global opacity to the background
-	painter.setOpacity(m_widgetOpacity);
 
-	// Create path for rounded rectangle
+	painter.setOpacity(m_widgetOpacity);
 	QPainterPath path;
 	path.addRoundedRect(rect(), cornerRadius, cornerRadius);
-
-	// Set the clip path to ensure all content stays within rounded borders
 	painter.setClipPath(path);
-
-	// Draw background
 	painter.fillPath(path, m_backgroundColor);
 
 	// Continue with regular painting
@@ -228,7 +220,6 @@ void PolarAlignmentWidget::drawLabels(QPainter &painter, double pixelRadius, dou
 }
 
 void PolarAlignmentWidget::drawErrorMarker(QPainter &painter) {
-	// If marker is hidden, don't draw it
 	if (!m_showMarker) {
 		return;
 	}
@@ -239,17 +230,15 @@ void PolarAlignmentWidget::drawErrorMarker(QPainter &painter) {
 
 	QColor markerColor = m_useErrorBasedColors ? getErrorBasedColor() : m_markerColor;
 
-	// Create a semi-transparent color
 	QColor markerColorWithAlpha = markerColor;
 	markerColorWithAlpha.setAlphaF(m_markerOpacity);
 
-	// Draw the marker as a transparent circle
 	painter.save();
+
 	painter.setBrush(QBrush(markerColorWithAlpha));
 	painter.setPen(QPen(markerColor, 1.5));
 	painter.drawEllipse(markerPos, markerSize, markerSize);
 
-	// Draw horizontal notches
 	painter.drawLine(
 		markerPos.x() - markerSize - notchSize, markerPos.y(),  // Left notch
 		markerPos.x() - markerSize, markerPos.y()
@@ -258,8 +247,6 @@ void PolarAlignmentWidget::drawErrorMarker(QPainter &painter) {
 		markerPos.x() + markerSize + 1, markerPos.y(),      // Right notch
 		markerPos.x() + markerSize + 1 + notchSize, markerPos.y()
 	);
-
-	// Draw vertical notches (3px long)
 	painter.drawLine(
 		markerPos.x(), markerPos.y() - markerSize - notchSize,  // Top notch
 		markerPos.x(), markerPos.y() - markerSize
@@ -268,18 +255,17 @@ void PolarAlignmentWidget::drawErrorMarker(QPainter &painter) {
 		markerPos.x(), markerPos.y() + markerSize + 1,      // Bottom notch
 		markerPos.x(), markerPos.y() + markerSize + 1 + notchSize
 	);
+
 	painter.restore();
 }
 
 void PolarAlignmentWidget::drawDirectionIndicators(QPainter &painter) {
-	// If marker is hidden, don't draw direction indicators
 	if (!m_showMarker) {
-		// Draw zeros instead to indicate no errors
 		QPointF center = getCenter();
 		int size = getTargetSize();
 
 		painter.save();
-		int panelX = center.x() + size/2 + 20;
+		int panelX = center.x() + size/2 + 10;
 		int centerY = height() / 2;
 		int verticalSpacing = 40;
 		int altY = centerY + verticalSpacing/2;
@@ -287,12 +273,11 @@ void PolarAlignmentWidget::drawDirectionIndicators(QPainter &painter) {
 		int arrowX = panelX + 16;
 
 		QFont valueFont = painter.font();
-		valueFont.setPointSize(18);
+		valueFont.setPointSize(m_valueFontSize);
 		valueFont.setBold(false);
 		painter.setFont(valueFont);
 
-		// Draw "0'" for both alt and az errors
-		QString zeroText = "0.00'";
+		QString zeroText = "N/A";
 		painter.setPen(m_labelColor);
 
 		// Get font metrics for vertical alignment
@@ -310,19 +295,18 @@ void PolarAlignmentWidget::drawDirectionIndicators(QPainter &painter) {
 		return;
 	}
 
-	// Original implementation follows...
 	QPointF center = getCenter();
 	int size = getTargetSize();
 
 	painter.save();
 
 	// Create a panel on the right side
-	int panelX = center.x() + size/2 + 20;
+	int panelX = center.x() + size/2 + 10;
 	int panelHeight = height() * 0.8;
 
 	// Setup font for values
 	QFont valueFont = painter.font();
-	valueFont.setPointSize(18);
+	valueFont.setPointSize(m_valueFontSize);
 	valueFont.setBold(false);
 
 	// Get error-based color for arrows only
@@ -441,9 +425,9 @@ void PolarAlignmentWidget::drawDirectionIndicators(QPainter &painter) {
 }
 
 QString PolarAlignmentWidget::formatErrorValue(double value) const {
-	// If marker is hidden, always return "0" with proper formatting
+	// If marker is hidden, always return N/A
 	if (!m_showMarker) {
-		return "0.00'";
+		return "N/A";
 	}
 
 	QString direction;
