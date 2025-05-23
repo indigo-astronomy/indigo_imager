@@ -729,6 +729,8 @@ void ImagerWindow::show_selected_preview_in_solver_tab(QString &solver_source) {
 }
 
 void ImagerWindow::on_tab_changed(int index) {
+	bool showPolarOverlay = false;
+
 	if (index == CAPTURE_TAB || index == FOCUSER_TAB || index == TELESCOPE_TAB) {
 		if (m_visible_viewer != m_imager_viewer) {
 			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_imager_viewer);
@@ -751,18 +753,15 @@ void ImagerWindow::on_tab_changed(int index) {
 					telescopeTabbar = childTabWidgets.first();
 				}
 			}
-
 			// Show polar alignment overlay when in telescope tab and on the polar align sub-tab
-			bool showPolarOverlay = false;
 			if (telescopeTabbar) {
-				showPolarOverlay = (telescopeTabbar->currentIndex() >= 0 &&
-								  telescopeTabbar->tabText(telescopeTabbar->currentIndex()) == "Polar align");
+				showPolarOverlay = (
+					telescopeTabbar->currentIndex() >= 0 &&
+					telescopeTabbar->tabText(telescopeTabbar->currentIndex()) == "Polar align"
+				);
 			}
-
-			togglePolarAlignmentOverlay(showPolarOverlay);
 		} else {
 			m_imager_viewer->showWCS(false);
-			togglePolarAlignmentOverlay(false);
 		}
 	} else if (index == SEQUENCE_TAB) {
 		if (m_visible_viewer != m_sequence_editor2) {
@@ -801,12 +800,6 @@ void ImagerWindow::on_tab_changed(int index) {
 		m_imager_viewer->showExtraSelection(false);
 		m_imager_viewer->showReference(conf.imager_show_reference);
 	}
-
-	// Show polar alignment overlay only in telescope tab when viewing the polar alignment sub-tab
-	bool showPolarOverlay = (index == TELESCOPE_TAB &&
-	                       m_tools_tabbar->currentWidget() &&
-	                       m_tools_tabbar->tabText(m_tools_tabbar->currentIndex()) == "Polar align");
-
 	togglePolarAlignmentOverlay(showPolarOverlay);
 }
 
@@ -1618,8 +1611,7 @@ void ImagerWindow::on_about_act() {
 }
 
 void ImagerWindow::togglePolarAlignmentOverlay(bool show) {
-	if (!m_polarAlignWidget)
-		return;
+	if (!m_polarAlignWidget) return;
 
 	if (show) {
 		// Get the visible image area in ImageViewer coordinates
@@ -1649,8 +1641,9 @@ void ImagerWindow::togglePolarAlignmentOverlay(bool show) {
 void ImagerWindow::updatePolarAlignmentOverlay(double azError, double altError) {
 	if (m_polarAlignWidget) {
 		m_polarAlignWidget->setErrors(altError, azError);
-		if (m_polarAlignWidget->isVisible())
-			togglePolarAlignmentOverlay(true); // reposition/resize if needed
+		if (m_polarAlignWidget->isVisible())  {
+			togglePolarAlignmentOverlay(true);
+		}
 	}
 }
 
