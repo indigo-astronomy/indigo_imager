@@ -445,7 +445,7 @@ void PolarAlignmentWidget::drawTitle(QPainter &painter) {
 	painter.save();
 
 	QFont titleFont = painter.font();
-	titleFont.setPointSize(12);
+	titleFont.setPointSize(m_titleFontSize);
 	titleFont.setBold(true);
 	painter.setFont(titleFont);
 
