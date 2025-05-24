@@ -838,6 +838,7 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 	bool alt_correction_up = false;
 	bool az_correction_cw = false;
 	int state = -1;
+	int accuracy_warning = 0;
 
 	w->set_widget_state(w->m_mount_start_pa_button, property->state);
 	w->set_widget_state(w->m_mount_recalculate_pe_button, property->state);
@@ -866,6 +867,8 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 			alt_error = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_AZ_ERROR_ITEM_NAME)) {
 			az_error = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_ACCURACY_WARNING_ITEM_NAME)) {
+			accuracy_warning = (int)property->items[i].number.value;
 		}
 	}
 
@@ -891,15 +894,18 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 	case INDIGO_POLAR_ALIGN_IDLE:
 		w->updatePolarAlignmentOverlay(0, 0);
 		w->showPolarAlignmentOverlayMarker(false);
+		w->setPolarAlignmentOverlayWarning(false);
 		break;
 	case INDIGO_POLAR_ALIGN_START:
 		w->updatePolarAlignmentOverlay(0, 0);
 		w->showPolarAlignmentOverlayMarker(false);
+		w->setPolarAlignmentOverlayWarning(false);
 		strcpy(message, "Slewing to initial position");
 		break;
 	case INDIGO_POLAR_ALIGN_REFERENCE_1:
 		w->updatePolarAlignmentOverlay(0, 0);
 		w->showPolarAlignmentOverlayMarker(false);
+		w->setPolarAlignmentOverlayWarning(false);
 		strcpy(message, "Measuring point 1");
 		break;
 	case INDIGO_POLAR_ALIGN_REFERENCE_2:
@@ -914,6 +920,7 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 	case INDIGO_POLAR_ALIGN_IN_PROGRESS:
 		w->updatePolarAlignmentOverlay(az_error * 60, alt_error * 60);
 		w->showPolarAlignmentOverlayMarker(true);
+		w->setPolarAlignmentOverlayWarning(accuracy_warning);
 		strcpy(message, "In progress");
 		break;
 	}
