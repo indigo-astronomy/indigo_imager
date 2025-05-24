@@ -38,6 +38,9 @@ public:
 	void setMarkerVisible(bool visible);
 	bool isMarkerVisible() const { return m_showMarker; }
 
+	void setTitle(const QString& title);
+	QString getTitle() const { return m_title; }
+
 protected:
 	void paintEvent(QPaintEvent *event) override;
 	void resizeEvent(QResizeEvent *event) override;
@@ -61,6 +64,8 @@ private:
 	QColor m_labelColor = Qt::white;
 	qreal m_widgetOpacity = 1.0;
 
+	QString m_title = "Polar Error";
+
 	// Scale levels in arcminutes
 	struct ScaleLevel {
 		double maxError;	 // Maximum error for this scale level (in arcminutes)
@@ -78,6 +83,7 @@ private:
 	void drawTarget(QPainter &painter);
 	void drawErrorMarker(QPainter &painter);
 	void drawLabels(QPainter &painter, double radius, double value);
+	void drawTitle(QPainter &painter);  // Add drawing method for title
 
 	QPointF errorToPoint(double altError, double azError) const;
 	

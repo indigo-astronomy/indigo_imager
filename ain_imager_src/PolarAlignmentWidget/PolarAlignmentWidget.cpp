@@ -94,6 +94,11 @@ void PolarAlignmentWidget::setUseErrorBasedColors(bool use) {
 	update();
 }
 
+void PolarAlignmentWidget::setTitle(const QString& title) {
+	m_title = title;
+	update();
+}
+
 void PolarAlignmentWidget::updateScale() {
 	double maxError = std::max(std::abs(m_altError), std::abs(m_azError));
 
@@ -132,6 +137,7 @@ void PolarAlignmentWidget::paintEvent(QPaintEvent *) {
 	drawTarget(painter);
 	drawErrorMarker(painter);
 	drawDirectionIndicators(painter);
+	drawTitle(painter);
 
 	painter.restore();
 }
@@ -436,8 +442,28 @@ void PolarAlignmentWidget::drawDirectionIndicators(QPainter &painter) {
 	painter.restore();
 }
 
+void PolarAlignmentWidget::drawTitle(QPainter &painter) {
+	painter.save();
+
+	QFont titleFont = painter.font();
+	titleFont.setPointSize(12);
+	titleFont.setBold(true);
+	painter.setFont(titleFont);
+
+	// Set color for title
+	painter.setPen(m_labelColor);
+
+	// Calculate position for title (top right)
+	QFontMetrics fm = painter.fontMetrics();
+	int titleWidth = fm.horizontalAdvance(m_title);
+	int padding = 12;
+
+	painter.drawText(width() - titleWidth - padding, padding + fm.ascent(), m_title);
+
+	painter.restore();
+}
+
 QString PolarAlignmentWidget::formatErrorValue(double value) const {
-	// If marker is hidden, always return N/A
 	if (!m_showMarker) {
 		return "N/A";
 	}
