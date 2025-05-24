@@ -1029,19 +1029,20 @@ void ImageViewer::setBalance(int balance) {
 	}
 }
 
-QRect ImageViewer::getVisibleImageRect() const {
-	if (!m_pixmap || m_pixmap->pixmap().isNull()) {
-		return QRect();
+QRect ImageViewer::getImageFrameRect() const {
+	QRect frameRect = this->rect();
+
+	if (m_bar_mode == ToolBarMode::AutoHidden || m_bar_mode == ToolBarMode::Visible) {
+		QRect toolbarRect = m_toolbar->rect();
+		frameRect = QRect(
+			frameRect.x(),
+			frameRect.y() + toolbarRect.height(),
+			frameRect.width(),
+			frameRect.height() - toolbarRect.height()
+		);
 	}
 
-	QRectF sceneRect = m_view->mapFromScene(m_pixmap->sceneBoundingRect()).boundingRect();
-	QRect viewRect = m_view->viewport()->rect();
-	QRectF intersected = sceneRect.intersected(viewRect);
-
-	// Map to ImageViewer coordinates
-	QPoint topLeft = m_view->viewport()->mapTo(this, intersected.topLeft().toPoint());
-	QPoint bottomRight = m_view->viewport()->mapTo(this, intersected.bottomRight().toPoint());
-	return QRect(topLeft, bottomRight);
+	return frameRect;
 }
 
 PixmapItem::PixmapItem(QGraphicsItem *parent) :

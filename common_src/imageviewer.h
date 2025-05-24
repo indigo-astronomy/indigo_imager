@@ -61,7 +61,7 @@ public:
 	void showStretchButton(bool show);
 	void showZoomButtons(bool show);
 
-	QRect getVisibleImageRect() const;
+	QRect getImageFrameRect() const;
 
 public slots:
 	void setText(const QString &txt);

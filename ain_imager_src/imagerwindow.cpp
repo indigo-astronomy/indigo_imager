@@ -1609,20 +1609,15 @@ void ImagerWindow::on_about_act() {
 }
 
 void ImagerWindow::togglePolarAlignmentOverlay(bool show) {
-	if (!m_polarAlignWidget) return;
+	if (!m_polarAlignWidget || !m_imager_viewer) return;
 
 	if (show) {
-		// Get the visible image area in ImageViewer coordinates
-		QRect visibleRect = m_imager_viewer->getVisibleImageRect();
-		if (visibleRect.isEmpty()) {
-			m_polarAlignWidget->setVisible(false);
-			return;
-		}
+		QRect visibleRect = m_imager_viewer->getImageFrameRect();
 
 		const int overlayWidth = 380;
 		const int overlayHeight = 240;
 
-		// Center the overlay in the visible image area
+		// Center the overlay in the image frame
 		int x = visibleRect.x() + (visibleRect.width() - overlayWidth) / 2;
 		int y = visibleRect.y() + (visibleRect.height() - overlayHeight) / 2;
 
