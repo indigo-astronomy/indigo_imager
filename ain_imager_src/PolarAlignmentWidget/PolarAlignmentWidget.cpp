@@ -100,6 +100,13 @@ void PolarAlignmentWidget::setTitle(const QString& title) {
 	update();
 }
 
+void PolarAlignmentWidget::setWarning(bool warning) {
+	if (m_showWarning != warning) {
+		m_showWarning = warning;
+		update();
+	}
+}
+
 void PolarAlignmentWidget::updateScale() {
 	m_currentScaleIndex = 0;
 	for (int i = 0; i < m_scaleLevels.size(); ++i) {
@@ -137,6 +144,10 @@ void PolarAlignmentWidget::paintEvent(QPaintEvent *) {
 	drawErrorMarker(painter);
 	drawDirectionIndicators(painter);
 	drawTitle(painter);
+
+	if (m_showWarning) {
+		drawWarning(painter);
+	}
 
 	painter.restore();
 }
@@ -459,6 +470,22 @@ void PolarAlignmentWidget::drawTitle(QPainter &painter) {
 
 	painter.drawText(width() - titleWidth - padding, padding + fm.ascent(), m_title);
 
+	painter.restore();
+}
+
+void PolarAlignmentWidget::drawWarning(QPainter &painter) {
+	const int iconSize = 24;
+	const int margin = 10;
+
+	painter.save();
+	QPoint topLeft(margin, margin);
+	QPixmap warningIcon(":/resource/warning.png");
+	warningIcon = warningIcon.scaled(
+		iconSize, iconSize,
+		Qt::KeepAspectRatio,
+		Qt::SmoothTransformation
+	);
+	painter.drawPixmap(topLeft, warningIcon);
 	painter.restore();
 }
 

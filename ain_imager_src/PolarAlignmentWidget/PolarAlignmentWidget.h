@@ -41,6 +41,10 @@ public:
 	void setTitle(const QString& title);
 	QString getTitle() const { return m_title; }
 
+	// Warning state methods
+	void setWarning(bool warning);
+	bool hasWarning() const { return m_showWarning; }
+
 protected:
 	void paintEvent(QPaintEvent *event) override;
 	void resizeEvent(QResizeEvent *event) override;
@@ -79,6 +83,7 @@ private:
 	int m_currentScaleIndex = 0;
 
 	bool m_showMarker = true;  // Visibility state of the marker and arrows
+	bool m_showWarning = false;  // Flag to show warning triangle
 
 	void initScaleLevels();
 	void updateScale();
@@ -96,4 +101,6 @@ private:
 
 	void drawDirectionIndicators(QPainter &painter);
 	QString formatErrorValue(double value) const;
+
+	void drawWarning(QPainter &painter);
 };

@@ -126,6 +126,7 @@ RESOURCES += \
 	$$PWD/../resource/guider-grey.png \
 	$$PWD/../resource/led-grey-dev.png \
 	$$PWD/../resource/server.png \
+	$$PWD/../resource/warning.png \
 	$$PWD/../resource/error.wav \
 	$$PWD/../resource/ok.wav \
 	$$PWD/../resource/warning.wav \
