@@ -20,6 +20,7 @@ void PolarAlignmentWidget::initScaleLevels() {
 void PolarAlignmentWidget::setErrors(double altError, double azError) {
 	m_altError = altError;
 	m_azError = azError;
+	m_totalError = std::sqrt(altError * altError + azError * azError);
 	updateScale();
 	update();
 }
@@ -100,11 +101,9 @@ void PolarAlignmentWidget::setTitle(const QString& title) {
 }
 
 void PolarAlignmentWidget::updateScale() {
-	double maxError = std::max(std::abs(m_altError), std::abs(m_azError));
-
 	m_currentScaleIndex = 0;
 	for (int i = 0; i < m_scaleLevels.size(); ++i) {
-		if (maxError <= m_scaleLevels[i].maxError) {
+		if (m_totalError <= m_scaleLevels[i].maxError) {
 			m_currentScaleIndex = i;
 			break;
 		}
@@ -479,12 +478,10 @@ QString PolarAlignmentWidget::formatErrorValue(double value) const {
 }
 
 QColor PolarAlignmentWidget::getErrorBasedColor() const {
-	double totalError = sqrt(m_altError * m_altError + m_azError * m_azError);
-
 	// Return color based on error magnitude
-	if (totalError < 1.0) {
+	if (m_totalError < 1.0) {
 		return m_smallErrorColor;  // < 1 arcmin: Green
-	} else if (totalError <= 6.0) {
+	} else if (m_totalError <= 6.0) {
 		return m_mediumErrorColor; // 1-6 arcmin: Orange
 	} else {
 		return m_largeErrorColor;  // > 6 arcmin: Red

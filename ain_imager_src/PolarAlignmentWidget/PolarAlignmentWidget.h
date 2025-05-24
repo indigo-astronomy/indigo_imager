@@ -49,6 +49,7 @@ private:
 	int m_valueFontSize = 22;  // Font size for values
 	double m_altError = 0.0;  // Altitude error in arcminutes
 	double m_azError = 0.0;   // Azimuth error in arcminutes
+	double m_totalError = 0.0; // Total error in arcminutes
 
 	// Marker appearance properties
 	QColor m_markerColor = Qt::red;
