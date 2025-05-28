@@ -508,7 +508,6 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 		set_base_agent_relations();
 
 		m_object_name_str = m_object_name->text().trimmed();
-		//add_fits_keyword_string(selected_imager_agent, "OBJECT", m_object_name_str);
 		change_agent_batch_property(selected_imager_agent);
 		change_ccd_frame_property(selected_imager_agent);
 		change_ccd_localmode_property(selected_imager_agent, m_object_name_str);
@@ -560,7 +559,7 @@ void ImagerWindow::on_preview_start_stop(bool clicked) {
 		} else {
 			set_base_agent_relations();
 			QString obj_name = m_object_name->text();
-			add_fits_keyword_string(selected_agent, "OBJECT", obj_name);
+			change_ccd_localmode_property(selected_agent, obj_name);
 			change_agent_batch_property(selected_agent);
 			change_ccd_frame_property(selected_agent);
 			change_ccd_upload_property(selected_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
@@ -855,7 +854,6 @@ void ImagerWindow::on_object_name_changed(const QString &object_name) {
 		get_selected_imager_agent(selected_agent);
 
 		change_ccd_localmode_property(selected_agent, object_name);
-		add_fits_keyword_string(selected_agent, "OBJECT", object_name);
 	});
 }
 
