@@ -47,6 +47,8 @@
 #define SC_SELECT_FRAME_TYPE        cs("select_frame_type")
 #define SC_SELECT_IMAGE_FORMAT      cs("select_image_format")
 #define SC_SELECT_CAMERA_MODE       cs("select_camera_mode")
+#define SC_SET_FRAME                cs("set_frame")
+#define SC_RESET_FRAME              cs("reset_frame")
 #define SC_SELECT_FILTER            cs("select_filter")
 #define SC_ENABLE_FITER_OFFSETS     cs("enable_filter_offsets")
 #define SC_DISABLE_FITER_OFFSETS    cs("disable_filter_offsets")

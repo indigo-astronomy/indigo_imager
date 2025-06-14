@@ -49,6 +49,13 @@ void SequenceItemModel::initializeModel() {
 		{SC_SELECT_FRAME_TYPE, {"Select Frame Type", {{0, {"Frame Type", ComboBox}}}}},
 		{SC_SELECT_IMAGE_FORMAT, {"Select Image Format", {{0, {"Image Format", ComboBox}}}}},
 		{SC_SELECT_CAMERA_MODE, {"Select Camera Mode", {{0, {"Camera Mode", ComboBox}}}}},
+		{SC_SET_FRAME, {"Set Frame ROI", {
+			{0, {"Left", SpinBox}},
+			{1, {"Top", SpinBox}},
+			{2, {"Width", SpinBox}},
+			{3, {"Height", SpinBox}}
+		}}},
+		{SC_RESET_FRAME, {"Reset Frame to Full", {}}},
 		{SC_SELECT_FILTER, {"Select Filter", {{0, {"Filter", ComboBox}}}}},
 		{SC_ENABLE_FITER_OFFSETS, {"Enable Filter Offsets", {}}},
 		{SC_DISABLE_FITER_OFFSETS, {"Disable Filter Offsets", {}}},
@@ -115,6 +122,8 @@ void SequenceItemModel::initializeModel() {
 			SC_SELECT_FRAME_TYPE,
 			SC_SELECT_CAMERA_MODE,
 			SC_SELECT_IMAGE_FORMAT,
+			SC_SET_FRAME,
+			SC_RESET_FRAME,
 			__SEPARATOR__,
 			SC_SET_GAIN,
 			SC_SET_OFFSET,
@@ -306,6 +315,23 @@ void SequenceItemModel::initializeModel() {
 	setNumericRange(SC_SET_ROTATOR_ANGLE, 0, -180, 360.0);
 	setNumericIncrement(SC_SET_ROTATOR_ANGLE, 0, 1.0);
 	setNumericDefaultValue(SC_SET_ROTATOR_ANGLE, 0, 0.0);
+
+	// Frame ROI settings
+	setNumericRange(SC_SET_FRAME, 0, 0, 10000);  // Left
+	setNumericIncrement(SC_SET_FRAME, 0, 1.0);
+	setNumericDefaultValue(SC_SET_FRAME, 0, 0.0);
+
+	setNumericRange(SC_SET_FRAME, 1, 0, 10000);  // Top
+	setNumericIncrement(SC_SET_FRAME, 1, 1.0);
+	setNumericDefaultValue(SC_SET_FRAME, 1, 0.0);
+
+	setNumericRange(SC_SET_FRAME, 2, 1, 10000);  // Width
+	setNumericIncrement(SC_SET_FRAME, 2, 1.0);
+	setNumericDefaultValue(SC_SET_FRAME, 2, 1000.0);
+
+	setNumericRange(SC_SET_FRAME, 3, 1, 10000);  // Height
+	setNumericIncrement(SC_SET_FRAME, 3, 1.0);
+	setNumericDefaultValue(SC_SET_FRAME, 3, 1000.0);
 
 	//qDebug() << "Initialized SequenceItemModel with" << widgetTypeMap.size() << "widget types";
 }
