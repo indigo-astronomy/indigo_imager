@@ -145,7 +145,7 @@ public:
 	friend void update_focus_estimator_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_batch_dithering(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *property);
-	friend void update_ccd_frame_property(ImagerWindow *w, indigo_property *property);
+	friend void update_ccd_frame_property(ImagerWindow *w, indigo_property *property, bool is_define);
 	friend void update_wheel_slot_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *property);
 	friend void update_ccd_local_mode(ImagerWindow *w, indigo_property *property);

@@ -317,21 +317,21 @@ void SequenceItemModel::initializeModel() {
 	setNumericDefaultValue(SC_SET_ROTATOR_ANGLE, 0, 0.0);
 
 	// Frame ROI settings
-	setNumericRange(SC_SET_FRAME, 0, 0, 10000);  // Left
+	setNumericRange(SC_SET_FRAME, 0, 0, 50000);  // Left
 	setNumericIncrement(SC_SET_FRAME, 0, 1.0);
 	setNumericDefaultValue(SC_SET_FRAME, 0, 0.0);
 
-	setNumericRange(SC_SET_FRAME, 1, 0, 10000);  // Top
+	setNumericRange(SC_SET_FRAME, 1, 0, 50000);  // Top
 	setNumericIncrement(SC_SET_FRAME, 1, 1.0);
 	setNumericDefaultValue(SC_SET_FRAME, 1, 0.0);
 
-	setNumericRange(SC_SET_FRAME, 2, 1, 10000);  // Width
+	setNumericRange(SC_SET_FRAME, 2, 0, 50000);  // Width
 	setNumericIncrement(SC_SET_FRAME, 2, 1.0);
-	setNumericDefaultValue(SC_SET_FRAME, 2, 1000.0);
+	setNumericDefaultValue(SC_SET_FRAME, 2, 50000.0);
 
-	setNumericRange(SC_SET_FRAME, 3, 1, 10000);  // Height
+	setNumericRange(SC_SET_FRAME, 3, 0, 50000);  // Height
 	setNumericIncrement(SC_SET_FRAME, 3, 1.0);
-	setNumericDefaultValue(SC_SET_FRAME, 3, 1000.0);
+	setNumericDefaultValue(SC_SET_FRAME, 3, 50000.0);
 
 	//qDebug() << "Initialized SequenceItemModel with" << widgetTypeMap.size() << "widget types";
 }

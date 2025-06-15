@@ -1452,19 +1452,54 @@ void define_ccd_exposure_property(ImagerWindow *w, indigo_property *property) {
 }
 
 
-void update_ccd_frame_property(ImagerWindow *w, indigo_property *property) {
+void update_ccd_frame_property(ImagerWindow *w, indigo_property *property, bool is_define = false) {
 	indigo_debug("Set %s", property->name);
+	int x_min=0, y_min=0, w_min=0, h_min=0;
+	int x_max=1000, y_max=1000, w_max=1000, h_max=1000;
+	int x_step = 1, y_step = 1, w_step = 1, h_step = 1;
 	for (int i = 0; i < property->count; i++) {
 		indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
 		if (client_match_item(&property->items[i], CCD_FRAME_LEFT_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_roi_x);
+			x_min = (int)property->items[i].number.min;
+			x_max = (int)property->items[i].number.max;
+			x_step = (int)property->items[i].number.step;
 		} else if (client_match_item(&property->items[i], CCD_FRAME_TOP_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_roi_y);
+			y_min = (int)property->items[i].number.min;
+			y_max = (int)property->items[i].number.max;
+			y_step = (int)property->items[i].number.step;
 		} else if (client_match_item(&property->items[i], CCD_FRAME_WIDTH_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_roi_w);
+			w_min = (int)property->items[i].number.min;
+			w_max = (int)property->items[i].number.max;
+			w_step = (int)property->items[i].number.step;
 		} else if (client_match_item(&property->items[i], CCD_FRAME_HEIGHT_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_roi_h);
+			h_min = (int)property->items[i].number.min;
+			h_max = (int)property->items[i].number.max;
+			h_step = (int)property->items[i].number.step;
 		}
+	}
+	if (is_define) {
+		// Do not set range as this may chnage the ROI if camera is changed.
+		// Set only the increment and the default value
+
+		//SequenceItemModel::instance().setNumericRange(SC_SET_FRAME, 0, x_min, x_max);  // Left
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_FRAME, 0, x_step);
+		SequenceItemModel::instance().setNumericDefaultValue(SC_SET_FRAME, 0, x_min);
+
+		//SequenceItemModel::instance().setNumericRange(SC_SET_FRAME, 1, y_min, y_max);  // Top
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_FRAME, 1, y_step);
+		SequenceItemModel::instance().setNumericDefaultValue(SC_SET_FRAME, 1, y_min);
+
+		//SequenceItemModel::instance().setNumericRange(SC_SET_FRAME, 2, w_min, w_max);  // Width
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_FRAME, 2, w_step);
+		SequenceItemModel::instance().setNumericDefaultValue(SC_SET_FRAME, 2, w_max);
+
+		//SequenceItemModel::instance().setNumericRange(SC_SET_FRAME, 3, h_min, h_max);  // Height
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_FRAME, 3, h_step);
+		SequenceItemModel::instance().setNumericDefaultValue(SC_SET_FRAME, 3, h_max);
 	}
 }
 
@@ -2739,7 +2774,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_agent_imager_meridian_flip_label(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME)) {
-		update_ccd_frame_property(this, property);
+		update_ccd_frame_property(this, property, true);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_WHEEL_FILTER_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_filter_select);
@@ -3151,7 +3186,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		update_agent_imager_stats_property(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME)) {
-		update_ccd_frame_property(this, property);
+		update_ccd_frame_property(this, property, false);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_pause_process_property(this, property, m_pause_button);
@@ -3510,6 +3545,22 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_enabled(m_roi_w, false);
 		set_spinbox_value(m_roi_h, 0);
 		set_enabled(m_roi_h, false);
+
+		//SequenceItemModel::instance().setNumericRange(SC_SET_FRAME, 0, 0, 50000);  // Left
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_FRAME, 0, 1.0);
+		SequenceItemModel::instance().setNumericDefaultValue(SC_SET_FRAME, 0, 0.0);
+
+		//SequenceItemModel::instance().setNumericRange(SC_SET_FRAME, 1, 0, 50000); // Top
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_FRAME, 1, 1.0);
+		SequenceItemModel::instance().setNumericDefaultValue(SC_SET_FRAME, 1, 0.0);
+
+		//SequenceItemModel::instance().setNumericRange(SC_SET_FRAME, 2, 0, 50000);  // Width
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_FRAME, 2, 1.0);
+		SequenceItemModel::instance().setNumericDefaultValue(SC_SET_FRAME, 2, 50000.0);
+
+		//SequenceItemModel::instance().setNumericRange(SC_SET_FRAME, 3, 0, 50000);  // Height
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_FRAME, 3, 1.0);
+		SequenceItemModel::instance().setNumericDefaultValue(SC_SET_FRAME, 3, 50000.0);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_WHEEL_FILTER_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
