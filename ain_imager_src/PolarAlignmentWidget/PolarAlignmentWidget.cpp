@@ -376,7 +376,7 @@ void PolarAlignmentWidget::drawDirectionIndicators(QPainter &painter) {
 
 		QRect iconRect(arrowX - iconSize/2, azY - iconSize/2, iconSize, iconSize);
 
-		if (m_azError < 0) {
+		if (m_azError > 0) {
 			QPolygonF rightArrow;
 			// Shaft base
 			rightArrow
@@ -545,8 +545,8 @@ QPointF PolarAlignmentWidget::errorToPoint(double altError, double azError) cons
 
 	// In a polar alignment context, typically:
 	// - Altitude error is up/down (y-axis, negative is up)
-	// - Azimuth error is left/right (x-axis, positive is right)
-	return QPointF(center.x() + pixelAz, center.y() + pixelAlt);
+	// - Azimuth error is left/right (x-axis, positive is left)
+	return QPointF(center.x() - pixelAz, center.y() + pixelAlt);
 }
 
 QPointF PolarAlignmentWidget::getCenter() const {
