@@ -1921,7 +1921,7 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 
 		if (executed_index >= 0 && property->state == INDIGO_BUSY_STATE) {
 			w->m_sequence_editor2->enable(false);
-			if (executed_index == 0) {
+			if (executed_index == 0 && progress == 0) {
 				w->m_seq_exposure_progress->setRange(0, 1);
 				w->m_seq_exposure_progress->setValue(0);
 				w->m_seq_exposure_progress->setFormat("Exposure: Idle");
