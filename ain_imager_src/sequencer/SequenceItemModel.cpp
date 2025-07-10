@@ -98,7 +98,9 @@ void SequenceItemModel::initializeModel() {
 		{SC_SET_FITS_HEADER, {"Set FITS Header", {{0, {"Keyword", LineEdit}}, {1, {"Value", LineEdit}}}}},
 		{SC_REMOVE_FITS_HEADER, {"Remove FITS Header", {{0, {"Keyword", LineEdit}}}}},
 		{SC_ENABLE_VERBOSE, {"Enable Verbose Logging", {}}},
-		{SC_DISABLE_VERBOSE, {"Disable Verbose Logging", {}}}
+		{SC_DISABLE_VERBOSE, {"Disable Verbose Logging", {}}},
+		{SC_BREAK_AT, {"Break If Past", {{0, {"Time (UTC)", DateTimeEdit}}}}},
+		{SC_RESUME_POINT, {"Resume Point", {}}}
 	};
 
 	//{"select_imager_agent", {"Select Imager Agent", {{0, {"Agent", "QComboBox"}}}}},
@@ -181,7 +183,10 @@ void SequenceItemModel::initializeModel() {
 			SC_ABORT_ON_FAILURE,
 			__SEPARATOR__,
 			SC_RECOVER_ON_FAILURE,
-			SC_RECOVERY_POINT
+			SC_RECOVERY_POINT,
+			__SEPARATOR__,
+			SC_BREAK_AT,
+			SC_RESUME_POINT
 		}},
 		{__SEPARATOR__, {}},
 		{CC_DEVICES, {

@@ -92,6 +92,8 @@
 #define SC_RECOVERY_POINT           cs("recovery_point")
 #define SC_ENABLE_VERBOSE           cs("enable_verbose")
 #define SC_DISABLE_VERBOSE          cs("disable_verbose")
+#define SC_BREAK_AT                 cs("break_at")
+#define SC_RESUME_POINT             cs("resume_point")
 
 #define CC_CAPTURE                  cs("Capture")
 #define CC_FILTER_WHEEL             cs("Filter Wheel")
