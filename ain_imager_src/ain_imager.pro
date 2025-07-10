@@ -119,6 +119,10 @@ RESOURCES += \
 	$$PWD/../resource/condition-green.png \
 	$$PWD/../resource/condition-orange.png \
 	$$PWD/../resource/condition-red.png \
+	$$PWD/../resource/resume-grey.png \
+	$$PWD/../resource/resume-green.png \
+	$$PWD/../resource/resume-orange.png \
+	$$PWD/../resource/resume-red.png \
 	$$PWD/../resource/recovery_point.png \
 	$$PWD/../resource/recovery_policy.png \
 	$$PWD/../resource/menu-loop-grey.png \

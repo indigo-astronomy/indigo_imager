@@ -887,10 +887,12 @@ void IndigoSequenceItem::setIdle() {
 		statusButton->setIcon(QIcon(":/resource/led-noexec.png"));
 	} else if (type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/loop-grey.png"));
-	} else if (type == SC_RECOVERY_POINT || type == SC_RESUME_POINT) {
+	} else if (type == SC_RECOVERY_POINT) {
 		statusButton->setIcon(QIcon(":/resource/recovery_point.png"));
 	} else if (type == SC_BREAK_AT) {
 		statusButton->setIcon(QIcon(":/resource/condition-grey.png"));
+	} else if (type == SC_RESUME_POINT) {
+		statusButton->setIcon(QIcon(":/resource/resume-grey.png"));
 	} else if (type == SC_CONTINUE_ON_FAILURE || type == SC_ABORT_ON_FAILURE || type == SC_RECOVER_ON_FAILURE) {
 		statusButton->setIcon(QIcon(":/resource/recovery_policy.png"));
 	} else {
@@ -905,10 +907,14 @@ void IndigoSequenceItem::setBusy() {
 		statusButton->setIcon(QIcon(":/resource/led-noexec.png"));
 	} else if (type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/loop-orange.png"));
-	} else if (type == SC_RECOVERY_POINT || type == SC_RESUME_POINT) {
+	} else if (type == SC_RECOVERY_POINT) {
 		statusButton->setIcon(QIcon(":/resource/recovery_point.png"));
+	} else if (type == SC_RESUME_POINT) {
+		statusButton->setIcon(QIcon(":/resource/resume-orange.png"));
 	} else if (type == SC_BREAK_AT) {
 		statusButton->setIcon(QIcon(":/resource/condition-orange.png"));
+	} else if (type == SC_RESUME_POINT) {
+		statusButton->setIcon(QIcon(":/resource/resume-grey.png"));
 	} else if (type == SC_CONTINUE_ON_FAILURE || type == SC_ABORT_ON_FAILURE || type == SC_RECOVER_ON_FAILURE) {
 		statusButton->setIcon(QIcon(":/resource/recovery_policy.png"));
 	} else {
@@ -923,8 +929,10 @@ void IndigoSequenceItem::setAlert() {
 		statusButton->setIcon(QIcon(":/resource/led-noexec.png"));
 	} else if (type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/loop-red.png"));
-	} else if (type == SC_RECOVERY_POINT || type == SC_RESUME_POINT) {
+	} else if (type == SC_RECOVERY_POINT) {
 		statusButton->setIcon(QIcon(":/resource/recovery_point.png"));
+	} else if (type == SC_RESUME_POINT) {
+		statusButton->setIcon(QIcon(":/resource/resume-red.png"));
 	} else if (type == SC_BREAK_AT) {
 		statusButton->setIcon(QIcon(":/resource/condition-red.png"));
 	} else if (type == SC_CONTINUE_ON_FAILURE || type == SC_ABORT_ON_FAILURE || type == SC_RECOVER_ON_FAILURE) {
@@ -941,8 +949,10 @@ void IndigoSequenceItem::setOk() {
 		statusButton->setIcon(QIcon(":/resource/led-noexec.png"));
 	} else if (type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/loop-green.png"));
-	} else if (type == SC_RECOVERY_POINT || type == SC_RESUME_POINT) {
+	} else if (type == SC_RECOVERY_POINT) {
 		statusButton->setIcon(QIcon(":/resource/recovery_point.png"));
+	} else if (type == SC_RESUME_POINT) {
+		statusButton->setIcon(QIcon(":/resource/resume-green.png"));
 	} else if (type == SC_BREAK_AT) {
 		statusButton->setIcon(QIcon(":/resource/condition-green.png"));
 	} else if (type == SC_CONTINUE_ON_FAILURE || type == SC_ABORT_ON_FAILURE || type == SC_RECOVER_ON_FAILURE) {
