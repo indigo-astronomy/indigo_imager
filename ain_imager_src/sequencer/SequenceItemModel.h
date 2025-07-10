@@ -93,6 +93,7 @@
 #define SC_ENABLE_VERBOSE           cs("enable_verbose")
 #define SC_DISABLE_VERBOSE          cs("disable_verbose")
 #define SC_BREAK_AT                 cs("break_at")
+#define SC_BREAK_AT_HA              cs("break_at_ha")
 #define SC_RESUME_POINT             cs("resume_point")
 
 #define CC_CAPTURE                  cs("Capture")

@@ -99,7 +99,8 @@ void SequenceItemModel::initializeModel() {
 		{SC_REMOVE_FITS_HEADER, {"Remove FITS Header", {{0, {"Keyword", LineEdit}}}}},
 		{SC_ENABLE_VERBOSE, {"Enable Verbose Logging", {}}},
 		{SC_DISABLE_VERBOSE, {"Disable Verbose Logging", {}}},
-		{SC_BREAK_AT, {"Break If Past", {{0, {"Time (UTC)", DateTimeEdit}}}}},
+		{SC_BREAK_AT, {"Break If Past (Time)", {{0, {"Time (UTC)", DateTimeEdit}}}}},
+		{SC_BREAK_AT_HA, {"Break If Past (Hour Angle)", {{0, {"HA (hours)", LineEditSG_RA}}}}},
 		{SC_RESUME_POINT, {"Resume Point", {}}}
 	};
 
@@ -186,6 +187,7 @@ void SequenceItemModel::initializeModel() {
 			SC_RECOVERY_POINT,
 			__SEPARATOR__,
 			SC_BREAK_AT,
+			SC_BREAK_AT_HA,
 			SC_RESUME_POINT
 		}},
 		{__SEPARATOR__, {}},
