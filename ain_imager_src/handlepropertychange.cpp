@@ -1403,14 +1403,26 @@ void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *proper
 
 void update_agent_imager_meridian_flip_label(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("Set %s", property->name);
-	indigo_property *features_p;
-	indigo_property *batch_p;
+	indigo_property *features_p = nullptr;
+	indigo_property *batch_p = nullptr;
+	indigo_property *flipper_state_p = nullptr;
+	char selected_agent[INDIGO_NAME_SIZE] = {0};
+
 	if (!strcmp(property->name, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {
+		w->get_selected_scripting_agent(selected_agent);
 		features_p = property;
 		batch_p = properties.get(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME);
-	} else {
+		flipper_state_p = properties.get(selected_agent, "FLIPPER_STATE");
+	} else if (!strcmp(property->name, AGENT_IMAGER_BATCH_PROPERTY_NAME)) {
+		w->get_selected_scripting_agent(selected_agent);
 		features_p = properties.get(property->device, AGENT_PROCESS_FEATURES_PROPERTY_NAME);
 		batch_p = property;
+		flipper_state_p = properties.get(selected_agent, "FLIPPER_STATE");
+	} else if (!strcmp(property->name, "FLIPPER_STATE")) {
+		w->get_selected_imager_agent(selected_agent);
+		flipper_state_p = property;
+		features_p = properties.get(selected_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME);
+		batch_p = properties.get(selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME);
 	}
 
 	double flip_time = 0;
@@ -1422,6 +1434,7 @@ void update_agent_imager_meridian_flip_label(ImagerWindow *w, indigo_property *p
 			}
 		}
 	}
+
 	bool flip_enabled = false;
 	if (features_p) {
 		for (int i = 0; i < features_p->count; i++) {
@@ -1431,6 +1444,8 @@ void update_agent_imager_meridian_flip_label(ImagerWindow *w, indigo_property *p
 			}
 		}
 	}
+
+	flip_enabled = flip_enabled && flipper_state_p != nullptr;
 
 	char message[100];
 	get_flip_string(flip_enabled, flip_time, message);
@@ -2822,6 +2837,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	    client_match_device_property(property, selected_scripting_agent, "LOOP_0") ||
 	    client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STEP_STATE")) {
 		update_scripting_sequence_state(this, property);
+	}
+	if (client_match_device_property(property, selected_scripting_agent, "FLIPPER_STATE")) {
+		update_agent_imager_meridian_flip_label(this, property);
 	}
 	if (client_match_device_property(property, selected_scripting_agent, AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME)) {
 		// new scripts and AinSequence should not be added to auto start by default
