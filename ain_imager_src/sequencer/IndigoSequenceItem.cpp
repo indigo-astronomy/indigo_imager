@@ -888,7 +888,7 @@ void IndigoSequenceItem::setIdle() {
 	} else if (type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/loop-grey.png"));
 	} else if (type == SC_RECOVERY_POINT) {
-		statusButton->setIcon(QIcon(":/resource/recovery_point.png"));
+		statusButton->setIcon(QIcon(":/resource/recovery-point-grey.png"));
 	} else if (type == SC_RESUME_POINT) {
 		statusButton->setIcon(QIcon(":/resource/resume-grey.png"));
 	} else if (type == SC_BREAK_AT || type == SC_BREAK_AT_HA) {
@@ -908,7 +908,7 @@ void IndigoSequenceItem::setBusy() {
 	} else if (type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/loop-orange.png"));
 	} else if (type == SC_RECOVERY_POINT) {
-		statusButton->setIcon(QIcon(":/resource/recovery_point.png"));
+		statusButton->setIcon(QIcon(":/resource/recovery-point-grey.png"));
 	} else if (type == SC_RESUME_POINT) {
 		statusButton->setIcon(QIcon(":/resource/resume-orange.png"));
 	} else if (type == SC_BREAK_AT || type == SC_BREAK_AT_HA) {
@@ -928,7 +928,7 @@ void IndigoSequenceItem::setAlert() {
 	} else if (type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/loop-red.png"));
 	} else if (type == SC_RECOVERY_POINT) {
-		statusButton->setIcon(QIcon(":/resource/recovery_point.png"));
+		statusButton->setIcon(QIcon(":/resource/recovery-point-grey.png"));
 	} else if (type == SC_RESUME_POINT) {
 		statusButton->setIcon(QIcon(":/resource/resume-red.png"));
 	} else if (type == SC_BREAK_AT || type == SC_BREAK_AT_HA) {
@@ -948,7 +948,7 @@ void IndigoSequenceItem::setOk() {
 	} else if (type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/loop-green.png"));
 	} else if (type == SC_RECOVERY_POINT) {
-		statusButton->setIcon(QIcon(":/resource/recovery_point.png"));
+		statusButton->setIcon(QIcon(":/resource/recovery-point-green.png"));
 	} else if (type == SC_RESUME_POINT) {
 		statusButton->setIcon(QIcon(":/resource/resume-green.png"));
 	} else if (type == SC_BREAK_AT || type == SC_BREAK_AT_HA) {

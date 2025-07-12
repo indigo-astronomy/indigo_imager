@@ -123,7 +123,8 @@ RESOURCES += \
 	$$PWD/../resource/resume-green.png \
 	$$PWD/../resource/resume-orange.png \
 	$$PWD/../resource/resume-red.png \
-	$$PWD/../resource/recovery_point.png \
+	$$PWD/../resource/recovery-point-grey.png \
+	$$PWD/../resource/recovery-point-green.png \
 	$$PWD/../resource/recovery_policy.png \
 	$$PWD/../resource/menu-loop-grey.png \
 	$$PWD/../resource/wheel-grey.png \
