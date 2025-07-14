@@ -272,6 +272,10 @@ void ViewerWindow::open_image(QString file_name) {
 		sprintf(info, "%s [%d x %d]", basename(m_image_path), w, h);
 		setWindowTitle(tr("Ain Viewer - ") + QString(m_image_path));
 		m_imager_viewer->setText(info);
+
+		if (m_image_info_dlg->isVisible()) {
+			on_image_info_act();
+		}
 	} else {
 		block_scrolling(false);
 		snprintf(msg, PATH_LEN, "File: '%s'\nDoes not seem to be a supported image format.", QDir::toNativeSeparators(m_image_path).toUtf8().data());
