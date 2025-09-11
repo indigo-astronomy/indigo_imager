@@ -2162,7 +2162,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 					w->m_drift_data_x.clear();
 					w->m_drift_data_y.clear();
 					w->m_guider_graph->redraw_data2(*(w->m_guider_data_1), *(w->m_guider_data_2));
-				} else if (frame_count > 0) {
+				} else if (frame_count > 0 && frame_count > w->m_guider_frame_count) {
 					w->m_drift_data_ra.append(d_ra);
 					w->m_drift_data_dec.append(d_dec);
 					w->m_drift_data_ra_s.append(d_ra_s);
@@ -2184,6 +2184,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 					}
 					w->m_guider_graph->redraw_data2(*(w->m_guider_data_1), *(w->m_guider_data_2));
 				}
+				w->m_guider_frame_count = frame_count;
 				break;
 			}
 		}

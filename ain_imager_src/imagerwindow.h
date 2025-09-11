@@ -768,6 +768,7 @@ private:
 	QVector<double> m_drift_data_y;
 	QVector<double> *m_guider_data_1;
 	QVector<double> *m_guider_data_2;
+	int m_guider_frame_count;
 	QLabel *m_guider_graph_label;
 	QLabel *m_guider_rd_drift_label;
 	QLabel *m_guider_xy_drift_label;

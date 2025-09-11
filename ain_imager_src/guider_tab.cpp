@@ -623,6 +623,7 @@ void ImagerWindow::select_guider_data(guider_display_data show) {
 		default:
 			m_guider_data_1 = nullptr;
 			m_guider_data_2 = nullptr;
+			m_guider_frame_count = 0;
 	}
 }
 

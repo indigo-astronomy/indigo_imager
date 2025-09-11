@@ -54,7 +54,7 @@ void FocusGraph::redraw_data(QVector<double> data) {
 
 	//set the range to ensure the last point is visible
 	if (!data.isEmpty()) {
-		xAxis->setRange(0, data.size() - 0.9);
+		xAxis->setRange(0, data.size() - 0.8);
 	} else {
 		xAxis->setRange(0, 1);
 	}
@@ -76,7 +76,7 @@ void FocusGraph::redraw_data2(QVector<double> data1, QVector<double> data2) {
 
 	// set the range to ensure the last point is visible
 	if (!data1.isEmpty()) {
-		xAxis->setRange(0, data1.size() - 0.9);
+		xAxis->setRange(0, data1.size() - 0.8);
 	} else {
 		xAxis->setRange(0, 1);
 	}
