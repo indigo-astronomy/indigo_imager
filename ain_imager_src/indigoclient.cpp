@@ -136,9 +136,19 @@ static bool download_blob_async(indigo_property *property, QAtomicInt *downloadi
 			indigo_item *blob_item = (indigo_item*)malloc(sizeof(indigo_item));
 			memcpy(blob_item, &property->items[row], sizeof(indigo_item));
 			blob_item->blob.value = nullptr;
+
+			// Measure individual blob download time
+			auto blob_start = std::chrono::high_resolution_clock::now();
+
 			if (*property->items[row].blob.url && indigo_populate_http_blob_item(blob_item)) {
+				auto blob_end = std::chrono::high_resolution_clock::now();
+				auto blob_duration = std::chrono::duration_cast<std::chrono::milliseconds>(blob_end - blob_start);
+
 				property->items[row].blob.value = nullptr;
-				indigo_log("BLOB: %s.%s URL received (%s, %ld bytes)...\n", property->device, property->name, blob_item->blob.url, blob_item->blob.size);
+				indigo_log("BLOB: %s.%s URL received (%s, %ld bytes) - Download time: %ld ms\n",
+					property->device, property->name, blob_item->blob.url,
+					blob_item->blob.size, blob_duration.count());
+
 				emit(client.create_preview(property, blob_item, save_blob));
 			} else {
 				if (blob_item->blob.value) free(blob_item->blob.value);
