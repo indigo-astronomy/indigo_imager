@@ -21,6 +21,7 @@
 #include <indigo/indigo_client.h>
 #include "indigoclient.h"
 #include "conf.h"
+#include <chrono>
 
 bool processed_device(char *device) {
 	if (device == nullptr) return false;
@@ -121,15 +122,23 @@ void IndigoClient::update_save_blob(indigo_property *property)	 {
 
 
 static bool download_blob_async(indigo_property *property, QAtomicInt *downloading, bool save_blob = false) {
+	const int max_concurrent_downloads = 1;
 	IndigoClient &client = IndigoClient::instance();
-	if (!downloading->testAndSetAcquire(0, 1)) {
-		indigo_debug("Task is already running, skipping...");
+
+	int prev = downloading->fetchAndAddRelaxed(1);
+	if (prev >= max_concurrent_downloads) {
+		downloading->fetchAndAddRelaxed(-1);
+		indigo_error("Maximum concurrent downloads (%d) reached, skipping...", max_concurrent_downloads);
 		return false;
 	}
+	if (prev > 0 && prev < max_concurrent_downloads) {
+		indigo_log("BLOB: %d Concurrent downloads (limit %d)", prev + 1, max_concurrent_downloads);
+	}
 
-	if( downloading == &client.imager_downloading) {
+	if (downloading == &client.imager_downloading) {
 		emit(client.imager_download_started());
 	}
+
 	QtConcurrent::run([property, downloading, save_blob]() {
 		IndigoClient &client = IndigoClient::instance();
 		for (int row = 0; row < property->count; row++) {
@@ -137,27 +146,28 @@ static bool download_blob_async(indigo_property *property, QAtomicInt *downloadi
 			memcpy(blob_item, &property->items[row], sizeof(indigo_item));
 			blob_item->blob.value = nullptr;
 
-			// Measure individual blob download time
-			auto blob_start = std::chrono::high_resolution_clock::now();
-
+			auto t0 = std::chrono::high_resolution_clock::now();
 			if (*property->items[row].blob.url && indigo_populate_http_blob_item(blob_item)) {
-				auto blob_end = std::chrono::high_resolution_clock::now();
-				auto blob_duration = std::chrono::duration_cast<std::chrono::milliseconds>(blob_end - blob_start);
-
+				auto t1 = std::chrono::high_resolution_clock::now();
+				auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
 				property->items[row].blob.value = nullptr;
-				indigo_log("BLOB: %s.%s URL received (%s, %ld bytes) - Download time: %ld ms\n",
-					property->device, property->name, blob_item->blob.url,
-					blob_item->blob.size, blob_duration.count());
-
+				indigo_log("BLOB: %s.%s (%s, %ld bytes) downloaded in %ld ms", property->device, property->name, blob_item->blob.url, blob_item->blob.size, ms);
 				emit(client.create_preview(property, blob_item, save_blob));
 			} else {
 				if (blob_item->blob.value) free(blob_item->blob.value);
 				free(blob_item);
 			}
 		}
-		downloading->store(0);
-		if( downloading == &client.imager_downloading) {
+
+		int remaining = downloading->fetchAndAddRelaxed(-1) - 1; // fetchAndAddRelaxed returns previous value rhis is why -1
+
+		if (remaining <= 0 && downloading == &client.imager_downloading) {
 			emit(client.imager_download_completed());
+		}
+
+		if (remaining < 0) {
+			// should not happen, but just in case
+			downloading->store(0);
 		}
 	});
 
