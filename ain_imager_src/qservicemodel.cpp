@@ -62,7 +62,6 @@ static bool hostResolvesToLocal(const QByteArray &rawHost) {
 	return false;
 }
 
-#define SERVICE_FILENAME "indigo_imager.services"
 
 void resolve_callback(const char *service_name, uint32_t interface_index, const char *host, int port) {
 	if (host != NULL) {

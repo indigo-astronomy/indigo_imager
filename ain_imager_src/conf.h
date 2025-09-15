@@ -33,6 +33,8 @@
 #define TOOLBAR_MIN_WIDTH 420
 
 #define CONFIG_FILENAME "indigo_imager.conf"
+#define SERVICE_FILENAME "indigo_imager.services"
+
 #define AIN_GUIDER_LOG_NAME_FORMAT "ain_guiding_%s.log"
 #define AIN_INDIGO_LOG_NAME_FORMAT "ain_indigo_%s.log"
 #define DEFAULT_OBJECT_NAME "unknown"
