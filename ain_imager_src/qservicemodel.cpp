@@ -26,9 +26,6 @@
 #include <QNetworkInterface>
 #include <QHostInfo>
 
-// Keep original advertised host when we substitute localhost
-static QHash<QByteArray, QByteArray> g_originalHosts;
-
 // Returns true if host is localhost, a local hostname, or resolves to a local interface address
 static bool hostResolvesToLocal(const QByteArray &rawHost) {
 	QByteArray h = rawHost.trimmed();
@@ -111,19 +108,8 @@ QServiceModel::~QServiceModel() {
 
 
 void QServiceModel::addServicePreferLocalhost(QByteArray service_name, uint32_t interface_index, QByteArray host, int port) {
-	// Normalize hostname (some mDNS libs append a trailing dot)
-	host = host.trimmed();
-	if (host.endsWith('.'))
-		host.chop(1);
-
-	bool prefer_local = (interface_index == 1) || hostResolvesToLocal(host);
-
-	if (prefer_local) {
-		// Record original host if different
-		if (host != "localhost") {
-			g_originalHosts.insert(service_name, host);
-		}
-
+	bool is_local = (interface_index == 1) || hostResolvesToLocal(host); // interface_index 1 is loopback
+	if (is_local) {
 		int i = findService(service_name);
 		if (i != -1 && m_services.at(i)->host() != QByteArray("localhost")) {
 			onServiceRemoved(service_name);
@@ -134,26 +120,17 @@ void QServiceModel::addServicePreferLocalhost(QByteArray service_name, uint32_t 
 	}
 }
 
+
 void QServiceModel::removeServiceKeepLocalhost(QByteArray service_name, uint32_t interface_index) {
 	int i = findService(service_name);
-	if (i == -1) return;
-
-	QIndigoService *svc = m_services.at(i);
-
-	// If we mapped this service to localhost but still have other interfaces that might re-resolve it soon, be conservative.
-	// Remove only if:
-	//  - It is NOT localhost, or
-	//  - It IS localhost and (interface_index == 1) and no original host stored
-	if (svc->host() == QByteArray("localhost")) {
-		if (interface_index == 1 && !g_originalHosts.contains(service_name)) {
-			onServiceRemoved(service_name);
+	if (i != -1) {
+		if (m_services.at(i)->host() == QByteArray("localhost")) {
+			if (interface_index == 1) {
+				onServiceRemoved(service_name);
+			}
 		} else {
-			// Unlikely but keep it for now; another interface may still advertise it.
-			return;
+			onServiceRemoved(service_name);
 		}
-	} else {
-		onServiceRemoved(service_name);
-		g_originalHosts.remove(service_name);
 	}
 }
 
