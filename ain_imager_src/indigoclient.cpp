@@ -151,7 +151,7 @@ static bool download_blob_async(indigo_property *property, QAtomicInt *downloadi
 				auto t1 = std::chrono::high_resolution_clock::now();
 				auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
 				property->items[row].blob.value = nullptr;
-				indigo_log("BLOB: %s.%s (%s, %ld bytes) downloaded in %ld ms", property->device, property->name, blob_item->blob.url, blob_item->blob.size, ms);
+				indigo_error("BLOB: %s.%s (%s, %ld bytes) downloaded in %ld ms", property->device, property->name, blob_item->blob.url, blob_item->blob.size, ms);
 				emit(client.create_preview(property, blob_item, save_blob));
 			} else {
 				if (blob_item->blob.value) free(blob_item->blob.value);
@@ -178,8 +178,9 @@ static void handle_blob_property(indigo_property *property) {
 	IndigoClient &client = IndigoClient::instance();
 	static char error_message[] = "Error: Download is not fast enough, skipping frame.";
 	if (property->state == INDIGO_OK_STATE && property->perm != INDIGO_WO_PERM) {
+		indigo_error("######## Blob OK state");
 		if (!strncmp(property->device, "Imager Agent", 12)) {
-			if (!strncmp(property->name, CCD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+			if (!strncmp(property->name, CCD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE) && (conf.guider_save_bandwidth == 0)) {
 				if (!download_blob_async(property, &client.imager_downloading, client.is_exposing(property->device))) {
 					client.m_logger->log(property, error_message);
 				}
@@ -187,8 +188,11 @@ static void handle_blob_property(indigo_property *property) {
 				if (!download_blob_async(property, &client.imager_downloading_saved_frame, true)) {
 					client.m_logger->log(property, error_message);
 				}
-			} else if (!strncmp(property->name, CCD_PREVIEW_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
-				// for the time being we are not interested in preview images
+			} else if (!strncmp(property->name, CCD_PREVIEW_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE) && (conf.guider_save_bandwidth > 0)) {
+				indigo_error("######## Preview image to save bandwidth");
+				if (!download_blob_async(property, &client.imager_downloading, client.is_exposing(property->device))) {
+					client.m_logger->log(property, error_message);
+				}
 			}
 		} else if (!strncmp(property->device, "Guider Agent", 12)) {
 			if ((!strncmp(property->name, CCD_PREVIEW_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) && (conf.guider_save_bandwidth == 0)) {

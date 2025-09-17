@@ -494,6 +494,7 @@ void ImagerWindow::change_jpeg_settings_property(const char *agent, const int jp
 	values[4] = -1;
 	values[5] = black_threshold;
 	values[6] = white_threshold;
+	indigo_error("Changing JPEG settings \"%s\": Q=%d, BG=%.1f, CP=%.1f, BT=%.1f, WT=%.1f", agent, jpeg_quality, target_bg, clipping_point, black_threshold, white_threshold);
 
 	indigo_change_number_property(nullptr, agent, CCD_JPEG_SETTINGS_PROPERTY_NAME, 7, items, values);
 }

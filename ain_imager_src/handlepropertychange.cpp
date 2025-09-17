@@ -2818,6 +2818,11 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	    client_match_device_property(property, selected_agent, AGENT_START_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_stats_property(this, property);
 	}
+	if (client_match_device_property(property, selected_agent, CCD_PREVIEW_PROPERTY_NAME)) {
+		QtConcurrent::run([=]() {
+			change_agent_ccd_peview(selected_agent, (bool)conf.guider_save_bandwidth);
+		});
+	}
 	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME)) {
 		define_ccd_exposure_property(this, property);
 		indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);

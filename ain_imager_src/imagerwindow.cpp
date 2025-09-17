@@ -837,6 +837,29 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		}
 	} else if (
 		get_selected_imager_agent(selected_agent) &&
+		client_match_device_property(property, selected_agent, CCD_PREVIEW_IMAGE_PROPERTY_NAME)
+	) {
+		if (m_indigo_item) {
+			if (m_indigo_item->blob.value) {
+				free(m_indigo_item->blob.value);
+			}
+			free(m_indigo_item);
+			m_indigo_item = nullptr;
+		}
+		m_indigo_item = item;
+		const stretch_config_t sconfig = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
+		preview_cache.create(property, m_indigo_item, sconfig);
+		QString key = preview_cache.create_key(property, m_indigo_item);
+		//preview_image *image = preview_cache.get(m_image_key);
+		if (show_preview_in_imager_viewer(key)) {
+			indigo_debug("m_imager_viewer = %p", m_imager_viewer);
+			m_imager_viewer->setText(QString("Unsaved") + QString(m_indigo_item->blob.format));
+			m_imager_viewer->setToolTip(QString("Unsaved") + QString(m_indigo_item->blob.format));
+			int size = (int)round(m_focus_star_radius->value() * 2 + 1);
+			move_resize_focuser_selection(m_star_x->value(), m_star_y->value(), size);
+		}
+	} else if (
+		get_selected_imager_agent(selected_agent) &&
 		client_match_device_property(property, selected_agent, AGENT_IMAGER_DOWNLOAD_IMAGE_PROPERTY_NAME)
 	) {
 		if (m_files_to_download.empty()) {
@@ -1313,6 +1336,12 @@ void ImagerWindow::on_use_system_locale_changed(bool status) {
 
 void ImagerWindow::on_imager_stretch_changed(int level) {
 	conf.preview_stretch_level = (preview_stretch)level;
+	QtConcurrent::run([=]() {
+		indigo_error("********* ImagerWindow::on_imager_stretch_changed: setup_preview");
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		setup_preview(selected_agent);
+	});
 	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 	preview_cache.recreate(m_image_key, sc);
 	show_preview_in_imager_viewer(m_image_key);
