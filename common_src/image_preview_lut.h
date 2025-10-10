@@ -60,14 +60,6 @@ typedef struct {
 	float contrast;
 } stretch_input_params_t;
 
-static const preview_stretch_t stretch_linear_lut[] = {
-	{0.01, 0.001},
-	{0.01, 0.07},
-	{0.01, 0.25},
-	{0.01, 0.75},
-	{0.01, 1.30},
-};
-
 static const stretch_input_params_t stretch_params_lut[] ={
 	{0   ,    0}, // Does not matter
 	{0.05, -2.8},

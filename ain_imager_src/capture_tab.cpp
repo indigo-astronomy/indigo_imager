@@ -506,12 +506,12 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 
 		// Start sequence or exposure
 		set_base_agent_relations();
-
 		m_object_name_str = m_object_name->text().trimmed();
 		change_agent_batch_property(selected_imager_agent);
 		change_ccd_frame_property(selected_imager_agent);
 		change_ccd_localmode_property(selected_imager_agent, m_object_name_str);
-		if(conf.save_images_on_server) {
+		if(conf.save_images_on_server || conf.guider_save_bandwidth) {
+			setup_preview(selected_imager_agent);
 			change_ccd_upload_property(selected_imager_agent, CCD_UPLOAD_MODE_BOTH_ITEM_NAME);
 		} else {
 			change_ccd_upload_property(selected_imager_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
@@ -557,6 +557,7 @@ void ImagerWindow::on_preview_start_stop(bool clicked) {
 		    ccd_exposure && ccd_exposure->state == INDIGO_BUSY_STATE) {
 			change_ccd_abort_exposure_property(selected_agent);
 		} else {
+			setup_preview(selected_agent);
 			set_base_agent_relations();
 			QString obj_name = m_object_name->text();
 			change_ccd_localmode_property(selected_agent, obj_name);

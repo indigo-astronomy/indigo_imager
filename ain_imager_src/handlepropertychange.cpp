@@ -192,6 +192,22 @@ static void change_combobox_selection_filtered(ImagerWindow *w, indigo_property 
 	}
 }
 
+void update_ccd_image_file(ImagerWindow *w, indigo_property *property) {
+	if (property->state != INDIGO_OK_STATE) {
+		w->m_last_remote_image_file = QString();
+		return;
+	}
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], CCD_IMAGE_FILE_ITEM_NAME)) {
+			w->m_last_remote_image_file = QString(property->items[i].text.value);
+			char message[PATH_LEN+100];
+			snprintf(message, sizeof(message), "[R] Image saved to: '%s'", w->m_last_remote_image_file.toUtf8().constData());
+			w->window_log(message);
+			break;
+		}
+	}
+}
+
 void update_focus_failreturn(ImagerWindow *w, indigo_property *property) {
 	w->set_enabled(w->m_focuser_failreturn_cbox, true);
 	for (int i = 0; i < property->count; i++) {
@@ -3132,6 +3148,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 
 	// Imager Agent
+	if (client_match_device_property(property, selected_agent, CCD_IMAGE_FILE_PROPERTY_NAME)) {
+		update_ccd_image_file(this, property);
+	}
 	if (client_match_device_property(property, selected_agent, CCD_LOCAL_MODE_PROPERTY_NAME)) {
 		update_ccd_local_mode(this, property);
 	}

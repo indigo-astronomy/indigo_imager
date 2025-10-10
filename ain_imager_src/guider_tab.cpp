@@ -555,11 +555,13 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 }
 
 void ImagerWindow::setup_preview(const char *agent) {
-	int stretch_level;
+	int stretch_level, reference_channel;
 	if (!strncmp(agent, "Imager Agent", 12)) {
 		stretch_level = conf.preview_stretch_level;
+		reference_channel = (conf.preview_color_balance == CB_AUTO) ? 0 : 2;
 	} else if (!strncmp(agent, "Guider Agent", 12)) {
 		stretch_level = conf.guider_stretch_level;
+		reference_channel = conf.guider_color_balance == CB_AUTO ? 0 : 2;
 	} else {
 		return;
 	}
@@ -571,30 +573,27 @@ void ImagerWindow::setup_preview(const char *agent) {
 		change_jpeg_settings_property(
 			agent,
 			93,
-			stretch_linear_lut[stretch_level].clip_black,
-			stretch_linear_lut[stretch_level].clip_white,
 			stretch_params_lut[stretch_level].brightness,
-			stretch_params_lut[stretch_level].contrast
+			stretch_params_lut[stretch_level].contrast,
+			reference_channel
 		);
 		break;
 	case 2:
 		change_jpeg_settings_property(
 			agent,
 			89,
-			stretch_linear_lut[stretch_level].clip_black,
-			stretch_linear_lut[stretch_level].clip_white,
 			stretch_params_lut[stretch_level].brightness,
-			stretch_params_lut[stretch_level].contrast
+			stretch_params_lut[stretch_level].contrast,
+			reference_channel
 		);
 		break;
 	case 3:
 		change_jpeg_settings_property(
 			agent,
 			50,
-			stretch_linear_lut[stretch_level].clip_black,
-			stretch_linear_lut[stretch_level].clip_white,
 			stretch_params_lut[stretch_level].brightness,
-			stretch_params_lut[stretch_level].contrast
+			stretch_params_lut[stretch_level].contrast,
+			reference_channel
 		);
 		break;
 	default:

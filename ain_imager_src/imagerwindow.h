@@ -123,6 +123,7 @@ public:
 	void property_delete(indigo_property* property, char *message);
 	void property_define(indigo_property* property, char *message);
 
+	friend void update_ccd_image_file(ImagerWindow *w, indigo_property *property);
 	friend void update_focus_failreturn(ImagerWindow *w, indigo_property *property);
 	friend void update_cooler_onoff(ImagerWindow *w, indigo_property *property);
 	friend void update_cooler_power(ImagerWindow *w, indigo_property *property);
@@ -929,15 +930,16 @@ private:
 	//char *m_image_formrat;
 	QString m_selected_filter;
 
+	QString m_last_remote_image_file;
+
 	void window_log(const char *message, int state = INDIGO_OK_STATE);
 
 	void change_jpeg_settings_property(
 		const char *agent,
 		const int jpeg_quality,
-		const double black_threshold,
-		const double white_threshold,
 		const double target_bg,
-		const double clipping_point
+		const double clipping_point,
+		const int ref_channel
 	);
 
 	void configure_spinbox_int(QSpinBox *widget, indigo_item *item, int perm);

@@ -853,8 +853,8 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		//preview_image *image = preview_cache.get(m_image_key);
 		if (show_preview_in_imager_viewer(key)) {
 			indigo_debug("m_imager_viewer = %p", m_imager_viewer);
-			m_imager_viewer->setText(QString("Unsaved") + QString(m_indigo_item->blob.format));
-			m_imager_viewer->setToolTip(QString("Unsaved") + QString(m_indigo_item->blob.format));
+			m_imager_viewer->setText(QString("Remote Image Preview"));
+			m_imager_viewer->setToolTip(QString("Remote Image Preview"));
 			int size = (int)round(m_focus_star_radius->value() * 2 + 1);
 			move_resize_focuser_selection(m_star_x->value(), m_star_y->value(), size);
 		}
@@ -1337,7 +1337,6 @@ void ImagerWindow::on_use_system_locale_changed(bool status) {
 void ImagerWindow::on_imager_stretch_changed(int level) {
 	conf.preview_stretch_level = (preview_stretch)level;
 	QtConcurrent::run([=]() {
-		indigo_error("********* ImagerWindow::on_imager_stretch_changed: setup_preview");
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
 		setup_preview(selected_agent);
@@ -1360,6 +1359,11 @@ void ImagerWindow::on_imager_debayer_changed(uint32_t bayer_pat) {
 
 void ImagerWindow::on_imager_cb_changed(int balance) {
 	conf.preview_color_balance = (color_balance)balance;
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		setup_preview(selected_agent);
+	});
 	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 	preview_cache.recreate(m_image_key, sc);
 	show_preview_in_imager_viewer(m_image_key);
@@ -1383,6 +1387,11 @@ void ImagerWindow::on_guider_stretch_changed(int level) {
 
 void ImagerWindow::on_guider_cb_changed(int balance) {
 	conf.guider_color_balance = (color_balance)balance;
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_guider_agent(selected_agent);
+		setup_preview(selected_agent);
+	});
 	const stretch_config_t sc = {(uint8_t)conf.guider_stretch_level, (uint8_t)conf.guider_color_balance, BAYER_PAT_AUTO};
 	preview_cache.recreate(m_guider_key, sc);
 	show_preview_in_guider_viewer(m_guider_key);
