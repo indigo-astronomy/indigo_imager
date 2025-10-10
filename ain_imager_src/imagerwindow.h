@@ -28,6 +28,7 @@
 #include <imageviewer.h>
 #include <widget_state.h>
 #include <conf.h>
+#include <PolarAlignmentWidget/PolarAlignmentWidget.h>
 
 class QServiceModel;
 class QIndigoServers;
@@ -63,11 +64,11 @@ class QIndigoServers;
 #include <QProcess>
 #include <QMovie>
 #include "focusgraph.h"
-#include "sequence_editor.h"
 #include "syncutils.h"
 #include "customobjectmodel.h"
 #include "qaddcustomobject.h"
 #include "qconfigdialog.h"
+#include <IndigoSequence.h>
 
 class ImagerWindow : public QMainWindow {
 	Q_OBJECT
@@ -110,17 +111,23 @@ public:
 		return true;
 	};
 
+	bool get_selected_scripting_agent(char * selected_agent) const {
+		if (!selected_agent || !m_agent_scripting_select) return false;
+		strncpy(selected_agent, m_agent_scripting_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+		indigo_debug("SELECTED SCRIPTING AGENT = %s", selected_agent);
+		return true;
+	};
+
 	void play_sound(int alarm);
 
 	void property_delete(indigo_property* property, char *message);
 	void property_define(indigo_property* property, char *message);
 
 	friend void update_focus_failreturn(ImagerWindow *w, indigo_property *property);
-	friend void set_filter_selected(ImagerWindow *w, indigo_property *property);
-	friend void reset_filter_names(ImagerWindow *w, indigo_property *property);
 	friend void update_cooler_onoff(ImagerWindow *w, indigo_property *property);
 	friend void update_cooler_power(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_process_features(ImagerWindow *w, indigo_property *property);
+	friend void update_agent_imager_meridian_flip_label(ImagerWindow *w, indigo_property *property);
 	friend void update_focuser_temperature(ImagerWindow *w, indigo_property *property);
 	friend void update_focuser_temperature_compensation_steps(ImagerWindow *w, indigo_property *property);
 	friend void update_focuser_mode(ImagerWindow *w, indigo_property *property);
@@ -138,10 +145,13 @@ public:
 	friend void update_focus_estimator_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_batch_dithering(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *property);
-	friend void update_ccd_frame_property(ImagerWindow *w, indigo_property *property);
+	friend void update_ccd_frame_property(ImagerWindow *w, indigo_property *property, bool is_define);
 	friend void update_wheel_slot_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *property);
+	friend void update_ccd_local_mode(ImagerWindow *w, indigo_property *property);
 	friend void update_ccd_exposure(ImagerWindow *w, indigo_property *property);
+	friend void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property);
+	friend void handle_scripting_on_load_script(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_stats(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_settings(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_apply_dec_backlash(ImagerWindow *w, indigo_property *property);
@@ -171,6 +181,11 @@ public:
 	friend void update_solver_agent_pa_settings(ImagerWindow *w, indigo_property *property);
 
 	bool m_is_sequence;
+
+	public:
+	void updatePolarAlignmentOverlay(double azError, double altError);
+	void showPolarAlignmentOverlayMarker(bool show);
+	void setPolarAlignmentOverlayWarning(bool show);
 
 signals:
 	void enable_blobs(bool on);
@@ -218,10 +233,12 @@ signals:
 public slots:
 	void on_exposure_start_stop(bool clicked);
 	void on_sequence_start_stop(bool clicked);
+	void on_sequence_pause(bool clicked);
 	void on_preview_start_stop(bool clicked);
 	void on_abort(bool clicked);
 	void on_pause(bool clicked);
-	void on_window_log(indigo_property* property, char *message);
+	void on_reset(bool clicked);
+	void on_window_log(indigo_property* property, const char *message);
 	void on_property_define(indigo_property* property, char *message);
 	void on_property_change(indigo_property* property, char *message);
 	void on_property_delete(indigo_property* property, char *message);
@@ -295,6 +312,8 @@ public slots:
 	void on_keep_image_on_server(int state);
 	void on_sync_remote_files(bool clicked);
 	void on_remove_synced_remote_files(bool clicked);
+
+	void on_scripting_agent_selected(int index);
 
 	void on_focus_start_stop(bool clicked);
 	void on_focus_preview_start_stop(bool clicked);
@@ -416,10 +435,12 @@ public slots:
 	void on_mount_agent_set_pa_settings(double value);
 	void on_mount_agent_set_pa_refraction(bool clicked);
 
-	void on_sequence_updated();
+	void on_recalculate_exposure();
 	void on_request_sequence();
 
 	void on_tab_changed(int index);
+
+	void onTelescopeSubTabChanged(int subTabIndex);
 
 	void on_custom_object_populate() {
 		QString ra_str(indigo_dtos(m_mount_ra, "%d:%02d:%04.1f"));
@@ -579,6 +600,7 @@ public slots:
 		line_edit->setText(text);
 		line_edit->blockSignals(false);
 	};
+
 private:
 	QTextEdit* mLog;
 	QTabWidget *m_tools_tabbar;
@@ -628,20 +650,24 @@ private:
 	QPushButton *m_sync_files_button;
 	QPushButton *m_remove_synced_files_button;
 	QProgressBar *m_download_progress;
-	QString m_object_name_str;
+	QString m_remote_object_name;
 	QStringList m_files_to_download;
 	QStringList m_files_to_remove;
 	QString m_filter_name;
 	QString m_frame_type;
+	QString m_object_name_str;
 
 	// Sequence tabbar
+	QComboBox *m_agent_scripting_select;
 	QProgressBar *m_seq_exposure_progress;
 	QProgressBar *m_seq_batch_progress;
 	QProgressBar *m_seq_sequence_progress;
 	QPushButton *m_seq_start_button;
 	QPushButton *m_seq_pause_button;
+	QPushButton *m_seq_reset_button;
 	QLabel *m_seq_esimated_duration;
 	QLabel *m_imager_status_label;
+	QString m_sequencer_code;
 
 	// Focuser tabbar
 	QComboBox *m_focuser_select;
@@ -742,6 +768,7 @@ private:
 	QVector<double> m_drift_data_y;
 	QVector<double> *m_guider_data_1;
 	QVector<double> *m_guider_data_2;
+	int m_guider_frame_count;
 	QLabel *m_guider_graph_label;
 	QLabel *m_guider_rd_drift_label;
 	QLabel *m_guider_xy_drift_label;
@@ -771,6 +798,7 @@ private:
 	QLabel *m_mount_alt_label;
 	QLabel *m_mount_ttr_label;
 	QLabel *m_mount_side_of_pier_label;
+	QLabel *m_mount_meridian_flip_label;
 	QLineEdit *m_mount_ra_input;
 	QLineEdit *m_mount_dec_input;
 	QPushButton *m_mount_goto_button;
@@ -871,6 +899,8 @@ private:
 	QLabel *m_pa_error_az_label;
 	QLabel *m_pa_error_alt_label;
 	QLabel *m_pa_error_label;
+	PolarAlignmentWidget* m_polarAlignWidget;
+
 	QMutex m_property_mutex;
 
 	int m_stderr;
@@ -883,7 +913,7 @@ private:
 
 	indigo_item *m_indigo_item;
 
-	SequenceEditor *m_sequence_editor;
+	IndigoSequence *m_sequence_editor2;
 
 	QString m_image_key;
 	QString m_guider_key;
@@ -899,7 +929,7 @@ private:
 	//char *m_image_formrat;
 	QString m_selected_filter;
 
-	void window_log(char *message, int state = INDIGO_OK_STATE);
+	void window_log(const char *message, int state = INDIGO_OK_STATE);
 
 	void change_jpeg_settings_property(
 		const char *agent,
@@ -920,6 +950,8 @@ private:
 	void create_telescope_tab(QFrame *solver_frame);
 	void create_solver_tab(QFrame *telescope_frame);
 
+	void load_sequencer_code();
+
 	void change_config_agent_load(const char *agent, const char *config, bool unload) const;
 	void change_config_agent_save(const char *agent, const char *config, bool autosave) const;
 	void change_config_agent_delete(const char *agent, const char *config) const;
@@ -931,25 +963,31 @@ private:
 	void change_ccd_mode_property(const char *agent, QComboBox *frame_size_select) const;
 	void change_ccd_image_format_property(const char *agent) const;
 	void change_ccd_frame_type_property(const char *agent) const;
-	void change_agent_start_process(const char *agent, char *item) const;
+	void change_agent_start_process(const char *agent, const char *item) const;
 	void change_agent_batch_property(const char *agent) const;
 	void change_agent_batch_property_for_focus(const char *agent) const;
 	void change_agent_start_exposure_property(const char *agent) const;
 	void change_agent_start_sequence_property(const char *agent) const;
-	void change_agent_pause_process_property(const char *agent, bool wait_exposure) const;
+	void change_agent_pause_process_property(const char *agent, bool wait_exposure, bool enable = true) const;
 	void change_agent_abort_process_property(const char *agent) const;
 	void change_wheel_slot_property(const char *agent) const;
 	void change_cooler_onoff_property(const char *agent) const;
 	void change_ccd_temperature_property(const char *agent) const;
 	void change_ccd_upload_property(const char *agent, const char *item_name) const;
 	void change_ccd_localmode_property(const char *agent, const QString &object_name);
+	void init_ccd_localmode_property(const char *agent);
 	void add_fits_keyword_string(const char *agent, const char *keyword, const QString &value) const;
 	void request_file_download(const char *agent, const char *file_name) const;
 	void request_file_remove(const char *agent, const char *file_name) const;
 	void change_related_agent(const char *agent, const char *old_agent, const char *new_agent) const;
-	void set_related_mount_and_imager_agents() const;
-	void set_related_imager_and_guider_agents() const;
-	void set_related_mount_guider_agent(const char *related_agent) const;
+
+	void set_related_agent(const char *agent, const char *related_agent) const;
+	void set_base_agent_relations() const;
+	void set_related_solver_agent(const char *related_agent) const;
+
+	// related_aget should be with trimmed service
+	void set_agent_releated_agent(const char *agent, const char *related_agent, bool select) const;
+
 	void change_agent_guider_dithering_property(const char *agent) const;
 	void change_agent_imager_dithering_property(const char *agent) const;
 	void change_agent_gain_property(const char *agent, QSpinBox *ccd_gain) const;
@@ -994,9 +1032,11 @@ private:
 	void change_guider_agent_edge_clipping(const char *agent) const;
 	void change_agent_ccd_peview(const char *agent, bool enable) const;
 
-	void change_mount_agent_equatorial(const char *agent, bool sync=false) const;
+	void change_mount_agent_equatorial(const char *agent, bool sync = false) const;
 	void change_mount_agent_abort(const char *agent) const;
 	void change_mount_agent_location(const char *agent, QString property_prefix) const;
+
+	void togglePolarAlignmentOverlay(bool show);
 
 	void change_rotator_position_property(const char *agent) const;
 	void change_rotator_sync_property(const char *agent) const;
@@ -1005,12 +1045,11 @@ private:
 	void clear_solver_agent_releated_agents(const char *agent) const;
 	void change_solver_agent_abort(const char *agent) const;
 
-	void set_agent_releated_agent(const char *agent, const char *related_agent, bool select) const;
 	void disable_auto_solving(const char *agent) const;
 
 	void update_solver_widgets_at_start(const char *image_agent, const char *solver_agent);
 
-	void mount_agent_set_switch_async(char *property, char *item, bool move);
+	void mount_agent_set_switch_async(const char *property, const char *item, bool move);
 
 	bool get_solver_relations(char *selected_mount_agent, char* selected_solver_agent, char *selected_image_agent, char *selected_solver_source, QComboBox *solver_source_select);
 	void trigger_solve_and_sync(bool recenter);
@@ -1021,7 +1060,7 @@ private:
 	void change_solver_goto_settings(const char *agent) const;
 	void trigger_precise_goto();
 
-	void change_imager_agent_sequence(const char *agent, QString sequence, QList<QString> batches) const;
+	void change_scripting_agent_sequence(const char *agent, QString sequence) const;
 
 	void select_guider_data(guider_display_data show);
 

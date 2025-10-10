@@ -541,6 +541,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 }
 
 void ImagerWindow::on_focus_estimator_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
@@ -570,6 +571,7 @@ void ImagerWindow::select_focuser_data(focuser_display_data show) {
 }
 
 void ImagerWindow::on_focuser_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_focuser[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
 		QString q_focuser_str = m_focuser_select->currentText();
@@ -588,6 +590,7 @@ void ImagerWindow::on_focuser_selected(int index) {
 }
 
 void ImagerWindow::on_focuser_backlash_changed(int value) {
+	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
 		char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
@@ -597,6 +600,7 @@ void ImagerWindow::on_focuser_backlash_changed(int value) {
 }
 
 void ImagerWindow::on_focuser_bl_overshoot_changed(double value) {
+	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
 		char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
@@ -606,6 +610,7 @@ void ImagerWindow::on_focuser_bl_overshoot_changed(double value) {
 }
 
 void ImagerWindow::on_focuser_temp_compensation_changed(int state) {
+	Q_UNUSED(state);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
@@ -620,6 +625,7 @@ void ImagerWindow::on_focuser_temp_compensation_changed(int state) {
 }
 
 void ImagerWindow::on_focuser_temp_compensation_steps_changed(int value) {
+	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
 		char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
@@ -629,6 +635,7 @@ void ImagerWindow::on_focuser_temp_compensation_steps_changed(int value) {
 }
 
 void ImagerWindow::on_selection_changed(double value) {
+	Q_UNUSED(value);
 	int x = m_star_x->value();
 	int y = m_star_y->value();
 	m_imager_viewer->moveSelection(x, y);
@@ -639,6 +646,7 @@ void ImagerWindow::on_selection_changed(double value) {
 }
 
 void ImagerWindow::on_focuser_selection_radius_changed(int value) {
+	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
 		char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
@@ -648,6 +656,7 @@ void ImagerWindow::on_focuser_selection_radius_changed(int value) {
 }
 
 void ImagerWindow::on_focuser_selection_star_count_changed(int value) {
+	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
 		char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
@@ -657,6 +666,7 @@ void ImagerWindow::on_focuser_selection_star_count_changed(int value) {
 }
 
 void ImagerWindow::on_focuser_clear_selection(bool clicked) {
+	Q_UNUSED(clicked);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
@@ -672,6 +682,7 @@ void ImagerWindow::on_focus_mode_selected(int index) {
 }
 
 void ImagerWindow::on_image_right_click(double x, double y, Qt::KeyboardModifiers modifiers) {
+	Q_UNUSED(modifiers);
 	m_star_x->blockSignals(true);
 	m_star_x->setValue(x);
 	m_star_x->blockSignals(false);
@@ -706,6 +717,7 @@ void ImagerWindow::on_focuser_position_changed() {
 }
 
 void ImagerWindow::on_focus_preview_start_stop(bool clicked) {
+	Q_UNUSED(clicked);
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -725,6 +737,7 @@ void ImagerWindow::on_focus_preview_start_stop(bool clicked) {
 }
 
 void ImagerWindow::on_focus_start_stop(bool clicked) {
+	Q_UNUSED(clicked);
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -751,6 +764,7 @@ void ImagerWindow::on_focus_start_stop(bool clicked) {
 }
 
 void ImagerWindow::on_focus_in(bool clicked) {
+	Q_UNUSED(clicked);
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -762,6 +776,7 @@ void ImagerWindow::on_focus_in(bool clicked) {
 }
 
 void ImagerWindow::on_focus_out(bool clicked) {
+	Q_UNUSED(clicked);
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -773,6 +788,7 @@ void ImagerWindow::on_focus_out(bool clicked) {
 }
 
 void ImagerWindow::on_focuser_subframe_changed(int index) {
+	Q_UNUSED(index);
 	conf.focuser_subframe = index;
 	write_conf();
 	QtConcurrent::run([=]() {
@@ -786,6 +802,7 @@ void ImagerWindow::on_focuser_subframe_changed(int index) {
 }
 
 void ImagerWindow::on_focuser_failreturn_changed(int state) {
+	Q_UNUSED(state);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
@@ -802,6 +819,7 @@ void ImagerWindow::on_focuser_failreturn_changed(int state) {
 }
 
 void ImagerWindow::on_focuser_reverse_changed(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
 

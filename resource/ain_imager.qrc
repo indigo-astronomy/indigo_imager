@@ -1,10 +1,12 @@
-<RCC>
+<!DOCTYPE RCC>
+<RCC version="1.0">
 	<qresource prefix="/resource">
 		<file>control_panel.qss</file>
 		<file>appicon.png</file>
 		<file>indigo_logo.png</file>
 		<file>save.png</file>
 		<file>delete.png</file>
+		<file>find.png</file>
 		<file>zoom-fit-best.png</file>
 		<file>zoom-original.png</file>
 		<file>bonjour_service.png</file>
@@ -14,13 +16,16 @@
 		<file>led-grey.png</file>
 		<file>led-green.png</file>
 		<file>led-orange.png</file>
+		<file>led-noexec.png</file>
 		<file>led-red-cb.png</file>
 		<file>led-green-cb.png</file>
 		<file>led-orange-cb.png</file>
+		<file>led-noexec-cb.png</file>
 		<file>stop.png</file>
 		<file>play.png</file>
 		<file>pause.png</file>
 		<file>record.png</file>
+		<file>reload.png</file>
 		<file>focus.png</file>
 		<file>calibrate.png</file>
 		<file>guide.png</file>
@@ -36,9 +41,37 @@
 		<file>folder.png</file>
 		<file>download.png</file>
 		<file>histogram.png</file>
+		<file>loop-grey.png</file>
+		<file>loop-orange.png</file>
+		<file>loop-green.png</file>
+		<file>loop-red.png</file>
+		<file>condition-grey.png</file>
+		<file>condition-green.png</file>
+		<file>condition-orange.png</file>
+		<file>condition-red.png</file>
+		<file>resume-grey.png</file>
+		<file>resume-green.png</file>
+		<file>resume-orange.png</file>
+		<file>resume-red.png</file>
+		<file>recovery-point-grey.png</file>
+		<file>recovery-point-green.png</file>
+		<file>recovery_policy.png</file>
+		<file>menu-loop-grey.png</file>
+		<file>wheel-grey.png</file>
+		<file>rotator-grey.png</file>
+		<file>shutter-grey.png</file>
+		<file>mount-grey.png</file>
+		<file>focuser-grey.png</file>
+		<file>guider-grey.png</file>
+		<file>led-grey-dev.png</file>
+		<file>server.png</file>
+		<file>warning.png</file>
 		<file>error.wav</file>
 		<file>ok.wav</file>
 		<file>warning.wav</file>
 		<file>spinner.gif</file>
+	</qresource>
+	<qresource prefix="/scripts">
+		<file alias="Sequencer.js">../ain_imager_src/scripts/Sequencer.js</file>
 	</qresource>
 </RCC>

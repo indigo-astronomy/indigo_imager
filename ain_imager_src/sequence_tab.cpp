@@ -31,6 +31,12 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	sequence_frame->setContentsMargins(0, 0, 0, 0);
 
 	int row = 0;
+
+	m_agent_scripting_select = new QComboBox();
+	sequence_frame_layout->addWidget(m_agent_scripting_select, row, 0, 1, 4);
+	connect(m_agent_imager_select, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ImagerWindow::on_scripting_agent_selected);
+
+	row++;
 	QLabel *label = new QLabel("Image preview:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	sequence_frame_layout->addWidget(label, row, 0, 1, 4);
@@ -63,7 +69,13 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	toolbox->addWidget(m_seq_pause_button);
 	m_seq_pause_button->setStyleSheet("min-width: 30px");
 	m_seq_pause_button->setIcon(QIcon(":resource/pause.png"));
-	connect(m_seq_pause_button, &QPushButton::clicked, this, &ImagerWindow::on_pause);
+	connect(m_seq_pause_button, &QPushButton::clicked, this, &ImagerWindow::on_sequence_pause);
+
+	m_seq_reset_button = new QPushButton("Reset");
+	toolbox->addWidget(m_seq_reset_button);
+	m_seq_reset_button->setStyleSheet("min-width: 30px");
+	m_seq_reset_button->setIcon(QIcon(":resource/reload.png"));
+	connect(m_seq_reset_button, &QPushButton::clicked, this, &ImagerWindow::on_reset);
 
 	QPushButton *button = new QPushButton("Abort");
 	button->setStyleSheet("min-width: 30px");
@@ -109,32 +121,46 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	sequence_frame_layout->addItem(spacer, row, 0);
 
 	row++;
-	m_seq_esimated_duration = new QLabel(QString("Sequence duration: ") + indigo_dtos(0, "%02d:%02d:%02.0f"));
-	m_seq_esimated_duration->setToolTip("This is approximate sequence duration as download, focusing, filter change etc., times are unpredicatble.");
-	sequence_frame_layout->addWidget(m_seq_esimated_duration, row, 0, 1, 4);
+	m_mount_meridian_flip_label = new QLabel("Meridian flip: <b>OFF</b>");
+	set_ok(m_mount_meridian_flip_label);
+	sequence_frame_layout->addWidget(m_mount_meridian_flip_label, row, 0, 1, 4);
+
+	row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	sequence_frame_layout->addItem(spacer, row, 0);
+
+	row++;
+	m_seq_esimated_duration = new QLabel(QString("Total exposure: ") + indigo_dtos(0, "%02d:%02d:%02.0f"));
+	m_seq_esimated_duration->setToolTip("This is the total exposure time of the composed sequence.");
+	sequence_frame_layout->addWidget(m_seq_esimated_duration, row, 0, 1, 3);
+
+	QToolButton *tbutton = new QToolButton();
+	//tbutton->setIcon(QIcon(":resource/download.png"));
+	//tbutton->setText("⟳");
+	tbutton->setText("Σ");
+	tbutton->setToolTip("Calculate sequence total exposure");
+	sequence_frame_layout->addWidget(tbutton, row, 3);
+	connect(tbutton, &QToolButton::clicked, this, &ImagerWindow::on_recalculate_exposure);
+
 }
 
-void ImagerWindow::on_sequence_updated() {
-	double duration = m_sequence_editor->approximate_duration();
-	m_seq_esimated_duration->setText(QString("Sequence duration: ") + QString(indigo_dtos(duration, "%02d:%02d:%02.0f")));
-
-	/*
+void ImagerWindow::on_scripting_agent_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
-		indigo_debug("CALLED: %s\n", __FUNCTION__);
-		static char selected_agent[INDIGO_NAME_SIZE];
-		get_selected_imager_agent(selected_agent);
-		static QList<QString> batches;
-		static QString sequence;
-		m_sequence_editor->generate_sequence(sequence, batches);
+		// Clear controls
+		indigo_property *property = (indigo_property*)malloc(sizeof(indigo_property));
+		memset(property, 0, sizeof(indigo_property));
+		get_selected_scripting_agent(property->device);
+		property_delete(property, nullptr);
+		free(property);
 
-		indigo_debug("SEQUENCE: %s\n", sequence.toStdString().c_str());
-		for (int i = 0; i < batches.count(); i++) {
-			indigo_debug("BATCH %d: %s\n", i+1, batches[i].toStdString().c_str());
-		}
-
-		change_imager_agent_sequence(selected_agent, sequence, batches);
+		indigo_enumerate_properties(nullptr, &INDIGO_ALL_PROPERTIES);
 	});
-	*/
+}
+
+void ImagerWindow::on_recalculate_exposure() {
+	double totalExposure = m_sequence_editor2->totalExposure();
+	m_seq_esimated_duration->setText(QString("Total exposure: ") + QString(indigo_dtos(totalExposure / 3600, "%02d:%02d:%02.0f")));
 }
 
 void ImagerWindow::on_sequence_name_changed(const QString &object_name) {
@@ -147,48 +173,80 @@ void ImagerWindow::on_sequence_name_changed(const QString &object_name) {
 		get_selected_imager_agent(selected_agent);
 
 		change_ccd_localmode_property(selected_agent, object_name);
-		add_fits_keyword_string(selected_agent, "OBJECT", object_name);
 	});
 }
 
 void ImagerWindow::on_request_sequence() {
 	indigo_debug("Sequence requested");
-	static char selected_agent[INDIGO_NAME_SIZE];
-	get_selected_imager_agent(selected_agent);
 
-	QString name;
 	QString sequence;
-	QList<QString> batches;
+	static char selected_agent[INDIGO_NAME_SIZE];
+	get_selected_scripting_agent(selected_agent);
 
-	indigo_property *p = properties.get(selected_agent, CCD_FITS_HEADERS_PROPERTY_NAME);
+	char sequence_script[INDIGO_NAME_SIZE] = {0};
+	indigo_property *p = nullptr;
+
+	for (int i = 0; i < 32; i++) {
+		snprintf(sequence_script, sizeof(sequence_script), AGENT_SCRIPTING_SCRIPT_PROPERTY_NAME, i);
+		p = properties.get(selected_agent, sequence_script);
+		if (p && !strcmp(p->label, AIN_SEQUENCE_NAME)) {
+			break;
+		}
+	}
+
 	if (p) {
 		for (int i = 0; i < p->count; i++) {
-			if (client_match_item(&p->items[i], "OBJECT")) {
-				name = QString(p->items[i].text.value).trimmed().remove("\'");
+			if (client_match_item(&p->items[i], AGENT_SCRIPTING_SCRIPT_ITEM_NAME)) {
+				sequence = indigo_get_text_item_value(&p->items[i]);
 				break;
 			}
 		}
+		m_sequence_editor2->loadScriptToView(sequence);
 	}
-
-	p = properties.get(selected_agent, AGENT_IMAGER_SEQUENCE_PROPERTY_NAME);
-	if (p) {
-		for (int i = 0; i < p->count; i++) {
-			if (client_match_item(&p->items[i], AGENT_IMAGER_SEQUENCE_ITEM_NAME)) {
-				sequence = indigo_get_text_item_value(&p->items[i]);
-			} else {
-				QString batch(indigo_get_text_item_value(&p->items[i]));
-				if (!batch.isEmpty()) {
-					batches.append(batch);
-				};
-			}
-		}
-		m_sequence_editor->set_sequence(name, sequence, batches);
-	}
-	double duration = m_sequence_editor->approximate_duration();
-	m_seq_esimated_duration->setText(QString("Sequence duration: ") + indigo_dtos(duration, "%02d:%02d:%02.0f"));
+	on_recalculate_exposure();
 }
 
 void ImagerWindow::on_sequence_start_stop(bool clicked) {
-	m_sequence_editor->clear_selection();
+	m_sequence_editor2->enable(true);
 	exposure_start_stop(clicked, true);
+}
+
+void ImagerWindow::on_sequence_pause(bool clicked) {
+	Q_UNUSED(clicked);
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_scripting_agent(selected_agent);
+
+		indigo_property *p = properties.get(selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME);
+		if (p == nullptr || p->count < 1) return;
+
+		bool paused = false;
+		for (int i = 0; i < p->count; i++) {
+			if (client_match_item(&p->items[i], AGENT_PAUSE_PROCESS_WAIT_ITEM_NAME)) {
+				paused = p->items[i].sw.value;
+				break;
+			}
+		}
+		change_agent_pause_process_property(selected_agent, true, !paused);
+	});
+}
+
+void ImagerWindow::on_reset(bool clicked) {
+	Q_UNUSED(clicked);
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+
+		static char selected_scripting_agent[INDIGO_NAME_SIZE];
+		get_selected_scripting_agent(selected_scripting_agent);
+
+
+		indigo_property *p = properties.get(selected_scripting_agent, "SEQUENCE_STATE");
+		if (p == nullptr || p->state == INDIGO_BUSY_STATE) return;
+
+		m_sequence_editor2->enable(true);
+
+		indigo_change_switch_property_1(nullptr, selected_scripting_agent, "SEQUENCE_RESET", "RESET", true);
+	});
 }

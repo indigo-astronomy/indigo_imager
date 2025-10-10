@@ -21,9 +21,14 @@
 #define INDIGOCLIENT_H
 
 #include <QObject>
+#include <QHash>
 #include <QAtomicInt>
 #include <indigo/indigo_bus.h>
 #include "logger.h"
+
+#if !defined(AGENT_PLATESOLVER_PA_STATE_ACCURACY_WARNING_ITEM_NAME)
+#define AGENT_PLATESOLVER_PA_STATE_ACCURACY_WARNING_ITEM_NAME	"ACCURACY_WARNING"
+#endif
 
 extern bool client_match_device_property(indigo_property *property, const char *device_name, const char *property_name);
 extern bool client_match_device_no_property(indigo_property *property, const char *device_name);
@@ -40,11 +45,10 @@ public:
 	IndigoClient() : guider_downloading(0), imager_downloading(0), imager_downloading_saved_frame(0), other_downloading(0) {
 		m_logger = &Logger::instance();
 		m_blobs_enabled = false;
-		m_save_blob = false;
-		m_is_exposing = true;
 	}
 
 	~IndigoClient() {
+		m_is_exposing.clear();
 		stop();
 	}
 
@@ -56,11 +60,12 @@ public:
 		return m_blobs_enabled;
 	};
 
-	void start(char *name);
+	bool is_exposing(const char* device);
+	void remove_is_exposing_entry(const char* device);
+
+	void start(const char *name);
 	void stop();
 	void update_save_blob(indigo_property *property);
-	bool m_save_blob;
-	bool m_is_exposing;
 
 	QAtomicInt guider_downloading;
 	QAtomicInt imager_downloading;
@@ -87,6 +92,9 @@ signals:
 	void obsolete_preview(indigo_property* property, indigo_item *item);
 	void remove_preview(indigo_property* property, indigo_item *item);
 	void no_preview(indigo_property* property, indigo_item *item);
+
+private:
+	QHash<QString, bool> m_is_exposing;
 };
 
 inline IndigoClient& IndigoClient::instance() {

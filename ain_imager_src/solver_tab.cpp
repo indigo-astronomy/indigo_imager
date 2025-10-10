@@ -359,6 +359,7 @@ bool ImagerWindow::open_image(QString file_name, int *image_size, unsigned char 
 }
 
 void ImagerWindow::on_solver_agent_selected(int index) {
+	Q_UNUSED(index);
 	QtConcurrent::run([=]() {
 		// Clear controls
 		indigo_property *property = (indigo_property*)malloc(sizeof(indigo_property));
@@ -382,14 +383,17 @@ void ImagerWindow::on_solver_hints_changed() {
 }
 
 void ImagerWindow::on_solver_ra_dec_hints_changed(bool clicked) {
+	Q_UNUSED(clicked);
 	on_solver_hints_changed();
 }
 
 void ImagerWindow::on_solver_hints_changed(int value) {
+	Q_UNUSED(value);
 	on_solver_hints_changed();
 }
 
 void ImagerWindow::on_solver_hints_changed(double value) {
+	Q_UNUSED(value);
 	on_solver_hints_changed();
 }
 
@@ -398,9 +402,7 @@ void ImagerWindow::on_trigger_solve() {
 }
 
 void ImagerWindow::on_solver_load_coords() {
-	indigo_error("CALLED: %s - not implemented\n", __FUNCTION__);
-
-	int wcs_state = -1;
+	indigo_debug("CALLED: %s\n", __FUNCTION__);
 
 	char selected_agent[INDIGO_NAME_SIZE];
 	get_selected_solver_agent(selected_agent);
@@ -433,6 +435,7 @@ void ImagerWindow::on_solver_load_coords() {
 }
 
 void ImagerWindow::on_image_source1_selected(int index) {
+	Q_UNUSED(index);
 	QString solver_source = m_solver_source_select1->currentText();
 	strncpy(conf.solver_image_source1, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
 	write_conf();

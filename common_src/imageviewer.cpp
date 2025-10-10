@@ -882,12 +882,14 @@ void ImageViewer::resizeEvent(QResizeEvent *event) {
 	QFrame::resizeEvent(event);
 	if (m_fit)
 		zoomFit();
+	emit viewerResized();
 }
 
 void ImageViewer::showEvent(QShowEvent *event) {
 	QFrame::showEvent(event);
 	if (m_fit)
 		zoomFit();
+	emit viewerShown();
 }
 
 void ImageViewer::stretchNone() {
@@ -1025,6 +1027,22 @@ void ImageViewer::setBalance(int balance) {
 			m_color_reference_act[COLOR_BALANCE_AUTO]->setChecked(true);
 			onAutoBalance();
 	}
+}
+
+QRect ImageViewer::getImageFrameRect() const {
+	QRect frameRect = this->rect();
+
+	if (m_bar_mode == ToolBarMode::AutoHidden || m_bar_mode == ToolBarMode::Visible) {
+		QRect toolbarRect = m_toolbar->rect();
+		frameRect = QRect(
+			frameRect.x(),
+			frameRect.y() + toolbarRect.height(),
+			frameRect.width(),
+			frameRect.height() - toolbarRect.height()
+		);
+	}
+
+	return frameRect;
 }
 
 PixmapItem::PixmapItem(QGraphicsItem *parent) :

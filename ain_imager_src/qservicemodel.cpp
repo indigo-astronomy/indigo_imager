@@ -23,8 +23,45 @@
 #include <indigo/indigo_client.h>
 #include <indigo/indigo_service_discovery.h>
 #include "conf.h"
+#include <QNetworkInterface>
+#include <QHostInfo>
 
-#define SERVICE_FILENAME "indigo_imager.services"
+// Returns true if host is localhost, a local hostname, or resolves to a local interface address
+static bool hostResolvesToLocal(const QByteArray &rawHost) {
+	QByteArray h = rawHost.trimmed();
+	if (h.isEmpty()) return false;
+	if (h == "localhost" || h == "127.0.0.1" || h == "::1") return true;
+
+	// Compare with local hostname
+	if (QString::fromUtf8(h).compare(QHostInfo::localHostName(), Qt::CaseInsensitive) == 0)
+		return true;
+
+	// Gather current local addresses (dynamic each call so it adapts to DHCP/Wi-Fi changes)
+	QSet<QHostAddress> localAddrs;
+	for (const QNetworkInterface &iface : QNetworkInterface::allInterfaces()) {
+		if (!(iface.flags() & QNetworkInterface::IsUp) ||
+			!(iface.flags() & QNetworkInterface::IsRunning))
+			continue;
+		for (const QNetworkAddressEntry &entry : iface.addressEntries()) {
+			if (!entry.ip().isNull())
+				localAddrs.insert(entry.ip());
+		}
+	}
+
+	// If raw host is an IP literal
+	QHostAddress ip;
+	if (ip.setAddress(QString::fromUtf8(h))) {
+		return localAddrs.contains(ip);
+	}
+
+	// Resolve host and see if any address matches a local interface
+	QHostInfo info = QHostInfo::fromName(QString::fromUtf8(h));
+	for (const QHostAddress &addr : info.addresses()) {
+		if (localAddrs.contains(addr)) return true;
+	}
+	return false;
+}
+
 
 void resolve_callback(const char *service_name, uint32_t interface_index, const char *host, int port) {
 	if (host != NULL) {
@@ -70,7 +107,8 @@ QServiceModel::~QServiceModel() {
 
 
 void QServiceModel::addServicePreferLocalhost(QByteArray service_name, uint32_t interface_index, QByteArray host, int port) {
-	if (interface_index == 1 ) { // if interface is loopback, use localhost, it is imune to interface drops
+	bool is_local = (interface_index == 1) || hostResolvesToLocal(host); // interface_index 1 is loopback
+	if (is_local) {
 		int i = findService(service_name);
 		if (i != -1 && m_services.at(i)->host() != QByteArray("localhost")) {
 			onServiceRemoved(service_name);
@@ -140,13 +178,21 @@ void QServiceModel::onTimer() {
 	for (auto i = m_services.constBegin(); i != m_services.constEnd(); ++i) {
 		if (i == nullptr) continue;
 		if ((*i)->m_server_entry == nullptr) continue;
-
+#ifdef INDIGO_VERSION_3
+		indigo_uni_handle *handle = (*i)->m_server_entry->handle;
+		if (handle != (*i)->prev_handle) {
+			indigo_debug("SERVICE Handles '%s' '%s' [%p] %p\n",(*i)->m_server_entry->name, (*i)->m_server_entry->host, handle, (*i)->prev_handle);
+			(*i)->prev_handle = handle;
+			emit(serviceConnectionChange((*i)->name(), (*i)->connected()));
+		}
+#else
 		int socket = (*i)->m_server_entry->socket;
 		if (socket != (*i)->prev_socket) {
 			indigo_debug("SERVICE Sockets '%s' '%s' [%d] %d\n",(*i)->m_server_entry->name, (*i)->m_server_entry->host, socket, (*i)->prev_socket);
 			(*i)->prev_socket = socket;
 			emit(serviceConnectionChange((*i)->name(), (*i)->connected()));
 		}
+#endif
 	}
 }
 

@@ -40,4 +40,6 @@ public:
 	bool matchObject(QString part_name);
 };
 
+Q_DECLARE_METATYPE(CustomObject*)
+
 #endif // CUSTOMOBJECT_H

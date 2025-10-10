@@ -22,6 +22,20 @@
 #include "propertycache.h"
 #include "conf.h"
 #include "widget_state.h"
+#include <QStringList>
+#include <SequenceItemModel.h>
+
+static void get_flip_string(bool flip_enambled, double flip_time, char *message) {
+	if (flip_enambled) {
+		if (flip_time < 0) {
+			snprintf(message, 100, "Meridian flip: <b>ON</b>, pause <b>%s</b> before transit", indigo_dtos(-flip_time, "%02d:%02d:%02d"));
+		} else {
+			snprintf(message, 100, "Meridian flip: <b>ON</b>, pause <b>%s</b> after transit", indigo_dtos(flip_time, "%02d:%02d:%02d"));
+		}
+	} else {
+		strcpy(message, "Meridian flip: <b>OFF</b>");
+	}
+}
 
 template<typename W>
 static void configure_spinbox(ImagerWindow *w, indigo_item *item, int perm, W *widget) {
@@ -134,6 +148,14 @@ static void add_items_to_combobox(ImagerWindow *w, indigo_property *property, QC
 	}
 }
 
+static void add_items_to_sequence_model(indigo_property *property, char *type, int parameter_index) {
+	QStringList items;
+	for (int i = 0; i < property->count; i++) {
+		items.append(QString(property->items[i].label));
+	}
+	SequenceItemModel::instance().setComboOptions(type, parameter_index, items);
+}
+
 static void add_items_to_combobox_filtered(ImagerWindow *w, indigo_property *property, const char *begins_with, QComboBox *items_combobox, bool append = false) {
 	if (!append) {
 		w->clear_combobox(items_combobox);
@@ -167,27 +189,6 @@ static void change_combobox_selection_filtered(ImagerWindow *w, indigo_property 
 	if (!selected) {
 		w->set_combobox_current_index(combobox, 0);
 		indigo_debug("[SELECT None]");
-	}
-}
-
-void reset_filter_names(ImagerWindow *w, indigo_property *property) {
-	w->clear_combobox(w->m_filter_select);
-	QList<QString>filters;
-	for (int i = 0; i < property->count; i++) {
-		QString filter_name = QString(property->items[i].text.value);
-		filters.append(filter_name);
-		w->add_combobox_item(w->m_filter_select, filter_name, QString(property->items[i].name));
-	}
-	w->m_sequence_editor->populate_filter_select(filters);
-}
-
-void set_filter_selected(ImagerWindow *w, indigo_property *property) {
-	for (int i = 0; i < property->count; i++) {
-		if (client_match_item(&property->items[i], WHEEL_SLOT_ITEM_NAME)) {
-			indigo_debug("SELECT: %s = %d\n", property->items[i].name, property->items[i].number.value);
-			w->set_combobox_current_index(w->m_filter_select, (int)property->items[i].number.value-1);
-			w->set_widget_state(w->m_filter_select, property->state);
-		}
 	}
 }
 
@@ -313,7 +314,9 @@ void update_mount_display_coordinates(ImagerWindow *w, indigo_property *property
 		}
 	}
 	w->set_text(w->m_mount_ttr_label, ttr_str);
-	if (ttr < 5.0/60) {  // 5 min
+	if (ttr < 0) { // < 0 means meridian passed
+		w->set_widget_state(w->m_mount_ttr_label, INDIGO_OK_STATE);
+	} else	if (ttr < 5.0/60) {  // 5 min
 		w->set_widget_state(w->m_mount_ttr_label, INDIGO_ALERT_STATE);
 	} else if (ttr < 20.0/60) { // 20 min
 		w->set_widget_state(w->m_mount_ttr_label, INDIGO_BUSY_STATE);
@@ -321,7 +324,7 @@ void update_mount_display_coordinates(ImagerWindow *w, indigo_property *property
 		w->set_widget_state(w->m_mount_ttr_label, INDIGO_OK_STATE);
 	}
 
-	QString tooltip_str = QString("<p><b>Rise / Transit / Set</b> (GMT)</p>");
+	QString tooltip_str = QString("<p><b>Rise / Transit / Set</b> (UTC)</p>");
 	if (rise == 0 && set == 0) { // never rises
 		tooltip_str +=
 			QString("Rise: never rises <br>") +
@@ -664,7 +667,7 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 		auto im = (preview_image &)w->m_guider_viewer->pixmapItem()->image();
 		im.set_wcs_data(ra * 15, dec, telescope_ra * 15, telescope_dec, angle, parity, scale);
 		w->m_guider_viewer->setImage(im);
-	} else if (w->m_visible_viewer != w->m_sequence_editor) {
+	} else if (w->m_visible_viewer != w->m_sequence_editor2) {
 		auto im = (preview_image &)((ImageViewer*)w->m_visible_viewer)->pixmapItem()->image();
 		// if solved from file set telescope ra and dec to solved
 		im.set_wcs_data(ra * 15, dec, ra * 15, dec, angle, parity, scale);
@@ -829,14 +832,13 @@ void update_solver_agent_hints(ImagerWindow *w, indigo_property *property) {
 
 int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("change %s", property->name);
-	double alt_offset = 0;
-	double dec_offset = 0;
 	double total_error = 0;
 	double alt_error = 0;
 	double az_error = 0;
 	bool alt_correction_up = false;
 	bool az_correction_cw = false;
 	int state = -1;
+	int accuracy_warning = 0;
 
 	w->set_widget_state(w->m_mount_start_pa_button, property->state);
 	w->set_widget_state(w->m_mount_recalculate_pe_button, property->state);
@@ -865,6 +867,8 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 			alt_error = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_AZ_ERROR_ITEM_NAME)) {
 			az_error = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_PLATESOLVER_PA_STATE_ACCURACY_WARNING_ITEM_NAME)) {
+			accuracy_warning = (int)property->items[i].number.value;
 		}
 	}
 
@@ -875,20 +879,33 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 		sprintf(alt_correction_str, "N/A");
 		sprintf(az_correction_str, "N/A");
 		sprintf(total_error_str, "N/A");
+		//w->updatePolarAlignmentOverlay(0, 0);
+		//w->showPolarAlignmentOverlayMarker(false);
 	} else if (state == INDIGO_POLAR_ALIGN_RECALCULATE || property->state == INDIGO_OK_STATE) {
 		sprintf(alt_correction_str, "%+.2f'  move %s", alt_error * 60, alt_correction_up ? "Up ↑" : "Down ↓");
 		sprintf(az_correction_str, "%+.2f'  move %s", az_error * 60, az_correction_cw ? "C.W. ↻" : "C.C.W. ↺");
 		sprintf(total_error_str, "%.2f'", total_error * 60);
+		//w->updatePolarAlignmentOverlay(az_error * 60, alt_error * 60);
+		//w->showPolarAlignmentOverlayMarker(true);
 	}
 
 	char message[50] = "Idle";
 	switch (state) {
 	case INDIGO_POLAR_ALIGN_IDLE:
+		w->updatePolarAlignmentOverlay(0, 0);
+		w->showPolarAlignmentOverlayMarker(false);
+		w->setPolarAlignmentOverlayWarning(false);
 		break;
 	case INDIGO_POLAR_ALIGN_START:
+		w->updatePolarAlignmentOverlay(0, 0);
+		w->showPolarAlignmentOverlayMarker(false);
+		w->setPolarAlignmentOverlayWarning(false);
 		strcpy(message, "Slewing to initial position");
 		break;
 	case INDIGO_POLAR_ALIGN_REFERENCE_1:
+		w->updatePolarAlignmentOverlay(0, 0);
+		w->showPolarAlignmentOverlayMarker(false);
+		w->setPolarAlignmentOverlayWarning(false);
 		strcpy(message, "Measuring point 1");
 		break;
 	case INDIGO_POLAR_ALIGN_REFERENCE_2:
@@ -901,6 +918,9 @@ int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property) {
 		strcpy(message, "Recalculating");
 		break;
 	case INDIGO_POLAR_ALIGN_IN_PROGRESS:
+		w->updatePolarAlignmentOverlay(az_error * 60, alt_error * 60);
+		w->showPolarAlignmentOverlayMarker(true);
+		w->setPolarAlignmentOverlayWarning(accuracy_warning);
 		strcpy(message, "In progress");
 		break;
 	}
@@ -991,12 +1011,9 @@ void update_focuser_temperature(ImagerWindow *w, indigo_property *property) {
 void update_focuser_mode(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("change %s", property->name);
 	bool automatic = false;
-	bool manual = false;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], FOCUSER_MODE_AUTOMATIC_ITEM_NAME)) {
 			automatic = property->items[i].sw.value;
-		} else if (client_match_item(&property->items[i], FOCUSER_MODE_MANUAL_ITEM_NAME)) {
-			manual = property->items[i].sw.value;
 		}
 	}
 	w->set_enabled(w->m_temperature_compensation_cbox, true);
@@ -1039,8 +1056,12 @@ void update_agent_imager_gain_offset_property(ImagerWindow *w, indigo_property *
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], CCD_GAIN_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_imager_gain);
+			SequenceItemModel::instance().setNumericRange(SC_SET_GAIN, 0, property->items[i].number.min, property->items[i].number.max);
+			SequenceItemModel::instance().setNumericIncrement(SC_SET_GAIN, 0, property->items[i].number.step);
 		} else if (client_match_item(&property->items[i], CCD_OFFSET_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_imager_offset);
+			SequenceItemModel::instance().setNumericRange(SC_SET_OFFSET, 0, property->items[i].number.min, property->items[i].number.max);
+			SequenceItemModel::instance().setNumericIncrement(SC_SET_OFFSET, 0, property->items[i].number.step);
 		}
 	}
 }
@@ -1095,6 +1116,8 @@ void update_focuser_poition(ImagerWindow *w, indigo_property *property, bool upd
 			indigo_debug("change target %s = %f", property->items[i].name, property->items[i].number.target);
 			configure_spinbox(w, &property->items[i], property->perm, w->m_focus_position);
 			w->set_spinbox_value(w->m_focus_position, property->items[i].number.target);
+			SequenceItemModel::instance().setNumericRange(SC_SET_FOCUSER_POSITION, 0, property->items[i].number.min, property->items[i].number.max);
+			SequenceItemModel::instance().setNumericIncrement(SC_SET_FOCUSER_POSITION, 0, property->items[i].number.step);
 		}
 		if (client_match_item(&property->items[i], FOCUSER_STEPS_ITEM_NAME)) {
 			w->set_widget_state(w->m_focus_steps, property->state);
@@ -1122,6 +1145,8 @@ void update_rotator_poition(ImagerWindow *w, indigo_property *property, bool upd
 			indigo_debug("change target %s = %f", property->items[i].name, property->items[i].number.target);
 			configure_spinbox(w, &property->items[i], property->perm, w->m_rotator_position);
 			w->set_spinbox_value(w->m_rotator_position, property->items[i].number.target);
+			SequenceItemModel::instance().setNumericRange(SC_SET_ROTATOR_ANGLE, 0, property->items[i].number.min, property->items[i].number.max);
+			SequenceItemModel::instance().setNumericIncrement(SC_SET_ROTATOR_ANGLE, 0, property->items[i].number.step);
 		}
 		if (client_match_item(&property->items[i], ROTATOR_RELATIVE_MOVE_ITEM_NAME)) {
 			w->set_widget_state(w->m_rotator_relative, property->state);
@@ -1191,7 +1216,7 @@ void update_imager_selection_property(ImagerWindow *w, indigo_property *property
 			count = property->items[i].number.value;
 			configure_spinbox(w, &property->items[i], property->perm, w->m_focus_star_count);
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_SELECTION_RADIUS_ITEM_NAME)) {
-			double max = property->items[i].number.value * 2 + 2;
+			//double max = property->items[i].number.value * 2 + 2;
 			size = (int)round(property->items[i].number.value * 2 + 1);
 			//w->m_focus_graph->set_yaxis_range(0, max);
 			configure_spinbox(w, &property->items[i], property->perm, w->m_focus_star_radius);
@@ -1376,6 +1401,56 @@ void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *proper
 	}
 }
 
+void update_agent_imager_meridian_flip_label(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("Set %s", property->name);
+	indigo_property *features_p = nullptr;
+	indigo_property *batch_p = nullptr;
+	indigo_property *flipper_state_p = nullptr;
+	char selected_agent[INDIGO_NAME_SIZE] = {0};
+
+	if (!strcmp(property->name, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {
+		w->get_selected_scripting_agent(selected_agent);
+		features_p = property;
+		batch_p = properties.get(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME);
+		flipper_state_p = properties.get(selected_agent, "FLIPPER_STATE");
+	} else if (!strcmp(property->name, AGENT_IMAGER_BATCH_PROPERTY_NAME)) {
+		w->get_selected_scripting_agent(selected_agent);
+		features_p = properties.get(property->device, AGENT_PROCESS_FEATURES_PROPERTY_NAME);
+		batch_p = property;
+		flipper_state_p = properties.get(selected_agent, "FLIPPER_STATE");
+	} else if (!strcmp(property->name, "FLIPPER_STATE")) {
+		w->get_selected_imager_agent(selected_agent);
+		flipper_state_p = property;
+		features_p = properties.get(selected_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME);
+		batch_p = properties.get(selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME);
+	}
+
+	double flip_time = 0;
+	if (batch_p) {
+		for (int i = 0; i < batch_p->count; i++) {
+			if (client_match_item(&batch_p->items[i], AGENT_IMAGER_BATCH_PAUSE_AFTER_TRANSIT_ITEM_NAME)) {
+				flip_time = batch_p->items[i].number.value;
+				break;
+			}
+		}
+	}
+
+	bool flip_enabled = false;
+	if (features_p) {
+		for (int i = 0; i < features_p->count; i++) {
+			if (client_match_item(&features_p->items[i], AGENT_PAUSE_PROCESS_AFTER_TRANSIT_ITEM_NAME)) {
+				flip_enabled = features_p->items[i].sw.value;
+				break;
+			}
+		}
+	}
+
+	flip_enabled = flip_enabled && flipper_state_p != nullptr;
+
+	char message[100];
+	get_flip_string(flip_enabled, flip_time, message);
+	w->set_text(w->m_mount_meridian_flip_label, message);
+}
 
 void define_ccd_exposure_property(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("Set %s.%s", property->device, property->name);
@@ -1384,34 +1459,71 @@ void define_ccd_exposure_property(ImagerWindow *w, indigo_property *property) {
 		indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
 		if (client_match_item(&property->items[i], CCD_EXPOSURE_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_preview_exposure_time);
+			SequenceItemModel::instance().setNumericRange(SC_CAPTURE_BATCH, 1, property->items[i].number.min, property->items[i].number.max);
+			SequenceItemModel::instance().setNumericIncrement(SC_CAPTURE_BATCH, 1, property->items[i].number.step);
 		}
 	}
 	w->set_spinbox_value(w->m_preview_exposure_time, preview_time);
 }
 
 
-void update_ccd_frame_property(ImagerWindow *w, indigo_property *property) {
+void update_ccd_frame_property(ImagerWindow *w, indigo_property *property, bool is_define = false) {
 	indigo_debug("Set %s", property->name);
+	int x_min=0, y_min=0, w_min=0, h_min=0;
+	int x_max=1000, y_max=1000, w_max=1000, h_max=1000;
+	int x_step = 1, y_step = 1, w_step = 1, h_step = 1;
 	for (int i = 0; i < property->count; i++) {
 		indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
 		if (client_match_item(&property->items[i], CCD_FRAME_LEFT_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_roi_x);
+			x_min = (int)property->items[i].number.min;
+			x_max = (int)property->items[i].number.max;
+			x_step = (int)property->items[i].number.step;
 		} else if (client_match_item(&property->items[i], CCD_FRAME_TOP_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_roi_y);
+			y_min = (int)property->items[i].number.min;
+			y_max = (int)property->items[i].number.max;
+			y_step = (int)property->items[i].number.step;
 		} else if (client_match_item(&property->items[i], CCD_FRAME_WIDTH_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_roi_w);
+			w_min = (int)property->items[i].number.min;
+			w_max = (int)property->items[i].number.max;
+			w_step = (int)property->items[i].number.step;
 		} else if (client_match_item(&property->items[i], CCD_FRAME_HEIGHT_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_roi_h);
+			h_min = (int)property->items[i].number.min;
+			h_max = (int)property->items[i].number.max;
+			h_step = (int)property->items[i].number.step;
 		}
+	}
+	if (is_define) {
+		// Do not set range as this may chnage the ROI if camera is changed.
+		// Set only the increment and the default value
+
+		//SequenceItemModel::instance().setNumericRange(SC_SET_FRAME, 0, x_min, x_max);  // Left
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_FRAME, 0, x_step);
+		SequenceItemModel::instance().setNumericDefaultValue(SC_SET_FRAME, 0, x_min);
+
+		//SequenceItemModel::instance().setNumericRange(SC_SET_FRAME, 1, y_min, y_max);  // Top
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_FRAME, 1, y_step);
+		SequenceItemModel::instance().setNumericDefaultValue(SC_SET_FRAME, 1, y_min);
+
+		//SequenceItemModel::instance().setNumericRange(SC_SET_FRAME, 2, w_min, w_max);  // Width
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_FRAME, 2, w_step);
+		SequenceItemModel::instance().setNumericDefaultValue(SC_SET_FRAME, 2, w_max);
+
+		//SequenceItemModel::instance().setNumericRange(SC_SET_FRAME, 3, h_min, h_max);  // Height
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_FRAME, 3, h_step);
+		SequenceItemModel::instance().setNumericDefaultValue(SC_SET_FRAME, 3, h_max);
 	}
 }
 
 
 static void update_agent_imager_pause_process_property(ImagerWindow *w, indigo_property *property, QPushButton* pause_button) {
-	indigo_debug("Set %s", property->name);
+	indigo_debug("Set %s.%s -> state %d", property->device, property->name, property->state);
 	for (int i = 0; i < property->count; i++) {
-		if (client_match_item(&property->items[i], AGENT_PAUSE_PROCESS_ITEM_NAME)) {
-			if(property->state == INDIGO_BUSY_STATE) {
+		if (client_match_item(&property->items[i], AGENT_PAUSE_PROCESS_WAIT_ITEM_NAME)) {
+			if(property->state == INDIGO_BUSY_STATE && property->items[i].sw.value) {
 				w->set_text(pause_button, "Resume");
 				set_busy(pause_button);
 			} else {
@@ -1422,22 +1534,8 @@ static void update_agent_imager_pause_process_property(ImagerWindow *w, indigo_p
 	}
 }
 
-void update_wheel_slot_property(ImagerWindow *w, indigo_property *property) {
-	for (int i = 0; i < property->count; i++) {
-		if (client_match_item(&property->items[i], WHEEL_SLOT_ITEM_NAME)) {
-			indigo_property *p = properties.get(property->device, WHEEL_SLOT_NAME_PROPERTY_NAME);
-			unsigned int current_filter = (unsigned int)property->items[i].number.value - 1;
-			w->set_widget_state(w->m_filter_select, property->state);
-			if (p && current_filter < p->count) {
-				w->m_filter_select->setCurrentText(p->items[current_filter].text.value);
-				indigo_debug("[SELECT filter] %s\n", p->items[current_filter].label);
-			}
-		}
-	}
-}
-
 void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *property) {
-	double exp_elapsed, exp_time = 1;
+	double exp_elapsed = 0, exp_time = 1;
 	double drift_x, drift_y;
 	int frames_complete = 0, frames_total = 0, batches_complete = 0, batches_total = 0, batch_index = 0;
 	static bool exposure_running = false;
@@ -1447,7 +1545,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	static double best_hfd = 0, best_contrast = 0, best_bahtinov = 0;
 	double FWHM = 0, HFD = 0, contrast = 0, bahtinov = 0;
 	int phase = INDIGO_IMAGER_PHASE_IDLE;
-	bool has_phase = false;
 
 	indigo_item *exposure_item = properties.get_item(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME, AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME);
 	if (exposure_item) exp_time = exposure_item->number.target;
@@ -1552,7 +1649,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			batch_index = (int)stats_p->items[i].number.value;
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_PHASE_ITEM_NAME)) {
 			phase = (int)stats_p->items[i].number.value;
-			has_phase = true;
 		} else if (client_match_item(&stats_p->items[i], AGENT_IMAGER_STATS_MAX_STARS_TO_USE_ITEM_NAME)) {
 			w->m_max_focus_stars = stats_p->items[i].number.value;
 			if (w->m_tools_tabbar->currentIndex() == FOCUSER_TAB) {
@@ -1577,9 +1673,8 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		w->set_widget_state(w->m_focusing_button, INDIGO_OK_STATE);
 		w->set_widget_state(w->m_focusing_preview_button, INDIGO_OK_STATE);
 		if (start_p->state == INDIGO_BUSY_STATE) {
-			w->m_sequence_editor->on_set_current_batch(batch_index);
+			//w->m_sequence_editor->on_set_current_batch(batch_index);
 			w->m_exposure_button->setIcon(QIcon(":resource/stop.png"));
-			w->m_seq_start_button->setIcon(QIcon(":resource/stop.png"));
 			w->set_enabled(w->m_exposure_button, true);
 			w->set_enabled(w->m_seq_start_button, true);
 			w->set_enabled(w->m_preview_button, false);
@@ -1606,14 +1701,10 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 				w->m_seq_batch_progress->setValue(frames_complete - 1);
 				w->m_seq_batch_progress->setFormat("Batch: exposure %v of %m complete...");
 			}
-			w->m_seq_sequence_progress->setRange(0, batches_total);
-			w->m_seq_sequence_progress->setValue(batches_complete - 1);
-			w->m_seq_sequence_progress->setFormat("Sequence: batch %v of %m complete...");
 			indigo_debug("frames total = %d", frames_total);
 		} else if (start_p->state == INDIGO_OK_STATE) {
-			w->m_sequence_editor->on_set_current_batch(0);
+			//w->m_sequence_editor->on_set_current_batch(0);
 			w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
-			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 			w->set_enabled(w->m_exposure_button, true);
 			w->set_enabled(w->m_seq_start_button, true);
 			w->set_enabled(w->m_preview_button, true);
@@ -1631,14 +1722,10 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			w->m_seq_batch_progress->setRange(0, 100);
 			w->m_seq_batch_progress->setValue(100);
 			w->m_seq_batch_progress->setFormat("Batch: Complete");
-			w->m_seq_sequence_progress->setRange(0, 100);
-			w->m_seq_sequence_progress->setValue(100);
-			w->m_seq_sequence_progress->setFormat("Sequence: Complete");
 			exposure_running = false;
 		} else {
-			w->m_sequence_editor->on_set_current_batch(0);
+			//w->m_sequence_editor->on_set_current_batch(0);
 			w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
-			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 			w->set_enabled(w->m_exposure_button, true);
 			w->set_enabled(w->m_seq_start_button, true);
 			w->set_enabled(w->m_preview_button, true);
@@ -1661,9 +1748,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 				w->m_process_progress->setFormat("Batch: exposure %v of %m complete");
 				w->m_seq_batch_progress->setFormat("Batch: exposure %v of %m complete");
 			}
-			w->m_seq_sequence_progress->setRange(0, batches_total);
-			w->m_seq_sequence_progress->setValue(batches_complete - 1);
-			w->m_seq_sequence_progress->setFormat("Sequence: batch %v of %m complete");
 			exposure_running = false;
 		}
 	} else if (focusing_running || preview_running) {
@@ -1710,7 +1794,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		}
 		w->set_widget_state(w->m_preview_button, INDIGO_OK_STATE);
 		w->set_widget_state(w->m_exposure_button, INDIGO_OK_STATE);
-		w->set_widget_state(w->m_seq_start_button, INDIGO_OK_STATE);
 		w->set_widget_state(w->m_focusing_preview_button, INDIGO_OK_STATE);
 		if (start_p->state == INDIGO_BUSY_STATE) {
 			w->set_enabled(w->m_preview_button, false);
@@ -1746,7 +1829,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		}
 	} else {
 		w->m_exposure_button->setIcon(QIcon(":resource/record.png"));
-		w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
 		w->set_enabled(w->m_preview_button, true);
 		w->set_enabled(w->m_exposure_button, true);
 		w->set_enabled(w->m_seq_start_button, true);
@@ -1757,37 +1839,17 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		exposure_running = false;
 	}
 
-	if (has_phase) {
-		switch (phase) {
-			case INDIGO_IMAGER_PHASE_IDLE:
-				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-grey.png\"> Idle");
-				break;
-			case INDIGO_IMAGER_PHASE_SETTING_FILTER:
-				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Changing filter");
-				break;
-			case INDIGO_IMAGER_PHASE_FOCUSING:
-				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Focusing");
-				break;
-			case INDIGO_IMAGER_PHASE_CAPTURING:
-				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Capturing");
-				break;
-			case INDIGO_IMAGER_PHASE_DITHERING:
-				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Dithering");
-				break;
-			case INDIGO_IMAGER_PHASE_WAITING:
-				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> Waiting");
-				break;
-			default:
-				break;
-		}
-	} else {
-		w->set_text(w->m_imager_status_label, "");
-	}
-
 	if (property == start_p) {
 		w->set_widget_state(w->m_exposure_button, start_p->state);
-		w->set_widget_state(w->m_seq_start_button, start_p->state);
 		w->set_widget_state(w->m_focusing_button, start_p->state);
+	}
+}
+
+void update_ccd_local_mode(ImagerWindow *w, indigo_property *property) {
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], CCD_LOCAL_MODE_OBJECT_ITEM_NAME)) {
+			w->m_remote_object_name = QString(property->items[i].text.value);
+		}
 	}
 }
 
@@ -1841,6 +1903,183 @@ void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 	w->set_widget_state(w->m_preview_button, property->state);
 }
 
+void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property) {
+
+	if (!strcmp(property->name, "SEQUENCE_STATE")) {
+		int sequence_step = -1;
+		int progress = 0;
+		int progress_total = 0;
+		double exposure_elapsed = 0;
+		double exposure_total = 0;
+		for (int i = 0; i < property->count; i++) {
+			if (client_match_item(&property->items[i], "STEP")) {
+				sequence_step = (int)property->items[i].number.value;
+			}
+			if (client_match_item(&property->items[i], "PROGRESS")) {
+				progress = (int)property->items[i].number.value;
+			}
+			if (client_match_item(&property->items[i], "PROGRESS_TOTAL")) {
+				progress_total = (int)property->items[i].number.value;
+			}
+			if (client_match_item(&property->items[i], "EXPOSURE")) {
+				exposure_elapsed = property->items[i].number.value / 3600.0;
+			}
+			if (client_match_item(&property->items[i], "EXPOSURE_TOTAL")) {
+				exposure_total = property->items[i].number.value / 3600.0;
+			}
+		}
+
+		int executed_index = w->m_sequence_editor2->getItemIndexByExecutedStep(sequence_step);
+
+		int complete = (progress_total != 0) ? (int)((double)progress / progress_total * 100 + 0.5) : 0;
+		w->m_seq_sequence_progress->setRange(0, 100);
+
+		if (executed_index >= 0 && property->state == INDIGO_BUSY_STATE) {
+			w->m_sequence_editor2->enable(false);
+			if (executed_index == 0 && progress == 0) {
+				w->m_seq_exposure_progress->setRange(0, 1);
+				w->m_seq_exposure_progress->setValue(0);
+				w->m_seq_exposure_progress->setFormat("Exposure: Idle");
+				w->m_seq_batch_progress->setRange(0, 1);
+				w->m_seq_batch_progress->setValue(0);
+				w->m_seq_batch_progress->setFormat("Process: Idle");
+				w->m_seq_sequence_progress->setValue(0);
+				w->m_seq_sequence_progress->setFormat("Sequence: Idle");
+			}
+
+			w->set_text(
+				w->m_seq_esimated_duration, QString("Total exposure: ") +
+				QString(indigo_dtos(exposure_total, "%02d:%02d:%02.0f")) +
+				QString("    (") + QString(indigo_dtos(exposure_total - exposure_elapsed, "%02d:%02d:%02.0f")) +
+				QString(" remaining)")
+			);
+
+			w->set_widget_state(w->m_seq_start_button, INDIGO_BUSY_STATE);
+			w->m_seq_start_button->setIcon(QIcon(":resource/stop.png"));
+
+			w->m_sequence_editor2->scrollToItem(executed_index);
+			IndigoSequenceItem *seq_item = nullptr;
+			int item_count = w->m_sequence_editor2->itemCount();
+
+			for (int i = executed_index + 1; i < item_count; i++) {
+				seq_item = w->m_sequence_editor2->getItemAt(i);
+				if (seq_item) {
+					seq_item->setIdle();
+				}
+			}
+
+			w->set_text(w->m_imager_status_label, "<img src=\":resource/led-orange.png\"> In progress");
+			w->m_seq_sequence_progress->setValue(complete);
+			w->m_seq_sequence_progress->setFormat("Sequence: %v\% complete");
+		} else if (property->state == INDIGO_OK_STATE) {
+			w->m_sequence_editor2->enable(true);
+			w->set_text(w->m_imager_status_label, "<img src=\":resource/led-green.png\"> Complete");
+			w->set_widget_state(w->m_seq_start_button, INDIGO_OK_STATE);
+			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
+
+			if(sequence_step >= 0) { // NOTE: should be sequence_step not executed_index
+				//indigo_error("SEQUENCE_STATE -> sequence step %d -> %d", sequence_step, executed_index);
+				w->m_seq_sequence_progress->setValue(complete);
+				w->m_seq_sequence_progress->setFormat("Sequence: %v\% complete");
+				w->set_text(w->m_seq_esimated_duration, QString("Total exposure: ") + QString(indigo_dtos(exposure_total, "%02d:%02d:%02.0f")));
+			} else {
+				w->set_text(w->m_imager_status_label, "<img src=\":resource/led-grey.png\"> Idle");
+				w->m_seq_exposure_progress->setRange(0, 1);
+				w->m_seq_exposure_progress->setValue(0);
+				w->m_seq_exposure_progress->setFormat("Exposure: Idle");
+				w->m_seq_batch_progress->setRange(0, 1);
+				w->m_seq_batch_progress->setValue(0);
+				w->m_seq_batch_progress->setFormat("Process: Idle");
+				w->m_seq_sequence_progress->setValue(0);
+				w->m_seq_sequence_progress->setFormat("Sequence: Idle");
+				w->set_text(w->m_seq_esimated_duration, QString("Total exposure: ") + QString(indigo_dtos(0, "%02d:%02d:%02.0f")));
+			}
+		} else if (property->state == INDIGO_ALERT_STATE) {
+			w->m_sequence_editor2->enable(true);
+			w->set_text(w->m_seq_esimated_duration, QString("Total exposure: ") + QString(indigo_dtos(exposure_total, "%02d:%02d:%02.0f")));
+			w->set_widget_state(w->m_seq_start_button, INDIGO_OK_STATE);
+			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
+
+			w->set_text(w->m_imager_status_label, "<img src=\":resource/led-red.png\"> Failed");
+			w->m_seq_sequence_progress->setValue(complete);
+			w->m_seq_sequence_progress->setFormat("Sequence: Failed (%v\% cpmplete)");
+		}
+	} else if (!strcmp(property->name, "SEQUENCE_STEP_STATE")) {
+		int loop_iteration = -1;
+		int loop_at_step = -1;
+		indigo_property *p = properties.get(property->device, "LOOP_0");
+		if (p) {
+			for (int i = 0; i < p->count; i++) {
+				if (client_match_item(&p->items[i], "STEP")) {
+					loop_at_step = (int)p->items[i].number.value;
+				}
+				if (client_match_item(&p->items[i], "COUNT")) {
+					loop_iteration = (int)p->items[i].number.value;
+				}
+			}
+		}
+		int loop_at_index = w->m_sequence_editor2->getItemIndexByExecutedStep(loop_at_step);
+
+		for (int i = 0; i < property->count; i++) {
+			IndigoSequenceItem *seq_item = nullptr;
+			int index = w->m_sequence_editor2->getItemIndexByExecutedStep(i);
+			seq_item = w->m_sequence_editor2->getItemAt(index);
+			if (seq_item) {
+				if (property->items[i].light.value == INDIGO_ALERT_STATE) {
+					seq_item->setAlert();
+				} else if (property->items[i].light.value == INDIGO_OK_STATE) {
+					seq_item->setOk();
+				} else if (property->items[i].light.value == INDIGO_BUSY_STATE) {
+					seq_item->setBusy();
+				} else if(property->items[i].light.value == INDIGO_IDLE_STATE) {
+					seq_item->setIdle();
+				}
+				if (i == loop_at_step) {
+					seq_item->setIteration(loop_iteration + 1);
+				} else {
+					seq_item->setIteration(0);
+				}
+			}
+		}
+	}
+}
+
+void handle_scripting_on_load_script(ImagerWindow *w, indigo_property *property) {
+	bool enable_new = false;
+	bool ain_sequence = false;
+	int ain_sequence_index = -1;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], AGENT_SCRIPTING_ADD_SCRIPT_PROPERTY_NAME)) {
+			enable_new = property->items[i].sw.value;
+		}
+		if (!strcmp(property->items[i].label, AIN_SEQUENCE_NAME)) {
+			ain_sequence = property->items[i].sw.value;
+			ain_sequence_index = i;
+		}
+	}
+
+	QtConcurrent::run([=]() {
+		if (enable_new) {
+			indigo_change_switch_property_1(
+				nullptr,
+				property->device,
+				AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME,
+				AGENT_SCRIPTING_ADD_SCRIPT_PROPERTY_NAME,
+				false
+			);
+		}
+		if (ain_sequence && ain_sequence_index >= 0) {
+			indigo_change_switch_property_1(
+				nullptr,
+				property->device,
+				AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME,
+				property->items[ain_sequence_index].name,
+				false
+			);
+		}
+	});
+}
+
 void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	double ref_x = 0, ref_y = 0;
 	double d_ra = 0, d_dec = 0;
@@ -1849,8 +2088,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	double rmse_ra = 0, rmse_dec = 0, dither_rmse = 0;
 	double rmse_ra_s = 0, rmse_dec_s = 0;
 	double d_x = 0, d_y = 0;
-	int size = 0, frame_count = -1;
-	bool is_guiding_process_on = false;
+	int frame_count = -1;
 	bool is_dithering = false;
 
 	for (int i = 0; i < property->count; i++) {
@@ -1924,7 +2162,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 					w->m_drift_data_x.clear();
 					w->m_drift_data_y.clear();
 					w->m_guider_graph->redraw_data2(*(w->m_guider_data_1), *(w->m_guider_data_2));
-				} else if (frame_count > 0) {
+				} else if (frame_count > 0 && frame_count > w->m_guider_frame_count) {
 					w->m_drift_data_ra.append(d_ra);
 					w->m_drift_data_dec.append(d_dec);
 					w->m_drift_data_ra_s.append(d_ra_s);
@@ -1946,6 +2184,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 					}
 					w->m_guider_graph->redraw_data2(*(w->m_guider_data_1), *(w->m_guider_data_2));
 				}
+				w->m_guider_frame_count = frame_count;
 				break;
 			}
 		}
@@ -2223,7 +2462,7 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 }
 
 
-void ImagerWindow::on_window_log(indigo_property* property, char *message) {
+void ImagerWindow::on_window_log(indigo_property* property, const char *message) {
 	char log_line[512];
 	int state = INDIGO_OK_STATE;
 
@@ -2288,11 +2527,13 @@ static void populateConfigItem(indigo_property *property, ConfigItem &configItem
 }
 
 void ImagerWindow::property_define(indigo_property* property, char *message) {
+	Q_UNUSED(message);
 	static char selected_agent[INDIGO_VALUE_SIZE];
 	static char selected_guider_agent[INDIGO_VALUE_SIZE];
 	static char selected_mount_agent[INDIGO_VALUE_SIZE];
 	static char selected_solver_agent[INDIGO_VALUE_SIZE];
 	static char selected_config_agent[INDIGO_VALUE_SIZE];
+	static char selected_scripting_agent[INDIGO_VALUE_SIZE];
 	static pthread_mutex_t l_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 	selected_agent[0] = '\0';
@@ -2300,6 +2541,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	selected_mount_agent[0] = '\0';
 	selected_solver_agent[0] = '\0';
 	selected_config_agent[0] = '\0';
+	selected_scripting_agent[0] = '\0';
 
 	indigo_debug("[PROPERTY DEFINE] %s(): %s.%s\n", __FUNCTION__, property->device, property->name);
 
@@ -2313,6 +2555,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			bool mount_not_loaded = true;
 			bool solver_not_loaded = true;
 			bool config_not_loaded = true;
+			bool scripting_not_loaded = true;
 
 			indigo_property *p = properties.get(property->device, "DRIVERS");
 			if (p) {
@@ -2321,6 +2564,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 				mount_not_loaded = !indigo_get_switch(p, "indigo_agent_mount");
 				solver_not_loaded = !indigo_get_switch(p, "indigo_agent_astrometry");
 				config_not_loaded = !indigo_get_switch(p, "indigo_agent_config");
+				scripting_not_loaded = !indigo_get_switch(p, "indigo_agent_scripting");
 			}
 			char *device_name = (char*)malloc(INDIGO_NAME_SIZE);
 			strncpy(device_name, property->device, INDIGO_NAME_SIZE);
@@ -2351,6 +2595,11 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 					static const char *values[] = { "indigo_agent_config" };
 					indigo_change_text_property(NULL, device_name, "LOAD", 1, items, values);
 				}
+				if (scripting_not_loaded) {
+					static const char *items[] = { "DRIVER" };
+					static const char *values[] = { "indigo_agent_scripting" };
+					indigo_change_text_property(NULL, device_name, "LOAD", 1, items, values);
+				}
 				pthread_mutex_unlock(&l_mutex);
 				free(device_name);
 			});
@@ -2364,8 +2613,8 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 				int build;
 				char message[255];
 				sscanf(item->text.value, "%d.%d-%d", &version_major, &version_minor, &build);
-				if (build < 298 && !properties.get(property->device, SERVER_INFO_PROPERTY_NAME)) { /* show warning only once per connection */
-					sprintf(message, "WARNING: Some features will not work on '%s' running Indigo %s as Ain requires 2.0-298 or newer!", property->device, item->text.value);
+				if (build < 336 && !properties.get(property->device, SERVER_INFO_PROPERTY_NAME)) { /* show warning only once per connection */
+					sprintf(message, "WARNING: Some features will not work on '%s' running Indigo %s as Ain requires 2.0-336 or newer!", property->device, item->text.value);
 					window_log(message, INDIGO_BUSY_STATE);
 				}
 			}
@@ -2388,6 +2637,10 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		QString name = QString(property->device);
 		add_combobox_item(m_agent_solver_select, name, name);
 	}
+	if(!strncmp(property->device, "Scripting Agent", 15)) {
+		QString name = QString(property->device);
+		add_combobox_item(m_agent_scripting_select, name, name);
+	}
 	if ((!strncmp(property->device, "Configuration agent", 19) || !strncmp(property->device, "Configuration Agent", 19)) &&
 	   (!strcmp(property->name, AGENT_CONFIG_SETUP_PROPERTY_NAME))) {
 		ConfigItem configItem;
@@ -2399,6 +2652,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		(!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12)) &&
 		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11)) &&
 		(!get_selected_solver_agent(selected_solver_agent) || strncmp(property->device, "Astrometry Agent", 16)) &&
+		(!get_selected_scripting_agent(selected_scripting_agent) || strncmp(property->device, "Scripting Agent", 15)) &&
 		!get_selected_config_agent(selected_config_agent) &&
 		strncmp(property->device, "Configuration agent", 19) &&
 		strncmp(property->device, "Configuration Agent", 19)
@@ -2409,9 +2663,12 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	// Config Agent
 	if (client_match_device_property(property, selected_config_agent, AGENT_CONFIG_LOAD_PROPERTY_NAME)) {
 		m_config_dialog->clearConfigs();
+		QStringList configs;
 		for (int i = 0; i < property->count; i++) {
 			m_config_dialog->addConfig(property->items[i].name);
+			configs.append(property->items[i].name);
 		}
+		SequenceItemModel::instance().setComboOptions(SC_LOAD_CONFIG, 0, configs);
 	}
 	if (client_match_device_property(property, selected_config_agent, AGENT_CONFIG_LAST_CONFIG_PROPERTY_NAME)) {
 		m_config_dialog->setActiveConfig(property->items[0].text.value);
@@ -2419,18 +2676,15 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 
 	// Imager Agent
-	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SEQUENCE_SIZE_PROPERTY_NAME)) {
-		indigo_item *item = indigo_get_item(property, AGENT_IMAGER_SEQUENCE_SIZE_ITEM_NAME);
-		if (item && item->number.max > item->number.value) {
-			indigo_debug("Setting AGENT_IMAGER_SEQUENCE_SIZE on '%s' to %.0f (was %.0f)", selected_agent, item->number.max, item->number.value);
-			static double max = item->number.max;
-			QtConcurrent::run([=]() {
-				indigo_change_number_property_1(nullptr, selected_agent, AGENT_IMAGER_SEQUENCE_SIZE_PROPERTY_NAME, AGENT_IMAGER_SEQUENCE_SIZE_ITEM_NAME, max);
-			});
-		}
+	if (client_match_device_property(property, selected_agent, CCD_LOCAL_MODE_PROPERTY_NAME)) {
+		update_ccd_local_mode(this, property);
+		QtConcurrent::run([=]() {
+			init_ccd_localmode_property(selected_agent);
+		});
 	}
 	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_camera_select);
+		add_items_to_sequence_model(property, SC_SELECT_IMAGER_CAMERA, 0);
 		if (indigo_get_switch(property, "NONE")) {
 			m_exposure_progress->setRange(0, 1);
 			m_exposure_progress->setValue(0);
@@ -2458,31 +2712,27 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_agent, FILTER_WHEEL_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_wheel_select);
+		add_items_to_sequence_model(property, SC_SELECT_FILTER_WHEEL, 0);
 	}
 	if (client_match_device_property(property, selected_agent, FILTER_FOCUSER_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_focuser_select);
+		add_items_to_sequence_model(property, SC_SELECT_FOCUSER, 0);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_frame_size_select);
-		QList<QString> ccd_modes;
-		for (int i = 0; i < property->count; i++) {
-			ccd_modes.append(property->items[i].label);
-		}
-		m_sequence_editor->populate_mode_select(ccd_modes);
+		add_items_to_sequence_model(property, SC_SELECT_CAMERA_MODE, 0);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_IMAGE_FORMAT_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_frame_format_select);
+		add_items_to_sequence_model(property, SC_SELECT_IMAGE_FORMAT, 0);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_TYPE_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_frame_type_select);
-		QList<QString> frame_types;
-		for (int i = 0; i < property->count; i++) {
-			frame_types.append(property->items[i].label);
-		}
-		m_sequence_editor->populate_frame_select(frame_types);
+		add_items_to_sequence_model(property, SC_SELECT_FRAME_TYPE, 0);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {
 		update_agent_process_features(this, property);
+		update_agent_imager_meridian_flip_label(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_POSITION_PROPERTY_NAME)) {
 		update_focuser_poition(this, property, true);
@@ -2537,21 +2787,17 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		indigo_property *p = properties.get(property->device, AGENT_IMAGER_BATCH_PROPERTY_NAME);
 		if (!p) update_agent_imager_batch_property(this, property);
 		update_agent_imager_batch_dithering(this, property);
+		update_agent_imager_meridian_flip_label(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME)) {
-		update_ccd_frame_property(this, property);
+		update_ccd_frame_property(this, property, true);
 	}
-	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME)) {
-		reset_filter_names(this, property);
-		indigo_property *p = properties.get(property->device, WHEEL_SLOT_PROPERTY_NAME);
-		if (p) set_filter_selected(this, p);
-	}
-	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_PROPERTY_NAME)) {
-		set_filter_selected(this, property);
+	if (client_match_device_property(property, selected_agent, AGENT_WHEEL_FILTER_PROPERTY_NAME)) {
+		add_items_to_combobox(this, property, m_filter_select);
+		add_items_to_sequence_model(property, SC_SELECT_FILTER, 0);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_pause_process_property(this, property, m_pause_button);
-		update_agent_imager_pause_process_property(this, property, m_seq_pause_button);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_COOLER_PROPERTY_NAME)) {
 		update_cooler_onoff(this, property);
@@ -2561,6 +2807,12 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_agent, CCD_TEMPERATURE_PROPERTY_NAME)) {
 		update_ccd_temperature(this, property, m_current_temp, m_set_temp, true);
+		for(int i = 0; i < property->count; i++) {
+			if (client_match_item(&property->items[i], CCD_TEMPERATURE_ITEM_NAME)) {
+				SequenceItemModel::instance().setNumericRange(SC_ENABLE_COOLER, 0, property->items[i].number.min, property->items[i].number.max);
+				SequenceItemModel::instance().setNumericIncrement(SC_ENABLE_COOLER, 0, property->items[i].number.step);
+			}
+		}
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_STATS_PROPERTY_NAME) ||
 	    client_match_device_property(property, selected_agent, AGENT_START_PROCESS_PROPERTY_NAME)) {
@@ -2569,7 +2821,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME)) {
 		define_ccd_exposure_property(this, property);
 		indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
-		if (!IndigoClient::instance().m_save_blob && p && p->state != INDIGO_BUSY_STATE ) {
+		if (!IndigoClient::instance().is_exposing(property->device) && p && p->state != INDIGO_BUSY_STATE ) {
 			update_ccd_exposure(this, property);
 		}
 	}
@@ -2579,6 +2831,23 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_agent, CCD_BIN_PROPERTY_NAME)) {
 		update_agent_imager_binning_property(this, property);
+	}
+
+	// Scripting Agent
+	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE") ||
+	    client_match_device_property(property, selected_scripting_agent, "LOOP_0") ||
+	    client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STEP_STATE")) {
+		update_scripting_sequence_state(this, property);
+	}
+	if (client_match_device_property(property, selected_scripting_agent, "FLIPPER_STATE")) {
+		update_agent_imager_meridian_flip_label(this, property);
+	}
+	if (client_match_device_property(property, selected_scripting_agent, AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME)) {
+		// new scripts and AinSequence should not be added to auto start by default
+		handle_scripting_on_load_script(this, property);
+	}
+	if (client_match_device_property(property, selected_scripting_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
+		update_agent_imager_pause_process_property(this, property, m_seq_pause_button);
 	}
 
 	// Guider Agent
@@ -2609,9 +2878,11 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			set_enabled(m_guider_preview_button, true);
 			set_widget_state(m_guider_preview_button, INDIGO_OK_STATE);
 		}
+		add_items_to_sequence_model(property, SC_SELECT_GUIDER_CAMERA, 0);
 	}
 	if (client_match_device_property(property, selected_guider_agent, FILTER_GUIDER_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_guider_select);
+		add_items_to_sequence_model(property, SC_SELECT_GUIDER, 0);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SELECTION_PROPERTY_NAME)) {
 		update_guider_selection_property(this, property);
@@ -2660,6 +2931,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	// Mount agent
 	if (client_match_device_property(property, selected_mount_agent, FILTER_MOUNT_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_mount_select);
+		add_items_to_sequence_model(property, SC_SELECT_MOUNT, 0);
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_EQUATORIAL_COORDINATES_PROPERTY_NAME)) {
 		update_mount_ra_dec(this, property, true);
@@ -2690,6 +2962,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_GPS_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_mount_gps_select);
+		add_items_to_sequence_model(property, SC_SELECT_GPS, 0);
 	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_JOYSTICK_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_mount_joystick_select);
@@ -2727,6 +3000,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_ROTATOR_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_rotator_select);
+		add_items_to_sequence_model(property, SC_SELECT_ROTATOR, 0);
 	}
 	if (client_match_device_property(property, selected_mount_agent, ROTATOR_POSITION_PROPERTY_NAME)) {
 		update_rotator_poition(this, property, true);
@@ -2818,11 +3092,13 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 
 
 void ImagerWindow::on_property_change(indigo_property* property, char *message) {
+	Q_UNUSED(message);
 	char selected_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_mount_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_solver_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_config_agent[INDIGO_VALUE_SIZE] = {0};
+	char selected_scripting_agent[INDIGO_VALUE_SIZE] = {0};
 
 	indigo_debug("[PROPERTY CHANGE] %s(): %s.%s\n", __FUNCTION__, property->device, property->name);
 
@@ -2837,6 +3113,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		(!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12)) &&
 		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11)) &&
 		(!get_selected_solver_agent(selected_solver_agent) || strncmp(property->device, "Astrometry Agent", 16)) &&
+		(!get_selected_scripting_agent(selected_scripting_agent) || strncmp(property->device, "Scripting Agent", 15)) &&
 		!get_selected_config_agent(selected_config_agent) &&
 		strncmp(property->device, "Configuration agent", 19) &&
 		strncmp(property->device, "Configuration Agent", 19)
@@ -2850,6 +3127,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 
 	// Imager Agent
+	if (client_match_device_property(property, selected_agent, CCD_LOCAL_MODE_PROPERTY_NAME)) {
+		update_ccd_local_mode(this, property);
+	}
 	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_camera_select);
 	}
@@ -2891,14 +3171,10 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {
 		update_agent_process_features(this, property);
+		update_agent_imager_meridian_flip_label(this, property);
 	}
-	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME)) {
-		reset_filter_names(this, property);
-		indigo_property *p = properties.get(property->device, WHEEL_SLOT_PROPERTY_NAME);
-		if (p) set_filter_selected(this, p);
-	}
-	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_PROPERTY_NAME)) {
-		update_wheel_slot_property(this, property);
+	if (client_match_device_property(property, selected_agent, AGENT_WHEEL_FILTER_PROPERTY_NAME)) {
+		change_combobox_selection(this, property, m_filter_select);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME)) {
 		update_imager_selection_property(this, property);
@@ -2916,10 +3192,11 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_BATCH_PROPERTY_NAME)) {
 		//update_agent_imager_batch_property(this, property);
 		update_agent_imager_batch_dithering(this, property);
+		update_agent_imager_meridian_flip_label(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME)) {
 		indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
-		if (!IndigoClient::instance().m_save_blob && p && p->state != INDIGO_BUSY_STATE ) {
+		if (!IndigoClient::instance().is_exposing(property->device) && p && p->state != INDIGO_BUSY_STATE ) {
 			update_ccd_exposure(this, property);
 		}
 	}
@@ -2928,11 +3205,10 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		update_agent_imager_stats_property(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME)) {
-		update_ccd_frame_property(this, property);
+		update_ccd_frame_property(this, property, false);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_pause_process_property(this, property, m_pause_button);
-		update_agent_imager_pause_process_property(this, property, m_seq_pause_button);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_COOLER_PROPERTY_NAME)) {
 		update_cooler_onoff(this, property);
@@ -2949,6 +3225,20 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_agent, CCD_BIN_PROPERTY_NAME)) {
 		update_agent_imager_binning_property(this, property);
+	}
+
+	// Scripting Agent
+	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE") ||
+	    client_match_device_property(property, selected_scripting_agent, "LOOP_0") ||
+	    client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STEP_STATE")) {
+		update_scripting_sequence_state(this, property);
+	}
+	if (client_match_device_property(property, selected_scripting_agent, AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME)) {
+		// new scripts and AinSequence should not be added to auto start by default
+		handle_scripting_on_load_script(this, property);
+	}
+	if (client_match_device_property(property, selected_scripting_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
+		update_agent_imager_pause_process_property(this, property, m_seq_pause_button);
 	}
 
 	// Guider Agent
@@ -3116,11 +3406,13 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 }
 
 void ImagerWindow::property_delete(indigo_property* property, char *message) {
+	Q_UNUSED(message);
 	char selected_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_mount_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_solver_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_config_agent[INDIGO_VALUE_SIZE] = {0};
+	char selected_scripting_agent[INDIGO_VALUE_SIZE] = {0};
 
 	indigo_debug("[REMOVE REMOVE REMOVE REMOVE REMOVE] %s.%s\n", property->device, property->name);
 	if (
@@ -3128,6 +3420,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		(!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12)) &&
 		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11)) &&
 		(!get_selected_solver_agent(selected_solver_agent) || strncmp(property->device, "Astrometry Agent", 16)) &&
+		(!get_selected_scripting_agent(selected_scripting_agent) || strncmp(property->device, "Scripting Agent", 15)) &&
 		!get_selected_config_agent(selected_config_agent) &&
 		strncmp(property->device, "Configuration agent", 19) &&
 		strncmp(property->device, "Configuration Agent", 19)
@@ -3151,6 +3444,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("REMOVE %s", property->name);
 		set_text(m_focus_position_label, "0");
 		set_widget_state(m_focus_position_label, INDIGO_OK_STATE);
+		SequenceItemModel::instance().setNumericRange(SC_SET_FOCUSER_POSITION, 0, 0, 100000);
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_FOCUSER_POSITION, 0, 1);
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_STEPS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
@@ -3185,33 +3480,43 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		clear_combobox(m_camera_select);
+
+		SequenceItemModel::instance().clearComboOptions(SC_SELECT_IMAGER_CAMERA, 0);
 	}
 	if (client_match_device_property(property, selected_agent, FILTER_WHEEL_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		clear_combobox(m_wheel_select);
+
+		SequenceItemModel::instance().clearComboOptions(SC_SELECT_FILTER_WHEEL, 0);
 	}
 	if (client_match_device_property(property, selected_agent, FILTER_FOCUSER_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		clear_combobox(m_focuser_select);
+
+		SequenceItemModel::instance().clearComboOptions(SC_SELECT_FOCUSER, 0);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_MODE_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		clear_combobox(m_frame_size_select);
-		m_sequence_editor->clear_mode_select();
+
+		SequenceItemModel::instance().clearComboOptions(SC_SELECT_CAMERA_MODE, 0);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_IMAGE_FORMAT_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		clear_combobox(m_frame_format_select);
+
+		SequenceItemModel::instance().clearComboOptions(SC_SELECT_IMAGE_FORMAT, 0);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_TYPE_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		clear_combobox(m_frame_type_select);
-		m_sequence_editor->clear_frame_select();
+
+		SequenceItemModel::instance().clearComboOptions(SC_SELECT_FRAME_TYPE, 0);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
@@ -3244,6 +3549,9 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		set_spinbox_value(m_dither_skip, 0);
 		set_enabled(m_dither_skip, false);
+		char message[100];
+		get_flip_string(0, 0, message);
+		set_text(m_mount_meridian_flip_label, message);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
@@ -3256,12 +3564,36 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_enabled(m_roi_w, false);
 		set_spinbox_value(m_roi_h, 0);
 		set_enabled(m_roi_h, false);
+
+		//SequenceItemModel::instance().setNumericRange(SC_SET_FRAME, 0, 0, 50000);  // Left
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_FRAME, 0, 1.0);
+		SequenceItemModel::instance().setNumericDefaultValue(SC_SET_FRAME, 0, 0.0);
+
+		//SequenceItemModel::instance().setNumericRange(SC_SET_FRAME, 1, 0, 50000); // Top
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_FRAME, 1, 1.0);
+		SequenceItemModel::instance().setNumericDefaultValue(SC_SET_FRAME, 1, 0.0);
+
+		//SequenceItemModel::instance().setNumericRange(SC_SET_FRAME, 2, 0, 50000);  // Width
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_FRAME, 2, 1.0);
+		SequenceItemModel::instance().setNumericDefaultValue(SC_SET_FRAME, 2, 50000.0);
+
+		//SequenceItemModel::instance().setNumericRange(SC_SET_FRAME, 3, 0, 50000);  // Height
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_FRAME, 3, 1.0);
+		SequenceItemModel::instance().setNumericDefaultValue(SC_SET_FRAME, 3, 50000.0);
 	}
-	if (client_match_device_property(property, selected_agent, WHEEL_SLOT_NAME_PROPERTY_NAME) ||
+	if (client_match_device_property(property, selected_agent, AGENT_WHEEL_FILTER_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		clear_combobox(m_filter_select);
-		m_sequence_editor->clear_filter_select();
+
+		SequenceItemModel::instance().clearComboOptions(SC_SELECT_FILTER, 0);
+	}
+	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+
+		SequenceItemModel::instance().setNumericRange(SC_CAPTURE_BATCH, 1, 0, 3600.0);
+		SequenceItemModel::instance().setNumericIncrement(SC_CAPTURE_BATCH, 1, 1.0);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_COOLER_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
@@ -3278,6 +3610,9 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("REMOVE %s", property->name);
 		set_text(m_current_temp, "");
 		set_enabled(m_set_temp, false);
+
+		SequenceItemModel::instance().setNumericRange(SC_ENABLE_COOLER, 0, -150.0, 30.0);
+		SequenceItemModel::instance().setNumericIncrement(SC_ENABLE_COOLER, 0, 0.5);
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_START_PROCESS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
@@ -3307,8 +3642,14 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_spinbox_value(m_imager_gain, 0);
 		set_enabled(m_imager_gain, false);
 
+		SequenceItemModel::instance().setNumericRange(SC_SET_GAIN, 0, 0, 1000);
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_GAIN, 0, 1.0);
+
 		set_spinbox_value(m_imager_offset, 0);
 		set_enabled(m_imager_offset, false);
+
+		SequenceItemModel::instance().setNumericRange(SC_SET_OFFSET, 0, 0, 1000);
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_OFFSET, 0, 1.0);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_BIN_PROPERTY_NAME) ||
 		client_match_device_no_property(property, selected_agent)) {
@@ -3318,6 +3659,13 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		set_spinbox_value(m_imager_bin_y, 0);
 		set_enabled(m_imager_bin_y, false);
+	}
+
+	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE") ||
+	    client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STEP_STATE") ||
+	    client_match_device_no_property(property, selected_scripting_agent)) {
+		emit m_sequence_editor2->enable(true);
+		emit m_sequence_editor2->setSequenceIdle();
 	}
 
 	// Guider Agent
@@ -3336,6 +3684,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_guider_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		clear_combobox(m_guider_camera_select);
+
+		SequenceItemModel::instance().clearComboOptions(SC_SELECT_GUIDER_CAMERA, 0);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DITHERING_STRATEGY_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
@@ -3377,6 +3727,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_guider_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		clear_combobox(m_guider_select);
+
+		SequenceItemModel::instance().clearComboOptions(SC_SELECT_GUIDER, 0);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
@@ -3505,6 +3857,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		clear_combobox(m_mount_select);
+
+		SequenceItemModel::instance().clearComboOptions(SC_SELECT_MOUNT, 0);
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_EQUATORIAL_COORDINATES_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
@@ -3578,6 +3932,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		clear_combobox(m_mount_gps_select);
+
+		SequenceItemModel::instance().clearComboOptions(SC_SELECT_GPS, 0);
 	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_JOYSTICK_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
@@ -3639,6 +3995,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		clear_combobox(m_rotator_select);
+
+		SequenceItemModel::instance().clearComboOptions(SC_SELECT_ROTATOR, 0);
 	}
 	if (client_match_device_property(property, selected_mount_agent, ROTATOR_POSITION_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
@@ -3646,6 +4004,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_text(m_rotator_position_label, "0.000°");
 		set_widget_state(m_rotator_position_label, INDIGO_OK_STATE);
 		set_widget_state(m_rotator_position_dial, INDIGO_OK_STATE);
+		SequenceItemModel::instance().setNumericRange(SC_SET_ROTATOR_ANGLE, 0, -180, 360);
+		SequenceItemModel::instance().setNumericIncrement(SC_SET_ROTATOR_ANGLE, 0, 10);
 	}
 	if (client_match_device_property(property, selected_mount_agent, ROTATOR_RELATIVE_MOVE_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
@@ -3756,6 +4116,7 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 		(strncmp(property->device, "Astrometry Agent", 16)) &&
 		(strncmp(property->device, "Configuration agent", 19)) &&
 		(strncmp(property->device, "Configuration Agent", 19)) &&
+		(strncmp(property->device, "Scripting Agent", 15)) &&
 		(strncmp(property->device, "Server", 6))
 	) {
 		properties.remove(property);
@@ -3815,12 +4176,26 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 			remove_combobox_item(m_agent_solver_select, index);
 			if (selected_index == index) {
 				set_combobox_current_index(m_agent_solver_select, 0);
-				on_mount_agent_selected(0);
+				on_solver_agent_selected(0);
 			}
 			indigo_debug("[REMOVE solver agent] %s\n", name.toUtf8().data());
 		} else {
 			indigo_debug("[NOT FOUND solver agent] %s\n", name.toUtf8().data());
 		}
+
+		selected_index = m_agent_scripting_select->currentIndex();
+		index = m_agent_scripting_select->findText(name);
+		if (index >= 0) {
+			remove_combobox_item(m_agent_scripting_select, index);
+			if (selected_index == index) {
+				set_combobox_current_index(m_agent_scripting_select, 0);
+				on_scripting_agent_selected(0);
+			}
+			indigo_debug("[REMOVE scripting agent] %s\n", name.toUtf8().data());
+		} else {
+			indigo_debug("[NOT FOUND scripting agent] %s\n", name.toUtf8().data());
+		}
+
 	}
 	properties.remove(property);
 	free(property);

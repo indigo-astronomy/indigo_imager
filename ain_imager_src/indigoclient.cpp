@@ -21,6 +21,7 @@
 #include <indigo/indigo_client.h>
 #include "indigoclient.h"
 #include "conf.h"
+#include <chrono>
 
 bool processed_device(char *device) {
 	if (device == nullptr) return false;
@@ -31,6 +32,7 @@ bool processed_device(char *device) {
 		strncmp(device, "Astrometry Agent", 16) &&
 		strncmp(device, "Configuration agent", 19) &&
 		strncmp(device, "Configuration Agent", 19) &&
+		strncmp(device, "Scripting Agent", 15) &&
 		strncmp(device, "Server", 6)
 	) {
 		return false;
@@ -86,10 +88,22 @@ static indigo_result client_attach(indigo_client *client) {
 	return INDIGO_OK;
 }
 
+bool IndigoClient::is_exposing(const char* device) {
+	if (m_is_exposing.contains(device)) {
+		return m_is_exposing.value(device);
+	}
+	return false;
+}
+
+void IndigoClient::remove_is_exposing_entry(const char* device) {
+	m_is_exposing.remove(device);
+}
+
 void IndigoClient::update_save_blob(indigo_property *property)	 {
 	if (client_match_device_prefix_property(property, "Imager Agent", AGENT_START_PROCESS_PROPERTY_NAME)) {
+		bool is_exposing = false;
 		if(property->state != INDIGO_BUSY_STATE) {
-			m_is_exposing = false;
+			is_exposing = false;
 		} else {
 			bool sequence_running = false;
 			bool batch_running = false;
@@ -100,42 +114,60 @@ void IndigoClient::update_save_blob(indigo_property *property)	 {
 					batch_running = property->items[i].sw.value;
 				}
 			}
-			m_is_exposing = sequence_running || batch_running;
-			indigo_debug("Exposing: %d (%d, %d)\n", m_is_exposing, sequence_running, batch_running);
+			is_exposing = sequence_running || batch_running;
 		}
+		m_is_exposing.insert(property->device, is_exposing);
 	}
-	m_save_blob = m_is_exposing;
 }
 
 
 static bool download_blob_async(indigo_property *property, QAtomicInt *downloading, bool save_blob = false) {
+	const int max_concurrent_downloads = 1;
 	IndigoClient &client = IndigoClient::instance();
-	if (!downloading->testAndSetAcquire(0, 1)) {
-		indigo_debug("Task is already running, skipping...");
+
+	int prev = downloading->fetchAndAddRelaxed(1);
+	if (prev >= max_concurrent_downloads) {
+		downloading->fetchAndAddRelaxed(-1);
+		indigo_error("Maximum concurrent downloads (%d) reached, skipping...", max_concurrent_downloads);
 		return false;
 	}
+	if (prev > 0 && prev < max_concurrent_downloads) {
+		indigo_log("BLOB: %d Concurrent downloads (limit %d)", prev + 1, max_concurrent_downloads);
+	}
 
-	if( downloading == &client.imager_downloading) {
+	if (downloading == &client.imager_downloading) {
 		emit(client.imager_download_started());
 	}
+
 	QtConcurrent::run([property, downloading, save_blob]() {
 		IndigoClient &client = IndigoClient::instance();
 		for (int row = 0; row < property->count; row++) {
 			indigo_item *blob_item = (indigo_item*)malloc(sizeof(indigo_item));
 			memcpy(blob_item, &property->items[row], sizeof(indigo_item));
 			blob_item->blob.value = nullptr;
+
+			auto t0 = std::chrono::high_resolution_clock::now();
 			if (*property->items[row].blob.url && indigo_populate_http_blob_item(blob_item)) {
+				auto t1 = std::chrono::high_resolution_clock::now();
+				auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
 				property->items[row].blob.value = nullptr;
-				indigo_log("BLOB: %s.%s URL received (%s, %ld bytes)...\n", property->device, property->name, blob_item->blob.url, blob_item->blob.size);
+				indigo_log("BLOB: %s.%s (%s, %ld bytes) downloaded in %ld ms", property->device, property->name, blob_item->blob.url, blob_item->blob.size, ms);
 				emit(client.create_preview(property, blob_item, save_blob));
 			} else {
 				if (blob_item->blob.value) free(blob_item->blob.value);
 				free(blob_item);
 			}
 		}
-		downloading->storeRelease(0);
-		if( downloading == &client.imager_downloading) {
+
+		int remaining = downloading->fetchAndAddRelaxed(-1) - 1; // fetchAndAddRelaxed returns previous value rhis is why -1
+
+		if (remaining <= 0 && downloading == &client.imager_downloading) {
 			emit(client.imager_download_completed());
+		}
+
+		if (remaining < 0) {
+			// should not happen, but just in case
+			*downloading = 0;  // Changed from downloading->store(0)
 		}
 	});
 
@@ -148,7 +180,7 @@ static void handle_blob_property(indigo_property *property) {
 	if (property->state == INDIGO_OK_STATE && property->perm != INDIGO_WO_PERM) {
 		if (!strncmp(property->device, "Imager Agent", 12)) {
 			if (!strncmp(property->name, CCD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
-				if (!download_blob_async(property, &client.imager_downloading, IndigoClient::instance().m_save_blob)) {
+				if (!download_blob_async(property, &client.imager_downloading, client.is_exposing(property->device))) {
 					client.m_logger->log(property, error_message);
 				}
 			} else if (!strncmp(property->name, AGENT_IMAGER_DOWNLOAD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
@@ -169,7 +201,7 @@ static void handle_blob_property(indigo_property *property) {
 				indigo_error(error_message);
 			}
 		} else {
-			download_blob_async(property, &client.other_downloading, client.m_save_blob);
+			download_blob_async(property, &client.other_downloading, client.is_exposing(property->device));
 		}
 	} else if(property->state == INDIGO_BUSY_STATE && property->perm != INDIGO_WO_PERM) {
 		for (int row = 0; row < property->count; row++) {
@@ -187,12 +219,26 @@ static indigo_result client_define_property(indigo_client *client, indigo_device
 
 	if (!processed_device(property->device)) return INDIGO_OK;
 
-	IndigoClient::instance().update_save_blob(property);
+	IndigoClient &client_instance = IndigoClient::instance();
+
+	client_instance.update_save_blob(property);
 
 	if (property->type == INDIGO_BLOB_VECTOR) {
+		//reset download flags
+		if (!strncmp(property->device, "Imager Agent", 12)) {
+			if (!strncmp(property->name, CCD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+				client_instance.imager_downloading = 0;  // Changed from .store(0)
+			} else if (!strncmp(property->name, AGENT_IMAGER_DOWNLOAD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+				client_instance.imager_downloading_saved_frame = 0;  // Changed from .store(0)
+			}
+		} else if (!strncmp(property->device, "Guider Agent", 12)) {
+			client_instance.guider_downloading = 0;  // Changed from .store(0)
+		} else {
+			client_instance.other_downloading = 0;  // Changed from .store(0)
+		}
 		if (device->version < INDIGO_VERSION_2_0)
-			IndigoClient::instance().m_logger->log(property, "BLOB can be used in INDI legacy mode");
-		if (IndigoClient::instance().blobs_enabled()) { // Enagle blob and let adapter decide URL or ALSO
+			client_instance.m_logger->log(property, "BLOB can be used in INDI legacy mode");
+		if (client_instance.blobs_enabled()) { // Enagle blob and let adapter decide URL or ALSO
 				indigo_enable_blob(client, property, INDIGO_ENABLE_BLOB);
 		}
 		handle_blob_property(property);
@@ -247,6 +293,10 @@ static indigo_result client_delete_property(indigo_client *client, indigo_device
 		}
 	}
 
+	if (client_match_device_prefix_property(property, "Imager Agent", AGENT_START_PROCESS_PROPERTY_NAME)) {
+		IndigoClient::instance().remove_is_exposing_entry(property->device);
+	}
+
 	indigo_property *property_copy = (indigo_property*)malloc(sizeof(indigo_property));
 	memcpy(property_copy, property, sizeof(indigo_property));
 	property_copy->count = 0;
@@ -283,7 +333,6 @@ static indigo_result client_send_message(indigo_client *client, indigo_device *d
 
 static indigo_result client_detach(indigo_client *client) {
 	Q_UNUSED(client);
-
 	return INDIGO_OK;
 }
 
@@ -298,7 +347,7 @@ indigo_client client = {
 	client_detach
 };
 
-void IndigoClient::start(char *name) {
+void IndigoClient::start(const char *name) {
 	indigo_start();
 	strncpy(client.name, name, INDIGO_NAME_SIZE);
 	indigo_attach_client(&client);

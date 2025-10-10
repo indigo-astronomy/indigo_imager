@@ -105,17 +105,50 @@ void ImagerWindow::change_ccd_upload_property(const char *agent, const char *ite
 }
 
 void ImagerWindow::change_ccd_localmode_property(const char *agent, const QString &object_name) {
-	static char filename_template[INDIGO_VALUE_SIZE];
-	if (object_name.isEmpty()) {
+	QString object;
+	if (object_name.trimmed().isEmpty() || object_name.trimmed() == DEFAULT_OBJECT_NAME) {
 		m_object_name_str = QString(DEFAULT_OBJECT_NAME);
+		object = "";
 	} else {
 		m_object_name_str = object_name.trimmed();
+		object = m_object_name_str;
 	}
-	strcpy(filename_template, m_object_name_str.toStdString().c_str());
-	strcat(filename_template, "_%-D_%F_%C_%M");
-	indigo_debug("filename template = %s", filename_template);
+	indigo_property *p = properties.get(agent, CCD_LOCAL_MODE_PROPERTY_NAME);
+	if (p == nullptr) return;
 
-	indigo_change_text_property_1_raw(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, CCD_LOCAL_MODE_PREFIX_ITEM_NAME, filename_template);
+	if (indigo_get_item(p, CCD_LOCAL_MODE_OBJECT_ITEM_NAME) != nullptr) {
+		indigo_debug("LOCAL_MODE property has OBJECT item");
+		static const char *items[] = {
+			CCD_LOCAL_MODE_OBJECT_ITEM_NAME,
+			CCD_LOCAL_MODE_PREFIX_ITEM_NAME
+		};
+
+		char object_cstr[INDIGO_VALUE_SIZE];
+		strncpy(object_cstr, m_object_name_str.toUtf8().constData(), INDIGO_VALUE_SIZE);
+		char *values[] {
+			object_cstr,
+			"%o_%-D_%F_%C_%M"
+		};
+		indigo_change_text_property(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, 2, items, (const char **)values);
+	} else {
+		indigo_debug("LOCAL_MODE property does not have OBJECT item");
+		m_remote_object_name = object;
+		add_fits_keyword_string(agent, "OBJECT", m_object_name_str.toUtf8().constData());
+
+		char value[INDIGO_VALUE_SIZE];
+		snprintf(value, INDIGO_VALUE_SIZE, "%s_%%-D_%%F_%%C_%%M", (char *)m_object_name_str.toUtf8().constData());
+		indigo_debug("Setting prefix to: %s", value);
+
+		indigo_change_text_property_1_raw(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, CCD_LOCAL_MODE_PREFIX_ITEM_NAME, value);
+	}
+}
+
+void ImagerWindow::init_ccd_localmode_property(const char *agent) {
+	char value[INDIGO_VALUE_SIZE];
+	snprintf(value, INDIGO_VALUE_SIZE, "%%o_%%-D_%%F_%%C_%%M");
+	indigo_debug("Setting prefix to: %s", value);
+
+	indigo_change_text_property_1_raw(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, CCD_LOCAL_MODE_PREFIX_ITEM_NAME, value);
 }
 
 void ImagerWindow::add_fits_keyword_string(const char *agent, const char *keyword, const QString &value) const {
@@ -145,31 +178,53 @@ void ImagerWindow::request_file_remove(const char *agent, const char *file_name)
 	indigo_change_text_property_1_raw(nullptr, agent, AGENT_IMAGER_DELETE_FILE_PROPERTY_NAME, AGENT_IMAGER_DELETE_FILE_ITEM_NAME, file_name);
 }
 
-void ImagerWindow::set_related_mount_guider_agent(const char *related_agent) const {
-	// Select related guider agent
-	char selected_mount_agent[INDIGO_NAME_SIZE] = {0};
-	char selected_mount_agent_trimmed[INDIGO_NAME_SIZE] = {0};
+void ImagerWindow::set_related_solver_agent(const char *related_agent) const {
+	// Select related agent
+	char selected_solver_agent[INDIGO_NAME_SIZE] = {0};
+	char related_agent_trimmed[INDIGO_NAME_SIZE] = {0};
+	char agent_prefix[INDIGO_NAME_SIZE] = {0};
+
+	get_selected_solver_agent(selected_solver_agent);
+
+	strncpy(related_agent_trimmed, related_agent, INDIGO_NAME_SIZE);
+	strncpy(agent_prefix, related_agent, INDIGO_NAME_SIZE);
+
+	char *service = strrchr(related_agent_trimmed, '@');
+	if (service != nullptr) {
+		*(service - 1) = '\0';
+	}
+
+	set_agent_releated_agent(selected_solver_agent, related_agent_trimmed, true);
+}
+
+void ImagerWindow::set_related_agent(const char *agent, const char *related_agent) const {
+	char agent_trimmed[INDIGO_NAME_SIZE] = {0};
 	char related_agent_trimmed[INDIGO_NAME_SIZE] = {0};
 	char old_agent[INDIGO_NAME_SIZE] = {0};
+	char agent_prefix[INDIGO_NAME_SIZE] = {0};
 
-	get_selected_mount_agent(selected_mount_agent);
-
-	strncpy(selected_mount_agent_trimmed, selected_mount_agent, INDIGO_NAME_SIZE);
+	strncpy(agent_trimmed, agent, INDIGO_NAME_SIZE);
 	strncpy(related_agent_trimmed, related_agent, INDIGO_NAME_SIZE);
+	strncpy(agent_prefix, related_agent, INDIGO_NAME_SIZE);
 
 	char *service1 = strrchr(related_agent_trimmed, '@');
-	char *service2 = strrchr(selected_mount_agent_trimmed, '@');
+	char *service2 = strrchr(agent_trimmed, '@');
 	if (service1 != nullptr && service2 != nullptr && !strcmp(service1, service2)) {
 		*(service1 - 1) = '\0';
 		*(service2 - 1) = '\0';
 	}
 
+	char *service3 = strchr(agent_prefix, '@');
+	if (service3 != nullptr) {
+		*(service3 - 1) = '\0';
+	}
+
 	bool change = true;
 	old_agent[0] = '\0';
-	indigo_property *p = properties.get(selected_mount_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
+	indigo_property *p = properties.get(agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
 	if (p) {
 		for (int i = 0; i < p->count; i++) {
-			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Guider Agent", strlen("Guider Agent"))) {
+			if (p->items[i].sw.value && !strncmp(p->items[i].name, agent_prefix, strlen(agent_prefix))) {
 				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
 				if (!strcmp(old_agent, related_agent_trimmed)) {
 					change = false;
@@ -178,130 +233,33 @@ void ImagerWindow::set_related_mount_guider_agent(const char *related_agent) con
 			}
 		}
 		if (change) {
-			indigo_debug("[RELATED GUIDER AGENT] %s '%s' %s -> %s\n", __FUNCTION__, selected_mount_agent, old_agent, related_agent_trimmed);
-			change_related_agent(selected_mount_agent, old_agent, related_agent_trimmed);
+			indigo_debug("[SET RELATED AGENT] %s '%s' chnaged '%s' -> '%s' (prefix '%s')\n", __FUNCTION__, agent, old_agent, related_agent_trimmed, agent_prefix);
+			change_related_agent(agent, old_agent, related_agent_trimmed);
 		}
 	}
 }
 
-void ImagerWindow::set_related_imager_and_guider_agents() const {
-	// Select related guider agent
-	char selected_imager_agent[INDIGO_NAME_SIZE] = {0};
-	char selected_imager_agent_trimmed[INDIGO_NAME_SIZE] = {0};
-	char selected_guider_agent[INDIGO_NAME_SIZE] = {0};
-	char selected_guider_agent_trimmed[INDIGO_NAME_SIZE] = {0};
-	char old_agent[INDIGO_NAME_SIZE] = {0};
-
-	get_selected_imager_agent(selected_imager_agent);
-	get_selected_guider_agent(selected_guider_agent);
-
-	strncpy(selected_imager_agent_trimmed, selected_imager_agent, INDIGO_NAME_SIZE);
-	strncpy(selected_guider_agent_trimmed, selected_guider_agent, INDIGO_NAME_SIZE);
-
-	char *service1 = strrchr(selected_guider_agent_trimmed, '@');
-	char *service2 = strrchr(selected_imager_agent_trimmed, '@');
-	if (service1 != nullptr && service2 != nullptr && !strcmp(service1, service2)) {
-		*(service1 - 1) = '\0';
-		*(service2 - 1) = '\0';
-	}
-
-	bool change = true;
-	old_agent[0] = '\0';
-	indigo_property *p = properties.get(selected_imager_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
-	if (p) {
-		for (int i = 0; i < p->count; i++) {
-			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Guider Agent", strlen("Guider Agent"))) {
-				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
-				if (!strcmp(old_agent, selected_guider_agent_trimmed)) {
-					change = false;
-					break;
-				}
-			}
-		}
-		if (change) {
-			indigo_debug("[RELATED GUIDER AGENT] %s '%s' %s -> %s\n", __FUNCTION__, selected_imager_agent, old_agent, selected_guider_agent_trimmed);
-			change_related_agent(selected_imager_agent, old_agent, selected_guider_agent_trimmed);
-		}
-	}
-
-	change = true;
-	old_agent[0] = '\0';
-	p = properties.get(selected_guider_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
-	if (p) {
-		for (int i = 0; i < p->count; i++) {
-			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Imager Agent", strlen("Imager Agent"))) {
-				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
-				if (!strcmp(old_agent, selected_imager_agent_trimmed)) {
-					change = false;
-					break;
-				}
-			}
-		}
-		if (change) {
-			indigo_debug("[RELATED IMAGER AGENT] %s '%s' %s -> %s\n", __FUNCTION__, selected_guider_agent, old_agent, selected_imager_agent_trimmed);
-			change_related_agent(selected_guider_agent, old_agent, selected_imager_agent_trimmed);
-		}
-	}
-}
-
-void ImagerWindow::set_related_mount_and_imager_agents() const {
-	// Select related imager and mount agent
+void ImagerWindow::set_base_agent_relations() const {
 	char selected_mount_agent[INDIGO_NAME_SIZE] = {0};
 	char selected_imager_agent[INDIGO_NAME_SIZE] = {0};
-	char selected_mount_agent_trimmed[INDIGO_NAME_SIZE] = {0};
-	char selected_imager_agent_trimmed[INDIGO_NAME_SIZE] = {0};
-	char old_agent[INDIGO_NAME_SIZE] = {0};
-
+	char selected_guider_agent[INDIGO_NAME_SIZE] = {0};
+	char selected_solver_agent[INDIGO_NAME_SIZE] = {0};
 	get_selected_mount_agent(selected_mount_agent);
 	get_selected_imager_agent(selected_imager_agent);
+	get_selected_guider_agent(selected_guider_agent);
+	get_selected_solver_agent(selected_solver_agent);
 
-	strncpy(selected_mount_agent_trimmed, selected_mount_agent, INDIGO_NAME_SIZE);
-	strncpy(selected_imager_agent_trimmed, selected_imager_agent, INDIGO_NAME_SIZE);
+	set_related_agent(selected_mount_agent, selected_imager_agent);
+	set_related_agent(selected_imager_agent, selected_mount_agent);
 
-	char *service1 = strrchr(selected_imager_agent_trimmed, '@');
-	char *service2 = strrchr(selected_mount_agent_trimmed, '@');
-	if (service1 != nullptr && service2 != nullptr && !strcmp(service1, service2)) {
-		*(service1 - 1) = '\0';
-		*(service2 - 1) = '\0';
-	}
+	set_related_agent(selected_imager_agent, selected_guider_agent);
+	set_related_agent(selected_guider_agent, selected_imager_agent);
 
-	bool change = true;
-	old_agent[0] = '\0';
-	indigo_property *p = properties.get(selected_mount_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
-	if (p) {
-		for (int i = 0; i < p->count; i++) {
-			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Imager Agent", strlen("Imager Agent"))) {
-				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
-				if (!strcmp(old_agent, selected_imager_agent_trimmed)) {
-					change = false;
-					break;
-				}
-			}
-		}
-		if (change) {
-			indigo_debug("[RELATED IMAGER AGENT] %s '%s' %s -> %s\n", __FUNCTION__, selected_mount_agent, old_agent, selected_imager_agent_trimmed);
-			change_related_agent(selected_mount_agent, old_agent, selected_imager_agent_trimmed);
-		}
-	}
+	set_related_agent(selected_solver_agent, selected_mount_agent);
+	set_related_agent(selected_mount_agent, selected_solver_agent);
 
-	change = true;
-	old_agent[0] = '\0';
-	p = properties.get(selected_imager_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
-	if (p) {
-		for (int i = 0; i < p->count; i++) {
-			if (p->items[i].sw.value && !strncmp(p->items[i].name, "Mount Agent", strlen("Mount Agent"))) {
-				strncpy(old_agent, p->items[i].name, INDIGO_NAME_SIZE);
-				if (!strcmp(old_agent, selected_mount_agent_trimmed)) {
-					change = false;
-					break;
-				}
-			}
-		}
-		if (change) {
-			indigo_debug("[RELATED MOUNT AGENT] %s '%s' %s -> %s\n", __FUNCTION__, selected_imager_agent, old_agent, selected_mount_agent_trimmed);
-			change_related_agent(selected_imager_agent, old_agent, selected_mount_agent_trimmed);
-		}
-	}
+	set_related_agent(selected_mount_agent, selected_guider_agent);
+	set_related_agent(selected_guider_agent, selected_mount_agent);
 }
 
 void ImagerWindow::change_related_agent(const char *agent, const char *old_agent, const char *new_agent) const {
@@ -508,7 +466,6 @@ void ImagerWindow::change_guider_agent_edge_clipping(const char *agent) const {
 }
 
 void ImagerWindow::change_focuser_subframe(const char *agent) const {
-	indigo_error("change_focuser_subframe");
 	static const char *items[] = {
 		AGENT_IMAGER_SELECTION_SUBFRAME_ITEM_NAME
 	};
@@ -570,7 +527,7 @@ void ImagerWindow::change_agent_focus_params_property(const char *agent, bool se
 		AGENT_IMAGER_FOCUS_DELAY_ITEM_NAME,
 		AGENT_IMAGER_FOCUS_BACKLASH_ITEM_NAME
 	};
-	static double values[7];
+	static double values[8];
 	values[0] = (double)m_initial_step->value();
 	values[1] = (double)m_final_step->value();
 	values[2] = (double)m_ucurve_step->value();
@@ -596,7 +553,23 @@ void ImagerWindow::change_agent_start_exposure_property(const char *agent) const
 }
 
 void ImagerWindow::change_agent_start_sequence_property(const char *agent) const {
-	change_agent_start_process(agent, AGENT_IMAGER_START_SEQUENCE_ITEM_NAME);
+	indigo_property *p = properties.get(agent, AGENT_SCRIPTING_EXECUTE_SCRIPT_PROPERTY_NAME);
+	if (p) {
+		for (int i = 0; i < p->count; i++) {
+			if (!strcmp(p->items[i].label, AIN_SEQUENCE_NAME)) {
+				indigo_change_switch_property_1(
+					nullptr,
+					agent,
+					AGENT_SCRIPTING_EXECUTE_SCRIPT_PROPERTY_NAME,
+					p->items[i].name,
+					true
+				);
+				indigo_debug("Sequence started %s", p->items[i].name);
+				return;
+			}
+		}
+	}
+	indigo_debug("Sequence not found");
 }
 
 void ImagerWindow::change_agent_start_focusing_property(const char *agent) const {
@@ -646,11 +619,12 @@ void ImagerWindow::change_focuser_focus_out_property(const char *agent) const {
 	indigo_change_switch_property(nullptr, agent, FOCUSER_DIRECTION_PROPERTY_NAME, 1, items, values);
 }
 
-void ImagerWindow::change_agent_pause_process_property(const char *agent, bool wait_exposure) const {
+void ImagerWindow::change_agent_pause_process_property(const char *agent, bool wait_exposure, bool pause) const {
+	//indigo_error("change_agent_pause_process_property: %s -> %s", agent, pause ? "true" : "false");
 	if(wait_exposure) {
-		indigo_change_switch_property_1(nullptr, agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME, AGENT_PAUSE_PROCESS_WAIT_ITEM_NAME, true);
+		indigo_change_switch_property_1(nullptr, agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME, AGENT_PAUSE_PROCESS_WAIT_ITEM_NAME, pause);
 	} else {
-		indigo_change_switch_property_1(nullptr, agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME, AGENT_PAUSE_PROCESS_ITEM_NAME, true);
+		indigo_change_switch_property_1(nullptr, agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME, AGENT_PAUSE_PROCESS_ITEM_NAME, pause);
 	}
 }
 
@@ -673,12 +647,9 @@ void ImagerWindow::change_agent_ccd_peview(const char *agent, bool enable) const
 }
 
 void ImagerWindow::change_wheel_slot_property(const char *agent) const {
-	static const char *items[] = {
-		WHEEL_SLOT_ITEM_NAME
-	};
-	static double values[1];
-	values[0] = (double)m_filter_select->currentIndex() + 1;
-	indigo_change_number_property(nullptr, agent, WHEEL_SLOT_PROPERTY_NAME, 1, items, values);
+	static char selected_filter[INDIGO_NAME_SIZE];
+	strncpy(selected_filter, m_filter_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	indigo_change_switch_property_1(nullptr, agent, AGENT_WHEEL_FILTER_PROPERTY_NAME, selected_filter, true);
 }
 
 void ImagerWindow::change_cooler_onoff_property(const char *agent) const {
@@ -800,20 +771,20 @@ void ImagerWindow::change_guider_agent_apply_dec_backlash(const char *agent) con
 }
 
 void ImagerWindow::change_mount_agent_equatorial(const char *agent, bool sync) const {
-	if (sync) {
-		indigo_change_switch_property_1(nullptr, agent, MOUNT_ON_COORDINATES_SET_PROPERTY_NAME, MOUNT_ON_COORDINATES_SET_SYNC_ITEM_NAME, true);
-	} else {
-		indigo_change_switch_property_1(nullptr, agent, MOUNT_ON_COORDINATES_SET_PROPERTY_NAME, MOUNT_ON_COORDINATES_SET_TRACK_ITEM_NAME, true);
-	}
-
 	static const char *items[] = {
-		MOUNT_EQUATORIAL_COORDINATES_RA_ITEM_NAME,
-		MOUNT_EQUATORIAL_COORDINATES_DEC_ITEM_NAME
+		AGENT_MOUNT_TARGET_COORDINATES_RA_ITEM_NAME,
+		AGENT_MOUNT_TARGET_COORDINATES_DEC_ITEM_NAME
 	};
 	static double values[2];
 	values[0] = indigo_stod((char*)m_mount_ra_input->text().trimmed().toStdString().c_str());
 	values[1] = indigo_stod((char*)m_mount_dec_input->text().trimmed().toStdString().c_str());
-	indigo_change_number_property(nullptr, agent, MOUNT_EQUATORIAL_COORDINATES_PROPERTY_NAME, 2, items, values);
+	indigo_change_number_property(nullptr, agent, AGENT_MOUNT_TARGET_COORDINATES_PROPERTY_NAME, 2, items, values);
+
+	if (sync) {
+		indigo_change_switch_property_1(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, AGENT_MOUNT_START_SYNC_ITEM_NAME, true);
+	} else {
+		indigo_change_switch_property_1(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, AGENT_MOUNT_START_SLEW_ITEM_NAME, true);
+	}
 }
 
 void ImagerWindow::change_mount_agent_location(const char *agent, QString property_prefix) const {
@@ -850,7 +821,7 @@ void ImagerWindow::change_solver_agent_hints_property(const char *agent) const {
 		AGENT_PLATESOLVER_HINTS_DEPTH_ITEM_NAME,
 		AGENT_PLATESOLVER_HINTS_CPU_LIMIT_ITEM_NAME
 	};
-	static double values[7];
+	static double values[8];
 	values[0] = indigo_stod((char*)m_solver_ra_hint->text().trimmed().toStdString().c_str());
 	values[1] = indigo_stod((char*)m_solver_dec_hint->text().trimmed().toStdString().c_str());
 	values[2] = (double)m_solver_radius_hint->value();
@@ -925,7 +896,7 @@ void ImagerWindow::disable_auto_solving(const char *agent) const {
 	//indigo_change_switch_property_1(nullptr, agent, AGENT_PLATESOLVER_SYNC_PROPERTY_NAME, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME, true);
 }
 
-void ImagerWindow::change_agent_start_process(const char *agent, char *item) const {
+void ImagerWindow::change_agent_start_process(const char *agent, const char *item) const {
 	indigo_change_switch_property_1(nullptr, agent, AGENT_START_PROCESS_PROPERTY_NAME, item, true);
 }
 
@@ -1187,49 +1158,78 @@ void ImagerWindow::change_solver_agent_pa_settings(const char *agent) const {
 
 #define MAX_ITEMS 256
 
-void ImagerWindow::change_imager_agent_sequence(const char *agent, QString sequence, QList<QString> batches) const {
+void ImagerWindow::change_scripting_agent_sequence(const char *agent, QString sequence) const {
 	static char items[MAX_ITEMS][INDIGO_NAME_SIZE] = {0};
 	static char values[MAX_ITEMS][INDIGO_VALUE_SIZE] = {0};
 	static char *items_ptr[MAX_ITEMS];
 	static char *values_ptr[MAX_ITEMS];
 
-	indigo_property *p = properties.get((char*)agent, AGENT_IMAGER_SEQUENCE_PROPERTY_NAME);
+	indigo_property *p = properties.get((char*)agent, AGENT_SCRIPTING_RUN_SCRIPT_PROPERTY_NAME);
 	if (p) {
-		int count = (p->count < MAX_ITEMS) ? p->count : MAX_ITEMS;
-		indigo_debug("%s(): MAX_ITEMS = %d, p->count = %d, count = %d", __FUNCTION__, MAX_ITEMS, p->count, count);
+		// Do Not run new scripts by default
+		indigo_change_switch_property_1(
+			nullptr,
+			agent,
+			AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME,
+			AGENT_SCRIPTING_ADD_SCRIPT_NAME_ITEM_NAME,
+			false
+		);
+		// Load sequencer code in the scripting agent
+		indigo_change_text_property_1_raw(
+			nullptr,
+			agent,
+			AGENT_SCRIPTING_RUN_SCRIPT_PROPERTY_NAME,
+			AGENT_SCRIPTING_RUN_SCRIPT_ITEM_NAME,
+			m_sequencer_code.toUtf8().constData()
+		);
+	}
 
-		if (p->count < batches.size() + 1) {
-			char message[255];
-			snprintf(message, 254, "Warning: Maximum number of batches of '%s' reached, only %d of %d will be executed", agent, p->count - 1, batches.size());
-			Logger::instance().log(NULL, message);
-		}
-
-		// Sequence
-		strncpy(items[0], AGENT_IMAGER_SEQUENCE_ITEM_NAME, INDIGO_NAME_SIZE);
-		items_ptr[0] = items[0];
-		char *sequence_c = (char*)indigo_safe_malloc(sequence.size() + 1);
-		if (sequence_c != nullptr) {
-			strncpy(sequence_c, sequence.toStdString().c_str(), sequence.size() + 1);
-			values_ptr[0] = sequence_c;
-		} else {
-			strncpy(values[0], sequence.toStdString().c_str(), INDIGO_VALUE_SIZE);
-			values_ptr[0] = values[0];
-		}
-
-		// Batches
-		for (int i = 1; i < count; i++) {
-			sprintf(items[i], "%02d", i);
-			if (i-1 < batches.count()) {
-				strncpy(values[i], batches[i-1].toStdString().c_str(), INDIGO_VALUE_SIZE);
-			} else {
-				values[i][0] = '\0';
+	p = properties.get((char*)agent, AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME);
+	if (p) {
+		for (int i = 0; i < p->count; i++) {
+			if (!strncmp(p->items[i].label, AIN_SEQUENCE_NAME, INDIGO_NAME_SIZE)) {
+				// Delete Ain Sequence
+				indigo_change_text_property_1(
+					nullptr,
+					agent,
+					AGENT_SCRIPTING_DELETE_SCRIPT_PROPERTY_NAME,
+					AGENT_SCRIPTING_DELETE_SCRIPT_NAME_ITEM_NAME,
+					AIN_SEQUENCE_NAME
+				);
+				break;
 			}
-			items_ptr[i] = items[i];
-			values_ptr[i] = values[i];
 		}
-		indigo_log("[SEQUENCE] %s '%s'\n", __FUNCTION__, agent);
-		indigo_change_text_property(nullptr, agent, AGENT_IMAGER_SEQUENCE_PROPERTY_NAME, p->count, (const char**)items_ptr, (const char**)values_ptr);
-		indigo_safe_free(sequence_c);
+		static const char *items[] = {
+			AGENT_SCRIPTING_ADD_SCRIPT_NAME_ITEM_NAME,
+			AGENT_SCRIPTING_ADD_SCRIPT_ITEM_NAME
+		};
+		// Add new AinSequence
+		static char *script;
+		script = (char*)indigo_safe_malloc_copy(sequence.length() + 1, sequence.toUtf8().data());
+		static char *values[2];
+		values[0] = AIN_SEQUENCE_NAME;
+		values[1] = script;
+		indigo_change_text_property(nullptr, agent, AGENT_SCRIPTING_ADD_SCRIPT_PROPERTY_NAME, 2, items, (const char**)values);
+		indigo_safe_free(script);
+
+		// Wait for AinSequence to appear
+		bool found = false;
+		const int MAX_RETRYS = 20;
+		const int SLEEP_TIME = 100000;  // 0.1 sec
+		int retrys = 0;
+		do {
+			for (int i = 0; i < p->count; i++) {
+				if (!strncmp(p->items[i].label, AIN_SEQUENCE_NAME, INDIGO_NAME_SIZE)) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				indigo_debug("Waiting for %s to appear #%d", AIN_SEQUENCE_NAME, retrys);
+				indigo_usleep(SLEEP_TIME);
+			}
+			retrys++;
+		} while (!found || retrys > MAX_RETRYS);
 	}
 }
 
