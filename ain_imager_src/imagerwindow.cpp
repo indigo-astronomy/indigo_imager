@@ -691,7 +691,7 @@ bool ImagerWindow::show_preview_in_guider_viewer(QString &key) {
 
 void ImagerWindow::play_sound(int alarm) {
 	if (conf.sound_notification_level) {
-		QSoundEffect sound_effect;
+		static QSoundEffect sound_effect; // static otherwise it will not play sounds with Qt6
 		switch (alarm) {
 		case AIN_NO_SOUND:
 			return;
