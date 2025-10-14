@@ -803,7 +803,7 @@ void ImagerWindow::change_mount_agent_location(const char *agent, QString proper
 }
 
 void ImagerWindow::change_mount_agent_abort(const char *agent) const {
-	indigo_change_switch_property_1(nullptr, agent, MOUNT_ABORT_MOTION_PROPERTY_NAME, MOUNT_ABORT_MOTION_ITEM_NAME, true);
+	indigo_change_switch_property_1(nullptr, agent, AGENT_ABORT_PROCESS_PROPERTY_NAME, AGENT_ABORT_PROCESS_ITEM_NAME, true);
 }
 
 void ImagerWindow::change_solver_agent_abort(const char *agent) const {

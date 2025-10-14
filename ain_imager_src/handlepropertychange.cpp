@@ -2799,6 +2799,10 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_pause_process_property(this, property, m_pause_button);
 	}
+	if (client_match_device_property(property, selected_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME)) {
+		set_widget_state(m_abort_exposure_button, property->state);
+		set_widget_state(m_focusing_abort_button, property->state);
+	}
 	if (client_match_device_property(property, selected_agent, CCD_COOLER_PROPERTY_NAME)) {
 		update_cooler_onoff(this, property);
 	}
@@ -2848,6 +2852,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_scripting_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_pause_process_property(this, property, m_seq_pause_button);
+	}
+	if (client_match_device_property(property, selected_scripting_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME) ) {
+		set_widget_state(m_seq_abort_button, property->state);
 	}
 
 	// Guider Agent
@@ -2927,8 +2934,14 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	    client_match_device_property(property, selected_guider_agent, CCD_OFFSET_PROPERTY_NAME)) {
 		update_agent_guider_gain_offset_property(this, property);
 	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME)) {
+		set_widget_state(m_guider_stop_button , property->state);
+	}
 
 	// Mount agent
+	if (client_match_device_property(property, selected_mount_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME)) {
+		set_widget_state(m_mount_abort_button, property->state);
+	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_MOUNT_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_mount_select);
 		add_items_to_sequence_model(property, SC_SELECT_MOUNT, 0);
@@ -3226,6 +3239,10 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_agent, CCD_BIN_PROPERTY_NAME)) {
 		update_agent_imager_binning_property(this, property);
 	}
+	if (client_match_device_property(property, selected_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME)) {
+		set_widget_state(m_abort_exposure_button, property->state);
+		set_widget_state(m_focusing_abort_button, property->state);
+	}
 
 	// Scripting Agent
 	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE") ||
@@ -3239,6 +3256,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_scripting_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_pause_process_property(this, property, m_seq_pause_button);
+	}
+	if (client_match_device_property(property, selected_scripting_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME) ) {
+		set_widget_state(m_seq_abort_button, property->state);
 	}
 
 	// Guider Agent
@@ -3286,8 +3306,14 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	    client_match_device_property(property, selected_guider_agent, CCD_OFFSET_PROPERTY_NAME)) {
 		update_agent_guider_gain_offset_property(this, property);
 	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME)) {
+		set_widget_state(m_guider_stop_button , property->state);
+	}
 
 	// Mount Agent
+	if (client_match_device_property(property, selected_mount_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME)) {
+		set_widget_state(m_mount_abort_button, property->state);
+	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_MOUNT_LIST_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_mount_select);
 	}
@@ -3518,6 +3544,12 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		SequenceItemModel::instance().clearComboOptions(SC_SELECT_FRAME_TYPE, 0);
 	}
+	if (client_match_device_property(property, selected_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		set_widget_state(m_abort_exposure_button, INDIGO_OK_STATE);
+		set_widget_state(m_focusing_abort_button, INDIGO_OK_STATE);
+	}
+
 	if (client_match_device_property(property, selected_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
@@ -3666,6 +3698,11 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_scripting_agent)) {
 		emit m_sequence_editor2->enable(true);
 		emit m_sequence_editor2->setSequenceIdle();
+	}
+
+	if (client_match_device_property(property, selected_scripting_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_scripting_agent)) {
+		set_widget_state(m_seq_abort_button, INDIGO_OK_STATE);
 	}
 
 	// Guider Agent
@@ -3852,7 +3889,16 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_enabled(m_guider_offset, false);
 	}
 
+	if (client_match_device_property(property, selected_guider_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
+		set_widget_state(m_guider_stop_button, INDIGO_OK_STATE);
+	}
+
 	// Mount Agent
+	if (client_match_device_property(property, selected_mount_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		set_widget_state(m_mount_abort_button, INDIGO_OK_STATE);
+	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_MOUNT_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);

@@ -155,11 +155,11 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_pause_button->setIcon(QIcon(":resource/pause.png"));
 	connect(m_pause_button, &QPushButton::clicked, this, &ImagerWindow::on_pause);
 
-	QPushButton *button = new QPushButton("Abort");
-	button->setStyleSheet("min-width: 30px");
-	button->setIcon(QIcon(":resource/stop.png"));
-	toolbox->addWidget(button);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
+	m_abort_exposure_button = new QPushButton("Abort");
+	m_abort_exposure_button->setStyleSheet("min-width: 30px");
+	m_abort_exposure_button->setIcon(QIcon(":resource/stop.png"));
+	toolbox->addWidget(m_abort_exposure_button);
+	connect(m_abort_exposure_button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
 
 	row++;
 	m_exposure_progress = new QProgressBar();
