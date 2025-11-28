@@ -77,12 +77,11 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	m_seq_reset_button->setIcon(QIcon(":resource/reload.png"));
 	connect(m_seq_reset_button, &QPushButton::clicked, this, &ImagerWindow::on_reset);
 
-	QPushButton *button = new QPushButton("Abort");
-	button->setStyleSheet("min-width: 30px");
-	button->setIcon(QIcon(":resource/stop.png"));
-	toolbox->addWidget(button);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
-
+	m_seq_abort_button = new QPushButton("Abort");
+	m_seq_abort_button->setStyleSheet("min-width: 30px");
+	m_seq_abort_button->setIcon(QIcon(":resource/stop.png"));
+	toolbox->addWidget(m_seq_abort_button);
+	connect(m_seq_abort_button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
 
 	row++;
 	spacer = new QSpacerItem(1, 5, QSizePolicy::Expanding, QSizePolicy::Maximum);

@@ -87,11 +87,11 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	toolbox->addWidget(m_guider_guide_button);
 	connect(m_guider_guide_button, &QPushButton::clicked, this, &ImagerWindow::on_guider_guide_start_stop);
 
-	QPushButton *button = new QPushButton("Stop");
-	button->setStyleSheet("min-width: 30px");
-	button->setIcon(QIcon(":resource/stop.png"));
-	toolbox->addWidget(button);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_guider_stop);
+	m_guider_stop_button = new QPushButton("Stop");
+	m_guider_stop_button->setStyleSheet("min-width: 30px");
+	m_guider_stop_button->setIcon(QIcon(":resource/stop.png"));
+	toolbox->addWidget(m_guider_stop_button);
+	connect(m_guider_stop_button, &QPushButton::clicked, this, &ImagerWindow::on_guider_stop);
 
 	row++;
 	spacer = new QSpacerItem(1, 5, QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -276,7 +276,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	settings_frame_layout->addItem(spacer, settings_row, 0);
 
 	settings_row++;
-	button = new QPushButton("Clear star selection");
+	QPushButton *button = new QPushButton("Clear star selection");
 	button->setStyleSheet("min-width: 30px");
 	button->setToolTip("Keyboard shortcut: Ctrl+Backspace");
 	settings_frame_layout->addWidget(button, settings_row, 0, 1, 4);

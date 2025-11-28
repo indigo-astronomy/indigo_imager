@@ -635,6 +635,7 @@ private:
 	QSpinBox *m_frame_delay;
 	QLineEdit *m_object_name;
 	QPushButton *m_pause_button;
+	QPushButton *m_abort_exposure_button;
 	QProgressBar *m_exposure_progress;
 	QProgressBar *m_process_progress;
 	QLabel *m_download_label;
@@ -666,6 +667,7 @@ private:
 	QPushButton *m_seq_start_button;
 	QPushButton *m_seq_pause_button;
 	QPushButton *m_seq_reset_button;
+	QPushButton *m_seq_abort_button;
 	QLabel *m_seq_esimated_duration;
 	QLabel *m_imager_status_label;
 	QString m_sequencer_code;
@@ -702,6 +704,7 @@ private:
 	QCheckBox *m_focuser_failreturn_cbox;
 	QDoubleSpinBox *m_focuser_exposure_time;
 	QPushButton *m_focusing_button;
+	QPushButton *m_focusing_abort_button;
 	QToolButton *m_focusing_in_button;
 	QToolButton *m_focusing_out_button;
 	QPushButton *m_focusing_preview_button;
@@ -778,6 +781,7 @@ private:
 	QPushButton *m_guider_guide_button;
 	QPushButton *m_guider_preview_button;
 	QPushButton *m_guider_calibrate_button;
+	QPushButton *m_guider_stop_button;
 
 	QComboBox *m_detection_mode_select;
 	QComboBox *m_dec_guiding_select;

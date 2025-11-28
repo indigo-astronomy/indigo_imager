@@ -124,13 +124,13 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	set_ok(m_focusing_button);
 	connect(m_focusing_button, &QPushButton::clicked, this, &ImagerWindow::on_focus_start_stop);
 
-	QPushButton *button = new QPushButton("Abort");
-	button->setStyleSheet("min-width: 30px");
-	button->setIcon(QIcon(":resource/stop.png"));
-	button->setToolTip("Abort focusing process");
-	toolbox->addWidget(button);
-	set_ok(button);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
+	m_focusing_abort_button = new QPushButton("Abort");
+	m_focusing_abort_button->setStyleSheet("min-width: 30px");
+	m_focusing_abort_button->setIcon(QIcon(":resource/stop.png"));
+	m_focusing_abort_button->setToolTip("Abort focusing process");
+	toolbox->addWidget(m_focusing_abort_button);
+	set_ok(m_focusing_abort_button);
+	connect(m_focusing_abort_button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
 
 	row++;
 	m_focusing_progress = new QProgressBar();
@@ -374,7 +374,7 @@ void ImagerWindow::create_focuser_tab(QFrame *focuser_frame) {
 	settings_frame_layout->addItem(spacer, settings_row, 0);
 
 	settings_row++;
-	button = new QPushButton("Clear star selection");
+	QPushButton *button = new QPushButton("Clear star selection");
 	button->setStyleSheet("min-width: 30px");
 	button->setToolTip("Keyboard shortcut: Shift+Backspace");
 	settings_frame_layout->addWidget(button, settings_row, 0, 1, 4);
