@@ -201,8 +201,8 @@ void update_ccd_image_file(ImagerWindow *w, indigo_property *property) {
 		if (client_match_item(&property->items[i], CCD_IMAGE_FILE_ITEM_NAME)) {
 			w->m_last_remote_image_file = QString(property->items[i].text.value);
 			char message[PATH_LEN+100];
-			snprintf(message, sizeof(message), "[R] Image saved to: '%s'", w->m_last_remote_image_file.toUtf8().constData());
-			w->window_log(message);
+			//snprintf(message, sizeof(message), "<font color='#3b9640'>○</font> Image saved to: '%s'", w->m_last_remote_image_file.toUtf8().constData());
+			//w->window_log(message);
 			break;
 		}
 	}

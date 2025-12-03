@@ -852,9 +852,14 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		QString key = preview_cache.create_key(property, m_indigo_item);
 		//preview_image *image = preview_cache.get(m_image_key);
 		if (show_preview_in_imager_viewer(key)) {
+			char message[PATH_LEN+100];
 			indigo_debug("m_imager_viewer = %p", m_imager_viewer);
 			m_imager_viewer->setText(QString("Remote Image Preview"));
 			m_imager_viewer->setToolTip(QString("Remote Image Preview"));
+			if (!m_last_remote_image_file.isEmpty()) {
+				snprintf(message, sizeof(message), "%s Image saved remotely to '%s'", PREVIEW_REMOTE_INDICATOR, m_last_remote_image_file.toUtf8().constData());
+				window_log(message);
+			}
 			int size = (int)round(m_focus_star_radius->value() * 2 + 1);
 			move_resize_focuser_selection(m_star_x->value(), m_star_y->value(), size);
 		}
@@ -892,7 +897,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 					strcat(location, file_name);
 					if (save_blob_item_with_prefix(item, location, file_name, false)) {
 						if (!conf.keep_images_on_server) {
-							snprintf(message, sizeof(message), "Image saved to '%s' and removed remotely", file_name);
+							snprintf(message, sizeof(message), "%s Image saved to '%s' and removed remotely", DOWNLOAD_INDICATOR, file_name);
 							QtConcurrent::run([=]() {
 								QString next_file = file_name_static;
 								char agent[INDIGO_VALUE_SIZE];
@@ -900,7 +905,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 								request_file_remove(agent, next_file.toUtf8().constData());
 							});
 						} else {
-							snprintf(message, sizeof(message), "Image saved to '%s' and kept remotely", file_name);
+							snprintf(message, sizeof(message), "%s Image saved to '%s' and kept remotely", DOWNLOAD_INDICATOR, file_name);
 						}
 						window_log(message);
 					} else {
@@ -978,7 +983,12 @@ void ImagerWindow::save_blob_item(indigo_item *item) {
 		char location[PATH_LEN];
 
 		if ((m_object_name_str == DEFAULT_OBJECT_NAME || m_object_name_str.isEmpty()) && !conf.save_noname_images) {
-			snprintf(message, sizeof(message), "Warning: image not saved, provide object name");
+			if (m_last_remote_image_file.isEmpty()) {
+				snprintf(message, sizeof(message), "⚠ Warning: image not saved, provide object name");
+			} else {
+				snprintf(message, sizeof(message), "%s Image saved remotely to '%s'", SAVE_REMOTE_INDICATOR, m_last_remote_image_file.toUtf8().constData());
+			}
+			m_last_remote_image_file = QString();
 			window_log(message, INDIGO_BUSY_STATE);
 			return;
 		}
@@ -986,7 +996,12 @@ void ImagerWindow::save_blob_item(indigo_item *item) {
 		if (save_blob_item_with_prefix(item, location, file_name)) {
 			m_imager_viewer->setText(basename(file_name));
 			m_imager_viewer->setToolTip(file_name);
-			snprintf(message, sizeof(message), "Image saved to '%s'", file_name);
+			if (m_last_remote_image_file.isEmpty()) {
+				snprintf(message, sizeof(message), "%s Image saved to '%s'", SAVE_LOCAL_INDICATOR, file_name);
+			} else {
+				snprintf(message, sizeof(message), "%s Image saved to '%s'", SAVE_BOTH_INDICATOR, file_name);
+			}
+			m_last_remote_image_file = QString();
 			window_log(message);
 		} else {
 			snprintf(message, sizeof(message), "Error: can not save '%s'", file_name);
@@ -1198,7 +1213,7 @@ void ImagerWindow::on_image_save_act() {
 	if (save_blob_item(m_indigo_item, file_name.toUtf8().data())) {
 		m_imager_viewer->setText(basename(file_name.toUtf8().data()));
 		m_imager_viewer->setToolTip(file_name);
-		snprintf(message, sizeof(message), "Image saved to '%s'", file_name.toUtf8().data());
+		snprintf(message, sizeof(message), "<font color='#3b9640'><b>●</b></font> Image saved to '%s'", file_name.toUtf8().data());
 		window_log(message);
 	} else {
 		snprintf(message, sizeof(message), "Can not save '%s'", file_name.toUtf8().data());
