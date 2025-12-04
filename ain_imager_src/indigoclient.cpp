@@ -179,7 +179,7 @@ static void handle_blob_property(indigo_property *property) {
 	static char error_message[] = "Error: Download is not fast enough, skipping frame.";
 	if (property->state == INDIGO_OK_STATE && property->perm != INDIGO_WO_PERM) {
 		if (!strncmp(property->device, "Imager Agent", 12)) {
-			if (!strncmp(property->name, CCD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE) && (conf.guider_save_bandwidth == 0)) {
+			if (!strncmp(property->name, CCD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE) && (conf.use_previews == 0)) {
 				if (!download_blob_async(property, &client.imager_downloading, client.is_exposing(property->device))) {
 					client.m_logger->log(property, error_message);
 				}
@@ -187,16 +187,16 @@ static void handle_blob_property(indigo_property *property) {
 				if (!download_blob_async(property, &client.imager_downloading_saved_frame, true)) {
 					client.m_logger->log(property, error_message);
 				}
-			} else if (!strncmp(property->name, CCD_PREVIEW_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE) && (conf.guider_save_bandwidth > 0)) {
+			} else if (!strncmp(property->name, CCD_PREVIEW_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE) && (conf.use_previews > 0)) {
 				if (!download_blob_async(property, &client.imager_downloading, client.is_exposing(property->device))) {
 					client.m_logger->log(property, error_message);
 				}
 			}
 		} else if (!strncmp(property->device, "Guider Agent", 12)) {
-			if ((!strncmp(property->name, CCD_PREVIEW_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) && (conf.guider_save_bandwidth == 0)) {
+			if ((!strncmp(property->name, CCD_PREVIEW_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) && (conf.use_previews == 0)) {
 				return;
 			}
-			if ((!strncmp(property->name, CCD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) && (conf.guider_save_bandwidth > 0)) {
+			if ((!strncmp(property->name, CCD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) && (conf.use_previews > 0)) {
 				return;
 			}
 			if (!download_blob_async(property, &client.guider_downloading)) {

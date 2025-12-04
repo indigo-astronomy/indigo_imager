@@ -481,18 +481,6 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	misc_frame_layout->addWidget(label, misc_row, 0, 1, 4);
 
 	misc_row++;
-	label = new QLabel("Use JPEG:");
-	misc_frame_layout->addWidget(label, misc_row, 0, 1, 2);
-	m_guider_save_bw_select = new QComboBox();
-	m_guider_save_bw_select->addItem("Off");
-	m_guider_save_bw_select->addItem("Fine");
-	m_guider_save_bw_select->addItem("Normal");
-	m_guider_save_bw_select->addItem("Coarse");
-	misc_frame_layout->addWidget(m_guider_save_bw_select, misc_row, 2, 1, 2);
-	m_guider_save_bw_select->setCurrentIndex(conf.guider_save_bandwidth);
-	connect(m_guider_save_bw_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_bw_save_changed);
-
-	misc_row++;
 	label = new QLabel("Use subframe:");
 	misc_frame_layout->addWidget(label, misc_row, 0, 1 ,2);
 	m_guider_subframe_select = new QComboBox();
@@ -552,53 +540,6 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guider_focal_lenght->setSpecialValueText(" ");
 	misc_frame_layout->addWidget(m_guider_focal_lenght, misc_row, 2, 1, 2);
 	connect(m_guider_focal_lenght, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_agent_guider_focal_length_changed);
-}
-
-void ImagerWindow::setup_preview(const char *agent) {
-	int stretch_level, reference_channel;
-	if (!strncmp(agent, "Imager Agent", 12)) {
-		stretch_level = conf.preview_stretch_level;
-		reference_channel = (conf.preview_color_balance == CB_AUTO) ? 0 : 2;
-	} else if (!strncmp(agent, "Guider Agent", 12)) {
-		stretch_level = conf.guider_stretch_level;
-		reference_channel = conf.guider_color_balance == CB_AUTO ? 0 : 2;
-	} else {
-		return;
-	}
-	change_agent_ccd_peview(agent, (bool)conf.guider_save_bandwidth);
-	switch (conf.guider_save_bandwidth) {
-	case 0:
-		break;
-	case 1:
-		change_jpeg_settings_property(
-			agent,
-			93,
-			stretch_params_lut[stretch_level].brightness,
-			stretch_params_lut[stretch_level].contrast,
-			reference_channel
-		);
-		break;
-	case 2:
-		change_jpeg_settings_property(
-			agent,
-			89,
-			stretch_params_lut[stretch_level].brightness,
-			stretch_params_lut[stretch_level].contrast,
-			reference_channel
-		);
-		break;
-	case 3:
-		change_jpeg_settings_property(
-			agent,
-			50,
-			stretch_params_lut[stretch_level].brightness,
-			stretch_params_lut[stretch_level].contrast,
-			reference_channel
-		);
-		break;
-	default:
-		break;
-	}
 }
 
 void ImagerWindow::select_guider_data(guider_display_data show) {
@@ -944,19 +885,6 @@ void ImagerWindow::on_guider_apply_backlash_changed(int state) {
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_guider_agent_apply_dec_backlash(selected_agent);
-	});
-}
-
-void ImagerWindow::on_guider_bw_save_changed(int index) {
-	conf.guider_save_bandwidth = index;
-	write_conf();
-	QtConcurrent::run([=]() {
-		static char selected_agent[INDIGO_NAME_SIZE];
-
-		get_selected_guider_agent(selected_agent);
-
-		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-		setup_preview(selected_agent);
 	});
 }
 

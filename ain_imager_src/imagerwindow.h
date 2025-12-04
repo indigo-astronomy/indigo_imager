@@ -366,7 +366,10 @@ public slots:
 	void on_guider_agent_aggressivity_changed(int value);
 	void on_change_guider_agent_i_gain_changed(double value);
 	void on_change_guider_agent_is_changed(int value);
-	void on_guider_bw_save_changed(int index);
+	void on_preview_mode_off();
+	void on_preview_mode_fine();
+	void on_preview_mode_normal();
+	void on_preview_mode_coarse();
 	void on_guide_show_rd_drift();
 	void on_guide_show_rd_s_drift();
 	void on_guide_show_rd_pulse();
@@ -737,7 +740,6 @@ private:
 	QSpinBox  *m_guide_star_radius;
 	QSpinBox  *m_guide_star_count;
 	QSpinBox  *m_guide_edge_clipping;
-	QComboBox *m_guider_save_bw_select;
 	QComboBox *m_guider_subframe_select;
 	QComboBox *m_guider_frame_size_select;
 	QSpinBox  *m_guider_gain;
@@ -1036,7 +1038,7 @@ private:
 	void change_guider_agent_aggressivity(const char *agent) const;
 	void change_guider_agent_i(const char *agent) const;
 	void change_guider_agent_edge_clipping(const char *agent) const;
-	void change_agent_ccd_peview(const char *agent, bool enable) const;
+	void change_agent_ccd_preview(const char *agent, bool enable) const;
 
 	void change_mount_agent_equatorial(const char *agent, bool sync = false) const;
 	void change_mount_agent_abort(const char *agent) const;

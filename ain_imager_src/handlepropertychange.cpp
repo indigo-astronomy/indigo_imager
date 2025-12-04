@@ -201,8 +201,14 @@ void update_ccd_image_file(ImagerWindow *w, indigo_property *property) {
 		if (client_match_item(&property->items[i], CCD_IMAGE_FILE_ITEM_NAME)) {
 			w->m_last_remote_image_file = QString(property->items[i].text.value);
 			char message[PATH_LEN+100];
-			//snprintf(message, sizeof(message), "<font color='#3b9640'>○</font> Image saved to: '%s'", w->m_last_remote_image_file.toUtf8().constData());
-			//w->window_log(message);
+			char *indicator;
+			if (conf.use_previews > 0) {
+				indicator = PREVIEW_REMOTE_INDICATOR;
+			} else {
+				indicator = SAVE_REMOTE_INDICATOR;
+			}
+			snprintf(message, sizeof(message), "%s Image saved remotely as: '%s'", indicator, w->m_last_remote_image_file.toUtf8().constData());
+			w->window_log(message);
 			break;
 		}
 	}
@@ -2840,7 +2846,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_agent, CCD_PREVIEW_PROPERTY_NAME)) {
 		QtConcurrent::run([=]() {
-			change_agent_ccd_peview(selected_agent, (bool)conf.guider_save_bandwidth);
+			change_agent_ccd_preview(selected_agent, (bool)conf.use_previews);
 		});
 	}
 	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME)) {
@@ -2884,7 +2890,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_guider_agent, CCD_PREVIEW_PROPERTY_NAME)) {
 		QtConcurrent::run([=]() {
-			change_agent_ccd_peview(selected_guider_agent, (bool)conf.guider_save_bandwidth);
+			change_agent_ccd_preview(selected_guider_agent, (bool)conf.use_previews);
 		});
 	}
 	if (client_match_device_property(property, selected_guider_agent, CCD_MODE_PROPERTY_NAME)) {
@@ -2894,7 +2900,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_agent_guider_focal_length_property(this, property);
 	}
 	if (client_match_device_property(property, selected_guider_agent, CCD_JPEG_SETTINGS_PROPERTY_NAME)) {
-		set_enabled(m_guider_save_bw_select, true);
+		// Nothing to do here for now
 	}
 	if (client_match_device_property(property, selected_guider_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_guider_camera_select);
@@ -3894,7 +3900,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_guider_agent, CCD_JPEG_SETTINGS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
-		set_enabled(m_guider_save_bw_select, false);
+		// nothing to do here yet
 	}
 
 	if (client_match_device_property(property, selected_guider_agent, AGENT_START_PROCESS_PROPERTY_NAME) ||

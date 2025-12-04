@@ -93,7 +93,7 @@ typedef struct {
 	bool antialiasing_enabled;
 	int focus_mode;
 	preview_stretch preview_stretch_level;
-	int guider_save_bandwidth;
+	int use_previews;
 	int guider_subframe;
 	int focuser_subframe;
 	preview_stretch guider_stretch_level;

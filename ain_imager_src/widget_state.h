@@ -25,11 +25,12 @@
 #define set_ok(widget) (widget->setStyleSheet("*:enabled {background-color: #272727;} QSpinBox:!enabled {background-color: #222222;}"))
 #define set_ok2(widget) (widget->setStyleSheet("background-color: #273727;"))
 
-#define SAVE_LOCAL_INDICATOR     "<font color='#3b9640'><b>●○</b></font>"
-#define SAVE_BOTH_INDICATOR      "<font color='#3b9640'><b>●●</b></font>"
-#define PREVIEW_REMOTE_INDICATOR "<font color='#3b9640'><b>○●</b></font>"
-#define SAVE_REMOTE_INDICATOR    "<font color='#ffa500'><b>○●</b></font>"
-#define SAVE_NONE_INDICATOR      "<font color='#e63737'><b>○○</b></font>"
-#define DOWNLOAD_INDICATOR        "<font color='#3b9640'><b>●</b></font>"
+#define SAVE_LOCAL_INDICATOR           "<font color='#3b9640'><b>◉</b></font>"
+#define SAVE_BOTH_INDICATOR            "<font color='#3b9640'><b>●</b></font>"
+#define PREVIEW_REMOTE_INDICATOR       "<font color='#3b96ff'><b>◉</b></font>"
+#define SAVE_REMOTE_INDICATOR          "<font color='#3b96ff'><b>●</b></font>"
+
+#define DOWNLOAD_INDICATOR             "<font color='#3b9640'><b>●</b></font>"
+#define DOWNLOAD_REMOVE_INDICATOR      "<font color='#3b9640'><b>◉</b></font>"
 
 #endif /* _WIDGET_STATE_H */

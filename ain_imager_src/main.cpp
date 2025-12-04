@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
 	conf.antialiasing_enabled = false;
 	conf.guider_antialiasing_enabled = false;
 	conf.focus_mode = 0;
-	conf.guider_save_bandwidth = 1;
+	conf.use_previews = 1;
 	conf.guider_subframe = 0;
 	conf.focuser_subframe = 0;
 	conf.focuser_display = SHOW_HFD;
@@ -129,6 +129,7 @@ int main(int argc, char *argv[]) {
 	conf.require_confirmation = false;
 	conf.compact_window_layout = false;
 	read_conf();
+	conf.blobs_enabled = true; // Always enable BLOBs remove option from UI
 
 	if (!conf.use_system_locale) qunsetenv("LC_NUMERIC");
 
