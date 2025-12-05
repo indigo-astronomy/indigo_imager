@@ -127,7 +127,7 @@ void ImagerWindow::change_ccd_localmode_property(const char *agent, const QStrin
 		strncpy(object_cstr, m_object_name_str.toUtf8().constData(), INDIGO_VALUE_SIZE);
 		char *values[] {
 			object_cstr,
-			"%o_%-D_%F_%C_%M"
+			"%o_%-D_%F_%C_idx%3I_%M"
 		};
 		indigo_change_text_property(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, 2, items, (const char **)values);
 	} else {
@@ -136,7 +136,7 @@ void ImagerWindow::change_ccd_localmode_property(const char *agent, const QStrin
 		add_fits_keyword_string(agent, "OBJECT", m_object_name_str.toUtf8().constData());
 
 		char value[INDIGO_VALUE_SIZE];
-		snprintf(value, INDIGO_VALUE_SIZE, "%s_%%-D_%%F_%%C_%%M", (char *)m_object_name_str.toUtf8().constData());
+		snprintf(value, INDIGO_VALUE_SIZE, "%s_%%-D_%%F_%%C_idx%%3I_%%M", (char *)m_object_name_str.toUtf8().constData());
 		indigo_debug("Setting prefix to: %s", value);
 
 		indigo_change_text_property_1_raw(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, CCD_LOCAL_MODE_PREFIX_ITEM_NAME, value);
@@ -145,7 +145,7 @@ void ImagerWindow::change_ccd_localmode_property(const char *agent, const QStrin
 
 void ImagerWindow::init_ccd_localmode_property(const char *agent) {
 	char value[INDIGO_VALUE_SIZE];
-	snprintf(value, INDIGO_VALUE_SIZE, "%%o_%%-D_%%F_%%C_%%M");
+	snprintf(value, INDIGO_VALUE_SIZE, "%%o_%%-D_%%F_%%C_idx%%3I_%%M");
 	indigo_debug("Setting prefix to: %s", value);
 
 	indigo_change_text_property_1_raw(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, CCD_LOCAL_MODE_PREFIX_ITEM_NAME, value);

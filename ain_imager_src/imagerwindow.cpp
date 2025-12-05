@@ -936,8 +936,8 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		if (show_preview_in_imager_viewer(key)) {
 			char message[PATH_LEN+100];
 			indigo_debug("m_imager_viewer = %p", m_imager_viewer);
-			m_imager_viewer->setText(QString("Remote Image Preview"));
-			m_imager_viewer->setToolTip(QString("Remote Image Preview"));
+			m_imager_viewer->setText(QString("👁 Remote Image Preview"));
+			m_imager_viewer->setToolTip(QString("👁 Remote Image Preview - not the actual file"));
 			/*
 			if (!m_last_remote_image_file.isEmpty()) {
 				snprintf(message, sizeof(message), "%s Image saved remotely as '%s'", PREVIEW_REMOTE_INDICATOR, m_last_remote_image_file.toUtf8().constData());
@@ -968,7 +968,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 					break;
 				}
 			}
-			indigo_debug("Received: %s", file_name);
+
 			if (m_files_to_download.contains(file_name)) {
 				m_files_to_download.removeAll(file_name);
 				get_current_output_dir(location, conf.data_dir_prefix);
@@ -979,6 +979,33 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 				c = strrchr(file_name, '_');
 				if (c && strlen(c+1) == 32) {
 					*c = '\0';
+
+					// Older indigo versions do not support %3I placeholder and is replaced by _3I
+					// Remove _idx_3I pattern only if it's at the end (before the hash)
+					char *idx_pos = strrchr(file_name, '_');
+					if (idx_pos && strncmp(idx_pos, "_3I", 3) == 0 && idx_pos[3] == '\0') {
+						*idx_pos = '\0';
+						char *idx_pos2 = strrchr(file_name, '_');
+						if (idx_pos2 && strncmp(idx_pos2, "_idx", 4) == 0 && idx_pos2[4] == '\0') {
+							*idx_pos2 = '\0';
+						} else { // put back "_" if "_idx" is not found
+							*idx_pos = '_';
+						}
+					}
+
+					// Remove _idxNNN pattern only if it's at the end (before the hash).
+					idx_pos = strrchr(file_name, '_');
+					if (
+						idx_pos &&
+						strncmp(idx_pos, "_idx", 4) == 0 &&
+						idx_pos[4] >= '0' && idx_pos[4] <= '9' &&
+						idx_pos[5] >= '0' && idx_pos[5] <= '9' &&
+						idx_pos[6] >= '0' && idx_pos[6] <= '9' &&
+						idx_pos[7] == '\0'
+					) {
+						*idx_pos = '\0';
+					}
+
 					strcat(location, file_name);
 					if (save_blob_item_with_prefix(item, location, file_name, false)) {
 						if (!conf.keep_images_on_server) {
