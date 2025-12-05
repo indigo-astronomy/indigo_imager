@@ -163,6 +163,10 @@ int main(int argc, char *argv[]) {
 	QFont font("SansSerif", 10, QFont::Medium);
 	font.setStyleHint(QFont::SansSerif);
 
+	//QFont font("Arial Unicode MS", 10, QFont::Normal);
+	//font.setStyleHint(QFont::SansSerif);
+
+
 	app.setFont(font);
 	//qDebug() << "Font: " << app.font().family() << app.font().pointSize() << app.font().weight();
 
