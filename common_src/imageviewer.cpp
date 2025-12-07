@@ -146,6 +146,30 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 	m_image_stats->raise();
 	m_image_stats->setVisible(false);
 
+	m_snr_overlay = new SNROverlay(m_view);
+	m_snr_overlay->setVisible(false);
+	m_snr_overlay_visible = false;
+
+	// Create SNR visualization circles
+	QPen snr_pen;
+	snr_pen.setCosmetic(true);
+	snr_pen.setWidth(2);
+	snr_pen.setColor(QColor(0, 255, 0));
+	snr_pen.setStyle(Qt::DashLine);
+
+	m_snr_star_circle = new QGraphicsEllipseItem(0, 0, 20, 20, m_pixmap);
+	m_snr_star_circle->setBrush(QBrush(Qt::NoBrush));
+	m_snr_star_circle->setPen(snr_pen);
+	m_snr_star_circle->setOpacity(0.7);
+	m_snr_star_circle->setVisible(false);
+
+	snr_pen.setColor(QColor(255, 255, 0));
+	m_snr_background_ring = new QGraphicsEllipseItem(0, 0, 60, 60, m_pixmap);
+	m_snr_background_ring->setBrush(QBrush(Qt::NoBrush));
+	m_snr_background_ring->setPen(snr_pen);
+	m_snr_background_ring->setOpacity(0.5);
+	m_snr_background_ring->setVisible(false);
+
 	m_extra_selections_visible = false;
 
 	connect(this, &ImageViewer::setImage, this, &ImageViewer::onSetImage);
@@ -844,28 +868,96 @@ void ImageViewer::mouseAt(double x, double y) {
 	}
 }
 
+void ImageViewer::showSNROverlay(bool show) {
+    m_snr_overlay_visible = show;
+    m_snr_overlay->setVisible(show);
+    m_snr_star_circle->setVisible(show);
+    m_snr_background_ring->setVisible(show);
+}
+
+void ImageViewer::calculateAndShowSNR(double x, double y) {
+    const preview_image &img = m_pixmap->image();
+    if (!img.valid(x, y) || !img.m_raw_data) {
+        return;
+    }
+
+    SNRResult result = calculateSNR(
+        reinterpret_cast<const uint8_t*>(img.m_raw_data),
+        img.width(),
+        img.height(),
+        img.m_pix_format,  // Changed from img.pix_format()
+        x, y,
+        20  // search radius
+    );
+
+    if (result.valid) {
+        // Position overlay widget
+        QPoint view_pos = m_view->mapFromScene(QPointF(result.star_x + 50, result.star_y - 50));
+        m_snr_overlay->move(view_pos);
+        m_snr_overlay->setSNRResult(result);
+        m_snr_overlay->raise();
+
+        // Draw star aperture circle
+        double diameter = result.star_radius * 2;
+        m_snr_star_circle->setRect(0, 0, diameter, diameter);
+        m_snr_star_circle->setPos(
+            result.star_x - result.star_radius,
+            result.star_y - result.star_radius
+        );
+
+        // Draw background annulus
+        double bg_diameter = result.star_radius * 6.0;
+        m_snr_background_ring->setRect(0, 0, bg_diameter, bg_diameter);
+        m_snr_background_ring->setPos(
+            result.star_x - result.star_radius * 3.0,
+            result.star_y - result.star_radius * 3.0
+        );
+
+        showSNROverlay(true);
+    } else {
+        m_snr_overlay->setSNRResult(result);
+        m_snr_overlay->setVisible(true);
+        m_snr_overlay->raise();
+        m_snr_star_circle->setVisible(false);
+        m_snr_background_ring->setVisible(false);
+    }
+}
+
+// Modify mouseRightPressAt to trigger SNR calculation on Ctrl+Click:
 void ImageViewer::mouseRightPressAt(double x, double y, Qt::KeyboardModifiers modifiers) {
-	indigo_debug("RIGHT CLICK COORDS: %f %f" ,x,y);
-	double ra, dec, telescope_ra, telescope_dec;
-	if (m_pixmap->image().valid(x,y)) {
-		moveSelection(x,y);
-		emit mouseRightPress(x, y, modifiers);
-		if (
-			m_pixmap->image().wcs_data(x, y, &ra, &dec, &telescope_ra, &telescope_dec) == 0 &&
-			m_show_wcs
-		) {
-			emit mouseRightPressRADec(ra, dec, telescope_ra, telescope_dec, modifiers);
-		}
-	}
+    indigo_debug("RIGHT CLICK COORDS: %f %f", x, y);
+
+    // Ctrl+RightClick = calculate SNR (if SNR mode is enabled)
+    if ((modifiers & Qt::ControlModifier)) {
+        calculateAndShowSNR(x, y);
+        return;
+    }
+
+    // Hide SNR overlay if clicking elsewhere
+    if (m_snr_overlay_visible && !(modifiers & Qt::ControlModifier)) {
+        showSNROverlay(false);
+    }
+
+    double ra, dec, telescope_ra, telescope_dec;
+    if (m_pixmap->image().valid(x, y)) {
+        moveSelection(x, y);
+        emit mouseRightPress(x, y, modifiers);
+        if (
+            m_pixmap->image().wcs_data(x, y, &ra, &dec, &telescope_ra, &telescope_dec) == 0 &&
+            m_show_wcs
+        ) {
+            emit mouseRightPressRADec(ra, dec, telescope_ra, telescope_dec, modifiers);
+        }
+    }
 }
 
 void ImageViewer::enterEvent(QEvent *event) {
-    QFrame::enterEvent(event);
-    if (m_bar_mode == ToolBarMode::AutoHidden) {
-        m_toolbar->show();
-        if (m_fit)
-            zoomFit();
-    }
+	QFrame::enterEvent(event);
+	if (m_bar_mode == ToolBarMode::AutoHidden) {
+		m_toolbar->show();
+		if (m_fit)
+			zoomFit();
+	}
 }
 
 void ImageViewer::leaveEvent(QEvent *event) {

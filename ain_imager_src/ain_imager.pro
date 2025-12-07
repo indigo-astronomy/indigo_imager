@@ -65,6 +65,8 @@ SOURCES += \
 	$$PWD/../common_src/stretcher.cpp \
 	$$PWD/../common_src/image_stats.cpp \
 	$$PWD/../common_src/dslr_raw.c \
+	$$PWD/../common_src/snr_calculator.cpp \
+	$$PWD/../common_src/snr_overlay.cpp \
 	$$PWD/../external/qcustomplot/qcustomplot.cpp
 
 
@@ -192,6 +194,8 @@ HEADERS += \
 	$$PWD/../common_src/coordconv.h \
 	$$PWD/../common_src/stretcher.h \
 	$$PWD/../common_src/image_stats.h \
+	$$PWD/../common_src/snr_calculator.h \
+	$$PWD/../common_src/snr_overlay.h \
 	$$PWD/../common_src/dslr_raw.h
 
 INCLUDEPATH += \

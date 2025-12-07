@@ -5,6 +5,8 @@
 #include <image_stats.h>
 #include <imagepreview.h>
 #include <QGraphicsPixmapItem>
+#include <snr_calculator.h>
+#include <snr_overlay.h>
 
 QT_BEGIN_NAMESPACE
 class QLabel;
@@ -111,6 +113,9 @@ public slots:
 	void onPrevious();
 	void onNext();
 
+	void showSNROverlay(bool show);
+	void calculateAndShowSNR(double x, double y);
+
 signals:
 	void imageChanged();
 	void setImage(preview_image &im);
@@ -167,6 +172,10 @@ private:
 	QAction *m_stretch_act[PREVIEW_STRETCH_COUNT];
 	QAction *m_debayer_act[DEBAYER_COUNT];
 	QAction *m_color_reference_act[COLOR_BALANCE_COUNT];
+	SNROverlay *m_snr_overlay;
+	QGraphicsEllipseItem *m_snr_star_circle;
+	QGraphicsEllipseItem *m_snr_background_ring;
+	bool m_snr_overlay_visible;
 };
 
 
