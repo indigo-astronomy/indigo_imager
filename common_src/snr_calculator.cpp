@@ -57,10 +57,11 @@ SNRResult calculateSNRTemplate(
     }
     double area_stddev = std::sqrt(area_variance / area_pixels.size());
 
-    // Star detection threshold: mean + 3σ
-    double star_threshold = area_mean + 3.0 * area_stddev;
+    // Star detection threshold: mean + 2σ (was 3σ - too strict for faint stars)
+    // This is more forgiving while still rejecting pure noise
+    double star_threshold = area_mean + 2.0 * area_stddev;
 
-    // Step 2: Find peak pixel within 8px radius that exceeds 3σ threshold
+    // Step 2: Find peak pixel within 8px radius that exceeds 2σ threshold
     double peak_value = 0;
     int peak_x = cx;
     int peak_y = cy;
@@ -84,10 +85,20 @@ SNRResult calculateSNRTemplate(
         }
     }
 
-    // Check if peak exceeds 3σ threshold
-    if (!star_detected || peak_value < star_threshold) {
+    // More robust star detection: Accept if EITHER condition is met:
+    // 1. Statistical threshold (mean + 2σ) is exceeded, OR
+    // 2. Peak has good contrast: at least 20% brighter than area mean and mean > 0
+    double contrast_ratio = (area_mean > 0) ? (peak_value / area_mean) : 0;
+    bool has_good_contrast = (contrast_ratio > 1.2) && (peak_value - area_mean > area_stddev);
+    
+    if (!star_detected && !has_good_contrast) {
+        indigo_error("SNR: No star detected at (%.1f,%.1f) - peak=%.1f, mean=%.1f, stddev=%.1f, threshold=%.1f, contrast=%.2f",
+                    click_x, click_y, peak_value, area_mean, area_stddev, star_threshold, contrast_ratio);
         return result; // No significant star detected in 8px radius
     }
+    
+    indigo_error("SNR: Star detected at (%.1f,%.1f) - peak=%.1f, mean=%.1f, threshold=%.1f, contrast=%.2f, stat_detect=%d",
+                click_x, click_y, peak_value, area_mean, star_threshold, contrast_ratio, star_detected);
 
     // Step 3: Estimate local background using robust sigma-clipped mean
     // Use pixels below mean + 1σ (likely background pixels)
@@ -107,133 +118,174 @@ SNRResult calculateSNRTemplate(
         local_background = background_pixels[background_pixels.size() / 2];
     }
 
-    // Step 4: Calculate intensity-weighted centroid (iterative refinement)
+    // Step 4: Calculate centroid around peak (small radius to avoid neighboring stars)
     double centroid_x = peak_x;
     double centroid_y = peak_y;
-
-    // Iterate to refine centroid within 8px radius
-    for (int iter = 0; iter < 5; iter++) {
-        double sum_intensity = 0;
-        double sum_x = 0;
-        double sum_y = 0;
-        int count = 0;
-
-        // Fixed radius of 8 pixels for centroid calculation
-        int refine_radius = 8;
-
-        // Use statistical threshold: mean + 2σ for centroid calculation
-        double centroid_threshold = area_mean + 2.0 * area_stddev;
-
-        for (int dy = -refine_radius; dy <= refine_radius; dy++) {
-            for (int dx = -refine_radius; dx <= refine_radius; dx++) {
-                int px = static_cast<int>(centroid_x) + dx;
-                int py = static_cast<int>(centroid_y) + dy;
-                if (px >= 0 && px < width && py >= 0 && py < height) {
+    
+    int centroid_radius = 8;
+    double centroid_threshold = local_background + area_stddev;
+    
+    double sum_intensity = 0;
+    double sum_x = 0;
+    double sum_y = 0;
+    
+    for (int dy = -centroid_radius; dy <= centroid_radius; dy++) {
+        for (int dx = -centroid_radius; dx <= centroid_radius; dx++) {
+            int px = peak_x + dx;
+            int py = peak_y + dy;
+            if (px >= 0 && px < width && py >= 0 && py < height) {
+                double dist = std::sqrt(dx * dx + dy * dy);
+                if (dist <= centroid_radius) {
                     double val = getPixelValue(data, px, py, width);
-                    // Only use pixels above threshold
                     if (val > centroid_threshold) {
                         double weight = val - local_background;
                         if (weight > 0) {
                             sum_intensity += weight;
                             sum_x += px * weight;
                             sum_y += py * weight;
-                            count++;
                         }
                     }
                 }
             }
         }
-
-        if (sum_intensity == 0 || count < 3) {
-            return result;
-        }
-
-        double new_centroid_x = sum_x / sum_intensity;
-        double new_centroid_y = sum_y / sum_intensity;
-
-        // Check convergence
-        double shift = std::sqrt(
-            (new_centroid_x - centroid_x) * (new_centroid_x - centroid_x) +
-            (new_centroid_y - centroid_y) * (new_centroid_y - centroid_y)
-        );
-
-        centroid_x = new_centroid_x;
-        centroid_y = new_centroid_y;
-
-        if (shift < 0.01) break; // Converged to 0.01 pixel accuracy
     }
+    
+    if (sum_intensity > 0) {
+        centroid_x = sum_x / sum_intensity;
+        centroid_y = sum_y / sum_intensity;
+    }
+    
+    // Multi-star detection: Check if centroid is too far from peak
+    double peak_to_centroid_dist = std::sqrt(
+        (centroid_x - peak_x) * (centroid_x - peak_x) +
+        (centroid_y - peak_y) * (centroid_y - peak_y)
+    );
+    
+    // If centroid is more than 3 pixels away from peak, likely multiple stars pulling it
+    if (peak_to_centroid_dist > 3.0) {
+        indigo_error("SNR: Centroid too far from peak (%.2f px) at (%.1f,%.1f) - likely multiple stars",
+                    peak_to_centroid_dist, click_x, click_y);
+        return result;
+    }
+    
+    indigo_error("SNR: Centroid at (%.2f,%.2f), peak at (%d,%d), distance=%.2f px",
+                centroid_x, centroid_y, peak_x, peak_y, peak_to_centroid_dist);
 
-    // Step 5: Calculate HFD using background-subtracted flux
-    // Use larger radius for flux calculation (up to 50px)
-    int max_radius = 50;
-    std::vector<std::pair<double, double>> pixel_data;
+    // Step 5: Iterative HFD calculation with growing aperture
+    // Start with small aperture and grow up to 2-3x the measured HFD
+    double hfr = 0;
+    double hfd = 0;
     double total_flux = 0;
-
-    // Detection threshold for flux calculation: mean + 1σ
-    double flux_threshold = area_mean + area_stddev;
-
-    // Collect pixels in circular aperture around refined centroid
-    int collect_left = std::max(0, static_cast<int>(centroid_x - max_radius));
-    int collect_right = std::min(width - 1, static_cast<int>(centroid_x + max_radius));
-    int collect_top = std::max(0, static_cast<int>(centroid_y - max_radius));
-    int collect_bottom = std::min(height - 1, static_cast<int>(centroid_y + max_radius));
-
-    for (int y = collect_top; y <= collect_bottom; y++) {
-        for (int x = collect_left; x <= collect_right; x++) {
-            double dist = std::sqrt(
-                (x - centroid_x) * (x - centroid_x) +
-                (y - centroid_y) * (y - centroid_y)
-            );
-            if (dist <= max_radius) {
-                double val = getPixelValue(data, x, y, width);
-                // Only include pixels above noise threshold
-                if (val > flux_threshold) {
-                    double above_bg = val - local_background;
-
-                    if (above_bg > 0) {
-                        pixel_data.push_back(std::make_pair(dist, above_bg));
-                        total_flux += above_bg;
+    
+    // Start with smaller initial aperture to avoid including neighboring stars
+    int initial_radius = 3;  // Changed from 15 to 3
+    int max_iterations = 8;   // Increased to allow more growth steps
+    int max_radius = 50;
+    
+    for (int iteration = 0; iteration < max_iterations; iteration++) {
+        std::vector<std::pair<double, double>> pixel_data;
+        total_flux = 0;
+        
+        // Determine aperture radius for this iteration
+        int aperture_radius;
+        if (iteration == 0) {
+            aperture_radius = initial_radius;
+        } else {
+            // Grow aperture more conservatively: 2.0x the current HFD (was 2.5x)
+            aperture_radius = static_cast<int>(hfd * 2.0 + 0.5);  // Round up
+            aperture_radius = std::min(aperture_radius, max_radius); // Cap at 50px
+            
+            // Don't shrink the aperture
+            if (aperture_radius < initial_radius) {
+                aperture_radius = initial_radius;
+            }
+            
+            // If aperture didn't grow from last iteration, we're done
+            static int last_aperture = 0;
+            if (iteration > 1 && aperture_radius == last_aperture) {
+                indigo_error("SNR: Converged at iteration %d (aperture stable)", iteration);
+                break;
+            }
+            last_aperture = aperture_radius;
+        }
+        
+        // Collect pixels in circular aperture around centroid
+        for (int dy = -aperture_radius; dy <= aperture_radius; dy++) {
+            for (int dx = -aperture_radius; dx <= aperture_radius; dx++) {
+                int px = static_cast<int>(centroid_x) + dx;
+                int py = static_cast<int>(centroid_y) + dy;
+                
+                if (px >= 0 && px < width && py >= 0 && py < height) {
+                    double dist = std::sqrt(dx * dx + dy * dy);
+                    if (dist <= aperture_radius) {
+                        double val = getPixelValue(data, px, py, width);
+                        double above_bg = val - local_background;
+                        
+                        if (above_bg > 0) {
+                            pixel_data.push_back(std::make_pair(dist, above_bg));
+                            total_flux += above_bg;
+                        }
                     }
                 }
             }
         }
-    }
+        
+        if (total_flux <= 0 || pixel_data.empty()) {
+            indigo_error("SNR: No flux found in iteration %d", iteration);
+            return result;
+        }
+        
+        // Sort by distance for HFR calculation
+        std::sort(pixel_data.begin(), pixel_data.end());
+        
+        // Calculate HFR (Half Flux Radius)
+        double half_flux = total_flux / 2.0;
+        double accumulated_flux = 0;
+        hfr = 0;
+        
+        for (const auto& pd : pixel_data) {
+            accumulated_flux += pd.second;
+            if (accumulated_flux >= half_flux) {
+                hfr = pd.first;
+                break;
+            }
+        }
+        
+        // Validate: HFR should not exceed aperture radius
+        if (hfr > aperture_radius) {
+            indigo_error("SNR: HFR (%.2f) exceeds aperture (%d) - likely bad data or multiple stars", 
+                        hfr, aperture_radius);
+            return result;
+        }
+        
+        hfd = hfr * 2.0;
+        
+        indigo_error("SNR: Iteration %d: aperture=%d px, HFR=%.2f, HFD=%.2f, flux=%.1f",
+                    iteration, aperture_radius, hfr, hfd, total_flux);
 
-    if (pixel_data.empty() || total_flux <= 0) {
-        return result;
-    }
-
-    // Sort by distance
-    std::sort(pixel_data.begin(), pixel_data.end(),
-        [](const std::pair<double, double>& a, const std::pair<double, double>& b) {
-            return a.first < b.first;
-        });
-
-    // Find HFR (Half Flux Radius)
-    double cumulative_flux = 0;
-    double half_flux = total_flux * 0.5;
-    double hfr = 0;
-
-    for (const auto& pixel : pixel_data) {
-        cumulative_flux += pixel.second;
-        if (cumulative_flux >= half_flux) {
-            hfr = pixel.first;
+        // Check convergence: if aperture is already 4x HFD or larger, we're done
+        if (aperture_radius >= hfd * 4.0) {
+            indigo_error("SNR: Converged at iteration %d (aperture >= 4*HFD)", iteration);
             break;
         }
     }
-
-    if (hfr <= 0 || hfr > max_radius) {
+    
+    if (hfd <= 0 || hfr <= 0) {
+        indigo_error("SNR: Invalid HFD calculated: %.2f", hfd);
+        return result;
+    }
+    
+    // Sanity check - reject if HFR is unreasonable
+    if (hfr < 0.5 || hfr > 20) {
+        indigo_error("SNR: HFR out of range: %.2f (valid range: 0.5-20)", hfr);
         return result;
     }
 
-    // Sanity check
-    if (hfr < 0.5 || hfr > 50) {
-        return result;
-    }
-
-    // Star aperture radius = 2.0 * HFR (captures ~94% of flux)
-    double star_radius = hfr * 2.0;
-    star_radius = std::min(star_radius, static_cast<double>(max_radius));
+    // Star aperture radius = 3.0 * HFR (captures ~94% of flux)
+    double star_radius = hfr * 3.0;
+    
+    // Additional safety limit: cap star radius at 25 pixels
+    star_radius = std::min(star_radius, 25.0);
 
     // Step 6: Calculate signal statistics in star aperture
     std::vector<double> signal_pixels;
