@@ -218,7 +218,11 @@ HFDInfo calculateIterativeHFD(
                 int py = static_cast<int>(centroid_y) + dy;
                 
                 if (px >= 0 && px < width && py >= 0 && py < height) {
-                    double dist = std::sqrt(dx * dx + dy * dy);
+                    // Calculate distance from actual centroid position (sub-pixel precision)
+                    double dist = std::sqrt(
+                        (px - centroid_x) * (px - centroid_x) +
+                        (py - centroid_y) * (py - centroid_y)
+                    );
                     if (dist <= aperture_radius) {
                         double val = getPixelValue(data, px, py, width);
                         double above_bg = val - local_background;
@@ -348,8 +352,8 @@ bool calculateBackgroundStatistics(
     int max_radius,
     SNRResult& result
 ) {
-    double inner_radius = star_radius * 1.5;
-    double outer_radius = star_radius * 3.0;
+    double inner_radius = star_radius * 2.5;
+    double outer_radius = star_radius * 4.0;
     outer_radius = std::min(outer_radius, static_cast<double>(max_radius));
 
     std::vector<double> bg_annulus_pixels;
@@ -417,17 +421,39 @@ bool calculateBackgroundStatistics(
 }
 
 void computeFinalSNR(SNRResult& result, double centroid_x, double centroid_y, double star_radius) {
-    double net_signal = result.signal_mean - result.background_mean;
-    double noise = result.background_stddev;
-
-    if (noise > 0) {
-        result.snr = net_signal / noise;
+    // Calculate total signal (sum of all pixels in aperture)
+    double total_signal = result.signal_mean * result.star_pixels;
+    
+    // Calculate total background in star aperture
+    double total_background = result.background_mean * result.star_pixels;
+    
+    // Net signal (background-subtracted)
+    double net_signal = total_signal - total_background;
+    
+    // Proper aperture photometry SNR formula:
+    // SNR = net_signal / sqrt(total_signal + n_pixels * background_variance)
+    // 
+    // This accounts for:
+    // - Photon noise from the star (sqrt(total_signal))
+    // - Photon noise from background (sqrt(n_pixels * background_variance))
+    // - Read noise is included in background_stddev if measured from the image
+    
+    double background_variance = result.background_stddev * result.background_stddev;
+    double noise_squared = total_signal + result.star_pixels * background_variance;
+    
+    if (noise_squared > 0) {
+        result.snr = net_signal / std::sqrt(noise_squared);
+    } else {
+        result.snr = 0;
     }
 
     result.star_radius = star_radius;
     result.star_x = centroid_x;
     result.star_y = centroid_y;
-    result.valid = (result.snr > 0 && result.snr < 1000);
+    result.valid = (result.snr > 0 && result.snr < 10000);
+    
+    indigo_error("SNR: Final - total_signal=%.1f, net_signal=%.1f, noise=%.1f, SNR=%.2f",
+                total_signal, net_signal, std::sqrt(noise_squared), result.snr);
 }
 
 template <typename T>
