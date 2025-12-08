@@ -117,7 +117,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	capture_frame_layout->addWidget(label, row, 0);
 	m_object_name = new QLineEdit();
 	m_object_name->setPlaceholderText("Image file prefix e.g. M16, M33 ...");
-	m_object_name->setToolTip("Object name or any text that will be used as a file name prefix.\nIf empty images will not be saved.");
+	m_object_name->setToolTip("Object name or any text that will be used as a file name prefix.\nIf empty images will not be saved.\nSpecial characters like / \\ $ will be replaced with _");
 	capture_frame_layout->addWidget(m_object_name, row, 1, 1, 5);
 	connect(m_object_name, &QLineEdit::textChanged, this, &ImagerWindow::on_object_name_changed);
 
@@ -845,16 +845,52 @@ void ImagerWindow::on_temperature_set(double value) {
 	});
 }
 
+static void sanitize(char *buffer) {
+	for (char *p = buffer; *p; p++) {
+		if (isalnum(*p)) {
+			continue;
+		}
+		if (*p == '-' || *p == '_' || *p == '.' || *p == ' ' ||
+			*p == '(' || *p == ')' || *p == '[' || *p == ']' ||
+			*p == '{' || *p == '}' || *p == '+' || *p == '=' ||
+			*p == '@' || *p == '#' || *p == '$' || *p == '%' ||
+			*p == '&' || *p == '!' || *p == '~' || *p == '^') {
+			continue;
+		}
+		*p = '_';
+	}
+}
+
 void ImagerWindow::on_object_name_changed(const QString &object_name) {
 	if (m_is_sequence) {
 		return;
 	}
+
+	QByteArray ba = object_name.toUtf8();
+	char sanitized_buffer[INDIGO_VALUE_SIZE];
+	strncpy(sanitized_buffer, ba.constData(), INDIGO_VALUE_SIZE - 1);
+	sanitized_buffer[INDIGO_VALUE_SIZE - 1] = '\0';
+	sanitize(sanitized_buffer);
+	QString sanitized_name = QString::fromUtf8(sanitized_buffer);
+
+	if (sanitized_name != object_name) {
+		// Temporarily disconnect to avoid recursive signal
+		disconnect(m_object_name, &QLineEdit::textChanged, this, &ImagerWindow::on_object_name_changed);
+
+		int cursor_pos = m_object_name->cursorPosition();
+		m_object_name->setText(sanitized_name);
+		m_object_name->setCursorPosition(qMin(cursor_pos, sanitized_name.length()));
+
+		connect(m_object_name, &QLineEdit::textChanged, this, &ImagerWindow::on_object_name_changed);
+		return;
+	}
+
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
 
-		change_ccd_localmode_property(selected_agent, object_name);
+		change_ccd_localmode_property(selected_agent, sanitized_name);
 	});
 }
 
