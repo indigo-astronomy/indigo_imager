@@ -15,12 +15,13 @@ struct SNRResult {
     double star_radius;
     double star_x;
     double star_y;
+    double hfd;  // Half Flux Diameter
     bool valid;
 
     SNRResult() : snr(0), signal_mean(0), signal_stddev(0),
                   background_mean(0), background_stddev(0),
                   star_pixels(0), background_pixels(0),
-                  star_radius(0), star_x(0), star_y(0), valid(false) {}
+                  star_radius(0), star_x(0), star_y(0), hfd(0), valid(false) {}
 };
 
 // Calculate SNR for a star at given coordinates

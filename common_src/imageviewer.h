@@ -115,6 +115,7 @@ public slots:
 
 	void showSNROverlay(bool show);
 	void calculateAndShowSNR(double x, double y);
+	void updateSNROverlayPosition();
 
 signals:
 	void imageChanged();
@@ -176,6 +177,9 @@ private:
 	QGraphicsEllipseItem *m_snr_star_circle;
 	QGraphicsEllipseItem *m_snr_background_ring;
 	bool m_snr_overlay_visible;
+	double m_snr_star_x;
+	double m_snr_star_y;
+	double m_snr_star_radius;
 };
 
 

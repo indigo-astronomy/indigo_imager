@@ -544,6 +544,9 @@ SNRResult calculateSNRTemplate(
 
     // Step 8: Compute final SNR
     computeFinalSNR(result, centroid.centroid_x, centroid.centroid_y, star_radius);
+    
+    // Store HFD value
+    result.hfd = hfd_info.hfd;
 
     return result;
 }

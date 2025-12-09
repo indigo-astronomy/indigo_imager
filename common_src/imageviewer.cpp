@@ -44,6 +44,12 @@ protected:
 		}
 	}
 
+	void scrollContentsBy(int dx, int dy) override {
+		QGraphicsView::scrollContentsBy(dx, dy);
+		// Update SNR overlay position when scrolling
+		m_viewer->updateSNROverlayPosition();
+	}
+
 	void enterEvent(QEvent *event) override {
 		QGraphicsView::enterEvent(event);
 		viewport()->setCursor(Qt::CrossCursor);
@@ -68,6 +74,9 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 	, m_zoom_level(0)
 	, m_fit(true)
 	, m_bar_mode(ToolBarMode::Visible)
+	, m_snr_star_x(0)
+	, m_snr_star_y(0)
+	, m_snr_star_radius(0)
 {
 	auto scene = new QGraphicsScene(this);
 	m_view = new GraphicsView(this);
@@ -747,6 +756,7 @@ void ImageViewer::zoomFit() {
 	indigo_debug("Zoom FIT = %.2f", m_zoom_level);
 	m_fit = true;
 	emit zoomChanged(m_view->transform().m11());
+	updateSNROverlayPosition();  // Update SNR overlay position after zoom
 }
 
 void ImageViewer::zoomOriginal() {
@@ -755,6 +765,7 @@ void ImageViewer::zoomOriginal() {
 	indigo_debug("Zoom 1:1 = %.2f", m_zoom_level);
 	m_fit = false;
 	setMatrix();
+	updateSNROverlayPosition();  // Update SNR overlay position after zoom
 }
 
 void ImageViewer::zoomIn() {
@@ -778,6 +789,7 @@ void ImageViewer::zoomIn() {
 	indigo_debug("Zoom IN = %.2f", m_zoom_level);
 	m_fit = false;
 	setMatrix();
+	updateSNROverlayPosition();  // Update SNR overlay position after zoom
 }
 
 void ImageViewer::zoomOut() {
@@ -805,6 +817,7 @@ void ImageViewer::zoomOut() {
 	indigo_debug("Zoom OUT = %.2f (fit = %.2f)", m_zoom_level, zoom_min);
 	m_fit = false;
 	setMatrix();
+	updateSNROverlayPosition();  // Update SNR overlay position after zoom
 }
 
 void ImageViewer::mouseAt(double x, double y) {
@@ -891,10 +904,23 @@ void ImageViewer::calculateAndShowSNR(double x, double y) {
     );
 
     if (result.valid) {
-        // Position overlay widget
-        QPoint view_pos = m_view->mapFromScene(QPointF(result.star_x + 50, result.star_y - 50));
-        m_snr_overlay->move(view_pos);
+        // Store star position for scroll updates
+        m_snr_star_x = result.star_x;
+        m_snr_star_y = result.star_y;
+        m_snr_star_radius = result.star_radius;
+        
+        // Set the result first so the overlay gets sized properly
         m_snr_overlay->setSNRResult(result);
+        
+        // Show the overlay and ensure visibility first
+        showSNROverlay(true);
+        
+        // Force the widget to update its geometry
+        m_snr_overlay->updateGeometry();
+        
+        // Now update position after overlay has been sized and shown
+        updateSNROverlayPosition();
+        
         m_snr_overlay->raise();
 
         // Draw star aperture circle
@@ -912,15 +938,67 @@ void ImageViewer::calculateAndShowSNR(double x, double y) {
             result.star_x - result.star_radius * 3.0,
             result.star_y - result.star_radius * 3.0
         );
-
-        showSNROverlay(true);
     } else {
+        // No star detected - position overlay at click location with small offset
+        // Clear star position to prevent zoom/scroll updates
+        m_snr_star_radius = 0;
+        
+        QPoint view_pos = m_view->mapFromScene(QPointF(x + 20, y + 20));
+        m_snr_overlay->move(view_pos);
+        
         m_snr_overlay->setSNRResult(result);
         m_snr_overlay->setVisible(true);
         m_snr_overlay->raise();
         m_snr_star_circle->setVisible(false);
         m_snr_background_ring->setVisible(false);
+        
+        // Set flag but position won't update on zoom/scroll due to m_snr_star_radius = 0
+        m_snr_overlay_visible = true;
     }
+}
+
+void ImageViewer::updateSNROverlayPosition() {
+    if (!m_snr_overlay_visible) {
+        return;
+    }
+    
+    // Only update position if we have valid star coordinates
+    // (i.e., a star was actually detected, not just "no star detected" message)
+    if (m_snr_star_radius <= 0) {
+        return;
+    }
+    
+    // Ensure the widget has correct size
+    m_snr_overlay->adjustSize();
+    int overlay_width = m_snr_overlay->width();
+    int overlay_height = m_snr_overlay->height();
+    
+    // Annulus outer radius in scene coordinates (image pixels)
+    double annulus_radius_scene = m_snr_star_radius * 3.0;
+    
+    // Convert annulus radius from scene to view coordinates (accounts for zoom)
+    QPointF star_view = m_view->mapFromScene(QPointF(m_snr_star_x, m_snr_star_y));
+    QPointF annulus_edge_view = m_view->mapFromScene(QPointF(m_snr_star_x + annulus_radius_scene, m_snr_star_y + annulus_radius_scene));
+    double annulus_radius_view = annulus_edge_view.x() - star_view.x(); // View space distance
+    
+    // Default: position top-left corner of overlay at bottom-right of annulus (in view coordinates)
+    QPoint view_pos(star_view.x() + annulus_radius_view, star_view.y() + annulus_radius_view);
+    
+    QRect viewport_rect = m_view->viewport()->rect();
+    
+    // Check if widget goes off the right edge
+    if (view_pos.x() + overlay_width > viewport_rect.right()) {
+        // Flip to left: position bottom-right corner of overlay at top-left of annulus
+        view_pos.setX(star_view.x() - annulus_radius_view - overlay_width);
+    }
+    
+    // Check if widget goes off the bottom edge
+    if (view_pos.y() + overlay_height > viewport_rect.bottom()) {
+        // Flip to top: position bottom-right corner of overlay at top-left of annulus
+        view_pos.setY(star_view.y() - annulus_radius_view - overlay_height);
+    }
+    
+    m_snr_overlay->move(view_pos);
 }
 
 // Modify mouseRightPressAt to trigger SNR calculation on Ctrl+Click:
