@@ -22,11 +22,11 @@ const int HFD_MAX_ITERATIONS = 8;
 const int HFD_MAX_RADIUS = 50;
 const double HFD_APERTURE_MULTIPLIER = 2.0;
 const double HFD_CONVERGENCE_FACTOR = 6.0;
-const double HFD_MIN_VALID = 0.5;
-const double HFD_MAX_VALID = 20.0;
-const double HFD_GROWTH_RATIO_ITER1 = 1.8;
-const double HFD_GROWTH_RATIO_LATER = 1.2;
-const double HFD_MAX_REASONABLE = 15.0;
+const double HFR_MIN_VALID = 0.25;
+const double HFR_MAX_VALID = 20.0;
+const double HFR_MAX_REASONABLE = 15.0;
+const double HFR_GROWTH_RATIO_ITER1 = 1.8;
+const double HFR_GROWTH_RATIO_LATER = 1.2;
 
 // Star aperture
 const double STAR_APERTURE_MULTIPLIER = 3.0;  // HFR multiplier for star aperture
@@ -212,7 +212,6 @@ HFDInfo calculateIterativeHFD(
 	HFDInfo info = {0, 0, false};
 
 	double hfr = 0;
-	double hfd = 0;
 	double total_flux = 0;
 	double prev_hfr = 0;
 
@@ -225,7 +224,7 @@ HFDInfo calculateIterativeHFD(
 		if (iteration == 0) {
 			aperture_radius = HFD_INITIAL_RADIUS;
 		} else {
-			aperture_radius = static_cast<int>(hfd * HFD_APERTURE_MULTIPLIER + 0.5);
+			aperture_radius = static_cast<int>(hfr * 2.0 * HFD_APERTURE_MULTIPLIER + 0.5);
 			aperture_radius = std::min(aperture_radius, HFD_MAX_RADIUS);
 
 			if (aperture_radius < HFD_INITIAL_RADIUS) {
@@ -293,32 +292,27 @@ HFDInfo calculateIterativeHFD(
 			return info;
 		}
 
-		hfd = hfr * 2.0;
-
 		indigo_error("SNR: Iteration %d: aperture=%d px, HFR=%.2f, HFD=%.2f, flux=%.1f",
-					iteration, aperture_radius, hfr, hfd, total_flux);
+					iteration, aperture_radius, hfr, hfr * 2.0, total_flux);
 
 		// Stop if HFR is growing too fast (likely including neighboring stars or noise)
 		if (iteration > 0 && prev_hfr > 0) {
 			double hfr_ratio = hfr / prev_hfr;
-			if ((hfr_ratio > HFD_GROWTH_RATIO_ITER1 && iteration == 1) || (hfr_ratio > HFD_GROWTH_RATIO_LATER && iteration > 1)) {
-				indigo_error("SNR: Stopping - HFR growing too fast (%.2f -> %.2f, ratio %.2f)",
-							prev_hfr, hfr, hfr_ratio);
+			if ((hfr_ratio > HFR_GROWTH_RATIO_ITER1 && iteration == 1) || (hfr_ratio > HFR_GROWTH_RATIO_LATER && iteration > 1)) {
+				indigo_error("SNR: Stopping - HFR growing too fast (%.2f -> %.2f, ratio %.2f)", prev_hfr, hfr, hfr_ratio);
 
 				// Use previous iteration's result
 				hfr = prev_hfr;
-				hfd = hfr * 2.0;
 				break;
 			}
 		}
 
 		// Stop if HFR exceeds reasonable range for a star
-		if (hfr > HFD_MAX_REASONABLE) {
+		if (hfr > HFR_MAX_REASONABLE) {
 			indigo_error("SNR: Stopping - HFR too large (%.2f), likely not a single star", hfr);
 			// Use previous iteration's result if available
 			if (iteration > 0 && prev_hfr > 0) {
 				hfr = prev_hfr;
-				hfd = hfr * 2.0;
 			}
 			break;
 		}
@@ -332,18 +326,18 @@ HFDInfo calculateIterativeHFD(
 		prev_hfr = hfr;
 	}
 
-	if (hfd <= 0 || hfr <= 0) {
-		indigo_error("SNR: Invalid HFD calculated: %.2f", hfd);
+	if (hfr <= 0) {
+		indigo_error("SNR: Invalid HFR calculated: %.2f", hfr);
 		return info;
 	}
 
-	if (hfr < HFD_MIN_VALID || hfr > HFD_MAX_VALID) {
+	if (hfr < HFR_MIN_VALID || hfr > HFR_MAX_VALID) {
 		indigo_error("SNR: HFR out of range: %.2f (valid range: 0.5-20)", hfr);
 		return info;
 	}
 
 	info.hfr = hfr;
-	info.hfd = hfd;
+	info.hfd = hfr * 2.0;
 	info.valid = true;
 	return info;
 }
