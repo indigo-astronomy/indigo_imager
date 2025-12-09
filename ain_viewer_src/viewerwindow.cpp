@@ -181,6 +181,7 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_imager_viewer->setStretch(conf.preview_stretch_level);
 	m_imager_viewer->setDebayer(conf.preview_bayer_pattern);
 	m_imager_viewer->setBalance(conf.preview_color_balance);
+	m_imager_viewer->enableSNRMode(true);  // Enable SNR mode for ain_viewer
 
 	connect(m_imager_viewer, &ImageViewer::stretchChanged, this, &ViewerWindow::on_stretch_changed);
 	connect(m_imager_viewer, &ImageViewer::debayerChanged, this, &ViewerWindow::on_debayer_changed);

@@ -422,6 +422,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_imager_viewer->setStretch(conf.preview_stretch_level);
 	m_imager_viewer->setDebayer(conf.preview_bayer_pattern);
 	m_imager_viewer->setBalance(conf.preview_color_balance);
+	m_imager_viewer->enableSNRMode(true);  // Enable SNR mode for capture tab
 	m_visible_viewer = m_imager_viewer;
 
 	// Image guide viewer
@@ -431,6 +432,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_guider_viewer->setStretch(conf.guider_stretch_level);
 	m_guider_viewer->setDebayer(BAYER_PAT_AUTO);
 	m_guider_viewer->setBalance(conf.guider_color_balance);
+	m_guider_viewer->enableSNRMode(true);  // Enable SNR mode for guider tab
 	m_guider_viewer->setVisible(false);
 
 	m_sequence_editor2 = new IndigoSequence();
@@ -1846,8 +1848,10 @@ void ImagerWindow::togglePolarAlignmentOverlay(bool show) {
 		m_polarAlignWidget->setAttribute(Qt::WA_TransparentForMouseEvents, true);
 		m_polarAlignWidget->setWidgetOpacity(0.5);
 		m_polarAlignWidget->raise();
+		m_imager_viewer->enableSNRMode(false);
 		m_polarAlignWidget->setVisible(true);
 	} else {
+		m_imager_viewer->enableSNRMode(true);
 		m_polarAlignWidget->setVisible(false);
 	}
 }

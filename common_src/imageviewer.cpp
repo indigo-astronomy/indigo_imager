@@ -158,6 +158,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 
 	m_snr_overlay = new SNROverlay(m_view);
 	m_snr_overlay->setVisible(false);
+	m_snr_mode_enabled = false;  // SNR mode disabled by default
 	m_snr_overlay_visible = false;
 
 	// Create SNR visualization circles
@@ -1026,14 +1027,21 @@ void ImageViewer::mouseRightPressAt(double x, double y, Qt::KeyboardModifiers mo
 
 // Handle Ctrl+Left-click for SNR calculation
 void ImageViewer::mouseLeftPressAt(double x, double y, Qt::KeyboardModifiers modifiers) {
-    // Ctrl+LeftClick = calculate SNR
-    if (modifiers & Qt::ControlModifier) {
+    // Only respond to Ctrl+Click if SNR mode is enabled
+    if ((modifiers & Qt::ControlModifier) && m_snr_mode_enabled) {
         calculateAndShowSNR(x, y);
         return;
     }
 
     // Hide SNR overlay if clicking elsewhere without Ctrl
     if (m_snr_overlay_visible) {
+        showSNROverlay(false);
+    }
+}
+
+void ImageViewer::enableSNRMode(bool enable) {
+    m_snr_mode_enabled = enable;
+    if (!enable && m_snr_overlay_visible) {
         showSNROverlay(false);
     }
 }
