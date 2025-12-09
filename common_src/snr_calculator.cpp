@@ -273,9 +273,10 @@ HFDInfo calculateIterativeHFD(
         // Stop if HFR is growing too fast (likely including neighboring stars or noise)
         if (iteration > 0 && prev_hfr > 0) {
             double hfr_ratio = hfr / prev_hfr;
-            if (hfr_ratio > 1.8) {
+            if ((hfr_ratio > 1.8 && iteration == 1) || (hfr_ratio > 1.2 && iteration > 1)) {
                 indigo_error("SNR: Stopping - HFR growing too fast (%.2f -> %.2f, ratio %.2f)", 
                             prev_hfr, hfr, hfr_ratio);
+
                 // Use previous iteration's result
                 hfr = prev_hfr;
                 hfd = hfr * 2.0;
@@ -295,8 +296,8 @@ HFDInfo calculateIterativeHFD(
         }
 
         // Check convergence
-        if (aperture_radius >= hfd * 4.0) {
-            indigo_error("SNR: Converged at iteration %d (aperture >= 4*HFD)", iteration);
+        if (aperture_radius >= hfr * 6.0) {
+            indigo_error("SNR: Converged at iteration %d (aperture >= 6*HFR)", iteration);
             break;
         }
         
