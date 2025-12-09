@@ -186,6 +186,7 @@ HFDInfo calculateIterativeHFD(
     double hfr = 0;
     double hfd = 0;
     double total_flux = 0;
+    double prev_hfr = 0;
     
     for (int iteration = 0; iteration < max_iterations; iteration++) {
         std::vector<std::pair<double, double>> pixel_data;
@@ -269,11 +270,37 @@ HFDInfo calculateIterativeHFD(
         indigo_error("SNR: Iteration %d: aperture=%d px, HFR=%.2f, HFD=%.2f, flux=%.1f",
                     iteration, aperture_radius, hfr, hfd, total_flux);
 
+        // Stop if HFR is growing too fast (likely including neighboring stars or noise)
+        if (iteration > 0 && prev_hfr > 0) {
+            double hfr_ratio = hfr / prev_hfr;
+            if (hfr_ratio > 1.8) {
+                indigo_error("SNR: Stopping - HFR growing too fast (%.2f -> %.2f, ratio %.2f)", 
+                            prev_hfr, hfr, hfr_ratio);
+                // Use previous iteration's result
+                hfr = prev_hfr;
+                hfd = hfr * 2.0;
+                break;
+            }
+        }
+        
+        // Stop if HFR exceeds reasonable range for a star
+        if (hfr > 15.0) {
+            indigo_error("SNR: Stopping - HFR too large (%.2f), likely not a single star", hfr);
+            // Use previous iteration's result if available
+            if (iteration > 0 && prev_hfr > 0) {
+                hfr = prev_hfr;
+                hfd = hfr * 2.0;
+            }
+            break;
+        }
+
         // Check convergence
         if (aperture_radius >= hfd * 4.0) {
             indigo_error("SNR: Converged at iteration %d (aperture >= 4*HFD)", iteration);
             break;
         }
+        
+        prev_hfr = hfr;
     }
     
     if (hfd <= 0 || hfr <= 0) {
