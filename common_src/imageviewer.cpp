@@ -943,7 +943,12 @@ void ImageViewer::calculateAndShowSNR(double x, double y) {
         // Clear star position to prevent zoom/scroll updates
         m_snr_star_radius = 0;
         
-        QPoint view_pos = m_view->mapFromScene(QPointF(x + 20, y + 20));
+        // Convert click position from scene to view coordinates
+        QPointF click_view = m_view->mapFromScene(QPointF(x, y));
+        
+        // Add fixed offset in VIEW coordinates (not scene coordinates)
+        // This maintains consistent offset regardless of zoom level
+        QPoint view_pos(click_view.x() + 10, click_view.y() + 10);
         m_snr_overlay->move(view_pos);
         
         m_snr_overlay->setSNRResult(result);

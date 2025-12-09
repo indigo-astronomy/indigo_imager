@@ -16,7 +16,7 @@ SNROverlay::SNROverlay(QWidget *parent)
         "background-color: rgba(0,0,0,40%); "
         "color: rgba(200,200,200,100%); "
         "font-family: monospace; "
-        "font-size: 11px; "
+        "font-size: 12px; "
         "padding: 6px;"
     );
     m_info_label->setTextFormat(Qt::RichText);
@@ -36,23 +36,33 @@ void SNROverlay::setSNRResult(const SNRResult &result) {
     }
 
     // Determine quality text and color based on SNR value
+    // Scale based on typical astronomical requirements:
+    // SNR < 3: Barely detectable (3-sigma detection limit)
+    // SNR 3-5: Detection but unreliable photometry
+    // SNR 5-10: Usable for basic photometry
+    // SNR 10-20: Good photometry
+    // SNR 20-50: Very good photometry (< 5% error)
+    // SNR 50+: Excellent precision (< 2% error)
     QString qualityText;
     QString qualityColor;
-    if (result.snr < 5.0) {
-        qualityText = "Poor";
+    if (result.snr < 3.0) {
+        qualityText = "Marginal";
         qualityColor = "#FF0000";  // Red
+    } else if (result.snr < 5.0) {
+        qualityText = "Detection";
+        qualityColor = "#FF6600";  // Orange-red
     } else if (result.snr < 10.0) {
-        qualityText = "Fair";
+        qualityText = "Usable";
         qualityColor = "#FFA500";  // Orange
     } else if (result.snr < 20.0) {
         qualityText = "Good";
         qualityColor = "#FFFF00";  // Yellow
     } else if (result.snr < 50.0) {
         qualityText = "Very Good";
-        qualityColor = "#90EE90";  // Light green
+        qualityColor = "#9ABD32";  // Yellow-green
     } else {
         qualityText = "Excellent";
-        qualityColor = "#00FF00";  // Green
+        qualityColor = "#00DD00";  // Bright green
     }
 
     QString info = QString(
