@@ -87,6 +87,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 	scene->addItem(m_pixmap);
 	connect(m_pixmap, SIGNAL(mouseMoved(double,double)), SLOT(mouseAt(double,double)));
 	connect(m_pixmap, SIGNAL(mouseRightPress(double, double, Qt::KeyboardModifiers)), SLOT(mouseRightPressAt(double, double, Qt::KeyboardModifiers)));
+	connect(m_pixmap, SIGNAL(mouseLeftPress(double, double, Qt::KeyboardModifiers)), SLOT(mouseLeftPressAt(double, double, Qt::KeyboardModifiers)));
 
 	m_ref_x = new QGraphicsLineItem(25,0,25,50, m_pixmap);
 	QPen pen;
@@ -908,19 +909,19 @@ void ImageViewer::calculateAndShowSNR(double x, double y) {
         m_snr_star_x = result.star_x;
         m_snr_star_y = result.star_y;
         m_snr_star_radius = result.star_radius;
-        
+
         // Set the result first so the overlay gets sized properly
         m_snr_overlay->setSNRResult(result);
-        
+
         // Show the overlay and ensure visibility first
         showSNROverlay(true);
-        
+
         // Force the widget to update its geometry
         m_snr_overlay->updateGeometry();
-        
+
         // Now update position after overlay has been sized and shown
         updateSNROverlayPosition();
-        
+
         m_snr_overlay->raise();
 
         // Draw star aperture circle
@@ -942,21 +943,21 @@ void ImageViewer::calculateAndShowSNR(double x, double y) {
         // No star detected - position overlay at click location with small offset
         // Clear star position to prevent zoom/scroll updates
         m_snr_star_radius = 0;
-        
+
         // Convert click position from scene to view coordinates
         QPointF click_view = m_view->mapFromScene(QPointF(x, y));
-        
+
         // Add fixed offset in VIEW coordinates (not scene coordinates)
         // This maintains consistent offset regardless of zoom level
         QPoint view_pos(click_view.x() + 10, click_view.y() + 10);
         m_snr_overlay->move(view_pos);
-        
+
         m_snr_overlay->setSNRResult(result);
         m_snr_overlay->setVisible(true);
         m_snr_overlay->raise();
         m_snr_star_circle->setVisible(false);
         m_snr_background_ring->setVisible(false);
-        
+
         // Set flag but position won't update on zoom/scroll due to m_snr_star_radius = 0
         m_snr_overlay_visible = true;
     }
@@ -966,60 +967,49 @@ void ImageViewer::updateSNROverlayPosition() {
     if (!m_snr_overlay_visible) {
         return;
     }
-    
+
     // Only update position if we have valid star coordinates
     // (i.e., a star was actually detected, not just "no star detected" message)
     if (m_snr_star_radius <= 0) {
         return;
     }
-    
+
     // Ensure the widget has correct size
     m_snr_overlay->adjustSize();
     int overlay_width = m_snr_overlay->width();
     int overlay_height = m_snr_overlay->height();
-    
+
     // Annulus outer radius in scene coordinates (image pixels)
     double annulus_radius_scene = m_snr_star_radius * 3.0;
-    
+
     // Convert annulus radius from scene to view coordinates (accounts for zoom)
     QPointF star_view = m_view->mapFromScene(QPointF(m_snr_star_x, m_snr_star_y));
     QPointF annulus_edge_view = m_view->mapFromScene(QPointF(m_snr_star_x + annulus_radius_scene, m_snr_star_y + annulus_radius_scene));
     double annulus_radius_view = annulus_edge_view.x() - star_view.x(); // View space distance
-    
+
     // Default: position top-left corner of overlay at bottom-right of annulus (in view coordinates)
     QPoint view_pos(star_view.x() + annulus_radius_view, star_view.y() + annulus_radius_view);
-    
+
     QRect viewport_rect = m_view->viewport()->rect();
-    
+
     // Check if widget goes off the right edge
     if (view_pos.x() + overlay_width > viewport_rect.right()) {
         // Flip to left: position bottom-right corner of overlay at top-left of annulus
         view_pos.setX(star_view.x() - annulus_radius_view - overlay_width);
     }
-    
+
     // Check if widget goes off the bottom edge
     if (view_pos.y() + overlay_height > viewport_rect.bottom()) {
         // Flip to top: position bottom-right corner of overlay at top-left of annulus
         view_pos.setY(star_view.y() - annulus_radius_view - overlay_height);
     }
-    
+
     m_snr_overlay->move(view_pos);
 }
 
-// Modify mouseRightPressAt to trigger SNR calculation on Ctrl+Click:
+// Handle right-click - restore original behavior with WCS coordinates
 void ImageViewer::mouseRightPressAt(double x, double y, Qt::KeyboardModifiers modifiers) {
     indigo_debug("RIGHT CLICK COORDS: %f %f", x, y);
-
-    // Ctrl+RightClick = calculate SNR (if SNR mode is enabled)
-    if ((modifiers & Qt::ControlModifier)) {
-        calculateAndShowSNR(x, y);
-        return;
-    }
-
-    // Hide SNR overlay if clicking elsewhere
-    if (m_snr_overlay_visible && !(modifiers & Qt::ControlModifier)) {
-        showSNROverlay(false);
-    }
 
     double ra, dec, telescope_ra, telescope_dec;
     if (m_pixmap->image().valid(x, y)) {
@@ -1031,6 +1021,20 @@ void ImageViewer::mouseRightPressAt(double x, double y, Qt::KeyboardModifiers mo
         ) {
             emit mouseRightPressRADec(ra, dec, telescope_ra, telescope_dec, modifiers);
         }
+    }
+}
+
+// Handle Ctrl+Left-click for SNR calculation
+void ImageViewer::mouseLeftPressAt(double x, double y, Qt::KeyboardModifiers modifiers) {
+    // Ctrl+LeftClick = calculate SNR
+    if (modifiers & Qt::ControlModifier) {
+        calculateAndShowSNR(x, y);
+        return;
+    }
+
+    // Hide SNR overlay if clicking elsewhere without Ctrl
+    if (m_snr_overlay_visible) {
+        showSNROverlay(false);
     }
 }
 
@@ -1243,10 +1247,13 @@ void PixmapItem::setImage(preview_image im) {
 }
 
 void PixmapItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
-		if(event->button() == Qt::RightButton) {
-			auto pos = event->pos();
-			emit mouseRightPress(pos.x(), pos.y(), event->modifiers());
-		}
+	if(event->button() == Qt::RightButton) {
+		auto pos = event->pos();
+		emit mouseRightPress(pos.x(), pos.y(), event->modifiers());
+	} else if(event->button() == Qt::LeftButton) {
+		auto pos = event->pos();
+		emit mouseLeftPress(pos.x(), pos.y(), event->modifiers());
+	}
 	QGraphicsItem::mousePressEvent(event);
 }
 

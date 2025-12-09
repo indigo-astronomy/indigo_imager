@@ -93,6 +93,7 @@ public slots:
 	void zoomOut();
 	void mouseAt(double x, double y);
 	void mouseRightPressAt(double x, double y, Qt::KeyboardModifiers modifiers);
+	void mouseLeftPressAt(double x, double y, Qt::KeyboardModifiers modifiers);
 
 	void stretchNone();
 	void stretchSlight();
@@ -197,6 +198,7 @@ signals:
 	void imageChanged(const preview_image &);
 	void sizeChanged(int w, int h);
 	void mouseRightPress(double x, double y, Qt::KeyboardModifiers);
+	void mouseLeftPress(double x, double y, Qt::KeyboardModifiers);
 	void mouseMoved(double x, double y);
 
 protected:
