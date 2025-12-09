@@ -177,12 +177,15 @@ private:
 	QAction *m_color_reference_act[COLOR_BALANCE_COUNT];
 	SNROverlay *m_snr_overlay;
 	QGraphicsEllipseItem *m_snr_star_circle;
-	QGraphicsEllipseItem *m_snr_background_ring;
+	QGraphicsEllipseItem *m_snr_background_inner_ring;
+	QGraphicsEllipseItem *m_snr_background_outer_ring;
 	bool m_snr_mode_enabled;
 	bool m_snr_overlay_visible;
 	double m_snr_star_x;
 	double m_snr_star_y;
 	double m_snr_star_radius;
+	double m_snr_background_inner_radius;
+	double m_snr_background_outer_radius;
 };
 
 

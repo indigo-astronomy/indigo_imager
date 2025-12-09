@@ -77,6 +77,8 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 	, m_snr_star_x(0)
 	, m_snr_star_y(0)
 	, m_snr_star_radius(0)
+	, m_snr_background_inner_radius(0)
+	, m_snr_background_outer_radius(0)
 {
 	auto scene = new QGraphicsScene(this);
 	m_view = new GraphicsView(this);
@@ -174,12 +176,21 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 	m_snr_star_circle->setOpacity(0.7);
 	m_snr_star_circle->setVisible(false);
 
+	// Inner annulus boundary (yellow)
 	snr_pen.setColor(QColor(255, 255, 0));
-	m_snr_background_ring = new QGraphicsEllipseItem(0, 0, 60, 60, m_pixmap);
-	m_snr_background_ring->setBrush(QBrush(Qt::NoBrush));
-	m_snr_background_ring->setPen(snr_pen);
-	m_snr_background_ring->setOpacity(0.5);
-	m_snr_background_ring->setVisible(false);
+	m_snr_background_inner_ring = new QGraphicsEllipseItem(0, 0, 40, 40, m_pixmap);
+	m_snr_background_inner_ring->setBrush(QBrush(Qt::NoBrush));
+	m_snr_background_inner_ring->setPen(snr_pen);
+	m_snr_background_inner_ring->setOpacity(0.5);
+	m_snr_background_inner_ring->setVisible(false);
+
+	// Outer annulus boundary (yellow)
+	snr_pen.setColor(QColor(255, 255, 0));
+	m_snr_background_outer_ring = new QGraphicsEllipseItem(0, 0, 60, 60, m_pixmap);
+	m_snr_background_outer_ring->setBrush(QBrush(Qt::NoBrush));
+	m_snr_background_outer_ring->setPen(snr_pen);
+	m_snr_background_outer_ring->setOpacity(0.5);
+	m_snr_background_outer_ring->setVisible(false);
 
 	m_extra_selections_visible = false;
 
@@ -887,7 +898,8 @@ void ImageViewer::showSNROverlay(bool show) {
     m_snr_overlay_visible = show;
     m_snr_overlay->setVisible(show);
     m_snr_star_circle->setVisible(show);
-    m_snr_background_ring->setVisible(show);
+    m_snr_background_inner_ring->setVisible(show);
+    m_snr_background_outer_ring->setVisible(show);
 }
 
 void ImageViewer::calculateAndShowSNR(double x, double y) {
@@ -910,6 +922,8 @@ void ImageViewer::calculateAndShowSNR(double x, double y) {
         m_snr_star_x = result.star_x;
         m_snr_star_y = result.star_y;
         m_snr_star_radius = result.star_radius;
+        m_snr_background_inner_radius = result.background_inner_radius;
+        m_snr_background_outer_radius = result.background_outer_radius;
 
         // Set the result first so the overlay gets sized properly
         m_snr_overlay->setSNRResult(result);
@@ -925,6 +939,11 @@ void ImageViewer::calculateAndShowSNR(double x, double y) {
 
         m_snr_overlay->raise();
 
+        // Show SNR visualization circles
+        m_snr_star_circle->setVisible(true);
+        m_snr_background_inner_ring->setVisible(true);
+        m_snr_background_outer_ring->setVisible(true);
+
         // Draw star aperture circle
         double diameter = result.star_radius * 2;
         m_snr_star_circle->setRect(0, 0, diameter, diameter);
@@ -933,17 +952,27 @@ void ImageViewer::calculateAndShowSNR(double x, double y) {
             result.star_y - result.star_radius
         );
 
-        // Draw background annulus
-        double bg_diameter = result.star_radius * 6.0;
-        m_snr_background_ring->setRect(0, 0, bg_diameter, bg_diameter);
-        m_snr_background_ring->setPos(
-            result.star_x - result.star_radius * 3.0,
-            result.star_y - result.star_radius * 3.0
+        // Draw background annulus inner boundary
+        double bg_inner_diameter = result.background_inner_radius * 2.0;
+        m_snr_background_inner_ring->setRect(0, 0, bg_inner_diameter, bg_inner_diameter);
+        m_snr_background_inner_ring->setPos(
+            result.star_x - result.background_inner_radius,
+            result.star_y - result.background_inner_radius
+        );
+
+        // Draw background annulus outer boundary
+        double bg_outer_diameter = result.background_outer_radius * 2.0;
+        m_snr_background_outer_ring->setRect(0, 0, bg_outer_diameter, bg_outer_diameter);
+        m_snr_background_outer_ring->setPos(
+            result.star_x - result.background_outer_radius,
+            result.star_y - result.background_outer_radius
         );
     } else {
         // No star detected - position overlay at click location with small offset
         // Clear star position to prevent zoom/scroll updates
         m_snr_star_radius = 0;
+        m_snr_background_inner_radius = 0;
+        m_snr_background_outer_radius = 0;
 
         // Convert click position from scene to view coordinates
         QPointF click_view = m_view->mapFromScene(QPointF(x, y));
@@ -957,7 +986,8 @@ void ImageViewer::calculateAndShowSNR(double x, double y) {
         m_snr_overlay->setVisible(true);
         m_snr_overlay->raise();
         m_snr_star_circle->setVisible(false);
-        m_snr_background_ring->setVisible(false);
+        m_snr_background_inner_ring->setVisible(false);
+        m_snr_background_outer_ring->setVisible(false);
 
         // Set flag but position won't update on zoom/scroll due to m_snr_star_radius = 0
         m_snr_overlay_visible = true;
@@ -980,8 +1010,8 @@ void ImageViewer::updateSNROverlayPosition() {
     int overlay_width = m_snr_overlay->width();
     int overlay_height = m_snr_overlay->height();
 
-    // Annulus outer radius in scene coordinates (image pixels)
-    double annulus_radius_scene = m_snr_star_radius * 3.0;
+    // Use actual background outer radius from SNR calculation
+    double annulus_radius_scene = m_snr_background_outer_radius;
 
     // Convert annulus radius from scene to view coordinates (accounts for zoom)
     QPointF star_view = m_view->mapFromScene(QPointF(m_snr_star_x, m_snr_star_y));

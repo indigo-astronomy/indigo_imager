@@ -42,12 +42,12 @@ PeakInfo findPeakAndDetectStar(
     double click_y
 ) {
     PeakInfo info = {cx, cy, 0, false};
-    
+
     int star_search_radius = 8;
     double star_threshold = area_mean + 2.0 * area_stddev;
-    
+
     bool star_detected = false;
-    
+
     for (int dy = -star_search_radius; dy <= star_search_radius; dy++) {
         for (int dx = -star_search_radius; dx <= star_search_radius; dx++) {
             int px = cx + dx;
@@ -65,20 +65,20 @@ PeakInfo findPeakAndDetectStar(
             }
         }
     }
-    
+
     // More robust star detection: Accept if EITHER condition is met
     double contrast_ratio = (area_mean > 0) ? (info.peak_value / area_mean) : 0;
     bool has_good_contrast = (contrast_ratio > 1.2) && (info.peak_value - area_mean > area_stddev);
-    
+
     if (!star_detected && !has_good_contrast) {
         indigo_error("SNR: No star detected at (%.1f,%.1f) - peak=%.1f, mean=%.1f, stddev=%.1f, threshold=%.1f, contrast=%.2f",
                     click_x, click_y, info.peak_value, area_mean, area_stddev, star_threshold, contrast_ratio);
         return info;
     }
-    
+
     indigo_error("SNR: Star detected at (%.1f,%.1f) - peak=%.1f, mean=%.1f, threshold=%.1f, contrast=%.2f, stat_detect=%d",
                 click_x, click_y, info.peak_value, area_mean, star_threshold, contrast_ratio, star_detected);
-    
+
     info.valid = true;
     return info;
 }
@@ -98,7 +98,7 @@ double estimateLocalBackground(const std::vector<double>& area_pixels, double ar
         std::sort(background_pixels.begin(), background_pixels.end());
         local_background = background_pixels[background_pixels.size() / 2];
     }
-    
+
     return local_background;
 }
 
@@ -115,14 +115,14 @@ CentroidInfo calculateCentroid(
     double click_y
 ) {
     CentroidInfo info = {static_cast<double>(peak_x), static_cast<double>(peak_y), false};
-    
+
     int centroid_radius = 8;
     double centroid_threshold = local_background + area_stddev;
-    
+
     double sum_intensity = 0;
     double sum_x = 0;
     double sum_y = 0;
-    
+
     for (int dy = -centroid_radius; dy <= centroid_radius; dy++) {
         for (int dx = -centroid_radius; dx <= centroid_radius; dx++) {
             int px = peak_x + dx;
@@ -143,27 +143,27 @@ CentroidInfo calculateCentroid(
             }
         }
     }
-    
+
     if (sum_intensity > 0) {
         info.centroid_x = sum_x / sum_intensity;
         info.centroid_y = sum_y / sum_intensity;
     }
-    
+
     // Multi-star detection: Check if centroid is too far from peak
     double peak_to_centroid_dist = std::sqrt(
         (info.centroid_x - peak_x) * (info.centroid_x - peak_x) +
         (info.centroid_y - peak_y) * (info.centroid_y - peak_y)
     );
-    
-    if (peak_to_centroid_dist > 3.0) {
+
+    if (peak_to_centroid_dist > 5.0) {
         indigo_error("SNR: Centroid too far from peak (%.2f px) at (%.1f,%.1f) - likely multiple stars",
                     peak_to_centroid_dist, click_x, click_y);
         return info;
     }
-    
+
     indigo_error("SNR: Centroid at (%.2f,%.2f), peak at (%d,%d), distance=%.2f px",
                 info.centroid_x, info.centroid_y, peak_x, peak_y, peak_to_centroid_dist);
-    
+
     info.valid = true;
     return info;
 }
@@ -178,20 +178,20 @@ HFDInfo calculateIterativeHFD(
     double local_background
 ) {
     HFDInfo info = {0, 0, false};
-    
+
     int initial_radius = 3;
     int max_iterations = 8;
     int max_radius = 50;
-    
+
     double hfr = 0;
     double hfd = 0;
     double total_flux = 0;
     double prev_hfr = 0;
-    
+
     for (int iteration = 0; iteration < max_iterations; iteration++) {
         std::vector<std::pair<double, double>> pixel_data;
         total_flux = 0;
-        
+
         // Determine aperture radius for this iteration
         int aperture_radius;
         if (iteration == 0) {
@@ -199,11 +199,11 @@ HFDInfo calculateIterativeHFD(
         } else {
             aperture_radius = static_cast<int>(hfd * 2.0 + 0.5);
             aperture_radius = std::min(aperture_radius, max_radius);
-            
+
             if (aperture_radius < initial_radius) {
                 aperture_radius = initial_radius;
             }
-            
+
             static int last_aperture = 0;
             if (iteration > 1 && aperture_radius == last_aperture) {
                 indigo_error("SNR: Converged at iteration %d (aperture stable)", iteration);
@@ -211,13 +211,13 @@ HFDInfo calculateIterativeHFD(
             }
             last_aperture = aperture_radius;
         }
-        
+
         // Collect pixels in circular aperture around centroid
         for (int dy = -aperture_radius; dy <= aperture_radius; dy++) {
             for (int dx = -aperture_radius; dx <= aperture_radius; dx++) {
                 int px = static_cast<int>(centroid_x) + dx;
                 int py = static_cast<int>(centroid_y) + dy;
-                
+
                 if (px >= 0 && px < width && py >= 0 && py < height) {
                     // Calculate distance from actual centroid position (sub-pixel precision)
                     double dist = std::sqrt(
@@ -227,7 +227,7 @@ HFDInfo calculateIterativeHFD(
                     if (dist <= aperture_radius) {
                         double val = getPixelValue(data, px, py, width);
                         double above_bg = val - local_background;
-                        
+
                         if (above_bg > 0) {
                             pixel_data.push_back(std::make_pair(dist, above_bg));
                             total_flux += above_bg;
@@ -236,20 +236,20 @@ HFDInfo calculateIterativeHFD(
                 }
             }
         }
-        
+
         if (total_flux <= 0 || pixel_data.empty()) {
             indigo_error("SNR: No flux found in iteration %d", iteration);
             return info;
         }
-        
+
         // Sort by distance for HFR calculation
         std::sort(pixel_data.begin(), pixel_data.end());
-        
+
         // Calculate HFR (Half Flux Radius)
         double half_flux = total_flux / 2.0;
         double accumulated_flux = 0;
         hfr = 0;
-        
+
         for (const auto& pd : pixel_data) {
             accumulated_flux += pd.second;
             if (accumulated_flux >= half_flux) {
@@ -257,16 +257,16 @@ HFDInfo calculateIterativeHFD(
                 break;
             }
         }
-        
+
         // Validate: HFR should not exceed aperture radius
         if (hfr > aperture_radius) {
-            indigo_error("SNR: HFR (%.2f) exceeds aperture (%d) - likely bad data or multiple stars", 
+            indigo_error("SNR: HFR (%.2f) exceeds aperture (%d) - likely bad data or multiple stars",
                         hfr, aperture_radius);
             return info;
         }
-        
+
         hfd = hfr * 2.0;
-        
+
         indigo_error("SNR: Iteration %d: aperture=%d px, HFR=%.2f, HFD=%.2f, flux=%.1f",
                     iteration, aperture_radius, hfr, hfd, total_flux);
 
@@ -274,7 +274,7 @@ HFDInfo calculateIterativeHFD(
         if (iteration > 0 && prev_hfr > 0) {
             double hfr_ratio = hfr / prev_hfr;
             if ((hfr_ratio > 1.8 && iteration == 1) || (hfr_ratio > 1.2 && iteration > 1)) {
-                indigo_error("SNR: Stopping - HFR growing too fast (%.2f -> %.2f, ratio %.2f)", 
+                indigo_error("SNR: Stopping - HFR growing too fast (%.2f -> %.2f, ratio %.2f)",
                             prev_hfr, hfr, hfr_ratio);
 
                 // Use previous iteration's result
@@ -283,7 +283,7 @@ HFDInfo calculateIterativeHFD(
                 break;
             }
         }
-        
+
         // Stop if HFR exceeds reasonable range for a star
         if (hfr > 15.0) {
             indigo_error("SNR: Stopping - HFR too large (%.2f), likely not a single star", hfr);
@@ -300,20 +300,20 @@ HFDInfo calculateIterativeHFD(
             indigo_error("SNR: Converged at iteration %d (aperture >= 6*HFR)", iteration);
             break;
         }
-        
+
         prev_hfr = hfr;
     }
-    
+
     if (hfd <= 0 || hfr <= 0) {
         indigo_error("SNR: Invalid HFD calculated: %.2f", hfd);
         return info;
     }
-    
+
     if (hfr < 0.5 || hfr > 20) {
         indigo_error("SNR: HFR out of range: %.2f (valid range: 0.5-20)", hfr);
         return info;
     }
-    
+
     info.hfr = hfr;
     info.hfd = hfd;
     info.valid = true;
@@ -370,7 +370,7 @@ bool calculateSignalStatistics(
     double bg_noise = result.background_stddev;
     result.signal_stddev = std::sqrt(photon_noise * photon_noise + bg_noise * bg_noise);
     result.star_pixels = signal_pixels.size();
-    
+
     return true;
 }
 
@@ -385,9 +385,13 @@ bool calculateBackgroundStatistics(
     int max_radius,
     SNRResult& result
 ) {
-    double inner_radius = star_radius * 2.5;
-    double outer_radius = star_radius * 4.0;
+    double inner_radius = star_radius * 2.0;
+    double outer_radius = star_radius * 3.0;
     outer_radius = std::min(outer_radius, static_cast<double>(max_radius));
+
+    // Store annulus radii in result
+    result.background_inner_radius = inner_radius;
+    result.background_outer_radius = outer_radius;
 
     std::vector<double> bg_annulus_pixels;
     int bg_left = std::max(0, static_cast<int>(centroid_x - outer_radius - 1));
@@ -449,31 +453,31 @@ bool calculateBackgroundStatistics(
     }
     result.background_stddev = std::sqrt(bg_var / clipped_bg.size());
     result.background_pixels = clipped_bg.size();
-    
+
     return true;
 }
 
 void computeFinalSNR(SNRResult& result, double centroid_x, double centroid_y, double star_radius) {
     // Calculate total signal (sum of all pixels in aperture)
     double total_signal = result.signal_mean * result.star_pixels;
-    
+
     // Calculate total background in star aperture
     double total_background = result.background_mean * result.star_pixels;
-    
+
     // Net signal (background-subtracted)
     double net_signal = total_signal - total_background;
-    
+
     // Proper aperture photometry SNR formula:
     // SNR = net_signal / sqrt(total_signal + n_pixels * background_variance)
-    // 
+    //
     // This accounts for:
     // - Photon noise from the star (sqrt(total_signal))
     // - Photon noise from background (sqrt(n_pixels * background_variance))
     // - Read noise is included in background_stddev if measured from the image
-    
+
     double background_variance = result.background_stddev * result.background_stddev;
     double noise_squared = total_signal + result.star_pixels * background_variance;
-    
+
     if (noise_squared > 0) {
         result.snr = net_signal / std::sqrt(noise_squared);
     } else {
@@ -484,7 +488,7 @@ void computeFinalSNR(SNRResult& result, double centroid_x, double centroid_y, do
     result.star_x = centroid_x;
     result.star_y = centroid_y;
     result.valid = (result.snr > 0 && result.snr < 10000);
-    
+
     indigo_error("SNR: Final - total_signal=%.1f, net_signal=%.1f, noise=%.1f, SNR=%.2f",
                 total_signal, net_signal, std::sqrt(noise_squared), result.snr);
 }
@@ -535,7 +539,7 @@ SNRResult calculateSNRTemplate(
     double area_stddev = std::sqrt(area_variance / area_pixels.size());
 
     // Step 2: Find peak and detect star
-    PeakInfo peak = findPeakAndDetectStar(data, width, height, cx, cy, area_pixels, 
+    PeakInfo peak = findPeakAndDetectStar(data, width, height, cx, cy, area_pixels,
                                           area_mean, area_stddev, click_x, click_y);
     if (!peak.valid) {
         return result;
@@ -552,7 +556,7 @@ SNRResult calculateSNRTemplate(
     }
 
     // Step 5: Iterative HFD calculation
-    HFDInfo hfd_info = calculateIterativeHFD(data, width, height, centroid.centroid_x, 
+    HFDInfo hfd_info = calculateIterativeHFD(data, width, height, centroid.centroid_x,
                                              centroid.centroid_y, local_background);
     if (!hfd_info.valid) {
         return result;
@@ -577,7 +581,7 @@ SNRResult calculateSNRTemplate(
 
     // Step 8: Compute final SNR
     computeFinalSNR(result, centroid.centroid_x, centroid.centroid_y, star_radius);
-    
+
     // Store HFD value
     result.hfd = hfd_info.hfd;
 
