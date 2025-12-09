@@ -4,6 +4,41 @@
 #include <algorithm>
 #include "indigo/indigo_bus.h"
 
+// SNR Calculation Constants
+namespace {
+
+// Star detection
+const int STAR_SEARCH_RADIUS = 8;
+const double STAR_DETECTION_SIGMA = 2.0;
+const double STAR_CONTRAST_RATIO = 1.2;
+
+// Centroid calculation
+const int CENTROID_RADIUS = 8;
+const double MAX_CENTROID_PEAK_DISTANCE = 5.0;
+
+// HFD/HFR calculation
+const int HFD_INITIAL_RADIUS = 3;
+const int HFD_MAX_ITERATIONS = 8;
+const int HFD_MAX_RADIUS = 50;
+const double HFD_APERTURE_MULTIPLIER = 2.0;
+const double HFD_CONVERGENCE_FACTOR = 6.0;
+const double HFD_MIN_VALID = 0.5;
+const double HFD_MAX_VALID = 20.0;
+const double HFD_GROWTH_RATIO_ITER1 = 1.8;
+const double HFD_GROWTH_RATIO_LATER = 1.2;
+const double HFD_MAX_REASONABLE = 15.0;
+
+// Star aperture
+const double STAR_APERTURE_MULTIPLIER = 3.0;  // HFR multiplier for star aperture
+const double STAR_APERTURE_MAX_RADIUS = 25.0;
+
+// Background annulus
+const double BG_INNER_RADIUS_MULTIPLIER = 2.0;  // star_radius multiplier
+const double BG_OUTER_RADIUS_MULTIPLIER = 3.0;  // star_radius multiplier
+const int BG_MAX_RADIUS = 50;
+const double BG_SIGMA_CLIP_THRESHOLD = 3.0;
+const double BG_MAD_SCALE_FACTOR = 1.4826;
+
 template <typename T>
 double getPixelValue(const T* data, int x, int y, int width) {
 	return static_cast<double>(data[y * width + x]);
@@ -35,7 +70,6 @@ PeakInfo findPeakAndDetectStar(
 	int height,
 	int cx,
 	int cy,
-	const std::vector<double>& area_pixels,
 	double area_mean,
 	double area_stddev,
 	double click_x,
@@ -43,13 +77,12 @@ PeakInfo findPeakAndDetectStar(
 ) {
 	PeakInfo info = {cx, cy, 0, false};
 
-	int star_search_radius = 8;
-	double star_threshold = area_mean + 2.0 * area_stddev;
+	double star_threshold = area_mean + STAR_DETECTION_SIGMA * area_stddev;
 
 	bool star_detected = false;
 
-	for (int dy = -star_search_radius; dy <= star_search_radius; dy++) {
-		for (int dx = -star_search_radius; dx <= star_search_radius; dx++) {
+	for (int dy = -STAR_SEARCH_RADIUS; dy <= STAR_SEARCH_RADIUS; dy++) {
+		for (int dx = -STAR_SEARCH_RADIUS; dx <= STAR_SEARCH_RADIUS; dx++) {
 			int px = cx + dx;
 			int py = cy + dy;
 			if (px >= 0 && px < width && py >= 0 && py < height) {
@@ -68,7 +101,7 @@ PeakInfo findPeakAndDetectStar(
 
 	// More robust star detection: Accept if EITHER condition is met
 	double contrast_ratio = (area_mean > 0) ? (info.peak_value / area_mean) : 0;
-	bool has_good_contrast = (contrast_ratio > 1.2) && (info.peak_value - area_mean > area_stddev);
+	bool has_good_contrast = (contrast_ratio > STAR_CONTRAST_RATIO) && (info.peak_value - area_mean > area_stddev);
 
 	if (!star_detected && !has_good_contrast) {
 		indigo_error("SNR: No star detected at (%.1f,%.1f) - peak=%.1f, mean=%.1f, stddev=%.1f, threshold=%.1f, contrast=%.2f",
@@ -116,20 +149,19 @@ CentroidInfo calculateCentroid(
 ) {
 	CentroidInfo info = {static_cast<double>(peak_x), static_cast<double>(peak_y), false};
 
-	int centroid_radius = 8;
 	double centroid_threshold = local_background + area_stddev;
 
 	double sum_intensity = 0;
 	double sum_x = 0;
 	double sum_y = 0;
 
-	for (int dy = -centroid_radius; dy <= centroid_radius; dy++) {
-		for (int dx = -centroid_radius; dx <= centroid_radius; dx++) {
+	for (int dy = -CENTROID_RADIUS; dy <= CENTROID_RADIUS; dy++) {
+		for (int dx = -CENTROID_RADIUS; dx <= CENTROID_RADIUS; dx++) {
 			int px = peak_x + dx;
 			int py = peak_y + dy;
 			if (px >= 0 && px < width && py >= 0 && py < height) {
 				double dist = std::sqrt(dx * dx + dy * dy);
-				if (dist <= centroid_radius) {
+				if (dist <= CENTROID_RADIUS) {
 					double val = getPixelValue(data, px, py, width);
 					if (val > centroid_threshold) {
 						double weight = val - local_background;
@@ -155,7 +187,7 @@ CentroidInfo calculateCentroid(
 		(info.centroid_y - peak_y) * (info.centroid_y - peak_y)
 	);
 
-	if (peak_to_centroid_dist > 5.0) {
+	if (peak_to_centroid_dist > MAX_CENTROID_PEAK_DISTANCE) {
 		indigo_error("SNR: Centroid too far from peak (%.2f px) at (%.1f,%.1f) - likely multiple stars",
 					peak_to_centroid_dist, click_x, click_y);
 		return info;
@@ -179,29 +211,25 @@ HFDInfo calculateIterativeHFD(
 ) {
 	HFDInfo info = {0, 0, false};
 
-	int initial_radius = 3;
-	int max_iterations = 8;
-	int max_radius = 50;
-
 	double hfr = 0;
 	double hfd = 0;
 	double total_flux = 0;
 	double prev_hfr = 0;
 
-	for (int iteration = 0; iteration < max_iterations; iteration++) {
+	for (int iteration = 0; iteration < HFD_MAX_ITERATIONS; iteration++) {
 		std::vector<std::pair<double, double>> pixel_data;
 		total_flux = 0;
 
 		// Determine aperture radius for this iteration
 		int aperture_radius;
 		if (iteration == 0) {
-			aperture_radius = initial_radius;
+			aperture_radius = HFD_INITIAL_RADIUS;
 		} else {
-			aperture_radius = static_cast<int>(hfd * 2.0 + 0.5);
-			aperture_radius = std::min(aperture_radius, max_radius);
+			aperture_radius = static_cast<int>(hfd * HFD_APERTURE_MULTIPLIER + 0.5);
+			aperture_radius = std::min(aperture_radius, HFD_MAX_RADIUS);
 
-			if (aperture_radius < initial_radius) {
-				aperture_radius = initial_radius;
+			if (aperture_radius < HFD_INITIAL_RADIUS) {
+				aperture_radius = HFD_INITIAL_RADIUS;
 			}
 
 			static int last_aperture = 0;
@@ -273,7 +301,7 @@ HFDInfo calculateIterativeHFD(
 		// Stop if HFR is growing too fast (likely including neighboring stars or noise)
 		if (iteration > 0 && prev_hfr > 0) {
 			double hfr_ratio = hfr / prev_hfr;
-			if ((hfr_ratio > 1.8 && iteration == 1) || (hfr_ratio > 1.2 && iteration > 1)) {
+			if ((hfr_ratio > HFD_GROWTH_RATIO_ITER1 && iteration == 1) || (hfr_ratio > HFD_GROWTH_RATIO_LATER && iteration > 1)) {
 				indigo_error("SNR: Stopping - HFR growing too fast (%.2f -> %.2f, ratio %.2f)",
 							prev_hfr, hfr, hfr_ratio);
 
@@ -285,7 +313,7 @@ HFDInfo calculateIterativeHFD(
 		}
 
 		// Stop if HFR exceeds reasonable range for a star
-		if (hfr > 15.0) {
+		if (hfr > HFD_MAX_REASONABLE) {
 			indigo_error("SNR: Stopping - HFR too large (%.2f), likely not a single star", hfr);
 			// Use previous iteration's result if available
 			if (iteration > 0 && prev_hfr > 0) {
@@ -296,7 +324,7 @@ HFDInfo calculateIterativeHFD(
 		}
 
 		// Check convergence
-		if (aperture_radius >= hfr * 6.0) {
+		if (aperture_radius >= hfr * HFD_CONVERGENCE_FACTOR) {
 			indigo_error("SNR: Converged at iteration %d (aperture >= 6*HFR)", iteration);
 			break;
 		}
@@ -309,7 +337,7 @@ HFDInfo calculateIterativeHFD(
 		return info;
 	}
 
-	if (hfr < 0.5 || hfr > 20) {
+	if (hfr < HFD_MIN_VALID || hfr > HFD_MAX_VALID) {
 		indigo_error("SNR: HFR out of range: %.2f (valid range: 0.5-20)", hfr);
 		return info;
 	}
@@ -385,8 +413,8 @@ bool calculateBackgroundStatistics(
 	int max_radius,
 	SNRResult& result
 ) {
-	double inner_radius = star_radius * 2.0;
-	double outer_radius = star_radius * 3.0;
+	double inner_radius = star_radius * BG_INNER_RADIUS_MULTIPLIER;
+	double outer_radius = star_radius * BG_OUTER_RADIUS_MULTIPLIER;
 	outer_radius = std::min(outer_radius, static_cast<double>(max_radius));
 
 	// Store annulus radii in result
@@ -426,12 +454,12 @@ bool calculateBackgroundStatistics(
 	}
 	std::sort(deviations.begin(), deviations.end());
 	double mad = deviations[deviations.size() / 2];
-	double bg_stddev_robust = 1.4826 * mad;
+	double bg_stddev_robust = BG_MAD_SCALE_FACTOR * mad;
 
 	// Sigma-clip: remove outliers beyond 3σ
 	std::vector<double> clipped_bg;
 	for (double val : bg_annulus_pixels) {
-		if (std::abs(val - bg_median) < 3.0 * bg_stddev_robust) {
+		if (std::abs(val - bg_median) < BG_SIGMA_CLIP_THRESHOLD * bg_stddev_robust) {
 			clipped_bg.push_back(val);
 		}
 	}
@@ -493,19 +521,17 @@ SNRResult calculateSNRTemplate(
 	int width,
 	int height,
 	double click_x,
-	double click_y,
-	int search_radius
+	double click_y
 ) {
 	SNRResult result;
 
 	int cx = static_cast<int>(click_x);
 	int cy = static_cast<int>(click_y);
-	int star_search_radius = 8;
 
-	// Step 1: Calculate statistics of the 8px search area
+	// Step 1: Calculate statistics of the search area
 	std::vector<double> area_pixels;
-	for (int dy = -star_search_radius; dy <= star_search_radius; dy++) {
-		for (int dx = -star_search_radius; dx <= star_search_radius; dx++) {
+	for (int dy = -STAR_SEARCH_RADIUS; dy <= STAR_SEARCH_RADIUS; dy++) {
+		for (int dx = -STAR_SEARCH_RADIUS; dx <= STAR_SEARCH_RADIUS; dx++) {
 			int px = cx + dx;
 			int py = cy + dy;
 			if (px >= 0 && px < width && py >= 0 && py < height) {
@@ -533,7 +559,7 @@ SNRResult calculateSNRTemplate(
 	double area_stddev = std::sqrt(area_variance / area_pixels.size());
 
 	// Step 2: Find peak and detect star
-	PeakInfo peak = findPeakAndDetectStar(data, width, height, cx, cy, area_pixels, area_mean, area_stddev, click_x, click_y);
+	PeakInfo peak = findPeakAndDetectStar(data, width, height, cx, cy, area_mean, area_stddev, click_x, click_y);
 	if (!peak.valid) {
 		return result;
 	}
@@ -554,8 +580,8 @@ SNRResult calculateSNRTemplate(
 	}
 
 	// Star aperture radius = 3.0 * HFR (captures ~94% of flux)
-	double star_radius = hfd_info.hfr * 3.0;
-	star_radius = std::min(star_radius, 25.0);
+	double star_radius = hfd_info.hfr * STAR_APERTURE_MULTIPLIER;
+	star_radius = std::min(star_radius, STAR_APERTURE_MAX_RADIUS);
 
 	// Step 6: Calculate signal statistics
 	if (!calculateSignalStatistics(data, width, height, centroid.centroid_x, centroid.centroid_y, star_radius, result)) {
@@ -563,8 +589,7 @@ SNRResult calculateSNRTemplate(
 	}
 
 	// Step 7: Calculate background statistics
-	int max_radius = 50;
-	if (!calculateBackgroundStatistics(data, width, height, centroid.centroid_x, centroid.centroid_y, star_radius, max_radius, result)) {
+	if (!calculateBackgroundStatistics(data, width, height, centroid.centroid_x, centroid.centroid_y, star_radius, BG_MAX_RADIUS, result)) {
 		return result;
 	}
 
@@ -577,35 +602,36 @@ SNRResult calculateSNRTemplate(
 	return result;
 }
 
+} // anonymous namespace
+
 SNRResult calculateSNR(
 	const uint8_t *image_data,
 	int width,
 	int height,
 	int pix_fmt,
 	double click_x,
-	double click_y,
-	int search_radius
+	double click_y
 ) {
 	switch (pix_fmt) {
 		case PIX_FMT_Y8:
 			return calculateSNRTemplate(
 				reinterpret_cast<const uint8_t*>(image_data),
-				width, height, click_x, click_y, search_radius
+				width, height, click_x, click_y
 			);
 		case PIX_FMT_Y16:
 			return calculateSNRTemplate(
 				reinterpret_cast<const uint16_t*>(image_data),
-				width, height, click_x, click_y, search_radius
+				width, height, click_x, click_y
 			);
 		case PIX_FMT_Y32:
 			return calculateSNRTemplate(
 				reinterpret_cast<const uint32_t*>(image_data),
-				width, height, click_x, click_y, search_radius
+				width, height, click_x, click_y
 			);
 		case PIX_FMT_F32:
 			return calculateSNRTemplate(
 				reinterpret_cast<const float*>(image_data),
-				width, height, click_x, click_y, search_radius
+				width, height, click_x, click_y
 			);
 		default:
 			return SNRResult();

@@ -39,8 +39,7 @@ SNRResult calculateSNR(
 	int height,
 	int pix_fmt,
 	double click_x,
-	double click_y,
-	int search_radius = 20  // Search area for star centroid
+	double click_y
 );
 
 #endif // SNR_CALCULATOR_H

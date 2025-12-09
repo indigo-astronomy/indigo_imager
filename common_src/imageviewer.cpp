@@ -912,9 +912,8 @@ void ImageViewer::calculateAndShowSNR(double x, double y) {
         reinterpret_cast<const uint8_t*>(img.m_raw_data),
         img.width(),
         img.height(),
-        img.m_pix_format,  // Changed from img.pix_format()
-        x, y,
-        20  // search radius
+        img.m_pix_format,
+        x, y
     );
 
     if (result.valid) {
