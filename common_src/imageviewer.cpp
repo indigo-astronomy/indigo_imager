@@ -162,9 +162,9 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 	// Create SNR visualization circles
 	QPen snr_pen;
 	snr_pen.setCosmetic(true);
-	snr_pen.setWidth(2);
+	snr_pen.setWidthF(1.5);
 	snr_pen.setColor(QColor(0, 255, 0));
-	snr_pen.setStyle(Qt::DashLine);
+	snr_pen.setStyle(Qt::SolidLine);
 
 	m_snr_star_circle = new QGraphicsEllipseItem(0, 0, 20, 20, m_pixmap);
 	m_snr_star_circle->setBrush(QBrush(Qt::NoBrush));

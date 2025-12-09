@@ -13,14 +13,11 @@ SNROverlay::SNROverlay(QWidget *parent)
 
     m_info_label = new QLabel(this);
     m_info_label->setStyleSheet(
-        "QLabel { "
-        "  background-color: rgba(0, 0, 0, 40%); "  // Match histogram transparency
-        "  color: rgb(200, 200, 200); "
-        "  padding: 6px; "
-        "  border-radius: 3px; "
-        "  font-family: monospace; "
-        "  font-size: 10px; "
-        "}"
+        "background-color: rgba(0,0,0,40%); "
+        "color: rgba(200,200,200,100%); "
+        "font-family: monospace; "
+        "font-size: 11px; "
+        "padding: 6px;"
     );
     m_info_label->setTextFormat(Qt::RichText);
 
@@ -59,12 +56,14 @@ void SNROverlay::setSNRResult(const SNRResult &result) {
     }
 
     QString info = QString(
-        "<b>SNR: <font color='%1'>%2</font> (%3)</b><br>"
-        "Signal: %4±%5<br>"
-        "Background: %6±%7<br>"
-        "HFD: %8 px<br>"
-        "Center: (%9,%10)<br>"
-        "Radius: %11px (%12/%13)"
+        "<table cellspacing='0' cellpadding='0' style='border-collapse: collapse;'>"
+        "<tr><td><b>SNR:</b></td><td align='right'><b><font color='%1'>%2</font> (%3)</b></td></tr>"
+        "<tr><td>Signal:</td><td align='right'>%4±%5</td></tr>"
+        "<tr><td>Background:</td><td align='right'>%6±%7</td></tr>"
+        "<tr><td>HFD:</td><td align='right'>%8 px</td></tr>"
+        "<tr><td>Center:</td><td align='right'>(%9,%10)</td></tr>"
+        "<tr><td>Radius:</td><td align='right'>%11px (%12/%13)</td></tr>"
+        "</table>"
     )
     .arg(qualityColor)
     .arg(result.snr, 0, 'f', 1)

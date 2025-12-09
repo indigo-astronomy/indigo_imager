@@ -324,18 +324,23 @@ bool calculateSignalStatistics(
         return false;
     }
 
+    // Calculate mean of raw signal pixels
     double signal_sum = 0;
     for (double val : signal_pixels) {
         signal_sum += val;
     }
-    result.signal_mean = signal_sum / signal_pixels.size();
+    double raw_signal_mean = signal_sum / signal_pixels.size();
 
-    double signal_var = 0;
-    for (double val : signal_pixels) {
-        double diff = val - result.signal_mean;
-        signal_var += diff * diff;
-    }
-    result.signal_stddev = std::sqrt(signal_var / signal_pixels.size());
+    // Calculate net signal mean (background-subtracted)
+    result.signal_mean = raw_signal_mean - result.background_mean;
+
+    // For the signal error, use Poisson statistics based on total signal
+    // The noise in the net signal comes from:
+    // 1. Photon noise from star+background: sqrt(raw_signal_mean)
+    // 2. Uncertainty in background subtraction: background_stddev
+    double photon_noise = std::sqrt(std::max(0.0, raw_signal_mean));
+    double bg_noise = result.background_stddev;
+    result.signal_stddev = std::sqrt(photon_noise * photon_noise + bg_noise * bg_noise);
     result.star_pixels = signal_pixels.size();
     
     return true;
