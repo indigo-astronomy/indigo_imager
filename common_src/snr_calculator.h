@@ -2,6 +2,7 @@
 #define SNR_CALCULATOR_H
 
 #include <cstdint>
+#include <string>
 #include <pixelformat.h>
 
 struct SNRResult {
@@ -23,6 +24,7 @@ struct SNRResult {
 	double total_flux;    // Total background-subtracted flux
 	bool valid;
 	bool is_saturated;
+	std::string error_message;  // Error description if valid == false
 
 	SNRResult() :
 		snr(0), hfd(0), signal_mean(0), signal_stddev(0),
@@ -31,7 +33,7 @@ struct SNRResult {
 		star_radius(0), star_x(0), star_y(0),
 		background_inner_radius(0), background_outer_radius(0),
 		eccentricity(0), peak_value(0), total_flux(0),
-		valid(false), is_saturated(false)
+		valid(false), is_saturated(false), error_message("")
 	{}
 
 };

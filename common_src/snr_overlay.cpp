@@ -30,7 +30,9 @@ void SNROverlay::setSNRResult(const SNRResult &result) {
 	m_result = result;
 
 	if (!result.valid) {
-		m_info_label->setText("<b>No star detected</b>");
+		// Display error message if available, otherwise default message
+		QString errorMsg = result.error_message.empty() ? " SNR: No star detected" : QString::fromStdString(result.error_message);
+		m_info_label->setText("<b>" + errorMsg + "</b>");
 		adjustSize();
 		return;
 	}

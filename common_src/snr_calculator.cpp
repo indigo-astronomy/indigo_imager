@@ -766,7 +766,10 @@ SNRResult calculateSNR(
 				reinterpret_cast<const float*>(image_data),
 				width, height, click_x, click_y
 			);
-		default:
-			return SNRResult();
+		default: {
+			SNRResult result;
+			result.error_message = "SNR: Unsupported pixel format";
+			return result;
+		}
 	}
 }
