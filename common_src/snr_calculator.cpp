@@ -187,13 +187,11 @@ CentroidInfo calculateCentroid(
 	);
 
 	if (peak_to_centroid_dist > MAX_CENTROID_PEAK_DISTANCE) {
-		indigo_error("SNR: Centroid too far from peak (%.2f px) at (%.1f,%.1f) - likely multiple stars",
-					peak_to_centroid_dist, click_x, click_y);
+		indigo_error("SNR: Centroid too far from peak (%.2f px) at (%.1f,%.1f) - likely multiple stars", peak_to_centroid_dist, click_x, click_y);
 		return info;
 	}
 
-	indigo_error("SNR: Centroid at (%.2f,%.2f), peak at (%d,%d), distance=%.2f px",
-				info.centroid_x, info.centroid_y, peak_x, peak_y, peak_to_centroid_dist);
+	indigo_error("SNR: Centroid at (%.2f,%.2f), peak at (%d,%d), distance=%.2f px", info.centroid_x, info.centroid_y, peak_x, peak_y, peak_to_centroid_dist);
 
 	info.valid = true;
 	return info;
@@ -286,8 +284,7 @@ HFRInfo calculateIterativeHFD(
 
 		// Validate: HFR should not exceed aperture radius
 		if (hfr > aperture_radius) {
-			indigo_error("SNR: HFR (%.2f) exceeds aperture (%d) - likely bad data or multiple stars",
-						hfr, aperture_radius);
+			indigo_error("SNR: HFR (%.2f) exceeds aperture (%d) - likely bad data or multiple stars", hfr, aperture_radius);
 			return info;
 		}
 
@@ -299,7 +296,6 @@ HFRInfo calculateIterativeHFD(
 			double hfr_ratio = hfr / prev_hfr;
 			if ((hfr_ratio > HFR_GROWTH_RATIO_ITER1 && iteration == 1) || (hfr_ratio > HFR_GROWTH_RATIO_LATER && iteration > 1)) {
 				indigo_error("SNR: Stopping - HFR growing too fast (%.2f -> %.2f, ratio %.2f)", prev_hfr, hfr, hfr_ratio);
-
 				// Use previous iteration's result
 				hfr = prev_hfr;
 				break;
@@ -316,7 +312,6 @@ HFRInfo calculateIterativeHFD(
 			break;
 		}
 
-		// Check convergence
 		if (aperture_radius >= hfr * HFD_CONVERGENCE_FACTOR) {
 			indigo_error("SNR: Converged at iteration %d (aperture >= 6*HFR)", iteration);
 			break;
