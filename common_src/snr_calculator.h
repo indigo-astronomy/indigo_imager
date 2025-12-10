@@ -19,6 +19,8 @@ struct SNRResult {
 	double background_inner_radius;
 	double background_outer_radius;
 	double eccentricity;  // Star roundness: 0=perfect circle, 1=linear
+	double peak_value;    // Maximum pixel value in star
+	double total_flux;    // Total background-subtracted flux
 	bool valid;
 	bool is_saturated;
 
@@ -28,7 +30,7 @@ struct SNRResult {
 		star_pixels(0), background_pixels(0),
 		star_radius(0), star_x(0), star_y(0),
 		background_inner_radius(0), background_outer_radius(0),
-		eccentricity(0),
+		eccentricity(0), peak_value(0), total_flux(0),
 		valid(false), is_saturated(false)
 	{}
 

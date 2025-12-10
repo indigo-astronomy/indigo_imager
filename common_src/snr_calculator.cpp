@@ -613,6 +613,8 @@ void computeFinalSNR(SNRResult& result, double centroid_x, double centroid_y, do
 	double total_background = result.background_mean * result.star_pixels;
 	double net_signal = total_signal - total_background;
 
+	result.total_flux = net_signal;
+
 	// Proper aperture photometry SNR formula:
 	// SNR = net_signal / sqrt(total_signal + n_pixels * background_variance)
 	//
@@ -686,6 +688,8 @@ SNRResult calculateSNRTemplate(
 	if (!peak.valid) {
 		return result;
 	}
+
+	result.peak_value = peak.peak_value;
 
 	// Check for saturation (flat peak)
 	result.is_saturated = checkSaturation(data, width, height, peak.peak_x, peak.peak_y, peak.peak_value);
