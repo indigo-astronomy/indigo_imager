@@ -74,8 +74,9 @@ void SNROverlay::setSNRResult(const SNRResult &result) {
 		"<tr><td>Signal:</td><td align='right'>%4±%5 ADU</td></tr>"
 		"<tr><td>Background:</td><td align='right'>%6±%7 ADU</td></tr>"
 		"<tr><td>HFD:</td><td align='right'>%8 px</td></tr>"
-		"<tr><td>Center:</td><td align='right'>(%9,%10)</td></tr>"
-		"<tr><td>Radius:</td><td align='right'>%11px (%12/%13)</td></tr>"
+		"<tr><td>Eccentricity:</td><td align='right'>%9</td></tr>"
+		"<tr><td>Center:</td><td align='right'>(%10,%11)</td></tr>"
+		"<tr><td>Radius:</td><td align='right'>%12px (%13/%14)</td></tr>"
 		"</table>"
 	)
 	.arg(qualityColor)
@@ -86,6 +87,7 @@ void SNROverlay::setSNRResult(const SNRResult &result) {
 	.arg(result.background_mean, 0, 'f', 0)
 	.arg(result.background_stddev, 0, 'f', 0)
 	.arg(result.hfd, 0, 'f', 2)
+	.arg(result.eccentricity, 0, 'f', 3)
 	.arg(result.star_x, 0, 'f', 1)
 	.arg(result.star_y, 0, 'f', 1)
 	.arg(result.star_radius, 0, 'f', 1)

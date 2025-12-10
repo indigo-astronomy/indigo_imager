@@ -107,6 +107,98 @@ struct HFRInfo {
 };
 
 template <typename T>
+double calculateEccentricity(
+	const T* data,
+	int width,
+	int height,
+	double centroid_x,
+	double centroid_y,
+	double star_radius,
+	double background
+) {
+	// Calculate second moments of the intensity distribution
+	// Using background-subtracted, weighted pixel values
+	double m20 = 0;  // Variance in x direction
+	double m02 = 0;  // Variance in y direction
+	double m11 = 0;  // Covariance xy
+	double total_weight = 0;
+
+	int aperture_left = std::max(0, static_cast<int>(centroid_x - star_radius - 1));
+	int aperture_right = std::min(width - 1, static_cast<int>(centroid_x + star_radius + 1));
+	int aperture_top = std::max(0, static_cast<int>(centroid_y - star_radius - 1));
+	int aperture_bottom = std::min(height - 1, static_cast<int>(centroid_y + star_radius + 1));
+
+	for (int y = aperture_top; y <= aperture_bottom; y++) {
+		for (int x = aperture_left; x <= aperture_right; x++) {
+			double dist = std::sqrt(
+				(x - centroid_x) * (x - centroid_x) +
+				(y - centroid_y) * (y - centroid_y)
+			);
+			if (dist <= star_radius) {
+				double val = getPixelValue(data, x, y, width);
+				double weight = std::max(0.0, val - background);
+
+				if (weight > 0) {
+					double dx = x - centroid_x;
+					double dy = y - centroid_y;
+
+					m20 += weight * dx * dx;
+					m02 += weight * dy * dy;
+					m11 += weight * dx * dy;
+					total_weight += weight;
+				}
+			}
+		}
+	}
+
+	if (total_weight <= 0) {
+		return 0;  // Can't calculate eccentricity
+	}
+
+	// Normalize moments
+	m20 /= total_weight;
+	m02 /= total_weight;
+	m11 /= total_weight;
+
+	// Calculate eccentricity from eigenvalues of moment matrix
+	// The moment matrix is: [m20 m11]
+	//                       [m11 m02]
+	// Eigenvalues: λ = (m20+m02)/2 ± sqrt(((m20-m02)/2)^2 + m11^2)
+	double trace = m20 + m02;
+	double det = m20 * m02 - m11 * m11;
+
+	if (trace <= 0 || det < 0) {
+		return 0;  // Invalid moments
+	}
+
+	double discriminant = trace * trace - 4 * det;
+	if (discriminant < 0) {
+		discriminant = 0;  // Numerical error protection
+	}
+
+	double lambda1 = (trace + std::sqrt(discriminant)) / 2.0;  // Major axis
+	double lambda2 = (trace - std::sqrt(discriminant)) / 2.0;  // Minor axis
+
+	if (lambda1 <= 0) {
+		return 0;  // Invalid eigenvalue
+	}
+
+	// Eccentricity = sqrt(1 - (minor/major)^2)
+	// For a circle: minor=major, eccentricity=0
+	// For a line: minor=0, eccentricity=1
+	double ratio = lambda2 / lambda1;
+	if (ratio < 0) ratio = 0;
+	if (ratio > 1) ratio = 1;
+
+	double eccentricity = std::sqrt(1.0 - ratio * ratio);
+
+	indigo_error("SNR: Eccentricity=%.3f (λ1=%.2f, λ2=%.2f, ratio=%.3f)",
+				 eccentricity, lambda1, lambda2, ratio);
+
+	return eccentricity;
+}
+
+template <typename T>
 PeakInfo findPeakAndDetectStar(
 	const T* data,
 	int width,
@@ -627,7 +719,10 @@ SNRResult calculateSNRTemplate(
 		return result;
 	}
 
-	// Step 8: Compute final SNR
+	// Step 8: Calculate eccentricity (star roundness)
+	result.eccentricity = calculateEccentricity(data, width, height, centroid.centroid_x, centroid.centroid_y, star_radius, result.background_mean);
+
+	// Step 9: Compute final SNR
 	computeFinalSNR(result, centroid.centroid_x, centroid.centroid_y, star_radius);
 
 	// Store HFD value
