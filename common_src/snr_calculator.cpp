@@ -57,9 +57,8 @@ struct CentroidInfo {
 	bool valid;
 };
 
-struct HFDInfo {
+struct HFRInfo {
 	double hfr;
-	double hfd;
 	bool valid;
 };
 
@@ -201,7 +200,7 @@ CentroidInfo calculateCentroid(
 }
 
 template <typename T>
-HFDInfo calculateIterativeHFD(
+HFRInfo calculateIterativeHFD(
 	const T* data,
 	int width,
 	int height,
@@ -209,7 +208,7 @@ HFDInfo calculateIterativeHFD(
 	double centroid_y,
 	double local_background
 ) {
-	HFDInfo info = {0, 0, false};
+	HFRInfo info = {0, false};
 
 	double hfr = 0;
 	double total_flux = 0;
@@ -337,7 +336,6 @@ HFDInfo calculateIterativeHFD(
 	}
 
 	info.hfr = hfr;
-	info.hfd = hfr * 2.0;
 	info.valid = true;
 	return info;
 }
@@ -568,7 +566,7 @@ SNRResult calculateSNRTemplate(
 	}
 
 	// Step 5: Iterative HFD calculation
-	HFDInfo hfd_info = calculateIterativeHFD(data, width, height, centroid.centroid_x, centroid.centroid_y, local_background);
+	HFRInfo hfd_info = calculateIterativeHFD(data, width, height, centroid.centroid_x, centroid.centroid_y, local_background);
 	if (!hfd_info.valid) {
 		return result;
 	}
@@ -591,7 +589,7 @@ SNRResult calculateSNRTemplate(
 	computeFinalSNR(result, centroid.centroid_x, centroid.centroid_y, star_radius);
 
 	// Store HFD value
-	result.hfd = hfd_info.hfd;
+	result.hfd = hfd_info.hfr * 2.0;
 
 	return result;
 }
