@@ -20,8 +20,8 @@ const double MAX_CENTROID_PEAK_DISTANCE = 5.0;
 const int HFD_INITIAL_RADIUS = 3;
 const int HFD_MAX_ITERATIONS = 8;
 const int HFD_MAX_RADIUS = 50;
-const double HFD_APERTURE_MULTIPLIER = 2.0;
-const double HFD_CONVERGENCE_FACTOR = 6.0;
+const double HFD_APERTURE_MULTIPLIER = 3.0;
+const double HFD_CONVERGENCE_FACTOR = 9.0;
 const double HFR_MIN_VALID = 0.25;
 const double HFR_MAX_VALID = 20.0;
 const double HFR_MAX_REASONABLE = 15.0;
@@ -29,7 +29,7 @@ const double HFR_GROWTH_RATIO_ITER1 = 1.8;
 const double HFR_GROWTH_RATIO_LATER = 1.2;
 
 // Star aperture
-const double STAR_APERTURE_MULTIPLIER = 3.0;  // HFR multiplier for star aperture
+const double STAR_APERTURE_MULTIPLIER = 3.5;  // HFR multiplier for star aperture
 const double STAR_APERTURE_MAX_RADIUS = 25.0;
 
 // Background annulus
