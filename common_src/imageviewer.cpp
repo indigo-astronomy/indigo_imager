@@ -896,184 +896,163 @@ void ImageViewer::mouseAt(double x, double y) {
 }
 
 void ImageViewer::showSNROverlay(bool show) {
-    m_snr_overlay_visible = show;
-    m_snr_overlay->setVisible(show);
-    m_snr_star_circle->setVisible(show);
-    m_snr_background_inner_ring->setVisible(show);
-    m_snr_background_outer_ring->setVisible(show);
+	m_snr_overlay_visible = show;
+	m_snr_overlay->setVisible(show);
+	m_snr_star_circle->setVisible(show);
+	m_snr_background_inner_ring->setVisible(show);
+	m_snr_background_outer_ring->setVisible(show);
 }
 
 void ImageViewer::calculateAndShowSNR(double x, double y) {
-    const preview_image &img = m_pixmap->image();
-    if (!img.valid(x, y) || !img.m_raw_data) {
-        return;
-    }
+	const preview_image &img = m_pixmap->image();
+	if (!img.valid(x, y) || !img.m_raw_data) {
+		return;
+	}
 
-    SNRResult result = calculateSNR(
-        reinterpret_cast<const uint8_t*>(img.m_raw_data),
-        img.width(),
-        img.height(),
-        img.m_pix_format,
-        x, y
-    );
+	SNRResult result = calculateSNR(
+		reinterpret_cast<const uint8_t*>(img.m_raw_data),
+		img.width(),
+		img.height(),
+		img.m_pix_format,
+		x, y
+	);
 
-    if (result.valid) {
-        // Store star position for scroll updates
-        m_snr_star_x = result.star_x;
-        m_snr_star_y = result.star_y;
-        m_snr_star_radius = result.star_radius;
-        m_snr_background_inner_radius = result.background_inner_radius;
-        m_snr_background_outer_radius = result.background_outer_radius;
+	if (result.valid) {
+		// Store star position for scroll updates
+		m_snr_star_x = result.star_x;
+		m_snr_star_y = result.star_y;
+		m_snr_star_radius = result.star_radius;
+		m_snr_background_inner_radius = result.background_inner_radius;
+		m_snr_background_outer_radius = result.background_outer_radius;
 
-        // Set the result first so the overlay gets sized properly
-        m_snr_overlay->setSNRResult(result);
+		// Set the result first so the overlay gets sized properly
+		m_snr_overlay->setSNRResult(result);
+		showSNROverlay(true);
+		m_snr_overlay->updateGeometry();
+		updateSNROverlayPosition();
 
-        // Show the overlay and ensure visibility first
-        showSNROverlay(true);
+		m_snr_overlay->raise();
 
-        // Force the widget to update its geometry
-        m_snr_overlay->updateGeometry();
+		// Show SNR visualization circles
+		m_snr_star_circle->setVisible(true);
+		m_snr_background_inner_ring->setVisible(true);
+		m_snr_background_outer_ring->setVisible(true);
 
-        // Now update position after overlay has been sized and shown
-        updateSNROverlayPosition();
+		// Draw aperture star circle
+		double diameter = result.star_radius * 2;
+		m_snr_star_circle->setRect(0, 0, diameter, diameter);
+		m_snr_star_circle->setPos(
+			result.star_x - result.star_radius,
+			result.star_y - result.star_radius
+		);
 
-        m_snr_overlay->raise();
+		// Draw background annulus inner boundary
+		double bg_inner_diameter = result.background_inner_radius * 2.0;
+		m_snr_background_inner_ring->setRect(0, 0, bg_inner_diameter, bg_inner_diameter);
+		m_snr_background_inner_ring->setPos(
+			result.star_x - result.background_inner_radius,
+			result.star_y - result.background_inner_radius
+		);
 
-        // Show SNR visualization circles
-        m_snr_star_circle->setVisible(true);
-        m_snr_background_inner_ring->setVisible(true);
-        m_snr_background_outer_ring->setVisible(true);
+		// Draw background annulus outer boundary
+		double bg_outer_diameter = result.background_outer_radius * 2.0;
+		m_snr_background_outer_ring->setRect(0, 0, bg_outer_diameter, bg_outer_diameter);
+		m_snr_background_outer_ring->setPos(
+			result.star_x - result.background_outer_radius,
+			result.star_y - result.background_outer_radius
+		);
+	} else {
+		m_snr_star_radius = 0;
+		m_snr_background_inner_radius = 0;
+		m_snr_background_outer_radius = 0;
 
-        // Draw star aperture circle
-        double diameter = result.star_radius * 2;
-        m_snr_star_circle->setRect(0, 0, diameter, diameter);
-        m_snr_star_circle->setPos(
-            result.star_x - result.star_radius,
-            result.star_y - result.star_radius
-        );
+		// Convert click position from scene to view coordinates
+		QPointF click_view = m_view->mapFromScene(QPointF(x, y));
 
-        // Draw background annulus inner boundary
-        double bg_inner_diameter = result.background_inner_radius * 2.0;
-        m_snr_background_inner_ring->setRect(0, 0, bg_inner_diameter, bg_inner_diameter);
-        m_snr_background_inner_ring->setPos(
-            result.star_x - result.background_inner_radius,
-            result.star_y - result.background_inner_radius
-        );
+		QPoint view_pos(click_view.x() + 10, click_view.y() + 10);
+		m_snr_overlay->move(view_pos);
 
-        // Draw background annulus outer boundary
-        double bg_outer_diameter = result.background_outer_radius * 2.0;
-        m_snr_background_outer_ring->setRect(0, 0, bg_outer_diameter, bg_outer_diameter);
-        m_snr_background_outer_ring->setPos(
-            result.star_x - result.background_outer_radius,
-            result.star_y - result.background_outer_radius
-        );
-    } else {
-        // No star detected - position overlay at click location with small offset
-        // Clear star position to prevent zoom/scroll updates
-        m_snr_star_radius = 0;
-        m_snr_background_inner_radius = 0;
-        m_snr_background_outer_radius = 0;
+		m_snr_overlay->setSNRResult(result);
+		m_snr_overlay->setVisible(true);
+		m_snr_overlay->raise();
+		m_snr_star_circle->setVisible(false);
+		m_snr_background_inner_ring->setVisible(false);
+		m_snr_background_outer_ring->setVisible(false);
 
-        // Convert click position from scene to view coordinates
-        QPointF click_view = m_view->mapFromScene(QPointF(x, y));
-
-        // Add fixed offset in VIEW coordinates (not scene coordinates)
-        // This maintains consistent offset regardless of zoom level
-        QPoint view_pos(click_view.x() + 10, click_view.y() + 10);
-        m_snr_overlay->move(view_pos);
-
-        m_snr_overlay->setSNRResult(result);
-        m_snr_overlay->setVisible(true);
-        m_snr_overlay->raise();
-        m_snr_star_circle->setVisible(false);
-        m_snr_background_inner_ring->setVisible(false);
-        m_snr_background_outer_ring->setVisible(false);
-
-        // Set flag but position won't update on zoom/scroll due to m_snr_star_radius = 0
-        m_snr_overlay_visible = true;
-    }
+		m_snr_overlay_visible = true;
+	}
 }
 
 void ImageViewer::updateSNROverlayPosition() {
-    if (!m_snr_overlay_visible) {
-        return;
-    }
+	if (!m_snr_overlay_visible) {
+		return;
+	}
 
-    // Only update position if we have valid star coordinates
-    // (i.e., a star was actually detected, not just "no star detected" message)
-    if (m_snr_star_radius <= 0) {
-        return;
-    }
+	if (m_snr_star_radius <= 0) {
+		return;
+	}
 
-    // Ensure the widget has correct size
-    m_snr_overlay->adjustSize();
-    int overlay_width = m_snr_overlay->width();
-    int overlay_height = m_snr_overlay->height();
+	// Ensure the widget has correct size
+	m_snr_overlay->adjustSize();
+	int overlay_width = m_snr_overlay->width();
+	int overlay_height = m_snr_overlay->height();
 
-    // Use actual background outer radius from SNR calculation
-    double annulus_radius_scene = m_snr_background_outer_radius;
+	// Use actual background outer radius from SNR calculation
+	double annulus_radius_scene = m_snr_background_outer_radius;
 
-    // Convert annulus radius from scene to view coordinates (accounts for zoom)
-    QPointF star_view = m_view->mapFromScene(QPointF(m_snr_star_x, m_snr_star_y));
-    QPointF annulus_edge_view = m_view->mapFromScene(QPointF(m_snr_star_x + annulus_radius_scene, m_snr_star_y + annulus_radius_scene));
-    double annulus_radius_view = annulus_edge_view.x() - star_view.x(); // View space distance
+	// Convert annulus radius from scene to view coordinates (accounts for zoom)
+	QPointF star_view = m_view->mapFromScene(QPointF(m_snr_star_x, m_snr_star_y));
+	QPointF annulus_edge_view = m_view->mapFromScene(QPointF(m_snr_star_x + annulus_radius_scene, m_snr_star_y + annulus_radius_scene));
+	double annulus_radius_view = annulus_edge_view.x() - star_view.x(); // View space distance
 
-    // Default: position top-left corner of overlay at bottom-right of annulus (in view coordinates)
-    QPoint view_pos(star_view.x() + annulus_radius_view, star_view.y() + annulus_radius_view);
+	QPoint view_pos(star_view.x() + annulus_radius_view, star_view.y() + annulus_radius_view);
 
-    QRect viewport_rect = m_view->viewport()->rect();
+	QRect viewport_rect = m_view->viewport()->rect();
 
-    // Check if widget goes off the right edge
-    if (view_pos.x() + overlay_width > viewport_rect.right()) {
-        // Flip to left: position bottom-right corner of overlay at top-left of annulus
-        view_pos.setX(star_view.x() - annulus_radius_view - overlay_width);
-    }
+	if (view_pos.x() + overlay_width > viewport_rect.right()) {
+		view_pos.setX(star_view.x() - annulus_radius_view - overlay_width);
+	}
+	if (view_pos.y() + overlay_height > viewport_rect.bottom()) {
+		view_pos.setY(star_view.y() - annulus_radius_view - overlay_height);
+	}
 
-    // Check if widget goes off the bottom edge
-    if (view_pos.y() + overlay_height > viewport_rect.bottom()) {
-        // Flip to top: position bottom-right corner of overlay at top-left of annulus
-        view_pos.setY(star_view.y() - annulus_radius_view - overlay_height);
-    }
-
-    m_snr_overlay->move(view_pos);
+	m_snr_overlay->move(view_pos);
 }
 
-// Handle right-click - restore original behavior with WCS coordinates
 void ImageViewer::mouseRightPressAt(double x, double y, Qt::KeyboardModifiers modifiers) {
-    indigo_debug("RIGHT CLICK COORDS: %f %f", x, y);
+	indigo_debug("RIGHT CLICK COORDS: %f %f", x, y);
 
-    double ra, dec, telescope_ra, telescope_dec;
-    if (m_pixmap->image().valid(x, y)) {
-        moveSelection(x, y);
-        emit mouseRightPress(x, y, modifiers);
-        if (
-            m_pixmap->image().wcs_data(x, y, &ra, &dec, &telescope_ra, &telescope_dec) == 0 &&
-            m_show_wcs
-        ) {
-            emit mouseRightPressRADec(ra, dec, telescope_ra, telescope_dec, modifiers);
-        }
-    }
+	double ra, dec, telescope_ra, telescope_dec;
+	if (m_pixmap->image().valid(x, y)) {
+		moveSelection(x, y);
+		emit mouseRightPress(x, y, modifiers);
+		if (
+			m_pixmap->image().wcs_data(x, y, &ra, &dec, &telescope_ra, &telescope_dec) == 0 &&
+			m_show_wcs
+		) {
+			emit mouseRightPressRADec(ra, dec, telescope_ra, telescope_dec, modifiers);
+		}
+	}
 }
 
 // Handle Ctrl+Left-click for SNR calculation
 void ImageViewer::mouseLeftPressAt(double x, double y, Qt::KeyboardModifiers modifiers) {
-    // Only respond to Ctrl+Click if SNR mode is enabled
-    if ((modifiers & Qt::ControlModifier) && m_snr_mode_enabled) {
-        calculateAndShowSNR(x, y);
-        return;
-    }
+	if ((modifiers & Qt::ControlModifier) && m_snr_mode_enabled) {
+		calculateAndShowSNR(x, y);
+		return;
+	}
 
-    // Hide SNR overlay if clicking elsewhere without Ctrl
-    if (m_snr_overlay_visible) {
-        showSNROverlay(false);
-    }
+	// Hide SNR overlay if clicking elsewhere without Ctrl
+	if (m_snr_overlay_visible) {
+		showSNROverlay(false);
+	}
 }
 
 void ImageViewer::enableSNRMode(bool enable) {
-    m_snr_mode_enabled = enable;
-    if (!enable && m_snr_overlay_visible) {
-        showSNROverlay(false);
-    }
+	m_snr_mode_enabled = enable;
+	if (!enable && m_snr_overlay_visible) {
+		showSNROverlay(false);
+	}
 }
 
 void ImageViewer::enterEvent(QEvent *event) {
