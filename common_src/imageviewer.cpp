@@ -90,6 +90,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 	connect(m_pixmap, SIGNAL(mouseMoved(double,double)), SLOT(mouseAt(double,double)));
 	connect(m_pixmap, SIGNAL(mouseRightPress(double, double, Qt::KeyboardModifiers)), SLOT(mouseRightPressAt(double, double, Qt::KeyboardModifiers)));
 	connect(m_pixmap, SIGNAL(mouseLeftPress(double, double, Qt::KeyboardModifiers)), SLOT(mouseLeftPressAt(double, double, Qt::KeyboardModifiers)));
+	connect(m_pixmap, SIGNAL(mouseLeftDoubleClick(double, double, Qt::KeyboardModifiers)), SLOT(mouseLeftDoubleClickAt(double, double, Qt::KeyboardModifiers)));
 
 	m_ref_x = new QGraphicsLineItem(25,0,25,50, m_pixmap);
 	QPen pen;
@@ -1048,6 +1049,12 @@ void ImageViewer::mouseLeftPressAt(double x, double y, Qt::KeyboardModifiers mod
 	}
 }
 
+void ImageViewer::mouseLeftDoubleClickAt(double x, double y, Qt::KeyboardModifiers modifiers) {
+	if (m_snr_mode_enabled) {
+		calculateAndShowSNR(x, y);
+	}
+}
+
 void ImageViewer::enableSNRMode(bool enable) {
 	m_snr_mode_enabled = enable;
 	if (!enable && m_snr_overlay_visible) {
@@ -1242,7 +1249,7 @@ QRect ImageViewer::getImageFrameRect() const {
 }
 
 PixmapItem::PixmapItem(QGraphicsItem *parent) :
-	QObject(), QGraphicsPixmapItem(parent)
+	QObject(), QGraphicsPixmapItem(parent), m_is_double_click(false)
 {
 	//setTransformationMode(Qt::SmoothTransformation);
 	setAcceptHoverEvents(true);
@@ -1268,14 +1275,27 @@ void PixmapItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
 		auto pos = event->pos();
 		emit mouseRightPress(pos.x(), pos.y(), event->modifiers());
 	} else if(event->button() == Qt::LeftButton) {
-		auto pos = event->pos();
-		emit mouseLeftPress(pos.x(), pos.y(), event->modifiers());
+		// Don't emit single-click signal if this is part of a double-click
+		if (!m_is_double_click) {
+			auto pos = event->pos();
+			emit mouseLeftPress(pos.x(), pos.y(), event->modifiers());
+		}
+		m_is_double_click = false;
 	}
 	QGraphicsItem::mousePressEvent(event);
 }
 
 void PixmapItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
 	QGraphicsItem::mouseReleaseEvent(event);
+}
+
+void PixmapItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) {
+	if(event->button() == Qt::LeftButton) {
+		m_is_double_click = true;
+		auto pos = event->pos();
+		emit mouseLeftDoubleClick(pos.x(), pos.y(), event->modifiers());
+	}
+	QGraphicsItem::mouseDoubleClickEvent(event);
 }
 
 void PixmapItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event) {

@@ -94,6 +94,7 @@ public slots:
 	void mouseAt(double x, double y);
 	void mouseRightPressAt(double x, double y, Qt::KeyboardModifiers modifiers);
 	void mouseLeftPressAt(double x, double y, Qt::KeyboardModifiers modifiers);
+	void mouseLeftDoubleClickAt(double x, double y, Qt::KeyboardModifiers modifiers);
 
 	void stretchNone();
 	void stretchSlight();
@@ -204,15 +205,18 @@ signals:
 	void sizeChanged(int w, int h);
 	void mouseRightPress(double x, double y, Qt::KeyboardModifiers);
 	void mouseLeftPress(double x, double y, Qt::KeyboardModifiers);
+	void mouseLeftDoubleClick(double x, double y, Qt::KeyboardModifiers);
 	void mouseMoved(double x, double y);
 
 protected:
 	void mousePressEvent(QGraphicsSceneMouseEvent *) override;
 	void mouseReleaseEvent(QGraphicsSceneMouseEvent *) override;
+	void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *) override;
 	void hoverMoveEvent(QGraphicsSceneHoverEvent *) override;
 
 private:
 	preview_image m_image;
+	bool m_is_double_click;
 };
 
 #endif // IMAGEVIEWER_H
