@@ -45,7 +45,10 @@ void SNROverlay::setSNRResult(const SNRResult &result) {
 	// SNR 50+: Excellent precision (< 2% error)
 	QString qualityText;
 	QString qualityColor;
-	if (result.snr < 3.0) {
+	if (result.is_saturated) {
+		qualityText = "SATURATED";
+		qualityColor = "#FF00FF";  // Magenta - warning color
+	} else if (result.snr < 3.0) {
 		qualityText = "Noisy";
 		qualityColor = "#FF0000";  // Red
 	} else if (result.snr < 5.0) {

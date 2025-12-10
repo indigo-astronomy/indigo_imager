@@ -19,6 +19,7 @@ struct SNRResult {
 	double background_inner_radius;
 	double background_outer_radius;
 	bool valid;
+	bool is_saturated;
 
 	SNRResult() :
 		snr(0), hfd(0), signal_mean(0), signal_stddev(0),
@@ -26,7 +27,7 @@ struct SNRResult {
 		star_pixels(0), background_pixels(0),
 		star_radius(0), star_x(0), star_y(0),
 		background_inner_radius(0), background_outer_radius(0),
-		valid(false)
+		valid(false), is_saturated(false)
 	{}
 
 };

@@ -39,9 +39,53 @@ const int BG_MAX_RADIUS = 50;
 const double BG_SIGMA_CLIP_THRESHOLD = 3.0;
 const double BG_MAD_SCALE_FACTOR = 1.4826;
 
+// Saturation detection
+const int SATURATION_CHECK_RADIUS = 5;         // Radius to check for flat peak
+const double SATURATION_FLATNESS_THRESHOLD = 0.001;  // Max relative variation for flat peak
+const int SATURATION_MIN_FLAT_PIXELS = 6;     // Min number of pixels at peak for saturation
+
 template <typename T>
 double getPixelValue(const T* data, int x, int y, int width) {
 	return static_cast<double>(data[y * width + x]);
+}
+
+template <typename T>
+bool checkSaturation(
+	const T* data,
+	int width,
+	int height,
+	int peak_x,
+	int peak_y,
+	double peak_value
+) {
+	if (peak_value <= 0) {
+		return false;
+	}
+
+	// Count pixels within a small radius that are at or very close to the peak value
+	int flat_pixel_count = 0;
+	double threshold = peak_value * (1.0 - SATURATION_FLATNESS_THRESHOLD);
+
+	for (int dy = -SATURATION_CHECK_RADIUS; dy <= SATURATION_CHECK_RADIUS; dy++) {
+		for (int dx = -SATURATION_CHECK_RADIUS; dx <= SATURATION_CHECK_RADIUS; dx++) {
+			int px = peak_x + dx;
+			int py = peak_y + dy;
+			if (px >= 0 && px < width && py >= 0 && py < height) {
+				double val = getPixelValue(data, px, py, width);
+				if (val >= threshold) {
+					flat_pixel_count++;
+				}
+			}
+		}
+	}
+
+	// If we have many pixels at the same (or very similar) peak value, the star is likely saturated
+	if (flat_pixel_count >= SATURATION_MIN_FLAT_PIXELS) {
+		indigo_error("SNR: Star appears saturated - %d pixels at peak value %.1f", flat_pixel_count, peak_value);
+		return true;
+	}
+
+	return false;
 }
 
 struct PeakInfo {
@@ -550,6 +594,9 @@ SNRResult calculateSNRTemplate(
 	if (!peak.valid) {
 		return result;
 	}
+
+	// Check for saturation (flat peak)
+	result.is_saturated = checkSaturation(data, width, height, peak.peak_x, peak.peak_y, peak.peak_value);
 
 	// Step 3: Estimate local background
 	double local_background = estimateLocalBackground(area_pixels, area_mean, area_stddev);
