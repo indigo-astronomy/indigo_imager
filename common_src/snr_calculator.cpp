@@ -334,7 +334,7 @@ CentroidInfo calculateCentroid(
 }
 
 template <typename T>
-HFRInfo calculateIterativeHFD(
+HFRInfo calculateIterativeHFR(
 	const T* data,
 	int width,
 	int height,
@@ -699,14 +699,14 @@ SNRResult calculateSNRTemplate(
 		return result;
 	}
 
-	// Step 5: Iterative HFD calculation
-	HFRInfo hfd_info = calculateIterativeHFD(data, width, height, centroid.centroid_x, centroid.centroid_y, local_background);
-	if (!hfd_info.valid) {
+	// Step 5: Iterative HFR calculation
+	HFRInfo hfr_info = calculateIterativeHFR(data, width, height, centroid.centroid_x, centroid.centroid_y, local_background);
+	if (!hfr_info.valid) {
 		return result;
 	}
 
 	// Star aperture radius = 3.0 * HFR (captures ~94% of flux)
-	double star_radius = hfd_info.hfr * STAR_APERTURE_MULTIPLIER;
+	double star_radius = hfr_info.hfr * STAR_APERTURE_MULTIPLIER;
 	star_radius = std::min(star_radius, STAR_APERTURE_MAX_RADIUS);
 
 	// Step 6: Calculate signal statistics
@@ -726,7 +726,7 @@ SNRResult calculateSNRTemplate(
 	computeFinalSNR(result, centroid.centroid_x, centroid.centroid_y, star_radius);
 
 	// Store HFD value
-	result.hfd = hfd_info.hfr * 2.0;
+	result.hfd = hfr_info.hfr * 2.0;
 
 	return result;
 }
