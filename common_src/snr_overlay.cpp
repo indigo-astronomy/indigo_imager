@@ -70,6 +70,8 @@ void SNROverlay::setSNRResult(const SNRResult &result) {
 		qualityColor = "#00DD00";  // Bright green
 	}
 
+	int accuracy = result.peak_value < 1.5 ? 5 : 0;
+
 	QString info = QString(
 		"<table cellspacing='0' cellpadding='0' style='border-collapse: collapse;'>"
 		"<tr><td><b>SNR:</b></td><td align='right'><b><font color='%1'>%2</font> (%3)</b></td></tr>"
@@ -86,12 +88,12 @@ void SNROverlay::setSNRResult(const SNRResult &result) {
 	.arg(qualityColor)
 	.arg(result.snr, 0, 'f', 1)
 	.arg(qualityText)
-	.arg(result.peak_value, 0, 'f', 0)
-	.arg(result.total_flux, 0, 'f', 0)
-	.arg(result.signal_mean, 0, 'f', 0)
-	.arg(result.signal_stddev, 0, 'f', 0)
-	.arg(result.background_mean, 0, 'f', 0)
-	.arg(result.background_stddev, 0, 'f', 0)
+	.arg(result.peak_value, 0, 'f', accuracy)
+	.arg(result.total_flux, 0, 'f', accuracy)
+	.arg(result.signal_mean, 0, 'f', accuracy)
+	.arg(result.signal_stddev, 0, 'f', accuracy)
+	.arg(result.background_mean, 0, 'f', accuracy)
+	.arg(result.background_stddev, 0, 'f', accuracy)
 	.arg(result.hfd, 0, 'f', 2)
 	.arg(result.eccentricity, 0, 'f', 3)
 	.arg(result.star_x, 0, 'f', 1)
