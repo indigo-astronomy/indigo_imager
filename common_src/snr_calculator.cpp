@@ -608,26 +608,31 @@ bool calculateBackgroundStatistics(
 	return true;
 }
 
-void computeFinalSNR(SNRResult& result, double centroid_x, double centroid_y, double star_radius) {
+void computeFinalSNR(SNRResult& result, double centroid_x, double centroid_y, double star_radius, double gain) {
 	double total_signal = result.signal_mean * result.star_pixels;
 	double total_background = result.background_mean * result.star_pixels;
 	double net_signal = total_signal - total_background;
 
 	result.total_flux = net_signal;
 
-	// Proper aperture photometry SNR formula:
-	// SNR = net_signal / sqrt(total_signal + n_pixels * background_variance)
-	//
-	// This accounts for:
-	// - Photon noise from the star (sqrt(total_signal))
-	// - Photon noise from background (sqrt(n_pixels * background_variance))
-	// - Read noise is included in background_stddev if measured from the image
+	// SNR calculation using Poisson noise model:
+	// For integer data: gain = e-/ADU (typically 1.0 if unknown)
+	// For normalized floats: gain = e-/normalized_unit (65535 means 1.0 = 65535 e-)
+	// electrons = pixel_value * gain
+	// Poisson noise in electrons = sqrt(electrons)
+	// noise² = signal_electrons + n_pixels × bg_variance_electrons
 
 	double background_variance = result.background_stddev * result.background_stddev;
-	double noise_squared = total_signal + result.star_pixels * background_variance;
+	double noise_squared;
 
+	// Convert to electrons using gain, apply Poisson noise, then compute SNR
+	double signal_electrons = total_signal * gain;
+	double bg_variance_electrons = background_variance * gain * gain;
+	noise_squared = signal_electrons + result.star_pixels * bg_variance_electrons;
+
+	double net_signal_electrons = net_signal * gain;
 	if (noise_squared > 0) {
-		result.snr = net_signal / std::sqrt(noise_squared);
+		result.snr = net_signal_electrons / std::sqrt(noise_squared);
 	} else {
 		result.snr = 0;
 	}
@@ -637,7 +642,8 @@ void computeFinalSNR(SNRResult& result, double centroid_x, double centroid_y, do
 	result.star_y = centroid_y;
 	result.valid = (result.snr > 0 && result.snr < 10000);
 
-	indigo_error("SNR: Final - total_signal=%.1f, net_signal=%.1f, noise=%.1f, SNR=%.2f", total_signal, net_signal, std::sqrt(noise_squared), result.snr);
+	indigo_error("SNR: Final - total_signal=%.1f, net_signal=%.1f, noise=%.1f, SNR=%.2f, gain=%.1f",
+			total_signal, net_signal, std::sqrt(std::max(noise_squared, 0.0)), result.snr, gain);
 }
 
 template <typename T>
@@ -646,7 +652,8 @@ SNRResult calculateSNRTemplate(
 	int width,
 	int height,
 	double click_x,
-	double click_y
+	double click_y,
+	double gain
 ) {
 	SNRResult result;
 
@@ -727,7 +734,7 @@ SNRResult calculateSNRTemplate(
 	result.eccentricity = calculateEccentricity(data, width, height, centroid.centroid_x, centroid.centroid_y, star_radius, result.background_mean);
 
 	// Step 9: Compute final SNR
-	computeFinalSNR(result, centroid.centroid_x, centroid.centroid_y, star_radius);
+	computeFinalSNR(result, centroid.centroid_x, centroid.centroid_y, star_radius, gain);
 
 	// Store HFD value
 	result.hfd = hfr_info.hfr * 2.0;
@@ -749,22 +756,22 @@ SNRResult calculateSNR(
 		case PIX_FMT_Y8:
 			return calculateSNRTemplate(
 				reinterpret_cast<const uint8_t*>(image_data),
-				width, height, click_x, click_y
+				width, height, click_x, click_y, 1.0  // gain = 1 e-/ADU
 			);
 		case PIX_FMT_Y16:
 			return calculateSNRTemplate(
 				reinterpret_cast<const uint16_t*>(image_data),
-				width, height, click_x, click_y
+				width, height, click_x, click_y, 1.0  // gain = 1 e-/ADU
 			);
 		case PIX_FMT_Y32:
 			return calculateSNRTemplate(
 				reinterpret_cast<const uint32_t*>(image_data),
-				width, height, click_x, click_y
+				width, height, click_x, click_y, 1.0  // gain = 1 e-/ADU
 			);
 		case PIX_FMT_F32:
 			return calculateSNRTemplate(
 				reinterpret_cast<const float*>(image_data),
-				width, height, click_x, click_y
+				width, height, click_x, click_y, 65535.0  // normalized: 1.0 = 65535 electrons
 			);
 		default: {
 			SNRResult result;

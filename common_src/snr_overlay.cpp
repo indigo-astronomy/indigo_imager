@@ -71,29 +71,34 @@ void SNROverlay::setSNRResult(const SNRResult &result) {
 	}
 
 	int accuracy = result.peak_value < 1.5 ? 5 : 0;
+	QString unit = result.peak_value < 1.5 ? "" : " ADU";
 
 	QString info = QString(
 		"<table cellspacing='0' cellpadding='0' style='border-collapse: collapse;'>"
 		"<tr><td><b>SNR:</b></td><td align='right'><b><font color='%1'>%2</font> (%3)</b></td></tr>"
-		"<tr><td>Peak:</td><td align='right'>%4 ADU</td></tr>"
-		"<tr><td>Total Flux:</td><td align='right'>%5 ADU</td></tr>"
-		"<tr><td>μ Signal:</td><td align='right'>%6±%7 ADU</td></tr>"
-		"<tr><td>μ Background:</td><td align='right'>%8±%9 ADU</td></tr>"
-		"<tr><td>HFD:</td><td align='right'>%10 px</td></tr>"
-		"<tr><td>Eccentricity:</td><td align='right'>%11</td></tr>"
-		"<tr><td>Center:</td><td align='right'>(%12,%13)</td></tr>"
-		"<tr><td>Radius:</td><td align='right'>%14px (%15/%16)</td></tr>"
+		"<tr><td>Peak:</td><td align='right'>%4%5</td></tr>"
+		"<tr><td>Total Flux:</td><td align='right'>%6%7</td></tr>"
+		"<tr><td>μ Signal:</td><td align='right'>%8±%9%10</td></tr>"
+		"<tr><td>μ Background:</td><td align='right'>%11±%12%13</td></tr>"
+		"<tr><td>HFD:</td><td align='right'>%14 px</td></tr>"
+		"<tr><td>Eccentricity:</td><td align='right'>%15</td></tr>"
+		"<tr><td>Center:</td><td align='right'>(%16,%17)</td></tr>"
+		"<tr><td>Radius:</td><td align='right'>%18px (%19/%20)</td></tr>"
 		"</table>"
 	)
 	.arg(qualityColor)
 	.arg(result.snr, 0, 'f', 1)
 	.arg(qualityText)
 	.arg(result.peak_value, 0, 'f', accuracy)
+	.arg(unit)
 	.arg(result.total_flux, 0, 'f', accuracy)
+	.arg(unit)
 	.arg(result.signal_mean, 0, 'f', accuracy)
 	.arg(result.signal_stddev, 0, 'f', accuracy)
+	.arg(unit)
 	.arg(result.background_mean, 0, 'f', accuracy)
 	.arg(result.background_stddev, 0, 'f', accuracy)
+	.arg(unit)
 	.arg(result.hfd, 0, 'f', 2)
 	.arg(result.eccentricity, 0, 'f', 3)
 	.arg(result.star_x, 0, 'f', 1)
