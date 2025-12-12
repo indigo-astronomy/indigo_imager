@@ -8,7 +8,7 @@
 namespace {
 
 // Star detection
-const int STAR_SEARCH_RADIUS = 8;
+const int STAR_SEARCH_RADIUS = 4;
 const double STAR_DETECTION_SIGMA = 2.0;
 const double STAR_CONTRAST_RATIO = 1.2;
 
