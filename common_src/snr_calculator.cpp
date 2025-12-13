@@ -302,8 +302,9 @@ CentroidInfo calculateCentroid(
 						double weight = val - local_background;
 						if (weight > 0) {
 							sum_intensity += weight;
-							sum_x += px * weight;
-							sum_y += py * weight;
+							// Use pixel center coordinates (px + 0.5, py + 0.5)
+							sum_x += (px + 0.5) * weight;
+							sum_y += (py + 0.5) * weight;
 						}
 					}
 				}
