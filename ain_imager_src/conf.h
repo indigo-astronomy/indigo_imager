@@ -83,6 +83,16 @@ typedef enum {
 	AIN_OK_SOUND
 } ain_sounds;
 
+typedef enum {
+	NO_PREVIEWS = 0,
+	GUIDER_FINE_PREVIEW = 1,
+	GUIDER_NORMAL_PREVIEW = 2,
+	GUIDER_COARSE_PREVIEW = 3,
+	ALL_FINE_PREVIEWS = 4,
+	ALL_NORMAL_PREVIEWS = 5,
+	ALL_COARSE_PREVIEWS = 6
+} ain_preview_mode;
+
 typedef struct {
 	bool blobs_enabled;
 	bool auto_connect;
@@ -93,7 +103,7 @@ typedef struct {
 	bool antialiasing_enabled;
 	int focus_mode;
 	preview_stretch preview_stretch_level;
-	int use_previews;
+	int __unused_use_previews;
 	int guider_subframe;
 	int focuser_subframe;
 	preview_stretch guider_stretch_level;
@@ -120,6 +130,7 @@ typedef struct {
 	uint32_t preview_bayer_pattern; /* BAYER_PAT_XXXX from image_preview_lut.h */
 	bool require_confirmation;
 	bool compact_window_layout;
+	ain_preview_mode preview_mode;
 	char unused[100];
 } conf_t;
 

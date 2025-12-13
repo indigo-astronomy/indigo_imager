@@ -202,7 +202,7 @@ void update_ccd_image_file(ImagerWindow *w, indigo_property *property) {
 			w->m_last_remote_image_file = QString(property->items[i].text.value);
 			char message[PATH_LEN+100];
 			char *indicator;
-			if (conf.use_previews > 0) {
+			if (conf.preview_mode > GUIDER_COARSE_PREVIEW) {
 				indicator = PREVIEW_REMOTE_INDICATOR;
 			} else {
 				indicator = SAVE_REMOTE_INDICATOR;
@@ -2846,7 +2846,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_agent, CCD_PREVIEW_PROPERTY_NAME)) {
 		QtConcurrent::run([=]() {
-			change_agent_ccd_preview(selected_agent, (bool)conf.use_previews);
+			change_agent_ccd_preview(selected_agent, conf.preview_mode > GUIDER_COARSE_PREVIEW);
 		});
 	}
 	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME)) {
@@ -2890,7 +2890,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_guider_agent, CCD_PREVIEW_PROPERTY_NAME)) {
 		QtConcurrent::run([=]() {
-			change_agent_ccd_preview(selected_guider_agent, (bool)conf.use_previews);
+			change_agent_ccd_preview(selected_guider_agent, (bool)conf.preview_mode > NO_PREVIEWS);
 		});
 	}
 	if (client_match_device_property(property, selected_guider_agent, CCD_MODE_PROPERTY_NAME)) {

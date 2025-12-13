@@ -157,28 +157,48 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	act = sub_menu->addAction("&Off (Use actual images)");
 	act->setCheckable(true);
-	if (conf.use_previews == 0) act->setChecked(true);
+	if (conf.preview_mode == NO_PREVIEWS) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_off);
 	preview_mode_group->addAction(act);
 
 	sub_menu->addSeparator();
 
-	act = sub_menu->addAction("&Fine preview");
+	act = sub_menu->addAction("Guider only &fine preview");
 	act->setCheckable(true);
-	if (conf.use_previews == 1) act->setChecked(true);
-	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_fine);
+	if (conf.preview_mode == GUIDER_FINE_PREVIEW) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_fine_guider);
 	preview_mode_group->addAction(act);
 
-	act = sub_menu->addAction("&Normal preview");
+	act = sub_menu->addAction("Guider only &normal preview");
 	act->setCheckable(true);
-	if (conf.use_previews == 2) act->setChecked(true);
-	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_normal);
+	if (conf.preview_mode == GUIDER_NORMAL_PREVIEW) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_normal_guider);
 	preview_mode_group->addAction(act);
 
-	act = sub_menu->addAction("&Coarse preview");
+	act = sub_menu->addAction("Guider only &coarse preview");
 	act->setCheckable(true);
-	if (conf.use_previews == 3) act->setChecked(true);
-	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_coarse);
+	if (conf.preview_mode == GUIDER_COARSE_PREVIEW) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_coarse_guider);
+	preview_mode_group->addAction(act);
+
+	sub_menu->addSeparator();
+
+	act = sub_menu->addAction("Imager && Guider &fine previews");
+	act->setCheckable(true);
+	if (conf.preview_mode == ALL_FINE_PREVIEWS) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_fine_all);
+	preview_mode_group->addAction(act);
+
+	act = sub_menu->addAction("Imager && Guider &normal previews");
+	act->setCheckable(true);
+	if (conf.preview_mode == ALL_NORMAL_PREVIEWS) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_normal_all);
+	preview_mode_group->addAction(act);
+
+	act = sub_menu->addAction("Imager && Guider &coarse previews");
+	act->setCheckable(true);
+	if (conf.preview_mode == ALL_COARSE_PREVIEWS) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_coarse_all);
 	preview_mode_group->addAction(act);
 
 	/*
@@ -717,20 +737,25 @@ bool ImagerWindow::show_preview_in_imager_viewer(QString &key) {
 
 void ImagerWindow::setup_preview(const char *agent) {
 	int stretch_level, reference_channel;
+	bool is_imager = false;
 	if (!strncmp(agent, "Imager Agent", 12)) {
+		is_imager = true;
 		stretch_level = conf.preview_stretch_level;
 		reference_channel = (conf.preview_color_balance == CB_AUTO) ? 0 : 2;
+		change_agent_ccd_preview(agent, conf.preview_mode > GUIDER_COARSE_PREVIEW);
 	} else if (!strncmp(agent, "Guider Agent", 12)) {
+		is_imager = false;
 		stretch_level = conf.guider_stretch_level;
 		reference_channel = conf.guider_color_balance == CB_AUTO ? 0 : 2;
+		change_agent_ccd_preview(agent, conf.preview_mode > NO_PREVIEWS);
 	} else {
 		return;
 	}
-	change_agent_ccd_preview(agent, (bool)conf.use_previews);
-	switch (conf.use_previews) {
+	switch (conf.preview_mode) {
 	case 0:
 		break;
-	case 1:
+	case GUIDER_FINE_PREVIEW:
+		if (is_imager) break;
 		change_jpeg_settings_property(
 			agent,
 			93,
@@ -739,7 +764,8 @@ void ImagerWindow::setup_preview(const char *agent) {
 			reference_channel
 		);
 		break;
-	case 2:
+	case GUIDER_NORMAL_PREVIEW:
+		if (is_imager) break;
 		change_jpeg_settings_property(
 			agent,
 			89,
@@ -748,7 +774,35 @@ void ImagerWindow::setup_preview(const char *agent) {
 			reference_channel
 		);
 		break;
-	case 3:
+	case GUIDER_COARSE_PREVIEW:
+		if (is_imager) break;
+		change_jpeg_settings_property(
+			agent,
+			50,
+			stretch_params_lut[stretch_level].brightness,
+			stretch_params_lut[stretch_level].contrast,
+			reference_channel
+		);
+		break;
+	case ALL_FINE_PREVIEWS:
+		change_jpeg_settings_property(
+			agent,
+			93,
+			stretch_params_lut[stretch_level].brightness,
+			stretch_params_lut[stretch_level].contrast,
+			reference_channel
+		);
+		break;
+	case ALL_NORMAL_PREVIEWS:
+		change_jpeg_settings_property(
+			agent,
+			89,
+			stretch_params_lut[stretch_level].brightness,
+			stretch_params_lut[stretch_level].contrast,
+			reference_channel
+		);
+		break;
+	case ALL_COARSE_PREVIEWS:
 		change_jpeg_settings_property(
 			agent,
 			50,
@@ -1051,8 +1105,8 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		item->blob.value = nullptr;
 		free(item);
 	} else if (get_selected_guider_agent(selected_agent)) {
-		if ((client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME) && conf.use_previews == 0) ||
-			(client_match_device_property(property, selected_agent, CCD_PREVIEW_IMAGE_PROPERTY_NAME) && conf.use_previews > 0)) {
+		if ((client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME) && conf.preview_mode == NO_PREVIEWS) ||
+			(client_match_device_property(property, selected_agent, CCD_PREVIEW_IMAGE_PROPERTY_NAME) && conf.preview_mode > NO_PREVIEWS)) {
 			const stretch_config_t sconfig = {(uint8_t)conf.guider_stretch_level, (uint8_t)conf.guider_color_balance, BAYER_PAT_AUTO};
 			preview_cache.create(property, item, sconfig);
 			QString key = preview_cache.create_key(property, item);
@@ -1595,7 +1649,7 @@ void ImagerWindow::on_guide_show_xy_drift() {
 }
 
 void ImagerWindow::on_preview_mode_off() {
-	conf.use_previews = 0;
+	conf.preview_mode = NO_PREVIEWS;
 	write_conf();
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -1609,8 +1663,8 @@ void ImagerWindow::on_preview_mode_off() {
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
-void ImagerWindow::on_preview_mode_fine() {
-	conf.use_previews = 1;
+void ImagerWindow::on_preview_mode_fine_guider() {
+	conf.preview_mode = GUIDER_FINE_PREVIEW;
 	write_conf();
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -1624,8 +1678,8 @@ void ImagerWindow::on_preview_mode_fine() {
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
-void ImagerWindow::on_preview_mode_normal() {
-	conf.use_previews = 2;
+void ImagerWindow::on_preview_mode_normal_guider() {
+	conf.preview_mode = GUIDER_NORMAL_PREVIEW;
 	write_conf();
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -1639,8 +1693,53 @@ void ImagerWindow::on_preview_mode_normal() {
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
-void ImagerWindow::on_preview_mode_coarse() {
-	conf.use_previews = 3;
+void ImagerWindow::on_preview_mode_coarse_guider() {
+	conf.preview_mode = GUIDER_COARSE_PREVIEW;
+	write_conf();
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_imager_agent(selected_agent);
+		setup_preview(selected_agent);
+
+		get_selected_guider_agent(selected_agent);
+		setup_preview(selected_agent);
+	});
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_preview_mode_fine_all() {
+	conf.preview_mode = ALL_FINE_PREVIEWS;
+	write_conf();
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_imager_agent(selected_agent);
+		setup_preview(selected_agent);
+
+		get_selected_guider_agent(selected_agent);
+		setup_preview(selected_agent);
+	});
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_preview_mode_normal_all() {
+	conf.preview_mode = ALL_NORMAL_PREVIEWS;
+	write_conf();
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_imager_agent(selected_agent);
+		setup_preview(selected_agent);
+
+		get_selected_guider_agent(selected_agent);
+		setup_preview(selected_agent);
+	});
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_preview_mode_coarse_all() {
+	conf.preview_mode = ALL_COARSE_PREVIEWS;
 	write_conf();
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];

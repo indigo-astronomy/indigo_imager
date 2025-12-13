@@ -367,9 +367,12 @@ public slots:
 	void on_change_guider_agent_i_gain_changed(double value);
 	void on_change_guider_agent_is_changed(int value);
 	void on_preview_mode_off();
-	void on_preview_mode_fine();
-	void on_preview_mode_normal();
-	void on_preview_mode_coarse();
+	void on_preview_mode_fine_guider();
+	void on_preview_mode_normal_guider();
+	void on_preview_mode_coarse_guider();
+	void on_preview_mode_fine_all();
+	void on_preview_mode_normal_all();
+	void on_preview_mode_coarse_all();
 	void on_guide_show_rd_drift();
 	void on_guide_show_rd_s_drift();
 	void on_guide_show_rd_pulse();

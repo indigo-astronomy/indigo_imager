@@ -510,7 +510,7 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 		change_agent_batch_property(selected_imager_agent);
 		change_ccd_frame_property(selected_imager_agent);
 		change_ccd_localmode_property(selected_imager_agent, m_object_name_str);
-		if(conf.save_images_on_server || conf.use_previews) {
+		if(conf.save_images_on_server || conf.preview_mode > GUIDER_COARSE_PREVIEW) {
 			setup_preview(selected_imager_agent);
 			change_ccd_upload_property(selected_imager_agent, CCD_UPLOAD_MODE_BOTH_ITEM_NAME);
 		} else {

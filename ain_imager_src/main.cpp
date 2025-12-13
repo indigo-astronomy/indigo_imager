@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
 	conf.antialiasing_enabled = false;
 	conf.guider_antialiasing_enabled = false;
 	conf.focus_mode = 0;
-	conf.use_previews = 1;
+	conf.__unused_use_previews = 0;
 	conf.guider_subframe = 0;
 	conf.focuser_subframe = 0;
 	conf.focuser_display = SHOW_HFD;
@@ -128,6 +128,7 @@ int main(int argc, char *argv[]) {
 	conf.preview_bayer_pattern = 0;
 	conf.require_confirmation = false;
 	conf.compact_window_layout = false;
+	conf.preview_mode = NO_PREVIEWS;
 	read_conf();
 	conf.blobs_enabled = true; // Always enable BLOBs remove option from UI
 
