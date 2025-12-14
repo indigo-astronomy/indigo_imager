@@ -98,7 +98,7 @@ bool checkSaturation(const T* data, int width, int height, int peak_x, int peak_
 
 	// If we have many pixels at the same (or very similar) peak value, the star is likely saturated
 	if (flat_pixel_count >= SATURATION_MIN_FLAT_PIXELS) {
-		indigo_error("SNR: Star appears saturated - %d pixels at peak value %.1f", flat_pixel_count, peak_value);
+		indigo_debug("SNR: Star appears saturated - %d pixels at peak value %.1f", flat_pixel_count, peak_value);
 		return true;
 	}
 
@@ -208,7 +208,7 @@ double calculateEccentricity(const T* data, int width, int height, double centro
 
 	double eccentricity = std::sqrt(1.0 - ratio * ratio);
 
-	indigo_error("SNR: Eccentricity=%.3f (λ1=%.2f, λ2=%.2f, ratio=%.3f)",
+	indigo_debug("SNR: Eccentricity=%.3f (λ1=%.2f, λ2=%.2f, ratio=%.3f)",
 				 eccentricity, lambda1, lambda2, ratio);
 
 	return eccentricity;
@@ -283,12 +283,12 @@ PeakInfo findPeakAndDetectStar(
 	bool has_good_contrast = (contrast_ratio > STAR_CONTRAST_RATIO) && (info.peak_value - area_mean > area_stddev);
 
 	if (!star_detected && !has_good_contrast) {
-		indigo_error("SNR: No star detected at (%d,%d) - peak=%.1f, mean=%.1f, stddev=%.1f, threshold=%.1f, contrast=%.2f",
+		indigo_debug("SNR: No star detected at (%d,%d) - peak=%.1f, mean=%.1f, stddev=%.1f, threshold=%.1f, contrast=%.2f",
 					cx, cy, info.peak_value, area_mean, area_stddev, star_threshold, contrast_ratio);
 		return info;
 	}
 
-	indigo_error("SNR: Star detected at (%d,%d) - peak=%.1f, mean=%.1f, threshold=%.1f, contrast=%.2f, stat_detect=%d",
+	indigo_debug("SNR: Star detected at (%d,%d) - peak=%.1f, mean=%.1f, threshold=%.1f, contrast=%.2f, stat_detect=%d",
 				cx, cy, info.peak_value, area_mean, star_threshold, contrast_ratio, star_detected);
 
 	info.valid = true;
@@ -368,11 +368,11 @@ CentroidInfo calculateCentroid(
 	);
 
 	if (peak_to_centroid_dist > MAX_CENTROID_PEAK_DISTANCE) {
-		indigo_error("SNR: Centroid too far from peak (%.2f px) at (%.1f,%.1f) - likely multiple stars", peak_to_centroid_dist, click_x, click_y);
+		indigo_debug("SNR: Centroid too far from peak (%.2f px) at (%.1f,%.1f) - likely multiple stars", peak_to_centroid_dist, click_x, click_y);
 		return info;
 	}
 
-	indigo_error("SNR: Centroid at (%.2f,%.2f), peak at (%d,%d), distance=%.2f px", info.centroid_x, info.centroid_y, peak_x, peak_y, peak_to_centroid_dist);
+	indigo_debug("SNR: Centroid at (%.2f,%.2f), peak at (%d,%d), distance=%.2f px", info.centroid_x, info.centroid_y, peak_x, peak_y, peak_to_centroid_dist);
 
 	info.valid = true;
 	return info;
@@ -411,7 +411,7 @@ HFRInfo calculateIterativeHFR(
 
 			static int last_aperture = 0;
 			if (iteration > 1 && aperture_radius == last_aperture) {
-				indigo_error("SNR: Converged at iteration %d (aperture stable)", iteration);
+				indigo_debug("SNR: Converged at iteration %d (aperture stable)", iteration);
 				break;
 			}
 			last_aperture = aperture_radius;
@@ -443,7 +443,7 @@ HFRInfo calculateIterativeHFR(
 		}
 
 		if (total_flux <= 0 || pixel_data.empty()) {
-			indigo_error("SNR: No flux found in iteration %d", iteration);
+			indigo_debug("SNR: No flux found in iteration %d", iteration);
 			return info;
 		}
 
@@ -465,18 +465,18 @@ HFRInfo calculateIterativeHFR(
 
 		// Validate: HFR should not exceed aperture radius
 		if (hfr > aperture_radius) {
-			indigo_error("SNR: HFR (%.2f) exceeds aperture (%d) - likely bad data or multiple stars", hfr, aperture_radius);
+			indigo_debug("SNR: HFR (%.2f) exceeds aperture (%d) - likely bad data or multiple stars", hfr, aperture_radius);
 			return info;
 		}
 
-		indigo_error("SNR: Iteration %d: aperture=%d px, HFR=%.2f, HFD=%.2f, flux=%.1f",
+		indigo_debug("SNR: Iteration %d: aperture=%d px, HFR=%.2f, HFD=%.2f, flux=%.1f",
 					iteration, aperture_radius, hfr, hfr * 2.0, total_flux);
 
 		// Stop if HFR is growing too fast (likely including neighboring stars or noise)
 		if (iteration > 0 && prev_hfr > 0) {
 			double hfr_ratio = hfr / prev_hfr;
 			if ((hfr_ratio > HFR_GROWTH_RATIO_ITER1 && iteration == 1) || (hfr_ratio > HFR_GROWTH_RATIO_LATER && iteration > 1)) {
-				indigo_error("SNR: Stopping - HFR growing too fast (%.2f -> %.2f, ratio %.2f)", prev_hfr, hfr, hfr_ratio);
+				indigo_debug("SNR: Stopping - HFR growing too fast (%.2f -> %.2f, ratio %.2f)", prev_hfr, hfr, hfr_ratio);
 				// Use previous iteration's result
 				hfr = prev_hfr;
 				break;
@@ -485,7 +485,7 @@ HFRInfo calculateIterativeHFR(
 
 		// Stop if HFR exceeds reasonable range for a star
 		if (hfr > HFR_MAX_REASONABLE) {
-			indigo_error("SNR: Stopping - HFR too large (%.2f), likely not a single star", hfr);
+			indigo_debug("SNR: Stopping - HFR too large (%.2f), likely not a single star", hfr);
 			// Use previous iteration's result if available
 			if (iteration > 0 && prev_hfr > 0) {
 				hfr = prev_hfr;
@@ -494,7 +494,7 @@ HFRInfo calculateIterativeHFR(
 		}
 
 		if (aperture_radius >= hfr * HFD_CONVERGENCE_FACTOR) {
-			indigo_error("SNR: Converged at iteration %d (aperture >= 6*HFR)", iteration);
+			indigo_debug("SNR: Converged at iteration %d (aperture >= 6*HFR)", iteration);
 			break;
 		}
 
@@ -502,12 +502,12 @@ HFRInfo calculateIterativeHFR(
 	}
 
 	if (hfr <= 0) {
-		indigo_error("SNR: Invalid HFR calculated: %.2f", hfr);
+		indigo_debug("SNR: Invalid HFR calculated: %.2f", hfr);
 		return info;
 	}
 
 	if (hfr < HFR_MIN_VALID || hfr > HFR_MAX_VALID) {
-		indigo_error("SNR: HFR out of range: %.2f (valid range: 0.5-20)", hfr);
+		indigo_debug("SNR: HFR out of range: %.2f (valid range: 0.5-20)", hfr);
 		return info;
 	}
 
@@ -686,7 +686,7 @@ void computeFinalSNR(SNRResult& result, double centroid_x, double centroid_y, do
 	result.star_y = centroid_y;
 	result.valid = (result.snr > 0 && result.snr < 10000);
 
-	indigo_error("SNR: Final - total_signal=%.1f, net_signal=%.1f, noise=%.1f, SNR=%.2f, gain=%.1f",
+	indigo_debug("SNR: Final - total_signal=%.1f, net_signal=%.1f, noise=%.1f, SNR=%.2f, gain=%.1f",
 			total_signal, net_signal, std::sqrt(std::max(noise_squared, 0.0)), result.snr, gain);
 }
 
