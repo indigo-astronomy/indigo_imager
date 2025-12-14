@@ -14,7 +14,7 @@ const double STAR_CONTRAST_RATIO = 1.2;
 
 // Centroid calculation
 const int CENTROID_RADIUS = 8;
-const double MAX_CENTROID_PEAK_DISTANCE = 5.0;
+const double MAX_CENTROID_PEAK_DISTANCE = 4.0;
 
 // HFD/HFR calculation
 const int HFD_INITIAL_RADIUS = 3;
@@ -44,20 +44,37 @@ const int SATURATION_CHECK_RADIUS = 5;         // Radius to check for flat peak
 const double SATURATION_FLATNESS_THRESHOLD = 0.001;  // Max relative variation for flat peak
 const int SATURATION_MIN_FLAT_PIXELS = 6;     // Min number of pixels at peak for saturation
 
+struct PeakInfo {
+	int peak_x;
+	int peak_y;
+	double peak_value;
+	bool valid;
+};
+
+struct CentroidInfo {
+	double centroid_x;
+	double centroid_y;
+	bool valid;
+};
+
+struct HFRInfo {
+	double hfr;
+	bool valid;
+};
+
+struct AreaStats {
+	std::vector<double> pixels;
+	double mean;
+	double stddev;
+};
+
 template <typename T>
 double getPixelValue(const T* data, int x, int y, int width) {
 	return static_cast<double>(data[y * width + x]);
 }
 
 template <typename T>
-bool checkSaturation(
-	const T* data,
-	int width,
-	int height,
-	int peak_x,
-	int peak_y,
-	double peak_value
-) {
+bool checkSaturation(const T* data, int width, int height, int peak_x, int peak_y, double peak_value) {
 	if (peak_value <= 0) {
 		return false;
 	}
@@ -88,34 +105,32 @@ bool checkSaturation(
 	return false;
 }
 
-struct PeakInfo {
-	int peak_x;
-	int peak_y;
-	double peak_value;
-	bool valid;
-};
-
-struct CentroidInfo {
-	double centroid_x;
-	double centroid_y;
-	bool valid;
-};
-
-struct HFRInfo {
-	double hfr;
-	bool valid;
-};
 
 template <typename T>
-double calculateEccentricity(
-	const T* data,
-	int width,
-	int height,
-	double centroid_x,
-	double centroid_y,
-	double star_radius,
-	double background
-) {
+PeakInfo findPeak(const T* data, int width, int height, int cx, int cy ) {
+	PeakInfo info = {cx, cy, 0, false};
+
+	for (int dy = -STAR_SEARCH_RADIUS; dy <= STAR_SEARCH_RADIUS; dy++) {
+		for (int dx = -STAR_SEARCH_RADIUS; dx <= STAR_SEARCH_RADIUS; dx++) {
+			int px = cx + dx;
+			int py = cy + dy;
+			if (px >= 0 && px < width && py >= 0 && py < height) {
+				double val = getPixelValue(data, px, py, width);
+				if (val > info.peak_value) {
+					info.peak_value = val;
+					info.peak_x = px;
+					info.peak_y = py;
+				}
+			}
+		}
+	}
+
+	info.valid = true;
+	return info;
+}
+
+template <typename T>
+double calculateEccentricity(const T* data, int width, int height, double centroid_x, double centroid_y, double star_radius, double background) {
 	// Calculate second moments of the intensity distribution
 	// Using background-subtracted, weighted pixel values
 	double m20 = 0;  // Variance in x direction
@@ -200,6 +215,36 @@ double calculateEccentricity(
 }
 
 template <typename T>
+AreaStats calculateAreaStatistics(const T* data, int width, int height, int center_x, int center_y) {
+	AreaStats stats;
+
+	for (int dy = -STAR_SEARCH_RADIUS; dy <= STAR_SEARCH_RADIUS; dy++) {
+		for (int dx = -STAR_SEARCH_RADIUS; dx <= STAR_SEARCH_RADIUS; dx++) {
+			int px = center_x + dx;
+			int py = center_y + dy;
+			if (px >= 0 && px < width && py >= 0 && py < height) {
+				stats.pixels.push_back(getPixelValue(data, px, py, width));
+			}
+		}
+	}
+
+	double sum = 0;
+	for (double val : stats.pixels) {
+		sum += val;
+	}
+	stats.mean = sum / stats.pixels.size();
+
+	double variance = 0;
+	for (double val : stats.pixels) {
+		double diff = val - stats.mean;
+		variance += diff * diff;
+	}
+	stats.stddev = std::sqrt(variance / stats.pixels.size());
+
+	return stats;
+}
+
+template <typename T>
 PeakInfo findPeakAndDetectStar(
 	const T* data,
 	int width,
@@ -207,9 +252,7 @@ PeakInfo findPeakAndDetectStar(
 	int cx,
 	int cy,
 	double area_mean,
-	double area_stddev,
-	double click_x,
-	double click_y
+	double area_stddev
 ) {
 	PeakInfo info = {cx, cy, 0, false};
 
@@ -240,29 +283,29 @@ PeakInfo findPeakAndDetectStar(
 	bool has_good_contrast = (contrast_ratio > STAR_CONTRAST_RATIO) && (info.peak_value - area_mean > area_stddev);
 
 	if (!star_detected && !has_good_contrast) {
-		indigo_error("SNR: No star detected at (%.1f,%.1f) - peak=%.1f, mean=%.1f, stddev=%.1f, threshold=%.1f, contrast=%.2f",
-					click_x, click_y, info.peak_value, area_mean, area_stddev, star_threshold, contrast_ratio);
+		indigo_error("SNR: No star detected at (%d,%d) - peak=%.1f, mean=%.1f, stddev=%.1f, threshold=%.1f, contrast=%.2f",
+					cx, cy, info.peak_value, area_mean, area_stddev, star_threshold, contrast_ratio);
 		return info;
 	}
 
-	indigo_error("SNR: Star detected at (%.1f,%.1f) - peak=%.1f, mean=%.1f, threshold=%.1f, contrast=%.2f, stat_detect=%d",
-				click_x, click_y, info.peak_value, area_mean, star_threshold, contrast_ratio, star_detected);
+	indigo_error("SNR: Star detected at (%d,%d) - peak=%.1f, mean=%.1f, threshold=%.1f, contrast=%.2f, stat_detect=%d",
+				cx, cy, info.peak_value, area_mean, star_threshold, contrast_ratio, star_detected);
 
 	info.valid = true;
 	return info;
 }
 
-double estimateLocalBackground(const std::vector<double>& area_pixels, double area_mean, double area_stddev) {
-	double background_threshold = area_mean + area_stddev;
+double estimateLocalBackground(const AreaStats& stats) {
+	double background_threshold = stats.mean + stats.stddev;
 	std::vector<double> background_pixels;
 
-	for (double val : area_pixels) {
+	for (double val : stats.pixels) {
 		if (val < background_threshold) {
 			background_pixels.push_back(val);
 		}
 	}
 
-	double local_background = area_mean;
+	double local_background = stats.mean;
 	if (!background_pixels.empty()) {
 		std::sort(background_pixels.begin(), background_pixels.end());
 		local_background = background_pixels[background_pixels.size() / 2];
@@ -505,7 +548,6 @@ bool calculateSignalStatistics(
 		return false;
 	}
 
-	// Calculate mean of raw signal pixels
 	double signal_sum = 0;
 	for (double val : signal_pixels) {
 		signal_sum += val;
@@ -659,87 +701,73 @@ SNRResult calculateSNRTemplate(
 ) {
 	SNRResult result;
 
-	int cx = static_cast<int>(click_x);
-	int cy = static_cast<int>(click_y);
-
 	// Step 1: Calculate statistics of the search area
-	std::vector<double> area_pixels;
-	for (int dy = -STAR_SEARCH_RADIUS; dy <= STAR_SEARCH_RADIUS; dy++) {
-		for (int dx = -STAR_SEARCH_RADIUS; dx <= STAR_SEARCH_RADIUS; dx++) {
-			int px = cx + dx;
-			int py = cy + dy;
-			if (px >= 0 && px < width && py >= 0 && py < height) {
-				area_pixels.push_back(getPixelValue(data, px, py, width));
-			}
-		}
-	}
-
-	if (area_pixels.empty()) {
+	AreaStats area_stats = calculateAreaStatistics(data, width, height, (int)click_x, (int)click_y);
+	if (area_stats.pixels.empty()) {
 		return result;
 	}
 
-	// Calculate mean and standard deviation of search area
-	double area_sum = 0;
-	for (double val : area_pixels) {
-		area_sum += val;
-	}
-	double area_mean = area_sum / area_pixels.size();
-
-	double area_variance = 0;
-	for (double val : area_pixels) {
-		double diff = val - area_mean;
-		area_variance += diff * diff;
-	}
-	double area_stddev = std::sqrt(area_variance / area_pixels.size());
-
 	// Step 2: Find peak and detect star
-	PeakInfo peak = findPeakAndDetectStar(data, width, height, cx, cy, area_mean, area_stddev, click_x, click_y);
+	PeakInfo peak = findPeakAndDetectStar(data, width, height, (int)click_x, (int)click_y, area_stats.mean, area_stats.stddev);
 	if (!peak.valid) {
 		return result;
 	}
 
-	result.peak_value = peak.peak_value;
+	// Step 3: Calculate area statistics centered on the peak
+	area_stats = calculateAreaStatistics(data, width, height, peak.peak_x, peak.peak_y);
+	double local_background = estimateLocalBackground(area_stats);
 
-	// Check for saturation (flat peak)
-	result.is_saturated = checkSaturation(data, width, height, peak.peak_x, peak.peak_y, peak.peak_value);
-
-	// Step 3: Estimate local background
-	double local_background = estimateLocalBackground(area_pixels, area_mean, area_stddev);
-
-	// Step 4: Calculate centroid
-	CentroidInfo centroid = calculateCentroid(data, width, height, peak.peak_x, peak.peak_y, local_background, area_stddev, click_x, click_y);
+	// Step 4: Calculate initial centroid
+	CentroidInfo centroid = calculateCentroid(data, width, height, peak.peak_x, peak.peak_y, local_background, area_stats.stddev, click_x, click_y);
 	if (!centroid.valid) {
 		return result;
 	}
 
-	// Step 5: Iterative HFR calculation
+	// Step 5: Refine - recalculate area statistics centered on initial centroid
+	area_stats = calculateAreaStatistics(data, width, height, (int)centroid.centroid_x, (int)centroid.centroid_y);
+	local_background = estimateLocalBackground(area_stats);
+
+	// Step 6: Recalculate centroid with refined background
+	centroid = calculateCentroid(data, width, height, peak.peak_x, peak.peak_y, local_background, area_stats.stddev, click_x, click_y);
+	if (!centroid.valid) {
+		return result;
+	}
+
+	// Step 7: Re-estimate peak value by searching around the centroid
+	// The centroid is not necessarily the peak pixel
+	peak = findPeak(data, width, height, (int)centroid.centroid_x, (int)centroid.centroid_y);
+
+	result.peak_value = peak.peak_value;
+
+	// Step 8: Check for saturation at the refined peak location
+	result.is_saturated = checkSaturation(data, width, height, peak.peak_x, peak.peak_y, result.peak_value);	// Step 5: Iterative HFR calculation
+
+	// Step 9: Calculate HFR iteratively
 	HFRInfo hfr_info = calculateIterativeHFR(data, width, height, centroid.centroid_x, centroid.centroid_y, local_background);
 	if (!hfr_info.valid) {
 		return result;
 	}
+	result.hfd = hfr_info.hfr * 2.0;
 
 	// Star aperture radius = 3.0 * HFR (captures ~94% of flux)
 	double star_radius = hfr_info.hfr * STAR_APERTURE_MULTIPLIER;
 	star_radius = std::min(star_radius, STAR_APERTURE_MAX_RADIUS);
 
-	// Step 6: Calculate signal statistics
+	// Step 10: Calculate signal statistics
 	if (!calculateSignalStatistics(data, width, height, centroid.centroid_x, centroid.centroid_y, star_radius, result)) {
 		return result;
 	}
 
-	// Step 7: Calculate background statistics
+	// Step 11: Calculate background statistics
 	if (!calculateBackgroundStatistics(data, width, height, centroid.centroid_x, centroid.centroid_y, star_radius, BG_MAX_RADIUS, result)) {
 		return result;
 	}
 
-	// Step 8: Calculate eccentricity (star roundness)
+	// Step 12: Calculate eccentricity (star roundness)
 	result.eccentricity = calculateEccentricity(data, width, height, centroid.centroid_x, centroid.centroid_y, star_radius, result.background_mean);
 
-	// Step 9: Compute final SNR
+	// Step 13: Compute final SNR
 	computeFinalSNR(result, centroid.centroid_x, centroid.centroid_y, star_radius, gain);
-
-	// Store HFD value
-	result.hfd = hfr_info.hfr * 2.0;
 
 	return result;
 }
