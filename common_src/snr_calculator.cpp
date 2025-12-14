@@ -139,8 +139,9 @@ double calculateEccentricity(
 				double weight = std::max(0.0, val - background);
 
 				if (weight > 0) {
-					double dx = x - centroid_x;
-					double dy = y - centroid_y;
+					// Use pixel center coordinates to match centroid calculation
+					double dx = (x + 0.5) - centroid_x;
+					double dy = (y + 0.5) - centroid_y;
 
 					m20 += weight * dx * dx;
 					m02 += weight * dy * dy;
