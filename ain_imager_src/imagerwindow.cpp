@@ -163,19 +163,19 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	sub_menu->addSeparator();
 
-	act = sub_menu->addAction("Guider only &fine preview");
+	act = sub_menu->addAction("Guider preview: &Fine");
 	act->setCheckable(true);
 	if (conf.preview_mode == GUIDER_FINE_PREVIEW) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_fine_guider);
 	preview_mode_group->addAction(act);
 
-	act = sub_menu->addAction("Guider only &normal preview");
+	act = sub_menu->addAction("Guider preview: &Normal");
 	act->setCheckable(true);
 	if (conf.preview_mode == GUIDER_NORMAL_PREVIEW) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_normal_guider);
 	preview_mode_group->addAction(act);
 
-	act = sub_menu->addAction("Guider only &coarse preview");
+	act = sub_menu->addAction("Guider preview: &Coarse");
 	act->setCheckable(true);
 	if (conf.preview_mode == GUIDER_COARSE_PREVIEW) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_coarse_guider);
@@ -183,19 +183,19 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	sub_menu->addSeparator();
 
-	act = sub_menu->addAction("Imager && Guider &fine previews");
+	act = sub_menu->addAction("Imager && Guider previews: &Fine");
 	act->setCheckable(true);
 	if (conf.preview_mode == ALL_FINE_PREVIEWS) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_fine_all);
 	preview_mode_group->addAction(act);
 
-	act = sub_menu->addAction("Imager && Guider &normal previews");
+	act = sub_menu->addAction("Imager && Guider previews: &Normal");
 	act->setCheckable(true);
 	if (conf.preview_mode == ALL_NORMAL_PREVIEWS) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_normal_all);
 	preview_mode_group->addAction(act);
 
-	act = sub_menu->addAction("Imager && Guider &coarse previews");
+	act = sub_menu->addAction("Imager && Guider previews: &Coarse");
 	act->setCheckable(true);
 	if (conf.preview_mode == ALL_COARSE_PREVIEWS) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_coarse_all);
