@@ -1077,7 +1077,7 @@ void ImagerWindow::on_update_server_disk_usage(double total_mb, double free_mb, 
 	if (state == INDIGO_IDLE_STATE || state == -1) {
 		total_str = "-- MB";
 		free_str = "-- MB";
-		percent_str = "--";
+		percent_str = "-- ";
 	}
 
 	QString icon_path;
@@ -1096,7 +1096,7 @@ void ImagerWindow::on_update_server_disk_usage(double total_mb, double free_mb, 
 			break;
 	}
 
-	QString html = QString("<img src=\"%1\" style='vertical-align:middle;'> &nbsp;Server total: %2 | Free: %3 | Usage: %4%")
+	QString html = QString("<span style='font-size:9pt;'><img src=\"%1\" style='vertical-align:middle;'> &nbsp;Server total: %2 | Free: %3 | Used: %4%</span>")
 		.arg(icon_path)
 		.arg(total_str)
 		.arg(free_str)
