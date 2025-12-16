@@ -187,11 +187,12 @@ public:
 	void updatePolarAlignmentOverlay(double azError, double altError);
 	void showPolarAlignmentOverlayMarker(bool show);
 	void setPolarAlignmentOverlayWarning(bool show);
-	void update_server_disk_usage(double total_mb, double free_mb, int state);
 
 signals:
 	void enable_blobs(bool on);
 	void rebuild_blob_previews();
+
+	void update_server_disk_usage(double total_mb, double free_mb, int state);
 
 	void set_enabled(QWidget *widget, bool enabled);
 	void set_widget_state(QWidget *widget, int state);
@@ -233,6 +234,7 @@ signals:
 	void resize_guider_edge_clipping(double edge_clipping);
 
 public slots:
+	void on_update_server_disk_usage(double total_mb, double free_mb, int state);
 	void on_exposure_start_stop(bool clicked);
 	void on_sequence_start_stop(bool clicked);
 	void on_sequence_pause(bool clicked);

@@ -485,6 +485,8 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_server_disk_usage_label = new QLabel("");
 	m_server_disk_usage_label->setToolTip("Server disk space usage");
 	remote_files_frame_layout->addWidget(m_server_disk_usage_label, remote_files_row, 0, 1, 4);
+	connect(this, &ImagerWindow::update_server_disk_usage, this, &ImagerWindow::on_update_server_disk_usage);
+
 	update_server_disk_usage(10000, 10, INDIGO_IDLE_STATE);
 }
 

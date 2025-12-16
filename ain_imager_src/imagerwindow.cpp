@@ -1976,7 +1976,7 @@ void ImagerWindow::setPolarAlignmentOverlayWarning(bool show) {
 	}
 }
 
-void ImagerWindow::update_server_disk_usage(double total_mb, double free_mb, int state) {
+void ImagerWindow::on_update_server_disk_usage(double total_mb, double free_mb, int state) {
 	if (!m_server_disk_usage_label) return;
 
 	// Accept MB, convert to GB/TB if needed
