@@ -180,6 +180,7 @@ public:
 	friend void define_ccd_exposure_property(ImagerWindow *w, indigo_property *property);
 	friend int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property);
 	friend void update_solver_agent_pa_settings(ImagerWindow *w, indigo_property *property);
+	friend void change_server_disk_usage(ImagerWindow *w, indigo_property *property);
 
 	bool m_is_sequence;
 

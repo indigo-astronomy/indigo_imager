@@ -2483,6 +2483,21 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 	}
 }
 
+void change_server_disk_usage(ImagerWindow *w, indigo_property *property) {
+	if (!w || !property) return;
+	double free_space = 0;
+	double total_space = 0;
+
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], AGENT_IMAGER_DISK_USAGE_FREE_ITEM_NAME)) {
+			free_space = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_DISK_USAGE_TOTAL_ITEM_NAME)) {
+			total_space = property->items[i].number.value;
+		}
+	}
+	w->update_server_disk_usage(total_space, free_space, property->state);
+}
+
 
 void ImagerWindow::on_window_log(indigo_property* property, const char *message) {
 	char log_line[512];
@@ -2731,6 +2746,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			set_enabled(m_focusing_preview_button, true);
 			set_widget_state(m_focusing_preview_button, INDIGO_OK_STATE);
 		}
+	}
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_DISK_USAGE_PROPERTY_NAME)) {
+		change_server_disk_usage(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, FILTER_WHEEL_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_wheel_select);
@@ -3173,6 +3191,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_agent, CCD_LOCAL_MODE_PROPERTY_NAME)) {
 		update_ccd_local_mode(this, property);
 	}
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_DISK_USAGE_PROPERTY_NAME)) {
+		change_server_disk_usage(this, property);
+	}
 	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_camera_select);
 	}
@@ -3495,6 +3516,11 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		m_config_dialog->removeAgent(property->device);
 	}
 
+	// Imager Agent
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_DISK_USAGE_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		update_server_disk_usage(0, 0, INDIGO_IDLE_STATE);
+	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_POSITION_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("REMOVE %s", property->name);
