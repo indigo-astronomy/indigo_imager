@@ -3519,7 +3519,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	// Imager Agent
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_DISK_USAGE_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
-		update_server_disk_usage(0, 0, INDIGO_IDLE_STATE);
+		update_server_disk_usage(-1, -1, INDIGO_IDLE_STATE);
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_POSITION_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {

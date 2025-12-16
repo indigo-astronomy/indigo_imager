@@ -487,7 +487,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	remote_files_frame_layout->addWidget(m_server_disk_usage_label, remote_files_row, 0, 1, 4);
 	connect(this, &ImagerWindow::update_server_disk_usage, this, &ImagerWindow::on_update_server_disk_usage);
 
-	update_server_disk_usage(10000, 10, INDIGO_IDLE_STATE);
+	update_server_disk_usage(-1, -1, INDIGO_IDLE_STATE);
 }
 
 void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
@@ -1033,4 +1033,74 @@ void ImagerWindow::remove_synced_remote_files() {
 	} else {
 		window_log("No downloaded images to remove");
 	}
+}
+
+void ImagerWindow::on_update_server_disk_usage(double total_mb, double free_mb, int state) {
+	if (!m_server_disk_usage_label) return;
+
+	// < 0 means no data available - clear label
+	if (total_mb < 0 || free_mb < 0) {
+		m_server_disk_usage_label->setText("");
+		m_server_disk_usage_label->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+		return;
+	}
+
+	// Accept MB, convert to GB/TB if needed
+	double total = total_mb;
+	double free = free_mb;
+	QString total_unit = "MB";
+	QString free_unit = "MB";
+
+	if (total >= 1024*1024) {
+		total /= (1024.0*1024.0);
+		total_unit = "TB";
+	} else if (total >= 1024) {
+		total /= 1024.0;
+		total_unit = "GB";
+	}
+
+	if (free >= 1024*1024) {
+		free /= (1024.0*1024.0);
+		free_unit = "TB";
+	} else if (free >= 1024) {
+		free /= 1024.0;
+		free_unit = "GB";
+	}
+
+	double used = total_mb - free_mb;
+	double used_percent = (total_mb > 0) ? (used / total_mb * 100.0) : 0.0;
+
+	QString total_str = QString("%1 %2").arg(total, 0, 'f', 2).arg(total_unit);
+	QString free_str = QString("%1 %2").arg(free, 0, 'f', 2).arg(free_unit);
+	QString percent_str = QString("%1").arg(used_percent, 0, 'f', 1);
+
+	if (state == INDIGO_IDLE_STATE || state == -1) {
+		total_str = "-- MB";
+		free_str = "-- MB";
+		percent_str = "--";
+	}
+
+	QString icon_path;
+	switch (state) {
+		case INDIGO_OK_STATE:
+			icon_path = ":resource/led-green.png";
+			break;
+		case INDIGO_BUSY_STATE:
+			icon_path = ":resource/led-orange.png";
+			break;
+		case INDIGO_ALERT_STATE:
+			icon_path = ":resource/led-red.png";
+			break;
+		default:
+			icon_path = ":resource/led-grey.png";
+			break;
+	}
+
+	QString html = QString("<img src=\"%1\" style='vertical-align:middle;'> &nbsp;Server total: %2 | Free: %3 | Usage: %4%")
+		.arg(icon_path)
+		.arg(total_str)
+		.arg(free_str)
+		.arg(percent_str);
+	m_server_disk_usage_label->setText(html);
+	m_server_disk_usage_label->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
 }
