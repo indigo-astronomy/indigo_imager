@@ -151,7 +151,7 @@ static bool download_blob_async(indigo_property *property, QAtomicInt *downloadi
 				auto t1 = std::chrono::high_resolution_clock::now();
 				auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
 				property->items[row].blob.value = nullptr;
-				indigo_error("BLOB: %s.%s (%s, %ld bytes) downloaded in %ld ms", property->device, property->name, blob_item->blob.url, blob_item->blob.size, ms);
+				indigo_log("BLOB: %s.%s (%s, %ld bytes) downloaded in %ld ms", property->device, property->name, blob_item->blob.url, blob_item->blob.size, ms);
 				emit(client.create_preview(property, blob_item, save_blob));
 			} else {
 				if (blob_item->blob.value) free(blob_item->blob.value);
@@ -203,7 +203,8 @@ static void handle_blob_property(indigo_property *property) {
 				indigo_error(error_message);
 			}
 		} else {
-			download_blob_async(property, &client.other_downloading, client.is_exposing(property->device));
+			indigo_log("BLOB: Skipping download of %s.%s", property->device, property->name);
+			//download_blob_async(property, &client.other_downloading, client.is_exposing(property->device));
 		}
 	} else if(property->state == INDIGO_BUSY_STATE && property->perm != INDIGO_WO_PERM) {
 		for (int row = 0; row < property->count; row++) {
