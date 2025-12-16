@@ -446,9 +446,9 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	remote_files_frame_layout->addWidget(m_keep_image_on_server_cbox, remote_files_row, 0, 1, 4);
 	connect(m_keep_image_on_server_cbox, &QPushButton::clicked, this, &ImagerWindow::on_keep_image_on_server);
 
-	remote_files_row++;
-	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
-	remote_files_frame_layout->addItem(spacer, remote_files_row, 0, 1, 4);
+	//remote_files_row++;
+	//spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	//remote_files_frame_layout->addItem(spacer, remote_files_row, 0, 1, 4);
 
 	remote_files_row++;
 	m_sync_files_button = new QPushButton("Download images");
@@ -466,7 +466,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	connect(m_remove_synced_files_button, &QPushButton::clicked, this, &ImagerWindow::on_remove_synced_remote_files);
 
 	remote_files_row++;
-	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	spacer = new QSpacerItem(1, 5, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	remote_files_frame_layout->addItem(spacer, remote_files_row, 0, 1, 4);
 
 	remote_files_row++;
@@ -475,6 +475,17 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_download_progress->setMaximum(1);
 	m_download_progress->setValue(0);
 	m_download_progress->setFormat("Download progress");
+
+	// Move disk usage label to the very bottom of the remote files tab
+	remote_files_row++;
+	spacer = new QSpacerItem(1, 1, QSizePolicy::Expanding, QSizePolicy::Expanding);
+	remote_files_frame_layout->addItem(spacer, remote_files_row, 0, 1, 4);
+
+	remote_files_row++;
+	m_server_disk_usage_label = new QLabel("");
+	m_server_disk_usage_label->setToolTip("Server disk space usage");
+	remote_files_frame_layout->addWidget(m_server_disk_usage_label, remote_files_row, 0, 1, 4);
+	update_server_disk_usage(10000, 10, INDIGO_IDLE_STATE);
 }
 
 void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {

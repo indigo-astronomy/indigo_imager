@@ -187,6 +187,7 @@ public:
 	void updatePolarAlignmentOverlay(double azError, double altError);
 	void showPolarAlignmentOverlayMarker(bool show);
 	void setPolarAlignmentOverlayWarning(bool show);
+	void update_server_disk_usage(double total_mb, double free_mb, int state);
 
 signals:
 	void enable_blobs(bool on);
@@ -658,6 +659,7 @@ private:
 	QPushButton *m_sync_files_button;
 	QPushButton *m_remove_synced_files_button;
 	QProgressBar *m_download_progress;
+	QLabel *m_server_disk_usage_label;
 	QString m_remote_object_name;
 	QStringList m_files_to_download;
 	QStringList m_files_to_remove;
