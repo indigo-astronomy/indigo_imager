@@ -74,7 +74,7 @@ void SNROverlay::setSNRResult(const SNRResult &result) {
 	QString unit = result.peak_value < 1.5 ? "" : " ADU";
 
 	QString info = QString(
-		"<table cellspacing='0' cellpadding='0' style='border-collapse: collapse;'>"
+		"<table cellspacing='5' cellpadding='0' style='border-collapse: collapse;'>"
 		"<tr><td><b>SNR:</b></td><td align='right'><b><font color='%1'>%2</font> (%3)</b></td></tr>"
 		"<tr><td>Peak:</td><td align='right'>%4%5</td></tr>"
 		"<tr><td>Total Flux:</td><td align='right'>%6%7</td></tr>"
