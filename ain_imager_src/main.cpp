@@ -182,11 +182,14 @@ int main(int argc, char *argv[]) {
 	QFontDatabase::addApplicationFont(":/fonts/DejaVuSans-ExtraLight.ttf");
 	if (id != -1) {
 		QString family = QFontDatabase::applicationFontFamilies(id).at(0);
-		app.setFont(QFont(family, 10, QFont::Medium));
+		QFont font = QFont(family, 10, QFont::Medium);
+		font.setKerning(false);
+		app.setFont(font);
 	} else {
 		indigo_error("Failed to load embedded DejaVu Sans font, using system default.");
 		QFont font("SansSerif", 10, QFont::Medium);
 		font.setStyleHint(QFont::SansSerif);
+		font.setKerning(false);
 		app.setFont(font);
 	}
 
