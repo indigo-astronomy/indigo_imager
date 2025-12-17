@@ -30,14 +30,8 @@
 #define SAVE_REMOTE_INDICATOR          "<font color='#3b96ff'><b>●</b></font>"
 #define DOWNLOAD_INDICATOR             "<font color='#3b9640'><b>●</b></font>"
 
-#ifdef INDIGO_WINDOWS
-	#define SAVE_LOCAL_INDICATOR           "<font color='#3b9640'><b>◎</b></font>"
-	#define PREVIEW_REMOTE_INDICATOR       "<font color='#3b96ff'><b>◎</b></font>"
-	#define DOWNLOAD_REMOVE_INDICATOR      "<font color='#3b9640'><b>◎</b></font>"
-#else
-	#define SAVE_LOCAL_INDICATOR           "<font color='#3b9640'><b>◉</b></font>"
-	#define PREVIEW_REMOTE_INDICATOR       "<font color='#3b96ff'><b>◉</b></font>"
-	#define DOWNLOAD_REMOVE_INDICATOR      "<font color='#3b9640'><b>◉</b></font>"
-#endif
+#define SAVE_LOCAL_INDICATOR           "<font color='#3b9640'><b>◉</b></font>"
+#define PREVIEW_REMOTE_INDICATOR       "<font color='#3b96ff'><b>◉</b></font>"
+#define DOWNLOAD_REMOVE_INDICATOR      "<font color='#3b9640'><b>◉</b></font>"
 
 #endif /* _WIDGET_STATE_H */
