@@ -85,7 +85,17 @@ int main(int argc, char *argv[]) {
 	QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 	QApplication app(argc, argv);
 
-	int id = QFontDatabase::addApplicationFont(":/fonts/Ubuntu-Regular.ttf");
+	int id = QFontDatabase::addApplicationFont(":/fonts/Hack-Regular.ttf");
+	if (id != -1) {
+		QStringList families = QFontDatabase::applicationFontFamilies(id);
+		if (!families.isEmpty()) {
+			QString monoFamily = families.at(0);
+			QFont::insertSubstitution("monospace", monoFamily);
+		}
+	} else {
+		indigo_error("Failed to load embedded Hack Mono font, using system default.");
+	}
+	id = QFontDatabase::addApplicationFont(":/fonts/Ubuntu-Regular.ttf");
 	if (id != -1) {
 		QString family = QFontDatabase::applicationFontFamilies(id).at(0);
 		app.setFont(QFont(family, 10, QFont::Medium));
