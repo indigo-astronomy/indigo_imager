@@ -95,12 +95,12 @@ int main(int argc, char *argv[]) {
 	} else {
 		indigo_error("Failed to load embedded Hack Mono font, using system default.");
 	}
-	id = QFontDatabase::addApplicationFont(":/fonts/Ubuntu-Regular.ttf");
+	id = QFontDatabase::addApplicationFont(":/fonts/DejaVuSans.ttf");
 	if (id != -1) {
 		QString family = QFontDatabase::applicationFontFamilies(id).at(0);
 		app.setFont(QFont(family, 10, QFont::Medium));
 	} else {
-		indigo_error("Failed to load embedded Ubuntu font, using system default.");
+		indigo_error("Failed to load embedded DejaVu Sans font, using system default.");
 		QFont font("SansSerif", 10, QFont::Medium);
 		font.setStyleHint(QFont::SansSerif);
 		app.setFont(font);
