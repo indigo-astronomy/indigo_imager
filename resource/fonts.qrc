@@ -1,0 +1,12 @@
+<RCC>
+  <qresource prefix="/">
+    <file>fonts/Ubuntu-BoldItalic.ttf</file>
+    <file>fonts/Ubuntu-Bold.ttf</file>
+    <file>fonts/Ubuntu-Italic.ttf</file>
+    <file>fonts/Ubuntu-LightItalic.ttf</file>
+    <file>fonts/Ubuntu-Light.ttf</file>
+    <file>fonts/Ubuntu-MediumItalic.ttf</file>
+    <file>fonts/Ubuntu-Medium.ttf</file>
+    <file>fonts/Ubuntu-Regular.ttf</file>
+  </qresource>
+</RCC>

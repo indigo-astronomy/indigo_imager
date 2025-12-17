@@ -42,6 +42,7 @@ SOURCES += \
 	$$PWD/../common_src/stretcher.cpp
 
 RESOURCES += \
+	$$PWD/../resource/fonts.qrc \
 	$$PWD/../qdarkstyle/style.qrc \
 	$$PWD/../resource/control_panel.qss \
 	$$PWD/../resource/ain_viewer.png \

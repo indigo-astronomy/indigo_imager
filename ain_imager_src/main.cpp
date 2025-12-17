@@ -161,15 +161,16 @@ int main(int argc, char *argv[]) {
 	QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 	QApplication app(argc, argv);
 
-	QFont font("SansSerif", 10, QFont::Medium);
-	font.setStyleHint(QFont::SansSerif);
-
-	//QFont font("Arial Unicode MS", 10, QFont::Normal);
-	//font.setStyleHint(QFont::SansSerif);
-
-
-	app.setFont(font);
-	//qDebug() << "Font: " << app.font().family() << app.font().pointSize() << app.font().weight();
+	int id = QFontDatabase::addApplicationFont(":/fonts/Ubuntu-Regular.ttf");
+	if (id != -1) {
+		QString family = QFontDatabase::applicationFontFamilies(id).at(0);
+		app.setFont(QFont(family, 10, QFont::Medium));
+	} else {
+		indigo_error("Failed to load embedded Ubuntu font, using system default.");
+		QFont font("SansSerif", 10, QFont::Medium);
+		font.setStyleHint(QFont::SansSerif);
+		app.setFont(font);
+	}
 
 	QVersionNumber running_version = QVersionNumber::fromString(qVersion());
 	QVersionNumber threshod_version(5, 13, 0);

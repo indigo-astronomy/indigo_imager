@@ -72,6 +72,7 @@ SOURCES += \
 
 RESOURCES += \
 	$$PWD/scripts/Sequencer.js \
+	$$PWD/../resource/fonts.qrc \
 	$$PWD/../qdarkstyle/style.qrc \
 	$$PWD/../resource/control_panel.qss \
 	$$PWD/../resource/appicon.png \
