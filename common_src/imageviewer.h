@@ -7,6 +7,7 @@
 #include <QGraphicsPixmapItem>
 #include <snr_calculator.h>
 #include <snr_overlay.h>
+#include <inspection_overlay.h>
 
 QT_BEGIN_NAMESPACE
 class QLabel;
@@ -118,6 +119,10 @@ public slots:
 	void enableSNRMode(bool enable);
 	void showSNROverlay(bool show);
 	void calculateAndShowSNR(double x, double y);
+
+	// Image inspection
+	void runImageInspection();
+	void showInspectionOverlay(bool show);
 	void updateSNROverlayPosition();
 
 signals:
@@ -177,6 +182,9 @@ private:
 	QAction *m_debayer_act[DEBAYER_COUNT];
 	QAction *m_color_reference_act[COLOR_BALANCE_COUNT];
 	SNROverlay *m_snr_overlay;
+	InspectionOverlay *m_inspection_overlay;
+	QAction *m_inspection_act;
+	bool m_inspection_overlay_visible;
 	QGraphicsEllipseItem *m_snr_star_circle;
 	QGraphicsEllipseItem *m_snr_background_inner_ring;
 	QGraphicsEllipseItem *m_snr_background_outer_ring;

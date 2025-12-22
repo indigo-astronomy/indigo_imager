@@ -39,6 +39,7 @@ SOURCES += \
 	$$PWD/../common_src/dslr_raw.c \
 	$$PWD/../common_src/snr_calculator.cpp \
 	$$PWD/../common_src/snr_overlay.cpp \
+	$$PWD/../common_src/inspection_overlay.cpp \
 	$$PWD/../common_src/stretcher.cpp
 
 RESOURCES += \
@@ -88,6 +89,7 @@ HEADERS += \
 	$$PWD/../common_src/coordconv.h \
 	$$PWD/../common_src/snr_calculator.h \
 	$$PWD/../common_src/snr_overlay.h \
+	$$PWD/../common_src/inspection_overlay.h \
 	$$PWD/../common_src/dslr_raw.h \
 	$$PWD/../common_src/stretcher.h
 
