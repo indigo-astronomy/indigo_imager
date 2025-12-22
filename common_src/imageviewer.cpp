@@ -935,26 +935,7 @@ void ImageViewer::showInspectionOverlay(bool show) {
 	}
 }
 
-// Helper: sigma clipping
-static double average_without_outliers(std::vector<double> &v) {
-	if (v.empty()) return 0.0;
-	// iterative 2-sigma clipping
-	for (int iter = 0; iter < 3; ++iter) {
-		double sum = 0, sumsq = 0;
-		for (double x : v) { sum += x; sumsq += x*x; }
-		double mean = sum / v.size();
-		double var = sumsq / v.size() - mean*mean;
-		double sd = var > 0 ? std::sqrt(var) : 0;
-		std::vector<double> nv;
-		for (double x : v) if (std::fabs(x - mean) <= 2.0 * sd) nv.push_back(x);
-		if (nv.size() == v.size()) break;
-		if (nv.empty()) return mean;
-		v.swap(nv);
-	}
-	double sum = 0;
-	for (double x : v) sum += x;
-	return v.empty() ? 0.0 : sum / v.size();
-}
+// (removed unused sigma-clipping helper `average_without_outliers`)
 
 void ImageViewer::runImageInspection() {
 	if (!m_pixmap) return;
