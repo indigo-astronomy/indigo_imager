@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <vector>
 #include "snr_calculator.h"
+class QGraphicsView;
 
 class InspectionOverlay : public QWidget {
 	Q_OBJECT
@@ -22,7 +23,8 @@ public:
 	void setInspectionResult(const std::vector<double> &directions, double center_hfd,
 		const std::vector<int> &detected, const std::vector<int> &used, const std::vector<int> &rejected,
 		int center_detected, int center_used, int center_rejected,
-		const std::vector<QPointF> &used_points, const std::vector<double> &used_radii, const std::vector<QPointF> &rejected_points);
+		const std::vector<QPointF> &used_points, const std::vector<double> &used_radii, const std::vector<QPointF> &rejected_points,
+		double pixel_scale, double base_image_px);
 	void setWidgetOpacity(double opacity);
 
 protected:
@@ -46,6 +48,17 @@ private:
 	std::vector<QPointF> m_used_points;
 	std::vector<double> m_used_radii;
 	std::vector<QPointF> m_rejected_points;
+
+	// view scaling (view pixels per image pixel) and base image radius in image pixels
+	double m_pixel_scale = 1.0;
+	double m_base_image_px = 0.0;
+
+	// optional pointer to the QGraphicsView so we can map scene->view dynamically
+	QGraphicsView *m_viewptr = nullptr;
+
+public:
+	// set the view used for mapping scene coordinates to view coordinates
+	void setView(QGraphicsView *view) { m_viewptr = view; }
 };
 
 #endif // INSPECTION_OVERLAY_H

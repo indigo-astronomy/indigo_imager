@@ -165,6 +165,8 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 
 	// Inspection overlay (parent to viewport so mapFromScene coordinates align)
 	m_inspection_overlay = new InspectionOverlay(m_view->viewport());
+	// give overlay a pointer to the view so it can map scene->view dynamically (keeps markers correct while zooming)
+	m_inspection_overlay->setView(m_view);
 	m_inspection_overlay->setVisible(false);
 	connect(m_inspection_overlay, &InspectionOverlay::destroyed, [this](){ m_inspection_overlay = nullptr; });
 	m_snr_mode_enabled = false;  // SNR mode disabled by default
@@ -1196,9 +1198,8 @@ void ImageViewer::runImageInspection() {
 				if (is_used) {
 					per_cell_used[cy * gx + cx].emplace_back(unique[i].x, unique[i].y, unique[i].snr, rscene);
 				} else {
-					// keep rejected as before (map now)
-					QPointF centerView = m_view->mapFromScene(centerScene);
-					inspection_rejected_points.push_back(centerView);
+					// store rejected as scene coordinates so overlay can map them dynamically
+					inspection_rejected_points.push_back(centerScene);
 				}
 				// record this unique candidate for global detected count recomputation (store original owner cell)
 				all_unique_candidates.push_back({unique[i].x, unique[i].y, unique[i].snr, unique[i].hfd, cy * gx + cx});
@@ -1272,12 +1273,9 @@ void ImageViewer::runImageInspection() {
 	inspection_used_radii.clear();
 	for (const auto &g : global_used) {
 		QPointF centerScene(g.x, g.y);
-		QPointF edgeScene(g.x + g.star_radius, g.y);
-		QPointF centerView = m_view->mapFromScene(centerScene);
-		QPointF edgeView = m_view->mapFromScene(edgeScene);
-		double radiusView = std::fabs(edgeView.x() - centerView.x());
-		inspection_used_points.push_back(centerView);
-		inspection_used_radii.push_back(std::max(1.5, radiusView));
+		// store used points as scene coordinates; store radii in image (scene) pixels
+		inspection_used_points.push_back(centerScene);
+		inspection_used_radii.push_back(g.star_radius);
 		// increment used count for the original owner cell (preserve per-cell ownership)
 		int cell_index = g.cell;
 		if (cell_index >= 0 && cell_index < gx * gy) cell_used[cell_index]++;
@@ -1308,8 +1306,8 @@ void ImageViewer::runImageInspection() {
 			if (dist <= GLOBAL_DUP_RADIUS) { matched = true; break; }
 		}
 		if (!matched) {
-			QPointF centerView = m_view->mapFromScene(QPointF(u.x, u.y));
-			inspection_rejected_points.push_back(centerView);
+			// store rejected points as scene coordinates
+			inspection_rejected_points.push_back(QPointF(u.x, u.y));
 		}
 	}
 
@@ -1372,8 +1370,14 @@ void ImageViewer::runImageInspection() {
 		int center_used = getCount(cell_used, 2,2);
 		int center_rejected = getCount(cell_rejected, 2,2);
 
+		// compute scene->view pixel scale: view pixels per image pixel
+		QPointF a = m_view->mapFromScene(QPointF(0,0));
+		QPointF b = m_view->mapFromScene(QPointF(1,0));
+		double pixelScale = std::hypot(b.x() - a.x(), b.y() - a.y());
+		double base_image_px = std::min(width, height) * 0.2; // same base used previously in overlay but in image pixels
 		m_inspection_overlay->setInspectionResult(dirs, center_hfd, detected_dirs, used_dirs, rejected_dirs,
-			center_detected, center_used, center_rejected, inspection_used_points, inspection_used_radii, inspection_rejected_points);
+				center_detected, center_used, center_rejected, inspection_used_points, inspection_used_radii, inspection_rejected_points,
+				pixelScale, base_image_px);
 		// position overlay over view
 		m_inspection_overlay->setGeometry(m_view->viewport()->rect());
 		m_inspection_overlay->raise();

@@ -1,6 +1,7 @@
 #include "inspection_overlay.h"
 #include <QPainter>
 #include <QPainterPath>
+#include <QGraphicsView>
 #include <QVBoxLayout>
 #include <cmath>
 
@@ -20,6 +21,9 @@ void InspectionOverlay::setInspectionResult(const std::vector<double> &direction
 	m_used.clear();
 	m_rejected.clear();
 	m_center_detected = m_center_used = m_center_rejected = 0;
+	// default scale
+	m_pixel_scale = 1.0;
+	m_base_image_px = 0.0;
 	update();
 }
 
@@ -34,13 +38,17 @@ void InspectionOverlay::setInspectionResult(const std::vector<double> &direction
 	m_center_detected = center_detected;
 	m_center_used = center_used;
 	m_center_rejected = center_rejected;
+	// default scale
+	m_pixel_scale = 1.0;
+	m_base_image_px = 0.0;
 	update();
 }
 
 void InspectionOverlay::setInspectionResult(const std::vector<double> &directions, double center_hfd,
 										   const std::vector<int> &detected, const std::vector<int> &used, const std::vector<int> &rejected,
 										   int center_detected, int center_used, int center_rejected,
-										   const std::vector<QPointF> &used_points, const std::vector<double> &used_radii, const std::vector<QPointF> &rejected_points) {
+					   const std::vector<QPointF> &used_points, const std::vector<double> &used_radii, const std::vector<QPointF> &rejected_points,
+					   double pixel_scale, double base_image_px) {
 	m_dirs = directions;
 	m_center_hfd = center_hfd;
 	m_detected = detected;
@@ -52,6 +60,9 @@ void InspectionOverlay::setInspectionResult(const std::vector<double> &direction
 	m_used_points = used_points;
 	m_used_radii = used_radii;
 	m_rejected_points = rejected_points;
+	// store view scaling and base image radius for zoom-aware drawing
+	m_pixel_scale = (pixel_scale > 0.0) ? pixel_scale : 1.0;
+	m_base_image_px = (base_image_px > 0.0) ? base_image_px : 0.0;
 	update();
 }
 
@@ -72,57 +83,56 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 	QRectF imgRect = rect();
 	QPointF center = imgRect.center();
 
-	// Base radius scaled to image diagonal
-	double base = std::min(imgRect.width(), imgRect.height()) * 0.2;
+	// Base radius: prefer image-space base converted to view coords (zoom-aware)
+	// Clamp to at most 25% of the smaller view dimension so octagon diameter ~= 50% of visible area
+	double base_view = 0.0;
+	double max_base = std::min(imgRect.width(), imgRect.height()) * 0.25;
+	if (m_base_image_px > 0.0 && m_pixel_scale > 0.0) {
+		base_view = m_base_image_px * m_pixel_scale;
+		if (base_view > max_base) base_view = max_base;
+	} else {
+		base_view = max_base;
+	}
 
-	// Normalize directions by center_hfd to get relative scale
-	double ref = (m_center_hfd > 0) ? m_center_hfd : 1.0;
+	// Use center HFD as the reference for scaling vertices so the reference circle represents center HFD
+	double center_ref = (m_center_hfd > 0) ? m_center_hfd : 1.0;
 
 	QPolygonF poly;
 	for (int i = 0; i < 8; ++i) {
 		// start at North (up) and proceed clockwise in 45deg steps
 		double angle = M_PI_2 - M_PI_4 * i; // angles: 90,45,0,-45,...
 		double h = m_dirs[i];
-		double scale = (h > 0) ? (h / ref) : 1.0;
-		double r = base * scale;
+		double scale = (h > 0) ? (h / center_ref) : 1.0;
+		double r = base_view * scale;
 		double x = center.x() + r * std::cos(angle);
 		double y = center.y() - r * std::sin(angle); // y inverted for screen coords
 		poly << QPointF(x, y);
 	}
 
-	// Draw a stylized octagon similar to ASTAP/NINA:
-	// 1) soft glow (wide translucent stroke)
-	// 2) semi-transparent fill
-	// 3) main crisp stroke with rounded joins
-	QPainterPath path;
-	path.addPolygon(poly);
-	path.closeSubpath();
-
-	// soft glow
-	QPen glowPen(QColor(255, 0, 255, static_cast<int>(m_opacity * 90)), 10, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-	p.setPen(glowPen);
+	// Draw octagon stroke (dashed) with width scaled by pixel scale
+	QColor octColor = QColor(180, 220, 255, static_cast<int>(m_opacity * 230));
+	double penWidth = std::max(1.0, 1.0 * m_pixel_scale);
+	QPen polyPen(octColor, penWidth, Qt::DashLine, Qt::RoundCap, Qt::RoundJoin);
+	p.setPen(polyPen);
 	p.setBrush(Qt::NoBrush);
-	p.drawPath(path);
+	p.drawPolygon(poly);
 
-	// semi-transparent fill
-	QColor fillCol(255, 0, 255, static_cast<int>(m_opacity * 30));
-	p.setPen(Qt::NoPen);
-	p.setBrush(fillCol);
-	p.drawPath(path);
+	// draw a reference circle corresponding to the center HFD (solid, distinct color).
+	// The circle radius equals base_view which represents center HFD in the vertex scaling.
+	if (m_center_hfd > 0) {
+		double cref = base_view;
+		QPen circPen(QColor(255, 200, 60, static_cast<int>(m_opacity * 220)), std::max(1.0, 1.0 * m_pixel_scale), Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+		p.setPen(circPen);
+		p.setBrush(Qt::NoBrush);
+		p.drawEllipse(center, cref, cref);
+	}
 
-	// main stroke
-	QPen mainPen(QColor(255, 0, 200, static_cast<int>(m_opacity * 230)), 2.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-	p.setBrush(Qt::NoBrush);
-	p.setPen(mainPen);
-	p.drawPath(path);
-
-	// draw small vertex markers to emphasize corners
+	// draw small vertex markers to emphasize corners (vortices). Use same color as octagon.
 	for (int i = 0; i < poly.size(); ++i) {
 		QPointF v = poly.at(i);
-		// white center with magenta border
-		p.setBrush(QColor(255,255,255, static_cast<int>(m_opacity*230)));
-		p.setPen(QPen(QColor(255,0,200, static_cast<int>(m_opacity*230)), 1.8));
-		double vr = std::max(3.0, std::min(width(), height()) * 0.006);
+		p.setBrush(octColor);
+		p.setPen(Qt::NoPen);
+		double vr = std::max(2.0, 3.0 * m_pixel_scale);
 		p.drawEllipse(v, vr, vr);
 	}
 
@@ -231,23 +241,29 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 	}
 
 	// draw used/rejected star markers
-	// used: small green dots; rejected: small red crosses
+	// used: small filled dots (use a color that contrasts with octagon); rejected: small red crosses
 	p.setRenderHint(QPainter::Antialiasing, true);
 
 	p.setPen(Qt::NoPen);
+	QColor usedColor = QColor(0, 200, 120, static_cast<int>(m_opacity * 230));
 	for (size_t i = 0; i < m_used_points.size(); ++i) {
-		QPointF pview = m_used_points[i];
-		double r = (i < m_used_radii.size() ? m_used_radii[i] : std::max(3.0, std::min(width(), height()) * 0.005));
+		// m_used_points are provided in scene coordinates; map to view if we have a view pointer
+		QPointF scenePt = m_used_points[i];
+		QPointF pview = (m_viewptr != nullptr) ? m_viewptr->mapFromScene(scenePt) : scenePt;
+		double r_scene = (i < m_used_radii.size() ? m_used_radii[i] : std::max(1.5, 3.0 * m_pixel_scale));
+		double r = (m_viewptr != nullptr) ? (r_scene * m_pixel_scale) : r_scene; // convert scene px -> view px
+		// draw outlined circle (no fill) so it scales plainly with zoom
 		p.setBrush(Qt::NoBrush);
-		p.setPen(QPen(QColor(0, 200, 0, static_cast<int>(m_opacity*230)), 1.5));
+		p.setPen(QPen(usedColor, std::max(1.0, 1.0 * m_pixel_scale)));
 		p.drawEllipse(pview, r, r);
 	}
 
 	for (const QPointF &pt : m_rejected_points) {
-		QPointF pview = pt;
-		double s = std::max(3.0, static_cast<double>(std::min(width(), height()) * 0.006));
+		QPointF scenePt = pt;
+		QPointF pview = (m_viewptr != nullptr) ? m_viewptr->mapFromScene(scenePt) : scenePt;
+		double s = std::max(3.0, 3.0 * m_pixel_scale);
 		p.setBrush(Qt::NoBrush);
-		p.setPen(QPen(QColor(255, 0, 0, static_cast<int>(m_opacity*220)), 1.5));
+		p.setPen(QPen(QColor(255, 0, 0, static_cast<int>(m_opacity*220)), std::max(1.0, 1.0 * m_pixel_scale)));
 		p.drawLine(QPointF(pview.x()-s, pview.y()-s), QPointF(pview.x()+s, pview.y()+s));
 		p.drawLine(QPointF(pview.x()-s, pview.y()+s), QPointF(pview.x()+s, pview.y()-s));
 	}
