@@ -127,90 +127,180 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 		p.drawEllipse(center, cref, cref);
 	}
 
-	// draw small vertex markers to emphasize corners (vortices). Use same color as octagon.
-	for (int i = 0; i < poly.size(); ++i) {
-		QPointF v = poly.at(i);
-		p.setBrush(octColor);
-		p.setPen(Qt::NoPen);
-		double vr = std::max(2.0, 3.0 * m_pixel_scale);
-		p.drawEllipse(v, vr, vr);
-	}
+
 
 	// draw center marker
 	p.setPen(QPen(QColor(200,200,200,static_cast<int>(m_opacity*255)),1));
 	p.drawEllipse(center, 3, 3);
 
+	// precompute center label rectangle so vertex labels can avoid overlapping it
+	QRectF centerLabelRect;
+	if (m_center_hfd > 0) {
+		QFont cfont = p.font();
+		int centerFont = std::max(7, static_cast<int>(std::min(width(), height()) * 0.015));
+		cfont.setPointSize(centerFont);
+		cfont.setBold(true);
+		QFontMetrics cfm(cfont);
+		QString ctxt = QString("C: %1 px").arg(QString::number(m_center_hfd, 'f', 2));
+		QRectF ctb = cfm.boundingRect(ctxt);
+		QPointF cdraw(center.x() - ctb.width()/2.0, center.y() - ctb.height()/2.0 - 6);
+		centerLabelRect = QRectF(cdraw.x()-4, cdraw.y()-2, ctb.width()+8, ctb.height()+4);
+	} else {
+		centerLabelRect = QRectF();
+	}
+
+	// draw used/rejected star markers BEFORE labels so labels remain on top
+	p.setRenderHint(QPainter::Antialiasing, true);
+	p.setPen(Qt::NoPen);
+	QColor usedColor = QColor(0, 200, 120, static_cast<int>(m_opacity * 230));
+	for (size_t i = 0; i < m_used_points.size(); ++i) {
+		QPointF scenePt = m_used_points[i];
+		QPointF pview = (m_viewptr != nullptr) ? m_viewptr->mapFromScene(scenePt) : scenePt;
+		double r_scene = (i < m_used_radii.size() ? m_used_radii[i] : std::max(1.5, 3.0 * m_pixel_scale));
+		double r = (m_viewptr != nullptr) ? (r_scene * m_pixel_scale) : r_scene;
+		p.setBrush(Qt::NoBrush);
+		p.setPen(QPen(usedColor, std::max(1.0, 1.0 * m_pixel_scale)));
+		p.drawEllipse(pview, r, r);
+	}
+	for (const QPointF &pt : m_rejected_points) {
+		QPointF scenePt = pt;
+		QPointF pview = (m_viewptr != nullptr) ? m_viewptr->mapFromScene(scenePt) : scenePt;
+		double s = std::max(3.0, 3.0 * m_pixel_scale);
+		p.setBrush(Qt::NoBrush);
+		p.setPen(QPen(QColor(255, 0, 0, static_cast<int>(m_opacity*220)), std::max(1.0, 1.0 * m_pixel_scale)));
+		p.drawLine(QPointF(pview.x()-s, pview.y()-s), QPointF(pview.x()+s, pview.y()+s));
+		p.drawLine(QPointF(pview.x()-s, pview.y()+s), QPointF(pview.x()+s, pview.y()-s));
+	}
+
 	// draw labels for each octagon vertex (average HFD)
 	if (m_dirs.size() >= 8) {
-		QFont font = p.font();
-		// scale font based on widget size (smaller than before)
-		int fontSize = std::max(8, static_cast<int>(std::min(width(), height()) * 0.02));
-		font.setPointSize(fontSize);
-		font.setBold(true);
-		p.setFont(font);
-		p.setPen(QPen(QColor(255,255,255,static_cast<int>(m_opacity*255)), 1));
+		QFont baseFont = p.font();
+		int fontSize = std::max(6, static_cast<int>(std::min(width(), height()) * 0.015));
+		QFont mainFont = baseFont;
+		mainFont.setPointSize(fontSize);
+		mainFont.setBold(true);
+		int smallSize = std::max(6, static_cast<int>(std::min(width(), height()) * 0.012));
+		QFont smallFont = baseFont;
+		smallFont.setPointSize(smallSize);
+		smallFont.setBold(false);
+
+		double vertex_r_view = std::max(2.0, 3.0 * m_pixel_scale);
+		double north_effective_r = std::max(4.0, 5.0 * m_pixel_scale);
+
+		struct LabelInfo { QPointF drawPos; double boxW, boxH; QString mainTxt; QString cntTxt; QFont mainF; QFont smallF; };
+		std::vector<LabelInfo> labels;
 
 		for (int i = 0; i < 8; ++i) {
 			QPointF pt = poly.at(i);
-			// direction from center to vertex
 			QPointF dir = pt - center;
 			double len = std::hypot(dir.x(), dir.y());
-			QPointF labelPos = center;
-			if (len > 0.1) {
-				// place label slightly outside the vertex
-				double scale = (len + fontSize * 1.5) / len;
-				labelPos = QPointF(center.x() + dir.x() * scale, center.y() + dir.y() * scale);
-			} else {
-				labelPos = pt;
+
+			QString mainTxt = QString::number(m_dirs[i], 'f', 2) + " px";
+			QString cntTxt;
+			if (!m_detected.empty() && i < static_cast<int>(m_detected.size())) {
+				cntTxt = QString("D:%1 U:%2 R:%3").arg(m_detected[i]).arg(m_used[i]).arg(m_rejected[i]);
 			}
 
-			QString txt = QString::number(m_dirs[i], 'f', 2) + " px";
-			QRectF tb = p.fontMetrics().boundingRect(txt);
-			// center the text at labelPos but offset a bit
-			QPointF drawPos(labelPos.x() - tb.width()/2.0, labelPos.y() - tb.height()/2.0);
-			// draw background for readability
+			QFontMetrics fmMain(mainFont);
+			QFontMetrics fmSmall(smallFont);
+			QRectF tbMain = fmMain.boundingRect(mainTxt);
+			QRectF tbSmall = fmSmall.boundingRect(cntTxt);
+			double padX = 8.0;
+			double padY = 4.0;
+			double boxW = std::max(tbMain.width(), tbSmall.width()) + padX;
+			double boxH = tbMain.height() + (cntTxt.isEmpty() ? 0.0 : tbSmall.height()) + padY;
+
+			double base_effective = (i == 0) ? north_effective_r : vertex_r_view;
+			double gap = std::max(4.0, 3.0 * m_pixel_scale);
+
+			QPointF drawPos;
+			if (len > 1e-6) {
+				QPointF unit(dir.x() / len, dir.y() / len);
+				double proj = std::abs(unit.x()) * (boxW * 0.5) + std::abs(unit.y()) * (boxH * 0.5);
+				double desiredCenterDist = base_effective + gap + proj;
+				QPointF labelCenter = QPointF(pt.x() + unit.x() * desiredCenterDist, pt.y() + unit.y() * desiredCenterDist);
+				drawPos = QPointF(labelCenter.x() - boxW * 0.5, labelCenter.y() - boxH * 0.5);
+				QRectF labelRect(drawPos.x()-4, drawPos.y()-2, boxW, boxH);
+				if (!centerLabelRect.isNull() && labelRect.intersects(centerLabelRect)) {
+					double extra = (std::max(boxW, boxH) * 0.5) + gap;
+					labelCenter = QPointF(pt.x() + unit.x() * (desiredCenterDist + extra), pt.y() + unit.y() * (desiredCenterDist + extra));
+					drawPos = QPointF(labelCenter.x() - boxW * 0.5, labelCenter.y() - boxH * 0.5);
+				}
+			} else {
+				drawPos = QPointF(pt.x() - boxW * 0.5, pt.y() - boxH * 0.5);
+			}
+
+			labels.push_back({drawPos, boxW, boxH, mainTxt, cntTxt, mainFont, smallFont});
+		}
+
+		// draw small vertex markers first
+		for (int i = 0; i < poly.size(); ++i) {
+			QPointF v = poly.at(i);
+			double vr = std::max(2.0, 3.0 * m_pixel_scale);
+			QPen vp(Qt::black, std::max(1.5, 1.2 * m_pixel_scale));
+			vp.setJoinStyle(Qt::RoundJoin);
+			p.setPen(vp);
+			p.setBrush(octColor);
+			p.drawEllipse(v, vr, vr);
+		}
+
+		// draw labels on top of vertices
+		for (size_t i = 0; i < labels.size(); ++i) {
+			const LabelInfo &li = labels[i];
 			QColor bg = QColor(0,0,0, static_cast<int>(m_opacity*180));
 			p.setBrush(bg);
 			p.setPen(Qt::NoPen);
-			QRectF bgRect(drawPos.x()-4, drawPos.y()-2, tb.width()+8, tb.height()+4);
+			QRectF bgRect(li.drawPos.x()-4, li.drawPos.y()-2, li.boxW, li.boxH);
 			p.drawRoundedRect(bgRect, 3, 3);
+
+			// draw main text
 			p.setBrush(Qt::NoBrush);
 			p.setPen(QPen(QColor(255,255,255,static_cast<int>(m_opacity*255)),1));
-			p.drawText(drawPos.x(), drawPos.y() + tb.height(), txt);
+			p.setFont(li.mainF);
+			QFontMetrics fmMain2(li.mainF);
+			QRectF tbMain2 = fmMain2.boundingRect(li.mainTxt);
+			double mx = li.drawPos.x() + (li.boxW - tbMain2.width()) * 0.5;
+			double my = li.drawPos.y() + tbMain2.height();
+			p.drawText(mx, my, li.mainTxt);
 
-			// draw counts if available (smaller font)
-			if (!m_detected.empty() && i < static_cast<int>(m_detected.size())) {
-				QFont small = p.font();
-				int smallSize = std::max(7, static_cast<int>(std::min(width(), height()) * 0.015));
-				small.setPointSize(smallSize);
-				small.setBold(false);
-				p.setFont(small);
-				QString cnt = QString("D:%1 U:%2 R:%3").arg(m_detected[i]).arg(m_used[i]).arg(m_rejected[i]);
-				QRectF tb2 = p.fontMetrics().boundingRect(cnt);
-				QPointF drawPos2(labelPos.x() - tb2.width()/2.0, drawPos.y() + tb.height() + 2);
-				QColor bg2 = QColor(0,0,0, static_cast<int>(m_opacity*160));
-				p.setBrush(bg2);
-				p.setPen(Qt::NoPen);
-				QRectF bgRect2(drawPos2.x()-3, drawPos2.y()-2, tb2.width()+6, tb2.height()+4);
-				p.drawRoundedRect(bgRect2, 3, 3);
-				p.setBrush(Qt::NoBrush);
+			// draw counts if present
+			if (!li.cntTxt.isEmpty()) {
+				p.setFont(li.smallF);
+				QFontMetrics fmSmall2(li.smallF);
+				QRectF tbSmall2 = fmSmall2.boundingRect(li.cntTxt);
+				double sx = li.drawPos.x() + (li.boxW - tbSmall2.width()) * 0.5;
+				double sy = li.drawPos.y() + fmMain2.height() + tbSmall2.height();
 				p.setPen(QPen(QColor(200,200,200,static_cast<int>(m_opacity*255)),1));
-				p.drawText(drawPos2.x(), drawPos2.y() + tb2.height(), cnt);
-				// restore font for next label
-				p.setFont(font);
+				p.drawText(sx, sy, li.cntTxt);
 			}
 		}
 	}
 
-	// draw center HFD label
+	// draw center HFD label (smaller and nudge down if it would overlap the north vertex)
 	if (m_center_hfd > 0) {
 		QFont font = p.font();
-		font.setPointSize(std::max(8, static_cast<int>(std::min(width(), height()) * 0.02)));
+		int centerFont = std::max(7, static_cast<int>(std::min(width(), height()) * 0.015));
+		font.setPointSize(centerFont);
 		font.setBold(true);
 		p.setFont(font);
 		QString txt = QString("C: %1 px").arg(QString::number(m_center_hfd, 'f', 2));
 		QRectF tb = p.fontMetrics().boundingRect(txt);
-		QPointF drawPos(center.x() - tb.width()/2.0, center.y() - tb.height()/2.0 - 6);
+		// prefer centered position but nudge down if it intersects the north vertex
+		QPointF labelPos(center.x(), center.y());
+		QPointF drawPos(labelPos.x() - tb.width()/2.0, labelPos.y() - tb.height()/2.0 - 6);
+
+		// if north vertex exists and overlaps the center label, push the label down
+		if (!poly.isEmpty()) {
+			QPointF north = poly.at(0);
+			double north_r = std::max(3.0, 4.0 * m_pixel_scale);
+			QRectF northRect(north.x() - (north_r + 4.0), north.y() - (north_r + 4.0), (north_r + 4.0) * 2.0, (north_r + 4.0) * 2.0);
+			QRectF centerBg(drawPos.x()-4, drawPos.y()-2, tb.width()+8, tb.height()+4);
+			if (centerBg.intersects(northRect)) {
+				double push = (north_r + 6.0);
+				drawPos.setY(drawPos.y() + push);
+			}
+		}
+
 		QColor bg = QColor(0,0,0, static_cast<int>(m_opacity*180));
 		p.setBrush(bg);
 		p.setPen(Qt::NoPen);
@@ -220,15 +310,15 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 		p.setPen(QPen(QColor(255,255,255,static_cast<int>(m_opacity*255)),1));
 		p.drawText(drawPos.x(), drawPos.y() + tb.height(), txt);
 
-		// draw center counts if available
+		// draw center counts if available (small)
 		if (m_center_detected > 0 || m_center_used > 0 || m_center_rejected > 0) {
 			QFont small = p.font();
-			small.setPointSize(std::max(7, static_cast<int>(std::min(width(), height()) * 0.015)));
+			small.setPointSize(std::max(6, static_cast<int>(std::min(width(), height()) * 0.012)));
 			small.setBold(false);
 			p.setFont(small);
 			QString cnt = QString("D:%1 U:%2 R:%3").arg(m_center_detected).arg(m_center_used).arg(m_center_rejected);
 			QRectF tb2 = p.fontMetrics().boundingRect(cnt);
-			QPointF drawPos2(center.x() - tb2.width()/2.0, drawPos.y() + tb.height() + 2);
+			QPointF drawPos2(labelPos.x() - tb2.width()/2.0, drawPos.y() + tb.height() + 2);
 			QColor bg2 = QColor(0,0,0, static_cast<int>(m_opacity*160));
 			p.setBrush(bg2);
 			p.setPen(Qt::NoPen);
@@ -240,31 +330,7 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 		}
 	}
 
-	// draw used/rejected star markers
-	// used: small filled dots (use a color that contrasts with octagon); rejected: small red crosses
-	p.setRenderHint(QPainter::Antialiasing, true);
+	// vertices and labels drawn above in the block above
 
-	p.setPen(Qt::NoPen);
-	QColor usedColor = QColor(0, 200, 120, static_cast<int>(m_opacity * 230));
-	for (size_t i = 0; i < m_used_points.size(); ++i) {
-		// m_used_points are provided in scene coordinates; map to view if we have a view pointer
-		QPointF scenePt = m_used_points[i];
-		QPointF pview = (m_viewptr != nullptr) ? m_viewptr->mapFromScene(scenePt) : scenePt;
-		double r_scene = (i < m_used_radii.size() ? m_used_radii[i] : std::max(1.5, 3.0 * m_pixel_scale));
-		double r = (m_viewptr != nullptr) ? (r_scene * m_pixel_scale) : r_scene; // convert scene px -> view px
-		// draw outlined circle (no fill) so it scales plainly with zoom
-		p.setBrush(Qt::NoBrush);
-		p.setPen(QPen(usedColor, std::max(1.0, 1.0 * m_pixel_scale)));
-		p.drawEllipse(pview, r, r);
-	}
 
-	for (const QPointF &pt : m_rejected_points) {
-		QPointF scenePt = pt;
-		QPointF pview = (m_viewptr != nullptr) ? m_viewptr->mapFromScene(scenePt) : scenePt;
-		double s = std::max(3.0, 3.0 * m_pixel_scale);
-		p.setBrush(Qt::NoBrush);
-		p.setPen(QPen(QColor(255, 0, 0, static_cast<int>(m_opacity*220)), std::max(1.0, 1.0 * m_pixel_scale)));
-		p.drawLine(QPointF(pview.x()-s, pview.y()-s), QPointF(pview.x()+s, pview.y()+s));
-		p.drawLine(QPointF(pview.x()-s, pview.y()+s), QPointF(pview.x()+s, pview.y()-s));
-	}
 }
