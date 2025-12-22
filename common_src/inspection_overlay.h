@@ -1,0 +1,51 @@
+#ifndef INSPECTION_OVERLAY_H
+#define INSPECTION_OVERLAY_H
+
+#include <QWidget>
+#include <vector>
+#include "snr_calculator.h"
+
+class InspectionOverlay : public QWidget {
+	Q_OBJECT
+
+public:
+	explicit InspectionOverlay(QWidget *parent = nullptr);
+	// Backward-compatible: simple result (no counts)
+	void setInspectionResult(const std::vector<double> &directions, double center_hfd);
+
+	// New: result with per-direction counts
+	void setInspectionResult(const std::vector<double> &directions, double center_hfd,
+		const std::vector<int> &detected, const std::vector<int> &used, const std::vector<int> &rejected,
+		int center_detected, int center_used, int center_rejected);
+
+	// New: include per-star positions (in view coordinates) for used/rejected markers
+	void setInspectionResult(const std::vector<double> &directions, double center_hfd,
+		const std::vector<int> &detected, const std::vector<int> &used, const std::vector<int> &rejected,
+		int center_detected, int center_used, int center_rejected,
+		const std::vector<QPointF> &used_points, const std::vector<double> &used_radii, const std::vector<QPointF> &rejected_points);
+	void setWidgetOpacity(double opacity);
+
+protected:
+	void paintEvent(QPaintEvent *event) override;
+
+private:
+	std::vector<double> m_dirs; // 8 directions: N, NE, E, SE, S, SW, W, NW
+	double m_center_hfd;
+	double m_opacity;
+
+	// per-direction counts
+	std::vector<int> m_detected;
+	std::vector<int> m_used;
+	std::vector<int> m_rejected;
+
+	int m_center_detected;
+	int m_center_used;
+	int m_center_rejected;
+
+	// Per-star positions in overlay (view) coordinates
+	std::vector<QPointF> m_used_points;
+	std::vector<double> m_used_radii;
+	std::vector<QPointF> m_rejected_points;
+};
+
+#endif // INSPECTION_OVERLAY_H
