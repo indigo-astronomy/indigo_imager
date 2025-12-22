@@ -5,6 +5,8 @@
 #include <vector>
 #include "snr_calculator.h"
 class QGraphicsView;
+class preview_image;
+class ImageInspector;
 
 class InspectionOverlay : public QWidget {
 	Q_OBJECT
@@ -26,6 +28,10 @@ public:
 		const std::vector<QPointF> &used_points, const std::vector<double> &used_radii, const std::vector<QPointF> &rejected_points,
 		double pixel_scale, double base_image_px);
 	void setWidgetOpacity(double opacity);
+
+	// Run inspection using the provided image. The overlay will call into an ImageInspector
+	// implementation and display the result. The ImageInspector lives inside the overlay.
+	void runInspection(const preview_image &img);
 
 protected:
 	void paintEvent(QPaintEvent *event) override;

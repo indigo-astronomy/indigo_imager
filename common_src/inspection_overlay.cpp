@@ -1,4 +1,6 @@
 #include "inspection_overlay.h"
+#include "image_inspector.h"
+#include "imagepreview.h"
 #include <QPainter>
 #include <QPainterPath>
 #include <QGraphicsView>
@@ -11,6 +13,25 @@ InspectionOverlay::InspectionOverlay(QWidget *parent)
 {
 	setAttribute(Qt::WA_TranslucentBackground);
 	setAttribute(Qt::WA_TransparentForMouseEvents);
+}
+
+void InspectionOverlay::runInspection(const preview_image &img) {
+	ImageInspector inspector;
+	InspectionResult r = inspector.inspect(img);
+
+	// compute scene->view pixel scale
+	double pixelScale = 1.0;
+	if (m_viewptr) {
+		QPointF a = m_viewptr->mapFromScene(QPointF(0,0));
+		QPointF b = m_viewptr->mapFromScene(QPointF(1,0));
+		pixelScale = std::hypot(b.x() - a.x(), b.y() - a.y());
+	}
+	double base_image_px = std::min(img.width(), img.height()) * 0.2;
+
+	setInspectionResult(r.dirs, r.center_hfd, r.detected_dirs, r.used_dirs, r.rejected_dirs,
+						r.center_detected, r.center_used, r.center_rejected,
+						r.used_points, r.used_radii, r.rejected_points,
+						pixelScale, base_image_px);
 }
 
 void InspectionOverlay::setInspectionResult(const std::vector<double> &directions, double center_hfd) {
