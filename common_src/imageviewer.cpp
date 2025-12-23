@@ -49,6 +49,7 @@ protected:
 		QGraphicsView::scrollContentsBy(dx, dy);
 		// Update SNR overlay position when scrolling
 		m_viewer->updateSNROverlayPosition();
+		m_viewer->updateInspectionOverlayPosition();
 	}
 
 	void enterEvent(QEvent *event) override {
@@ -805,6 +806,7 @@ void ImageViewer::zoomFit() {
 	m_fit = true;
 	emit zoomChanged(m_view->transform().m11());
 	updateSNROverlayPosition();  // Update SNR overlay position after zoom
+	updateInspectionOverlayPosition();
 }
 
 void ImageViewer::zoomOriginal() {
@@ -814,6 +816,7 @@ void ImageViewer::zoomOriginal() {
 	m_fit = false;
 	setMatrix();
 	updateSNROverlayPosition();  // Update SNR overlay position after zoom
+	updateInspectionOverlayPosition();
 }
 
 void ImageViewer::zoomIn() {
@@ -838,6 +841,7 @@ void ImageViewer::zoomIn() {
 	m_fit = false;
 	setMatrix();
 	updateSNROverlayPosition();  // Update SNR overlay position after zoom
+	updateInspectionOverlayPosition();
 }
 
 void ImageViewer::zoomOut() {
@@ -866,6 +870,7 @@ void ImageViewer::zoomOut() {
 	m_fit = false;
 	setMatrix();
 	updateSNROverlayPosition();  // Update SNR overlay position after zoom
+	updateInspectionOverlayPosition();
 }
 
 void ImageViewer::mouseAt(double x, double y) {
@@ -1073,6 +1078,14 @@ void ImageViewer::updateSNROverlayPosition() {
 	}
 
 	m_snr_overlay->move(view_pos);
+}
+
+void ImageViewer::updateInspectionOverlayPosition() {
+	if (!m_inspection_overlay || !m_inspection_overlay_visible) return;
+	if (!m_view) return;
+	// Make sure overlay covers the viewport and repaint so markers update position/scale
+	m_inspection_overlay->setGeometry(m_view->viewport()->rect());
+	m_inspection_overlay->update();
 }
 
 void ImageViewer::mouseRightPressAt(double x, double y, Qt::KeyboardModifiers modifiers) {

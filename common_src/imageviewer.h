@@ -124,6 +124,7 @@ public slots:
 	void runImageInspection();
 	void showInspectionOverlay(bool show);
 	void updateSNROverlayPosition();
+	void updateInspectionOverlayPosition();
 
 signals:
 	void imageChanged();
