@@ -38,6 +38,9 @@ public:
 	// implementation and display the result. The ImageInspector lives inside the overlay.
 	void runInspection(const preview_image &img);
 
+	// Clear any current inspection results and cancel running inspection.
+	void clearInspection();
+
 protected:
 	void paintEvent(QPaintEvent *event) override;
 

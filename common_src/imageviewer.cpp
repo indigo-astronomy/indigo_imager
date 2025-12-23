@@ -700,6 +700,8 @@ const preview_image &ImageViewer::image() const {
 
 void ImageViewer::onSetImage(preview_image &im) {
 	showSNROverlay(false); // hide SNR overlay when new image is displayed
+	// clear any existing inspection overlay immediately before updating the image
+	if (m_inspection_overlay) m_inspection_overlay->clearInspection();
 	m_pixmap->setImage(im);
 	if (!m_pixmap->pixmap().isNull()) {
 		if (m_selection_visible && !m_selection_p.isNull()) {

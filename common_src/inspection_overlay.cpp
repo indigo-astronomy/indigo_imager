@@ -30,6 +30,9 @@ void InspectionOverlay::runInspection(const preview_image &img) {
 		m_watcher = nullptr;
 	}
 
+	// clear any existing inspection overlay immediately so UI doesn't show stale results
+	setInspectionResult(std::vector<double>(), 0.0);
+
 	// compute base image radius now (we'll need it on the GUI thread)
 	double base_image_px = std::min(img.width(), img.height()) * 0.2;
 
@@ -78,6 +81,18 @@ void InspectionOverlay::runInspection(const preview_image &img) {
 		// restore cursor (only for the latest run)
 		//if (QApplication::overrideCursor()) QApplication::restoreOverrideCursor();
 	});
+}
+
+void InspectionOverlay::clearInspection() {
+	// bump sequence token to invalidate any pending result
+	++m_seq;
+	if (m_watcher) {
+		try { m_watcher->future().cancel(); } catch (...) {}
+		m_watcher->deleteLater();
+		m_watcher = nullptr;
+	}
+	// clear displayed results
+	setInspectionResult(std::vector<double>(), 0.0);
 }
 
 void InspectionOverlay::setInspectionResult(const std::vector<double> &directions, double center_hfd) {
