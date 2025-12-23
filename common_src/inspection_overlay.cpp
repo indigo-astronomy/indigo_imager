@@ -351,7 +351,7 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 		// draw oriented ellipses at vertices to indicate per-cell eccentricity/angle
 		// assume the inspection grid is 5x5 and per-cell vectors follow that layout
 		const double ELLIPSE_ECC_THRESHOLD = 0.10; // hide strong orientation for near-circular cells
-		int gx = 5, gy = 5;
+		int gx = 5;
 		for (int i = 0; i < 8; ++i) {
 			QPointF v = poly.at(i);
 			int cx = 0, cy = 0;
