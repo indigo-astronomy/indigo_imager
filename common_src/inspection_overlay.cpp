@@ -37,7 +37,7 @@ void InspectionOverlay::runInspection(const preview_image &img) {
 	double base_image_px = std::min(img.width(), img.height()) * 0.2;
 
 	// show busy cursor
-	//if (!QApplication::overrideCursor()) QApplication::setOverrideCursor(Qt::BusyCursor);
+	if (!QApplication::overrideCursor()) QApplication::setOverrideCursor(Qt::BusyCursor);
 
 	QFuture<InspectionResult> future = QtConcurrent::run([pimg]() {
 		ImageInspector inspector;
@@ -79,7 +79,7 @@ void InspectionOverlay::runInspection(const preview_image &img) {
 		}
 
 		// restore cursor (only for the latest run)
-		//if (QApplication::overrideCursor()) QApplication::restoreOverrideCursor();
+		if (QApplication::overrideCursor()) QApplication::restoreOverrideCursor();
 	});
 }
 
