@@ -130,7 +130,7 @@ PeakInfo findPeak(const T* data, int width, int height, int cx, int cy ) {
 }
 
 template <typename T>
-double calculateEccentricity(const T* data, int width, int height, double centroid_x, double centroid_y, double star_radius, double background) {
+double calculateEccentricity(const T* data, int width, int height, double centroid_x, double centroid_y, double star_radius, double background, double &out_angle_deg) {
 	// Calculate second moments of the intensity distribution
 	// Using background-subtracted, weighted pixel values
 	double m20 = 0;  // Variance in x direction
@@ -208,8 +208,17 @@ double calculateEccentricity(const T* data, int width, int height, double centro
 
 	double eccentricity = std::sqrt(1.0 - ratio * ratio);
 
-	indigo_debug("SNR: Eccentricity=%.3f (λ1=%.2f, λ2=%.2f, ratio=%.3f)",
-				 eccentricity, lambda1, lambda2, ratio);
+	// Compute major axis angle (radians) from second moments
+	// 0 = along +X axis, range [0,180)
+	double ang_rad = 0.5 * std::atan2(2.0 * m11, m20 - m02);
+	double ang_deg = ang_rad * 180.0 / M_PI;
+	// Normalize to [0,180)
+	while (ang_deg < 0) ang_deg += 180.0;
+	while (ang_deg >= 180.0) ang_deg -= 180.0;
+	out_angle_deg = ang_deg;
+
+	indigo_debug("SNR: Eccentricity=%.3f angle=%.2fdeg (λ1=%.2f, λ2=%.2f, ratio=%.3f)",
+				 eccentricity, out_angle_deg, lambda1, lambda2, ratio);
 
 	return eccentricity;
 }
@@ -763,8 +772,10 @@ SNRResult calculateSNRTemplate(
 		return result;
 	}
 
-	// Step 12: Calculate eccentricity (star roundness)
-	result.eccentricity = calculateEccentricity(data, width, height, centroid.centroid_x, centroid.centroid_y, star_radius, result.background_mean);
+	// Step 12: Calculate eccentricity (star roundness) and major axis angle
+	double maj_angle = 0.0;
+	result.eccentricity = calculateEccentricity(data, width, height, centroid.centroid_x, centroid.centroid_y, star_radius, result.background_mean, maj_angle);
+	result.major_axis_angle = maj_angle;
 
 	// Step 13: Compute final SNR
 	computeFinalSNR(result, centroid.centroid_x, centroid.centroid_y, star_radius, gain);
