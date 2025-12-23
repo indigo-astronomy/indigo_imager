@@ -4,6 +4,9 @@
 #include <QPaintEvent>
 #include <cmath>
 
+// Show major-axis angle only for sufficiently non-circular PSFs
+static const double SNR_ECC_ANGLE_THRESHOLD = 0.1; // show angle only for ecc >= 0.1
+
 SNROverlay::SNROverlay(QWidget *parent)
 	: QWidget(parent)
 	, m_opacity(0.85)
@@ -73,6 +76,16 @@ void SNROverlay::setSNRResult(const SNRResult &result) {
 	int accuracy = result.peak_value < 1.5 ? 5 : 0;
 	QString unit = result.peak_value < 1.5 ? "" : " ADU";
 
+	// Only show angle when eccentricity is meaningful
+	QString eccText;
+	if (result.eccentricity >= SNR_ECC_ANGLE_THRESHOLD) {
+		eccText = QString("%1 (%2°)")
+			.arg(result.eccentricity, 0, 'f', 3)
+			.arg(result.major_axis_angle, 0, 'f', 0);
+	} else {
+		eccText = QString("%1").arg(result.eccentricity, 0, 'f', 3);
+	}
+
 	QString info = QString(
 		"<table cellspacing='5' cellpadding='0' style='border-collapse: collapse;'>"
 		"<tr><td><b>SNR:</b></td><td align='right'><b><font color='%1'>%2</font> (%3)</b></td></tr>"
@@ -100,7 +113,7 @@ void SNROverlay::setSNRResult(const SNRResult &result) {
 	.arg(result.background_stddev, 0, 'f', accuracy)
 	.arg(unit)
 	.arg(result.hfd, 0, 'f', 2)
-	.arg(result.eccentricity, 0, 'f', 3)
+	.arg(eccText)
 	.arg(result.star_x, 0, 'f', 1)
 	.arg(result.star_y, 0, 'f', 1)
 	.arg(result.star_radius, 0, 'f', 1)
