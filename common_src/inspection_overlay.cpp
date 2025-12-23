@@ -6,6 +6,9 @@
 #include <QGraphicsView>
 #include <QVBoxLayout>
 #include <cmath>
+#include <QtConcurrent/QtConcurrentRun>
+#include <QApplication>
+#include <QFuture>
 
 InspectionOverlay::InspectionOverlay(QWidget *parent)
 	: QWidget(parent), m_center_hfd(0), m_opacity(0.85),
@@ -16,22 +19,64 @@ InspectionOverlay::InspectionOverlay(QWidget *parent)
 }
 
 void InspectionOverlay::runInspection(const preview_image &img) {
-	ImageInspector inspector;
-	InspectionResult r = inspector.inspect(img);
+	// prepare a heap copy of the image (preview_image copy may require non-const ref)
+	preview_image *pimg = new preview_image(const_cast<preview_image&>(const_cast<preview_image&>(img)));
 
-	// compute scene->view pixel scale
-	double pixelScale = 1.0;
-	if (m_viewptr) {
-		QPointF a = m_viewptr->mapFromScene(QPointF(0,0));
-		QPointF b = m_viewptr->mapFromScene(QPointF(1,0));
-		pixelScale = std::hypot(b.x() - a.x(), b.y() - a.y());
+	// increment sequence token and cancel previous watcher if any
+	const uint64_t seq = ++m_seq;
+	if (m_watcher) {
+		try { m_watcher->future().cancel(); } catch (...) {}
+		m_watcher->deleteLater();
+		m_watcher = nullptr;
 	}
+
+	// compute base image radius now (we'll need it on the GUI thread)
 	double base_image_px = std::min(img.width(), img.height()) * 0.2;
 
-	setInspectionResult(r.dirs, r.center_hfd, r.detected_dirs, r.used_dirs, r.rejected_dirs,
-						r.center_detected, r.center_used, r.center_rejected,
-						r.used_points, r.used_radii, r.rejected_points,
-						pixelScale, base_image_px);
+	// show busy cursor
+	//if (!QApplication::overrideCursor()) QApplication::setOverrideCursor(Qt::BusyCursor);
+
+	QFuture<InspectionResult> future = QtConcurrent::run([pimg]() {
+		ImageInspector inspector;
+		InspectionResult r = inspector.inspect(*pimg);
+		delete pimg;
+		return r;
+	});
+
+	m_watcher = new QFutureWatcher<InspectionResult>(this);
+	m_watcher->setFuture(future);
+	connect(m_watcher, &QFutureWatcher<InspectionResult>::finished, this, [this, seq, base_image_px]() {
+		// only apply result if still latest
+		if (seq != m_seq.load()) {
+			if (m_watcher) {
+				m_watcher->deleteLater();
+				m_watcher = nullptr;
+			}
+			return;
+		}
+
+		InspectionResult r = m_watcher->future().result();
+
+		// compute scene->view pixel scale
+		double pixelScale = 1.0;
+		if (m_viewptr) {
+			QPointF a = m_viewptr->mapFromScene(QPointF(0,0));
+			QPointF b = m_viewptr->mapFromScene(QPointF(1,0));
+			pixelScale = std::hypot(b.x() - a.x(), b.y() - a.y());
+		}
+		setInspectionResult(r.dirs, r.center_hfd, r.detected_dirs, r.used_dirs, r.rejected_dirs,
+							r.center_detected, r.center_used, r.center_rejected,
+							r.used_points, r.used_radii, r.rejected_points,
+				    pixelScale, base_image_px);
+
+		if (m_watcher) {
+			m_watcher->deleteLater();
+			m_watcher = nullptr;
+		}
+
+		// restore cursor (only for the latest run)
+		//if (QApplication::overrideCursor()) QApplication::restoreOverrideCursor();
+	});
 }
 
 void InspectionOverlay::setInspectionResult(const std::vector<double> &directions, double center_hfd) {

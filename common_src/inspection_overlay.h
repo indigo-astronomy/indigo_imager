@@ -4,6 +4,10 @@
 #include <QWidget>
 #include <vector>
 #include "snr_calculator.h"
+#include <QFutureWatcher>
+#include <atomic>
+#include "image_inspector.h"
+
 class QGraphicsView;
 class preview_image;
 class ImageInspector;
@@ -61,6 +65,10 @@ private:
 
 	// optional pointer to the QGraphicsView so we can map scene->view dynamically
 	QGraphicsView *m_viewptr = nullptr;
+
+	// async inspection watcher and sequence token
+	QFutureWatcher<InspectionResult> *m_watcher = nullptr;
+	std::atomic<uint64_t> m_seq {0};
 
 public:
 	// set the view used for mapping scene coordinates to view coordinates
