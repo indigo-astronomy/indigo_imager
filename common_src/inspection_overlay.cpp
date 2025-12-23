@@ -202,8 +202,6 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 		p.drawEllipse(center, cref, cref);
 	}
 
-
-
 	// draw center marker
 	p.setPen(QPen(QColor(200,200,200,static_cast<int>(m_opacity*255)),1));
 	p.drawEllipse(center, 3, 3);
@@ -216,7 +214,7 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 		cfont.setPointSize(centerFont);
 		cfont.setBold(true);
 		QFontMetrics cfm(cfont);
-		QString ctxt = QString("C: %1 px").arg(QString::number(m_center_hfd, 'f', 2));
+		QString ctxt = QString::fromUtf8("%1 px").arg(QString::number(m_center_hfd, 'f', 2));
 		QRectF ctb = cfm.boundingRect(ctxt);
 		QPointF cdraw(center.x() - ctb.width()/2.0, center.y() - ctb.height()/2.0 - 6);
 		centerLabelRect = QRectF(cdraw.x()-4, cdraw.y()-2, ctb.width()+8, ctb.height()+4);
@@ -362,7 +360,7 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 
 		// draw oriented ellipses at vertices to indicate per-cell eccentricity/angle
 		// assume the inspection grid is 5x5 and per-cell vectors follow that layout
-		const double ELLIPSE_ECC_THRESHOLD = 0.10; // hide strong orientation for near-circular cells
+		// Always draw the ellipse (do not hide when eccentricity is small)
 		int gx = 5;
 		for (int i = 0; i < 8; ++i) {
 			QPointF v = poly.at(i);
@@ -388,41 +386,34 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 			major_view *= 4.0;
 			double minor_view = major_view;
 			if (ecc > 0.0 && ecc < 1.0) minor_view = major_view * std::sqrt(std::max(0.0, 1.0 - ecc * ecc));
-			// draw only if we have meaningful eccentricity, otherwise draw faint circle
-			if (ecc >= ELLIPSE_ECC_THRESHOLD) {
-				// choose color by eccentricity: green (<0.4), default (0.4-0.55), red (>0.55)
-				QColor edgeCol, fillCol, lineCol;
-				if (ecc < 0.4) {
-					edgeCol = QColor(0,200,120, static_cast<int>(m_opacity*220));
-					fillCol = QColor(0,200,120, static_cast<int>(m_opacity*80));
-					lineCol = QColor(120,240,200, static_cast<int>(m_opacity*220));
-				} else if (ecc > 0.55) {
-					edgeCol = QColor(220,60,60, static_cast<int>(m_opacity*220));
-					fillCol = QColor(220,60,60, static_cast<int>(m_opacity*80));
-					lineCol = QColor(255,140,140, static_cast<int>(m_opacity*220));
-				} else {
-					edgeCol = QColor(255,180,80, static_cast<int>(m_opacity*220));
-					fillCol = QColor(255,180,80, static_cast<int>(m_opacity*80));
-					lineCol = QColor(255,220,120, static_cast<int>(m_opacity*220));
-				}
-				p.save();
-				p.translate(v);
-				p.rotate(-ang + 90.0); // rotate so major axis aligns with computed angle (adjusted +90°)
-				QPen ep(edgeCol, std::max(1.0, 1.0 * m_pixel_scale));
-				p.setPen(ep);
-				QBrush eb(fillCol);
-				p.setBrush(eb);
-				p.drawEllipse(QPointF(0,0), major_view, minor_view);
-				// draw major-axis line (along ellipse major axis)
-				p.setPen(QPen(lineCol, std::max(1.0, 1.0 * m_pixel_scale)));
-				p.drawLine(QPointF(-major_view, 0), QPointF(major_view, 0));
-				p.restore();
+			// always draw a colored ellipse for the cell; keep color thresholds:
+			// green (<0.4), default (0.4-0.55), red (>0.55)
+			QColor edgeCol, fillCol, lineCol;
+			if (ecc < 0.4) {
+				edgeCol = QColor(0,200,120, static_cast<int>(m_opacity*220));
+				fillCol = QColor(0,200,120, static_cast<int>(m_opacity*80));
+				lineCol = QColor(120,240,200, static_cast<int>(m_opacity*220));
+			} else if (ecc > 0.55) {
+				edgeCol = QColor(220,60,60, static_cast<int>(m_opacity*220));
+				fillCol = QColor(220,60,60, static_cast<int>(m_opacity*80));
+				lineCol = QColor(255,140,140, static_cast<int>(m_opacity*220));
 			} else {
-				// faint circle for near-circular cells
-				p.setPen(QPen(QColor(200,200,200, static_cast<int>(m_opacity*120)), std::max(1.0, 1.0 * m_pixel_scale)));
-				p.setBrush(Qt::NoBrush);
-				p.drawEllipse(v, major_view * 0.5, major_view * 0.5);
+				edgeCol = QColor(255,180,80, static_cast<int>(m_opacity*220));
+				fillCol = QColor(255,180,80, static_cast<int>(m_opacity*80));
+				lineCol = QColor(255,220,120, static_cast<int>(m_opacity*220));
 			}
+			p.save();
+			p.translate(v);
+			p.rotate(-ang + 90.0); // rotate so major axis aligns with computed angle (adjusted +90°)
+			QPen ep(edgeCol, std::max(1.0, 1.0 * m_pixel_scale));
+			p.setPen(ep);
+			QBrush eb(fillCol);
+			p.setBrush(eb);
+			p.drawEllipse(QPointF(0,0), major_view, minor_view);
+			// draw major-axis line (along ellipse major axis)
+			p.setPen(QPen(lineCol, std::max(1.0, 1.0 * m_pixel_scale)));
+			p.drawLine(QPointF(-major_view, 0), QPointF(major_view, 0));
+			p.restore();
 		}
 
 		// draw labels on top of vertices
@@ -481,7 +472,7 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 		font.setPointSize(centerFont);
 		font.setBold(true);
 		p.setFont(font);
-		QString txt = QString("C: %1 px").arg(QString::number(m_center_hfd, 'f', 2));
+		QString txt = QString::fromUtf8("%1 px").arg(QString::number(m_center_hfd, 'f', 2));
 		QRectF tb = p.fontMetrics().boundingRect(txt);
 		// prefer centered position but nudge down if it intersects the north vertex
 		QPointF labelPos(center.x(), center.y());
