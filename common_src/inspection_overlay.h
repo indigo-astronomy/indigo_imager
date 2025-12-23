@@ -30,7 +30,8 @@ public:
 		const std::vector<int> &detected, const std::vector<int> &used, const std::vector<int> &rejected,
 		int center_detected, int center_used, int center_rejected,
 		const std::vector<QPointF> &used_points, const std::vector<double> &used_radii, const std::vector<QPointF> &rejected_points,
-		double pixel_scale, double base_image_px);
+		double pixel_scale, double base_image_px,
+		const std::vector<double> &cell_eccentricity = std::vector<double>(), const std::vector<double> &cell_major_angle = std::vector<double>());
 	void setWidgetOpacity(double opacity);
 
 	// Run inspection using the provided image. The overlay will call into an ImageInspector
@@ -62,6 +63,10 @@ private:
 	// view scaling (view pixels per image pixel) and base image radius in image pixels
 	double m_pixel_scale = 1.0;
 	double m_base_image_px = 0.0;
+
+	// per-cell morphology (5x5 grid assumed): eccentricity and major-axis angle (deg)
+	std::vector<double> m_cell_eccentricity;
+	std::vector<double> m_cell_major_angle;
 
 	// optional pointer to the QGraphicsView so we can map scene->view dynamically
 	QGraphicsView *m_viewptr = nullptr;

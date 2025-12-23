@@ -10,7 +10,7 @@ ImageInspector::ImageInspector() {}
 ImageInspector::~ImageInspector() {}
 
 // file-local helper types
-struct Candidate { double x; double y; double hfd; double star_radius; double snr; };
+struct Candidate { double x; double y; double hfd; double star_radius; double snr; double moment_m20; double moment_m02; double moment_m11; };
 struct UniqueCand { double x; double y; double snr; double hfd; int cell; };
 
 struct CellResult {
@@ -22,9 +22,10 @@ struct CellResult {
     std::vector<std::tuple<double,double,double,double>> per_cell_used; // x,y,snr,star_radius
     std::vector<UniqueCand> unique_candidates; // for recomputing detected counts
     std::vector<QPointF> rejected_points;
+    double eccentricity = 0.0;
+    double major_angle_deg = 0.0;
 };
 
-// compute mean and standard deviation of the luma channel in the search rectangle
 static void compute_mean_stddev_in_area(const preview_image &img, int sx0, int sy0, int sx1, int sy1,
                                         double &out_mean, double &out_sd) {
     double sum = 0.0;
@@ -70,7 +71,6 @@ static std::vector<Candidate> deduplicate_within_cell(const std::vector<Candidat
     return unique;
 }
 
-// Sigma-clip HFD values from the unique candidate list. Returns average HFD and fills used_indices.
 static double sigma_clip_hfd(const std::vector<Candidate> &unique, std::vector<int> &used_indices) {
     used_indices.clear();
     if (unique.empty()) return 0.0;
@@ -157,7 +157,7 @@ static CellResult analyze_cell(const preview_image &img, int width, int height, 
                 int cx_i = static_cast<int>(std::round(r.star_x));
                 int cy_i = static_cast<int>(std::round(r.star_y));
                 if (cx_i >= x0 - MARGIN_CENTROID && cx_i <= x1 + MARGIN_CENTROID && cy_i >= y0 - MARGIN_CENTROID && cy_i <= y1 + MARGIN_CENTROID) {
-                    candidates.push_back({r.star_x, r.star_y, r.hfd, r.star_radius, r.snr});
+                    candidates.push_back({r.star_x, r.star_y, r.hfd, r.star_radius, r.snr, r.moment_m20, r.moment_m02, r.moment_m11});
                 }
             }
         }
@@ -181,7 +181,7 @@ static CellResult analyze_cell(const preview_image &img, int width, int height, 
                 int cy_i = static_cast<int>(std::round(r.star_y));
                 const int MARGIN_CENTROID_FALLBACK = 12;
                 if (cx_i < x0 - MARGIN_CENTROID_FALLBACK || cx_i > x1 + MARGIN_CENTROID_FALLBACK || cy_i < y0 - MARGIN_CENTROID_FALLBACK || cy_i > y1 + MARGIN_CENTROID_FALLBACK) continue;
-                fallback_found.push_back({r.star_x, r.star_y, r.hfd, r.star_radius, r.snr});
+                fallback_found.push_back({r.star_x, r.star_y, r.hfd, r.star_radius, r.snr, r.moment_m20, r.moment_m02, r.moment_m11});
             }
         }
         if (!fallback_found.empty()) {
@@ -214,6 +214,45 @@ static CellResult analyze_cell(const preview_image &img, int width, int height, 
             cr.rejected_points.push_back(centerScene);
         }
         cr.unique_candidates.push_back({unique[i].x, unique[i].y, unique[i].snr, unique[i].hfd, cy * gx + cx});
+    }
+    // Aggregate weighted per-star normalized central moments (provided by SNRResult)
+    double m20 = 0.0, m02 = 0.0, m11 = 0.0, total_w = 0.0;
+    for (int idx : used_indices) {
+        if (idx < 0 || static_cast<size_t>(idx) >= unique.size()) continue;
+        const Candidate &uc = unique[idx];
+        double w = std::max(1.0, uc.snr);
+        m20 += w * uc.moment_m20;
+        m02 += w * uc.moment_m02;
+        m11 += w * uc.moment_m11;
+        total_w += w;
+    }
+
+    if (total_w > 0.0) {
+        m20 /= total_w; m02 /= total_w; m11 /= total_w;
+    }
+    if (total_w > 0.0) {
+        double trace = m20 + m02;
+        double det = m20 * m02 - m11 * m11;
+        double discriminant = trace * trace - 4.0 * det;
+        if (discriminant < 0) discriminant = 0;
+        double lambda1 = (trace + std::sqrt(discriminant)) / 2.0;
+        double lambda2 = (trace - std::sqrt(discriminant)) / 2.0;
+        double ecc = 0.0;
+        if (lambda1 > 0) {
+            double ratio = lambda2 / lambda1;
+            if (ratio < 0) ratio = 0;
+            if (ratio > 1) ratio = 1;
+            ecc = std::sqrt(std::max(0.0, 1.0 - ratio * ratio));
+        }
+        double ang_rad = 0.5 * std::atan2(2.0 * m11, m20 - m02);
+        double ang_deg = ang_rad * 180.0 / M_PI;
+        while (ang_deg < 0) ang_deg += 180.0;
+        while (ang_deg >= 180.0) ang_deg -= 180.0;
+        cr.eccentricity = ecc;
+        cr.major_angle_deg = ang_deg;
+    } else {
+        cr.eccentricity = 0.0;
+        cr.major_angle_deg = 0.0;
     }
     cr.hfd = avg;
     size_t nd = unique.size();
@@ -262,6 +301,8 @@ InspectionResult ImageInspector::inspect(const preview_image &img, int gx, int g
     std::vector<std::vector<std::tuple<double,double,double,double>>> per_cell_used(gx * gy);
     std::vector<UniqueCand> all_unique_candidates;
     std::vector<QPointF> inspection_rejected_points;
+    std::vector<double> per_cell_ecc(gx * gy, 0.0);
+    std::vector<double> per_cell_angle(gx * gy, 0.0);
     for (int cy = 0; cy < gy; ++cy) {
         for (int cx = 0; cx < gx; ++cx) {
             int idx = cy * gx + cx;
@@ -272,6 +313,8 @@ InspectionResult ImageInspector::inspect(const preview_image &img, int gx, int g
             cell_used[idx] = cr.used;
             cell_rejected[idx] = cr.rejected;
             per_cell_used[idx] = std::move(cr.per_cell_used);
+            per_cell_ecc[idx] = cr.eccentricity;
+            per_cell_angle[idx] = cr.major_angle_deg;
             // append unique candidates and rejected points
             for (auto &u : cr.unique_candidates) all_unique_candidates.push_back(u);
             for (auto &rp : cr.rejected_points) inspection_rejected_points.push_back(rp);
@@ -405,6 +448,8 @@ InspectionResult ImageInspector::inspect(const preview_image &img, int gx, int g
     res.used_points = std::move(inspection_used_points);
     res.used_radii = std::move(inspection_used_radii);
     res.rejected_points = std::move(inspection_rejected_points);
+    res.cell_eccentricity = std::move(per_cell_ecc);
+    res.cell_major_angle = std::move(per_cell_angle);
 
     return res;
 }

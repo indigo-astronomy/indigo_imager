@@ -19,6 +19,9 @@ struct InspectionResult {
     std::vector<QPointF> used_points; // scene coords (image pixels)
     std::vector<double> used_radii; // radii in image pixels
     std::vector<QPointF> rejected_points; // scene coords
+    // per-cell morphology: eccentricity and major-axis angle (degrees)
+    std::vector<double> cell_eccentricity; // size gx*gy (filled by inspector)
+    std::vector<double> cell_major_angle;  // degrees, range [0,180)
 };
 
 class ImageInspector {

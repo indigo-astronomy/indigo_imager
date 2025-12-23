@@ -65,9 +65,10 @@ void InspectionOverlay::runInspection(const preview_image &img) {
 			pixelScale = std::hypot(b.x() - a.x(), b.y() - a.y());
 		}
 		setInspectionResult(r.dirs, r.center_hfd, r.detected_dirs, r.used_dirs, r.rejected_dirs,
-							r.center_detected, r.center_used, r.center_rejected,
-							r.used_points, r.used_radii, r.rejected_points,
-				    pixelScale, base_image_px);
+						r.center_detected, r.center_used, r.center_rejected,
+						r.used_points, r.used_radii, r.rejected_points,
+						pixelScale, base_image_px,
+						r.cell_eccentricity, r.cell_major_angle);
 
 		if (m_watcher) {
 			m_watcher->deleteLater();
@@ -90,6 +91,8 @@ void InspectionOverlay::setInspectionResult(const std::vector<double> &direction
 	// default scale
 	m_pixel_scale = 1.0;
 	m_base_image_px = 0.0;
+	m_cell_eccentricity.clear();
+	m_cell_major_angle.clear();
 	update();
 }
 
@@ -107,14 +110,17 @@ void InspectionOverlay::setInspectionResult(const std::vector<double> &direction
 	// default scale
 	m_pixel_scale = 1.0;
 	m_base_image_px = 0.0;
+	m_cell_eccentricity.clear();
+	m_cell_major_angle.clear();
 	update();
 }
 
 void InspectionOverlay::setInspectionResult(const std::vector<double> &directions, double center_hfd,
 										   const std::vector<int> &detected, const std::vector<int> &used, const std::vector<int> &rejected,
 										   int center_detected, int center_used, int center_rejected,
-					   const std::vector<QPointF> &used_points, const std::vector<double> &used_radii, const std::vector<QPointF> &rejected_points,
-					   double pixel_scale, double base_image_px) {
+				   const std::vector<QPointF> &used_points, const std::vector<double> &used_radii, const std::vector<QPointF> &rejected_points,
+				   double pixel_scale, double base_image_px,
+				   const std::vector<double> &cell_eccentricity, const std::vector<double> &cell_major_angle) {
 	m_dirs = directions;
 	m_center_hfd = center_hfd;
 	m_detected = detected;
@@ -129,6 +135,9 @@ void InspectionOverlay::setInspectionResult(const std::vector<double> &direction
 	// store view scaling and base image radius for zoom-aware drawing
 	m_pixel_scale = (pixel_scale > 0.0) ? pixel_scale : 1.0;
 	m_base_image_px = (base_image_px > 0.0) ? base_image_px : 0.0;
+	// store per-cell morphology if provided
+	if (!cell_eccentricity.empty()) m_cell_eccentricity = cell_eccentricity; else m_cell_eccentricity.clear();
+	if (!cell_major_angle.empty()) m_cell_major_angle = cell_major_angle; else m_cell_major_angle.clear();
 	update();
 }
 
@@ -250,16 +259,26 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 		smallFont.setPointSize(smallSize);
 		smallFont.setBold(false);
 
-		double vertex_r_view = std::max(2.0, 3.0 * m_pixel_scale);
-		double north_effective_r = std::max(4.0, 5.0 * m_pixel_scale);
+		double vertex_r_view = std::max(3.0, 4.0 * m_pixel_scale);
+		double north_effective_r = std::max(8.0, 10.0 * m_pixel_scale);
 
 		struct LabelInfo { QPointF drawPos; double boxW, boxH; QString mainTxt; QString cntTxt; QFont mainF; QFont smallF; };
 		std::vector<LabelInfo> labels;
 
+		// precompute per-vertex effective radii to avoid label overlap with enlarged ellipses
+		std::vector<double> vertexEffective(8, 0.0);
 		for (int i = 0; i < 8; ++i) {
 			QPointF pt = poly.at(i);
 			QPointF dir = pt - center;
 			double len = std::hypot(dir.x(), dir.y());
+			// compute representative major axis (same logic as ellipse drawing)
+			double maj = (m_dirs.size() > static_cast<size_t>(i) && m_dirs[i] > 0) ? (m_dirs[i] * m_pixel_scale) : (base_view * 0.20);
+			maj = std::min(maj, base_view * 0.6);
+			maj = std::max(2.0, maj);
+			maj *= 4.0; // same visual scaling as ellipse
+			double base_effective = (i == 0) ? north_effective_r : vertex_r_view;
+			// offset label center by half the major axis length plus a larger gap
+			vertexEffective[i] = base_effective + (maj * 0.5) + std::max(12.0, 6.0 * m_pixel_scale);
 
 			QString mainTxt = QString::number(m_dirs[i], 'f', 2) + " px";
 			QString cntTxt;
@@ -276,14 +295,13 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 			double boxW = std::max(tbMain.width(), tbSmall.width()) + padX;
 			double boxH = tbMain.height() + (cntTxt.isEmpty() ? 0.0 : tbSmall.height()) + padY;
 
-			double base_effective = (i == 0) ? north_effective_r : vertex_r_view;
-			double gap = std::max(4.0, 3.0 * m_pixel_scale);
+			double gap = std::max(12.0, 6.0 * m_pixel_scale);
 
 			QPointF drawPos;
 			if (len > 1e-6) {
 				QPointF unit(dir.x() / len, dir.y() / len);
 				double proj = std::abs(unit.x()) * (boxW * 0.5) + std::abs(unit.y()) * (boxH * 0.5);
-				double desiredCenterDist = base_effective + gap + proj;
+				double desiredCenterDist = vertexEffective[i] + proj;
 				QPointF labelCenter = QPointF(pt.x() + unit.x() * desiredCenterDist, pt.y() + unit.y() * desiredCenterDist);
 				drawPos = QPointF(labelCenter.x() - boxW * 0.5, labelCenter.y() - boxH * 0.5);
 				QRectF labelRect(drawPos.x()-4, drawPos.y()-2, boxW, boxH);
@@ -308,6 +326,56 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 			p.setPen(vp);
 			p.setBrush(octColor);
 			p.drawEllipse(v, vr, vr);
+		}
+
+		// draw oriented ellipses at vertices to indicate per-cell eccentricity/angle
+		// assume the inspection grid is 5x5 and per-cell vectors follow that layout
+		const double ELLIPSE_ECC_THRESHOLD = 0.10; // hide strong orientation for near-circular cells
+		int gx = 5, gy = 5;
+		for (int i = 0; i < 8; ++i) {
+			QPointF v = poly.at(i);
+			int cx = 0, cy = 0;
+			switch (i) {
+				case 0: cx = 2; cy = 0; break; // N
+				case 1: cx = 4; cy = 0; break; // NE
+				case 2: cx = 4; cy = 2; break; // E
+				case 3: cx = 4; cy = 4; break; // SE
+				case 4: cx = 2; cy = 4; break; // S
+				case 5: cx = 0; cy = 4; break; // SW
+				case 6: cx = 0; cy = 2; break; // W
+				case 7: cx = 0; cy = 0; break; // NW
+			}
+			int idx = cy * gx + cx;
+			double ecc = (idx >= 0 && idx < static_cast<int>(m_cell_eccentricity.size())) ? m_cell_eccentricity[idx] : 0.0;
+			double ang = (idx >= 0 && idx < static_cast<int>(m_cell_major_angle.size())) ? m_cell_major_angle[idx] : 0.0;
+			// representative major axis length in view pixels: use vertex HFD if available
+			double major_view = (m_dirs.size() > static_cast<size_t>(i) && m_dirs[i] > 0) ? (m_dirs[i] * m_pixel_scale) : (base_view * 0.20);
+			major_view = std::min(major_view, base_view * 0.6);
+			major_view = std::max(2.0, major_view);
+			// make ellipse visually larger (user request): scale up by 4x
+			major_view *= 4.0;
+			double minor_view = major_view;
+			if (ecc > 0.0 && ecc < 1.0) minor_view = major_view * std::sqrt(std::max(0.0, 1.0 - ecc * ecc));
+			// draw only if we have meaningful eccentricity, otherwise draw faint circle
+			if (ecc >= ELLIPSE_ECC_THRESHOLD) {
+				p.save();
+				p.translate(v);
+				p.rotate(-ang); // rotate so major axis aligns with computed angle
+				QPen ep(QColor(255,180,80, static_cast<int>(m_opacity*220)), std::max(1.0, 1.0 * m_pixel_scale));
+				p.setPen(ep);
+				QBrush eb(QColor(255,180,80, static_cast<int>(m_opacity*80)));
+				p.setBrush(eb);
+				p.drawEllipse(QPointF(0,0), major_view, minor_view);
+				// draw major-axis line (along ellipse major axis)
+				p.setPen(QPen(QColor(255,220,120, static_cast<int>(m_opacity*220)), std::max(1.0, 1.0 * m_pixel_scale)));
+				p.drawLine(QPointF(-major_view, 0), QPointF(major_view, 0));
+				p.restore();
+			} else {
+				// faint circle for near-circular cells
+				p.setPen(QPen(QColor(200,200,200, static_cast<int>(m_opacity*120)), std::max(1.0, 1.0 * m_pixel_scale)));
+				p.setBrush(Qt::NoBrush);
+				p.drawEllipse(v, major_view * 0.5, major_view * 0.5);
+			}
 		}
 
 		// draw labels on top of vertices
