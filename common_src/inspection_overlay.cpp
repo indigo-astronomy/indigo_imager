@@ -262,7 +262,7 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 		double vertex_r_view = std::max(3.0, 4.0 * m_pixel_scale);
 		double north_effective_r = std::max(8.0, 10.0 * m_pixel_scale);
 
-		struct LabelInfo { QPointF drawPos; double boxW, boxH; QString mainTxt; QString cntTxt; QFont mainF; QFont smallF; };
+		struct LabelInfo { QPointF drawPos; double boxW, boxH; QString mainTxt; QString morphTxt; QString cntTxt; QFont mainF; QFont smallF; };
 		std::vector<LabelInfo> labels;
 
 		// precompute per-vertex effective radii to avoid label overlap with enlarged ellipses
@@ -281,19 +281,39 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 			vertexEffective[i] = base_effective + (maj * 0.5) + std::max(12.0, 6.0 * m_pixel_scale);
 
 			QString mainTxt = QString::number(m_dirs[i], 'f', 2) + " px";
+			QString morphTxt;
 			QString cntTxt;
 			if (!m_detected.empty() && i < static_cast<int>(m_detected.size())) {
 				cntTxt = QString("D:%1 U:%2 R:%3").arg(m_detected[i]).arg(m_used[i]).arg(m_rejected[i]);
+			}
+			// map vertex index -> grid cell to fetch eccentricity/angle
+			int vx_cx = 0, vx_cy = 0;
+			switch (i) {
+				case 0: vx_cx = 2; vx_cy = 0; break; // N
+				case 1: vx_cx = 4; vx_cy = 0; break; // NE
+				case 2: vx_cx = 4; vx_cy = 2; break; // E
+				case 3: vx_cx = 4; vx_cy = 4; break; // SE
+				case 4: vx_cx = 2; vx_cy = 4; break; // S
+				case 5: vx_cx = 0; vx_cy = 4; break; // SW
+				case 6: vx_cx = 0; vx_cy = 2; break; // W
+				case 7: vx_cx = 0; vx_cy = 0; break; // NW
+			}
+			int v_idx = vx_cy * 5 + vx_cx;
+			double vecc = (v_idx >= 0 && v_idx < static_cast<int>(m_cell_eccentricity.size())) ? m_cell_eccentricity[v_idx] : 0.0;
+			double vang = (v_idx >= 0 && v_idx < static_cast<int>(m_cell_major_angle.size())) ? m_cell_major_angle[v_idx] : 0.0;
+			if (!std::isnan(vecc) && vecc > 0.0) {
+				morphTxt = QString::fromUtf8("ε:%1 ∠%2°").arg(QString::number(vecc, 'f', 2)).arg(QString::number(vang, 'f', 0));
 			}
 
 			QFontMetrics fmMain(mainFont);
 			QFontMetrics fmSmall(smallFont);
 			QRectF tbMain = fmMain.boundingRect(mainTxt);
+			QRectF tbMorph = fmSmall.boundingRect(morphTxt);
 			QRectF tbSmall = fmSmall.boundingRect(cntTxt);
 			double padX = 8.0;
 			double padY = 4.0;
-			double boxW = std::max(tbMain.width(), tbSmall.width()) + padX;
-			double boxH = tbMain.height() + (cntTxt.isEmpty() ? 0.0 : tbSmall.height()) + padY;
+			double boxW = std::max({tbMain.width(), tbMorph.width(), tbSmall.width()}) + padX;
+			double boxH = tbMain.height() + (morphTxt.isEmpty() ? 0.0 : tbMorph.height()) + (cntTxt.isEmpty() ? 0.0 : tbSmall.height()) + padY;
 
 			double gap = std::max(12.0, 6.0 * m_pixel_scale);
 
@@ -314,7 +334,7 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 				drawPos = QPointF(pt.x() - boxW * 0.5, pt.y() - boxH * 0.5);
 			}
 
-			labels.push_back({drawPos, boxW, boxH, mainTxt, cntTxt, mainFont, smallFont});
+			labels.push_back({drawPos, boxW, boxH, mainTxt, morphTxt, cntTxt, mainFont, smallFont});
 		}
 
 		// draw small vertex markers first
@@ -360,7 +380,7 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 			if (ecc >= ELLIPSE_ECC_THRESHOLD) {
 				p.save();
 				p.translate(v);
-				p.rotate(-ang); // rotate so major axis aligns with computed angle
+				p.rotate(-ang + 90.0); // rotate so major axis aligns with computed angle (adjusted +90°)
 				QPen ep(QColor(255,180,80, static_cast<int>(m_opacity*220)), std::max(1.0, 1.0 * m_pixel_scale));
 				p.setPen(ep);
 				QBrush eb(QColor(255,180,80, static_cast<int>(m_opacity*80)));
@@ -395,19 +415,30 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 			QRectF tbMain2 = fmMain2.boundingRect(li.mainTxt);
 			QFontMetrics fmSmall2(li.smallF);
 			double mainH = fmMain2.height();
+			double morphH = li.morphTxt.isEmpty() ? 0.0 : fmSmall2.height();
 			double smallH = li.cntTxt.isEmpty() ? 0.0 : fmSmall2.height();
-			double contentH = mainH + (li.cntTxt.isEmpty() ? 0.0 : smallH);
+			double contentH = mainH + morphH + smallH;
 			double topPad = (li.boxH - contentH) * 0.5;
 			double mx = li.drawPos.x() + (li.boxW - tbMain2.width()) * 0.5;
 			double my = li.drawPos.y() + topPad + fmMain2.ascent();
 			p.drawText(mx, my, li.mainTxt);
 
-			// draw counts if present, placed below main text
+			// draw morphology (ε / angle) on the second line if present
+			if (!li.morphTxt.isEmpty()) {
+				p.setFont(li.smallF);
+				QRectF tbMorph = fmSmall2.boundingRect(li.morphTxt);
+				double sxm = li.drawPos.x() + (li.boxW - tbMorph.width()) * 0.5;
+				double sym = li.drawPos.y() + topPad + mainH + fmSmall2.ascent();
+				p.setPen(QPen(QColor(255,220,120,static_cast<int>(m_opacity*255)),1));
+				p.drawText(sxm, sym, li.morphTxt);
+			}
+
+			// draw counts on the third line if present
 			if (!li.cntTxt.isEmpty()) {
 				p.setFont(li.smallF);
 				QRectF tbSmall2 = fmSmall2.boundingRect(li.cntTxt);
 				double sx = li.drawPos.x() + (li.boxW - tbSmall2.width()) * 0.5;
-				double sy = li.drawPos.y() + topPad + mainH + fmSmall2.ascent();
+				double sy = li.drawPos.y() + topPad + mainH + morphH + fmSmall2.ascent();
 				p.setPen(QPen(QColor(200,200,200,static_cast<int>(m_opacity*255)),1));
 				p.drawText(sx, sy, li.cntTxt);
 			}
