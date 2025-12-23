@@ -217,10 +217,6 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 		p.drawEllipse(center, cref, cref);
 	}
 
-	// draw center marker
-	p.setPen(QPen(QColor(200,200,200,static_cast<int>(m_opacity*255)),1));
-	p.drawEllipse(center, 3, 3);
-
 	// precompute center label rectangle so vertex labels can avoid overlapping it
 	QRectF centerLabelRect;
 	if (m_center_hfd > 0) {
@@ -509,6 +505,26 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 		QPointF effectiveCenter(drawPos.x() + tb.width()/2.0, drawPos.y() + tb.height()/2.0 + 6);
 
 		// Combine main center label and counts into a single background box to avoid duplicated boxes
+		// central morphology (center cell at grid 2,2 -> index 12)
+		QString cmorph;
+		QRectF tbMorph;
+		int center_idx = 2 + 2 * 5;
+		double c_ecc = (center_idx >= 0 && center_idx < static_cast<int>(m_cell_eccentricity.size())) ? m_cell_eccentricity[center_idx] : 0.0;
+		double c_ang = (center_idx >= 0 && center_idx < static_cast<int>(m_cell_major_angle.size())) ? m_cell_major_angle[center_idx] : 0.0;
+		QColor cmorphCol = QColor(255,220,120, static_cast<int>(m_opacity*220));
+		if (!std::isnan(c_ecc) && c_ecc > 0.0) {
+			cmorph = QString::fromUtf8("ε:%1 ∠%2°").arg(QString::number(c_ecc, 'f', 2)).arg(QString::number(c_ang, 'f', 0));
+			// match vertex label/ellipse "lineCol" colors so red/green are identical
+			if (c_ecc < 0.4) cmorphCol = QColor(120,240,200, static_cast<int>(m_opacity*220));
+			else if (c_ecc > 0.55) cmorphCol = QColor(255,140,140, static_cast<int>(m_opacity*220));
+			else cmorphCol = QColor(255,220,120, static_cast<int>(m_opacity*220));
+			QFont small = p.font();
+			small.setPointSize(std::max(6, static_cast<int>(std::min(width(), height()) * 0.012)));
+			small.setBold(false);
+			QFontMetrics fmSmall(small);
+			tbMorph = fmSmall.boundingRect(cmorph);
+		}
+
 		QString cnt;
 		QRectF tb2;
 		if (m_center_detected > 0 || m_center_used > 0 || m_center_rejected > 0) {
@@ -523,8 +539,8 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 
 		double padX = 8.0;
 		double padY = 4.0;
-		double combinedW = std::max(tb.width(), tb2.width()) + padX;
-		double combinedH = tb.height() + (cnt.isEmpty() ? 0.0 : tb2.height()) + padY;
+		double combinedW = std::max({tb.width(), tb2.width(), tbMorph.width()}) + padX;
+		double combinedH = tb.height() + (cmorph.isEmpty() ? 0.0 : tbMorph.height()) + (cnt.isEmpty() ? 0.0 : tb2.height()) + padY;
 		QPointF combinedTopLeft(effectiveCenter.x() - combinedW/2.0, effectiveCenter.y() - combinedH/2.0);
 
 		QColor bg = QColor(0,0,0, static_cast<int>(m_opacity*180));
@@ -533,28 +549,38 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 		QRectF bgRect(combinedTopLeft.x(), combinedTopLeft.y(), combinedW, combinedH);
 		p.drawRoundedRect(bgRect, 3, 3);
 
-		// draw main text and counts centered vertically and horizontally inside the combined box
+		// draw main text, central morphology (colored) and counts centered vertically and horizontally inside the combined box
 		p.setBrush(Qt::NoBrush);
 		p.setFont(font);
 		QFontMetrics fmMain(font);
 		QRectF tbMain = fmMain.boundingRect(txt);
-		QFontMetrics fmSmall((cnt.isEmpty() ? font : QFont(font.family(), std::max(6, static_cast<int>(std::min(width(), height()) * 0.012)))));
+		QFont smallFont(font.family(), std::max(6, static_cast<int>(std::min(width(), height()) * 0.012)));
+		smallFont.setBold(false);
+		QFontMetrics fmSmall(smallFont);
 		double mainH = fmMain.height();
+		double morphH = cmorph.isEmpty() ? 0.0 : fmSmall.height();
 		double smallH = cnt.isEmpty() ? 0.0 : fmSmall.height();
-		double contentH = mainH + (cnt.isEmpty() ? 0.0 : smallH);
+		double contentH = mainH + morphH + (cnt.isEmpty() ? 0.0 : smallH);
 		double topPad = (combinedH - contentH) * 0.5;
 		double mainX = combinedTopLeft.x() + (combinedW - tbMain.width()) * 0.5;
 		double mainY = combinedTopLeft.y() + topPad + fmMain.ascent();
 		p.setPen(QPen(QColor(255,255,255,static_cast<int>(m_opacity*255)),1));
 		p.drawText(mainX, mainY, txt);
+		// draw central morphology (colored) below main text if available
+		if (!cmorph.isEmpty()) {
+			p.setFont(smallFont);
+			double mx = combinedTopLeft.x() + (combinedW - tbMorph.width()) * 0.5;
+			double my = combinedTopLeft.y() + topPad + mainH + fmSmall.ascent();
+			p.setPen(QPen(cmorphCol,1));
+			p.drawText(mx, my, cmorph);
+		}
 
+		// draw counts on the last line if present
 		if (!cnt.isEmpty()) {
-			QFont small(font.family(), std::max(6, static_cast<int>(std::min(width(), height()) * 0.012)));
-			small.setBold(false);
-			p.setFont(small);
-			QFontMetrics fmS(small);
+			p.setFont(smallFont);
+			QFontMetrics fmS(smallFont);
 			double sx = combinedTopLeft.x() + (combinedW - fmS.boundingRect(cnt).width()) * 0.5;
-			double sy = combinedTopLeft.y() + topPad + mainH + fmS.ascent();
+			double sy = combinedTopLeft.y() + topPad + mainH + morphH + fmS.ascent();
 			p.setPen(QPen(QColor(200,200,200,static_cast<int>(m_opacity*255)),1));
 			p.drawText(sx, sy, cnt);
 		}
