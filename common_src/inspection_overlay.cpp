@@ -384,26 +384,30 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 			QColor bg = QColor(0,0,0, static_cast<int>(m_opacity*180));
 			p.setBrush(bg);
 			p.setPen(Qt::NoPen);
-			QRectF bgRect(li.drawPos.x()-4, li.drawPos.y()-2, li.boxW, li.boxH);
+			QRectF bgRect(li.drawPos.x(), li.drawPos.y(), li.boxW, li.boxH);
 			p.drawRoundedRect(bgRect, 3, 3);
 
-			// draw main text
+			// draw main text centered vertically and horizontally within the label box
 			p.setBrush(Qt::NoBrush);
 			p.setPen(QPen(QColor(255,255,255,static_cast<int>(m_opacity*255)),1));
 			p.setFont(li.mainF);
 			QFontMetrics fmMain2(li.mainF);
 			QRectF tbMain2 = fmMain2.boundingRect(li.mainTxt);
+			QFontMetrics fmSmall2(li.smallF);
+			double mainH = fmMain2.height();
+			double smallH = li.cntTxt.isEmpty() ? 0.0 : fmSmall2.height();
+			double contentH = mainH + (li.cntTxt.isEmpty() ? 0.0 : smallH);
+			double topPad = (li.boxH - contentH) * 0.5;
 			double mx = li.drawPos.x() + (li.boxW - tbMain2.width()) * 0.5;
-			double my = li.drawPos.y() + tbMain2.height();
+			double my = li.drawPos.y() + topPad + fmMain2.ascent();
 			p.drawText(mx, my, li.mainTxt);
 
-			// draw counts if present
+			// draw counts if present, placed below main text
 			if (!li.cntTxt.isEmpty()) {
 				p.setFont(li.smallF);
-				QFontMetrics fmSmall2(li.smallF);
 				QRectF tbSmall2 = fmSmall2.boundingRect(li.cntTxt);
 				double sx = li.drawPos.x() + (li.boxW - tbSmall2.width()) * 0.5;
-				double sy = li.drawPos.y() + fmMain2.height() + tbSmall2.height();
+				double sy = li.drawPos.y() + topPad + mainH + fmSmall2.ascent();
 				p.setPen(QPen(QColor(200,200,200,static_cast<int>(m_opacity*255)),1));
 				p.drawText(sx, sy, li.cntTxt);
 			}
@@ -435,32 +439,58 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 			}
 		}
 
-		QColor bg = QColor(0,0,0, static_cast<int>(m_opacity*180));
-		p.setBrush(bg);
-		p.setPen(Qt::NoPen);
-		QRectF bgRect(drawPos.x()-4, drawPos.y()-2, tb.width()+8, tb.height()+4);
-		p.drawRoundedRect(bgRect, 3, 3);
-		p.setBrush(Qt::NoBrush);
-		p.setPen(QPen(QColor(255,255,255,static_cast<int>(m_opacity*255)),1));
-		p.drawText(drawPos.x(), drawPos.y() + tb.height(), txt);
+		// compute effective center point from possibly nudged drawPos so combined box aligns
+		QPointF effectiveCenter(drawPos.x() + tb.width()/2.0, drawPos.y() + tb.height()/2.0 + 6);
 
-		// draw center counts if available (small)
+		// Combine main center label and counts into a single background box to avoid duplicated boxes
+		QString cnt;
+		QRectF tb2;
 		if (m_center_detected > 0 || m_center_used > 0 || m_center_rejected > 0) {
 			QFont small = p.font();
 			small.setPointSize(std::max(6, static_cast<int>(std::min(width(), height()) * 0.012)));
 			small.setBold(false);
+			// measure with the small font
+			QFontMetrics fmSmall(small);
+			cnt = QString("D:%1 U:%2 R:%3").arg(m_center_detected).arg(m_center_used).arg(m_center_rejected);
+			tb2 = fmSmall.boundingRect(cnt);
+		}
+
+		double padX = 8.0;
+		double padY = 4.0;
+		double combinedW = std::max(tb.width(), tb2.width()) + padX;
+		double combinedH = tb.height() + (cnt.isEmpty() ? 0.0 : tb2.height()) + padY;
+		QPointF combinedTopLeft(effectiveCenter.x() - combinedW/2.0, effectiveCenter.y() - combinedH/2.0);
+
+		QColor bg = QColor(0,0,0, static_cast<int>(m_opacity*180));
+		p.setBrush(bg);
+		p.setPen(Qt::NoPen);
+		QRectF bgRect(combinedTopLeft.x(), combinedTopLeft.y(), combinedW, combinedH);
+		p.drawRoundedRect(bgRect, 3, 3);
+
+		// draw main text and counts centered vertically and horizontally inside the combined box
+		p.setBrush(Qt::NoBrush);
+		p.setFont(font);
+		QFontMetrics fmMain(font);
+		QRectF tbMain = fmMain.boundingRect(txt);
+		QFontMetrics fmSmall((cnt.isEmpty() ? font : QFont(font.family(), std::max(6, static_cast<int>(std::min(width(), height()) * 0.012)))));
+		double mainH = fmMain.height();
+		double smallH = cnt.isEmpty() ? 0.0 : fmSmall.height();
+		double contentH = mainH + (cnt.isEmpty() ? 0.0 : smallH);
+		double topPad = (combinedH - contentH) * 0.5;
+		double mainX = combinedTopLeft.x() + (combinedW - tbMain.width()) * 0.5;
+		double mainY = combinedTopLeft.y() + topPad + fmMain.ascent();
+		p.setPen(QPen(QColor(255,255,255,static_cast<int>(m_opacity*255)),1));
+		p.drawText(mainX, mainY, txt);
+
+		if (!cnt.isEmpty()) {
+			QFont small(font.family(), std::max(6, static_cast<int>(std::min(width(), height()) * 0.012)));
+			small.setBold(false);
 			p.setFont(small);
-			QString cnt = QString("D:%1 U:%2 R:%3").arg(m_center_detected).arg(m_center_used).arg(m_center_rejected);
-			QRectF tb2 = p.fontMetrics().boundingRect(cnt);
-			QPointF drawPos2(labelPos.x() - tb2.width()/2.0, drawPos.y() + tb.height() + 2);
-			QColor bg2 = QColor(0,0,0, static_cast<int>(m_opacity*160));
-			p.setBrush(bg2);
-			p.setPen(Qt::NoPen);
-			QRectF bgRect2(drawPos2.x()-3, drawPos2.y()-2, tb2.width()+6, tb2.height()+4);
-			p.drawRoundedRect(bgRect2, 3, 3);
-			p.setBrush(Qt::NoBrush);
+			QFontMetrics fmS(small);
+			double sx = combinedTopLeft.x() + (combinedW - fmS.boundingRect(cnt).width()) * 0.5;
+			double sy = combinedTopLeft.y() + topPad + mainH + fmS.ascent();
 			p.setPen(QPen(QColor(200,200,200,static_cast<int>(m_opacity*255)),1));
-			p.drawText(drawPos2.x(), drawPos2.y() + tb2.height(), cnt);
+			p.drawText(sx, sy, cnt);
 		}
 	}
 
