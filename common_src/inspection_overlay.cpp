@@ -262,7 +262,7 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 		double vertex_r_view = std::max(3.0, 4.0 * m_pixel_scale);
 		double north_effective_r = std::max(8.0, 10.0 * m_pixel_scale);
 
-		struct LabelInfo { QPointF drawPos; double boxW, boxH; QString mainTxt; QString morphTxt; QString cntTxt; QFont mainF; QFont smallF; };
+		struct LabelInfo { QPointF drawPos; double boxW, boxH; QString mainTxt; QString morphTxt; QString cntTxt; QFont mainF; QFont smallF; QColor edgeCol; QColor lineCol; };
 		std::vector<LabelInfo> labels;
 
 		// precompute per-vertex effective radii to avoid label overlap with enlarged ellipses
@@ -334,7 +334,19 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 				drawPos = QPointF(pt.x() - boxW * 0.5, pt.y() - boxH * 0.5);
 			}
 
-			labels.push_back({drawPos, boxW, boxH, mainTxt, morphTxt, cntTxt, mainFont, smallFont});
+			// choose label colors to match ellipse coloring (green <0.4, default 0.4-0.55, red >0.55)
+			QColor labEdge, labLine;
+			if (vecc < 0.4) {
+				labEdge = QColor(0,200,120, static_cast<int>(m_opacity*220));
+				labLine = QColor(120,240,200, static_cast<int>(m_opacity*220));
+			} else if (vecc > 0.55) {
+				labEdge = QColor(220,60,60, static_cast<int>(m_opacity*220));
+				labLine = QColor(255,140,140, static_cast<int>(m_opacity*220));
+			} else {
+				labEdge = QColor(255,180,80, static_cast<int>(m_opacity*220));
+				labLine = QColor(255,220,120, static_cast<int>(m_opacity*220));
+			}
+			labels.push_back({drawPos, boxW, boxH, mainTxt, morphTxt, cntTxt, mainFont, smallFont, labEdge, labLine});
 		}
 
 		// draw small vertex markers first
@@ -378,16 +390,31 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 			if (ecc > 0.0 && ecc < 1.0) minor_view = major_view * std::sqrt(std::max(0.0, 1.0 - ecc * ecc));
 			// draw only if we have meaningful eccentricity, otherwise draw faint circle
 			if (ecc >= ELLIPSE_ECC_THRESHOLD) {
+				// choose color by eccentricity: green (<0.4), default (0.4-0.55), red (>0.55)
+				QColor edgeCol, fillCol, lineCol;
+				if (ecc < 0.4) {
+					edgeCol = QColor(0,200,120, static_cast<int>(m_opacity*220));
+					fillCol = QColor(0,200,120, static_cast<int>(m_opacity*80));
+					lineCol = QColor(120,240,200, static_cast<int>(m_opacity*220));
+				} else if (ecc > 0.55) {
+					edgeCol = QColor(220,60,60, static_cast<int>(m_opacity*220));
+					fillCol = QColor(220,60,60, static_cast<int>(m_opacity*80));
+					lineCol = QColor(255,140,140, static_cast<int>(m_opacity*220));
+				} else {
+					edgeCol = QColor(255,180,80, static_cast<int>(m_opacity*220));
+					fillCol = QColor(255,180,80, static_cast<int>(m_opacity*80));
+					lineCol = QColor(255,220,120, static_cast<int>(m_opacity*220));
+				}
 				p.save();
 				p.translate(v);
 				p.rotate(-ang + 90.0); // rotate so major axis aligns with computed angle (adjusted +90°)
-				QPen ep(QColor(255,180,80, static_cast<int>(m_opacity*220)), std::max(1.0, 1.0 * m_pixel_scale));
+				QPen ep(edgeCol, std::max(1.0, 1.0 * m_pixel_scale));
 				p.setPen(ep);
-				QBrush eb(QColor(255,180,80, static_cast<int>(m_opacity*80)));
+				QBrush eb(fillCol);
 				p.setBrush(eb);
 				p.drawEllipse(QPointF(0,0), major_view, minor_view);
 				// draw major-axis line (along ellipse major axis)
-				p.setPen(QPen(QColor(255,220,120, static_cast<int>(m_opacity*220)), std::max(1.0, 1.0 * m_pixel_scale)));
+				p.setPen(QPen(lineCol, std::max(1.0, 1.0 * m_pixel_scale)));
 				p.drawLine(QPointF(-major_view, 0), QPointF(major_view, 0));
 				p.restore();
 			} else {
@@ -409,6 +436,7 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 
 			// draw main text centered vertically and horizontally within the label box
 			p.setBrush(Qt::NoBrush);
+			// keep HFD main text white; morphology (ε/∠) uses color-coding
 			p.setPen(QPen(QColor(255,255,255,static_cast<int>(m_opacity*255)),1));
 			p.setFont(li.mainF);
 			QFontMetrics fmMain2(li.mainF);
@@ -429,7 +457,7 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 				QRectF tbMorph = fmSmall2.boundingRect(li.morphTxt);
 				double sxm = li.drawPos.x() + (li.boxW - tbMorph.width()) * 0.5;
 				double sym = li.drawPos.y() + topPad + mainH + fmSmall2.ascent();
-				p.setPen(QPen(QColor(255,220,120,static_cast<int>(m_opacity*255)),1));
+				p.setPen(QPen(li.lineCol,1));
 				p.drawText(sxm, sym, li.morphTxt);
 			}
 
@@ -439,7 +467,8 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 				QRectF tbSmall2 = fmSmall2.boundingRect(li.cntTxt);
 				double sx = li.drawPos.x() + (li.boxW - tbSmall2.width()) * 0.5;
 				double sy = li.drawPos.y() + topPad + mainH + morphH + fmSmall2.ascent();
-				p.setPen(QPen(QColor(200,200,200,static_cast<int>(m_opacity*255)),1));
+				QColor cntCol = QColor(200,200,200,static_cast<int>(m_opacity*255));
+				p.setPen(QPen(cntCol,1));
 				p.drawText(sx, sy, li.cntTxt);
 			}
 		}
