@@ -735,6 +735,16 @@ void ImageViewer::onSetImage(preview_image &im) {
 
 	if (m_fit) zoomFit();
 
+	// If inspection overlay is enabled, run inspection on the newly set image
+	if (m_inspection_overlay && m_inspection_overlay_visible) {
+		m_inspection_overlay->setGeometry(m_view->viewport()->rect());
+		// Use the stored pixmap image to ensure the overlay inspects the same data
+		const preview_image &piximg = m_pixmap->image();
+		m_inspection_overlay->runInspection(piximg);
+		m_inspection_overlay->raise();
+		m_inspection_overlay->update();
+	}
+
 	emit imageChanged();
 }
 
