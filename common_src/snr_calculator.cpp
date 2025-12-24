@@ -216,7 +216,7 @@ double calculateEccentricity(const T* data, int width, int height, double centro
 
 	// Compute major axis angle (radians) from second moments
 	// 0 = along +X axis, range [0,180)
-	double ang_rad = 0.5 * std::atan2(2.0 * m11, m20 - m02);
+	double ang_rad = 0.5 * std::atan2(2.0 * m11, m02 - m20);
 	double ang_deg = ang_rad * 180.0 / M_PI;
 	// Normalize to [0,180)
 	while (ang_deg < 0) ang_deg += 180.0;

@@ -244,7 +244,8 @@ static CellResult analyze_cell(const preview_image &img, int width, int height, 
             if (ratio > 1) ratio = 1;
             ecc = std::sqrt(std::max(0.0, 1.0 - ratio * ratio));
         }
-        double ang_rad = 0.5 * std::atan2(2.0 * m11, m20 - m02);
+        //double ang_rad = 0.5 * std::atan2(2.0 * m11, m20 - m02);
+		double ang_rad = 0.5 * std::atan2(2.0 * m11, m02 - m20);
         double ang_deg = ang_rad * 180.0 / M_PI;
         while (ang_deg < 0) ang_deg += 180.0;
         while (ang_deg >= 180.0) ang_deg -= 180.0;
