@@ -137,6 +137,54 @@ static double sigma_clip_hfd(const std::vector<Candidate> &unique, std::vector<i
 	return avg;
 }
 
+// Compute weighted average eccentricity and major-axis angle for a cell.
+// This preserves the original aggregation logic (weights = max(1.0, snr)).
+static void compute_weighted_eccentricity_and_angle(
+	const std::vector<Candidate> &unique,
+	const std::vector<int> &used_indices,
+	double &out_eccentricity,
+	double &out_major_angle_deg)
+{
+	double m20 = 0.0, m02 = 0.0, m11 = 0.0, total_w = 0.0;
+	double ecc_sum = 0.0;
+
+	for (int idx : used_indices) {
+		if (idx < 0 || static_cast<size_t>(idx) >= unique.size()) continue;
+		const Candidate &uc = unique[idx];
+		double w = std::max(1.0, uc.snr);
+		m20 += w * uc.moment_m20;
+		m02 += w * uc.moment_m02;
+		m11 += w * uc.moment_m11;
+		ecc_sum += w * uc.eccentricity;
+		total_w += w;
+	}
+
+	if (total_w > 0.0) {
+		m20 /= total_w;
+		m02 /= total_w;
+		m11 /= total_w;
+
+		double trace = m20 + m02;
+		double det = m20 * m02 - m11 * m11;
+		double discriminant = trace * trace - 4.0 * det;
+		if (discriminant < 0) discriminant = 0;
+		double lambda1 = (trace + std::sqrt(discriminant)) / 2.0;
+		double lambda2 = (trace - std::sqrt(discriminant)) / 2.0;
+		// compute major axis angle (same formula as before)
+		double ang_rad = 0.5 * std::atan2(2.0 * m11, m02 - m20);
+		double ang_deg = ang_rad * 180.0 / M_PI;
+		while (ang_deg < 0) ang_deg += 180.0;
+		while (ang_deg >= 180.0) ang_deg -= 180.0;
+
+		double ecc_avg = (total_w > 0.0) ? (ecc_sum / total_w) : 0.0;
+		out_eccentricity = ecc_avg;
+		out_major_angle_deg = ang_deg;
+	} else {
+		out_eccentricity = 0.0;
+		out_major_angle_deg = 0.0;
+	}
+}
+
 static CellResult analyze_cell(
 	const preview_image &img,
 	int width,
@@ -254,243 +302,225 @@ static CellResult analyze_cell(
 		cr.unique_candidates.push_back({unique[i].x, unique[i].y, unique[i].snr, unique[i].hfd, unique[i].eccentricity, cy * gx + cx});
 	}
 
-	// Aggregate weighted per-star normalized central moments (provided by SNRResult)
-	double m20 = 0.0, m02 = 0.0, m11 = 0.0, total_w = 0.0;
-	double ecc_sum = 0.0;
-	int ecc_count = 0;
-
-	for (int idx : used_indices) {
-		if (idx < 0 || static_cast<size_t>(idx) >= unique.size()) continue;
-		const Candidate &uc = unique[idx];
-		double w = std::max(1.0, uc.snr);
-		m20 += w * uc.moment_m20;
-		m02 += w * uc.moment_m02;
-		m11 += w * uc.moment_m11;
-		ecc_sum += w * uc.eccentricity;
-		total_w += w;
-		++ecc_count;
-	}
-
-	if (total_w > 0.0) {
-		m20 /= total_w;
-		m02 /= total_w;
-		m11 /= total_w;
-
-		double trace = m20 + m02;
-		double det = m20 * m02 - m11 * m11;
-		double discriminant = trace * trace - 4.0 * det;
-		if (discriminant < 0) discriminant = 0;
-		double lambda1 = (trace + std::sqrt(discriminant)) / 2.0;
-		double lambda2 = (trace - std::sqrt(discriminant)) / 2.0;
-		// keep major axis angle calculation as before
-		double ang_rad = 0.5 * std::atan2(2.0 * m11, m02 - m20);
-		double ang_deg = ang_rad * 180.0 / M_PI;
-		while (ang_deg < 0) ang_deg += 180.0;
-		while (ang_deg >= 180.0) ang_deg -= 180.0;
-		// weighted average eccentricity from per-star SNRResult.eccentricity
-		double ecc_avg = (total_w > 0.0) ? (ecc_sum / total_w) : 0.0;
-		cr.eccentricity = ecc_avg;
-		cr.major_angle_deg = ang_deg;
-	} else {
-		cr.eccentricity = 0.0;
-		cr.major_angle_deg = 0.0;
-	}
-
-	size_t nd = unique.size();
-	cr.detected = static_cast<int>(std::min(nd, static_cast<size_t>(9999)));
+	cr.detected = static_cast<int>(std::min(unique.size(), static_cast<size_t>(9999)));
 	cr.used = std::min(used_after, 9999);
 	cr.rejected = std::min(rejected, 9999);
+
+	// Aggregate weighted eccentricity and major-axis angle using helper
+	compute_weighted_eccentricity_and_angle(unique, used_indices, cr.eccentricity, cr.major_angle_deg);
+
 	return cr;
 }
 
 InspectionResult ImageInspector::inspect(const preview_image &img, int gx, int gy, double snr_threshold) {
-    InspectionResult res;
-    // validate
-    if (img.m_raw_data == nullptr) return res;
-    int width = img.width();
-    int height = img.height();
-    if (width <= 0 || height <= 0) return res;
+	InspectionResult res;
+	// validate
+	if (img.m_raw_data == nullptr) return res;
+	int width = img.width();
+	int height = img.height();
+	if (width <= 0 || height <= 0) return res;
 
-    int cell_w = width / gx;
-    int cell_h = height / gy;
-    std::vector<double> cell_hfd(gx * gy, 0.0);
-    std::vector<int> cell_detected(gx * gy, 0);
-    std::vector<int> cell_used(gx * gy, 0);
-    std::vector<int> cell_rejected(gx * gy, 0);
+	int cell_w = width / gx;
+	int cell_h = height / gy;
+	std::vector<double> cell_hfd(gx * gy, 0.0);
+	std::vector<int> cell_detected(gx * gy, 0);
+	std::vector<int> cell_used(gx * gy, 0);
+	std::vector<int> cell_rejected(gx * gy, 0);
 
-    // mark target cells (4 corners, 4 mid-edges, center)
-    std::vector<bool> isTarget(gx * gy, false);
-    auto mark = [&](int tx, int ty) {
-        if (tx >= 0 && tx < gx && ty >= 0 && ty < gy) {
-            isTarget[ty * gx + tx] = true;
-        }
-    };
-    mark(0,0); mark(gx-1,0); mark(gx-1,gy-1); mark(0,gy-1);
-    mark(gx/2, 0); mark(gx-1, gy/2); mark(gx/2, gy-1); mark(0, gy/2); mark(gx/2, gy/2);
+	// mark target cells (4 corners, 4 mid-edges, center)
+	std::vector<bool> isTarget(gx * gy, false);
+	auto mark = [&](int tx, int ty) {
+		if (tx >= 0 && tx < gx && ty >= 0 && ty < gy) {
+			isTarget[ty * gx + tx] = true;
+		}
+	};
+	mark(0,0);
+	mark(gx-1,0);
+	mark(gx-1,gy-1);
+	mark(0,gy-1);
+	mark(gx/2, 0);
+	mark(gx-1, gy/2);
+	mark(gx/2, gy-1);
+	mark(0, gy/2);
+	mark(gx/2, gy/2);
 
-    // launch per-target-cell analysis in parallel
-    std::vector<std::future<CellResult>> futures(gx * gy);
-    for (int cy = 0; cy < gy; ++cy) {
-        for (int cx = 0; cx < gx; ++cx) {
-            int idx = cy * gx + cx;
-            if (!isTarget[idx]) continue;
-            futures[idx] = std::async(std::launch::async, analyze_cell, std::cref(img), width, height, gx, gy, cx, cy, cell_w, cell_h, snr_threshold);
-        }
-    }
+	// launch per-target-cell analysis in parallel
+	std::vector<std::future<CellResult>> futures(gx * gy);
+	for (int cy = 0; cy < gy; ++cy) {
+		for (int cx = 0; cx < gx; ++cx) {
+			int idx = cy * gx + cx;
+			if (!isTarget[idx]) continue;
+			futures[idx] = std::async(std::launch::async, analyze_cell, std::cref(img), width, height, gx, gy, cx, cy, cell_w, cell_h, snr_threshold);
+		}
+	}
 
-    // collect results
-    std::vector<std::vector<std::tuple<double,double,double,double>>> per_cell_used(gx * gy);
-    std::vector<UniqueCand> all_unique_candidates;
-    std::vector<QPointF> inspection_rejected_points;
-    std::vector<double> per_cell_ecc(gx * gy, 0.0);
-    std::vector<double> per_cell_angle(gx * gy, 0.0);
-    for (int cy = 0; cy < gy; ++cy) {
-        for (int cx = 0; cx < gx; ++cx) {
-            int idx = cy * gx + cx;
-            if (!isTarget[idx]) continue;
-            CellResult cr = futures[idx].get();
-            cell_hfd[idx] = cr.hfd;
-            cell_detected[idx] = cr.detected;
-            cell_used[idx] = cr.used;
-            cell_rejected[idx] = cr.rejected;
-            per_cell_used[idx] = std::move(cr.per_cell_used);
-            per_cell_ecc[idx] = cr.eccentricity;
-            per_cell_angle[idx] = cr.major_angle_deg;
-            // append unique candidates and rejected points
-            for (auto &u : cr.unique_candidates) all_unique_candidates.push_back(u);
-            for (auto &rp : cr.rejected_points) inspection_rejected_points.push_back(rp);
-        }
-    }
+	// collect results
+	std::vector<std::vector<std::tuple<double,double,double,double>>> per_cell_used(gx * gy);
+	std::vector<UniqueCand> all_unique_candidates;
+	std::vector<QPointF> inspection_rejected_points;
+	std::vector<double> per_cell_ecc(gx * gy, 0.0);
+	std::vector<double> per_cell_angle(gx * gy, 0.0);
+	for (int cy = 0; cy < gy; ++cy) {
+		for (int cx = 0; cx < gx; ++cx) {
+			int idx = cy * gx + cx;
+			if (!isTarget[idx]) continue;
+			CellResult cr = futures[idx].get();
+			cell_hfd[idx] = cr.hfd;
+			cell_detected[idx] = cr.detected;
+			cell_used[idx] = cr.used;
+			cell_rejected[idx] = cr.rejected;
+			per_cell_used[idx] = std::move(cr.per_cell_used);
+			per_cell_ecc[idx] = cr.eccentricity;
+			per_cell_angle[idx] = cr.major_angle_deg;
+			// append unique candidates and rejected points
+			for (auto &u : cr.unique_candidates) all_unique_candidates.push_back(u);
+			for (auto &rp : cr.rejected_points) inspection_rejected_points.push_back(rp);
+		}
+	}
 
-    // global dedup
-    struct GlobalEntry { double x; double y; double snr; double star_radius; int cell; };
-    std::vector<GlobalEntry> global_used;
-    const double GLOBAL_DUP_RADIUS = 5.0;
-    for (int ci = 0; ci < gx * gy; ++ci) {
-        for (auto &t : per_cell_used[ci]) {
-            double x = std::get<0>(t); double y = std::get<1>(t); double snr = std::get<2>(t); double sr = std::get<3>(t);
-            bool merged = false;
-            for (auto &g : global_used) {
-                double dx = g.x - x; double dy = g.y - y;
-                if (std::sqrt(dx*dx + dy*dy) <= GLOBAL_DUP_RADIUS) {
-                    if (snr > g.snr) {
-                        g.x = x;
-                        g.y = y;
-                        g.snr = snr;
-                        g.star_radius = sr;
-                    }
-                    merged = true;
-                    break;
-                }
-            }
-            if (!merged) global_used.push_back({x,y,snr,sr,ci});
-        }
-    }
+	// global dedup
+	struct GlobalEntry { double x; double y; double snr; double star_radius; int cell; };
+	std::vector<GlobalEntry> global_used;
+	const double GLOBAL_DUP_RADIUS = 5.0;
+	for (int ci = 0; ci < gx * gy; ++ci) {
+		for (auto &t : per_cell_used[ci]) {
+			double x = std::get<0>(t); double y = std::get<1>(t); double snr = std::get<2>(t); double sr = std::get<3>(t);
+			bool merged = false;
+			for (auto &g : global_used) {
+				double dx = g.x - x; double dy = g.y - y;
+				if (std::sqrt(dx*dx + dy*dy) <= GLOBAL_DUP_RADIUS) {
+					if (snr > g.snr) {
+						g.x = x;
+						g.y = y;
+						g.snr = snr;
+						g.star_radius = sr;
+					}
+					merged = true;
+					break;
+				}
+			}
+			if (!merged) global_used.push_back({x,y,snr,sr,ci});
+		}
+	}
 
-    // rebuild used points and used counts per cell
-    std::fill(cell_used.begin(), cell_used.end(), 0);
-    std::vector<QPointF> inspection_used_points;
-    std::vector<double> inspection_used_radii;
-    for (const auto &g : global_used) {
-        inspection_used_points.push_back(QPointF(g.x, g.y));
-        inspection_used_radii.push_back(g.star_radius);
-        int cell_index = g.cell;
-        if (cell_index>=0 && cell_index < gx*gy) {
-            cell_used[cell_index]++;
-        }
-    }
+	// rebuild used points and used counts per cell
+	std::fill(cell_used.begin(), cell_used.end(), 0);
+	std::vector<QPointF> inspection_used_points;
+	std::vector<double> inspection_used_radii;
+	for (const auto &g : global_used) {
+		inspection_used_points.push_back(QPointF(g.x, g.y));
+		inspection_used_radii.push_back(g.star_radius);
+		int cell_index = g.cell;
+		if (cell_index>=0 && cell_index < gx*gy) {
+			cell_used[cell_index]++;
+		}
+	}
 
-    // recompute detected per owner cell
-    std::vector<int> cell_detected_final(gx * gy, 0);
-    for (const auto &u : all_unique_candidates) {
-        int owner = u.cell;
-        if (owner<0 || owner>=gx*gy) continue;
-        cell_detected_final[owner]++;
-    }
-    for (int i=0;i<gx*gy;++i) { cell_detected[i] = cell_detected_final[i]; cell_rejected[i] = std::max(0, cell_detected[i] - cell_used[i]); }
+	// recompute detected per owner cell
+	std::vector<int> cell_detected_final(gx * gy, 0);
+	for (const auto &u : all_unique_candidates) {
+		int owner = u.cell;
+		if (owner<0 || owner>=gx*gy) continue;
+		cell_detected_final[owner]++;
+	}
 
-    // build rejected points set (those not matched to global_used)
-    inspection_rejected_points.clear();
-    for (const auto &u : all_unique_candidates) {
-        bool matched=false;
-        for (const auto &g : global_used) {
-            double dx = g.x - u.x; double dy = g.y - u.y; double dist = std::sqrt(dx*dx + dy*dy);
-            if (dist <= GLOBAL_DUP_RADIUS) { matched = true; break; }
-        }
-        if (!matched) inspection_rejected_points.push_back(QPointF(u.x, u.y));
-    }
+	for (int i=0; i < gx * gy; ++i) {
+		cell_detected[i] = cell_detected_final[i];
+		cell_rejected[i] = std::max(0, cell_detected[i] - cell_used[i]);
+	}
 
-    // extract dirs
-    auto getCell = [&](int gx_i, int gy_i) -> double {
-        if (gx_i < 0 || gx_i >= gx || gy_i < 0 || gy_i >= gy) {
-            return 0.0;
-        }
-        return cell_hfd[gy_i * gx + gx_i];
-    };
-    std::vector<double> dirs(8, 0.0);
-    dirs[0] = getCell(2,0);
-    dirs[1] = getCell(4,0);
-    dirs[2] = getCell(4,2);
-    dirs[3] = getCell(4,4);
-    dirs[4] = getCell(2,4);
-    dirs[5] = getCell(0,4);
-    dirs[6] = getCell(0,2);
-    dirs[7] = getCell(0,0);
-    double center_hfd = getCell(2,2);
+	// build rejected points set (those not matched to global_used)
+	inspection_rejected_points.clear();
+	for (const auto &u : all_unique_candidates) {
+		bool matched=false;
+		for (const auto &g : global_used) {
+			double dx = g.x - u.x;
+			double dy = g.y - u.y;
+			double dist = std::sqrt(dx*dx + dy*dy);
 
-    // map counts
-    std::vector<int> detected_dirs(8,0), used_dirs(8,0), rejected_dirs(8,0);
-    auto getCount = [&](const std::vector<int> &vec, int gx_i, int gy_i) -> int {
-        if (gx_i < 0 || gx_i >= gx || gy_i < 0 || gy_i >= gy) {
-            return 0;
-        }
-        return vec[gy_i * gx + gx_i];
-    };
-    detected_dirs[0] = getCount(cell_detected, 2,0);
-    detected_dirs[1] = getCount(cell_detected, 4,0);
-    detected_dirs[2] = getCount(cell_detected, 4,2);
-    detected_dirs[3] = getCount(cell_detected, 4,4);
-    detected_dirs[4] = getCount(cell_detected, 2,4);
-    detected_dirs[5] = getCount(cell_detected, 0,4);
-    detected_dirs[6] = getCount(cell_detected, 0,2);
-    detected_dirs[7] = getCount(cell_detected, 0,0);
+			if (dist <= GLOBAL_DUP_RADIUS) {
+				matched = true;
+				break;
+			}
+		}
+		if (!matched) {
+			inspection_rejected_points.push_back(QPointF(u.x, u.y));
+		}
+	}
 
-    used_dirs[0] = getCount(cell_used, 2,0);
-    used_dirs[1] = getCount(cell_used, 4,0);
-    used_dirs[2] = getCount(cell_used, 4,2);
-    used_dirs[3] = getCount(cell_used, 4,4);
-    used_dirs[4] = getCount(cell_used, 2,4);
-    used_dirs[5] = getCount(cell_used, 0,4);
-    used_dirs[6] = getCount(cell_used, 0,2);
-    used_dirs[7] = getCount(cell_used, 0,0);
+	// extract dirs
+	auto getCell = [&](int gx_i, int gy_i) -> double {
+		if (gx_i < 0 || gx_i >= gx || gy_i < 0 || gy_i >= gy) {
+			return 0.0;
+		}
+		return cell_hfd[gy_i * gx + gx_i];
+	};
 
-    rejected_dirs[0] = getCount(cell_rejected, 2,0);
-    rejected_dirs[1] = getCount(cell_rejected, 4,0);
-    rejected_dirs[2] = getCount(cell_rejected, 4,2);
-    rejected_dirs[3] = getCount(cell_rejected, 4,4);
-    rejected_dirs[4] = getCount(cell_rejected, 2,4);
-    rejected_dirs[5] = getCount(cell_rejected, 0,4);
-    rejected_dirs[6] = getCount(cell_rejected, 0,2);
-    rejected_dirs[7] = getCount(cell_rejected, 0,0);
+	std::vector<double> dirs(8, 0.0);
+	dirs[0] = getCell(2,0);
+	dirs[1] = getCell(4,0);
+	dirs[2] = getCell(4,2);
+	dirs[3] = getCell(4,4);
+	dirs[4] = getCell(2,4);
+	dirs[5] = getCell(0,4);
+	dirs[6] = getCell(0,2);
+	dirs[7] = getCell(0,0);
+	double center_hfd = getCell(2,2);
 
-    int center_detected = getCount(cell_detected, 2,2);
-    int center_used = getCount(cell_used, 2,2);
-    int center_rejected = getCount(cell_rejected, 2,2);
+	// map counts
+	std::vector<int> detected_dirs(8,0), used_dirs(8,0), rejected_dirs(8,0);
+	auto getCount = [&](const std::vector<int> &vec, int gx_i, int gy_i) -> int {
+		if (gx_i < 0 || gx_i >= gx || gy_i < 0 || gy_i >= gy) {
+			return 0;
+		}
+		return vec[gy_i * gx + gx_i];
+	};
 
-    // fill result
-    res.dirs = std::move(dirs);
-    res.center_hfd = center_hfd;
-    res.detected_dirs = std::move(detected_dirs);
-    res.used_dirs = std::move(used_dirs);
-    res.rejected_dirs = std::move(rejected_dirs);
-    res.center_detected = center_detected;
-    res.center_used = center_used;
-    res.center_rejected = center_rejected;
-    res.used_points = std::move(inspection_used_points);
-    res.used_radii = std::move(inspection_used_radii);
-    res.rejected_points = std::move(inspection_rejected_points);
-    res.cell_eccentricity = std::move(per_cell_ecc);
-    res.cell_major_angle = std::move(per_cell_angle);
+	detected_dirs[0] = getCount(cell_detected, 2,0);
+	detected_dirs[1] = getCount(cell_detected, 4,0);
+	detected_dirs[2] = getCount(cell_detected, 4,2);
+	detected_dirs[3] = getCount(cell_detected, 4,4);
+	detected_dirs[4] = getCount(cell_detected, 2,4);
+	detected_dirs[5] = getCount(cell_detected, 0,4);
+	detected_dirs[6] = getCount(cell_detected, 0,2);
+	detected_dirs[7] = getCount(cell_detected, 0,0);
 
-    return res;
+	used_dirs[0] = getCount(cell_used, 2,0);
+	used_dirs[1] = getCount(cell_used, 4,0);
+	used_dirs[2] = getCount(cell_used, 4,2);
+	used_dirs[3] = getCount(cell_used, 4,4);
+	used_dirs[4] = getCount(cell_used, 2,4);
+	used_dirs[5] = getCount(cell_used, 0,4);
+	used_dirs[6] = getCount(cell_used, 0,2);
+	used_dirs[7] = getCount(cell_used, 0,0);
+
+	rejected_dirs[0] = getCount(cell_rejected, 2,0);
+	rejected_dirs[1] = getCount(cell_rejected, 4,0);
+	rejected_dirs[2] = getCount(cell_rejected, 4,2);
+	rejected_dirs[3] = getCount(cell_rejected, 4,4);
+	rejected_dirs[4] = getCount(cell_rejected, 2,4);
+	rejected_dirs[5] = getCount(cell_rejected, 0,4);
+	rejected_dirs[6] = getCount(cell_rejected, 0,2);
+	rejected_dirs[7] = getCount(cell_rejected, 0,0);
+
+	int center_detected = getCount(cell_detected, 2,2);
+	int center_used = getCount(cell_used, 2,2);
+	int center_rejected = getCount(cell_rejected, 2,2);
+
+	// fill result
+	res.dirs = std::move(dirs);
+	res.center_hfd = center_hfd;
+	res.detected_dirs = std::move(detected_dirs);
+	res.used_dirs = std::move(used_dirs);
+	res.rejected_dirs = std::move(rejected_dirs);
+	res.center_detected = center_detected;
+	res.center_used = center_used;
+	res.center_rejected = center_rejected;
+	res.used_points = std::move(inspection_used_points);
+	res.used_radii = std::move(inspection_used_radii);
+	res.rejected_points = std::move(inspection_rejected_points);
+	res.cell_eccentricity = std::move(per_cell_ecc);
+	res.cell_major_angle = std::move(per_cell_angle);
+
+	return res;
 }
