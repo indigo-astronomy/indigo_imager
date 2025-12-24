@@ -67,11 +67,13 @@ void InspectionOverlay::runInspection(const preview_image &img) {
 			QPointF b = m_viewptr->mapFromScene(QPointF(1,0));
 			pixelScale = std::hypot(b.x() - a.x(), b.y() - a.y());
 		}
-		setInspectionResult(r.dirs, r.center_hfd, r.detected_dirs, r.used_dirs, r.rejected_dirs,
-						r.center_detected, r.center_used, r.center_rejected,
-						r.used_points, r.used_radii, r.rejected_points,
-						pixelScale, base_image_px,
-						r.cell_eccentricity, r.cell_major_angle);
+		setInspectionResult(
+			r.dirs, r.center_hfd, r.detected_dirs, r.used_dirs, r.rejected_dirs,
+			r.center_detected, r.center_used, r.center_rejected,
+			r.used_points, r.used_radii, r.rejected_points,
+			pixelScale, base_image_px,
+			r.cell_eccentricity, r.cell_major_angle
+		);
 
 		if (m_watcher) {
 			m_watcher->deleteLater();
@@ -111,9 +113,16 @@ void InspectionOverlay::setInspectionResult(const std::vector<double> &direction
 	update();
 }
 
-void InspectionOverlay::setInspectionResult(const std::vector<double> &directions, double center_hfd,
-										   const std::vector<int> &detected, const std::vector<int> &used, const std::vector<int> &rejected,
-										   int center_detected, int center_used, int center_rejected) {
+void InspectionOverlay::setInspectionResult(
+	const std::vector<double> &directions,
+	double center_hfd,
+	const std::vector<int> &detected,
+	const std::vector<int> &used,
+	const std::vector<int> &rejected,
+	int center_detected,
+	int center_used,
+	int center_rejected
+) {
 	m_dirs = directions;
 	m_center_hfd = center_hfd;
 	m_detected = detected;
@@ -130,12 +139,21 @@ void InspectionOverlay::setInspectionResult(const std::vector<double> &direction
 	update();
 }
 
-void InspectionOverlay::setInspectionResult(const std::vector<double> &directions, double center_hfd,
-										   const std::vector<int> &detected, const std::vector<int> &used, const std::vector<int> &rejected,
-										   int center_detected, int center_used, int center_rejected,
-				   const std::vector<QPointF> &used_points, const std::vector<double> &used_radii, const std::vector<QPointF> &rejected_points,
-				   double pixel_scale, double base_image_px,
-				   const std::vector<double> &cell_eccentricity, const std::vector<double> &cell_major_angle) {
+void InspectionOverlay::setInspectionResult(
+	const std::vector<double> &directions, double center_hfd,
+	const std::vector<int> &detected, const std::vector<int> &used,
+	const std::vector<int> &rejected,
+	int center_detected,
+	int center_used,
+	int center_rejected,
+	const std::vector<QPointF> &used_points,
+	const std::vector<double> &used_radii,
+	const std::vector<QPointF> &rejected_points,
+	double pixel_scale,
+	double base_image_px,
+	const std::vector<double> &cell_eccentricity,
+	const std::vector<double> &cell_major_angle
+) {
 	m_dirs = directions;
 	m_center_hfd = center_hfd;
 	m_detected = detected;
