@@ -10,8 +10,8 @@ ImageInspector::ImageInspector() {}
 ImageInspector::~ImageInspector() {}
 
 // file-local helper types
-struct Candidate { double x; double y; double hfd; double star_radius; double snr; double moment_m20; double moment_m02; double moment_m11; };
-struct UniqueCand { double x; double y; double snr; double hfd; int cell; };
+struct Candidate { double x; double y; double hfd; double star_radius; double snr; double moment_m20; double moment_m02; double moment_m11; double eccentricity; };
+struct UniqueCand { double x; double y; double snr; double hfd; double eccentricity; int cell; };
 
 struct CellResult {
     int cell_index;
@@ -153,11 +153,11 @@ static CellResult analyze_cell(const preview_image &img, int width, int height, 
             }
             if (!is_local_max) continue;
             SNRResult r = calculateSNR(reinterpret_cast<const uint8_t*>(img.m_raw_data), width, height, img.m_pix_format, xx, yy);
-            if (r.valid && !r.is_saturated) {
+                if (r.valid && !r.is_saturated) {
                 int cx_i = static_cast<int>(std::round(r.star_x));
                 int cy_i = static_cast<int>(std::round(r.star_y));
                 if (cx_i >= x0 - MARGIN_CENTROID && cx_i <= x1 + MARGIN_CENTROID && cy_i >= y0 - MARGIN_CENTROID && cy_i <= y1 + MARGIN_CENTROID) {
-                    candidates.push_back({r.star_x, r.star_y, r.hfd, r.star_radius, r.snr, r.moment_m20, r.moment_m02, r.moment_m11});
+                    candidates.push_back({r.star_x, r.star_y, r.hfd, r.star_radius, r.snr, r.moment_m20, r.moment_m02, r.moment_m11, r.eccentricity});
                 }
             }
         }
@@ -181,7 +181,7 @@ static CellResult analyze_cell(const preview_image &img, int width, int height, 
                 int cy_i = static_cast<int>(std::round(r.star_y));
                 const int MARGIN_CENTROID_FALLBACK = 12;
                 if (cx_i < x0 - MARGIN_CENTROID_FALLBACK || cx_i > x1 + MARGIN_CENTROID_FALLBACK || cy_i < y0 - MARGIN_CENTROID_FALLBACK || cy_i > y1 + MARGIN_CENTROID_FALLBACK) continue;
-                fallback_found.push_back({r.star_x, r.star_y, r.hfd, r.star_radius, r.snr, r.moment_m20, r.moment_m02, r.moment_m11});
+                fallback_found.push_back({r.star_x, r.star_y, r.hfd, r.star_radius, r.snr, r.moment_m20, r.moment_m02, r.moment_m11, r.eccentricity});
             }
         }
         if (!fallback_found.empty()) {
@@ -213,10 +213,14 @@ static CellResult analyze_cell(const preview_image &img, int width, int height, 
         } else {
             cr.rejected_points.push_back(centerScene);
         }
-        cr.unique_candidates.push_back({unique[i].x, unique[i].y, unique[i].snr, unique[i].hfd, cy * gx + cx});
+        cr.unique_candidates.push_back({unique[i].x, unique[i].y, unique[i].snr, unique[i].hfd, unique[i].eccentricity, cy * gx + cx});
     }
     // Aggregate weighted per-star normalized central moments (provided by SNRResult)
     double m20 = 0.0, m02 = 0.0, m11 = 0.0, total_w = 0.0;
+    double ecc_sum = 0.0;
+	int ecc_count = 0;
+	printf("Cell (%d,%d) detected=%zu used=%d rejected=%d avg_hfd=%.2f\n", cx, cy, unique.size(), used_after, rejected, avg);
+
     for (int idx : used_indices) {
         if (idx < 0 || static_cast<size_t>(idx) >= unique.size()) continue;
         const Candidate &uc = unique[idx];
@@ -224,32 +228,32 @@ static CellResult analyze_cell(const preview_image &img, int width, int height, 
         m20 += w * uc.moment_m20;
         m02 += w * uc.moment_m02;
         m11 += w * uc.moment_m11;
+        ecc_sum += w * uc.eccentricity;
         total_w += w;
+		++ecc_count;
+		printf("  Used star[%d]: x=%.2f y=%.2f snr=%.2f hfd=%.2f ecc=%.3f\n", ecc_count, uc.x, uc.y, uc.snr, uc.hfd, uc.eccentricity);
     }
 
     if (total_w > 0.0) {
-        m20 /= total_w; m02 /= total_w; m11 /= total_w;
-    }
-    if (total_w > 0.0) {
-        double trace = m20 + m02;
+		m20 /= total_w;
+		m02 /= total_w;
+		m11 /= total_w;
+
+		double trace = m20 + m02;
         double det = m20 * m02 - m11 * m11;
         double discriminant = trace * trace - 4.0 * det;
         if (discriminant < 0) discriminant = 0;
         double lambda1 = (trace + std::sqrt(discriminant)) / 2.0;
         double lambda2 = (trace - std::sqrt(discriminant)) / 2.0;
-        double ecc = 0.0;
-        if (lambda1 > 0) {
-            double ratio = lambda2 / lambda1;
-            if (ratio < 0) ratio = 0;
-            if (ratio > 1) ratio = 1;
-            ecc = std::sqrt(std::max(0.0, 1.0 - ratio * ratio));
-        }
-        //double ang_rad = 0.5 * std::atan2(2.0 * m11, m20 - m02);
-		double ang_rad = 0.5 * std::atan2(2.0 * m11, m02 - m20);
+        // keep major axis angle calculation as before
+        double ang_rad = 0.5 * std::atan2(2.0 * m11, m02 - m20);
         double ang_deg = ang_rad * 180.0 / M_PI;
         while (ang_deg < 0) ang_deg += 180.0;
         while (ang_deg >= 180.0) ang_deg -= 180.0;
-        cr.eccentricity = ecc;
+        // weighted average eccentricity from per-star SNRResult.eccentricity
+        double ecc_avg = (total_w > 0.0) ? (ecc_sum / total_w) : 0.0;
+		printf("  Cell major axis angle=%.2f deg eccentricity=%.3f\n", ang_deg, ecc_avg);
+        cr.eccentricity = ecc_avg;
         cr.major_angle_deg = ang_deg;
     } else {
         cr.eccentricity = 0.0;
