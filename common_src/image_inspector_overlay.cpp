@@ -173,15 +173,45 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 	if (!m_error_message.empty()) {
 		QPainter p(this);
 		p.setRenderHint(QPainter::Antialiasing, true);
-		p.setPen(QPen(QColor(255,255,255,220)));
-		QFont f = p.font();
-		int fs = std::max(10, static_cast<int>(std::min(width(), height()) * 0.03));
-		f.setPointSize(fs);
-		f.setBold(true);
-		p.setFont(f);
+
+		// Header font (Inspector:)
+		QFont headerFont = p.font();
+		int headerFs = std::max(12, static_cast<int>(std::min(width(), height()) * 0.03));
+		headerFont.setPointSize(headerFs);
+		headerFont.setBold(true);
+
+		// Error font (smaller than header)
+		QFont errorFont = p.font();
+		int errorFs = std::max(8, headerFs - 4);
+		errorFont.setPointSize(errorFs);
+		errorFont.setBold(false);
+
+		QString header = tr("Image inspector");
+		QString err = QString::fromUtf8(m_error_message.c_str());
+
+		// Measure sizes and draw both lines centered as a block
+		QFontMetrics hf(headerFont);
+		QFontMetrics ef(errorFont);
 		QRectF r = rect();
-		QString msg = QString::fromUtf8(m_error_message.c_str());
-		p.drawText(r, Qt::AlignCenter | Qt::TextWordWrap, msg);
+
+		QRectF hb = hf.boundingRect(r.toRect(), Qt::AlignCenter | Qt::TextWordWrap, header);
+		QRectF eb = ef.boundingRect(r.toRect(), Qt::AlignCenter | Qt::TextWordWrap, err);
+
+		double blockH = hb.height() + eb.height();
+		double startY = r.top() + (r.height() - blockH) / 2.0;
+
+		// Draw header
+		p.setFont(headerFont);
+		p.setPen(QPen(QColor(255,255,255,255)));
+		QRectF headerRect(r.left(), startY, r.width(), hb.height());
+		p.drawText(headerRect, Qt::AlignHCenter | Qt::AlignVCenter | Qt::TextWordWrap, header);
+
+		// Draw error text below with smaller font
+		p.setFont(errorFont);
+		p.setPen(QPen(QColor(220,220,220,255)));
+		QRectF errRect(r.left(), startY + hb.height(), r.width(), eb.height());
+		p.drawText(errRect, Qt::AlignHCenter | Qt::AlignVCenter | Qt::TextWordWrap, err);
+
 		return;
 	}
 
