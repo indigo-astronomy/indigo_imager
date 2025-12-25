@@ -31,8 +31,11 @@ public:
 
 protected:
 	void paintEvent(QPaintEvent *event) override;
+	void resizeEvent(QResizeEvent *event) override;
 
 private:
+	// compute a UI-only pixel scale based on the overlay/widget size (used for pen/marker sizing)
+	double computeUiPixelScale() const;
 	std::vector<double> m_dirs; // 8 directions: N, NE, E, SE, S, SW, W, NW
 	double m_center_hfd;
 	double m_opacity;
@@ -72,7 +75,10 @@ private:
 
 public:
 	// set the view used for mapping scene coordinates to view coordinates
-	void setView(QGraphicsView *view) { m_viewptr = view; }
+	void setView(QGraphicsView *view);
+
+protected:
+	bool eventFilter(QObject *watched, QEvent *event) override;
 };
 
 #endif // INSPECTION_OVERLAY_H

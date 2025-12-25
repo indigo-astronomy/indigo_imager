@@ -18,6 +18,57 @@ InspectionOverlay::InspectionOverlay(QWidget *parent)
 	setAttribute(Qt::WA_TransparentForMouseEvents);
 }
 
+void InspectionOverlay::setView(QGraphicsView *view) {
+	// Remove previous filter/parenting if any
+	if (m_viewptr) {
+		if (m_viewptr->viewport()) m_viewptr->viewport()->removeEventFilter(this);
+		// don't delete parent; just detach
+		this->setParent(nullptr);
+	}
+
+	m_viewptr = view;
+	if (!m_viewptr) return;
+
+	QWidget *vp = m_viewptr->viewport();
+	if (vp) {
+		// make the overlay a child of the viewport so it moves/resizes with it
+		this->setParent(vp);
+		this->setAttribute(Qt::WA_TransparentForMouseEvents);
+		this->setAttribute(Qt::WA_NoSystemBackground, true);
+		this->setGeometry(0, 0, vp->width(), vp->height());
+		this->show();
+		vp->installEventFilter(this);
+	}
+}
+
+bool InspectionOverlay::eventFilter(QObject *watched, QEvent *event) {
+	if (m_viewptr && m_viewptr->viewport() && watched == m_viewptr->viewport()) {
+		if (event->type() == QEvent::Resize) {
+			// Ensure overlay matches viewport size and recompute UI scale
+			QWidget *vp = m_viewptr->viewport();
+			if (vp) {
+				this->setGeometry(0, 0, vp->width(), vp->height());
+				// recompute pixel scale via helper
+				m_pixel_scale = computeUiPixelScale();
+				update();
+			}
+		}
+	}
+	return QWidget::eventFilter(watched, event);
+}
+
+// helper: compute a UI-only pixel scale based on the overlay/widget short dimension
+double InspectionOverlay::computeUiPixelScale() const {
+	const double REF_VIEW_SHORT = 800.0;
+	int vw = this->width();
+	int vh = this->height();
+	if (vw > 0 && vh > 0) {
+		double shortDim = static_cast<double>(std::min(vw, vh));
+		return std::max(0.20, std::min(shortDim / REF_VIEW_SHORT, 4.0));
+	}
+	return 1.0;
+}
+
 void InspectionOverlay::runInspection(const preview_image &img) {
 	// prepare a heap copy of the image (preview_image copy may require non-const ref)
 	preview_image *pimg = new preview_image(const_cast<preview_image&>(const_cast<preview_image&>(img)));
@@ -60,19 +111,8 @@ void InspectionOverlay::runInspection(const preview_image &img) {
 
 		InspectionResult r = m_watcher->future().result();
 
-		// compute a view-dependent pixel scale based on the overlay window size
-		// (use the short dimension so scale is stable for tall/narrow windows).
-		// This makes marker/pen sizes depend on window size rather than the
-		// image/scene zoom level which produced overly large strokes when zoomed.
-		double pixelScale = 1.0;
-		const double REF_VIEW_SHORT = 800.0; // reference short-dimension in pixels
-		int vw = this->width();
-		int vh = this->height();
-		if (vw > 0 && vh > 0) {
-			double shortDim = static_cast<double>(std::min(vw, vh));
-			// normalize so REF_VIEW_SHORT -> scale 1.0, clamp to reasonable range
-			pixelScale = std::max(0.20, std::min(shortDim / REF_VIEW_SHORT, 4.0));
-		}
+		// compute UI pixel scale (centralized helper)
+		double pixelScale = computeUiPixelScale();
 		// Apply the full InspectionResult to the overlay
 		setInspectionResult(r);
 		// store view-specific scaling that is not part of the inspection result
@@ -572,4 +612,11 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 		}
 	}
 	// vertices and labels drawn above in the block above
+}
+
+void InspectionOverlay::resizeEvent(QResizeEvent *event) {
+	QWidget::resizeEvent(event);
+	// Recompute the UI pixel scale using the helper
+	m_pixel_scale = computeUiPixelScale();
+	update();
 }
