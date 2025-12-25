@@ -265,15 +265,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu->addSeparator();
 
-	act = menu->addAction(tr("Show image &statistics"));
-	act->setCheckable(true);
-	act->setChecked(conf.statistics_enabled);
-	connect(act, &QAction::toggled, this, &ImagerWindow::on_statistics_show);
-
-	act = menu->addAction(tr("Show image &center"));
-	act->setCheckable(true);
-	act->setChecked(conf.imager_show_reference);
-	connect(act, &QAction::toggled, this, &ImagerWindow::on_imager_show_reference);
+	// NOTE: moved image statistics / center controls into Tools menu below
 
 	act = menu->addAction(tr("Enable image &antialiasing"));
 	act->setCheckable(true);
@@ -358,6 +350,35 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	log_group->addAction(act);
 
 	menu_bar->addMenu(menu);
+
+	// Tools menu: image utilities moved here from Settings
+	QMenu *tools_menu = new QMenu("&Tools");
+	QAction *tools_act;
+
+	tools_act = tools_menu->addAction(tr("Image &statistics"));
+	tools_act->setCheckable(true);
+	tools_act->setChecked(conf.statistics_enabled);
+	connect(tools_act, &QAction::toggled, this, &ImagerWindow::on_statistics_show);
+
+	tools_act = tools_menu->addAction(tr("Image &center"));
+	tools_act->setCheckable(true);
+	tools_act->setChecked(conf.imager_show_reference);
+	connect(tools_act, &QAction::toggled, this, &ImagerWindow::on_imager_show_reference);
+
+	// Image Inspector action toggles inspection overlay in the image viewer
+	tools_act = tools_menu->addAction(tr("Image &Inspector"));
+	tools_act->setCheckable(true);
+	connect(tools_act, &QAction::toggled, this, [this](bool checked){
+		if (!m_imager_viewer) return;
+		if (checked) {
+			m_imager_viewer->runImageInspection();
+			m_imager_viewer->showInspectionOverlay(true);
+		} else {
+			m_imager_viewer->showInspectionOverlay(false);
+		}
+	});
+
+	menu_bar->addMenu(tools_menu);
 
 	menu = new QMenu("&Help");
 

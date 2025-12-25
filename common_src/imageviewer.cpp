@@ -385,20 +385,7 @@ void ImageViewer::makeToolbar(bool show_prev_next, bool show_debayer) {
 	box->addWidget(orig);
 	box->addWidget(m_stretch_button);
 
-	// add inspection action to toolbar menu
-	QAction *inspectionAct = new QAction(tr("Image Inspection"), this);
-	inspectionAct->setCheckable(true);
-	connect(inspectionAct, &QAction::triggered, this, [this](bool checked){
-		if (checked) {
-			runImageInspection();
-			showInspectionOverlay(true);
-		} else {
-			showInspectionOverlay(false);
-		}
-	});
-	menu->addSeparator();
-	menu->addAction(inspectionAct);
-	m_inspection_act = inspectionAct;
+	// Image Inspection action is provided from the main window Tools menu
 }
 
 void ImageViewer::showStretchButton(bool show) {
