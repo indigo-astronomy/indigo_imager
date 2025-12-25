@@ -60,12 +60,18 @@ void InspectionOverlay::runInspection(const preview_image &img) {
 
 		InspectionResult r = m_watcher->future().result();
 
-		// compute scene->view pixel scale
+		// compute a view-dependent pixel scale based on the overlay window size
+		// (use the short dimension so scale is stable for tall/narrow windows).
+		// This makes marker/pen sizes depend on window size rather than the
+		// image/scene zoom level which produced overly large strokes when zoomed.
 		double pixelScale = 1.0;
-		if (m_viewptr) {
-			QPointF a = m_viewptr->mapFromScene(QPointF(0,0));
-			QPointF b = m_viewptr->mapFromScene(QPointF(1,0));
-			pixelScale = std::hypot(b.x() - a.x(), b.y() - a.y());
+		const double REF_VIEW_SHORT = 800.0; // reference short-dimension in pixels
+		int vw = this->width();
+		int vh = this->height();
+		if (vw > 0 && vh > 0) {
+			double shortDim = static_cast<double>(std::min(vw, vh));
+			// normalize so REF_VIEW_SHORT -> scale 1.0, clamp to reasonable range
+			pixelScale = std::max(0.20, std::min(shortDim / REF_VIEW_SHORT, 4.0));
 		}
 		// Apply the full InspectionResult to the overlay
 		setInspectionResult(r);
@@ -216,11 +222,15 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 	for (size_t i = 0; i < m_used_points.size(); ++i) {
 		QPointF scenePt = m_used_points[i];
 		QPointF pview = (m_viewptr != nullptr) ? m_viewptr->mapFromScene(scenePt) : scenePt;
-		double r_scene = (i < m_used_radii.size() ? m_used_radii[i] : std::max(1.5, 3.0 * m_pixel_scale));
-		double r = (m_viewptr != nullptr) ? (r_scene * m_pixel_scale) : r_scene;
+		// use same half-size as rejected crosses so plus and cross markers match visually
+		double s = std::max(3.0 * 1.4, 3.0 * 1.6 * m_pixel_scale);
+		QPen usedPen(usedColor, std::max(1.0, 1.0 * m_pixel_scale), Qt::SolidLine, Qt::SquareCap, Qt::RoundJoin);
+		p.setPen(usedPen);
 		p.setBrush(Qt::NoBrush);
-		p.setPen(QPen(usedColor, std::max(1.0, 1.0 * m_pixel_scale)));
-		p.drawEllipse(pview, r, r);
+		// horizontal line
+		p.drawLine(QPointF(pview.x() - s, pview.y()), QPointF(pview.x() + s, pview.y()));
+		// vertical line
+		p.drawLine(QPointF(pview.x(), pview.y() - s), QPointF(pview.x(), pview.y() + s));
 	}
 	for (const QPointF &pt : m_rejected_points) {
 		QPointF scenePt = pt;
