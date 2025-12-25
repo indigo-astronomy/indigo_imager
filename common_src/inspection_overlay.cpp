@@ -31,7 +31,7 @@ void InspectionOverlay::runInspection(const preview_image &img) {
 	}
 
 	// clear any existing inspection overlay immediately so UI doesn't show stale results
-	setInspectionResult(std::vector<double>(), 0.0);
+	setInspectionResult(InspectionResult());
 
 	// compute base image radius now (we'll need it on the GUI thread)
 	double base_image_px = std::min(img.width(), img.height()) * 0.2;
@@ -67,14 +67,12 @@ void InspectionOverlay::runInspection(const preview_image &img) {
 			QPointF b = m_viewptr->mapFromScene(QPointF(1,0));
 			pixelScale = std::hypot(b.x() - a.x(), b.y() - a.y());
 		}
-		setInspectionResult(
-			r.dirs, r.center_hfd, r.detected_dirs, r.used_dirs, r.rejected_dirs,
-			r.center_detected, r.center_used, r.center_rejected,
-			r.used_points, r.used_radii, r.rejected_points,
-			pixelScale, base_image_px,
-			r.cell_eccentricity, r.cell_major_angle,
-			r.error_message
-		);
+		// Apply the full InspectionResult to the overlay
+		setInspectionResult(r);
+		// store view-specific scaling that is not part of the inspection result
+		m_pixel_scale = (pixelScale > 0.0) ? pixelScale : 1.0;
+		m_base_image_px = (base_image_px > 0.0) ? base_image_px : 0.0;
+		update();
 
 		if (m_watcher) {
 			m_watcher->deleteLater();
@@ -95,89 +93,26 @@ void InspectionOverlay::clearInspection() {
 		m_watcher = nullptr;
 	}
 	// clear displayed results
-	setInspectionResult(std::vector<double>(), 0.0);
+	setInspectionResult(InspectionResult());
 }
 
-void InspectionOverlay::setInspectionResult(const std::vector<double> &directions, double center_hfd) {
-	m_dirs = directions;
-	m_center_hfd = center_hfd;
-	// clear counts if none provided
-	m_detected.clear();
-	m_used.clear();
-	m_rejected.clear();
-	m_center_detected = m_center_used = m_center_rejected = 0;
-	// default scale
-	m_pixel_scale = 1.0;
-	m_base_image_px = 0.0;
-	m_cell_eccentricity.clear();
-	m_cell_major_angle.clear();
-	m_error_message.clear();
-	update();
-}
-
-void InspectionOverlay::setInspectionResult(
-	const std::vector<double> &directions,
-	double center_hfd,
-	const std::vector<int> &detected,
-	const std::vector<int> &used,
-	const std::vector<int> &rejected,
-	int center_detected,
-	int center_used,
-	int center_rejected
-) {
-	m_dirs = directions;
-	m_center_hfd = center_hfd;
-	m_detected = detected;
-	m_used = used;
-	m_rejected = rejected;
-	m_center_detected = center_detected;
-	m_center_used = center_used;
-	m_center_rejected = center_rejected;
-	// default scale
-	m_pixel_scale = 1.0;
-	m_base_image_px = 0.0;
-	m_cell_eccentricity.clear();
-	m_cell_major_angle.clear();
-	m_error_message.clear();
-	update();
-}
-
-void InspectionOverlay::setInspectionResult(
-	const std::vector<double> &directions, double center_hfd,
-	const std::vector<int> &detected, const std::vector<int> &used,
-	const std::vector<int> &rejected,
-	int center_detected,
-	int center_used,
-	int center_rejected,
-	const std::vector<QPointF> &used_points,
-	const std::vector<double> &used_radii,
-	const std::vector<QPointF> &rejected_points,
-	double pixel_scale,
-	double base_image_px,
-	const std::vector<double> &cell_eccentricity,
-	const std::vector<double> &cell_major_angle,
-	const std::string &error_message
-) {
-	m_dirs = directions;
-	m_center_hfd = center_hfd;
-	m_detected = detected;
-	m_used = used;
-	m_rejected = rejected;
-	m_center_detected = center_detected;
-	m_center_used = center_used;
-	m_center_rejected = center_rejected;
-	m_used_points = used_points;
-	m_used_radii = used_radii;
-	m_rejected_points = rejected_points;
-	// store view scaling and base image radius for zoom-aware drawing
-	m_pixel_scale = (pixel_scale > 0.0) ? pixel_scale : 1.0;
-	m_base_image_px = (base_image_px > 0.0) ? base_image_px : 0.0;
-	// store per-cell morphology if provided
-	if (!cell_eccentricity.empty()) m_cell_eccentricity = cell_eccentricity; else m_cell_eccentricity.clear();
-	if (!cell_major_angle.empty()) m_cell_major_angle = cell_major_angle; else m_cell_major_angle.clear();
-
-	// error message (may be empty)
-	m_error_message = error_message;
+void InspectionOverlay::setInspectionResult(const InspectionResult &res) {
+	// Copy core inspection data
+	m_dirs = res.dirs;
+	m_center_hfd = res.center_hfd;
+	m_detected = res.detected_dirs;
+	m_used = res.used_dirs;
+	m_rejected = res.rejected_dirs;
+	m_center_detected = res.center_detected;
+	m_center_used = res.center_used;
+	m_center_rejected = res.center_rejected;
+	m_used_points = res.used_points;
+	m_used_radii = res.used_radii;
+	m_rejected_points = res.rejected_points;
+	if (!res.cell_eccentricity.empty()) m_cell_eccentricity = res.cell_eccentricity; else m_cell_eccentricity.clear();
+	if (!res.cell_major_angle.empty()) m_cell_major_angle = res.cell_major_angle; else m_cell_major_angle.clear();
+	m_error_message = res.error_message;
+	// Note: view-specific scaling (m_pixel_scale/m_base_image_px) is set by the caller
 	update();
 }
 

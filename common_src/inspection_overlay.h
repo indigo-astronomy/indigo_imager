@@ -18,22 +18,8 @@ class InspectionOverlay : public QWidget {
 
 public:
 	explicit InspectionOverlay(QWidget *parent = nullptr);
-	// Backward-compatible: simple result (no counts)
-	void setInspectionResult(const std::vector<double> &directions, double center_hfd);
-
-	// New: result with per-direction counts
-	void setInspectionResult(const std::vector<double> &directions, double center_hfd,
-		const std::vector<int> &detected, const std::vector<int> &used, const std::vector<int> &rejected,
-		int center_detected, int center_used, int center_rejected);
-
-	// New: include per-star positions (in view coordinates) for used/rejected markers
-	void setInspectionResult(const std::vector<double> &directions, double center_hfd,
-		const std::vector<int> &detected, const std::vector<int> &used, const std::vector<int> &rejected,
-		int center_detected, int center_used, int center_rejected,
-		const std::vector<QPointF> &used_points, const std::vector<double> &used_radii, const std::vector<QPointF> &rejected_points,
-		double pixel_scale, double base_image_px,
-		const std::vector<double> &cell_eccentricity = std::vector<double>(), const std::vector<double> &cell_major_angle = std::vector<double>(),
-		const std::string &error_message = std::string());
+	// Single-shot setter accepting the full inspection result (preferred)
+	void setInspectionResult(const InspectionResult &res);
 	void setWidgetOpacity(double opacity);
 
 	// Run inspection using the provided image. The overlay will call into an ImageInspector

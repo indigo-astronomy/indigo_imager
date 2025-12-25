@@ -187,8 +187,6 @@ static void compute_weighted_eccentricity_and_angle(
 
 static CellResult analyze_cell(
 	const preview_image &img,
-	int width,
-	int height,
 	int gx,
 	int gy,
 	int cx,
@@ -200,16 +198,19 @@ static CellResult analyze_cell(
 	CellResult cr;
 	cr.cell_index = cy * gx + cx;
 
+	int img_w = img.width();
+	int img_h = img.height();
+
 	int x0 = cx * cell_w;
 	int y0 = cy * cell_h;
-	int x1 = (cx == gx-1) ? width-1 : x0 + cell_w - 1;
-	int y1 = (cy == gy-1) ? height-1 : y0 + cell_h - 1;
+	int x1 = (cx == gx-1) ? img_w-1 : x0 + cell_w - 1;
+	int y1 = (cy == gy-1) ? img_h-1 : y0 + cell_h - 1;
 	const int MARGIN_SEARCH = 8;
 	const int MARGIN_CENTROID = 8;
 	int sx0 = std::max(0, x0 - MARGIN_SEARCH);
 	int sy0 = std::max(0, y0 - MARGIN_SEARCH);
-	int sx1 = std::min(width - 1, x1 + MARGIN_SEARCH);
-	int sy1 = std::min(height - 1, y1 + MARGIN_SEARCH);
+	int sx1 = std::min(img_w - 1, x1 + MARGIN_SEARCH);
+	int sy1 = std::min(img_h - 1, y1 + MARGIN_SEARCH);
 
 	// compute mean/stddev in search area
 	double cell_mean = 0.0, cell_sd = 0.0;
@@ -225,7 +226,7 @@ static CellResult analyze_cell(
 			for (int ny = yy - 1; ny <= yy + 1; ++ny) {
 				for (int nx = xx - 1; nx <= xx + 1; ++nx) {
 					if (nx == xx && ny == yy) continue;
-					if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+					if (nx < 0 || nx >= img_w || ny < 0 || ny >= img_h) continue;
 					double nval = 0, ng = 0, nb = 0;
 					img.pixel_value(nx, ny, nval, ng, nb);
 					if (nval > center_val) {
@@ -238,7 +239,7 @@ static CellResult analyze_cell(
 				}
 			}
 			if (!is_local_max) continue;
-			SNRResult r = calculateSNR(reinterpret_cast<const uint8_t*>(img.m_raw_data), width, height, img.m_pix_format, xx, yy);
+			SNRResult r = calculateSNR(reinterpret_cast<const uint8_t*>(img.m_raw_data), img_w, img_h, img.m_pix_format, xx, yy);
 				if (r.valid && !r.is_saturated) {
 				int cx_i = static_cast<int>(std::round(r.star_x));
 				int cy_i = static_cast<int>(std::round(r.star_y));
@@ -333,7 +334,7 @@ InspectionResult ImageInspector::inspect(const preview_image &img, int gx, int g
 		for (int cx = 0; cx < gx; ++cx) {
 			int idx = cy * gx + cx;
 			if (!isTarget[idx]) continue;
-			futures[idx] = std::async(std::launch::async, analyze_cell, std::cref(img), width, height, gx, gy, cx, cy, cell_w, cell_h, snr_threshold);
+			futures[idx] = std::async(std::launch::async, analyze_cell, std::cref(img), gx, gy, cx, cy, cell_w, cell_h, snr_threshold);
 		}
 	}
 
