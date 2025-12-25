@@ -166,11 +166,11 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 	m_snr_overlay->setVisible(false);
 
 	// Inspection overlay (parent to viewport so mapFromScene coordinates align)
-	m_inspection_overlay = new InspectionOverlay(m_view->viewport());
+	m_inspection_overlay = new ImageInspectorOverlay(m_view->viewport());
 	// give overlay a pointer to the view so it can map scene->view dynamically (keeps markers correct while zooming)
 	m_inspection_overlay->setView(m_view);
 	m_inspection_overlay->setVisible(false);
-	connect(m_inspection_overlay, &InspectionOverlay::destroyed, [this](){ m_inspection_overlay = nullptr; });
+	connect(m_inspection_overlay, &ImageInspectorOverlay::destroyed, [this](){ m_inspection_overlay = nullptr; });
 	m_snr_mode_enabled = false;  // SNR mode disabled by default
 	m_snr_overlay_visible = false;
 

@@ -68,7 +68,7 @@ SOURCES += \
 	$$PWD/../common_src/snr_calculator.cpp \
 	$$PWD/../common_src/snr_overlay.cpp \
 	$$PWD/../common_src/image_inspector.cpp \
-	$$PWD/../common_src/inspection_overlay.cpp \
+	$$PWD/../common_src/image_inspector_overlay.cpp \
 	$$PWD/../external/qcustomplot/qcustomplot.cpp
 
 RESOURCES += \
@@ -198,7 +198,7 @@ HEADERS += \
 	$$PWD/../common_src/image_stats.h \
 	$$PWD/../common_src/snr_calculator.h \
 	$$PWD/../common_src/snr_overlay.h \
-	$$PWD/../common_src/inspection_overlay.h
+	$$PWD/../common_src/image_inspector_overlay.h \
 	$$PWD/../common_src/image_inspector.h
 
 INCLUDEPATH += \

@@ -1,5 +1,5 @@
-#ifndef INSPECTION_OVERLAY_H
-#define INSPECTION_OVERLAY_H
+#ifndef IMAGE_INSPECTOR_OVERLAY_H
+#define IMAGE_INSPECTOR_OVERLAY_H
 
 #include <QWidget>
 #include <vector>
@@ -13,11 +13,11 @@ class QGraphicsView;
 class preview_image;
 class ImageInspector;
 
-class InspectionOverlay : public QWidget {
+class ImageInspectorOverlay : public QWidget {
 	Q_OBJECT
 
 public:
-	explicit InspectionOverlay(QWidget *parent = nullptr);
+	explicit ImageInspectorOverlay(QWidget *parent = nullptr);
 	// Single-shot setter accepting the full inspection result (preferred)
 	void setInspectionResult(const InspectionResult &res);
 	void setWidgetOpacity(double opacity);
@@ -29,9 +29,13 @@ public:
 	// Clear any current inspection results and cancel running inspection.
 	void clearInspection();
 
+	// set the view used for mapping scene coordinates to view coordinates
+	void setView(QGraphicsView *view);
+
 protected:
 	void paintEvent(QPaintEvent *event) override;
 	void resizeEvent(QResizeEvent *event) override;
+	bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
 	// compute a UI-only pixel scale based on the overlay/widget size (used for pen/marker sizing)
@@ -72,13 +76,6 @@ private:
 	// optional error message returned by the inspector - if non-empty paintEvent will
 	// display it in the center and skip other overlays
 	std::string m_error_message;
-
-public:
-	// set the view used for mapping scene coordinates to view coordinates
-	void setView(QGraphicsView *view);
-
-protected:
-	bool eventFilter(QObject *watched, QEvent *event) override;
 };
 
-#endif // INSPECTION_OVERLAY_H
+#endif // IMAGE_INSPECTOR_OVERLAY_H

@@ -1,4 +1,4 @@
-#include "inspection_overlay.h"
+#include "image_inspector_overlay.h"
 #include "image_inspector.h"
 #include "imagepreview.h"
 #include <QPainter>
@@ -10,7 +10,7 @@
 #include <QApplication>
 #include <QFuture>
 
-InspectionOverlay::InspectionOverlay(QWidget *parent)
+ImageInspectorOverlay::ImageInspectorOverlay(QWidget *parent)
 	: QWidget(parent), m_center_hfd(0), m_opacity(0.85),
 	  m_center_detected(0), m_center_used(0), m_center_rejected(0)
 {
@@ -18,7 +18,7 @@ InspectionOverlay::InspectionOverlay(QWidget *parent)
 	setAttribute(Qt::WA_TransparentForMouseEvents);
 }
 
-void InspectionOverlay::setView(QGraphicsView *view) {
+void ImageInspectorOverlay::setView(QGraphicsView *view) {
 	// Remove previous filter/parenting if any
 	if (m_viewptr) {
 		if (m_viewptr->viewport()) m_viewptr->viewport()->removeEventFilter(this);
@@ -41,7 +41,7 @@ void InspectionOverlay::setView(QGraphicsView *view) {
 	}
 }
 
-bool InspectionOverlay::eventFilter(QObject *watched, QEvent *event) {
+bool ImageInspectorOverlay::eventFilter(QObject *watched, QEvent *event) {
 	if (m_viewptr && m_viewptr->viewport() && watched == m_viewptr->viewport()) {
 		if (event->type() == QEvent::Resize) {
 			// Ensure overlay matches viewport size and recompute UI scale
@@ -58,7 +58,7 @@ bool InspectionOverlay::eventFilter(QObject *watched, QEvent *event) {
 }
 
 // helper: compute a UI-only pixel scale based on the overlay/widget short dimension
-double InspectionOverlay::computeUiPixelScale() const {
+double ImageInspectorOverlay::computeUiPixelScale() const {
 	const double REF_VIEW_SHORT = 800.0;
 	int vw = this->width();
 	int vh = this->height();
@@ -69,7 +69,7 @@ double InspectionOverlay::computeUiPixelScale() const {
 	return 1.0;
 }
 
-void InspectionOverlay::runInspection(const preview_image &img) {
+void ImageInspectorOverlay::runInspection(const preview_image &img) {
 	// prepare a heap copy of the image (preview_image copy may require non-const ref)
 	preview_image *pimg = new preview_image(const_cast<preview_image&>(const_cast<preview_image&>(img)));
 
@@ -130,7 +130,7 @@ void InspectionOverlay::runInspection(const preview_image &img) {
 	});
 }
 
-void InspectionOverlay::clearInspection() {
+void ImageInspectorOverlay::clearInspection() {
 	// bump sequence token to invalidate any pending result
 	++m_seq;
 	if (m_watcher) {
@@ -142,7 +142,7 @@ void InspectionOverlay::clearInspection() {
 	setInspectionResult(InspectionResult());
 }
 
-void InspectionOverlay::setInspectionResult(const InspectionResult &res) {
+void ImageInspectorOverlay::setInspectionResult(const InspectionResult &res) {
 	// Copy core inspection data
 	m_dirs = res.dirs;
 	m_center_hfd = res.center_hfd;
@@ -162,12 +162,12 @@ void InspectionOverlay::setInspectionResult(const InspectionResult &res) {
 	update();
 }
 
-void InspectionOverlay::setWidgetOpacity(double opacity) {
+void ImageInspectorOverlay::setWidgetOpacity(double opacity) {
 	m_opacity = opacity;
 	update();
 }
 
-void InspectionOverlay::paintEvent(QPaintEvent *event) {
+void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 	QWidget::paintEvent(event);
 	// If inspector returned an error, show it centered and skip other overlays
 	if (!m_error_message.empty()) {
@@ -614,7 +614,7 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 	// vertices and labels drawn above in the block above
 }
 
-void InspectionOverlay::resizeEvent(QResizeEvent *event) {
+void ImageInspectorOverlay::resizeEvent(QResizeEvent *event) {
 	QWidget::resizeEvent(event);
 	// Recompute the UI pixel scale using the helper
 	m_pixel_scale = computeUiPixelScale();

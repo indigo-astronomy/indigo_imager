@@ -7,7 +7,7 @@
 #include <QGraphicsPixmapItem>
 #include <snr_calculator.h>
 #include <snr_overlay.h>
-#include <inspection_overlay.h>
+#include <image_inspector_overlay.h>
 
 QT_BEGIN_NAMESPACE
 class QLabel;
@@ -183,7 +183,7 @@ private:
 	QAction *m_debayer_act[DEBAYER_COUNT];
 	QAction *m_color_reference_act[COLOR_BALANCE_COUNT];
 	SNROverlay *m_snr_overlay;
-	InspectionOverlay *m_inspection_overlay;
+	ImageInspectorOverlay *m_inspection_overlay;
 	QAction *m_inspection_act;
 	bool m_inspection_overlay_visible;
 	QGraphicsEllipseItem *m_snr_star_circle;
