@@ -76,6 +76,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 	, m_zoom_level(0)
 	, m_fit(true)
 	, m_bar_mode(ToolBarMode::Visible)
+	, m_inspection_overlay_visible(false)
 	, m_snr_star_x(0)
 	, m_snr_star_y(0)
 	, m_snr_star_radius(0)
@@ -239,7 +240,7 @@ void ImageViewer::makeToolbar(bool show_prev_next, bool show_debayer) {
 	m_zoomout_button->setShortcut(QKeySequence(Qt::Key_Minus));
 	connect(m_zoomout_button, SIGNAL(clicked()), SLOT(zoomOut()));
 
-	QMenu *menu = new QMenu("");
+	QMenu *menu = new QMenu(this);
 	QAction *act;
 
 	QActionGroup *stretch_group = new QActionGroup(this);

@@ -72,9 +72,9 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	rootLayout->setSizeConstraint(QLayout::SetMinimumSize);
 	central->setLayout(rootLayout);
 
-	// Create menubar
-	QMenuBar *menu_bar = new QMenuBar;
-	QMenu *menu = new QMenu("&File");
+	// Create menubar and menus with a parent so Qt will manage their lifetimes
+	QMenuBar *menu_bar = new QMenuBar(this);
+	QMenu *menu = new QMenu("&File", this);
 	QAction *act;
 
 	act = menu->addAction(tr("&Open Image..."));
@@ -124,7 +124,7 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_exit_act);
 	menu_bar->addMenu(menu);
 
-	menu = new QMenu("&Settings");
+	menu = new QMenu("&Settings", this);
 
 	act = menu->addAction(tr("Open &last file at startup"));
 	act->setCheckable(true);
@@ -157,7 +157,7 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu_bar->addMenu(menu);
 
-	menu = new QMenu("&Help");
+	menu = new QMenu("&Help", this);
 
 	act = menu->addAction(tr("&About"));
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_about_act);
