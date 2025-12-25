@@ -253,31 +253,6 @@ static CellResult analyze_cell(
 	const double DUPLICATE_RADIUS = 5.0;
 	std::vector<Candidate> unique = deduplicate_within_cell(candidates, snr_threshold, DUPLICATE_RADIUS);
 
-	const int MIN_STARS_PER_CELL = 6;
-	const double FALLBACK_SNR = 6.0;
-	if (unique.size() < static_cast<size_t>(MIN_STARS_PER_CELL)) {
-		int fallback_step = 4;
-		std::vector<Candidate> fallback_found;
-		for (int yy = y0; yy <= y1; yy += fallback_step) {
-			for (int xx = x0; xx <= x1; xx += fallback_step) {
-				SNRResult r = calculateSNR(reinterpret_cast<const uint8_t*>(img.m_raw_data), width, height, img.m_pix_format, xx, yy);
-				if (!r.valid || r.is_saturated) continue;
-				if (!(r.snr > FALLBACK_SNR && r.hfd > 0)) continue;
-				int cx_i = static_cast<int>(std::round(r.star_x));
-				int cy_i = static_cast<int>(std::round(r.star_y));
-				const int MARGIN_CENTROID_FALLBACK = 12;
-				if (cx_i < x0 - MARGIN_CENTROID_FALLBACK || cx_i > x1 + MARGIN_CENTROID_FALLBACK || cy_i < y0 - MARGIN_CENTROID_FALLBACK || cy_i > y1 + MARGIN_CENTROID_FALLBACK) continue;
-				fallback_found.push_back({r.star_x, r.star_y, r.hfd, r.star_radius, r.snr, r.moment_m20, r.moment_m02, r.moment_m11, r.eccentricity});
-			}
-		}
-		if (!fallback_found.empty()) {
-			// merge existing unique and fallback and re-deduplicate using fallback threshold
-			std::vector<Candidate> merged = unique;
-			merged.insert(merged.end(), fallback_found.begin(), fallback_found.end());
-			unique = deduplicate_within_cell(merged, FALLBACK_SNR, DUPLICATE_RADIUS);
-		}
-	}
-
 	// sigma-clip HFD values
 	std::vector<int> used_indices;
 	cr.hfd = sigma_clip_hfd(unique, used_indices);
@@ -319,6 +294,14 @@ InspectionResult ImageInspector::inspect(const preview_image &img, int gx, int g
 	int width = img.width();
 	int height = img.height();
 	if (width <= 0 || height <= 0) return res;
+
+	// Reject color images early: we only support grayscale formats for SNR calculation
+	double tr=0, tg=0, tb=0;
+	int pf = img.pixel_value(0,0,tr,tg,tb);
+	if (pf == PIX_FMT_RGB24 || pf == PIX_FMT_RGB48 || pf == PIX_FMT_RGB96 || pf == PIX_FMT_RGBF) {
+		res.error_message = "Color images are not supported";
+		return res;
+	}
 
 	int cell_w = width / gx;
 	int cell_h = height / gy;
@@ -384,7 +367,10 @@ InspectionResult ImageInspector::inspect(const preview_image &img, int gx, int g
 	const double GLOBAL_DUP_RADIUS = 5.0;
 	for (int ci = 0; ci < gx * gy; ++ci) {
 		for (auto &t : per_cell_used[ci]) {
-			double x = std::get<0>(t); double y = std::get<1>(t); double snr = std::get<2>(t); double sr = std::get<3>(t);
+			double x = std::get<0>(t);
+			double y = std::get<1>(t);
+			double snr = std::get<2>(t);
+			double sr = std::get<3>(t);
 			bool merged = false;
 			for (auto &g : global_used) {
 				double dx = g.x - x; double dy = g.y - y;
@@ -413,6 +399,14 @@ InspectionResult ImageInspector::inspect(const preview_image &img, int gx, int g
 		int cell_index = g.cell;
 		if (cell_index>=0 && cell_index < gx*gy) {
 			cell_used[cell_index]++;
+		}
+	}
+
+	for (int ci = 0; ci < gx * gy; ++ci) {
+		if (!isTarget[ci]) continue;
+		if (cell_used[ci] < 3) {
+			res.error_message = std::string("Not enough usable stars detected");
+			return res;
 		}
 	}
 

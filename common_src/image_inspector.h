@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <QPointF>
+#include <string>
 
 // forward
 class preview_image;
@@ -22,6 +23,10 @@ struct InspectionResult {
 	// per-cell morphology: eccentricity and major-axis angle (degrees)
 	std::vector<double> cell_eccentricity; // size gx*gy (filled by inspector)
 	std::vector<double> cell_major_angle;  // degrees, range [0,180)
+
+	// Error message (empty when no error). If non-empty the overlay will display
+	// this message and skip other visualizations.
+	std::string error_message;
 };
 
 class ImageInspector {
@@ -31,5 +36,5 @@ public:
 
 	// Inspect the provided preview image and return results.
 	// Parameters like grid size and thresholds may be tuned later.
-	InspectionResult inspect(const preview_image &img, int gx = 5, int gy = 5, double snr_threshold = 10.0);
+	InspectionResult inspect(const preview_image &img, int gx = 5, int gy = 5, double snr_threshold = 8.0);
 };

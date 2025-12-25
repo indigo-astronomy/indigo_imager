@@ -72,7 +72,8 @@ void InspectionOverlay::runInspection(const preview_image &img) {
 			r.center_detected, r.center_used, r.center_rejected,
 			r.used_points, r.used_radii, r.rejected_points,
 			pixelScale, base_image_px,
-			r.cell_eccentricity, r.cell_major_angle
+			r.cell_eccentricity, r.cell_major_angle,
+			r.error_message
 		);
 
 		if (m_watcher) {
@@ -110,6 +111,7 @@ void InspectionOverlay::setInspectionResult(const std::vector<double> &direction
 	m_base_image_px = 0.0;
 	m_cell_eccentricity.clear();
 	m_cell_major_angle.clear();
+	m_error_message.clear();
 	update();
 }
 
@@ -136,6 +138,7 @@ void InspectionOverlay::setInspectionResult(
 	m_base_image_px = 0.0;
 	m_cell_eccentricity.clear();
 	m_cell_major_angle.clear();
+	m_error_message.clear();
 	update();
 }
 
@@ -152,7 +155,8 @@ void InspectionOverlay::setInspectionResult(
 	double pixel_scale,
 	double base_image_px,
 	const std::vector<double> &cell_eccentricity,
-	const std::vector<double> &cell_major_angle
+	const std::vector<double> &cell_major_angle,
+	const std::string &error_message
 ) {
 	m_dirs = directions;
 	m_center_hfd = center_hfd;
@@ -171,6 +175,9 @@ void InspectionOverlay::setInspectionResult(
 	// store per-cell morphology if provided
 	if (!cell_eccentricity.empty()) m_cell_eccentricity = cell_eccentricity; else m_cell_eccentricity.clear();
 	if (!cell_major_angle.empty()) m_cell_major_angle = cell_major_angle; else m_cell_major_angle.clear();
+
+	// error message (may be empty)
+	m_error_message = error_message;
 	update();
 }
 
@@ -181,6 +188,22 @@ void InspectionOverlay::setWidgetOpacity(double opacity) {
 
 void InspectionOverlay::paintEvent(QPaintEvent *event) {
 	QWidget::paintEvent(event);
+	// If inspector returned an error, show it centered and skip other overlays
+	if (!m_error_message.empty()) {
+		QPainter p(this);
+		p.setRenderHint(QPainter::Antialiasing, true);
+		p.setPen(QPen(QColor(255,255,255,220)));
+		QFont f = p.font();
+		int fs = std::max(10, static_cast<int>(std::min(width(), height()) * 0.03));
+		f.setPointSize(fs);
+		f.setBold(true);
+		p.setFont(f);
+		QRectF r = rect();
+		QString msg = QString::fromUtf8(m_error_message.c_str());
+		p.drawText(r, Qt::AlignCenter | Qt::TextWordWrap, msg);
+		return;
+	}
+
 	if (m_dirs.empty()) return;
 
 	QPainter p(this);
@@ -603,8 +626,5 @@ void InspectionOverlay::paintEvent(QPaintEvent *event) {
 			p.drawText(sx, sy, cnt);
 		}
 	}
-
 	// vertices and labels drawn above in the block above
-
-
 }

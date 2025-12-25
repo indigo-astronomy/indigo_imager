@@ -7,6 +7,7 @@
 #include <QFutureWatcher>
 #include <atomic>
 #include "image_inspector.h"
+#include <string>
 
 class QGraphicsView;
 class preview_image;
@@ -31,7 +32,8 @@ public:
 		int center_detected, int center_used, int center_rejected,
 		const std::vector<QPointF> &used_points, const std::vector<double> &used_radii, const std::vector<QPointF> &rejected_points,
 		double pixel_scale, double base_image_px,
-		const std::vector<double> &cell_eccentricity = std::vector<double>(), const std::vector<double> &cell_major_angle = std::vector<double>());
+		const std::vector<double> &cell_eccentricity = std::vector<double>(), const std::vector<double> &cell_major_angle = std::vector<double>(),
+		const std::string &error_message = std::string());
 	void setWidgetOpacity(double opacity);
 
 	// Run inspection using the provided image. The overlay will call into an ImageInspector
@@ -77,6 +79,10 @@ private:
 	// async inspection watcher and sequence token
 	QFutureWatcher<InspectionResult> *m_watcher = nullptr;
 	std::atomic<uint64_t> m_seq {0};
+
+	// optional error message returned by the inspector - if non-empty paintEvent will
+	// display it in the center and skip other overlays
+	std::string m_error_message;
 
 public:
 	// set the view used for mapping scene coordinates to view coordinates
