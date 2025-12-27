@@ -297,7 +297,8 @@ InspectionResult ImageInspector::inspect(const preview_image &img, int gx, int g
 	if (width <= 0 || height <= 0) return res;
 
 	// If the image is color, construct a temporary grayscale preview_image
-	// where each pixel value = r + g + b stored as 32-bit unsigned integer (PIX_FMT_Y32).
+	// where each pixel value = r + g + b stored as 32-bit float (PIX_FMT_F32)
+	// for compatibility with normalized float images.
 	double tr=0, tg=0, tb=0;
 	int pf = img.pixel_value(0,0,tr,tg,tb);
 	preview_image gray_img; // default constructed; may be used when pf is color
@@ -305,14 +306,12 @@ InspectionResult ImageInspector::inspect(const preview_image &img, int gx, int g
 	if (pf == PIX_FMT_RGB24 || pf == PIX_FMT_RGB48 || pf == PIX_FMT_RGB96 || pf == PIX_FMT_RGBF) {
 		int width = img.width();
 		int height = img.height();
-		// initialize gray preview with a simple QImage format; raw_data will be provided
 		preview_image tmp(width, height, QImage::Format_Grayscale8);
 		gray_img = tmp;
 		gray_img.m_width = width;
 		gray_img.m_height = height;
-		gray_img.m_pix_format = PIX_FMT_Y32;
-		// allocate 4 bytes per pixel
-		size_t size = static_cast<size_t>(width) * static_cast<size_t>(height) * 4;
+		gray_img.m_pix_format = PIX_FMT_F32;
+		size_t size = static_cast<size_t>(width) * static_cast<size_t>(height) * sizeof(float);
 		gray_img.m_raw_data = (char*)malloc(size);
 		if (gray_img.m_raw_data == nullptr) {
 			res.error_message = "Failed to allocate memory for grayscale preview";
@@ -327,12 +326,12 @@ InspectionResult ImageInspector::inspect(const preview_image &img, int gx, int g
 		gray_img.m_parity = img.m_parity;
 		gray_img.m_pix_scale = img.m_pix_scale;
 
-		uint32_t *dst = reinterpret_cast<uint32_t*>(gray_img.m_raw_data);
+		float *dst = reinterpret_cast<float*>(gray_img.m_raw_data);
 		for (int y = 0; y < height; ++y) {
 			for (int x = 0; x < width; ++x) {
 				double r=0, g=0, b=0;
 				img.pixel_value(x, y, r, g, b);
-				uint32_t v = static_cast<uint32_t>(std::round(r + g + b));
+				float v = static_cast<float>(r + g + b);
 				dst[y * width + x] = v;
 			}
 		}
