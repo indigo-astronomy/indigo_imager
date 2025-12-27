@@ -296,12 +296,47 @@ InspectionResult ImageInspector::inspect(const preview_image &img, int gx, int g
 	int height = img.height();
 	if (width <= 0 || height <= 0) return res;
 
-	// Reject color images early: we only support grayscale formats for SNR calculation
+	// If the image is color, construct a temporary grayscale preview_image
+	// where each pixel value = r + g + b stored as 32-bit unsigned integer (PIX_FMT_Y32).
 	double tr=0, tg=0, tb=0;
 	int pf = img.pixel_value(0,0,tr,tg,tb);
+	preview_image gray_img; // default constructed; may be used when pf is color
+	const preview_image *img_ptr = &img;
 	if (pf == PIX_FMT_RGB24 || pf == PIX_FMT_RGB48 || pf == PIX_FMT_RGB96 || pf == PIX_FMT_RGBF) {
-		res.error_message = "Color images are not supported";
-		return res;
+		int width = img.width();
+		int height = img.height();
+		// initialize gray preview with a simple QImage format; raw_data will be provided
+		preview_image tmp(width, height, QImage::Format_Grayscale8);
+		gray_img = tmp;
+		gray_img.m_width = width;
+		gray_img.m_height = height;
+		gray_img.m_pix_format = PIX_FMT_Y32;
+		// allocate 4 bytes per pixel
+		size_t size = static_cast<size_t>(width) * static_cast<size_t>(height) * 4;
+		gray_img.m_raw_data = (char*)malloc(size);
+		if (gray_img.m_raw_data == nullptr) {
+			res.error_message = "Failed to allocate memory for grayscale preview";
+			return res;
+		}
+		// copy WCS/meta if present
+		gray_img.m_center_ra = img.m_center_ra;
+		gray_img.m_center_dec = img.m_center_dec;
+		gray_img.m_telescope_ra = img.m_telescope_ra;
+		gray_img.m_telescope_dec = img.m_telescope_dec;
+		gray_img.m_rotation_angle = img.m_rotation_angle;
+		gray_img.m_parity = img.m_parity;
+		gray_img.m_pix_scale = img.m_pix_scale;
+
+		uint32_t *dst = reinterpret_cast<uint32_t*>(gray_img.m_raw_data);
+		for (int y = 0; y < height; ++y) {
+			for (int x = 0; x < width; ++x) {
+				double r=0, g=0, b=0;
+				img.pixel_value(x, y, r, g, b);
+				uint32_t v = static_cast<uint32_t>(std::round(r + g + b));
+				dst[y * width + x] = v;
+			}
+		}
+		img_ptr = &gray_img;
 	}
 
 	int cell_w = width / gx;
@@ -328,13 +363,13 @@ InspectionResult ImageInspector::inspect(const preview_image &img, int gx, int g
 	mark(0, gy/2);
 	mark(gx/2, gy/2);
 
-	// launch per-target-cell analysis in parallel
+	// launch per-target-cell analysis in parallel using img_ptr
 	std::vector<std::future<CellResult>> futures(gx * gy);
 	for (int cy = 0; cy < gy; ++cy) {
 		for (int cx = 0; cx < gx; ++cx) {
 			int idx = cy * gx + cx;
 			if (!isTarget[idx]) continue;
-			futures[idx] = std::async(std::launch::async, analyze_cell, std::cref(img), gx, gy, cx, cy, cell_w, cell_h, snr_threshold);
+			futures[idx] = std::async(std::launch::async, analyze_cell, std::cref(*img_ptr), gx, gy, cx, cy, cell_w, cell_h, snr_threshold);
 		}
 	}
 
