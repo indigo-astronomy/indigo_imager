@@ -84,6 +84,10 @@ void ImageInspectorOverlay::runInspection(const preview_image &img) {
 	// clear any existing inspection overlay immediately so UI doesn't show stale results
 	setInspectionResult(InspectionResult());
 
+	// set busy message so paintEvent can show a visual hint while analysis runs
+	m_busy_message = "Analyzing image...";
+	update();
+
 	// compute base image radius now (we'll need it on the GUI thread)
 	double base_image_px = std::min(img.width(), img.height()) * 0.2;
 
@@ -110,6 +114,9 @@ void ImageInspectorOverlay::runInspection(const preview_image &img) {
 		}
 
 		InspectionResult r = m_watcher->future().result();
+
+		// clear busy message now that result arrived
+		m_busy_message.clear();
 
 		// compute UI pixel scale (centralized helper)
 		double pixelScale = computeUiPixelScale();
@@ -167,51 +174,85 @@ void ImageInspectorOverlay::setWidgetOpacity(double opacity) {
 	update();
 }
 
+// Draw a subtle busy indicator (octagon) behind messages
+void ImageInspectorOverlay::drawBusyIndicator(QPainter &p, const QRectF &r) {
+	QPointF center = r.center();
+	double base = std::min(r.width(), r.height()) * 0.15;
+	if (base < 8.0) base = 8.0;
+
+	QPolygonF poly;
+	for (int i = 0; i < 8; ++i) {
+		double angle = M_PI_2 - M_PI_4 * i;
+		double x = center.x() + base * std::cos(angle);
+		double y = center.y() - base * std::sin(angle);
+		poly << QPointF(x, y);
+	}
+
+	QColor fillCol = QColor(50, 80, 120, static_cast<int>(m_opacity * 60));
+	QColor edgeCol = QColor(180, 220, 255, static_cast<int>(m_opacity * 120));
+	p.save();
+	p.setBrush(fillCol);
+	p.setPen(Qt::NoPen);
+	p.drawPolygon(poly);
+
+	QPen pen(edgeCol, std::max(1.0, 1.0 * m_pixel_scale), Qt::DashLine, Qt::RoundCap, Qt::RoundJoin);
+	p.setPen(pen);
+	p.setBrush(Qt::NoBrush);
+	p.drawPolygon(poly);
+	p.restore();
+}
+
+// Draw a centered header + message (error or busy) and optional busy indicator
+void ImageInspectorOverlay::drawCenterMessage(QPainter &p) {
+	// Header font (Inspector:)
+	QFont headerFont = p.font();
+	int headerFs = std::max(12, static_cast<int>(std::min(width(), height()) * 0.03));
+	headerFont.setPointSize(headerFs);
+	headerFont.setBold(true);
+
+	// Message font (smaller than header)
+	QFont msgFont = p.font();
+	int msgFs = std::max(8, headerFs - 4);
+	msgFont.setPointSize(msgFs);
+	msgFont.setBold(false);
+
+	QString header = tr("Image inspector");
+	QString msg = !m_error_message.empty() ? QString::fromUtf8(m_error_message.c_str()) : QString::fromUtf8(m_busy_message.c_str());
+
+	// Measure sizes and draw both lines centered as a block
+	QFontMetrics hf(headerFont);
+	QFontMetrics mf(msgFont);
+	QRectF r = rect();
+
+	// draw busy indicator behind the text so message remains readable
+	if (!m_busy_message.empty()) drawBusyIndicator(p, r);
+
+	QRectF hb = hf.boundingRect(r.toRect(), Qt::AlignCenter | Qt::TextWordWrap, header);
+	QRectF mb = mf.boundingRect(r.toRect(), Qt::AlignCenter | Qt::TextWordWrap, msg);
+
+	double blockH = hb.height() + mb.height();
+	double startY = r.top() + (r.height() - blockH) / 2.0;
+
+	// Draw header
+	p.setFont(headerFont);
+	p.setPen(QPen(QColor(255,255,255,255)));
+	QRectF headerRect(r.left(), startY, r.width(), hb.height());
+	p.drawText(headerRect, Qt::AlignHCenter | Qt::AlignVCenter | Qt::TextWordWrap, header);
+
+	// Draw message text below with smaller font
+	p.setFont(msgFont);
+	p.setPen(QPen(QColor(220,220,220,255)));
+	QRectF msgRect(r.left(), startY + hb.height(), r.width(), mb.height());
+	p.drawText(msgRect, Qt::AlignHCenter | Qt::AlignVCenter | Qt::TextWordWrap, msg);
+}
+
 void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 	QWidget::paintEvent(event);
-	// If inspector returned an error, show it centered and skip other overlays
-	if (!m_error_message.empty()) {
+	// If inspector returned an error or is busy, show a centered message and skip other overlays
+	if (!m_error_message.empty() || !m_busy_message.empty()) {
 		QPainter p(this);
 		p.setRenderHint(QPainter::Antialiasing, true);
-
-		// Header font (Inspector:)
-		QFont headerFont = p.font();
-		int headerFs = std::max(12, static_cast<int>(std::min(width(), height()) * 0.03));
-		headerFont.setPointSize(headerFs);
-		headerFont.setBold(true);
-
-		// Error font (smaller than header)
-		QFont errorFont = p.font();
-		int errorFs = std::max(8, headerFs - 4);
-		errorFont.setPointSize(errorFs);
-		errorFont.setBold(false);
-
-		QString header = tr("Image inspector");
-		QString err = QString::fromUtf8(m_error_message.c_str());
-
-		// Measure sizes and draw both lines centered as a block
-		QFontMetrics hf(headerFont);
-		QFontMetrics ef(errorFont);
-		QRectF r = rect();
-
-		QRectF hb = hf.boundingRect(r.toRect(), Qt::AlignCenter | Qt::TextWordWrap, header);
-		QRectF eb = ef.boundingRect(r.toRect(), Qt::AlignCenter | Qt::TextWordWrap, err);
-
-		double blockH = hb.height() + eb.height();
-		double startY = r.top() + (r.height() - blockH) / 2.0;
-
-		// Draw header
-		p.setFont(headerFont);
-		p.setPen(QPen(QColor(255,255,255,255)));
-		QRectF headerRect(r.left(), startY, r.width(), hb.height());
-		p.drawText(headerRect, Qt::AlignHCenter | Qt::AlignVCenter | Qt::TextWordWrap, header);
-
-		// Draw error text below with smaller font
-		p.setFont(errorFont);
-		p.setPen(QPen(QColor(220,220,220,255)));
-		QRectF errRect(r.left(), startY + hb.height(), r.width(), eb.height());
-		p.drawText(errRect, Qt::AlignHCenter | Qt::AlignVCenter | Qt::TextWordWrap, err);
-
+		drawCenterMessage(p);
 		return;
 	}
 

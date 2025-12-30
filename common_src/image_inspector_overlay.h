@@ -12,6 +12,7 @@
 class QGraphicsView;
 class preview_image;
 class ImageInspector;
+class QPainter;
 
 class ImageInspectorOverlay : public QWidget {
 	Q_OBJECT
@@ -76,6 +77,15 @@ private:
 	// optional error message returned by the inspector - if non-empty paintEvent will
 	// display it in the center and skip other overlays
 	std::string m_error_message;
+
+	// optional busy message shown while analysis is running
+	std::string m_busy_message;
+
+	// draw a small busy indicator behind messages
+	void drawBusyIndicator(QPainter &p, const QRectF &r);
+
+	// draw a centered header + message (error or busy) and optional busy indicator
+	void drawCenterMessage(QPainter &p);
 };
 
 #endif // IMAGE_INSPECTOR_OVERLAY_H
