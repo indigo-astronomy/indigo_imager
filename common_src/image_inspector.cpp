@@ -27,6 +27,7 @@ struct UniqueCand {
 	double y;
 	double snr;
 	double hfd;
+	double star_radius;
 	double eccentricity;
 	int cell;
 };
@@ -275,7 +276,7 @@ static CellResult analyze_cell(
 		} else {
 			cr.rejected_points.push_back(centerScene);
 		}
-		cr.unique_candidates.push_back({unique[i].x, unique[i].y, unique[i].snr, unique[i].hfd, unique[i].eccentricity, cy * gx + cx});
+		cr.unique_candidates.push_back({unique[i].x, unique[i].y, unique[i].snr, unique[i].hfd, unique[i].star_radius, unique[i].eccentricity, cy * gx + cx});
 	}
 
 	cr.detected = static_cast<int>(std::min(unique.size(), static_cast<size_t>(9999)));
@@ -399,7 +400,7 @@ InspectionResult ImageInspector::inspect(const preview_image &img, int gx, int g
 	// global dedup
 	struct GlobalEntry { double x; double y; double snr; double star_radius; int cell; };
 	std::vector<GlobalEntry> global_used;
-	const double GLOBAL_DUP_RADIUS = 5.0;
+	// Build global_used — merge entries when their apertures overlap
 	for (int ci = 0; ci < gx * gy; ++ci) {
 		for (auto &t : per_cell_used[ci]) {
 			double x = std::get<0>(t);
@@ -409,7 +410,9 @@ InspectionResult ImageInspector::inspect(const preview_image &img, int gx, int g
 			bool merged = false;
 			for (auto &g : global_used) {
 				double dx = g.x - x; double dy = g.y - y;
-				if (std::sqrt(dx*dx + dy*dy) <= GLOBAL_DUP_RADIUS) {
+				double dist = std::sqrt(dx*dx + dy*dy);
+				double merge_threshold = (g.star_radius + sr);
+				if (merge_threshold > 0.0 && dist <= merge_threshold) {
 					if (snr > g.snr) {
 						g.x = x;
 						g.y = y;
@@ -466,8 +469,13 @@ InspectionResult ImageInspector::inspect(const preview_image &img, int gx, int g
 			double dx = g.x - u.x;
 			double dy = g.y - u.y;
 			double dist = std::sqrt(dx*dx + dy*dy);
-
-			if (dist <= GLOBAL_DUP_RADIUS) {
+			double match_threshold = (g.star_radius + u.star_radius);
+			if (match_threshold > 0.0 && dist <= match_threshold) {
+				matched = true;
+				break;
+			}
+			// small epsilon fallback
+			if (dist <= 1.0) {
 				matched = true;
 				break;
 			}
