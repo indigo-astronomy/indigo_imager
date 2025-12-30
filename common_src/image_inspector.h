@@ -36,5 +36,5 @@ public:
 
 	// Inspect the provided preview image and return results.
 	// Parameters like grid size and thresholds may be tuned later.
-	InspectionResult inspect(const preview_image &img, int gx = 5, int gy = 5, double snr_threshold = 8.0);
+	InspectionResult inspect(const preview_image &img, int gx = 5, int gy = 5, double snr_threshold = 10.0);
 };

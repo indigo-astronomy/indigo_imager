@@ -45,24 +45,34 @@ struct CellResult {
 	double major_angle_deg = 0.0;
 };
 
-static void compute_mean_stddev_in_area(const preview_image &img, int sx0, int sy0, int sx1, int sy1, double &out_mean, double &out_sd) {
-	double sum = 0.0;
-	double sumsq = 0.0;
-	int count = 0;
+// Robust background estimator using median and MAD (less sensitive to bright outliers)
+static void compute_median_mad_in_area(const preview_image &img, int sx0, int sy0, int sx1, int sy1, double &out_median, double &out_sd) {
+	std::vector<double> vals;
+	vals.reserve((sx1 - sx0 + 1) * (sy1 - sy0 + 1));
 	for (int yy = sy0; yy <= sy1; ++yy) {
 		for (int xx = sx0; xx <= sx1; ++xx) {
-			double v = 0;
-			double g = 0;
-			double b = 0;
+			double v = 0, g = 0, b = 0;
 			img.pixel_value(xx, yy, v, g, b);
-			sum += v;
-			sumsq += v * v;
-			++count;
+			vals.push_back(v);
 		}
 	}
-	out_mean = (count>0) ? (sum / count) : 0.0;
-	double var = (count>0) ? (sumsq / count - out_mean * out_mean) : 0.0;
-	out_sd = var > 0.0 ? std::sqrt(var) : 0.0;
+	if (vals.empty()) {
+		out_median = 0.0;
+		out_sd = 0.0;
+		return;
+	}
+	std::sort(vals.begin(), vals.end());
+	size_t n = vals.size();
+	if (n % 2 == 1) out_median = vals[n/2]; else out_median = 0.5 * (vals[n/2 - 1] + vals[n/2]);
+
+	// compute absolute deviations from median
+	std::vector<double> devs;
+	devs.reserve(n);
+	for (double v : vals) devs.push_back(std::fabs(v - out_median));
+	std::sort(devs.begin(), devs.end());
+	double mad = (n % 2 == 1) ? devs[n/2] : 0.5 * (devs[n/2 - 1] + devs[n/2]);
+	// convert MAD to approximate standard deviation for normal distrib: sd ~= 1.4826 * MAD
+	out_sd = mad * 1.4826;
 }
 
 // Deduplicate raw candidates within a cell: keep only those with snr > threshold and with
@@ -213,10 +223,11 @@ static CellResult analyze_cell(
 	int sx1 = std::min(img_w - 1, x1 + MARGIN_SEARCH);
 	int sy1 = std::min(img_h - 1, y1 + MARGIN_SEARCH);
 
-	// compute mean/stddev in search area
-	double cell_mean = 0.0, cell_sd = 0.0;
-	compute_mean_stddev_in_area(img, sx0, sy0, sx1, sy1, cell_mean, cell_sd);
-	double peak_threshold = cell_mean + 1.5 * cell_sd;
+	// compute robust background (median + MAD) in search area to avoid a single very bright star
+	double cell_median = 0.0, cell_sd = 0.0;
+	compute_median_mad_in_area(img, sx0, sy0, sx1, sy1, cell_median, cell_sd);
+	// Pick a conservative threshold multiplier; MAD is robust so 3*sigma is reasonable
+	double peak_threshold = cell_median + 3.0 * cell_sd;
 
 	std::vector<Candidate> candidates;
 	for (int yy = sy0; yy <= sy1; ++yy) {
