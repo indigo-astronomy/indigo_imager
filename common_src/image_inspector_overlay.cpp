@@ -285,31 +285,56 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 		centerLabelRect = QRectF();
 	}
 
-	// draw used/rejected star markers BEFORE labels so labels remain on top
+	// draw used star markers as oriented ellipses representing morphology/size
 	p.setRenderHint(QPainter::Antialiasing, true);
 	p.setPen(Qt::NoPen);
-	QColor usedColor = QColor(0, 200, 120, static_cast<int>(m_opacity * 230));
+	// prepare scene rect and grid size (inspector uses 5x5 by default)
+	int gx = 5, gy = 5;
+	QRectF sceneRect;
+	if (m_viewptr && m_viewptr->scene()) sceneRect = m_viewptr->scene()->sceneRect();
+
 	for (size_t i = 0; i < m_used_points.size(); ++i) {
 		QPointF scenePt = m_used_points[i];
 		QPointF pview = (m_viewptr != nullptr) ? m_viewptr->mapFromScene(scenePt) : scenePt;
-		// use same half-size as rejected crosses so plus and cross markers match visually
-		double s = std::max(3.0 * 1.4, 3.0 * 1.6 * m_pixel_scale);
-		QPen usedPen(usedColor, std::max(1.0, 1.0 * m_pixel_scale), Qt::SolidLine, Qt::SquareCap, Qt::RoundJoin);
-		p.setPen(usedPen);
-		p.setBrush(Qt::NoBrush);
-		// horizontal line
-		p.drawLine(QPointF(pview.x() - s, pview.y()), QPointF(pview.x() + s, pview.y()));
-		// vertical line
-		p.drawLine(QPointF(pview.x(), pview.y() - s), QPointF(pview.x(), pview.y() + s));
-	}
-	for (const QPointF &pt : m_rejected_points) {
-		QPointF scenePt = pt;
-		QPointF pview = (m_viewptr != nullptr) ? m_viewptr->mapFromScene(scenePt) : scenePt;
-		double s = std::max(3.0, 3.0 * m_pixel_scale);
-		p.setBrush(Qt::NoBrush);
-		p.setPen(QPen(QColor(255, 0, 0, static_cast<int>(m_opacity*220)), std::max(1.0, 1.0 * m_pixel_scale)));
-		p.drawLine(QPointF(pview.x()-s, pview.y()-s), QPointF(pview.x()+s, pview.y()+s));
-		p.drawLine(QPointF(pview.x()-s, pview.y()+s), QPointF(pview.x()+s, pview.y()-s));
+
+		// compute view-space major radius by mapping a scene-space offset
+		double major_view = 6.0 * m_pixel_scale; // fallback
+		if (i < m_used_radii.size()) {
+			double r_img = m_used_radii[i];
+			QPointF pv_edge = (m_viewptr != nullptr) ? m_viewptr->mapFromScene(QPointF(scenePt.x() + r_img, scenePt.y())) : QPointF(pview.x() + r_img, pview.y());
+			major_view = std::abs(pv_edge.x() - pview.x());
+			if (major_view < 1.0) major_view = 1.0;
+		}
+		// make ellipse 1.2x actual star size (view-space)
+		major_view = std::max(2.0, major_view * 1.2);
+
+		// determine corresponding grid cell to pull morphology (ecc, angle)
+		double ecc = 0.0;
+		double ang = 0.0;
+		if (!sceneRect.isNull() && sceneRect.width() > 0 && sceneRect.height() > 0 && !m_cell_eccentricity.empty()) {
+			double cw = sceneRect.width() / gx;
+			double ch = sceneRect.height() / gy;
+			int cx = std::min(std::max(0, static_cast<int>(scenePt.x() / cw)), gx - 1);
+			int cy = std::min(std::max(0, static_cast<int>(scenePt.y() / ch)), gy - 1);
+			int idx = cy * gx + cx;
+			if (idx >= 0 && idx < static_cast<int>(m_cell_eccentricity.size())) ecc = m_cell_eccentricity[idx];
+			if (idx >= 0 && idx < static_cast<int>(m_cell_major_angle.size())) ang = m_cell_major_angle[idx];
+		}
+
+		double minor_view = major_view;
+		if (!std::isnan(ecc) && ecc > 0.0 && ecc < 1.0) minor_view = major_view * std::sqrt(std::max(0.0, 1.0 - ecc * ecc));
+
+		// Use green for used stars; increase transparency
+		QColor edgeCol = QColor(0,200,120, static_cast<int>(m_opacity*160));
+		QColor fillCol = QColor(0,200,120, static_cast<int>(m_opacity*40));
+
+		p.save();
+		p.translate(pview);
+		p.rotate(-ang + 90.0);
+		p.setPen(QPen(edgeCol, std::max(1.0, 1.0 * m_pixel_scale)));
+		p.setBrush(QBrush(fillCol));
+		p.drawEllipse(QPointF(0,0), major_view, minor_view);
+		p.restore();
 	}
 
 	// draw labels for each octagon vertex (average HFD)
