@@ -9,6 +9,9 @@
 ImageInspector::ImageInspector() {}
 ImageInspector::~ImageInspector() {}
 
+// detection threshold multiplier applied to MAD-derived sigma when computing peak threshold in a cell
+static constexpr double DETECTION_THRESHOLD = 4.0;
+
 // file-local helper types
 struct Candidate {
 	double x;
@@ -227,7 +230,7 @@ static CellResult analyze_cell(
 	double cell_median = 0.0, cell_sd = 0.0;
 	compute_median_mad_in_area(img, sx0, sy0, sx1, sy1, cell_median, cell_sd);
 	// Pick a conservative threshold multiplier; MAD is robust so 3*sigma is reasonable
-	double peak_threshold = cell_median + 3.0 * cell_sd;
+	double peak_threshold = cell_median + DETECTION_THRESHOLD * cell_sd;
 
 	std::vector<Candidate> candidates;
 	for (int yy = sy0; yy <= sy1; ++yy) {
