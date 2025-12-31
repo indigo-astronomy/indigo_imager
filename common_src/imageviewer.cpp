@@ -48,6 +48,7 @@ protected:
 		QGraphicsView::scrollContentsBy(dx, dy);
 		// Update SNR overlay position when scrolling
 		m_viewer->updateSNROverlayPosition();
+		m_viewer->updateInspectionOverlayPosition();
 	}
 
 	void enterEvent(QEvent *event) override {
@@ -74,6 +75,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 	, m_zoom_level(0)
 	, m_fit(true)
 	, m_bar_mode(ToolBarMode::Visible)
+	, m_inspection_overlay_visible(false)
 	, m_snr_star_x(0)
 	, m_snr_star_y(0)
 	, m_snr_star_radius(0)
@@ -161,6 +163,13 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 
 	m_snr_overlay = new SNROverlay(m_view);
 	m_snr_overlay->setVisible(false);
+
+	// Inspection overlay (parent to viewport so mapFromScene coordinates align)
+	m_inspection_overlay = new ImageInspectorOverlay(m_view->viewport());
+	// give overlay a pointer to the view so it can map scene->view dynamically (keeps markers correct while zooming)
+	m_inspection_overlay->setView(m_view);
+	m_inspection_overlay->setVisible(false);
+	connect(m_inspection_overlay, &ImageInspectorOverlay::destroyed, [this](){ m_inspection_overlay = nullptr; });
 	m_snr_mode_enabled = false;  // SNR mode disabled by default
 	m_snr_overlay_visible = false;
 
@@ -230,7 +239,7 @@ void ImageViewer::makeToolbar(bool show_prev_next, bool show_debayer) {
 	m_zoomout_button->setShortcut(QKeySequence(Qt::Key_Minus));
 	connect(m_zoomout_button, SIGNAL(clicked()), SLOT(zoomOut()));
 
-	QMenu *menu = new QMenu("");
+	QMenu *menu = new QMenu(this);
 	QAction *act;
 
 	QActionGroup *stretch_group = new QActionGroup(this);
@@ -676,6 +685,8 @@ const preview_image &ImageViewer::image() const {
 
 void ImageViewer::onSetImage(preview_image &im) {
 	showSNROverlay(false); // hide SNR overlay when new image is displayed
+	// clear any existing inspection overlay immediately before updating the image
+	if (m_inspection_overlay) m_inspection_overlay->clearInspection();
 	m_pixmap->setImage(im);
 	if (!m_pixmap->pixmap().isNull()) {
 		if (m_selection_visible && !m_selection_p.isNull()) {
@@ -711,6 +722,16 @@ void ImageViewer::onSetImage(preview_image &im) {
 	m_view->scene()->setSceneRect(0, 0, im.width(), im.height());
 
 	if (m_fit) zoomFit();
+
+	// If inspection overlay is enabled, run inspection on the newly set image
+	if (m_inspection_overlay && m_inspection_overlay_visible) {
+		m_inspection_overlay->setGeometry(m_view->viewport()->rect());
+		// Use the stored pixmap image to ensure the overlay inspects the same data
+		const preview_image &piximg = m_pixmap->image();
+		m_inspection_overlay->runInspection(piximg);
+		m_inspection_overlay->raise();
+		m_inspection_overlay->update();
+	}
 
 	emit imageChanged();
 }
@@ -772,6 +793,7 @@ void ImageViewer::zoomFit() {
 	m_fit = true;
 	emit zoomChanged(m_view->transform().m11());
 	updateSNROverlayPosition();  // Update SNR overlay position after zoom
+	updateInspectionOverlayPosition();
 }
 
 void ImageViewer::zoomOriginal() {
@@ -781,6 +803,7 @@ void ImageViewer::zoomOriginal() {
 	m_fit = false;
 	setMatrix();
 	updateSNROverlayPosition();  // Update SNR overlay position after zoom
+	updateInspectionOverlayPosition();
 }
 
 void ImageViewer::zoomIn() {
@@ -805,6 +828,7 @@ void ImageViewer::zoomIn() {
 	m_fit = false;
 	setMatrix();
 	updateSNROverlayPosition();  // Update SNR overlay position after zoom
+	updateInspectionOverlayPosition();
 }
 
 void ImageViewer::zoomOut() {
@@ -833,6 +857,7 @@ void ImageViewer::zoomOut() {
 	m_fit = false;
 	setMatrix();
 	updateSNROverlayPosition();  // Update SNR overlay position after zoom
+	updateInspectionOverlayPosition();
 }
 
 void ImageViewer::mouseAt(double x, double y) {
@@ -902,6 +927,26 @@ void ImageViewer::showSNROverlay(bool show) {
 	m_snr_star_circle->setVisible(show);
 	m_snr_background_inner_ring->setVisible(show);
 	m_snr_background_outer_ring->setVisible(show);
+}
+
+void ImageViewer::showInspectionOverlay(bool show) {
+	m_inspection_overlay_visible = show;
+	if (m_inspection_overlay) {
+		m_inspection_overlay->setVisible(show);
+		m_inspection_overlay->update();
+	}
+}
+
+void ImageViewer::runImageInspection() {
+	if (!m_pixmap) return;
+	const preview_image &img = m_pixmap->image();
+	if (img.m_raw_data == nullptr) return;
+	if (!m_inspection_overlay) return;
+
+	// Delegate inspection to the overlay which owns an ImageInspector internally.
+	m_inspection_overlay->setGeometry(m_view->viewport()->rect());
+	m_inspection_overlay->runInspection(img);
+	m_inspection_overlay->raise();
 }
 
 void ImageViewer::calculateAndShowSNR(double x, double y) {
@@ -1018,6 +1063,14 @@ void ImageViewer::updateSNROverlayPosition() {
 	}
 
 	m_snr_overlay->move(view_pos);
+}
+
+void ImageViewer::updateInspectionOverlayPosition() {
+	if (!m_inspection_overlay || !m_inspection_overlay_visible) return;
+	if (!m_view) return;
+	// Make sure overlay covers the viewport and repaint so markers update position/scale
+	m_inspection_overlay->setGeometry(m_view->viewport()->rect());
+	m_inspection_overlay->update();
 }
 
 void ImageViewer::mouseRightPressAt(double x, double y, Qt::KeyboardModifiers modifiers) {

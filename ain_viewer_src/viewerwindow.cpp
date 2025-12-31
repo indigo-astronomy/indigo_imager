@@ -72,9 +72,9 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	rootLayout->setSizeConstraint(QLayout::SetMinimumSize);
 	central->setLayout(rootLayout);
 
-	// Create menubar
-	QMenuBar *menu_bar = new QMenuBar;
-	QMenu *menu = new QMenu("&File");
+	// Create menubar and menus with a parent so Qt will manage their lifetimes
+	QMenuBar *menu_bar = new QMenuBar(this);
+	QMenu *menu = new QMenu("&File", this);
 	QAction *act;
 
 	act = menu->addAction(tr("&Open Image..."));
@@ -124,7 +124,7 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_exit_act);
 	menu_bar->addMenu(menu);
 
-	menu = new QMenu("&Settings");
+	menu = new QMenu("&Settings", this);
 
 	act = menu->addAction(tr("Open &last file at startup"));
 	act->setCheckable(true);
@@ -138,18 +138,6 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu->addSeparator();
 
-	act = menu->addAction(tr("Show image &statistics"));
-	act->setCheckable(true);
-	act->setChecked(conf.statistics_enabled);
-	connect(act, &QAction::toggled, this, &ViewerWindow::on_statistics_show);
-
-	act = menu->addAction(tr("Show image &center"));
-	act->setCheckable(true);
-	act->setChecked(conf.show_reference);
-	connect(act, &QAction::toggled, this, &ViewerWindow::on_viewer_show_reference);
-
-	menu->addSeparator();
-
 	act = menu->addAction(tr("Enable &antialiasing"));
 	act->setCheckable(true);
 	act->setChecked(conf.antialiasing_enabled);
@@ -157,7 +145,37 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu_bar->addMenu(menu);
 
-	menu = new QMenu("&Help");
+	QMenu *tools_menu = new QMenu("&Tools", this);
+	QAction *tools_act;
+
+	tools_act = tools_menu->addAction(tr("Image &statistics"));
+	tools_act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_H));
+	tools_act->setCheckable(true);
+	tools_act->setChecked(conf.statistics_enabled);
+	connect(tools_act, &QAction::toggled, this, &ViewerWindow::on_statistics_show);
+
+	tools_act = tools_menu->addAction(tr("Image &center"));
+	tools_act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_M));
+	tools_act->setCheckable(true);
+	tools_act->setChecked(conf.show_reference);
+	connect(tools_act, &QAction::toggled, this, &ViewerWindow::on_viewer_show_reference);
+
+	tools_act = tools_menu->addAction(tr("Image &Inspector"));
+	tools_act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_N));
+	tools_act->setCheckable(true);
+	connect(tools_act, &QAction::toggled, this, [this](bool checked){
+		if (!m_imager_viewer) return;
+		if (checked) {
+			m_imager_viewer->runImageInspection();
+			m_imager_viewer->showInspectionOverlay(true);
+		} else {
+			m_imager_viewer->showInspectionOverlay(false);
+		}
+	});
+
+	menu_bar->addMenu(tools_menu);
+
+	menu = new QMenu("&Help", this);
 
 	act = menu->addAction(tr("&About"));
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_about_act);

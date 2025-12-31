@@ -22,7 +22,7 @@ const int HFD_MAX_ITERATIONS = 8;
 const int HFD_MAX_RADIUS = 50;
 const double HFD_APERTURE_MULTIPLIER = 3.0;
 const double HFD_CONVERGENCE_FACTOR = 9.0;
-const double HFR_MIN_VALID = 0.25;
+const double HFR_MIN_VALID = 0.75;
 const double HFR_MAX_VALID = 20.0;
 const double HFR_MAX_REASONABLE = 15.0;
 const double HFR_GROWTH_RATIO_ITER1 = 1.8;
@@ -130,7 +130,8 @@ PeakInfo findPeak(const T* data, int width, int height, int cx, int cy ) {
 }
 
 template <typename T>
-double calculateEccentricity(const T* data, int width, int height, double centroid_x, double centroid_y, double star_radius, double background, double &out_angle_deg) {
+double calculateEccentricity(const T* data, int width, int height, double centroid_x, double centroid_y, double star_radius, double background,
+							 double &out_angle_deg, double &out_m20, double &out_m02, double &out_m11) {
 	// Calculate second moments of the intensity distribution
 	// Using background-subtracted, weighted pixel values
 	double m20 = 0;  // Variance in x direction
@@ -176,6 +177,11 @@ double calculateEccentricity(const T* data, int width, int height, double centro
 	m02 /= total_weight;
 	m11 /= total_weight;
 
+	// expose normalized central moments
+	out_m20 = m20;
+	out_m02 = m02;
+	out_m11 = m11;
+
 	// Calculate eccentricity from eigenvalues of moment matrix
 	// The moment matrix is: [m20 m11]
 	//                       [m11 m02]
@@ -210,7 +216,7 @@ double calculateEccentricity(const T* data, int width, int height, double centro
 
 	// Compute major axis angle (radians) from second moments
 	// 0 = along +X axis, range [0,180)
-	double ang_rad = 0.5 * std::atan2(2.0 * m11, m20 - m02);
+	double ang_rad = 0.5 * std::atan2(2.0 * m11, m02 - m20);
 	double ang_deg = ang_rad * 180.0 / M_PI;
 	// Normalize to [0,180)
 	while (ang_deg < 0) ang_deg += 180.0;
@@ -772,10 +778,14 @@ SNRResult calculateSNRTemplate(
 		return result;
 	}
 
-	// Step 12: Calculate eccentricity (star roundness) and major axis angle
+	// Step 12: Calculate eccentricity (star roundness), major axis angle and central moments
 	double maj_angle = 0.0;
-	result.eccentricity = calculateEccentricity(data, width, height, centroid.centroid_x, centroid.centroid_y, star_radius, result.background_mean, maj_angle);
+	double m20 = 0.0, m02 = 0.0, m11 = 0.0;
+	result.eccentricity = calculateEccentricity(data, width, height, centroid.centroid_x, centroid.centroid_y, star_radius, result.background_mean, maj_angle, m20, m02, m11);
 	result.major_axis_angle = maj_angle;
+	result.moment_m20 = m20;
+	result.moment_m02 = m02;
+	result.moment_m11 = m11;
 
 	// Step 13: Compute final SNR
 	computeFinalSNR(result, centroid.centroid_x, centroid.centroid_y, star_radius, gain);

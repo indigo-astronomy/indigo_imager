@@ -1,0 +1,91 @@
+#ifndef IMAGE_INSPECTOR_OVERLAY_H
+#define IMAGE_INSPECTOR_OVERLAY_H
+
+#include <QWidget>
+#include <vector>
+#include "snr_calculator.h"
+#include <QFutureWatcher>
+#include <atomic>
+#include "image_inspector.h"
+#include <string>
+
+class QGraphicsView;
+class preview_image;
+class ImageInspector;
+class QPainter;
+
+class ImageInspectorOverlay : public QWidget {
+	Q_OBJECT
+
+public:
+	explicit ImageInspectorOverlay(QWidget *parent = nullptr);
+	// Single-shot setter accepting the full inspection result (preferred)
+	void setInspectionResult(const InspectionResult &res);
+	void setWidgetOpacity(double opacity);
+
+	// Run inspection using the provided image. The overlay will call into an ImageInspector
+	// implementation and display the result. The ImageInspector lives inside the overlay.
+	void runInspection(const preview_image &img);
+
+	// Clear any current inspection results and cancel running inspection.
+	void clearInspection();
+
+	// set the view used for mapping scene coordinates to view coordinates
+	void setView(QGraphicsView *view);
+
+protected:
+	void paintEvent(QPaintEvent *event) override;
+	void resizeEvent(QResizeEvent *event) override;
+	bool eventFilter(QObject *watched, QEvent *event) override;
+
+private:
+	// compute a UI-only pixel scale based on the overlay/widget size (used for pen/marker sizing)
+	double computeUiPixelScale() const;
+	std::vector<double> m_dirs; // 8 directions: N, NE, E, SE, S, SW, W, NW
+	double m_center_hfd;
+	double m_opacity;
+
+	// per-direction counts
+	std::vector<int> m_detected;
+	std::vector<int> m_used;
+	std::vector<int> m_rejected;
+
+	int m_center_detected;
+	int m_center_used;
+	int m_center_rejected;
+
+	// Per-star positions in overlay (view) coordinates
+	std::vector<QPointF> m_used_points;
+	std::vector<double> m_used_radii;
+	std::vector<QPointF> m_rejected_points;
+
+	// view scaling (view pixels per image pixel) and base image radius in image pixels
+	double m_pixel_scale = 1.0;
+	double m_base_image_px = 0.0;
+
+	// per-cell morphology (5x5 grid assumed): eccentricity and major-axis angle (deg)
+	std::vector<double> m_cell_eccentricity;
+	std::vector<double> m_cell_major_angle;
+
+	// optional pointer to the QGraphicsView so we can map scene->view dynamically
+	QGraphicsView *m_viewptr = nullptr;
+
+	// async inspection watcher and sequence token
+	QFutureWatcher<InspectionResult> *m_watcher = nullptr;
+	std::atomic<uint64_t> m_seq {0};
+
+	// optional error message returned by the inspector - if non-empty paintEvent will
+	// display it in the center and skip other overlays
+	std::string m_error_message;
+
+	// optional busy message shown while analysis is running
+	std::string m_busy_message;
+
+	// draw a small busy indicator behind messages
+	void drawBusyIndicator(QPainter &p, const QRectF &r);
+
+	// draw a centered header + message (error or busy) and optional busy indicator
+	void drawCenterMessage(QPainter &p);
+};
+
+#endif // IMAGE_INSPECTOR_OVERLAY_H

@@ -23,6 +23,11 @@ struct SNRResult {
 	double major_axis_angle; // Angle of major axis in degrees, 0 = +X axis, range [0,180)
 	double peak_value;    // Maximum pixel value in star
 	double total_flux;    // Total background-subtracted flux
+	// Normalized central second moments computed per-star (useful for aggregating cell morphology)
+	double moment_m20; // <dx^2>
+	double moment_m02; // <dy^2>
+	double moment_m11; // <dx*dy>
+
 	bool valid;
 	bool is_saturated;
 	std::string error_message;  // Error description if valid == false
@@ -34,6 +39,7 @@ struct SNRResult {
 		star_radius(0), star_x(0), star_y(0),
 		background_inner_radius(0), background_outer_radius(0),
 		eccentricity(0), major_axis_angle(0), peak_value(0), total_flux(0),
+		moment_m20(0), moment_m02(0), moment_m11(0),
 		valid(false), is_saturated(false), error_message("")
 	{}
 
