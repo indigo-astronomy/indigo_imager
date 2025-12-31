@@ -11,7 +11,6 @@
 #include <QHBoxLayout>
 #include <QToolButton>
 #include <QLabel>
-#include <cmath>
 
 // Graphics View with better mouse events handling
 class GraphicsView : public QGraphicsView {
@@ -939,8 +938,6 @@ void ImageViewer::showInspectionOverlay(bool show) {
 		m_inspection_overlay->update();
 	}
 }
-
-// (removed unused sigma-clipping helper `average_without_outliers`)
 
 void ImageViewer::runImageInspection() {
 	if (!m_pixmap) return;

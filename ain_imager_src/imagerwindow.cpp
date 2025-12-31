@@ -265,8 +265,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu->addSeparator();
 
-	// NOTE: moved image statistics / center controls into Tools menu below
-
 	act = menu->addAction(tr("Enable image &antialiasing"));
 	act->setCheckable(true);
 	act->setChecked(conf.antialiasing_enabled);
@@ -351,7 +349,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu_bar->addMenu(menu);
 
-	// Tools menu: image utilities moved here from Settings
 	QMenu *tools_menu = new QMenu("&Tools");
 	QAction *tools_act;
 

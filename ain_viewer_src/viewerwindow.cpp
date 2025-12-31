@@ -138,8 +138,6 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu->addSeparator();
 
-	// NOTE: moved image statistics / center controls into Tools menu below
-
 	act = menu->addAction(tr("Enable &antialiasing"));
 	act->setCheckable(true);
 	act->setChecked(conf.antialiasing_enabled);
@@ -147,7 +145,6 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu_bar->addMenu(menu);
 
-	// Tools menu: image utilities moved here from Settings
 	QMenu *tools_menu = new QMenu("&Tools", this);
 	QAction *tools_act;
 
@@ -163,7 +160,6 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	tools_act->setChecked(conf.show_reference);
 	connect(tools_act, &QAction::toggled, this, &ViewerWindow::on_viewer_show_reference);
 
-	// Image Inspector action toggles inspection overlay in the image viewer
 	tools_act = tools_menu->addAction(tr("Image &Inspector"));
 	tools_act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_N));
 	tools_act->setCheckable(true);
