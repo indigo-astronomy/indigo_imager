@@ -11,8 +11,9 @@ ImageInspector::~ImageInspector() {}
 
 // detection threshold multiplier applied to MAD-derived sigma when computing peak threshold in a cell
 static constexpr double DETECTION_THRESHOLD = 4.0;
+static constexpr double HFD_OUTLIER_THRESHOLD = 1.5;
 
-// file-local helper types
+// helper types
 struct Candidate {
 	double x;
 	double y;
@@ -48,7 +49,7 @@ struct CellResult {
 	double major_angle_deg = 0.0;
 };
 
-// Robust background estimator using median and MAD (less sensitive to bright outliers)
+// Background estimator using median and MAD (less sensitive to bright outliers than mean/stddev)
 static void compute_median_mad_in_area(const preview_image &img, int sx0, int sy0, int sx1, int sy1, double &out_median, double &out_sd) {
 	std::vector<double> vals;
 	vals.reserve((sx1 - sx0 + 1) * (sy1 - sy0 + 1));
@@ -74,6 +75,7 @@ static void compute_median_mad_in_area(const preview_image &img, int sx0, int sy
 	for (double v : vals) devs.push_back(std::fabs(v - out_median));
 	std::sort(devs.begin(), devs.end());
 	double mad = (n % 2 == 1) ? devs[n/2] : 0.5 * (devs[n/2 - 1] + devs[n/2]);
+
 	// convert MAD to approximate standard deviation for normal distrib: sd ~= 1.4826 * MAD
 	out_sd = mad * 1.4826;
 }
@@ -118,7 +120,7 @@ static double sigma_clip_hfd(const std::vector<Candidate> &unique, std::vector<i
 	}
 
 	std::vector<std::pair<double,int>> v = hv;
-	for (int iter = 0; iter < 3; ++iter) {
+	for (int iter = 0; iter < 2; ++iter) {
 		if (v.empty()) break;
 		double sum = 0.0;
 		double sumsq = 0.0;
@@ -131,7 +133,7 @@ static double sigma_clip_hfd(const std::vector<Candidate> &unique, std::vector<i
 		double sd = var > 0 ? std::sqrt(var) : 0.0;
 		std::vector<std::pair<double,int>> nv;
 		for (auto &p : v) {
-			if (std::fabs(p.first - mean) <= 2.0 * sd) nv.push_back(p);
+			if (std::fabs(p.first - mean) <= HFD_OUTLIER_THRESHOLD * sd) nv.push_back(p);
 		}
 		if (nv.size() == v.size()) break;
 		if (nv.empty()) break;
@@ -157,8 +159,8 @@ static void compute_weighted_eccentricity_and_angle(
 	const std::vector<Candidate> &unique,
 	const std::vector<int> &used_indices,
 	double &out_eccentricity,
-	double &out_major_angle_deg)
-{
+	double &out_major_angle_deg
+) {
 	double m20 = 0.0, m02 = 0.0, m11 = 0.0, total_w = 0.0;
 	double ecc_sum = 0.0;
 
@@ -235,8 +237,10 @@ static CellResult analyze_cell(
 	std::vector<Candidate> candidates;
 	for (int yy = sy0; yy <= sy1; ++yy) {
 		for (int xx = sx0; xx <= sx1; ++xx) {
-			double center_val=0, gv=0, bv=0; img.pixel_value(xx, yy, center_val, gv, bv);
+			double center_val=0, gv=0, bv=0;
+			img.pixel_value(xx, yy, center_val, gv, bv);
 			if (center_val <= peak_threshold) continue;
+
 			bool is_local_max = true;
 			for (int ny = yy - 1; ny <= yy + 1; ++ny) {
 				for (int nx = xx - 1; nx <= xx + 1; ++nx) {
@@ -254,6 +258,7 @@ static CellResult analyze_cell(
 				}
 			}
 			if (!is_local_max) continue;
+
 			SNRResult r = calculateSNR(reinterpret_cast<const uint8_t*>(img.m_raw_data), img_w, img_h, img.m_pix_format, xx, yy);
 				if (r.valid && !r.is_saturated) {
 				int cx_i = static_cast<int>(std::round(r.star_x));
@@ -278,7 +283,9 @@ static CellResult analyze_cell(
 	// Build a boolean mask for O(1) lookup of used candidates
 	std::vector<char> is_used_mask(unique.size(), 0);
 	for (int idx : used_indices) {
-		if (idx >= 0 && static_cast<size_t>(idx) < unique.size()) is_used_mask[idx] = 1;
+		if (idx >= 0 && static_cast<size_t>(idx) < unique.size()) {
+			is_used_mask[idx] = 1;
+		}
 	}
 
 	for (size_t i = 0; i < unique.size(); ++i) {
@@ -321,11 +328,13 @@ InspectionResult ImageInspector::inspect(const preview_image &img, int gx, int g
 	if (pf == PIX_FMT_RGB24 || pf == PIX_FMT_RGB48 || pf == PIX_FMT_RGB96 || pf == PIX_FMT_RGBF) {
 		int width = img.width();
 		int height = img.height();
+
 		preview_image tmp(width, height, QImage::Format_Grayscale8);
 		gray_img = tmp;
 		gray_img.m_width = width;
 		gray_img.m_height = height;
 		gray_img.m_pix_format = PIX_FMT_F32;
+
 		size_t size = static_cast<size_t>(width) * static_cast<size_t>(height) * sizeof(float);
 		gray_img.m_raw_data = (char*)malloc(size);
 		if (gray_img.m_raw_data == nullptr) {

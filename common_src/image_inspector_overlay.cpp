@@ -92,7 +92,7 @@ void ImageInspectorOverlay::runInspection(const preview_image &img) {
 	double base_image_px = std::min(img.width(), img.height()) * 0.2;
 
 	// show busy cursor
-	if (!QApplication::overrideCursor()) QApplication::setOverrideCursor(Qt::BusyCursor);
+	// if (!QApplication::overrideCursor()) QApplication::setOverrideCursor(Qt::BusyCursor);
 
 	QFuture<InspectionResult> future = QtConcurrent::run([pimg]() {
 		ImageInspector inspector;
@@ -115,14 +115,11 @@ void ImageInspectorOverlay::runInspection(const preview_image &img) {
 
 		InspectionResult r = m_watcher->future().result();
 
-		// clear busy message now that result arrived
 		m_busy_message.clear();
 
-		// compute UI pixel scale (centralized helper)
 		double pixelScale = computeUiPixelScale();
-		// Apply the full InspectionResult to the overlay
 		setInspectionResult(r);
-		// store view-specific scaling that is not part of the inspection result
+
 		m_pixel_scale = (pixelScale > 0.0) ? pixelScale : 1.0;
 		m_base_image_px = (base_image_px > 0.0) ? base_image_px : 0.0;
 		update();
@@ -133,7 +130,7 @@ void ImageInspectorOverlay::runInspection(const preview_image &img) {
 		}
 
 		// restore cursor (only for the latest run)
-		if (QApplication::overrideCursor()) QApplication::restoreOverrideCursor();
+		// if (QApplication::overrideCursor()) QApplication::restoreOverrideCursor();
 	});
 }
 
@@ -150,7 +147,6 @@ void ImageInspectorOverlay::clearInspection() {
 }
 
 void ImageInspectorOverlay::setInspectionResult(const InspectionResult &res) {
-	// Copy core inspection data
 	m_dirs = res.dirs;
 	m_center_hfd = res.center_hfd;
 	m_detected = res.detected_dirs;
@@ -162,8 +158,16 @@ void ImageInspectorOverlay::setInspectionResult(const InspectionResult &res) {
 	m_used_points = res.used_points;
 	m_used_radii = res.used_radii;
 	m_rejected_points = res.rejected_points;
-	if (!res.cell_eccentricity.empty()) m_cell_eccentricity = res.cell_eccentricity; else m_cell_eccentricity.clear();
-	if (!res.cell_major_angle.empty()) m_cell_major_angle = res.cell_major_angle; else m_cell_major_angle.clear();
+	if (!res.cell_eccentricity.empty()) {
+		m_cell_eccentricity = res.cell_eccentricity;
+	} else {
+		m_cell_eccentricity.clear();
+	}
+	if (!res.cell_major_angle.empty()) {
+		m_cell_major_angle = res.cell_major_angle;
+	} else {
+		m_cell_major_angle.clear();
+	}
 	m_error_message = res.error_message;
 	// Note: view-specific scaling (m_pixel_scale/m_base_image_px) is set by the caller
 	update();
@@ -178,7 +182,9 @@ void ImageInspectorOverlay::setWidgetOpacity(double opacity) {
 void ImageInspectorOverlay::drawBusyIndicator(QPainter &p, const QRectF &r) {
 	QPointF center = r.center();
 	double base = std::min(r.width(), r.height()) * 0.15;
-	if (base < 8.0) base = 8.0;
+	if (base < 8.0) {
+		base = 8.0;
+	}
 
 	QPolygonF poly;
 	for (int i = 0; i < 8; ++i) {
@@ -204,15 +210,13 @@ void ImageInspectorOverlay::drawBusyIndicator(QPainter &p, const QRectF &r) {
 
 // Draw a centered header + message (error or busy) and optional busy indicator
 void ImageInspectorOverlay::drawCenterMessage(QPainter &p) {
-	// Header font (Inspector:)
 	QFont headerFont = p.font();
 	int headerFs = std::max(12, static_cast<int>(std::min(width(), height()) * 0.03));
 	headerFont.setPointSize(headerFs);
 	headerFont.setBold(true);
 
-	// Message font (smaller than header)
 	QFont msgFont = p.font();
-	int msgFs = std::max(8, headerFs - 4);
+	int msgFs = std::max(8, static_cast<int>(headerFs * 0.8));
 	msgFont.setPointSize(msgFs);
 	msgFont.setBold(false);
 
@@ -233,13 +237,11 @@ void ImageInspectorOverlay::drawCenterMessage(QPainter &p) {
 	double blockH = hb.height() + mb.height();
 	double startY = r.top() + (r.height() - blockH) / 2.0;
 
-	// Draw header
 	p.setFont(headerFont);
 	p.setPen(QPen(QColor(255,255,255,255)));
 	QRectF headerRect(r.left(), startY, r.width(), hb.height());
 	p.drawText(headerRect, Qt::AlignHCenter | Qt::AlignVCenter | Qt::TextWordWrap, header);
 
-	// Draw message text below with smaller font
 	p.setFont(msgFont);
 	p.setPen(QPen(QColor(220,220,220,255)));
 	QRectF msgRect(r.left(), startY + hb.height(), r.width(), mb.height());
@@ -248,7 +250,7 @@ void ImageInspectorOverlay::drawCenterMessage(QPainter &p) {
 
 void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 	QWidget::paintEvent(event);
-	// If inspector returned an error or is busy, show a centered message and skip other overlays
+
 	if (!m_error_message.empty() || !m_busy_message.empty()) {
 		QPainter p(this);
 		p.setRenderHint(QPainter::Antialiasing, true);
@@ -365,7 +367,7 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 		double minor_view = major_view;
 		if (!std::isnan(ecc) && ecc > 0.0 && ecc < 1.0) minor_view = major_view * std::sqrt(std::max(0.0, 1.0 - ecc * ecc));
 
-		// Use green for used stars; increase transparency
+		// Use semi-trasparent green for used stars
 		QColor edgeCol = QColor(0,200,120, static_cast<int>(m_opacity*160));
 		QColor fillCol = QColor(0,200,120, static_cast<int>(m_opacity*40));
 
@@ -406,7 +408,7 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 			double maj = (m_dirs.size() > static_cast<size_t>(i) && m_dirs[i] > 0) ? (m_dirs[i] * m_pixel_scale) : (base_view * 0.20);
 			maj = std::min(maj, base_view * 0.6);
 			maj = std::max(2.0, maj);
-			maj *= 4.0; // same visual scaling as ellipse
+			maj *= 4.0;
 			double base_effective = (i == 0) ? north_effective_r : vertex_r_view;
 			// offset label center by half the major axis length plus a larger gap
 			vertexEffective[i] = base_effective + (maj * 0.5) + std::max(12.0, 6.0 * m_pixel_scale);
@@ -626,7 +628,7 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 		// compute effective center point from possibly nudged drawPos so combined box aligns
 		QPointF effectiveCenter(drawPos.x() + tb.width()/2.0, drawPos.y() + tb.height()/2.0 + 6);
 
-		// Combine main center label and counts into a single background box to avoid duplicated boxes
+		// Combine main center label and counts into a single background box
 		// central morphology (center cell at grid 2,2 -> index 12)
 		QString cmorph;
 		QRectF tbMorph;
@@ -636,10 +638,15 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 		QColor cmorphCol = QColor(255,220,120, static_cast<int>(m_opacity*220));
 		if (!std::isnan(c_ecc) && c_ecc > 0.0) {
 			cmorph = QString::fromUtf8("ε:%1 ∠%2°").arg(QString::number(c_ecc, 'f', 2)).arg(QString::number(c_ang, 'f', 0));
-			// match vertex label/ellipse "lineCol" colors so red/green are identical
-			if (c_ecc < 0.4) cmorphCol = QColor(120,240,200, static_cast<int>(m_opacity*220));
-			else if (c_ecc > 0.55) cmorphCol = QColor(255,140,140, static_cast<int>(m_opacity*220));
-			else cmorphCol = QColor(255,220,120, static_cast<int>(m_opacity*220));
+
+			if (c_ecc < 0.4) {
+				cmorphCol = QColor(120,240,200, static_cast<int>(m_opacity*220));
+			} else if (c_ecc > 0.55) {
+				cmorphCol = QColor(255,140,140, static_cast<int>(m_opacity*220));
+			} else {
+				cmorphCol = QColor(255,220,120, static_cast<int>(m_opacity*220));
+			}
+
 			QFont small = p.font();
 			small.setPointSize(std::max(6, static_cast<int>(std::min(width(), height()) * 0.012)));
 			small.setBold(false);
@@ -653,7 +660,7 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 			QFont small = p.font();
 			small.setPointSize(std::max(6, static_cast<int>(std::min(width(), height()) * 0.012)));
 			small.setBold(false);
-			// measure with the small font
+
 			QFontMetrics fmSmall(small);
 			cnt = QString("D:%1 U:%2 R:%3").arg(m_center_detected).arg(m_center_used).arg(m_center_rejected);
 			tb2 = fmSmall.boundingRect(cnt);
@@ -688,7 +695,8 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 		double mainY = combinedTopLeft.y() + topPad + fmMain.ascent();
 		p.setPen(QPen(QColor(255,255,255,static_cast<int>(m_opacity*255)),1));
 		p.drawText(mainX, mainY, txt);
-		// draw central morphology (colored) below main text if available
+
+		// draw central morphology (colored) below main text
 		if (!cmorph.isEmpty()) {
 			p.setFont(smallFont);
 			double mx = combinedTopLeft.x() + (combinedW - tbMorph.width()) * 0.5;
@@ -697,7 +705,7 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 			p.drawText(mx, my, cmorph);
 		}
 
-		// draw counts on the last line if present
+		// draw counts below morphology
 		if (!cnt.isEmpty()) {
 			p.setFont(smallFont);
 			QFontMetrics fmS(smallFont);
@@ -707,12 +715,10 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 			p.drawText(sx, sy, cnt);
 		}
 	}
-	// vertices and labels drawn above in the block above
 }
 
 void ImageInspectorOverlay::resizeEvent(QResizeEvent *event) {
 	QWidget::resizeEvent(event);
-	// Recompute the UI pixel scale using the helper
 	m_pixel_scale = computeUiPixelScale();
 	update();
 }

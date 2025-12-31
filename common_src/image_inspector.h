@@ -1,10 +1,10 @@
-#pragma once
+#ifndef IMAGE_INSPECTOR_H
+#define IMAGE_INSPECTOR_H
 
 #include <vector>
 #include <QPointF>
 #include <string>
 
-// forward
 class preview_image;
 
 struct InspectionResult {
@@ -38,3 +38,5 @@ public:
 	// Parameters like grid size and thresholds may be tuned later.
 	InspectionResult inspect(const preview_image &img, int gx = 5, int gy = 5, double snr_threshold = 10.0);
 };
+
+#endif // IMAGE_INSPECTOR_H
