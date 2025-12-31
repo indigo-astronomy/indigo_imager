@@ -383,8 +383,6 @@ void ImageViewer::makeToolbar(bool show_prev_next, bool show_debayer) {
 	box->addWidget(fit);
 	box->addWidget(orig);
 	box->addWidget(m_stretch_button);
-
-	// Image Inspection action is provided from the main window Tools menu
 }
 
 void ImageViewer::showStretchButton(bool show) {
