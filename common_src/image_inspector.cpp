@@ -184,8 +184,6 @@ static void compute_weighted_eccentricity_and_angle(
 		double det = m20 * m02 - m11 * m11;
 		double discriminant = trace * trace - 4.0 * det;
 		if (discriminant < 0) discriminant = 0;
-		double lambda1 = (trace + std::sqrt(discriminant)) / 2.0;
-		double lambda2 = (trace - std::sqrt(discriminant)) / 2.0;
 		// compute major axis angle (same formula as before)
 		double ang_rad = 0.5 * std::atan2(2.0 * m11, m02 - m20);
 		double ang_deg = ang_rad * 180.0 / M_PI;
