@@ -58,6 +58,7 @@ class QIndigoServers;
 #include <QDial>
 #include <QDateTime>
 #include <QFileDialog>
+#include <QSoundEffect>
 #include <QTableView>
 #include <QThread>
 #include <QtConcurrentRun>
@@ -119,6 +120,11 @@ public:
 	};
 
 	void play_sound(int alarm);
+
+private:
+	QSoundEffect *m_sound_ok;
+	QSoundEffect *m_sound_warning;
+	QSoundEffect *m_sound_alert;
 
 	void property_delete(indigo_property* property, char *message);
 	void property_define(indigo_property* property, char *message);

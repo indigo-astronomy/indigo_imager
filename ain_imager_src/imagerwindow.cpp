@@ -35,7 +35,9 @@
 #include <imageviewer.h>
 #include <image_stats.h>
 #include <QSound>
+#include <QSoundEffect>
 #include <QFileInfo>
+#include <QUrl>
 //#include <IndigoSequence.h>
 
 void write_conf();
@@ -63,6 +65,23 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	mIndigoServers = new QIndigoServers(this);
 	m_config_dialog = new QConfigDialog(this);
 	m_add_object_dialog = new QAddCustomObject(this);
+
+	m_sound_ok = nullptr;
+	m_sound_warning = nullptr;
+	m_sound_alert = nullptr;
+
+	// Initialize reusable sound effects (parented to this so they'll be freed)
+	m_sound_ok = new QSoundEffect(this);
+	m_sound_ok->setSource(QUrl("qrc:/resource/ok.wav"));
+	m_sound_ok->setVolume(0.5);
+
+	m_sound_warning = new QSoundEffect(this);
+	m_sound_warning->setSource(QUrl("qrc:/resource/warning.wav"));
+	m_sound_warning->setVolume(0.5);
+
+	m_sound_alert = new QSoundEffect(this);
+	m_sound_alert->setSource(QUrl("qrc:/resource/error.wav"));
+	m_sound_alert->setVolume(0.5);
 
 	m_is_sequence = false;
 	m_indigo_item = nullptr;
@@ -861,14 +880,14 @@ void ImagerWindow::play_sound(int alarm) {
 		case AIN_NO_SOUND:
 			return;
 		case AIN_ALERT_SOUND:
-			QSound::play(":/resource/error.wav");
+			if (m_sound_alert) m_sound_alert->play();
 			return;
 		case AIN_WARNING_SOUND:
-			QSound::play(":/resource/warning.wav");
+			if (m_sound_warning) m_sound_warning->play();
 			return;
 		case AIN_OK_SOUND:
 			if (conf.sound_notification_level > AIN_WARNING_SOUND) {
-				QSound::play(":/resource/ok.wav");
+				if (m_sound_ok) m_sound_ok->play();
 			}
 			return;
 		}
