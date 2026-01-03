@@ -30,10 +30,13 @@
 
 #include <unistd.h>
 #include <thread>
+#include <mutex>
 
 #define MIN_SIZE_TO_PARALLELIZE 0x3FFFF
 
 // Related Functions
+
+static std::recursive_mutex g_preview_mutex;
 
 static void qimage_cleanup(void *info) {
 	if (info) free(info);
@@ -650,17 +653,15 @@ preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long
 
 // Overload: accept ownership of already-allocated input buffer to avoid extra memcpy.
 preview_image* create_preview(int width, int height, int pix_format, std::shared_ptr<char> image_owner, char *image_data, const stretch_config_t sconfig) {
+	std::lock_guard<std::recursive_mutex> _preview_lock(g_preview_mutex);
 	// formats that can be used directly without rearrangement
 	if (
 		pix_format == PIX_FMT_Y8 || pix_format == PIX_FMT_Y16 || pix_format == PIX_FMT_Y32 || pix_format == PIX_FMT_F32 ||
 		pix_format == PIX_FMT_RGB24 || pix_format == PIX_FMT_RGB48 || pix_format == PIX_FMT_RGB96 || pix_format == PIX_FMT_RGBF
 	) {
 		// create QImage from external buffer so Qt doesn't call QImageData::create
-		int bytesPerLine = width * 4; // RGB32
-		size_t display_size = (size_t)bytesPerLine * (size_t)height;
-		uchar *display_buf = (uchar*)malloc(display_size);
-		if (!display_buf) return nullptr;
-		preview_image* img = new preview_image(display_buf, width, height, bytesPerLine, QImage::Format_RGB32, qimage_cleanup, display_buf);
+		// Use QImage-internal buffer to avoid external buffer cleanup races
+		preview_image* img = new preview_image(width, height, QImage::Format_RGB32);
 		img->m_raw_owner = image_owner;
 		img->m_raw_data = image_data;
 		img->m_pix_format = pix_format;
@@ -676,11 +677,9 @@ preview_image* create_preview(int width, int height, int pix_format, std::shared
 }
 
 preview_image* create_preview(int width, int height, int pix_format, char *image_data, const stretch_config_t sconfig) {
-	int bytesPerLine = width * 4; // RGB32
-	size_t display_size = (size_t)bytesPerLine * (size_t)height;
-	uchar *display_buf = (uchar*)malloc(display_size);
-	if (!display_buf) return nullptr;
-	preview_image* img = new preview_image(display_buf, width, height, bytesPerLine, QImage::Format_RGB32, qimage_cleanup, display_buf);
+	std::lock_guard<std::recursive_mutex> _preview_lock(g_preview_mutex);
+	// Use QImage-internal buffer to avoid external buffer cleanup races
+	preview_image* img = new preview_image(width, height, QImage::Format_RGB32);
 	if (pix_format == PIX_FMT_Y8) {
 		uint8_t* buf = (uint8_t*)image_data;
 		uint8_t* pixmap_data = (uint8_t*)malloc(sizeof(uint8_t) * height * width);
@@ -919,6 +918,7 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 }
 
 void stretch_preview(preview_image *img, const stretch_config_t sconfig) {
+	std::lock_guard<std::recursive_mutex> _preview_lock(g_preview_mutex);
 	if (
 		img->m_pix_format == PIX_FMT_Y8 ||
 		img->m_pix_format == PIX_FMT_Y16 ||
