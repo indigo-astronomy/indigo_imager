@@ -35,6 +35,10 @@
 
 // Related Functions
 
+static void qimage_cleanup(void *info) {
+	if (info) free(info);
+}
+
 int get_bayer_offsets(uint32_t pix_format) {
 	switch (pix_format) {
 		case PIX_FMT_SBGGR8:
@@ -651,7 +655,12 @@ preview_image* create_preview(int width, int height, int pix_format, std::shared
 		pix_format == PIX_FMT_Y8 || pix_format == PIX_FMT_Y16 || pix_format == PIX_FMT_Y32 || pix_format == PIX_FMT_F32 ||
 		pix_format == PIX_FMT_RGB24 || pix_format == PIX_FMT_RGB48 || pix_format == PIX_FMT_RGB96 || pix_format == PIX_FMT_RGBF
 	) {
-		preview_image* img = new preview_image(width, height, QImage::Format_RGB32);
+		// create QImage from external buffer so Qt doesn't call QImageData::create
+		int bytesPerLine = width * 4; // RGB32
+		size_t display_size = (size_t)bytesPerLine * (size_t)height;
+		uchar *display_buf = (uchar*)malloc(display_size);
+		if (!display_buf) return nullptr;
+		preview_image* img = new preview_image(display_buf, width, height, bytesPerLine, QImage::Format_RGB32, qimage_cleanup, display_buf);
 		img->m_raw_owner = image_owner;
 		img->m_raw_data = image_data;
 		img->m_pix_format = pix_format;
@@ -667,7 +676,11 @@ preview_image* create_preview(int width, int height, int pix_format, std::shared
 }
 
 preview_image* create_preview(int width, int height, int pix_format, char *image_data, const stretch_config_t sconfig) {
-	preview_image* img = new preview_image(width, height, QImage::Format_RGB32);
+	int bytesPerLine = width * 4; // RGB32
+	size_t display_size = (size_t)bytesPerLine * (size_t)height;
+	uchar *display_buf = (uchar*)malloc(display_size);
+	if (!display_buf) return nullptr;
+	preview_image* img = new preview_image(display_buf, width, height, bytesPerLine, QImage::Format_RGB32, qimage_cleanup, display_buf);
 	if (pix_format == PIX_FMT_Y8) {
 		uint8_t* buf = (uint8_t*)image_data;
 		uint8_t* pixmap_data = (uint8_t*)malloc(sizeof(uint8_t) * height * width);

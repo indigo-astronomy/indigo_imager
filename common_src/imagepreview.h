@@ -74,6 +74,21 @@ public:
 		m_pix_scale(0)
 	{};
 
+	preview_image(uchar *data, int width, int height, int bytesPerLine, QImage::Format format, QImageCleanupFunction cleanupFunction = nullptr, void *cleanupInfo = nullptr):
+		QImage(data, width, height, bytesPerLine, format, cleanupFunction, cleanupInfo),
+		m_raw_data(nullptr),
+		m_width(0),
+		m_height(0),
+		m_pix_format(0),
+		m_center_ra(0),
+		m_center_dec(0),
+		m_telescope_ra(0),
+		m_telescope_dec(0),
+		m_rotation_angle(0),
+		m_parity(0),
+		m_pix_scale(0)
+	{ };
+
 	preview_image(preview_image &image): QImage(image) {
 		m_width = image.m_width;
 		m_height = image.m_height;
