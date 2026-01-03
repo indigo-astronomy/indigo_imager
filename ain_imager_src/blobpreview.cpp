@@ -25,6 +25,19 @@
 
 blob_preview_cache preview_cache;
 
+void blob_preview_cache::clear_all() {
+	pthread_mutex_lock(&preview_mutex);
+	blob_preview_cache::iterator i = begin();
+	while (i != end()) {
+		preview_image *preview = i.value();
+		if (preview != nullptr) {
+			delete preview;
+		}
+		i = erase(i);
+	}
+	pthread_mutex_unlock(&preview_mutex);
+}
+
 QString blob_preview_cache::create_key(indigo_property *property, indigo_item *item) {
 	QString key(property->device);
 	key.append(".");

@@ -34,16 +34,10 @@ public:
 	};
 
 	~blob_preview_cache() {
-		//indigo_debug("preview: %s()\n", __FUNCTION__);
-		blob_preview_cache::iterator i = begin();
-		while (i != end()) {
-			preview_image *preview = i.value();
-			if (preview != nullptr) {
-				delete(preview);
-			}
-			i = erase(i);
-		}
+		clear_all();
 	};
+
+	void clear_all();
 
 private:
 	pthread_mutex_t preview_mutex;

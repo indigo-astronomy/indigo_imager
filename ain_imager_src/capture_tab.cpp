@@ -175,7 +175,8 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_download_label->setToolTip("Image download progress");
 	m_download_label->setStyleSheet(QString("QLabel { background-color: #272727; border-radius: %1px; }").arg(spinner_size / 2));
 	capture_frame_layout->addWidget(m_download_label, row, 5, 2, 1);
-	m_download_spinner = new QMovie(":resource/spinner.gif");
+	// Parent the movie so it is reliably destroyed on shutdown (fixes Valgrind leak via QImageReader/QMovie).
+	m_download_spinner = new QMovie(":resource/spinner.gif", QByteArray(), this);
 	m_download_spinner->setScaledSize(m_download_label->size() * 0.7);
 	m_download_label->setMovie(m_download_spinner);
 	m_download_label->clear();

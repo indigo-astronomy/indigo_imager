@@ -644,6 +644,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 ImagerWindow::~ImagerWindow () {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
+	preview_cache.clear_all();
 	QSize wsize = size();
 	conf.window_width = wsize.width();
 	conf.window_height = wsize.height();
@@ -652,6 +653,15 @@ ImagerWindow::~ImagerWindow () {
 		IndigoClient::instance().stop();
 	});
 	indigo_usleep(0.5 * ONE_SECOND_DELAY);
+	// Stop and detach the download spinner movie explicitly.
+	if (m_download_label) {
+		m_download_label->setMovie(nullptr);
+	}
+	if (m_download_spinner) {
+		m_download_spinner->stop();
+		delete m_download_spinner;
+		m_download_spinner = nullptr;
+	}
 	delete m_imager_viewer;
 	if (m_indigo_item) {
 		if (m_indigo_item->blob.value) {
