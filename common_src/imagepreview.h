@@ -257,6 +257,7 @@ preview_image* create_xisf_preview(unsigned char *xisf_buffer, unsigned long xis
 preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size, const stretch_config_t sconfig);
 preview_image* create_preview(unsigned char *data, size_t size, const char* format, const stretch_config_t sconfig);
 preview_image* create_preview(int width, int height, int pixel_format, char *image_data, const stretch_config_t sconfig);
+preview_image* create_preview(int width, int height, int pixel_format, std::shared_ptr<char> image_owner, char *image_data, const stretch_config_t sconfig);
 preview_image* create_preview(indigo_property *property, indigo_item *item, const stretch_config_t sconfig);
 preview_image* create_preview(indigo_item *item, const stretch_config_t sconfig);
 void stretch_preview(preview_image *img, const stretch_config_t sconfig);

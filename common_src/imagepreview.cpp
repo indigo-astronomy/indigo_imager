@@ -397,10 +397,9 @@ preview_image* create_dslr_raw_preview(unsigned char *raw_buffer, unsigned long 
 
 	}
 
-	preview_image *img = create_preview(outout_image.width, outout_image.height,
-	        pix_format, (char*)outout_image.data, sconfig);
-
-	if (outout_image.data != nullptr) free(outout_image.data);
+	// transfer ownership of the debayered/raw buffer to the preview to avoid extra copy
+	std::shared_ptr<char> owner((char*)outout_image.data, [](char *p){ free(p); });
+	preview_image *img = create_preview(outout_image.width, outout_image.height, pix_format, owner, (char*)outout_image.data, sconfig);
 	return img;
 }
 
@@ -451,11 +450,11 @@ preview_image* create_fits_preview(unsigned char *raw_fits_buffer, unsigned long
 		if (bayer_pix_fmt != 0) pix_format = bayer_pix_fmt;
 	}
 
-	preview_image *img = create_preview(header.naxisn[0], header.naxisn[1],
-	        pix_format, fits_data, sconfig);
+	// pass ownership of fits_data to preview to avoid an extra memcpy/free
+	std::shared_ptr<char> owner(fits_data, [](char *p){ free(p); });
+	preview_image *img = create_preview(header.naxisn[0], header.naxisn[1], pix_format, owner, fits_data, sconfig);
 
-	indigo_debug("FITS_END: fits_data = %p", fits_data);
-	free(fits_data);
+	indigo_debug("FITS_END: fits_data = %p (owned)", fits_data);
 	return img;
 }
 
@@ -519,8 +518,9 @@ preview_image* create_xisf_preview(unsigned char *xisf_buffer, unsigned long xis
 			if (bayer_pix_fmt != 0) pix_format = bayer_pix_fmt;
 		}
 
-		img = create_preview(header.width, header.height, pix_format, (char*)xisf_data, sconfig);
-		free(xisf_data);
+		// transfer ownership of the decompressed buffer to the preview
+		std::shared_ptr<char> owner(xisf_data, [](char *p){ free(p); });
+		img = create_preview(header.width, header.height, pix_format, owner, (char*)xisf_data, sconfig);
 	}
 
 	indigo_debug("XISF_END");
@@ -642,6 +642,28 @@ preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long
 
 	indigo_debug("RAW_END: raw_data = %p", raw_data);
 	return img;
+}
+
+// Overload: accept ownership of already-allocated input buffer to avoid extra memcpy.
+preview_image* create_preview(int width, int height, int pix_format, std::shared_ptr<char> image_owner, char *image_data, const stretch_config_t sconfig) {
+	// formats that can be used directly without rearrangement
+	if (
+		pix_format == PIX_FMT_Y8 || pix_format == PIX_FMT_Y16 || pix_format == PIX_FMT_Y32 || pix_format == PIX_FMT_F32 ||
+		pix_format == PIX_FMT_RGB24 || pix_format == PIX_FMT_RGB48 || pix_format == PIX_FMT_RGB96 || pix_format == PIX_FMT_RGBF
+	) {
+		preview_image* img = new preview_image(width, height, QImage::Format_RGB32);
+		img->m_raw_owner = image_owner;
+		img->m_raw_data = image_data;
+		img->m_pix_format = pix_format;
+		img->m_height = height;
+		img->m_width = width;
+
+		stretch_preview(img, sconfig);
+		return img;
+	}
+
+	// For other formats (planar, bayer etc) fall back to the existing path which will perform conversion/copy.
+	return create_preview(width, height, pix_format, image_data, sconfig);
 }
 
 preview_image* create_preview(int width, int height, int pix_format, char *image_data, const stretch_config_t sconfig) {
