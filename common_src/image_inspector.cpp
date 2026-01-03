@@ -334,11 +334,13 @@ InspectionResult ImageInspector::inspect(const preview_image &img, int gx, int g
 		gray_img.m_pix_format = PIX_FMT_F32;
 
 		size_t size = static_cast<size_t>(width) * static_cast<size_t>(height) * sizeof(float);
-		gray_img.m_raw_data = (char*)malloc(size);
-		if (gray_img.m_raw_data == nullptr) {
+		char *tmpbuf = (char*)malloc(size);
+		if (tmpbuf == nullptr) {
 			res.error_message = "Failed to allocate memory for grayscale preview";
 			return res;
 		}
+		gray_img.m_raw_owner = std::shared_ptr<char>(tmpbuf, [](char *p){ free(p); });
+		gray_img.m_raw_data = gray_img.m_raw_owner.get();
 		// copy WCS/meta if present
 		gray_img.m_center_ra = img.m_center_ra;
 		gray_img.m_center_dec = img.m_center_dec;

@@ -1,5 +1,5 @@
 QT += core gui widgets network printsupport concurrent multimedia
-CONFIG += c++11 release app_bundle
+CONFIG += c++11 debug app_bundle
 
 unix:mac {
 	CONFIG += app_bundle

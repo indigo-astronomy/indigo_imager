@@ -650,7 +650,8 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		uint8_t* buf = (uint8_t*)image_data;
 		uint8_t* pixmap_data = (uint8_t*)malloc(sizeof(uint8_t) * height * width);
 		memcpy(pixmap_data, buf, sizeof(uint8_t) * height * width);
-		img->m_raw_data = (char*)pixmap_data;
+		img->m_raw_owner = std::shared_ptr<char>((char*)pixmap_data, [](char *p){ free(p); });
+		img->m_raw_data = img->m_raw_owner.get();
 		img->m_pix_format = PIX_FMT_Y8;
 		img->m_height = height;
 		img->m_width = width;
@@ -660,7 +661,8 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		uint16_t* buf = (uint16_t*)image_data;
 		uint16_t* pixmap_data = (uint16_t*)malloc(sizeof(uint16_t) * height * width);
 		memcpy(pixmap_data, buf, sizeof(uint16_t) * height * width);
-		img->m_raw_data = (char*)pixmap_data;
+		img->m_raw_owner = std::shared_ptr<char>((char*)pixmap_data, [](char *p){ free(p); });
+		img->m_raw_data = img->m_raw_owner.get();
 		img->m_pix_format = PIX_FMT_Y16;
 		img->m_height = height;
 		img->m_width = width;
@@ -670,7 +672,8 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		uint32_t* buf = (uint32_t*)image_data;
 		uint32_t* pixmap_data = (uint32_t*)malloc(sizeof(uint32_t) * height * width);
 		memcpy(pixmap_data, buf, sizeof(uint32_t) * height * width);
-		img->m_raw_data = (char*)pixmap_data;
+		img->m_raw_owner = std::shared_ptr<char>((char*)pixmap_data, [](char *p){ free(p); });
+		img->m_raw_data = img->m_raw_owner.get();
 		img->m_pix_format = PIX_FMT_Y32;
 		img->m_height = height;
 		img->m_width = width;
@@ -680,7 +683,8 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		float* buf = (float*)image_data;
 		float* pixmap_data = (float*)malloc(sizeof(float) * height * width);
 		memcpy(pixmap_data, buf, sizeof(float) * height * width);
-		img->m_raw_data = (char*)pixmap_data;
+		img->m_raw_owner = std::shared_ptr<char>((char*)pixmap_data, [](char *p){ free(p); });
+		img->m_raw_data = img->m_raw_owner.get();
 		img->m_pix_format = PIX_FMT_F32;
 		img->m_height = height;
 		img->m_width = width;
@@ -702,7 +706,8 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 				index2 += 3;
 			}
 		}
-		img->m_raw_data = (char*)pixmap_data;
+		img->m_raw_owner = std::shared_ptr<char>((char*)pixmap_data, [](char *p){ free(p); });
+		img->m_raw_data = img->m_raw_owner.get();
 		img->m_pix_format = PIX_FMT_RGB24;
 		img->m_height = height;
 		img->m_width = width;
@@ -724,7 +729,8 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 				index2 += 3;
 			}
 		}
-		img->m_raw_data = (char*)pixmap_data;
+		img->m_raw_owner = std::shared_ptr<char>((char*)pixmap_data, [](char *p){ free(p); });
+		img->m_raw_data = img->m_raw_owner.get();
 		img->m_pix_format = PIX_FMT_RGB48;
 		img->m_height = height;
 		img->m_width = width;
@@ -746,7 +752,8 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 				index2 += 3;
 			}
 		}
-		img->m_raw_data = (char*)pixmap_data;
+		img->m_raw_owner = std::shared_ptr<char>((char*)pixmap_data, [](char *p){ free(p); });
+		img->m_raw_data = img->m_raw_owner.get();
 		img->m_pix_format = PIX_FMT_RGB96;
 		img->m_height = height;
 		img->m_width = width;
@@ -768,7 +775,8 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 				index2 += 3;
 			}
 		}
-		img->m_raw_data = (char*)pixmap_data;
+		img->m_raw_owner = std::shared_ptr<char>((char*)pixmap_data, [](char *p){ free(p); });
+		img->m_raw_data = img->m_raw_owner.get();
 		img->m_pix_format = PIX_FMT_RGBF;
 		img->m_height = height;
 		img->m_width = width;
@@ -778,7 +786,8 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		uint8_t* buf = (uint8_t*)image_data;
 		uint8_t* pixmap_data = (uint8_t*)malloc(sizeof(uint8_t) * height * width * 3);
 		memcpy(pixmap_data, buf, sizeof(uint8_t) * height * width * 3);
-		img->m_raw_data = (char*)pixmap_data;
+		img->m_raw_owner = std::shared_ptr<char>((char*)pixmap_data, [](char *p){ free(p); });
+		img->m_raw_data = img->m_raw_owner.get();
 		img->m_pix_format = PIX_FMT_RGB24;
 		img->m_height = height;
 		img->m_width = width;
@@ -788,7 +797,8 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		uint16_t* buf = (uint16_t*)image_data;
 		uint16_t* pixmap_data = (uint16_t*)malloc(sizeof(uint16_t) * height * width * 3);
 		memcpy(pixmap_data, buf, sizeof(uint16_t) * height * width * 3);
-		img->m_raw_data = (char*)pixmap_data;
+		img->m_raw_owner = std::shared_ptr<char>((char*)pixmap_data, [](char *p){ free(p); });
+		img->m_raw_data = img->m_raw_owner.get();
 		img->m_pix_format = PIX_FMT_RGB48;
 		img->m_height = height;
 		img->m_width = width;
@@ -798,7 +808,8 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		uint32_t* buf = (uint32_t*)image_data;
 		uint32_t* pixmap_data = (uint32_t*)malloc(sizeof(uint32_t) * height * width * 3);
 		memcpy(pixmap_data, buf, sizeof(uint32_t) * height * width * 3);
-		img->m_raw_data = (char*)pixmap_data;
+		img->m_raw_owner = std::shared_ptr<char>((char*)pixmap_data, [](char *p){ free(p); });
+		img->m_raw_data = img->m_raw_owner.get();
 		img->m_pix_format = PIX_FMT_RGB96;
 		img->m_height = height;
 		img->m_width = width;
@@ -808,7 +819,8 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		float* buf = (float*)image_data;
 		float* pixmap_data = (float*)malloc(sizeof(float) * height * width * 3);
 		memcpy(pixmap_data, buf, sizeof(float) * height * width * 3);
-		img->m_raw_data = (char*)pixmap_data;
+		img->m_raw_owner = std::shared_ptr<char>((char*)pixmap_data, [](char *p){ free(p); });
+		img->m_raw_data = img->m_raw_owner.get();
 		img->m_pix_format = PIX_FMT_RGBF;
 		img->m_height = height;
 		img->m_width = width;
@@ -819,7 +831,8 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		uint8_t* rgb_data = (uint8_t*)malloc(width*height*3);
 		parallel_debayer((uint8_t*)image_data, width, height, get_bayer_offsets(pix_format), rgb_data);
 
-		img->m_raw_data = (char*)rgb_data;
+		img->m_raw_owner = std::shared_ptr<char>((char*)rgb_data, [](char *p){ free(p); });
+		img->m_raw_data = img->m_raw_owner.get();
 		img->m_pix_format = PIX_FMT_RGB24;
 		img->m_height = height;
 		img->m_width = width;
@@ -830,7 +843,8 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		uint16_t* rgb_data = (uint16_t*)malloc(width*height*6);
 		parallel_debayer((uint16_t*)image_data, width, height, get_bayer_offsets(pix_format), rgb_data);
 
-		img->m_raw_data = (char*)rgb_data;
+		img->m_raw_owner = std::shared_ptr<char>((char*)rgb_data, [](char *p){ free(p); });
+		img->m_raw_data = img->m_raw_owner.get();
 		img->m_pix_format = PIX_FMT_RGB48;
 		img->m_height = height;
 		img->m_width = width;
@@ -841,7 +855,8 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		uint32_t* rgb_data = (uint32_t*)malloc(width*height*12);
 		parallel_debayer((uint32_t*)image_data, width, height, get_bayer_offsets(pix_format), rgb_data);
 
-		img->m_raw_data = (char*)rgb_data;
+		img->m_raw_owner = std::shared_ptr<char>((char*)rgb_data, [](char *p){ free(p); });
+		img->m_raw_data = img->m_raw_owner.get();
 		img->m_pix_format = PIX_FMT_RGB96;
 		img->m_height = height;
 		img->m_width = width;
@@ -852,7 +867,8 @@ preview_image* create_preview(int width, int height, int pix_format, char *image
 		float* rgb_data = (float*)malloc(width*height*12);
 		parallel_debayer((float*)image_data, width, height, get_bayer_offsets(pix_format), rgb_data);
 
-		img->m_raw_data = (char*)rgb_data;
+		img->m_raw_owner = std::shared_ptr<char>((char*)rgb_data, [](char *p){ free(p); });
+		img->m_raw_data = img->m_raw_owner.get();
 		img->m_pix_format = PIX_FMT_RGBF;
 		img->m_height = height;
 		img->m_width = width;
