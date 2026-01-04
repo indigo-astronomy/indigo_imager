@@ -59,7 +59,7 @@ SOURCES += \
 	$$PWD/../common_src/utils.cpp \
 	$$PWD/../common_src/imagepreview.cpp \
 	$$PWD/../common_src/imageviewer.cpp \
-	$$PWD/../common_src/antialiasedellipseitem.cpp \
+	$$PWD/../common_src/antialiaseditems.cpp \
 	$$PWD/../common_src/fits.c \
 	$$PWD/../common_src/xisf.c \
 	$$PWD/../common_src/xml.c \
@@ -189,7 +189,7 @@ HEADERS += \
 	$$PWD/../common_src/image_preview_lut.h \
 	$$PWD/../common_src/imagepreview.h \
 	$$PWD/../common_src/imageviewer.h \
-	$$PWD/../common_src/antialiasedellipseitem.h \
+	$$PWD/../common_src/antialiaseditems.h \
 	$$PWD/../common_src/fits.h \
 	$$PWD/../common_src/xisf.h \
 	$$PWD/../common_src/xml.h \

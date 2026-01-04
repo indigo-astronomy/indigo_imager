@@ -11,7 +11,7 @@
 #include <QHBoxLayout>
 #include <QToolButton>
 #include <QLabel>
-#include "antialiasedellipseitem.h"
+#include "antialiaseditems.h"
 
 // Graphics View with better mouse events handling
 class GraphicsView : public QGraphicsView {
@@ -115,7 +115,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 	m_ref_visible = false;
 	m_show_wcs = false;
 
-	m_selection = new QGraphicsRectItem(0,0,25,25, m_pixmap);
+	m_selection = new AntialiasedRectItem(0,0,25,25, m_pixmap);
 	m_selection->setBrush(QBrush(Qt::NoBrush));
 	pen.setCosmetic(true);
 	pen.setWidth(1);
@@ -125,7 +125,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 	m_selection->setVisible(false);
 	m_selection_visible = false;
 
-	m_edge_clipping = new QGraphicsRectItem(0,0,0,0, m_pixmap);
+	m_edge_clipping = new AntialiasedRectItem(0,0,0,0, m_pixmap);
 	m_edge_clipping_v = 0;
 	m_edge_clipping->setBrush(QBrush(Qt::NoBrush));
 	pen.setCosmetic(true);

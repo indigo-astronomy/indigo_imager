@@ -17,6 +17,7 @@ class PixmapItem;
 class GraphicsView;
 class QToolButton;
 class AntialiasedEllipseItem;
+class AntialiasedRectItem;
 
 /**
  * @brief ImageViewer displays images and allows basic interaction with it
@@ -160,8 +161,8 @@ private:
 	QLabel *m_image_histogram;
 	GraphicsView *m_view;
 	PixmapItem *m_pixmap;
-	QGraphicsRectItem *m_selection;
-	QGraphicsRectItem *m_edge_clipping;
+	AntialiasedRectItem *m_selection;
+	AntialiasedRectItem *m_edge_clipping;
 	QGraphicsLineItem *m_ref_x;
 	QGraphicsLineItem *m_ref_y;
 	QPoint m_selection_p;
