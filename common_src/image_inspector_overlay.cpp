@@ -415,9 +415,9 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 			QString mainTxt = QString::number(m_dirs[i], 'f', 2) + " px";
 			QString morphTxt;
 			QString cntTxt;
-			if (!m_detected.empty() && i < static_cast<int>(m_detected.size())) {
-				cntTxt = QString("D:%1 U:%2 R:%3").arg(m_detected[i]).arg(m_used[i]).arg(m_rejected[i]);
-			}
+				if (!m_detected.empty() && i < static_cast<int>(m_detected.size())) {
+					cntTxt = QString("★%1 ✓%2 ✕%3").arg(m_detected[i]).arg(m_used[i]).arg(m_rejected[i]);
+				}
 			// map vertex index -> grid cell to fetch eccentricity/angle
 			int vx_cx = 0, vx_cy = 0;
 			switch (i) {
@@ -642,7 +642,7 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 		QString cnt;
 		QRectF tb2;
 		if (m_center_detected > 0 || m_center_used > 0 || m_center_rejected > 0) {
-			cnt = QString("D:%1 U:%2 R:%3").arg(m_center_detected).arg(m_center_used).arg(m_center_rejected);
+			cnt = QString("★%1 ✓%2 ✕%3").arg(m_center_detected).arg(m_center_used).arg(m_center_rejected);
 			tb2 = fmMorph.boundingRect(cnt);
 		}
 
