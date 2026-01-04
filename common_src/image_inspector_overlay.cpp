@@ -251,8 +251,11 @@ void ImageInspectorOverlay::drawCenterMessage(QPainter &p) {
 void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 	QWidget::paintEvent(event);
 
-	constexpr double padX = 8.0;
-	constexpr double padY = 4.0;
+	const QString hfdFormat = QStringLiteral("%1 px");
+	const QString morphFormat = QStringLiteral("ε:%1 ∠%2°");
+	const QString countFormat = QStringLiteral("★%1 ✓%2 ✕%3");
+	const double padX = 8.0;
+	const double padY = 4.0;
 
 	QPainter p(this);
 	QFont hfdFont = p.font();
@@ -329,7 +332,7 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 	// precompute center label rectangle so vertex labels can avoid overlapping it
 	QRectF centerLabelRect;
 	if (m_center_hfd > 0) {
-		QString ctxt = QString::fromUtf8("%1 px").arg(QString::number(m_center_hfd, 'f', 2));
+		QString ctxt = morphFormat.arg(QString::number(m_center_hfd, 'f', 2));
 		QRectF ctb = fmHfd.boundingRect(ctxt);
 		QPointF cdraw(center.x() - ctb.width()/2.0, center.y() - ctb.height()/2.0 - 6);
 		centerLabelRect = QRectF(cdraw.x()-4, cdraw.y()-2, ctb.width()+8, ctb.height()+4);
@@ -412,11 +415,11 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 			// offset label center by half the major axis length plus a larger gap
 			vertexEffective[i] = base_effective + (maj * 0.5) + std::max(12.0, 6.0 * m_pixel_scale);
 
-			QString mainTxt = QString::number(m_dirs[i], 'f', 2) + " px";
+			QString mainTxt = hfdFormat.arg(QString::number(m_dirs[i], 'f', 2));
 			QString morphTxt;
 			QString cntTxt;
 				if (!m_detected.empty() && i < static_cast<int>(m_detected.size())) {
-					cntTxt = QString("★%1 ✓%2 ✕%3").arg(m_detected[i]).arg(m_used[i]).arg(m_rejected[i]);
+					cntTxt = countFormat.arg(m_detected[i]).arg(m_used[i]).arg(m_rejected[i]);
 				}
 			// map vertex index -> grid cell to fetch eccentricity/angle
 			int vx_cx = 0, vx_cy = 0;
@@ -434,7 +437,7 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 			double vecc = (v_idx >= 0 && v_idx < static_cast<int>(m_cell_eccentricity.size())) ? m_cell_eccentricity[v_idx] : 0.0;
 			double vang = (v_idx >= 0 && v_idx < static_cast<int>(m_cell_major_angle.size())) ? m_cell_major_angle[v_idx] : 0.0;
 			if (!std::isnan(vecc) && vecc > 0.0) {
-				morphTxt = QString::fromUtf8("ε:%1 ∠%2°").arg(QString::number(vecc, 'f', 2)).arg(QString::number(vang, 'f', 0));
+				morphTxt = morphFormat.arg(QString::number(vecc, 'f', 2)).arg(QString::number(vang, 'f', 0));
 			}
 
 			QRectF tbMain = fmHfd.boundingRect(mainTxt);
@@ -596,7 +599,7 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 	// draw center HFD label (smaller and nudge down if it would overlap the north vertex)
 	if (m_center_hfd > 0) {
 		p.setFont(hfdFont);
-		QString txt = QString::fromUtf8("%1 px").arg(QString::number(m_center_hfd, 'f', 2));
+		QString txt = hfdFormat.arg(QString::number(m_center_hfd, 'f', 2));
 		QRectF tb = p.fontMetrics().boundingRect(txt);
 		// prefer centered position but nudge down if it intersects the north vertex
 		QPointF labelPos(center.x(), center.y());
@@ -642,7 +645,7 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 		QString cnt;
 		QRectF tb2;
 		if (m_center_detected > 0 || m_center_used > 0 || m_center_rejected > 0) {
-			cnt = QString("★%1 ✓%2 ✕%3").arg(m_center_detected).arg(m_center_used).arg(m_center_rejected);
+			cnt = countFormat.arg(m_center_detected).arg(m_center_used).arg(m_center_rejected);
 			tb2 = fmMorph.boundingRect(cnt);
 		}
 
