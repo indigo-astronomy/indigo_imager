@@ -251,8 +251,23 @@ void ImageInspectorOverlay::drawCenterMessage(QPainter &p) {
 void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 	QWidget::paintEvent(event);
 
+	constexpr double padX = 8.0;
+	constexpr double padY = 4.0;
+
+	QPainter p(this);
+	QFont hfdFont = p.font();
+	int hfdFontSize = std::max(12, static_cast<int>(std::min(width(), height()) * 0.015));
+	hfdFont.setPointSize(hfdFontSize);
+	hfdFont.setBold(true);
+	QFontMetrics fmHfd(hfdFont);
+
+	QFont morphFont = p.font();
+	int morphFontSize = std::max(10, static_cast<int>(std::min(width(), height()) * 0.012));
+	morphFont.setPointSize(morphFontSize);
+	morphFont.setBold(false);
+	QFontMetrics fmMorph(morphFont);
+
 	if (!m_error_message.empty() || !m_busy_message.empty()) {
-		QPainter p(this);
 		p.setRenderHint(QPainter::Antialiasing, true);
 		drawCenterMessage(p);
 		return;
@@ -260,7 +275,6 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 
 	if (m_dirs.empty()) return;
 
-	QPainter p(this);
 	p.setRenderHint(QPainter::Antialiasing, true);
 	p.setPen(QPen(QColor(255, 0, 255, static_cast<int>(m_opacity * 255)), 2));
 	p.setBrush(Qt::NoBrush);
@@ -315,13 +329,8 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 	// precompute center label rectangle so vertex labels can avoid overlapping it
 	QRectF centerLabelRect;
 	if (m_center_hfd > 0) {
-		QFont cfont = p.font();
-		int centerFont = std::max(7, static_cast<int>(std::min(width(), height()) * 0.015));
-		cfont.setPointSize(centerFont);
-		cfont.setBold(true);
-		QFontMetrics cfm(cfont);
 		QString ctxt = QString::fromUtf8("%1 px").arg(QString::number(m_center_hfd, 'f', 2));
-		QRectF ctb = cfm.boundingRect(ctxt);
+		QRectF ctb = fmHfd.boundingRect(ctxt);
 		QPointF cdraw(center.x() - ctb.width()/2.0, center.y() - ctb.height()/2.0 - 6);
 		centerLabelRect = QRectF(cdraw.x()-4, cdraw.y()-2, ctb.width()+8, ctb.height()+4);
 	} else {
@@ -382,16 +391,6 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 
 	// draw labels for each octagon vertex (average HFD)
 	if (m_dirs.size() >= 8) {
-		QFont baseFont = p.font();
-		int fontSize = std::max(6, static_cast<int>(std::min(width(), height()) * 0.015));
-		QFont mainFont = baseFont;
-		mainFont.setPointSize(fontSize);
-		mainFont.setBold(true);
-		int smallSize = std::max(6, static_cast<int>(std::min(width(), height()) * 0.012));
-		QFont smallFont = baseFont;
-		smallFont.setPointSize(smallSize);
-		smallFont.setBold(false);
-
 		double vertex_r_view = std::max(3.0, 4.0 * m_pixel_scale);
 		double north_effective_r = std::max(8.0, 10.0 * m_pixel_scale);
 
@@ -438,14 +437,10 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 				morphTxt = QString::fromUtf8("ε:%1 ∠%2°").arg(QString::number(vecc, 'f', 2)).arg(QString::number(vang, 'f', 0));
 			}
 
-			QFontMetrics fmMain(mainFont);
-			QFontMetrics fmSmall(smallFont);
-			QRectF tbMain = fmMain.boundingRect(mainTxt);
-			QRectF tbMorph = fmSmall.boundingRect(morphTxt);
-			QRectF tbSmall = fmSmall.boundingRect(cntTxt);
-			double padX = 8.0;
-			double padY = 4.0;
-			double boxW = std::max({tbMain.width(), tbMorph.width(), tbSmall.width()}) + padX;
+			QRectF tbMain = fmHfd.boundingRect(mainTxt);
+			QRectF tbMorph = fmMorph.boundingRect(morphTxt);
+			QRectF tbSmall = fmMorph.boundingRect(cntTxt);
+			double boxW = std::max({tbMain.width(), tbMorph.width(), tbSmall.width()}) + 2 * padX;
 			double boxH = tbMain.height() + (morphTxt.isEmpty() ? 0.0 : tbMorph.height()) + (cntTxt.isEmpty() ? 0.0 : tbSmall.height()) + padY;
 
 			double gap = std::max(12.0, 6.0 * m_pixel_scale);
@@ -479,7 +474,7 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 				labEdge = QColor(255,180,80, static_cast<int>(m_opacity*220));
 				labLine = QColor(255,220,120, static_cast<int>(m_opacity*220));
 			}
-			labels.push_back({drawPos, boxW, boxH, mainTxt, morphTxt, cntTxt, mainFont, smallFont, labEdge, labLine});
+			labels.push_back({drawPos, boxW, boxH, mainTxt, morphTxt, cntTxt, hfdFont, morphFont, labEdge, labLine});
 		}
 
 		// draw small vertex markers first
@@ -602,11 +597,7 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 
 	// draw center HFD label (smaller and nudge down if it would overlap the north vertex)
 	if (m_center_hfd > 0) {
-		QFont font = p.font();
-		int centerFont = std::max(7, static_cast<int>(std::min(width(), height()) * 0.015));
-		font.setPointSize(centerFont);
-		font.setBold(true);
-		p.setFont(font);
+		p.setFont(hfdFont);
 		QString txt = QString::fromUtf8("%1 px").arg(QString::number(m_center_hfd, 'f', 2));
 		QRectF tb = p.fontMetrics().boundingRect(txt);
 		// prefer centered position but nudge down if it intersects the north vertex
@@ -647,28 +638,17 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 				cmorphCol = QColor(255,220,120, static_cast<int>(m_opacity*220));
 			}
 
-			QFont small = p.font();
-			small.setPointSize(std::max(6, static_cast<int>(std::min(width(), height()) * 0.012)));
-			small.setBold(false);
-			QFontMetrics fmSmall(small);
-			tbMorph = fmSmall.boundingRect(cmorph);
+			tbMorph = fmMorph.boundingRect(cmorph);
 		}
 
 		QString cnt;
 		QRectF tb2;
 		if (m_center_detected > 0 || m_center_used > 0 || m_center_rejected > 0) {
-			QFont small = p.font();
-			small.setPointSize(std::max(6, static_cast<int>(std::min(width(), height()) * 0.012)));
-			small.setBold(false);
-
-			QFontMetrics fmSmall(small);
 			cnt = QString("D:%1 U:%2 R:%3").arg(m_center_detected).arg(m_center_used).arg(m_center_rejected);
-			tb2 = fmSmall.boundingRect(cnt);
+			tb2 = fmMorph.boundingRect(cnt);
 		}
 
-		double padX = 8.0;
-		double padY = 4.0;
-		double combinedW = std::max({tb.width(), tb2.width(), tbMorph.width()}) + padX;
+		double combinedW = std::max({tb.width(), tb2.width(), tbMorph.width()}) + 2 * padX;
 		double combinedH = tb.height() + (cmorph.isEmpty() ? 0.0 : tbMorph.height()) + (cnt.isEmpty() ? 0.0 : tb2.height()) + padY;
 		QPointF combinedTopLeft(effectiveCenter.x() - combinedW/2.0, effectiveCenter.y() - combinedH/2.0);
 
@@ -680,37 +660,32 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 
 		// draw main text, central morphology (colored) and counts centered vertically and horizontally inside the combined box
 		p.setBrush(Qt::NoBrush);
-		p.setFont(font);
-		QFontMetrics fmMain(font);
-		QRectF tbMain = fmMain.boundingRect(txt);
-		QFont smallFont(font.family(), std::max(6, static_cast<int>(std::min(width(), height()) * 0.012)));
-		smallFont.setBold(false);
-		QFontMetrics fmSmall(smallFont);
-		double mainH = fmMain.height();
-		double morphH = cmorph.isEmpty() ? 0.0 : fmSmall.height();
-		double smallH = cnt.isEmpty() ? 0.0 : fmSmall.height();
+		p.setFont(hfdFont);
+		QRectF tbMain = fmHfd.boundingRect(txt);
+		double mainH = fmHfd.height();
+		double morphH = cmorph.isEmpty() ? 0.0 : fmMorph.height();
+		double smallH = cnt.isEmpty() ? 0.0 : fmMorph.height();
 		double contentH = mainH + morphH + (cnt.isEmpty() ? 0.0 : smallH);
 		double topPad = (combinedH - contentH) * 0.5;
 		double mainX = combinedTopLeft.x() + (combinedW - tbMain.width()) * 0.5;
-		double mainY = combinedTopLeft.y() + topPad + fmMain.ascent();
+		double mainY = combinedTopLeft.y() + topPad + fmHfd.ascent();
 		p.setPen(QPen(QColor(255,255,255,static_cast<int>(m_opacity*255)),1));
 		p.drawText(mainX, mainY, txt);
 
 		// draw central morphology (colored) below main text
 		if (!cmorph.isEmpty()) {
-			p.setFont(smallFont);
+			p.setFont(morphFont);
 			double mx = combinedTopLeft.x() + (combinedW - tbMorph.width()) * 0.5;
-			double my = combinedTopLeft.y() + topPad + mainH + fmSmall.ascent();
+			double my = combinedTopLeft.y() + topPad + mainH + fmMorph.ascent();
 			p.setPen(QPen(cmorphCol,1));
 			p.drawText(mx, my, cmorph);
 		}
 
 		// draw counts below morphology
 		if (!cnt.isEmpty()) {
-			p.setFont(smallFont);
-			QFontMetrics fmS(smallFont);
-			double sx = combinedTopLeft.x() + (combinedW - fmS.boundingRect(cnt).width()) * 0.5;
-			double sy = combinedTopLeft.y() + topPad + mainH + morphH + fmS.ascent();
+			p.setFont(morphFont);
+			double sx = combinedTopLeft.x() + (combinedW - fmMorph.boundingRect(cnt).width()) * 0.5;
+			double sy = combinedTopLeft.y() + topPad + mainH + morphH + fmMorph.ascent();
 			p.setPen(QPen(QColor(200,200,200,static_cast<int>(m_opacity*255)),1));
 			p.drawText(sx, sy, cnt);
 		}
