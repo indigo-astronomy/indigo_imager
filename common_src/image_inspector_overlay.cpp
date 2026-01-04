@@ -394,7 +394,7 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 		double vertex_r_view = std::max(3.0, 4.0 * m_pixel_scale);
 		double north_effective_r = std::max(8.0, 10.0 * m_pixel_scale);
 
-		struct LabelInfo { QPointF drawPos; double boxW, boxH; QString mainTxt; QString morphTxt; QString cntTxt; QFont mainF; QFont smallF; QColor edgeCol; QColor lineCol; };
+		struct LabelInfo { QPointF drawPos; double boxW, boxH; QString mainTxt; QString morphTxt; QString cntTxt; QColor edgeCol; QColor lineCol; };
 		std::vector<LabelInfo> labels;
 
 		// precompute per-vertex effective radii to avoid label overlap with enlarged ellipses
@@ -474,7 +474,7 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 				labEdge = QColor(255,180,80, static_cast<int>(m_opacity*220));
 				labLine = QColor(255,220,120, static_cast<int>(m_opacity*220));
 			}
-			labels.push_back({drawPos, boxW, boxH, mainTxt, morphTxt, cntTxt, hfdFont, morphFont, labEdge, labLine});
+			labels.push_back({drawPos, boxW, boxH, mainTxt, morphTxt, cntTxt, labEdge, labLine});
 		}
 
 		// draw small vertex markers first
@@ -559,35 +559,33 @@ void ImageInspectorOverlay::paintEvent(QPaintEvent *event) {
 			p.setBrush(Qt::NoBrush);
 			// keep HFD main text white; morphology (ε/∠) uses color-coding
 			p.setPen(QPen(QColor(255,255,255,static_cast<int>(m_opacity*255)),1));
-			p.setFont(li.mainF);
-			QFontMetrics fmMain2(li.mainF);
-			QRectF tbMain2 = fmMain2.boundingRect(li.mainTxt);
-			QFontMetrics fmSmall2(li.smallF);
-			double mainH = fmMain2.height();
-			double morphH = li.morphTxt.isEmpty() ? 0.0 : fmSmall2.height();
-			double smallH = li.cntTxt.isEmpty() ? 0.0 : fmSmall2.height();
+			p.setFont(hfdFont);
+			QRectF tbHfd = fmHfd.boundingRect(li.mainTxt);
+			double mainH = fmHfd.height();
+			double morphH = li.morphTxt.isEmpty() ? 0.0 : fmMorph.height();
+			double smallH = li.cntTxt.isEmpty() ? 0.0 : fmMorph.height();
 			double contentH = mainH + morphH + smallH;
 			double topPad = (li.boxH - contentH) * 0.5;
-			double mx = li.drawPos.x() + (li.boxW - tbMain2.width()) * 0.5;
-			double my = li.drawPos.y() + topPad + fmMain2.ascent();
+			double mx = li.drawPos.x() + (li.boxW - tbHfd.width()) * 0.5;
+			double my = li.drawPos.y() + topPad + fmHfd.ascent();
 			p.drawText(mx, my, li.mainTxt);
 
 			// draw morphology (ε / angle) on the second line if present
 			if (!li.morphTxt.isEmpty()) {
-				p.setFont(li.smallF);
-				QRectF tbMorph = fmSmall2.boundingRect(li.morphTxt);
+				p.setFont(morphFont);
+				QRectF tbMorph = fmMorph.boundingRect(li.morphTxt);
 				double sxm = li.drawPos.x() + (li.boxW - tbMorph.width()) * 0.5;
-				double sym = li.drawPos.y() + topPad + mainH + fmSmall2.ascent();
+				double sym = li.drawPos.y() + topPad + mainH + fmMorph.ascent();
 				p.setPen(QPen(li.lineCol,1));
 				p.drawText(sxm, sym, li.morphTxt);
 			}
 
 			// draw counts on the third line if present
 			if (!li.cntTxt.isEmpty()) {
-				p.setFont(li.smallF);
-				QRectF tbSmall2 = fmSmall2.boundingRect(li.cntTxt);
-				double sx = li.drawPos.x() + (li.boxW - tbSmall2.width()) * 0.5;
-				double sy = li.drawPos.y() + topPad + mainH + morphH + fmSmall2.ascent();
+				p.setFont(morphFont);
+				QRectF tbMorph = fmMorph.boundingRect(li.cntTxt);
+				double sx = li.drawPos.x() + (li.boxW - tbMorph.width()) * 0.5;
+				double sy = li.drawPos.y() + topPad + mainH + morphH + fmMorph.ascent();
 				QColor cntCol = QColor(200,200,200,static_cast<int>(m_opacity*255));
 				p.setPen(QPen(cntCol,1));
 				p.drawText(sx, sy, li.cntTxt);
