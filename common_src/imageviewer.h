@@ -16,6 +16,7 @@ QT_END_NAMESPACE
 class PixmapItem;
 class GraphicsView;
 class QToolButton;
+class AntialiasedEllipseItem;
 
 /**
  * @brief ImageViewer displays images and allows basic interaction with it
@@ -166,7 +167,7 @@ private:
 	QPoint m_selection_p;
 	QPoint m_ref_p;
 	double m_edge_clipping_v;
-	QList<QGraphicsEllipseItem*> m_extra_selections;
+	QList<AntialiasedEllipseItem*> m_extra_selections;
 	bool m_extra_selections_visible;
 
 	QWidget *m_toolbar;
@@ -186,9 +187,9 @@ private:
 	ImageInspectorOverlay *m_inspection_overlay;
 	QAction *m_inspection_act;
 	bool m_inspection_overlay_visible;
-	QGraphicsEllipseItem *m_snr_star_circle;
-	QGraphicsEllipseItem *m_snr_background_inner_ring;
-	QGraphicsEllipseItem *m_snr_background_outer_ring;
+	AntialiasedEllipseItem *m_snr_star_circle;
+	AntialiasedEllipseItem *m_snr_background_inner_ring;
+	AntialiasedEllipseItem *m_snr_background_outer_ring;
 	bool m_snr_mode_enabled;
 	bool m_snr_overlay_visible;
 	double m_snr_star_x;

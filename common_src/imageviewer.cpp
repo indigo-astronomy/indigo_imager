@@ -11,6 +11,7 @@
 #include <QHBoxLayout>
 #include <QToolButton>
 #include <QLabel>
+#include "antialiasedellipseitem.h"
 
 // Graphics View with better mouse events handling
 class GraphicsView : public QGraphicsView {
@@ -180,7 +181,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 	snr_pen.setColor(QColor(0, 255, 0));
 	snr_pen.setStyle(Qt::SolidLine);
 
-	m_snr_star_circle = new QGraphicsEllipseItem(0, 0, 20, 20, m_pixmap);
+	m_snr_star_circle = new AntialiasedEllipseItem(0, 0, 20, 20, m_pixmap);
 	m_snr_star_circle->setBrush(QBrush(Qt::NoBrush));
 	m_snr_star_circle->setPen(snr_pen);
 	m_snr_star_circle->setOpacity(0.7);
@@ -188,7 +189,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 
 	// Inner annulus boundary (yellow)
 	snr_pen.setColor(QColor(255, 255, 0));
-	m_snr_background_inner_ring = new QGraphicsEllipseItem(0, 0, 40, 40, m_pixmap);
+	m_snr_background_inner_ring = new AntialiasedEllipseItem(0, 0, 40, 40, m_pixmap);
 	m_snr_background_inner_ring->setBrush(QBrush(Qt::NoBrush));
 	m_snr_background_inner_ring->setPen(snr_pen);
 	m_snr_background_inner_ring->setOpacity(0.5);
@@ -196,7 +197,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 
 	// Outer annulus boundary (yellow)
 	snr_pen.setColor(QColor(255, 255, 0));
-	m_snr_background_outer_ring = new QGraphicsEllipseItem(0, 0, 60, 60, m_pixmap);
+	m_snr_background_outer_ring = new AntialiasedEllipseItem(0, 0, 60, 60, m_pixmap);
 	m_snr_background_outer_ring->setBrush(QBrush(Qt::NoBrush));
 	m_snr_background_outer_ring->setPen(snr_pen);
 	m_snr_background_outer_ring->setOpacity(0.5);
@@ -547,7 +548,7 @@ void ImageViewer::moveSelection(double x, double y) {
 
 void ImageViewer::showExtraSelection(bool show) {
 	m_extra_selections_visible = show;
-	QList<QGraphicsEllipseItem*>::iterator sel;
+	QList<AntialiasedEllipseItem*>::iterator sel;
 	for (sel = m_extra_selections.begin(); sel != m_extra_selections.end(); ++sel) {
 		if (!m_pixmap->pixmap().isNull()) (*sel)->setVisible(show);
 		else (*sel)->setVisible(false);
@@ -563,7 +564,7 @@ void ImageViewer::moveResizeExtraSelection(QList<QPointF> &point_list, int size)
 	//pen.setColor(QColor(255, 255, 0));
 	QList<QPointF>::iterator point;
 	for (point = point_list.begin(); point != point_list.end(); ++point) {
-		QGraphicsEllipseItem *selection = new QGraphicsEllipseItem(0, 0, size, size, m_pixmap);
+		AntialiasedEllipseItem *selection = new AntialiasedEllipseItem(0, 0, size, size, m_pixmap);
 		double x = point->x() - size / 2.0;
 		double y = point->y() - size / 2.0;
 		selection->setRect(0, 0, size, size);
@@ -709,7 +710,7 @@ void ImageViewer::onSetImage(preview_image &im) {
 		}
 		resizeEdgeClipping(m_edge_clipping_v);
 
-		QList<QGraphicsEllipseItem*>::iterator sel;
+		QList<AntialiasedEllipseItem*>::iterator sel;
 		for (sel = m_extra_selections.begin(); sel != m_extra_selections.end(); ++sel) {
 			//QRectF rect = (*sel)->rect();
 			//if (rect.x() > 0 && rect.y() > 0) {
