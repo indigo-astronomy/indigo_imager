@@ -237,14 +237,23 @@ void ImageInspectorOverlay::drawCenterMessage(QPainter &p) {
 	double blockH = hb.height() + mb.height();
 	double startY = r.top() + (r.height() - blockH) / 2.0;
 
+	double shadowOffset = (m_pixel_scale > 0.0) ? std::max(1.0, 1.5 * m_pixel_scale) : 1.0;
+	QColor shadowCol = QColor(0, 0, 0, static_cast<int>(m_opacity * 220));
+
 	p.setFont(headerFont);
-	p.setPen(QPen(QColor(255,255,255,255)));
 	QRectF headerRect(r.left(), startY, r.width(), hb.height());
+	QRectF headerRectShadow = headerRect.translated(shadowOffset, shadowOffset);
+	p.setPen(QPen(shadowCol));
+	p.drawText(headerRectShadow, Qt::AlignHCenter | Qt::AlignVCenter | Qt::TextWordWrap, header);
+	p.setPen(QPen(QColor(255,255,255,255)));
 	p.drawText(headerRect, Qt::AlignHCenter | Qt::AlignVCenter | Qt::TextWordWrap, header);
 
 	p.setFont(msgFont);
-	p.setPen(QPen(QColor(220,220,220,255)));
 	QRectF msgRect(r.left(), startY + hb.height(), r.width(), mb.height());
+	QRectF msgRectShadow = msgRect.translated(shadowOffset, shadowOffset);
+	p.setPen(QPen(shadowCol));
+	p.drawText(msgRectShadow, Qt::AlignHCenter | Qt::AlignVCenter | Qt::TextWordWrap, msg);
+	p.setPen(QPen(QColor(220,220,220,255)));
 	p.drawText(msgRect, Qt::AlignHCenter | Qt::AlignVCenter | Qt::TextWordWrap, msg);
 }
 
