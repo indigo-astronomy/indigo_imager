@@ -77,6 +77,9 @@ public slots:
 	void on_viewer_show_reference(bool status);
 	void on_statistics_show(bool enabled);
 
+	// Find stars using INDIGO precise finder and show as extra selections
+	void on_find_stars_act();
+
 private:
 	// Image viewer
 	TextDialog *m_image_info_dlg;
@@ -88,6 +91,11 @@ private:
 	char *m_image_formrat;
 	QString m_selected_filter;
 	QStringList m_image_list;
+
+	// Find stars radius (editable via dialog)
+	int m_find_stars_radius;
+	// maximum stars to search for
+	int m_find_stars_max;
 };
 
 #endif // VIEWERWINDOW_H

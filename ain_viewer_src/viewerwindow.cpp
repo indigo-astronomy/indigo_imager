@@ -33,6 +33,13 @@
 #include <xisf.h>
 #include <QDateTime>
 
+#include <indigo/indigo_raw_utils.h>
+#include <QInputDialog>
+#include <QDialog>
+#include <QFormLayout>
+#include <QSpinBox>
+#include <QDialogButtonBox>
+
 
 void write_conf();
 
@@ -173,6 +180,12 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 		}
 	});
 
+
+	// Add Find Stars action: run INDIGO precise finder on loaded image
+	tools_act = tools_menu->addAction(tr("&Find Stars"));
+	tools_act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_F));
+	connect(tools_act, &QAction::triggered, this, &ViewerWindow::on_find_stars_act);
+
 	menu_bar->addMenu(tools_menu);
 
 	menu = new QMenu("&Help", this);
@@ -191,6 +204,10 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	// Image viewer
 	m_imager_viewer = new ImageViewer(this, true);
+
+	// default radius for find stars
+	m_find_stars_radius = 6;
+	m_find_stars_max = 1000;
 	m_imager_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
 	form_layout->addWidget((QWidget*)m_imager_viewer);
 	m_imager_viewer->setMinimumWidth(IMAGE_AREA_MIN_WIDTH);
@@ -210,6 +227,74 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_imager_viewer->enableAntialiasing(conf.antialiasing_enabled);
 	m_imager_viewer->showReference(conf.show_reference);
 	if (conf.file_open[0] != '\0') open_image(conf.file_open);
+}
+
+void ViewerWindow::on_find_stars_act() {
+	if (!m_preview_image || m_preview_image->m_raw_data == nullptr) {
+		show_message("Find Stars", "No image loaded or raw data not available.");
+		return;
+	}
+
+	// map preview pixel format to INDIGO raw type
+	indigo_raw_type raw_type = INDIGO_RAW_MONO8;
+	switch (m_preview_image->m_pix_format) {
+		case PIX_FMT_Y8: raw_type = INDIGO_RAW_MONO8; break;
+		case PIX_FMT_Y16: raw_type = INDIGO_RAW_MONO16; break;
+		case PIX_FMT_RGB24: raw_type = INDIGO_RAW_RGB24; break;
+		case PIX_FMT_RGB48: raw_type = INDIGO_RAW_RGB48; break;
+		default:
+			show_message("Find Stars", "Unsupported pixel format for INDIGO find stars.");
+			return;
+	}
+
+	// show a dialog with radius and max stars
+	QDialog dlg(this);
+	dlg.setWindowTitle(tr("Find Stars"));
+	QFormLayout form(&dlg);
+	QSpinBox *radiusSpin = new QSpinBox(&dlg);
+	radiusSpin->setRange(1, 200);
+	radiusSpin->setValue(m_find_stars_radius);
+	QSpinBox *maxSpin = new QSpinBox(&dlg);
+	maxSpin->setRange(1, 10000);
+	maxSpin->setValue(m_find_stars_max);
+	form.addRow(tr("Selection radius:"), radiusSpin);
+	form.addRow(tr("Max stars:"), maxSpin);
+	QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, &dlg);
+	form.addRow(buttonBox);
+	connect(buttonBox, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+	connect(buttonBox, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+	if (dlg.exec() != QDialog::Accepted) return;
+	int radius_i = radiusSpin->value();
+	int max_stars = maxSpin->value();
+	m_find_stars_radius = radius_i;
+	m_find_stars_max = max_stars;
+	const uint16_t radius = static_cast<uint16_t>(radius_i);
+	indigo_star_detection *stars = (indigo_star_detection*)calloc(max_stars, sizeof(indigo_star_detection));
+	if (!stars) {
+		show_message("Find Stars", "Out of memory");
+		return;
+	}
+
+	int found = 0;
+	indigo_result r = indigo_find_stars_precise(raw_type, (const void*)m_preview_image->m_raw_data, radius, m_preview_image->m_width, m_preview_image->m_height, max_stars, stars, &found);
+	if (r != INDIGO_OK) {
+		char buf[128];
+		snprintf(buf, sizeof(buf), "indigo_find_stars_precise returned %d", r);
+		show_message("Find Stars", buf);
+		free(stars);
+		return;
+	}
+
+	QList<QPointF> pts;
+	for (int i = 0; i < found; ++i) {
+		pts.append(QPointF(stars[i].x, stars[i].y));
+	}
+
+	// show as extra selections (size = diameter)
+	m_imager_viewer->moveResizeExtraSelection(pts, radius * 2);
+	m_imager_viewer->showExtraSelection(true);
+
+	free(stars);
 }
 
 ViewerWindow::~ViewerWindow () {
