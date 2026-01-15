@@ -49,6 +49,8 @@ public:
 	virtual ~ViewerWindow();
 	void open_image(QString file_name);
 	void enable_image_inspector(bool enable);
+	void schedule_auto_save(int seconds);
+	void save_view_to_default_file_and_exit();
 	void show_message(const char *title, const char *message, QMessageBox::Icon icon = QMessageBox::Warning);
 	void block_scrolling(bool blocked) {
 		if (blocked) {
@@ -80,6 +82,9 @@ public slots:
 	void on_statistics_show(bool enabled);
 
 private:
+	bool save_view(const QString &file_name, bool show_errors_as_dialogs);
+	QString save_view_default_filename() const;
+
 	// Image viewer
 	TextDialog *m_image_info_dlg;
 	ImageViewer *m_imager_viewer;

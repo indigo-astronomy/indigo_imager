@@ -33,6 +33,7 @@
 #include <xisf.h>
 #include <QDateTime>
 #include <QGraphicsView>
+#include <QTimer>
 
 
 void write_conf();
@@ -726,11 +727,7 @@ void ViewerWindow::on_save_preview_act() {
 		return;
 	}
 
-	QString original_path(m_image_path);
-	QFileInfo file_info(original_path);
-	QString base_name = file_info.completeBaseName();
-	QString directory = file_info.absolutePath();
-	QString suggested_name = directory + "/" + base_name + "_inspection.png";
+	QString suggested_name = save_view_default_filename();
 
 	QString file_name = QFileDialog::getSaveFileName(
 		this,
@@ -743,19 +740,60 @@ void ViewerWindow::on_save_preview_act() {
 		return;
 	}
 
+	save_view(file_name, true);
+}
+
+void ViewerWindow::save_view_to_default_file_and_exit() {
+	if (!m_imager_viewer || m_image_path[0] == '\0') {
+		indigo_error("Cannot save view: No image is currently loaded.\n");
+		QApplication::quit();
+		return;
+	}
+
+	QString file_name = save_view_default_filename();
+	save_view(file_name, false);
+
+	// Exit cleanly after auto-save
+	QApplication::quit();
+}
+
+QString ViewerWindow::save_view_default_filename() const {
+	QString original_path(m_image_path);
+	QFileInfo file_info(original_path);
+	QString base_name = file_info.completeBaseName();
+	QString directory = file_info.absolutePath();
+	return directory + "/" + base_name + "_view.png";
+}
+
+bool ViewerWindow::save_view(const QString &file_name, bool show_errors_as_dialogs) {
 	QGraphicsView *view = m_imager_viewer->findChild<QGraphicsView*>();
 	if (!view) {
-		show_message("Save View", "Failed to access image view.", QMessageBox::Critical);
-		return;
+		if (show_errors_as_dialogs) {
+			show_message("Save View", "Failed to access image view.", QMessageBox::Critical);
+		} else {
+			indigo_error("Cannot save view: Failed to access image view.\n");
+		}
+		return false;
 	}
 
 	QPixmap pixmap = view->viewport()->grab();
 
 	if (pixmap.save(file_name, "PNG")) {
 		indigo_debug("View saved to: %s\n", file_name.toUtf8().constData());
+		return true;
 	} else {
-		show_message("Save View", "Failed to save view image.", QMessageBox::Critical);
+		if (show_errors_as_dialogs) {
+			show_message("Save View", "Failed to save view image.", QMessageBox::Critical);
+		} else {
+			indigo_error("Failed to save view image to: %s\n", file_name.toUtf8().constData());
+		}
+		return false;
 	}
+}
+
+void ViewerWindow::schedule_auto_save(int seconds) {
+	QTimer::singleShot(seconds * 1000, this, &ViewerWindow::save_view_to_default_file_and_exit);
+	indigo_log("Auto-save scheduled in %d seconds\n", seconds);
 }
 
 void ViewerWindow::on_stretch_changed(int level) {
