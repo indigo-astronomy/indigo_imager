@@ -73,6 +73,8 @@ int main(int argc, char *argv[]) {
 	if (!conf.reopen_file_at_start) {
 		conf.file_open[0] = '\0';
 	}
+	// always default to error log level unless overridden from command line
+	conf.indigo_log_level = INDIGO_LOG_ERROR;
 
 	qunsetenv("LC_NUMERIC");
 
@@ -88,6 +90,10 @@ int main(int argc, char *argv[]) {
 		} else if (strcmp(argv[i], "-s") == 0 && i + 1 < argc) {
 			i++;
 			auto_save_seconds = atoi(argv[i]);
+		} else if (strcmp(argv[i], "-vv") == 0) {
+			conf.indigo_log_level = INDIGO_LOG_DEBUG;
+		} else if (strcmp(argv[i], "-v") == 0) {
+			conf.indigo_log_level = INDIGO_LOG_INFO;
 		} else if (argv[i][0] != '-') {
 			// Backwards compatibility: treat non-option as filename
 			strncpy(conf.file_open, argv[i], PATH_MAX);
