@@ -789,6 +789,16 @@ void ViewerWindow::on_statistics_show(bool enabled) {
 	write_conf();
 }
 
+void ViewerWindow::enable_image_inspector(bool enable) {
+	if (!m_imager_viewer) return;
+	if (enable) {
+		m_imager_viewer->runImageInspection();
+		m_imager_viewer->showInspectionOverlay(true);
+	} else {
+		m_imager_viewer->showInspectionOverlay(false);
+	}
+}
+
 void ViewerWindow::on_stretch_changed(int level) {
 	conf.preview_stretch_level = (preview_stretch)level;
 	if (m_preview_image) {
