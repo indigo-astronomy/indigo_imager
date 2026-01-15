@@ -76,8 +76,18 @@ int main(int argc, char *argv[]) {
 
 	qunsetenv("LC_NUMERIC");
 
-	if (argc > 1) {
-		strncpy(conf.file_open, argv[argc-1], PATH_MAX);
+	// Parse command line arguments
+	bool enable_inspector = false;
+	for (int i = 1; i < argc; i++) {
+		if (strcmp(argv[i], "-I") == 0) {
+			enable_inspector = true;
+		} else if (strcmp(argv[i], "-f") == 0 && i + 1 < argc) {
+			i++;
+			strncpy(conf.file_open, argv[i], PATH_MAX);
+		} else if (argv[i][0] != '-') {
+			// Backwards compatibility: treat non-option as filename
+			strncpy(conf.file_open, argv[i], PATH_MAX);
+		}
 	}
 
 	indigo_set_log_level(conf.indigo_log_level);
@@ -128,6 +138,11 @@ int main(int argc, char *argv[]) {
 
 	ViewerWindow viewer_window;
 	viewer_window.show();
+
+	// Enable image analyzer if requested via command line
+	if (enable_inspector) {
+		viewer_window.enable_image_inspector(true);
+	}
 
 	return app.exec();
 }

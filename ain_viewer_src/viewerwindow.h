@@ -48,6 +48,7 @@ public:
 	explicit ViewerWindow(QWidget *parent = nullptr);
 	virtual ~ViewerWindow();
 	void open_image(QString file_name);
+	void enable_image_inspector(bool enable);
 	void show_message(const char *title, const char *message, QMessageBox::Icon icon = QMessageBox::Warning);
 	void block_scrolling(bool blocked) {
 		if (blocked) {
