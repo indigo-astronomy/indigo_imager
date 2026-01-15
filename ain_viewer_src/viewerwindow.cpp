@@ -453,7 +453,7 @@ void ViewerWindow::on_image_info_act() {
 			if (image_info.temperature > -273.15) {
 				text->append(QString("<b>Temperature:</b> ") + QString::number(image_info.temperature, 'f',2) + "°C" );
 			}
-			int demonimator = 1;
+
 			if (image_info.shutter > 0 && image_info.shutter < 1) {
 				int demon = rint(1 / image_info.shutter);
 				text->append(QString("<b>Shutter speed:</b> ") + "1/" + QString::number(demon) + " (" + QString::number(image_info.shutter, 'f', 4) + ") sec");
