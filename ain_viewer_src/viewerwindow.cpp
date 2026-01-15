@@ -32,6 +32,7 @@
 #include <image_stats.h>
 #include <xisf.h>
 #include <QDateTime>
+#include <QGraphicsView>
 
 
 void write_conf();
@@ -86,6 +87,11 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_I));
 	//act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_info_act);
+
+	act = menu->addAction(tr("&Save Preview as PNG..."));
+	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
+	//act->setShortcutVisibleInContextMenu(true);
+	connect(act, &QAction::triggered, this, &ViewerWindow::on_save_preview_act);
 
 	act = menu->addAction(tr("&Next Image"));
 	act->setShortcut(QKeySequence(Qt::Key_Right));
@@ -711,6 +717,50 @@ void ViewerWindow::enable_image_inspector(bool enable) {
 		m_imager_viewer->showInspectionOverlay(true);
 	} else {
 		m_imager_viewer->showInspectionOverlay(false);
+	}
+}
+
+void ViewerWindow::on_save_preview_act() {
+	if (!m_imager_viewer || m_image_path[0] == '\0') {
+		show_message("Save Preview", "No image is currently loaded.", QMessageBox::Warning);
+		return;
+	}
+
+	// Generate output filename based on the original image name
+	QString original_path(m_image_path);
+	QFileInfo file_info(original_path);
+	QString base_name = file_info.completeBaseName();
+	QString directory = file_info.absolutePath();
+	QString suggested_name = directory + "/" + base_name + "_inspection.png";
+
+	// Ask user for save location
+	QString file_name = QFileDialog::getSaveFileName(
+		this,
+		tr("Save Preview with Overlays"),
+		suggested_name,
+		tr("PNG Images (*.png)")
+	);
+
+	if (file_name.isEmpty()) {
+		return; // User cancelled
+	}
+
+	// Get the graphics view from the ImageViewer
+	// We need to grab the entire view including overlays
+	QWidget *view_widget = m_imager_viewer->findChild<QGraphicsView*>();
+	if (!view_widget) {
+		show_message("Save Preview", "Failed to access image view.", QMessageBox::Critical);
+		return;
+	}
+
+	// Grab the view as a pixmap
+	QPixmap pixmap = view_widget->grab();
+
+	// Save to file
+	if (pixmap.save(file_name, "PNG")) {
+		indigo_debug("Preview saved to: %s\n", file_name.toUtf8().constData());
+	} else {
+		show_message("Save Preview", "Failed to save preview image.", QMessageBox::Critical);
 	}
 }
 
