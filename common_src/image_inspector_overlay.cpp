@@ -9,6 +9,8 @@
 #include <QtConcurrent/QtConcurrentRun>
 #include <QApplication>
 #include <QFuture>
+#include <chrono>
+#include <cstdio>
 
 ImageInspectorOverlay::ImageInspectorOverlay(QWidget *parent)
 	: QWidget(parent), m_center_hfd(0), m_opacity(0.85),
@@ -95,8 +97,12 @@ void ImageInspectorOverlay::runInspection(const preview_image &img) {
 	// if (!QApplication::overrideCursor()) QApplication::setOverrideCursor(Qt::BusyCursor);
 
 	QFuture<InspectionResult> future = QtConcurrent::run([pimg]() {
+		auto t0 = std::chrono::high_resolution_clock::now();
 		ImageInspector inspector;
 		InspectionResult r = inspector.inspect(*pimg);
+		auto t1 = std::chrono::high_resolution_clock::now();
+		double elapsed_ms = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t1 - t0).count();
+		std::fprintf(stderr, "ImageInspector::inspect (overlay): %.3f ms\n", elapsed_ms);
 		delete pimg;
 		return r;
 	});
