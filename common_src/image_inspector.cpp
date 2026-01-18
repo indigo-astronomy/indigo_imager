@@ -3,98 +3,283 @@
 #include "snr_calculator.h"
 #include <cmath>
 #include <algorithm>
-#include <cstdio>
 #include <future>
+#include <cstdlib>
 
-ImageInspector::ImageInspector() {}
-ImageInspector::~ImageInspector() {}
+// =============================================================================
+// ImagePreprocessor Implementation
+// =============================================================================
 
-// detection threshold multiplier applied to MAD-derived sigma when computing peak threshold in a cell
-static constexpr double DETECTION_THRESHOLD = 4.0;
-static constexpr double HFD_OUTLIER_THRESHOLD = 1.5;
+bool ImagePreprocessor::isColorFormat(int pix_format) {
+	return pix_format == PIX_FMT_RGB24 ||
+	       pix_format == PIX_FMT_RGB48 ||
+	       pix_format == PIX_FMT_RGB96 ||
+	       pix_format == PIX_FMT_RGBF;
+}
 
-// helper types
-struct Candidate {
-	double x;
-	double y;
-	double hfd;
-	double star_radius;
-	double snr;
-	double moment_m20;
-	double moment_m02;
-	double moment_m11;
-	double eccentricity;
-};
+std::unique_ptr<preview_image> ImagePreprocessor::convertToFloat32Grayscale(const preview_image& img) {
+	int width = img.width();
+	int height = img.height();
 
-struct UniqueCand {
-	double x;
-	double y;
-	double snr;
-	double hfd;
-	double star_radius;
-	double eccentricity;
-	int cell;
-};
+	std::unique_ptr<preview_image> gray(new preview_image(width, height, QImage::Format_Grayscale8));
+	gray->m_width = width;
+	gray->m_height = height;
+	gray->m_pix_format = PIX_FMT_F32;
 
-struct CellResult {
-	int cell_index;
-	double hfd = 0.0;
-	int detected = 0;
-	int used = 0;
-	int rejected = 0;
-	std::vector<std::tuple<double,double,double,double>> per_cell_used; // x,y,snr,star_radius
-	std::vector<UniqueCand> unique_candidates; // for recomputing detected counts
-	std::vector<QPointF> rejected_points;
-	double eccentricity = 0.0;
-	double major_angle_deg = 0.0;
-};
+	size_t size = static_cast<size_t>(width) * static_cast<size_t>(height) * sizeof(float);
+	char* tmpbuf = static_cast<char*>(malloc(size));
+	if (!tmpbuf) {
+		return nullptr;
+	}
 
-// Background estimator using median and MAD (less sensitive to bright outliers than mean/stddev)
-static void compute_median_mad_in_area(const preview_image &img, int sx0, int sy0, int sx1, int sy1, double &out_median, double &out_sd) {
+	gray->m_raw_owner = std::shared_ptr<char>(tmpbuf, [](char* p) { free(p); });
+	gray->m_raw_data = gray->m_raw_owner.get();
+
+	// Copy WCS/meta if present
+	gray->m_center_ra = img.m_center_ra;
+	gray->m_center_dec = img.m_center_dec;
+	gray->m_telescope_ra = img.m_telescope_ra;
+	gray->m_telescope_dec = img.m_telescope_dec;
+	gray->m_rotation_angle = img.m_rotation_angle;
+	gray->m_parity = img.m_parity;
+	gray->m_pix_scale = img.m_pix_scale;
+
+	float* dst = reinterpret_cast<float*>(gray->m_raw_data);
+	for (int y = 0; y < height; ++y) {
+		for (int x = 0; x < width; ++x) {
+			double r = 0, g = 0, b = 0;
+			img.pixel_value(x, y, r, g, b);
+			dst[y * width + x] = static_cast<float>(r + g + b);
+		}
+	}
+
+	return gray;
+}
+
+const preview_image* ImagePreprocessor::toGrayscale(
+	const preview_image& img,
+	std::unique_ptr<preview_image>& converted_out,
+	std::string& error_out
+) {
+	double tr = 0, tg = 0, tb = 0;
+	int pf = img.pixel_value(0, 0, tr, tg, tb);
+
+	if (!isColorFormat(pf)) {
+		// Already grayscale, return input directly
+		return &img;
+	}
+
+	converted_out = convertToFloat32Grayscale(img);
+	if (!converted_out) {
+		error_out = "Failed to allocate memory for grayscale preview";
+		return nullptr;
+	}
+
+	return converted_out.get();
+}
+
+// =============================================================================
+// BackgroundEstimator Implementation
+// =============================================================================
+
+BackgroundEstimator::Result BackgroundEstimator::computeMedianMAD(
+	const preview_image& img,
+	int x0, int y0, int x1, int y1
+) {
+	Result result;
+
 	std::vector<double> vals;
-	vals.reserve((sx1 - sx0 + 1) * (sy1 - sy0 + 1));
-	for (int yy = sy0; yy <= sy1; ++yy) {
-		for (int xx = sx0; xx <= sx1; ++xx) {
+	vals.reserve((x1 - x0 + 1) * (y1 - y0 + 1));
+
+	for (int y = y0; y <= y1; ++y) {
+		for (int x = x0; x <= x1; ++x) {
 			double v = 0, g = 0, b = 0;
-			img.pixel_value(xx, yy, v, g, b);
+			img.pixel_value(x, y, v, g, b);
 			vals.push_back(v);
 		}
 	}
+
 	if (vals.empty()) {
-		out_median = 0.0;
-		out_sd = 0.0;
-		return;
+		return result;
 	}
+
 	std::sort(vals.begin(), vals.end());
 	size_t n = vals.size();
-	if (n % 2 == 1) out_median = vals[n/2]; else out_median = 0.5 * (vals[n/2 - 1] + vals[n/2]);
 
-	// compute absolute deviations from median
+	// Compute median
+	result.median = (n % 2 == 1)
+		? vals[n / 2]
+		: 0.5 * (vals[n / 2 - 1] + vals[n / 2]);
+
+	// Compute MAD (Median Absolute Deviation)
 	std::vector<double> devs;
 	devs.reserve(n);
-	for (double v : vals) devs.push_back(std::fabs(v - out_median));
+	for (double v : vals) {
+		devs.push_back(std::fabs(v - result.median));
+	}
 	std::sort(devs.begin(), devs.end());
-	double mad = (n % 2 == 1) ? devs[n/2] : 0.5 * (devs[n/2 - 1] + devs[n/2]);
 
-	// convert MAD to approximate standard deviation for normal distrib: sd ~= 1.4826 * MAD
-	out_sd = mad * 1.4826;
+	double mad = (n % 2 == 1)
+		? devs[n / 2]
+		: 0.5 * (devs[n / 2 - 1] + devs[n / 2]);
+
+	// Convert MAD to approximate standard deviation (for normal distribution)
+	result.sigma = mad * 1.4826;
+
+	return result;
 }
 
-// Deduplicate raw candidates within a cell: keep only those with snr > threshold and with
-// duplicates merged by keeping the highest-SNR entry inside duplicate_radius.
-static std::vector<Candidate> deduplicate_within_cell(
-	const std::vector<Candidate> &candidates,
-	double snr_threshold,
-	double duplicate_radius
-) {
-	std::vector<Candidate> unique;
-	for (const Candidate &c : candidates) {
-		if (!(c.snr > snr_threshold && c.hfd > 0)) continue;
+// =============================================================================
+// StarDetector Implementation
+// =============================================================================
+
+StarDetector::StarDetector(const InspectorConfig& config)
+	: m_config(config)
+{}
+
+bool StarDetector::isLocalMaximum(
+	const preview_image& img,
+	int x, int y,
+	double threshold
+) const {
+	double center_val = 0, gv = 0, bv = 0;
+	img.pixel_value(x, y, center_val, gv, bv);
+
+	if (center_val <= threshold) {
+		return false;
+	}
+
+	int img_w = img.width();
+	int img_h = img.height();
+
+	for (int ny = y - 1; ny <= y + 1; ++ny) {
+		for (int nx = x - 1; nx <= x + 1; ++nx) {
+			if (nx == x && ny == y) continue;
+			if (nx < 0 || nx >= img_w || ny < 0 || ny >= img_h) continue;
+
+			double nval = 0, ng = 0, nb = 0;
+			img.pixel_value(nx, ny, nval, ng, nb);
+
+			if (nval > center_val) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+bool StarDetector::measureStar(
+	const preview_image& img,
+	int peak_x, int peak_y,
+	StarCandidate& out
+) const {
+	SNRResult r = calculateSNR(
+		reinterpret_cast<const uint8_t*>(img.m_raw_data),
+		img.width(), img.height(),
+		img.m_pix_format,
+		peak_x, peak_y
+	);
+
+	if (!r.valid || r.is_saturated) {
+		return false;
+	}
+
+	out.x = r.star_x;
+	out.y = r.star_y;
+	out.hfd = r.hfd;
+	out.star_radius = r.star_radius;
+	out.snr = r.snr;
+	out.moment_m20 = r.moment_m20;
+	out.moment_m02 = r.moment_m02;
+	out.moment_m11 = r.moment_m11;
+	out.eccentricity = r.eccentricity;
+
+	return true;
+}
+
+std::vector<StarCandidate> StarDetector::detectInCell(
+	const preview_image& img,
+	int cell_x, int cell_y,
+	int cell_w, int cell_h,
+	int grid_x, int grid_y
+) const {
+	std::vector<StarCandidate> candidates;
+
+	int img_w = img.width();
+	int img_h = img.height();
+	int cell_index = cell_y * grid_x + cell_x;
+
+	// Cell boundaries
+	int x0 = cell_x * cell_w;
+	int y0 = cell_y * cell_h;
+	int x1 = (cell_x == grid_x - 1) ? img_w - 1 : x0 + cell_w - 1;
+	int y1 = (cell_y == grid_y - 1) ? img_h - 1 : y0 + cell_h - 1;
+
+	// Expanded search area
+	int sx0 = std::max(0, x0 - m_config.search_margin);
+	int sy0 = std::max(0, y0 - m_config.search_margin);
+	int sx1 = std::min(img_w - 1, x1 + m_config.search_margin);
+	int sy1 = std::min(img_h - 1, y1 + m_config.search_margin);
+
+	// Compute robust background in search area
+	auto bg = BackgroundEstimator::computeMedianMAD(img, sx0, sy0, sx1, sy1);
+	double peak_threshold = bg.median + m_config.detection_threshold_sigma * bg.sigma;
+
+	// Scan for local maxima
+	for (int y = sy0; y <= sy1; ++y) {
+		for (int x = sx0; x <= sx1; ++x) {
+			if (!isLocalMaximum(img, x, y, peak_threshold)) {
+				continue;
+			}
+
+			StarCandidate candidate;
+			if (!measureStar(img, x, y, candidate)) {
+				continue;
+			}
+
+			// Check if centroid is within allowed margin of cell
+			int cx_i = static_cast<int>(std::round(candidate.x));
+			int cy_i = static_cast<int>(std::round(candidate.y));
+
+			if (cx_i >= x0 - m_config.centroid_margin &&
+			    cx_i <= x1 + m_config.centroid_margin &&
+			    cy_i >= y0 - m_config.centroid_margin &&
+			    cy_i <= y1 + m_config.centroid_margin) {
+				candidate.cell_index = cell_index;
+				candidates.push_back(candidate);
+			}
+		}
+	}
+
+	return candidates;
+}
+
+// =============================================================================
+// CandidateFilter Implementation
+// =============================================================================
+
+CandidateFilter::CandidateFilter(const InspectorConfig& config)
+	: m_config(config)
+{}
+
+std::vector<StarCandidate> CandidateFilter::deduplicateWithinCell(
+	const std::vector<StarCandidate>& candidates
+) const {
+	std::vector<StarCandidate> unique;
+
+	for (const auto& c : candidates) {
+		if (!(c.snr > m_config.snr_threshold && c.hfd > 0)) {
+			continue;
+		}
+
 		bool replaced = false;
-		for (Candidate &u : unique) {
-			double dx = c.x - u.x, dy = c.y - u.y;
-			double dist = std::sqrt(dx*dx + dy*dy);
-			if (dist <= duplicate_radius) {
+		for (auto& u : unique) {
+			double dx = c.x - u.x;
+			double dy = c.y - u.y;
+			double dist = std::sqrt(dx * dx + dy * dy);
+
+			if (dist <= m_config.duplicate_radius) {
 				if (c.snr > u.snr) {
 					u = c;
 				}
@@ -102,76 +287,132 @@ static std::vector<Candidate> deduplicate_within_cell(
 				break;
 			}
 		}
-		if (!replaced) unique.push_back(c);
+
+		if (!replaced) {
+			unique.push_back(c);
+		}
 	}
+
 	return unique;
 }
 
-static double sigma_clip_hfd(const std::vector<Candidate> &unique, std::vector<int> &used_indices) {
-	used_indices.clear();
+std::vector<StarCandidate> CandidateFilter::deduplicateGlobal(
+	const std::vector<StarCandidate>& candidates
+) const {
+	std::vector<StarCandidate> unique;
 
-	if (unique.empty()) {
-		return 0.0;
+	for (const auto& c : candidates) {
+		bool merged = false;
+
+		for (auto& u : unique) {
+			double dx = u.x - c.x;
+			double dy = u.y - c.y;
+			double dist = std::sqrt(dx * dx + dy * dy);
+			double merge_threshold = u.star_radius + c.star_radius;
+
+			if (merge_threshold > 0.0 && dist <= merge_threshold) {
+				if (c.snr > u.snr) {
+					// Keep the higher SNR candidate position/properties
+					// but keep ORIGINAL cell ownership (from first-seen)
+					int first_cell = u.cell_index;
+					u.x = c.x;
+					u.y = c.y;
+					u.snr = c.snr;
+					u.star_radius = c.star_radius;
+					u.hfd = c.hfd;
+					u.eccentricity = c.eccentricity;
+					u.moment_m20 = c.moment_m20;
+					u.moment_m02 = c.moment_m02;
+					u.moment_m11 = c.moment_m11;
+					u.cell_index = first_cell;
+				}
+				merged = true;
+				break;
+			}
+		}
+
+		if (!merged) {
+			unique.push_back(c);
+		}
 	}
 
-	std::vector<std::pair<double,int>> hv;
-	for (size_t i = 0; i < unique.size(); ++i) {
-		hv.emplace_back(unique[i].hfd, static_cast<int>(i));
+	return unique;
+}
+
+std::vector<size_t> CandidateFilter::sigmaClipHFD(
+	const std::vector<StarCandidate>& candidates
+) const {
+	std::vector<size_t> used_indices;
+
+	if (candidates.empty()) {
+		return used_indices;
 	}
 
-	std::vector<std::pair<double,int>> v = hv;
+	// Build (hfd, index) pairs
+	std::vector<std::pair<double, size_t>> hv;
+	for (size_t i = 0; i < candidates.size(); ++i) {
+		hv.emplace_back(candidates[i].hfd, i);
+	}
+
+	// Iterative sigma clipping
+	auto v = hv;
 	for (int iter = 0; iter < 2; ++iter) {
 		if (v.empty()) break;
-		double sum = 0.0;
-		double sumsq = 0.0;
-		for (auto &p : v) {
+
+		double sum = 0.0, sumsq = 0.0;
+		for (const auto& p : v) {
 			sum += p.first;
 			sumsq += p.first * p.first;
 		}
+
 		double mean = sum / v.size();
 		double var = sumsq / v.size() - mean * mean;
 		double sd = var > 0 ? std::sqrt(var) : 0.0;
-		std::vector<std::pair<double,int>> nv;
-		for (auto &p : v) {
-			if (std::fabs(p.first - mean) <= HFD_OUTLIER_THRESHOLD * sd) nv.push_back(p);
+
+		std::vector<std::pair<double, size_t>> nv;
+		for (const auto& p : v) {
+			if (std::fabs(p.first - mean) <= m_config.hfd_outlier_threshold * sd) {
+				nv.push_back(p);
+			}
 		}
-		if (nv.size() == v.size()) break;
-		if (nv.empty()) break;
+
+		if (nv.size() == v.size() || nv.empty()) {
+			break;
+		}
 		v.swap(nv);
 	}
 
-	for (auto &p : v) {
+	for (const auto& p : v) {
 		used_indices.push_back(p.second);
 	}
 
-	double sum = 0.0;
-	for (auto &p : v) {
-		sum += p.first;
-	}
-
-	double avg = v.empty() ? 0.0 : sum / v.size();
-	return avg;
+	return used_indices;
 }
 
-// Compute weighted average eccentricity and major-axis angle for a cell.
-// This preserves the original aggregation logic (weights = max(1.0, snr)).
-static void compute_weighted_eccentricity_and_angle(
-	const std::vector<Candidate> &unique,
-	const std::vector<int> &used_indices,
-	double &out_eccentricity,
-	double &out_major_angle_deg
-) {
-	double m20 = 0.0, m02 = 0.0, m11 = 0.0, total_w = 0.0;
-	double ecc_sum = 0.0;
+// =============================================================================
+// CellAnalyzer Implementation
+// =============================================================================
 
-	for (int idx : used_indices) {
-		if (idx < 0 || static_cast<size_t>(idx) >= unique.size()) continue;
-		const Candidate &uc = unique[idx];
-		double w = std::max(1.0, uc.snr);
-		m20 += w * uc.moment_m20;
-		m02 += w * uc.moment_m02;
-		m11 += w * uc.moment_m11;
-		ecc_sum += w * uc.eccentricity;
+CellAnalyzer::CellAnalyzer(const InspectorConfig& config)
+	: m_config(config)
+	, m_detector(config)
+	, m_filter(config)
+{}
+
+void CellAnalyzer::computeMorphology(
+	const std::vector<StarCandidate>& used,
+	double& eccentricity_out,
+	double& angle_out
+) const {
+	double m20 = 0.0, m02 = 0.0, m11 = 0.0;
+	double ecc_sum = 0.0, total_w = 0.0;
+
+	for (const auto& c : used) {
+		double w = std::max(1.0, c.snr);
+		m20 += w * c.moment_m20;
+		m02 += w * c.moment_m02;
+		m11 += w * c.moment_m11;
+		ecc_sum += w * c.eccentricity;
 		total_w += w;
 	}
 
@@ -180,407 +421,367 @@ static void compute_weighted_eccentricity_and_angle(
 		m02 /= total_w;
 		m11 /= total_w;
 
-		double trace = m20 + m02;
-		double det = m20 * m02 - m11 * m11;
-		double discriminant = trace * trace - 4.0 * det;
-		if (discriminant < 0) discriminant = 0;
-		// compute major axis angle (same formula as before)
+		// Compute major axis angle
 		double ang_rad = 0.5 * std::atan2(2.0 * m11, m02 - m20);
 		double ang_deg = ang_rad * 180.0 / M_PI;
 		while (ang_deg < 0) ang_deg += 180.0;
 		while (ang_deg >= 180.0) ang_deg -= 180.0;
 
-		double ecc_avg = (total_w > 0.0) ? (ecc_sum / total_w) : 0.0;
-		out_eccentricity = ecc_avg;
-		out_major_angle_deg = ang_deg;
+		eccentricity_out = ecc_sum / total_w;
+		angle_out = ang_deg;
 	} else {
-		out_eccentricity = 0.0;
-		out_major_angle_deg = 0.0;
+		eccentricity_out = 0.0;
+		angle_out = 0.0;
 	}
 }
 
-static CellResult analyze_cell(
-	const preview_image &img,
-	int gx,
-	int gy,
-	int cx,
-	int cy,
-	int cell_w,
-	int cell_h,
-	double snr_threshold
-) {
-	CellResult cr;
-	cr.cell_index = cy * gx + cx;
+CellStatistics CellAnalyzer::analyze(
+	const preview_image& img,
+	int cell_x, int cell_y,
+	int cell_w, int cell_h,
+	int grid_x, int grid_y
+) const {
+	CellStatistics stats;
+	stats.cell_index = cell_y * grid_x + cell_x;
 
-	int img_w = img.width();
-	int img_h = img.height();
+	// Step 1: Detect all candidates in cell
+	auto candidates = m_detector.detectInCell(
+		img, cell_x, cell_y, cell_w, cell_h, grid_x, grid_y
+	);
 
-	int x0 = cx * cell_w;
-	int y0 = cy * cell_h;
-	int x1 = (cx == gx-1) ? img_w-1 : x0 + cell_w - 1;
-	int y1 = (cy == gy-1) ? img_h-1 : y0 + cell_h - 1;
-	const int MARGIN_SEARCH = 8;
-	const int MARGIN_CENTROID = 8;
-	int sx0 = std::max(0, x0 - MARGIN_SEARCH);
-	int sy0 = std::max(0, y0 - MARGIN_SEARCH);
-	int sx1 = std::min(img_w - 1, x1 + MARGIN_SEARCH);
-	int sy1 = std::min(img_h - 1, y1 + MARGIN_SEARCH);
+	// Step 2: Deduplicate within cell
+	auto unique = m_filter.deduplicateWithinCell(candidates);
 
-	// compute robust background (median + MAD) in search area to avoid a single very bright star
-	double cell_median = 0.0, cell_sd = 0.0;
-	compute_median_mad_in_area(img, sx0, sy0, sx1, sy1, cell_median, cell_sd);
-	// Pick a conservative threshold multiplier; MAD is robust so 3*sigma is reasonable
-	double peak_threshold = cell_median + DETECTION_THRESHOLD * cell_sd;
+	// Step 3: Sigma-clip HFD values
+	auto used_indices = m_filter.sigmaClipHFD(unique);
 
-	std::vector<Candidate> candidates;
-	for (int yy = sy0; yy <= sy1; ++yy) {
-		for (int xx = sx0; xx <= sx1; ++xx) {
-			double center_val=0, gv=0, bv=0;
-			img.pixel_value(xx, yy, center_val, gv, bv);
-			if (center_val <= peak_threshold) continue;
-
-			bool is_local_max = true;
-			for (int ny = yy - 1; ny <= yy + 1; ++ny) {
-				for (int nx = xx - 1; nx <= xx + 1; ++nx) {
-					if (nx == xx && ny == yy) continue;
-					if (nx < 0 || nx >= img_w || ny < 0 || ny >= img_h) continue;
-					double nval = 0, ng = 0, nb = 0;
-					img.pixel_value(nx, ny, nval, ng, nb);
-					if (nval > center_val) {
-						is_local_max = false;
-						break;
-					}
-				}
-				if (!is_local_max) {
-					break;
-				}
-			}
-			if (!is_local_max) continue;
-
-			SNRResult r = calculateSNR(reinterpret_cast<const uint8_t*>(img.m_raw_data), img_w, img_h, img.m_pix_format, xx, yy);
-				if (r.valid && !r.is_saturated) {
-				int cx_i = static_cast<int>(std::round(r.star_x));
-				int cy_i = static_cast<int>(std::round(r.star_y));
-				if (cx_i >= x0 - MARGIN_CENTROID && cx_i <= x1 + MARGIN_CENTROID && cy_i >= y0 - MARGIN_CENTROID && cy_i <= y1 + MARGIN_CENTROID) {
-					candidates.push_back({r.star_x, r.star_y, r.hfd, r.star_radius, r.snr, r.moment_m20, r.moment_m02, r.moment_m11, r.eccentricity});
-				}
-			}
+	// Step 4: Compute cell HFD (mean of kept values)
+	if (!used_indices.empty()) {
+		double sum = 0.0;
+		for (size_t idx : used_indices) {
+			sum += unique[idx].hfd;
 		}
+		stats.hfd = sum / used_indices.size();
 	}
 
-	// deduplicate within cell (keep highest-SNR duplicates)
-	const double DUPLICATE_RADIUS = 5.0;
-	std::vector<Candidate> unique = deduplicate_within_cell(candidates, snr_threshold, DUPLICATE_RADIUS);
-
-	// sigma-clip HFD values
-	std::vector<int> used_indices;
-	cr.hfd = sigma_clip_hfd(unique, used_indices);
-	int used_after = static_cast<int>(used_indices.size());
-	int rejected = static_cast<int>(unique.size()) - used_after;
-
-	// Build a boolean mask for O(1) lookup of used candidates
-	std::vector<char> is_used_mask(unique.size(), 0);
-	for (int idx : used_indices) {
-		if (idx >= 0 && static_cast<size_t>(idx) < unique.size()) {
-			is_used_mask[idx] = 1;
-		}
+	// Step 5: Separate used vs rejected candidates
+	std::vector<bool> is_used(unique.size(), false);
+	for (size_t idx : used_indices) {
+		is_used[idx] = true;
 	}
 
 	for (size_t i = 0; i < unique.size(); ++i) {
-		bool is_used = is_used_mask[i] != 0;
-		QPointF centerScene(unique[i].x, unique[i].y);
-		double rscene = unique[i].star_radius;
-		if (is_used) {
-			cr.per_cell_used.emplace_back(unique[i].x, unique[i].y, unique[i].snr, rscene);
+		if (is_used[i]) {
+			stats.used_candidates.push_back(unique[i]);
 		} else {
-			cr.rejected_points.push_back(centerScene);
+			stats.rejected_candidates.push_back(unique[i]);
 		}
-		cr.unique_candidates.push_back({unique[i].x, unique[i].y, unique[i].snr, unique[i].hfd, unique[i].star_radius, unique[i].eccentricity, cy * gx + cx});
 	}
 
-	cr.detected = static_cast<int>(std::min(unique.size(), static_cast<size_t>(9999)));
-	cr.used = std::min(used_after, 9999);
-	cr.rejected = std::min(rejected, 9999);
+	stats.detected = static_cast<int>(unique.size());
+	stats.used = static_cast<int>(stats.used_candidates.size());
+	stats.rejected = static_cast<int>(stats.rejected_candidates.size());
 
-	// Aggregate weighted eccentricity and major-axis angle using helper
-	compute_weighted_eccentricity_and_angle(unique, used_indices, cr.eccentricity, cr.major_angle_deg);
+	// Step 6: Compute morphology
+	computeMorphology(stats.used_candidates, stats.eccentricity, stats.major_angle_deg);
 
-	return cr;
+	return stats;
 }
 
-InspectionResult ImageInspector::inspect(const preview_image &img, int gx, int gy, double snr_threshold) {
+// =============================================================================
+// GridAnalyzer Implementation
+// =============================================================================
+
+GridAnalyzer::GridAnalyzer(const InspectorConfig& config)
+	: m_config(config)
+	, m_cell_analyzer(config)
+{}
+
+std::vector<std::pair<int, int>> GridAnalyzer::getTargetCells() const {
+	int gx = m_config.grid_x;
+	int gy = m_config.grid_y;
+
+	std::vector<std::pair<int, int>> targets;
+
+	// 4 corners
+	targets.emplace_back(0, 0);
+	targets.emplace_back(gx - 1, 0);
+	targets.emplace_back(gx - 1, gy - 1);
+	targets.emplace_back(0, gy - 1);
+
+	// 4 mid-edges
+	targets.emplace_back(gx / 2, 0);
+	targets.emplace_back(gx - 1, gy / 2);
+	targets.emplace_back(gx / 2, gy - 1);
+	targets.emplace_back(0, gy / 2);
+
+	// Center
+	targets.emplace_back(gx / 2, gy / 2);
+
+	return targets;
+}
+
+std::vector<CellStatistics> GridAnalyzer::analyzeTargetCells(
+	const preview_image& img
+) const {
+	int gx = m_config.grid_x;
+	int gy = m_config.grid_y;
+	int cell_w = img.width() / gx;
+	int cell_h = img.height() / gy;
+
+	auto targets = getTargetCells();
+
+	// Launch parallel analysis
+	std::vector<std::future<CellStatistics>> futures;
+	futures.reserve(targets.size());
+
+	for (size_t i = 0; i < targets.size(); ++i) {
+		int cx = targets[i].first;
+		int cy = targets[i].second;
+		futures.push_back(std::async(
+			std::launch::async,
+			[this, &img, cx, cy, cell_w, cell_h, gx, gy]() {
+				return m_cell_analyzer.analyze(img, cx, cy, cell_w, cell_h, gx, gy);
+			}
+		));
+	}
+
+	// Collect results
+	std::vector<CellStatistics> results;
+	results.reserve(futures.size());
+
+	for (auto& f : futures) {
+		results.push_back(f.get());
+	}
+
+	return results;
+}
+
+// =============================================================================
+// ResultAssembler Implementation
+// =============================================================================
+
+ResultAssembler::ResultAssembler(const InspectorConfig& config)
+	: m_config(config)
+{}
+
+int ResultAssembler::cellToDirectionIndex(int cell_x, int cell_y) const {
+	int gx = m_config.grid_x;
+	int gy = m_config.grid_y;
+	int cx = gx / 2;
+	int cy = gy / 2;
+
+	// Map cell position to direction index (0-7, clockwise from top)
+	if (cell_x == cx && cell_y == 0) return 0;         // N
+	if (cell_x == gx - 1 && cell_y == 0) return 1;     // NE
+	if (cell_x == gx - 1 && cell_y == cy) return 2;    // E
+	if (cell_x == gx - 1 && cell_y == gy - 1) return 3; // SE
+	if (cell_x == cx && cell_y == gy - 1) return 4;    // S
+	if (cell_x == 0 && cell_y == gy - 1) return 5;     // SW
+	if (cell_x == 0 && cell_y == cy) return 6;         // W
+	if (cell_x == 0 && cell_y == 0) return 7;          // NW
+
+	return -1; // Not a direction cell
+}
+
+bool ResultAssembler::isCenterCell(int cell_x, int cell_y) const {
+	return cell_x == m_config.grid_x / 2 && cell_y == m_config.grid_y / 2;
+}
+
+InspectionResult ResultAssembler::assemble(
+	const std::vector<CellStatistics>& cell_stats,
+	const std::vector<StarCandidate>& global_used
+) const {
 	InspectionResult res;
-	// validate
-	if (img.m_raw_data == nullptr) return res;
-	int width = img.width();
-	int height = img.height();
-	if (width <= 0 || height <= 0) return res;
+	int gx = m_config.grid_x;
+	int gy = m_config.grid_y;
 
-	// If the image is color, construct a temporary grayscale preview_image
-	// where each pixel value = r + g + b stored as 32-bit float (PIX_FMT_F32)
-	// for compatibility with normalized float images.
-	double tr=0, tg=0, tb=0;
-	int pf = img.pixel_value(0,0,tr,tg,tb);
-	preview_image gray_img; // default constructed; may be used when pf is color
-	const preview_image *img_ptr = &img;
-	if (pf == PIX_FMT_RGB24 || pf == PIX_FMT_RGB48 || pf == PIX_FMT_RGB96 || pf == PIX_FMT_RGBF) {
-		int width = img.width();
-		int height = img.height();
+	res.dirs.resize(8, 0.0);
+	res.detected_dirs.resize(8, 0);
+	res.used_dirs.resize(8, 0);
+	res.rejected_dirs.resize(8, 0);
+	res.cell_eccentricity.resize(gx * gy, 0.0);
+	res.cell_major_angle.resize(gx * gy, 0.0);
 
-		preview_image tmp(width, height, QImage::Format_Grayscale8);
-		gray_img = tmp;
-		gray_img.m_width = width;
-		gray_img.m_height = height;
-		gray_img.m_pix_format = PIX_FMT_F32;
-
-		size_t size = static_cast<size_t>(width) * static_cast<size_t>(height) * sizeof(float);
-		char *tmpbuf = (char*)malloc(size);
-		if (tmpbuf == nullptr) {
-			res.error_message = "Failed to allocate memory for grayscale preview";
-			return res;
+	// Fill per-cell morphology and HFD
+	for (const auto& s : cell_stats) {
+		if (s.cell_index >= 0 && s.cell_index < gx * gy) {
+			res.cell_eccentricity[s.cell_index] = s.eccentricity;
+			res.cell_major_angle[s.cell_index] = s.major_angle_deg;
 		}
-		gray_img.m_raw_owner = std::shared_ptr<char>(tmpbuf, [](char *p){ free(p); });
-		gray_img.m_raw_data = gray_img.m_raw_owner.get();
-		// copy WCS/meta if present
-		gray_img.m_center_ra = img.m_center_ra;
-		gray_img.m_center_dec = img.m_center_dec;
-		gray_img.m_telescope_ra = img.m_telescope_ra;
-		gray_img.m_telescope_dec = img.m_telescope_dec;
-		gray_img.m_rotation_angle = img.m_rotation_angle;
-		gray_img.m_parity = img.m_parity;
-		gray_img.m_pix_scale = img.m_pix_scale;
-
-		float *dst = reinterpret_cast<float*>(gray_img.m_raw_data);
-		for (int y = 0; y < height; ++y) {
-			for (int x = 0; x < width; ++x) {
-				double r=0, g=0, b=0;
-				img.pixel_value(x, y, r, g, b);
-				float v = static_cast<float>(r + g + b);
-				dst[y * width + x] = v;
-			}
-		}
-		img_ptr = &gray_img;
 	}
 
-	int cell_w = width / gx;
-	int cell_h = height / gy;
-	std::vector<double> cell_hfd(gx * gy, 0.0);
-	std::vector<int> cell_detected(gx * gy, 0);
+	// Build used points and recompute cell_used counts from global_used
 	std::vector<int> cell_used(gx * gy, 0);
+	for (const auto& c : global_used) {
+		res.used_points.emplace_back(c.x, c.y);
+		res.used_radii.push_back(c.star_radius);
+		if (c.cell_index >= 0 && c.cell_index < gx * gy) {
+			cell_used[c.cell_index]++;
+		}
+	}
+
+	// Collect all unique candidates from all cells for detected count and rejected points
+	std::vector<StarCandidate> all_unique_candidates;
+	for (const auto& s : cell_stats) {
+		for (const auto& c : s.used_candidates) {
+			all_unique_candidates.push_back(c);
+		}
+		for (const auto& c : s.rejected_candidates) {
+			all_unique_candidates.push_back(c);
+		}
+	}
+
+	// Recompute detected per cell from all_unique_candidates
+	std::vector<int> cell_detected(gx * gy, 0);
+	for (const auto& u : all_unique_candidates) {
+		if (u.cell_index >= 0 && u.cell_index < gx * gy) {
+			cell_detected[u.cell_index]++;
+		}
+	}
+
+	// Compute rejected = detected - used
 	std::vector<int> cell_rejected(gx * gy, 0);
-
-	// mark target cells (4 corners, 4 mid-edges, center)
-	std::vector<bool> isTarget(gx * gy, false);
-	auto mark = [&](int tx, int ty) {
-		if (tx >= 0 && tx < gx && ty >= 0 && ty < gy) {
-			isTarget[ty * gx + tx] = true;
-		}
-	};
-	mark(0,0);
-	mark(gx-1,0);
-	mark(gx-1,gy-1);
-	mark(0,gy-1);
-	mark(gx/2, 0);
-	mark(gx-1, gy/2);
-	mark(gx/2, gy-1);
-	mark(0, gy/2);
-	mark(gx/2, gy/2);
-
-	// launch per-target-cell analysis in parallel using img_ptr
-	std::vector<std::future<CellResult>> futures(gx * gy);
-	for (int cy = 0; cy < gy; ++cy) {
-		for (int cx = 0; cx < gx; ++cx) {
-			int idx = cy * gx + cx;
-			if (!isTarget[idx]) continue;
-			futures[idx] = std::async(std::launch::async, analyze_cell, std::cref(*img_ptr), gx, gy, cx, cy, cell_w, cell_h, snr_threshold);
-		}
-	}
-
-	// collect results
-	std::vector<std::vector<std::tuple<double,double,double,double>>> per_cell_used(gx * gy);
-	std::vector<UniqueCand> all_unique_candidates;
-	std::vector<QPointF> inspection_rejected_points;
-	std::vector<double> per_cell_ecc(gx * gy, 0.0);
-	std::vector<double> per_cell_angle(gx * gy, 0.0);
-	for (int cy = 0; cy < gy; ++cy) {
-		for (int cx = 0; cx < gx; ++cx) {
-			int idx = cy * gx + cx;
-			if (!isTarget[idx]) continue;
-			CellResult cr = futures[idx].get();
-			cell_hfd[idx] = cr.hfd;
-			cell_detected[idx] = cr.detected;
-			cell_used[idx] = cr.used;
-			cell_rejected[idx] = cr.rejected;
-			per_cell_used[idx] = std::move(cr.per_cell_used);
-			per_cell_ecc[idx] = cr.eccentricity;
-			per_cell_angle[idx] = cr.major_angle_deg;
-			// append unique candidates and rejected points
-			for (auto &u : cr.unique_candidates) all_unique_candidates.push_back(u);
-			for (auto &rp : cr.rejected_points) inspection_rejected_points.push_back(rp);
-		}
-	}
-
-	// global dedup
-	struct GlobalEntry { double x; double y; double snr; double star_radius; int cell; };
-	std::vector<GlobalEntry> global_used;
-	// Build global_used — merge entries when their apertures overlap
-	for (int ci = 0; ci < gx * gy; ++ci) {
-		for (auto &t : per_cell_used[ci]) {
-			double x = std::get<0>(t);
-			double y = std::get<1>(t);
-			double snr = std::get<2>(t);
-			double sr = std::get<3>(t);
-			bool merged = false;
-			for (auto &g : global_used) {
-				double dx = g.x - x; double dy = g.y - y;
-				double dist = std::sqrt(dx*dx + dy*dy);
-				double merge_threshold = (g.star_radius + sr);
-				if (merge_threshold > 0.0 && dist <= merge_threshold) {
-					if (snr > g.snr) {
-						g.x = x;
-						g.y = y;
-						g.snr = snr;
-						g.star_radius = sr;
-					}
-					merged = true;
-					break;
-				}
-			}
-			if (!merged) global_used.push_back({x,y,snr,sr,ci});
-		}
-	}
-
-	// rebuild used points and used counts per cell
-	std::fill(cell_used.begin(), cell_used.end(), 0);
-	std::vector<QPointF> inspection_used_points;
-	std::vector<double> inspection_used_radii;
-	for (const auto &g : global_used) {
-		inspection_used_points.push_back(QPointF(g.x, g.y));
-		inspection_used_radii.push_back(g.star_radius);
-		int cell_index = g.cell;
-		if (cell_index>=0 && cell_index < gx*gy) {
-			cell_used[cell_index]++;
-		}
-	}
-
-	for (int ci = 0; ci < gx * gy; ++ci) {
-		if (!isTarget[ci]) continue;
-		if (cell_used[ci] < 3) {
-			res.error_message = std::string("Not enough usable stars detected");
-			return res;
-		}
-	}
-
-	// recompute detected per owner cell
-	std::vector<int> cell_detected_final(gx * gy, 0);
-	for (const auto &u : all_unique_candidates) {
-		int owner = u.cell;
-		if (owner<0 || owner>=gx*gy) continue;
-		cell_detected_final[owner]++;
-	}
-
-	for (int i=0; i < gx * gy; ++i) {
-		cell_detected[i] = cell_detected_final[i];
+	for (int i = 0; i < gx * gy; ++i) {
 		cell_rejected[i] = std::max(0, cell_detected[i] - cell_used[i]);
 	}
 
-	// build rejected points set (those not matched to global_used)
-	inspection_rejected_points.clear();
-	for (const auto &u : all_unique_candidates) {
-		bool matched=false;
-		for (const auto &g : global_used) {
+	// Map cell statistics to directions
+	for (const auto& s : cell_stats) {
+		int cx = s.cell_index % gx;
+		int cy = s.cell_index / gx;
+
+		if (isCenterCell(cx, cy)) {
+			res.center_hfd = s.hfd;
+			res.center_detected = cell_detected[s.cell_index];
+			res.center_used = cell_used[s.cell_index];
+			res.center_rejected = cell_rejected[s.cell_index];
+		} else {
+			int dir = cellToDirectionIndex(cx, cy);
+			if (dir >= 0 && dir < 8) {
+				res.dirs[dir] = s.hfd;
+				res.detected_dirs[dir] = cell_detected[s.cell_index];
+				res.used_dirs[dir] = cell_used[s.cell_index];
+				res.rejected_dirs[dir] = cell_rejected[s.cell_index];
+			}
+		}
+	}
+
+	// Build rejected points: check ALL unique candidates against global_used
+	for (const auto& u : all_unique_candidates) {
+		bool matched = false;
+		for (const auto& g : global_used) {
 			double dx = g.x - u.x;
 			double dy = g.y - u.y;
-			double dist = std::sqrt(dx*dx + dy*dy);
-			double match_threshold = (g.star_radius + u.star_radius);
-			if (match_threshold > 0.0 && dist <= match_threshold) {
-				matched = true;
-				break;
-			}
-			// small epsilon fallback
-			if (dist <= 1.0) {
+			double dist = std::sqrt(dx * dx + dy * dy);
+			double threshold = g.star_radius + u.star_radius;
+			if ((threshold > 0.0 && dist <= threshold) || dist <= 1.0) {
 				matched = true;
 				break;
 			}
 		}
 		if (!matched) {
-			inspection_rejected_points.push_back(QPointF(u.x, u.y));
+			res.rejected_points.emplace_back(u.x, u.y);
 		}
 	}
 
-	// extract dirs
-	auto getCell = [&](int gx_i, int gy_i) -> double {
-		if (gx_i < 0 || gx_i >= gx || gy_i < 0 || gy_i >= gy) {
-			return 0.0;
+	return res;
+}
+
+// =============================================================================
+// ImageInspector Implementation
+// =============================================================================
+
+ImageInspector::ImageInspector() = default;
+
+ImageInspector::ImageInspector(const InspectorConfig& config)
+	: m_config(config)
+{}
+
+ImageInspector::~ImageInspector() = default;
+
+bool ImageInspector::validateInput(const preview_image& img, std::string& error_out) const {
+	if (img.m_raw_data == nullptr) {
+		error_out = "Image has no raw data";
+		return false;
+	}
+
+	if (img.width() <= 0 || img.height() <= 0) {
+		error_out = "Invalid image dimensions";
+		return false;
+	}
+
+	return true;
+}
+
+InspectionResult ImageInspector::inspect(const preview_image& img) const {
+	InspectionResult res;
+
+	// Step 1: Validate input
+	if (!validateInput(img, res.error_message)) {
+		return res;
+	}
+
+	// Step 2: Convert to grayscale if needed
+	std::unique_ptr<preview_image> converted;
+	const preview_image* work_img = ImagePreprocessor::toGrayscale(img, converted, res.error_message);
+	if (!work_img) {
+		return res;
+	}
+
+	// Step 3: Analyze target cells in parallel
+	GridAnalyzer grid_analyzer(m_config);
+	auto cell_stats = grid_analyzer.analyzeTargetCells(*work_img);
+
+	// Step 4: Collect all used candidates and perform global deduplication
+	std::vector<StarCandidate> all_used;
+	for (const auto& s : cell_stats) {
+		for (const auto& c : s.used_candidates) {
+			all_used.push_back(c);
 		}
-		return cell_hfd[gy_i * gx + gx_i];
-	};
+	}
 
-	std::vector<double> dirs(8, 0.0);
-	dirs[0] = getCell(2,0);
-	dirs[1] = getCell(4,0);
-	dirs[2] = getCell(4,2);
-	dirs[3] = getCell(4,4);
-	dirs[4] = getCell(2,4);
-	dirs[5] = getCell(0,4);
-	dirs[6] = getCell(0,2);
-	dirs[7] = getCell(0,0);
-	double center_hfd = getCell(2,2);
+	CandidateFilter filter(m_config);
+	auto global_used = filter.deduplicateGlobal(all_used);
 
-	// map counts
-	std::vector<int> detected_dirs(8,0), used_dirs(8,0), rejected_dirs(8,0);
-	auto getCount = [&](const std::vector<int> &vec, int gx_i, int gy_i) -> int {
-		if (gx_i < 0 || gx_i >= gx || gy_i < 0 || gy_i >= gy) {
-			return 0;
+	// Step 5: Check minimum star count per cell (after global dedup)
+	// Recompute used counts per cell from global_used
+	std::vector<int> cell_used_counts(m_config.grid_x * m_config.grid_y, 0);
+	for (const auto& c : global_used) {
+		if (c.cell_index >= 0 && c.cell_index < m_config.grid_x * m_config.grid_y) {
+			cell_used_counts[c.cell_index]++;
 		}
-		return vec[gy_i * gx + gx_i];
-	};
+	}
 
-	detected_dirs[0] = getCount(cell_detected, 2,0);
-	detected_dirs[1] = getCount(cell_detected, 4,0);
-	detected_dirs[2] = getCount(cell_detected, 4,2);
-	detected_dirs[3] = getCount(cell_detected, 4,4);
-	detected_dirs[4] = getCount(cell_detected, 2,4);
-	detected_dirs[5] = getCount(cell_detected, 0,4);
-	detected_dirs[6] = getCount(cell_detected, 0,2);
-	detected_dirs[7] = getCount(cell_detected, 0,0);
+	// Check each target cell has at least 3 stars
+	GridAnalyzer grid_analyzer_check(m_config);
+	auto targets = grid_analyzer_check.getTargetCells();
+	for (const auto& target : targets) {
+		int cell_idx = target.second * m_config.grid_x + target.first;
+		if (cell_used_counts[cell_idx] < 3) {
+			res.error_message = "Not enough usable stars detected";
+			return res;
+		}
+	}
 
-	used_dirs[0] = getCount(cell_used, 2,0);
-	used_dirs[1] = getCount(cell_used, 4,0);
-	used_dirs[2] = getCount(cell_used, 4,2);
-	used_dirs[3] = getCount(cell_used, 4,4);
-	used_dirs[4] = getCount(cell_used, 2,4);
-	used_dirs[5] = getCount(cell_used, 0,4);
-	used_dirs[6] = getCount(cell_used, 0,2);
-	used_dirs[7] = getCount(cell_used, 0,0);
-
-	rejected_dirs[0] = getCount(cell_rejected, 2,0);
-	rejected_dirs[1] = getCount(cell_rejected, 4,0);
-	rejected_dirs[2] = getCount(cell_rejected, 4,2);
-	rejected_dirs[3] = getCount(cell_rejected, 4,4);
-	rejected_dirs[4] = getCount(cell_rejected, 2,4);
-	rejected_dirs[5] = getCount(cell_rejected, 0,4);
-	rejected_dirs[6] = getCount(cell_rejected, 0,2);
-	rejected_dirs[7] = getCount(cell_rejected, 0,0);
-
-	int center_detected = getCount(cell_detected, 2,2);
-	int center_used = getCount(cell_used, 2,2);
-	int center_rejected = getCount(cell_rejected, 2,2);
-
-	// fill result
-	res.dirs = std::move(dirs);
-	res.center_hfd = center_hfd;
-	res.detected_dirs = std::move(detected_dirs);
-	res.used_dirs = std::move(used_dirs);
-	res.rejected_dirs = std::move(rejected_dirs);
-	res.center_detected = center_detected;
-	res.center_used = center_used;
-	res.center_rejected = center_rejected;
-	res.used_points = std::move(inspection_used_points);
-	res.used_radii = std::move(inspection_used_radii);
-	res.rejected_points = std::move(inspection_rejected_points);
-	res.cell_eccentricity = std::move(per_cell_ecc);
-	res.cell_major_angle = std::move(per_cell_angle);
+	// Step 6: Assemble final result
+	ResultAssembler assembler(m_config);
+	res = assembler.assemble(cell_stats, global_used);
 
 	return res;
+}
+
+InspectionResult ImageInspector::inspect(
+	const preview_image& img,
+	int gx, int gy,
+	double snr_threshold
+) const {
+	// Create temporary config with specified parameters
+	InspectorConfig config = m_config;
+	config.grid_x = gx;
+	config.grid_y = gy;
+	config.snr_threshold = snr_threshold;
+
+	ImageInspector temp_inspector(config);
+	return temp_inspector.inspect(img);
 }
