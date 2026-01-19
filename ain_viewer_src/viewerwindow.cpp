@@ -41,6 +41,7 @@
 #include <QFormLayout>
 #include <QSpinBox>
 #include <QDialogButtonBox>
+#include <QDoubleSpinBox>
 
 
 void write_conf();
@@ -215,6 +216,8 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	// default radius for find stars
 	m_find_stars_radius = 6;
 	m_find_stars_max = 1000;
+	// default detection threshold
+	m_find_stars_threshold = 5.0;
 	m_imager_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
 	form_layout->addWidget((QWidget*)m_imager_viewer);
 	m_imager_viewer->setMinimumWidth(IMAGE_AREA_MIN_WIDTH);
@@ -254,7 +257,7 @@ void ViewerWindow::on_find_stars_act() {
 			return;
 	}
 
-	// show a dialog with radius and max stars
+	// show a dialog with radius, max stars and detection threshold
 	QDialog dlg(this);
 	dlg.setWindowTitle(tr("Find Stars"));
 	QFormLayout form(&dlg);
@@ -264,8 +267,13 @@ void ViewerWindow::on_find_stars_act() {
 	QSpinBox *maxSpin = new QSpinBox(&dlg);
 	maxSpin->setRange(1, 10000);
 	maxSpin->setValue(m_find_stars_max);
+	QDoubleSpinBox *thresholdSpin = new QDoubleSpinBox(&dlg);
+	thresholdSpin->setRange(0.0, 20);
+	thresholdSpin->setDecimals(1);
+	thresholdSpin->setValue(m_find_stars_threshold);
 	form.addRow(tr("Selection radius:"), radiusSpin);
 	form.addRow(tr("Max stars:"), maxSpin);
+	form.addRow(tr("Detection threshold:"), thresholdSpin);
 	QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, &dlg);
 	form.addRow(buttonBox);
 	connect(buttonBox, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
@@ -273,8 +281,10 @@ void ViewerWindow::on_find_stars_act() {
 	if (dlg.exec() != QDialog::Accepted) return;
 	int radius_i = radiusSpin->value();
 	int max_stars = maxSpin->value();
+	double threshold = thresholdSpin->value();
 	m_find_stars_radius = radius_i;
 	m_find_stars_max = max_stars;
+	m_find_stars_threshold = threshold;
 	const uint16_t radius = static_cast<uint16_t>(radius_i);
 	indigo_star_detection *stars = (indigo_star_detection*)calloc(max_stars, sizeof(indigo_star_detection));
 	if (!stars) {
@@ -283,10 +293,10 @@ void ViewerWindow::on_find_stars_act() {
 	}
 
 	int found = 0;
-	indigo_result r = indigo_find_stars_precise(raw_type, (const void*)m_preview_image->m_raw_data, radius, m_preview_image->m_width, m_preview_image->m_height, max_stars, stars, &found);
+	indigo_result r = indigo_find_stars_precise_threshold(raw_type, (const void*)m_preview_image->m_raw_data, radius, threshold, m_preview_image->m_width, m_preview_image->m_height, max_stars, stars, &found);
 	if (r != INDIGO_OK) {
 		char buf[128];
-		snprintf(buf, sizeof(buf), "indigo_find_stars_precise returned %d", r);
+		snprintf(buf, sizeof(buf), "indigo_find_stars_precise_threshold returned %d", r);
 		show_message("Find Stars", buf);
 		free(stars);
 		return;

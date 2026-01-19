@@ -103,6 +103,8 @@ private:
 	int m_find_stars_radius;
 	// maximum stars to search for
 	int m_find_stars_max;
+	// detection threshold for find stars (editable via dialog)
+	double m_find_stars_threshold;
 };
 
 #endif // VIEWERWINDOW_H
