@@ -6,7 +6,7 @@ unix:mac {
 	ICON=$$PWD/../resource/ain_viewer.icns
 }
 
-QMAKE_CXXFLAGS += -O0 -g
+QMAKE_CXXFLAGS += -O3 -g
 QMAKE_CXXFLAGS_RELEASE += -O3
 
 OBJECTS_DIR=object
