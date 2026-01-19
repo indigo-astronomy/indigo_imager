@@ -73,11 +73,31 @@ int main(int argc, char *argv[]) {
 	if (!conf.reopen_file_at_start) {
 		conf.file_open[0] = '\0';
 	}
+	// always default to error log level unless overridden from command line
+	conf.indigo_log_level = INDIGO_LOG_ERROR;
 
 	qunsetenv("LC_NUMERIC");
 
-	if (argc > 1) {
-		strncpy(conf.file_open, argv[argc-1], PATH_MAX);
+	// Parse command line arguments
+	bool enable_inspector = false;
+	int auto_save_seconds = 0;
+	for (int i = 1; i < argc; i++) {
+		if (strcmp(argv[i], "-I") == 0) {
+			enable_inspector = true;
+		} else if (strcmp(argv[i], "-f") == 0 && i + 1 < argc) {
+			i++;
+			strncpy(conf.file_open, argv[i], PATH_MAX);
+		} else if (strcmp(argv[i], "-s") == 0 && i + 1 < argc) {
+			i++;
+			auto_save_seconds = atoi(argv[i]);
+		} else if (strcmp(argv[i], "-vv") == 0) {
+			conf.indigo_log_level = INDIGO_LOG_DEBUG;
+		} else if (strcmp(argv[i], "-v") == 0) {
+			conf.indigo_log_level = INDIGO_LOG_INFO;
+		} else if (argv[i][0] != '-') {
+			// Backwards compatibility: treat non-option as filename
+			strncpy(conf.file_open, argv[i], PATH_MAX);
+		}
 	}
 
 	indigo_set_log_level(conf.indigo_log_level);
@@ -128,6 +148,16 @@ int main(int argc, char *argv[]) {
 
 	ViewerWindow viewer_window;
 	viewer_window.show();
+
+	// Enable image analyzer if requested via command line
+	if (enable_inspector) {
+		viewer_window.enable_image_inspector(true);
+	}
+
+	// Schedule auto-save if requested
+	if (auto_save_seconds > 0) {
+		viewer_window.schedule_auto_save(auto_save_seconds);
+	}
 
 	return app.exec();
 }

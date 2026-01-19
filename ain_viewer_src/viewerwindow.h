@@ -48,6 +48,9 @@ public:
 	explicit ViewerWindow(QWidget *parent = nullptr);
 	virtual ~ViewerWindow();
 	void open_image(QString file_name);
+	void enable_image_inspector(bool enable);
+	void schedule_auto_save(int seconds);
+	void save_view_to_default_file_and_exit();
 	void show_message(const char *title, const char *message, QMessageBox::Icon icon = QMessageBox::Warning);
 	void block_scrolling(bool blocked) {
 		if (blocked) {
@@ -67,6 +70,7 @@ public slots:
 	void on_image_close_act();
 	void on_image_raw_to_fits();
 	void on_image_info_act();
+	void on_save_preview_act();
 	void on_exit_act();
 	void on_about_act();
 
@@ -81,6 +85,9 @@ public slots:
 	void on_find_stars_act();
 
 private:
+	bool save_view(const QString &file_name, bool show_errors_as_dialogs);
+	QString save_view_default_filename() const;
+
 	// Image viewer
 	TextDialog *m_image_info_dlg;
 	ImageViewer *m_imager_viewer;
