@@ -56,11 +56,7 @@ std::unique_ptr<preview_image> ImagePreprocessor::convertToFloat32Grayscale(cons
 	return gray;
 }
 
-const preview_image* ImagePreprocessor::toGrayscale(
-	const preview_image& img,
-	std::unique_ptr<preview_image>& converted_out,
-	std::string& error_out
-) {
+const preview_image* ImagePreprocessor::toGrayscale(const preview_image& img, std::unique_ptr<preview_image>& converted_out, std::string& error_out) {
 	double tr = 0, tg = 0, tb = 0;
 	int pf = img.pixel_value(0, 0, tr, tg, tb);
 
@@ -82,10 +78,7 @@ const preview_image* ImagePreprocessor::toGrayscale(
 // BackgroundEstimator Implementation
 // =============================================================================
 
-BackgroundEstimator::Result BackgroundEstimator::computeMedianMAD(
-	const preview_image& img,
-	int x0, int y0, int x1, int y1
-) {
+BackgroundEstimator::Result BackgroundEstimator::computeMedianMAD(const preview_image& img, int x0, int y0, int x1, int y1) {
 	Result result;
 
 	std::vector<double> vals;
@@ -198,12 +191,7 @@ bool StarDetector::measureStar(
 	return true;
 }
 
-std::vector<StarCandidate> StarDetector::detectInCell(
-	const preview_image& img,
-	int cell_x, int cell_y,
-	int cell_w, int cell_h,
-	int grid_x, int grid_y
-) const {
+std::vector<StarCandidate> StarDetector::detectInCell(const preview_image& img, int cell_x, int cell_y, int cell_w, int cell_h, int grid_x, int grid_y) const {
 	std::vector<StarCandidate> candidates;
 
 	int img_w = img.width();
@@ -263,9 +251,7 @@ CandidateFilter::CandidateFilter(const InspectorConfig& config)
 	: m_config(config)
 {}
 
-std::vector<StarCandidate> CandidateFilter::deduplicateWithinCell(
-	const std::vector<StarCandidate>& candidates
-) const {
+std::vector<StarCandidate> CandidateFilter::deduplicateWithinCell(const std::vector<StarCandidate>& candidates) const {
 	std::vector<StarCandidate> unique;
 
 	for (const auto& c : candidates) {
@@ -296,9 +282,7 @@ std::vector<StarCandidate> CandidateFilter::deduplicateWithinCell(
 	return unique;
 }
 
-std::vector<StarCandidate> CandidateFilter::deduplicateGlobal(
-	const std::vector<StarCandidate>& candidates
-) const {
+std::vector<StarCandidate> CandidateFilter::deduplicateGlobal(const std::vector<StarCandidate>& candidates) const {
 	std::vector<StarCandidate> unique;
 
 	for (const auto& c : candidates) {
@@ -339,9 +323,7 @@ std::vector<StarCandidate> CandidateFilter::deduplicateGlobal(
 	return unique;
 }
 
-std::vector<size_t> CandidateFilter::sigmaClipHFD(
-	const std::vector<StarCandidate>& candidates
-) const {
+std::vector<size_t> CandidateFilter::sigmaClipHFD(const std::vector<StarCandidate>& candidates) const {
 	std::vector<size_t> used_indices;
 
 	if (candidates.empty()) {
@@ -435,12 +417,7 @@ void CellAnalyzer::computeMorphology(
 	}
 }
 
-CellStatistics CellAnalyzer::analyze(
-	const preview_image& img,
-	int cell_x, int cell_y,
-	int cell_w, int cell_h,
-	int grid_x, int grid_y
-) const {
+CellStatistics CellAnalyzer::analyze(const preview_image& img, int cell_x, int cell_y, int cell_w, int cell_h, int grid_x, int grid_y) const {
 	CellStatistics stats;
 	stats.cell_index = cell_y * grid_x + cell_x;
 
@@ -521,9 +498,7 @@ std::vector<std::pair<int, int>> GridAnalyzer::getTargetCells() const {
 	return targets;
 }
 
-std::vector<CellStatistics> GridAnalyzer::analyzeTargetCells(
-	const preview_image& img
-) const {
+std::vector<CellStatistics> GridAnalyzer::analyzeTargetCells(const preview_image& img) const {
 	int gx = m_config.grid_x;
 	int gy = m_config.grid_y;
 	int cell_w = img.width() / gx;
@@ -588,10 +563,7 @@ bool ResultAssembler::isCenterCell(int cell_x, int cell_y) const {
 	return cell_x == m_config.grid_x / 2 && cell_y == m_config.grid_y / 2;
 }
 
-InspectionResult ResultAssembler::assemble(
-	const std::vector<CellStatistics>& cell_stats,
-	const std::vector<StarCandidate>& global_used
-) const {
+InspectionResult ResultAssembler::assemble(const std::vector<CellStatistics>& cell_stats, const std::vector<StarCandidate>& global_used) const {
 	InspectionResult res;
 	int gx = m_config.grid_x;
 	int gy = m_config.grid_y;
@@ -771,11 +743,7 @@ InspectionResult ImageInspector::inspect(const preview_image& img) const {
 	return res;
 }
 
-InspectionResult ImageInspector::inspect(
-	const preview_image& img,
-	int gx, int gy,
-	double snr_threshold
-) const {
+InspectionResult ImageInspector::inspect(const preview_image& img, int gx, int gy, double snr_threshold) const {
 	// Create temporary config with specified parameters
 	InspectorConfig config = m_config;
 	config.grid_x = gx;

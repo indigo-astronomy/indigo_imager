@@ -43,12 +43,13 @@ struct CellStatistics {
 struct InspectionResult {
 	std::vector<double> dirs;              // 8 directions HFD values
 	double center_hfd = 0.0;
-	std::vector<int> detected_dirs;        // size 8
-	std::vector<int> used_dirs;            // size 8
-	std::vector<int> rejected_dirs;        // size 8
 	int center_detected = 0;
 	int center_used = 0;
 	int center_rejected = 0;
+
+	std::vector<int> detected_dirs;        // size 8
+	std::vector<int> used_dirs;            // size 8
+	std::vector<int> rejected_dirs;        // size 8
 
 	std::vector<QPointF> used_points;      // scene coords (image pixels)
 	std::vector<double> used_radii;        // radii in image pixels
@@ -84,11 +85,7 @@ public:
 	// Convert color image to grayscale if needed
 	// Returns pointer to grayscale image (may return input if already grayscale)
 	// If conversion was performed, stores converted image in 'converted_out'
-	static const preview_image* toGrayscale(
-		const preview_image& img,
-		std::unique_ptr<preview_image>& converted_out,
-		std::string& error_out
-	);
+	static const preview_image* toGrayscale(const preview_image& img, std::unique_ptr<preview_image>& converted_out, std::string& error_out);
 
 private:
 	static bool isColorFormat(int pix_format);
@@ -107,10 +104,7 @@ public:
 	};
 
 	// Compute median and MAD-based sigma for a rectangular region
-	static Result computeMedianMAD(
-		const preview_image& img,
-		int x0, int y0, int x1, int y1
-	);
+	static Result computeMedianMAD(const preview_image& img, int x0, int y0, int x1, int y1);
 };
 
 // =============================================================================
@@ -136,11 +130,7 @@ private:
 	bool isLocalMaximum(const preview_image& img, int x, int y, double threshold) const;
 
 	// Measure star properties at a peak position
-	bool measureStar(
-		const preview_image& img,
-		int peak_x, int peak_y,
-		StarCandidate& out
-	) const;
+	bool measureStar(const preview_image& img, int peak_x, int peak_y, StarCandidate& out) const;
 };
 
 // =============================================================================
@@ -152,19 +142,13 @@ public:
 	CandidateFilter(const InspectorConfig& config);
 
 	// Remove duplicates within a cell, keeping highest-SNR
-	std::vector<StarCandidate> deduplicateWithinCell(
-		const std::vector<StarCandidate>& candidates
-	) const;
+	std::vector<StarCandidate> deduplicateWithinCell(const std::vector<StarCandidate>& candidates) const;
 
 	// Global deduplication across all cells
-	std::vector<StarCandidate> deduplicateGlobal(
-		const std::vector<StarCandidate>& candidates
-	) const;
+	std::vector<StarCandidate> deduplicateGlobal(const std::vector<StarCandidate>& candidates) const;
 
 	// Apply sigma-clipping to HFD values, returns indices of kept candidates
-	std::vector<size_t> sigmaClipHFD(
-		const std::vector<StarCandidate>& candidates
-	) const;
+	std::vector<size_t> sigmaClipHFD(const std::vector<StarCandidate>& candidates) const;
 
 private:
 	const InspectorConfig& m_config;
@@ -179,12 +163,7 @@ public:
 	CellAnalyzer(const InspectorConfig& config);
 
 	// Analyze a single cell and return statistics
-	CellStatistics analyze(
-		const preview_image& img,
-		int cell_x, int cell_y,
-		int cell_w, int cell_h,
-		int grid_x, int grid_y
-	) const;
+	CellStatistics analyze(const preview_image& img, int cell_x, int cell_y, int cell_w, int cell_h, int grid_x, int grid_y ) const;
 
 private:
 	const InspectorConfig& m_config;
@@ -192,11 +171,7 @@ private:
 	CandidateFilter m_filter;
 
 	// Compute weighted eccentricity and angle from candidates
-	void computeMorphology(
-		const std::vector<StarCandidate>& used,
-		double& eccentricity_out,
-		double& angle_out
-	) const;
+	void computeMorphology(const std::vector<StarCandidate>& used, double& eccentricity_out, double& angle_out) const;
 };
 
 // =============================================================================
@@ -208,9 +183,7 @@ public:
 	GridAnalyzer(const InspectorConfig& config);
 
 	// Analyze all target cells (corners, edges, center) in parallel
-	std::vector<CellStatistics> analyzeTargetCells(
-		const preview_image& img
-	) const;
+	std::vector<CellStatistics> analyzeTargetCells(const preview_image& img) const;
 
 	// Get the list of target cell indices (9 cells: 4 corners + 4 edges + center)
 	std::vector<std::pair<int, int>> getTargetCells() const;
@@ -228,11 +201,7 @@ class ResultAssembler {
 public:
 	ResultAssembler(const InspectorConfig& config);
 
-	// Assemble final result from cell statistics
-	InspectionResult assemble(
-		const std::vector<CellStatistics>& cell_stats,
-		const std::vector<StarCandidate>& all_candidates
-	) const;
+	InspectionResult assemble(const std::vector<CellStatistics>& cell_stats, const std::vector<StarCandidate>& all_candidates) const;
 
 private:
 	const InspectorConfig& m_config;
@@ -240,7 +209,6 @@ private:
 	// Map cell coordinates to 8-direction index
 	int cellToDirectionIndex(int cell_x, int cell_y) const;
 
-	// Check if cell is the center cell
 	bool isCenterCell(int cell_x, int cell_y) const;
 };
 
@@ -254,24 +222,15 @@ public:
 	explicit ImageInspector(const InspectorConfig& config);
 	~ImageInspector();
 
-	// Main inspection method
 	InspectionResult inspect(const preview_image& img) const;
+	InspectionResult inspect(const preview_image& img, int gx, int gy, double snr_threshold) const;
 
-	// Overload with custom grid size and SNR threshold (for backward compatibility)
-	InspectionResult inspect(
-		const preview_image& img,
-		int gx, int gy,
-		double snr_threshold
-	) const;
-
-	// Access configuration
 	const InspectorConfig& config() const { return m_config; }
 	void setConfig(const InspectorConfig& config) { m_config = config; }
 
 private:
 	InspectorConfig m_config;
 
-	// Validate input image
 	bool validateInput(const preview_image& img, std::string& error_out) const;
 };
 
