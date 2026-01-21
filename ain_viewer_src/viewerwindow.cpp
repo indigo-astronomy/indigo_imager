@@ -265,7 +265,7 @@ void ViewerWindow::on_find_stars_act() {
 	radiusSpin->setRange(1, 200);
 	radiusSpin->setValue(m_find_stars_radius);
 	QSpinBox *maxSpin = new QSpinBox(&dlg);
-	maxSpin->setRange(1, 10000);
+	maxSpin->setRange(1, 100000);
 	maxSpin->setValue(m_find_stars_max);
 	QDoubleSpinBox *thresholdSpin = new QDoubleSpinBox(&dlg);
 	thresholdSpin->setRange(0.0, 20);
