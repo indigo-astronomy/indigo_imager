@@ -294,6 +294,12 @@ void ViewerWindow::on_find_stars_act() {
 
 	int found = 0;
 	indigo_result r = indigo_find_stars_precise_threshold(raw_type, (const void*)m_preview_image->m_raw_data, radius, threshold, m_preview_image->m_width, m_preview_image->m_height, max_stars, stars, &found);
+	indigo_log("Found %d stars:\n", found);
+
+	for (int i = 0; i < found; i++) {
+		indigo_log("Star %d: x=%.2f y=%.2f luminance=%.2f saturated=%d close_to_other=%d\n", i + 1, stars[i].x, stars[i].y, stars[i].luminance, stars[i].oversaturated, stars[i].close_to_other);
+	}
+
 	if (r != INDIGO_OK) {
 		char buf[128];
 		snprintf(buf, sizeof(buf), "indigo_find_stars_precise_threshold returned %d", r);
