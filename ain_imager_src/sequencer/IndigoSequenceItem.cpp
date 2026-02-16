@@ -272,12 +272,12 @@ void IndigoSequenceItem::addInputWidget(const QString &paramName, const ParamWid
 				if (!isEnabledState) return;
 
 				QMenu *menu = new QMenu(this);
-				SelectObject *selectObjectWidget = new SelectObject(this);
+				SelectObjectWidget *selectObjectWidget = new SelectObjectWidget(this);
 				QWidgetAction *widgetAction = new QWidgetAction(menu);
 				widgetAction->setDefaultWidget(selectObjectWidget);
 				menu->addAction(widgetAction);
 
-				connect(selectObjectWidget, &SelectObject::objectSelected, this, [this, menu, raIndex, decIndex](const QString &name, double ra, double dec) {
+				connect(selectObjectWidget, &SelectObjectWidget::objectSelected, this, [this, menu, raIndex, decIndex](const QString &name, double ra, double dec) {
 					Q_UNUSED(name);
 					if (QLineEditSG *raInput = qobject_cast<QLineEditSG*>(parameterWidgets[raIndex])) {
 						raInput->setValue(ra);

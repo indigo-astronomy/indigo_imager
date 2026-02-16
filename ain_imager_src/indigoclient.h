@@ -24,6 +24,7 @@
 #include <QHash>
 #include <QAtomicInt>
 #include <indigo/indigo_bus.h>
+#include <indigo/indigo_names.h>
 #include "logger.h"
 
 #if !defined(AGENT_PLATESOLVER_PA_STATE_ACCURACY_WARNING_ITEM_NAME)

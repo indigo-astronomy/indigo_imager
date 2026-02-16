@@ -222,6 +222,8 @@ static indigo_result client_define_property(indigo_client *client, indigo_device
 
 	if (!processed_device(property->device)) return INDIGO_OK;
 
+	//indigo_error(" ----> Defining property [%s] on device [%s]\n", property->name, property->device);
+
 	IndigoClient &client_instance = IndigoClient::instance();
 
 	client_instance.update_save_blob(property);
@@ -264,6 +266,8 @@ static indigo_result client_update_property(indigo_client *client, indigo_device
 	Q_UNUSED(device);
 
 	if (!processed_device(property->device)) return INDIGO_OK;
+
+	//indigo_error(" ----> Updating property [%s] on device [%s]\n", property->name, property->device);
 
 	IndigoClient::instance().update_save_blob(property);
 
@@ -320,6 +324,8 @@ static indigo_result client_send_message(indigo_client *client, indigo_device *d
 	Q_UNUSED(client);
 
 	if (!message) return INDIGO_OK;
+
+	//indigo_error(" ----> Message from device [%s]: %s\n", device ? device->name : "Unknown", message);
 
 	char *message_copy;
 	message_copy = (char*)malloc(INDIGO_VALUE_SIZE);

@@ -33,11 +33,11 @@
 Q_DECLARE_METATYPE(indigo_dso_entry*)
 Q_DECLARE_METATYPE(indigo_star_entry*)
 
-class SelectObject : public QFrame {
+class SelectObjectWidget : public QFrame {
 	Q_OBJECT
 
 public:
-	explicit SelectObject(QWidget *parent = nullptr);
+	explicit SelectObjectWidget(QWidget *parent = nullptr);
 
 signals:
 	void objectSelected(const QString &name, double ra, double dec);

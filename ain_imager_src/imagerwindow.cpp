@@ -513,6 +513,10 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	load_sequencer_code();
 	// indigo_error("%s", m_sequencer_code.toUtf8().data());
 
+	//  Start up the client
+	IndigoClient::instance().enable_blobs(conf.blobs_enabled);
+	IndigoClient::instance().start("INDIGO Imager");
+
 	mServiceModel = &QServiceModel::instance();
 	indigo_debug("servicemodel %p", mServiceModel);
 	mServiceModel->enable_auto_connect(conf.auto_connect);
@@ -649,10 +653,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 		if (m_polarAlignWidget && m_polarAlignWidget->isVisible())
 			togglePolarAlignmentOverlay(true);
 	});
-
-	//  Start up the client
-	IndigoClient::instance().enable_blobs(conf.blobs_enabled);
-	IndigoClient::instance().start("INDIGO Imager");
 
 	// load manually configured services
 	mServiceModel->loadManualServices();
