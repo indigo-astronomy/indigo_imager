@@ -19,6 +19,7 @@
 
 #include <QtConcurrent/QtConcurrent>
 #include <indigo/indigo_client.h>
+#include <indigo/indigo_names.h>
 #include "indigoclient.h"
 #include "conf.h"
 #include <chrono>
