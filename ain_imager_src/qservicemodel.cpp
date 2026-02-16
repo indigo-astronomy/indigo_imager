@@ -67,7 +67,7 @@ void resolve_callback(const char *service_name, uint32_t interface_index, const 
 	if (host != NULL) {
 		QServiceModel *model = NULL;
 		model = &QServiceModel::instance();
-		indigo_debug("resolved %p", model);
+		indigo_debug("resolved service: %s on %s:%d\n", service_name, host, port);
 		if (model) {
 			model->addServicePreferLocalhost(QByteArray(service_name), interface_index, QByteArray(host), port);
 		}
@@ -221,7 +221,9 @@ bool QServiceModel::addService(QByteArray name, QByteArray host, int port, bool 
 	m_services.append(indigo_service);
 	endInsertRows();
 
-	if (indigo_service->auto_connect && !indigo_service->is_auto_service) indigo_service->connect();
+	if (indigo_service->auto_connect && !indigo_service->is_auto_service) {
+		indigo_service->connect();
+	}
 	if (!indigo_service->is_auto_service) {
 		emit(
 			serviceAdded(
@@ -338,7 +340,9 @@ void QServiceModel::onServiceAdded(QByteArray name, QByteArray host, int port) {
 		}
 	}
 
-	if (stored_service->auto_connect) stored_service->connect();
+	if (stored_service->auto_connect) {
+		stored_service->connect();
+	}
 	emit(
 		serviceAdded(
 			stored_service->name(),

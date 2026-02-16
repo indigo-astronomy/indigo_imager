@@ -34,6 +34,7 @@ public:
 	bool connect();
 	bool connected() const;
 	bool disconnect();
+
 	QByteArray name() const { return m_name; }
 	QByteArray host() const { return m_host; }
 	int port() const { return m_port; }
@@ -48,6 +49,7 @@ public:
 	bool is_auto_service;
 	bool auto_connect;
 #ifdef INDIGO_VERSION_3
+	bool m_connection_status;
 	indigo_uni_handle *prev_handle;
 #else
 	int prev_socket;

@@ -16,7 +16,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 #include "qindigoservice.h"
 
 QIndigoService::QIndigoService(QByteArray name, QByteArray host, int port) :
@@ -27,6 +26,7 @@ QIndigoService::QIndigoService(QByteArray name, QByteArray host, int port) :
 	is_auto_service(false),
 	auto_connect(true),
 #ifdef INDIGO_VERSION_3
+	m_connection_status(false),
 	prev_handle(NULL) {
 #else
 	prev_socket(-1) {
@@ -41,6 +41,7 @@ QIndigoService::QIndigoService(QByteArray name, QByteArray host, int port, bool 
 	is_auto_service(!is_manual_service),
 	auto_connect(connect),
 #ifdef INDIGO_VERSION_3
+	m_connection_status(false),
 	prev_handle(NULL) {
 #else
 	prev_socket(-1) {
@@ -61,9 +62,15 @@ bool QIndigoService::connect() {
 #endif
 
 	indigo_debug("%s(): %s %s %d\n",__FUNCTION__, m_name.constData(), m_host.constData(), m_port);
+#ifdef INDIGO_VERSION_3
+	indigo_result res = indigo_connect_server(m_name.constData(), m_host.constData(), m_port, &m_server_entry, &m_connection_status);
+#else
 	indigo_result res = indigo_connect_server(m_name.constData(), m_host.constData(), m_port, &m_server_entry);
+#endif
 	indigo_debug("%s(): %s %s %d server_entry=%p\n",__FUNCTION__, m_name.constData(), m_host.constData(), m_port, m_server_entry);
-	if (res != INDIGO_OK) return false;
+	if (res != INDIGO_OK) {
+		return false;
+	}
 	while (!connected() && i--) {
 		indigo_usleep(100000);
 	}
@@ -74,7 +81,12 @@ bool QIndigoService::connect() {
 
 bool QIndigoService::connected() const {
 	if (m_server_entry) {
+#ifdef INDIGO_VERSION_3
+		indigo_error("%s(): m_connection_status=%d\n", __FUNCTION__, m_connection_status);
+		return m_connection_status;
+#else
 		return indigo_connection_status(m_server_entry, NULL);
+#endif
 	}
 	indigo_debug("%s(): socket is null\n", __FUNCTION__);
 	return false;
