@@ -98,7 +98,8 @@ bool QIndigoService::disconnect() {
 	if (m_server_entry) {
 		indigo_debug("%s(): %s %s %d\n",__FUNCTION__, m_name.constData(), m_host.constData(), m_port);
 		bool res = (indigo_disconnect_server(m_server_entry) == INDIGO_OK);
-		while (connected()) {
+		int count = 20; /* 2.0 seconds */
+		while (connected() && count--) {
 			indigo_usleep(100000);
 		}
 		m_server_entry=nullptr;
