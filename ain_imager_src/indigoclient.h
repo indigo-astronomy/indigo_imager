@@ -85,7 +85,8 @@ signals:
 	void property_deleted(indigo_property* property_copy, char *message_copy);
 
 	/* property is always NULL */
-	void message_sent(indigo_property* property, char *message_copy);
+	void message_received_v2(indigo_property* property, char *message_copy);
+	void message_received_v3(char* device_name_copy, char *property_name_copy, int property_state, char *message_copy);
 
 	void create_preview(indigo_property* property, indigo_item *blob_item_copy, bool save_blob);
 	void imager_download_started();

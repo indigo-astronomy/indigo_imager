@@ -320,8 +320,40 @@ static indigo_result client_delete_property(indigo_client *client, indigo_device
 	return INDIGO_OK;
 }
 
+#ifdef INDIGO_VERSION_3
+static indigo_result client_receive_message(indigo_client *client, indigo_device *device, indigo_property *property, const char *message) {
+	Q_UNUSED(client);
 
-static indigo_result client_send_message(indigo_client *client, indigo_device *device, const char *message) {
+	if (!message) return INDIGO_OK;
+
+	char *message_copy;
+	message_copy = (char*)malloc(INDIGO_VALUE_SIZE);
+	snprintf(message_copy, INDIGO_VALUE_SIZE, "%s", message);
+
+	if (property) {
+		char *device_name_copy = (char*)malloc(INDIGO_NAME_SIZE);
+		strncpy(device_name_copy, property->device, INDIGO_NAME_SIZE);
+
+		char *property_name_copy = NULL;
+		if (
+			strcmp(property->name, OK_PROPERTY->name) != 0 &&
+			strcmp(property->name, ALERT_PROPERTY->name) != 0 &&
+			strcmp(property->name, BUSY_PROPERTY->name) != 0 &&
+			strcmp(property->name, IDLE_PROPERTY->name) != 0
+		) {
+			property_name_copy = (char*)malloc(INDIGO_NAME_SIZE);
+			strncpy(property_name_copy, property->name, INDIGO_NAME_SIZE);
+		}
+
+		emit(IndigoClient::instance().message_received_v3(device_name_copy, property_name_copy, property->state, message_copy));
+	} else {
+		emit(IndigoClient::instance().message_received_v3(NULL, NULL, 0, message_copy));
+	}
+
+	return INDIGO_OK;
+}
+#else
+static indigo_result client_receive_message(indigo_client *client, indigo_device *device, const char *message) {
 	Q_UNUSED(client);
 
 	if (!message) return INDIGO_OK;
@@ -336,10 +368,10 @@ static indigo_result client_send_message(indigo_client *client, indigo_device *d
 	} else {
 		snprintf(message_copy, INDIGO_VALUE_SIZE, "%s", message);
 	}
-	emit(IndigoClient::instance().message_sent(NULL, message_copy));
+	emit(IndigoClient::instance().message_received_v2(NULL, message_copy));
 	return INDIGO_OK;
 }
-
+#endif
 
 static indigo_result client_detach(indigo_client *client) {
 	Q_UNUSED(client);
@@ -353,7 +385,7 @@ indigo_client client = {
 	client_define_property,
 	client_update_property,
 	client_delete_property,
-	client_send_message,
+	client_receive_message,
 	client_detach
 };
 

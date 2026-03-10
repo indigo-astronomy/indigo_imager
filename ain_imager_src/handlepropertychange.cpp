@@ -2506,10 +2506,13 @@ void ImagerWindow::on_window_log(indigo_property* property, const char *message)
 	if (!message) return;
 
 	if (property) {
-		snprintf(log_line, 512, "%s.%s: %s", property->device, property->name, message);
+		if (property->name[0] != '\0') {
+			snprintf(log_line, 512, "%s.%s: %s", property->device, property->name, message);
+		} else {
+			snprintf(log_line, 512, "%s: %s", property->device, message);
+		}
 		state = property->state;
 	} else {
-		state = INDIGO_OK_STATE;
 		snprintf(log_line, 512, "%s", message);
 	}
 	window_log(log_line, state);

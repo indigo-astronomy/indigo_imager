@@ -255,6 +255,7 @@ public slots:
 	void on_property_change(indigo_property* property, char *message);
 	void on_property_delete(indigo_property* property, char *message);
 	void on_message_sent(indigo_property* property, char *message);
+	void on_message_received(char *device_name, char *property_name, int property_state, char *message);
 	void on_blobs_changed(bool status);
 	void on_save_noname_images_changed(bool status);
 	void on_restore_window_size_changed(bool status);
