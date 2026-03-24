@@ -26,6 +26,7 @@
 #include <image_preview_lut.h>
 #include <coordconv.h>
 #include <stretcher.h>
+#include <memory>
 
 #if !defined(INDIGO_WINDOWS)
 #define USE_LIBJPEG
@@ -73,8 +74,22 @@ public:
 		m_pix_scale(0)
 	{};
 
+	preview_image(uchar *data, int width, int height, int bytesPerLine, QImage::Format format, QImageCleanupFunction cleanupFunction = nullptr, void *cleanupInfo = nullptr):
+		QImage(data, width, height, bytesPerLine, format, cleanupFunction, cleanupInfo),
+		m_raw_data(nullptr),
+		m_width(0),
+		m_height(0),
+		m_pix_format(0),
+		m_center_ra(0),
+		m_center_dec(0),
+		m_telescope_ra(0),
+		m_telescope_dec(0),
+		m_rotation_angle(0),
+		m_parity(0),
+		m_pix_scale(0)
+	{ };
+
 	preview_image(preview_image &image): QImage(image) {
-		int size = 0;
 		m_width = image.m_width;
 		m_height = image.m_height;
 		m_pix_format = image.m_pix_format;
@@ -86,41 +101,12 @@ public:
 		m_parity = image.m_parity;
 		m_pix_scale = image.m_pix_scale;
 
-		if (image.m_raw_data == nullptr) {
-			m_raw_data = nullptr;
-			return;
-		}
-
-		if (m_pix_format == PIX_FMT_Y8) {
-			size = m_width * m_height;
-		} else if (m_pix_format == PIX_FMT_Y16) {
-			size = m_width * m_height * 2;
-		} else if (m_pix_format == PIX_FMT_Y32) {
-			size = m_width * m_height * 4;
-		} else if (m_pix_format == PIX_FMT_F32) {
-			size = m_width * m_height * 4;
-		} else if (m_pix_format == PIX_FMT_RGB24) {
-			size = m_width * m_height * 3;
-		} else if (m_pix_format == PIX_FMT_RGB48) {
-			size = m_width * m_height * 6;
-		} else if (m_pix_format == PIX_FMT_RGB96) {
-			size = m_width * m_height * 12;
-		} else if (m_pix_format == PIX_FMT_RGBF) {
-			size = m_width * m_height * 12;
-		}
-
-		if (size == 0) {
-			m_raw_data = nullptr;
-			return;
-		}
-
-		m_raw_data = (char*)malloc(size);
-		memcpy(m_raw_data, image.m_raw_data, size);
+		m_raw_owner = image.m_raw_owner; // share the underlying buffer
+		m_raw_data = image.m_raw_data;
 	};
 
 	preview_image& operator=(preview_image &image) {
 		QImage::operator=(image);
-		int size = 0;
 		m_width = image.m_width;
 		m_height = image.m_height;
 		m_pix_format = image.m_pix_format;
@@ -132,47 +118,14 @@ public:
 		m_parity = image.m_parity;
 		m_pix_scale = image.m_pix_scale;
 
-		if (image.m_raw_data == nullptr) {
-			if (m_raw_data) free(m_raw_data);
-			m_raw_data = nullptr;
-			return *this;
-		}
-
-		if (m_pix_format == PIX_FMT_Y8) {
-			size = m_width * m_height;
-		} else if (m_pix_format == PIX_FMT_Y16) {
-			size = m_width * m_height * 2;
-		} else if (m_pix_format == PIX_FMT_Y32) {
-			size = m_width * m_height * 4;
-		} else if (m_pix_format == PIX_FMT_F32) {
-			size = m_width * m_height * 4;
-		} else if (m_pix_format == PIX_FMT_RGB24) {
-			size = m_width * m_height * 3;
-		} else if (m_pix_format == PIX_FMT_RGB48) {
-			size = m_width * m_height * 6;
-		} else if (m_pix_format == PIX_FMT_RGB96) {
-			size = m_width * m_height * 12;
-		} else if (m_pix_format == PIX_FMT_RGBF) {
-			size = m_width * m_height * 12;
-		}
-
-		if (m_raw_data) free(m_raw_data);
-
-		if (size == 0) {
-			m_raw_data = nullptr;
-			return *this;
-		}
-
-		m_raw_data = (char*)malloc(size);
-		memcpy(m_raw_data, image.m_raw_data, size);
+		// share buffer instead of copying
+		m_raw_owner = image.m_raw_owner;
+		m_raw_data = image.m_raw_data;
 		return *this;
 	}
 
 	~preview_image() {
-		if (m_raw_data != nullptr) {
-			free(m_raw_data);
-			m_raw_data = nullptr;
-		}
+		m_raw_owner.reset();
 	};
 
 	int pixel_value(int x, int y, double &r, double &g, double &b) const {
@@ -296,6 +249,7 @@ public:
 	};
 
 	char *m_raw_data;
+	std::shared_ptr<char> m_raw_owner;
 	int m_width;
 	int m_height;
 	int m_pix_format;
@@ -318,6 +272,7 @@ preview_image* create_xisf_preview(unsigned char *xisf_buffer, unsigned long xis
 preview_image* create_raw_preview(unsigned char *raw_image_buffer, unsigned long raw_size, const stretch_config_t sconfig);
 preview_image* create_preview(unsigned char *data, size_t size, const char* format, const stretch_config_t sconfig);
 preview_image* create_preview(int width, int height, int pixel_format, char *image_data, const stretch_config_t sconfig);
+preview_image* create_preview(int width, int height, int pixel_format, std::shared_ptr<char> image_owner, char *image_data, const stretch_config_t sconfig);
 preview_image* create_preview(indigo_property *property, indigo_item *item, const stretch_config_t sconfig);
 preview_image* create_preview(indigo_item *item, const stretch_config_t sconfig);
 void stretch_preview(preview_image *img, const stretch_config_t sconfig);

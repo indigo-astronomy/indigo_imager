@@ -5,7 +5,9 @@
 #include <image_stats.h>
 #include <imagepreview.h>
 #include <QGraphicsPixmapItem>
-#include <QEnterEvent>
+#include <snr_calculator.h>
+#include <snr_overlay.h>
+#include <image_inspector_overlay.h>
 
 QT_BEGIN_NAMESPACE
 class QLabel;
@@ -14,6 +16,8 @@ QT_END_NAMESPACE
 class PixmapItem;
 class GraphicsView;
 class QToolButton;
+class AntialiasedEllipseItem;
+class AntialiasedRectItem;
 
 /**
  * @brief ImageViewer displays images and allows basic interaction with it
@@ -92,6 +96,8 @@ public slots:
 	void zoomOut();
 	void mouseAt(double x, double y);
 	void mouseRightPressAt(double x, double y, Qt::KeyboardModifiers modifiers);
+	void mouseLeftPressAt(double x, double y, Qt::KeyboardModifiers modifiers);
+	void mouseLeftDoubleClickAt(double x, double y, Qt::KeyboardModifiers modifiers);
 
 	void stretchNone();
 	void stretchSlight();
@@ -111,6 +117,16 @@ public slots:
 
 	void onPrevious();
 	void onNext();
+
+	void enableSNRMode(bool enable);
+	void showSNROverlay(bool show);
+	void calculateAndShowSNR(double x, double y);
+
+	// Image inspection
+	void runImageInspection();
+	void showInspectionOverlay(bool show);
+	void updateSNROverlayPosition();
+	void updateInspectionOverlayPosition();
 
 signals:
 	void imageChanged();
@@ -145,14 +161,14 @@ private:
 	QLabel *m_image_histogram;
 	GraphicsView *m_view;
 	PixmapItem *m_pixmap;
-	QGraphicsRectItem *m_selection;
-	QGraphicsRectItem *m_edge_clipping;
+	AntialiasedRectItem *m_selection;
+	AntialiasedRectItem *m_edge_clipping;
 	QGraphicsLineItem *m_ref_x;
 	QGraphicsLineItem *m_ref_y;
 	QPoint m_selection_p;
 	QPoint m_ref_p;
 	double m_edge_clipping_v;
-	QList<QGraphicsEllipseItem*> m_extra_selections;
+	QList<AntialiasedEllipseItem*> m_extra_selections;
 	bool m_extra_selections_visible;
 
 	QWidget *m_toolbar;
@@ -168,6 +184,20 @@ private:
 	QAction *m_stretch_act[PREVIEW_STRETCH_COUNT];
 	QAction *m_debayer_act[DEBAYER_COUNT];
 	QAction *m_color_reference_act[COLOR_BALANCE_COUNT];
+	SNROverlay *m_snr_overlay;
+	ImageInspectorOverlay *m_inspection_overlay;
+	QAction *m_inspection_act;
+	bool m_inspection_overlay_visible;
+	AntialiasedEllipseItem *m_snr_star_circle;
+	AntialiasedEllipseItem *m_snr_background_inner_ring;
+	AntialiasedEllipseItem *m_snr_background_outer_ring;
+	bool m_snr_mode_enabled;
+	bool m_snr_overlay_visible;
+	double m_snr_star_x;
+	double m_snr_star_y;
+	double m_snr_star_radius;
+	double m_snr_background_inner_radius;
+	double m_snr_background_outer_radius;
 };
 
 
@@ -185,15 +215,19 @@ signals:
 	void imageChanged(const preview_image &);
 	void sizeChanged(int w, int h);
 	void mouseRightPress(double x, double y, Qt::KeyboardModifiers);
+	void mouseLeftPress(double x, double y, Qt::KeyboardModifiers);
+	void mouseLeftDoubleClick(double x, double y, Qt::KeyboardModifiers);
 	void mouseMoved(double x, double y);
 
 protected:
 	void mousePressEvent(QGraphicsSceneMouseEvent *) override;
 	void mouseReleaseEvent(QGraphicsSceneMouseEvent *) override;
+	void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *) override;
 	void hoverMoveEvent(QGraphicsSceneHoverEvent *) override;
 
 private:
 	preview_image m_image;
+	bool m_is_double_click;
 };
 
 #endif // IMAGEVIEWER_H

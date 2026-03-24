@@ -19,6 +19,7 @@
 
 #include <QtConcurrent/QtConcurrent>
 #include <indigo/indigo_client.h>
+#include <indigo/indigo_names.h>
 #include "indigoclient.h"
 #include "conf.h"
 #include <chrono>
@@ -179,7 +180,7 @@ static void handle_blob_property(indigo_property *property) {
 	static char error_message[] = "Error: Download is not fast enough, skipping frame.";
 	if (property->state == INDIGO_OK_STATE && property->perm != INDIGO_WO_PERM) {
 		if (!strncmp(property->device, "Imager Agent", 12)) {
-			if (!strncmp(property->name, CCD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
+			if (!strncmp(property->name, CCD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE) && (conf.preview_mode < ALL_FINE_PREVIEWS)) {
 				if (!download_blob_async(property, &client.imager_downloading, client.is_exposing(property->device))) {
 					client.m_logger->log(property, error_message);
 				}
@@ -187,21 +188,24 @@ static void handle_blob_property(indigo_property *property) {
 				if (!download_blob_async(property, &client.imager_downloading_saved_frame, true)) {
 					client.m_logger->log(property, error_message);
 				}
-			} else if (!strncmp(property->name, CCD_PREVIEW_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
-				// for the time being we are not interested in preview images
+			} else if (!strncmp(property->name, CCD_PREVIEW_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE) && (conf.preview_mode > GUIDER_COARSE_PREVIEW)) {
+				if (!download_blob_async(property, &client.imager_downloading, client.is_exposing(property->device))) {
+					client.m_logger->log(property, error_message);
+				}
 			}
 		} else if (!strncmp(property->device, "Guider Agent", 12)) {
-			if ((!strncmp(property->name, CCD_PREVIEW_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) && (conf.guider_save_bandwidth == 0)) {
+			if ((!strncmp(property->name, CCD_PREVIEW_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) && (conf.preview_mode == NO_PREVIEWS)) {
 				return;
 			}
-			if ((!strncmp(property->name, CCD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) && (conf.guider_save_bandwidth > 0)) {
+			if ((!strncmp(property->name, CCD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) && (conf.preview_mode > NO_PREVIEWS)) {
 				return;
 			}
 			if (!download_blob_async(property, &client.guider_downloading)) {
 				indigo_error(error_message);
 			}
 		} else {
-			download_blob_async(property, &client.other_downloading, client.is_exposing(property->device));
+			indigo_log("BLOB: Skipping download of %s.%s", property->device, property->name);
+			//download_blob_async(property, &client.other_downloading, client.is_exposing(property->device));
 		}
 	} else if(property->state == INDIGO_BUSY_STATE && property->perm != INDIGO_WO_PERM) {
 		for (int row = 0; row < property->count; row++) {
@@ -218,6 +222,8 @@ static indigo_result client_define_property(indigo_client *client, indigo_device
 	Q_UNUSED(device);
 
 	if (!processed_device(property->device)) return INDIGO_OK;
+
+	//indigo_error(" ----> Defining property [%s] on device [%s]\n", property->name, property->device);
 
 	IndigoClient &client_instance = IndigoClient::instance();
 
@@ -261,6 +267,8 @@ static indigo_result client_update_property(indigo_client *client, indigo_device
 	Q_UNUSED(device);
 
 	if (!processed_device(property->device)) return INDIGO_OK;
+
+	//indigo_error(" ----> Updating property [%s] on device [%s]\n", property->name, property->device);
 
 	IndigoClient::instance().update_save_blob(property);
 
@@ -312,11 +320,45 @@ static indigo_result client_delete_property(indigo_client *client, indigo_device
 	return INDIGO_OK;
 }
 
-
-static indigo_result client_send_message(indigo_client *client, indigo_device *device, const char *message) {
+#ifdef INDIGO_VERSION_3
+static indigo_result client_receive_message(indigo_client *client, indigo_device *device, indigo_property *property, const char *message) {
 	Q_UNUSED(client);
 
 	if (!message) return INDIGO_OK;
+
+	char *message_copy;
+	message_copy = (char*)malloc(INDIGO_VALUE_SIZE);
+	snprintf(message_copy, INDIGO_VALUE_SIZE, "%s", message);
+
+	if (property) {
+		char *device_name_copy = (char*)malloc(INDIGO_NAME_SIZE);
+		strncpy(device_name_copy, property->device, INDIGO_NAME_SIZE);
+
+		char *property_name_copy = NULL;
+		if (
+			strcmp(property->name, OK_PROPERTY->name) != 0 &&
+			strcmp(property->name, ALERT_PROPERTY->name) != 0 &&
+			strcmp(property->name, BUSY_PROPERTY->name) != 0 &&
+			strcmp(property->name, IDLE_PROPERTY->name) != 0
+		) {
+			property_name_copy = (char*)malloc(INDIGO_NAME_SIZE);
+			strncpy(property_name_copy, property->name, INDIGO_NAME_SIZE);
+		}
+
+		emit(IndigoClient::instance().message_received_v3(device_name_copy, property_name_copy, property->state, message_copy));
+	} else {
+		emit(IndigoClient::instance().message_received_v3(NULL, NULL, 0, message_copy));
+	}
+
+	return INDIGO_OK;
+}
+#else
+static indigo_result client_receive_message(indigo_client *client, indigo_device *device, const char *message) {
+	Q_UNUSED(client);
+
+	if (!message) return INDIGO_OK;
+
+	//indigo_error(" ----> Message from device [%s]: %s\n", device ? device->name : "Unknown", message);
 
 	char *message_copy;
 	message_copy = (char*)malloc(INDIGO_VALUE_SIZE);
@@ -326,10 +368,10 @@ static indigo_result client_send_message(indigo_client *client, indigo_device *d
 	} else {
 		snprintf(message_copy, INDIGO_VALUE_SIZE, "%s", message);
 	}
-	emit(IndigoClient::instance().message_sent(NULL, message_copy));
+	emit(IndigoClient::instance().message_received_v2(NULL, message_copy));
 	return INDIGO_OK;
 }
-
+#endif
 
 static indigo_result client_detach(indigo_client *client) {
 	Q_UNUSED(client);
@@ -343,7 +385,7 @@ indigo_client client = {
 	client_define_property,
 	client_update_property,
 	client_delete_property,
-	client_send_message,
+	client_receive_message,
 	client_detach
 };
 

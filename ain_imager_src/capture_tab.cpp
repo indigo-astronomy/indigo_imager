@@ -117,7 +117,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	capture_frame_layout->addWidget(label, row, 0);
 	m_object_name = new QLineEdit();
 	m_object_name->setPlaceholderText("Image file prefix e.g. M16, M33 ...");
-	m_object_name->setToolTip("Object name or any text that will be used as a file name prefix.\nIf empty images will not be saved.");
+	m_object_name->setToolTip("Object name or any text that will be used as a file name prefix.\nIf empty images will not be saved.\nSpecial characters like / \\ $ will be replaced with _");
 	capture_frame_layout->addWidget(m_object_name, row, 1, 1, 5);
 	connect(m_object_name, &QLineEdit::textChanged, this, &ImagerWindow::on_object_name_changed);
 
@@ -155,11 +155,11 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_pause_button->setIcon(QIcon(":resource/pause.png"));
 	connect(m_pause_button, &QPushButton::clicked, this, &ImagerWindow::on_pause);
 
-	QPushButton *button = new QPushButton("Abort");
-	button->setStyleSheet("min-width: 30px");
-	button->setIcon(QIcon(":resource/stop.png"));
-	toolbox->addWidget(button);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
+	m_abort_exposure_button = new QPushButton("Abort");
+	m_abort_exposure_button->setStyleSheet("min-width: 30px");
+	m_abort_exposure_button->setIcon(QIcon(":resource/stop.png"));
+	toolbox->addWidget(m_abort_exposure_button);
+	connect(m_abort_exposure_button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
 
 	row++;
 	m_exposure_progress = new QProgressBar();
@@ -175,7 +175,8 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_download_label->setToolTip("Image download progress");
 	m_download_label->setStyleSheet(QString("QLabel { background-color: #272727; border-radius: %1px; }").arg(spinner_size / 2));
 	capture_frame_layout->addWidget(m_download_label, row, 5, 2, 1);
-	m_download_spinner = new QMovie(":resource/spinner.gif");
+	// Parent the movie so it is reliably destroyed on shutdown (fixes Valgrind leak via QImageReader/QMovie).
+	m_download_spinner = new QMovie(":resource/spinner.gif", QByteArray(), this);
 	m_download_spinner->setScaledSize(m_download_label->size() * 0.7);
 	m_download_label->setMovie(m_download_spinner);
 	m_download_label->clear();
@@ -446,9 +447,9 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	remote_files_frame_layout->addWidget(m_keep_image_on_server_cbox, remote_files_row, 0, 1, 4);
 	connect(m_keep_image_on_server_cbox, &QPushButton::clicked, this, &ImagerWindow::on_keep_image_on_server);
 
-	remote_files_row++;
-	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
-	remote_files_frame_layout->addItem(spacer, remote_files_row, 0, 1, 4);
+	//remote_files_row++;
+	//spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	//remote_files_frame_layout->addItem(spacer, remote_files_row, 0, 1, 4);
 
 	remote_files_row++;
 	m_sync_files_button = new QPushButton("Download images");
@@ -466,7 +467,7 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	connect(m_remove_synced_files_button, &QPushButton::clicked, this, &ImagerWindow::on_remove_synced_remote_files);
 
 	remote_files_row++;
-	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	spacer = new QSpacerItem(1, 5, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	remote_files_frame_layout->addItem(spacer, remote_files_row, 0, 1, 4);
 
 	remote_files_row++;
@@ -475,6 +476,19 @@ void ImagerWindow::create_imager_tab(QFrame *capture_frame) {
 	m_download_progress->setMaximum(1);
 	m_download_progress->setValue(0);
 	m_download_progress->setFormat("Download progress");
+
+	// Move disk usage label to the very bottom of the remote files tab
+	remote_files_row++;
+	spacer = new QSpacerItem(1, 1, QSizePolicy::Expanding, QSizePolicy::Expanding);
+	remote_files_frame_layout->addItem(spacer, remote_files_row, 0, 1, 4);
+
+	remote_files_row++;
+	m_server_disk_usage_label = new QLabel("");
+	m_server_disk_usage_label->setToolTip("Server disk space usage");
+	remote_files_frame_layout->addWidget(m_server_disk_usage_label, remote_files_row, 0, 1, 4);
+	connect(this, &ImagerWindow::update_server_disk_usage, this, &ImagerWindow::on_update_server_disk_usage);
+
+	update_server_disk_usage(-1, -1, INDIGO_IDLE_STATE);
 }
 
 void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
@@ -506,12 +520,12 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 
 		// Start sequence or exposure
 		set_base_agent_relations();
-
 		m_object_name_str = m_object_name->text().trimmed();
 		change_agent_batch_property(selected_imager_agent);
 		change_ccd_frame_property(selected_imager_agent);
 		change_ccd_localmode_property(selected_imager_agent, m_object_name_str);
-		if(conf.save_images_on_server) {
+		if(conf.save_images_on_server || conf.preview_mode > GUIDER_COARSE_PREVIEW) {
+			setup_preview(selected_imager_agent);
 			change_ccd_upload_property(selected_imager_agent, CCD_UPLOAD_MODE_BOTH_ITEM_NAME);
 		} else {
 			change_ccd_upload_property(selected_imager_agent, CCD_UPLOAD_MODE_CLIENT_ITEM_NAME);
@@ -557,6 +571,7 @@ void ImagerWindow::on_preview_start_stop(bool clicked) {
 		    ccd_exposure && ccd_exposure->state == INDIGO_BUSY_STATE) {
 			change_ccd_abort_exposure_property(selected_agent);
 		} else {
+			setup_preview(selected_agent);
 			set_base_agent_relations();
 			QString obj_name = m_object_name->text();
 			change_ccd_localmode_property(selected_agent, obj_name);
@@ -844,16 +859,52 @@ void ImagerWindow::on_temperature_set(double value) {
 	});
 }
 
+static void sanitize(char *buffer) {
+	for (char *p = buffer; *p; p++) {
+		if (isalnum(*p)) {
+			continue;
+		}
+		if (*p == '-' || *p == '_' || *p == '.' || *p == ' ' ||
+			*p == '(' || *p == ')' || *p == '[' || *p == ']' ||
+			*p == '{' || *p == '}' || *p == '+' || *p == '=' ||
+			*p == '@' || *p == '#' || *p == '$' || *p == '%' ||
+			*p == '&' || *p == '!' || *p == '~' || *p == '^') {
+			continue;
+		}
+		*p = '_';
+	}
+}
+
 void ImagerWindow::on_object_name_changed(const QString &object_name) {
 	if (m_is_sequence) {
 		return;
 	}
+
+	QByteArray ba = object_name.toUtf8();
+	char sanitized_buffer[INDIGO_VALUE_SIZE];
+	strncpy(sanitized_buffer, ba.constData(), INDIGO_VALUE_SIZE - 1);
+	sanitized_buffer[INDIGO_VALUE_SIZE - 1] = '\0';
+	sanitize(sanitized_buffer);
+	QString sanitized_name = QString::fromUtf8(sanitized_buffer);
+
+	if (sanitized_name != object_name) {
+		// Temporarily disconnect to avoid recursive signal
+		disconnect(m_object_name, &QLineEdit::textChanged, this, &ImagerWindow::on_object_name_changed);
+
+		int cursor_pos = m_object_name->cursorPosition();
+		m_object_name->setText(sanitized_name);
+		m_object_name->setCursorPosition(qMin(cursor_pos, sanitized_name.length()));
+
+		connect(m_object_name, &QLineEdit::textChanged, this, &ImagerWindow::on_object_name_changed);
+		return;
+	}
+
 	QtConcurrent::run([=]() {
 		indigo_debug("CALLED: %s\n", __FUNCTION__);
 		static char selected_agent[INDIGO_NAME_SIZE];
 		get_selected_imager_agent(selected_agent);
 
-		change_ccd_localmode_property(selected_agent, object_name);
+		change_ccd_localmode_property(selected_agent, sanitized_name);
 	});
 }
 
@@ -983,4 +1034,74 @@ void ImagerWindow::remove_synced_remote_files() {
 	} else {
 		window_log("No downloaded images to remove");
 	}
+}
+
+void ImagerWindow::on_update_server_disk_usage(double total_mb, double free_mb, int state) {
+	if (!m_server_disk_usage_label) return;
+
+	// < 0 means no data available - clear label
+	if (total_mb < 0 || free_mb < 0) {
+		m_server_disk_usage_label->setText("");
+		m_server_disk_usage_label->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+		return;
+	}
+
+	// Accept MB, convert to GB/TB if needed
+	double total = total_mb;
+	double free = free_mb;
+	QString total_unit = "MB";
+	QString free_unit = "MB";
+
+	if (total >= 1024*1024) {
+		total /= (1024.0*1024.0);
+		total_unit = "TB";
+	} else if (total >= 1024) {
+		total /= 1024.0;
+		total_unit = "GB";
+	}
+
+	if (free >= 1024*1024) {
+		free /= (1024.0*1024.0);
+		free_unit = "TB";
+	} else if (free >= 1024) {
+		free /= 1024.0;
+		free_unit = "GB";
+	}
+
+	double used = total_mb - free_mb;
+	double used_percent = (total_mb > 0) ? (used / total_mb * 100.0) : 0.0;
+
+	QString total_str = QString("%1 %2").arg(total, 0, 'f', 2).arg(total_unit);
+	QString free_str = QString("%1 %2").arg(free, 0, 'f', 2).arg(free_unit);
+	QString percent_str = QString("%1").arg(used_percent, 0, 'f', 1);
+
+	if (state == INDIGO_IDLE_STATE || state == -1) {
+		total_str = "-- MB";
+		free_str = "-- MB";
+		percent_str = "-- ";
+	}
+
+	QString icon_path;
+	switch (state) {
+		case INDIGO_OK_STATE:
+			icon_path = ":resource/led-green.png";
+			break;
+		case INDIGO_BUSY_STATE:
+			icon_path = ":resource/led-orange.png";
+			break;
+		case INDIGO_ALERT_STATE:
+			icon_path = ":resource/led-red.png";
+			break;
+		default:
+			icon_path = ":resource/led-grey.png";
+			break;
+	}
+
+	QString html = QString("<span style='font-size:9pt;'><img src=\"%1\" style='vertical-align:middle;'> &nbsp;Server total: %2 | Free: %3 | Used: %4%</span>")
+		.arg(icon_path)
+		.arg(total_str)
+		.arg(free_str)
+		.arg(percent_str);
+	m_server_disk_usage_label->setText(html);
+	m_server_disk_usage_label->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
 }

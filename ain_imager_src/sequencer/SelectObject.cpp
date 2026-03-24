@@ -20,7 +20,7 @@
 #include "SelectObject.h"
 #include "indigo_cat_data.h"
 
-SelectObject::SelectObject(QWidget *parent) : QFrame(parent) {
+SelectObjectWidget::SelectObjectWidget(QWidget *parent) : QFrame(parent) {
 	m_layout = new QGridLayout();
 	m_layout->setAlignment(Qt::AlignTop);
 	setLayout(m_layout);
@@ -34,46 +34,46 @@ SelectObject::SelectObject(QWidget *parent) : QFrame(parent) {
 	m_object_search_line = new QLineEdit();
 	m_object_search_line->setPlaceholderText("E.g. M42, Ain, Vega ...");
 	m_layout->addWidget(m_object_search_line, row, 1, 1, 4);
-	connect(m_object_search_line, &QLineEdit::textEdited, this, &SelectObject::onSearchTextChanged);
-	connect(m_object_search_line, &QLineEdit::returnPressed, this, &SelectObject::onSearchEntered);
+	connect(m_object_search_line, &QLineEdit::textEdited, this, &SelectObjectWidget::onSearchTextChanged);
+	connect(m_object_search_line, &QLineEdit::returnPressed, this, &SelectObjectWidget::onSearchEntered);
 
 	row++;
 	m_custom_objects_only_cbox = new QCheckBox("Custom objects only");
 	m_layout->addWidget(m_custom_objects_only_cbox, row, 1, 1, 4, Qt::AlignRight);
-	connect(m_custom_objects_only_cbox, &QCheckBox::clicked, this, &SelectObject::onCustomObjectsOnlyChecked);
+	connect(m_custom_objects_only_cbox, &QCheckBox::clicked, this, &SelectObjectWidget::onCustomObjectsOnlyChecked);
 
 	row++;
 	m_object_list = new QListWidget();
 	m_object_list->setStyleSheet("QListWidget {border: 1px solid #404040;}");
 	m_layout->addWidget(m_object_list, row, 0, 1, 5);
-	connect(m_object_list, &QListWidget::itemSelectionChanged, this, &SelectObject::onObjectSelected);
-	connect(m_object_list, &QListWidget::itemClicked, this, &SelectObject::onObjectClicked);
+	connect(m_object_list, &QListWidget::itemSelectionChanged, this, &SelectObjectWidget::onObjectSelected);
+	connect(m_object_list, &QListWidget::itemClicked, this, &SelectObjectWidget::onObjectClicked);
 
 	m_customObjectModel = new CustomObjectModel();
 	m_customObjectModel->loadObjects();
 }
 
-void SelectObject::onSearchTextChanged(const QString &text) {
+void SelectObjectWidget::onSearchTextChanged(const QString &text) {
 	updateObjectList(text);
 }
 
-void SelectObject::onSearchEntered() {
+void SelectObjectWidget::onSearchEntered() {
 	if (m_object_list->count() == 0) return;
 	m_object_list->setCurrentRow(0);
 	m_object_list->setFocus();
 	indigo_debug("%s -> 0\n", __FUNCTION__);
 }
 
-void SelectObject::onCustomObjectsOnlyChecked(bool checked) {
+void SelectObjectWidget::onCustomObjectsOnlyChecked(bool checked) {
 	Q_UNUSED(checked);
 	updateObjectList(m_object_search_line->text());
 }
 
-void SelectObject::onObjectSelected() {
+void SelectObjectWidget::onObjectSelected() {
 	onObjectClicked(m_object_list->currentItem());
 }
 
-void SelectObject::onObjectClicked(QListWidgetItem *item) {
+void SelectObjectWidget::onObjectClicked(QListWidgetItem *item) {
 	auto object = item->data(Qt::UserRole).value<CustomObject*>();
 	if (object) {
 		emit objectSelected(object->m_name, object->m_ra, object->m_dec);
@@ -90,7 +90,7 @@ void SelectObject::onObjectClicked(QListWidgetItem *item) {
 	}
 }
 
-void SelectObject::updateObjectList(const QString &text) {
+void SelectObjectWidget::updateObjectList(const QString &text) {
 	m_object_list->clear();
 	QString obj_name_c = text.trimmed();
 	if (obj_name_c.isEmpty()) return;
@@ -177,7 +177,7 @@ void SelectObject::updateObjectList(const QString &text) {
 	}
 }
 
-void SelectObject::showEvent(QShowEvent *event) {
+void SelectObjectWidget::showEvent(QShowEvent *event) {
 	QFrame::showEvent(event);
 	m_object_search_line->setFocus();
 }

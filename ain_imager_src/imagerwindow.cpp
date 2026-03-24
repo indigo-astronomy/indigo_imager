@@ -36,6 +36,7 @@
 #include <image_stats.h>
 #include <QSoundEffect>
 #include <QFileInfo>
+#include <QUrl>
 //#include <IndigoSequence.h>
 
 void write_conf();
@@ -63,6 +64,23 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	mIndigoServers = new QIndigoServers(this);
 	m_config_dialog = new QConfigDialog(this);
 	m_add_object_dialog = new QAddCustomObject(this);
+
+	m_sound_ok = nullptr;
+	m_sound_warning = nullptr;
+	m_sound_alert = nullptr;
+
+	// Initialize reusable sound effects (parented to this so they'll be freed)
+	m_sound_ok = new QSoundEffect(this);
+	m_sound_ok->setSource(QUrl("qrc:/resource/ok.wav"));
+	m_sound_ok->setVolume(0.5);
+
+	m_sound_warning = new QSoundEffect(this);
+	m_sound_warning->setSource(QUrl("qrc:/resource/warning.wav"));
+	m_sound_warning->setVolume(0.5);
+
+	m_sound_alert = new QSoundEffect(this);
+	m_sound_alert->setSource(QUrl("qrc:/resource/error.wav"));
+	m_sound_alert->setVolume(0.5);
 
 	m_is_sequence = false;
 	m_indigo_item = nullptr;
@@ -145,20 +163,75 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu = new QMenu("&Settings");
 
+	act = menu->addAction(tr("Save &noname images"));
+	act->setCheckable(true);
+	act->setChecked(conf.save_noname_images);
+	connect(act, &QAction::toggled, this, &ImagerWindow::on_save_noname_images_changed);
+
+	sub_menu = menu->addMenu("&Preview Mode");
+
+	QActionGroup *preview_mode_group = new QActionGroup(this);
+	preview_mode_group->setExclusive(true);
+
+	act = sub_menu->addAction("&Off (Use actual images)");
+	act->setCheckable(true);
+	if (conf.preview_mode == NO_PREVIEWS) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_off);
+	preview_mode_group->addAction(act);
+
+	sub_menu->addSeparator();
+
+	act = sub_menu->addAction("Guider preview: &Fine");
+	act->setCheckable(true);
+	if (conf.preview_mode == GUIDER_FINE_PREVIEW) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_fine_guider);
+	preview_mode_group->addAction(act);
+
+	act = sub_menu->addAction("Guider preview: &Normal");
+	act->setCheckable(true);
+	if (conf.preview_mode == GUIDER_NORMAL_PREVIEW) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_normal_guider);
+	preview_mode_group->addAction(act);
+
+	act = sub_menu->addAction("Guider preview: &Coarse");
+	act->setCheckable(true);
+	if (conf.preview_mode == GUIDER_COARSE_PREVIEW) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_coarse_guider);
+	preview_mode_group->addAction(act);
+
+	sub_menu->addSeparator();
+
+	act = sub_menu->addAction("Imager && Guider previews: &Fine");
+	act->setCheckable(true);
+	if (conf.preview_mode == ALL_FINE_PREVIEWS) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_fine_all);
+	preview_mode_group->addAction(act);
+
+	act = sub_menu->addAction("Imager && Guider previews: &Normal");
+	act->setCheckable(true);
+	if (conf.preview_mode == ALL_NORMAL_PREVIEWS) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_normal_all);
+	preview_mode_group->addAction(act);
+
+	act = sub_menu->addAction("Imager && Guider previews: &Coarse");
+	act->setCheckable(true);
+	if (conf.preview_mode == ALL_COARSE_PREVIEWS) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_coarse_all);
+	preview_mode_group->addAction(act);
+
+	/*
 	act = menu->addAction(tr("Enable &BLOBs"));
 	act->setCheckable(true);
 	act->setChecked(conf.blobs_enabled);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_blobs_changed);
+	*/
+
+	menu->addSeparator();
 
 	act = menu->addAction(tr("&Auto connect new services"));
 	act->setCheckable(true);
 	act->setChecked(conf.auto_connect);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_bonjour_changed);
-
-	act = menu->addAction(tr("Save &noname images"));
-	act->setCheckable(true);
-	act->setChecked(conf.save_noname_images);
-	connect(act, &QAction::toggled, this, &ImagerWindow::on_save_noname_images_changed);
 
 	act = menu->addAction(tr("&Restore window size at start"));
 	act->setCheckable(true);
@@ -209,16 +282,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	sound_group->addAction(act);
 
 	menu->addSeparator();
-
-	act = menu->addAction(tr("Show image &statistics"));
-	act->setCheckable(true);
-	act->setChecked(conf.statistics_enabled);
-	connect(act, &QAction::toggled, this, &ImagerWindow::on_statistics_show);
-
-	act = menu->addAction(tr("Show image &center"));
-	act->setCheckable(true);
-	act->setChecked(conf.imager_show_reference);
-	connect(act, &QAction::toggled, this, &ImagerWindow::on_imager_show_reference);
 
 	act = menu->addAction(tr("Enable image &antialiasing"));
 	act->setCheckable(true);
@@ -304,6 +367,34 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu_bar->addMenu(menu);
 
+	QMenu *tools_menu = new QMenu("&Tools");
+	QAction *tools_act;
+
+	tools_act = tools_menu->addAction(tr("Image &statistics"));
+	tools_act->setCheckable(true);
+	tools_act->setChecked(conf.statistics_enabled);
+	connect(tools_act, &QAction::toggled, this, &ImagerWindow::on_statistics_show);
+
+	tools_act = tools_menu->addAction(tr("Image &center"));
+	tools_act->setCheckable(true);
+	tools_act->setChecked(conf.imager_show_reference);
+	connect(tools_act, &QAction::toggled, this, &ImagerWindow::on_imager_show_reference);
+
+	// Image Inspector action toggles inspection overlay in the image viewer
+	tools_act = tools_menu->addAction(tr("Image &Inspector"));
+	tools_act->setCheckable(true);
+	connect(tools_act, &QAction::toggled, this, [this](bool checked){
+		if (!m_imager_viewer) return;
+		if (checked) {
+			m_imager_viewer->runImageInspection();
+			m_imager_viewer->showInspectionOverlay(true);
+		} else {
+			m_imager_viewer->showInspectionOverlay(false);
+		}
+	});
+
+	menu_bar->addMenu(tools_menu);
+
 	menu = new QMenu("&Help");
 
 	act = menu->addAction(tr("Online &User Guide"));
@@ -387,6 +478,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_imager_viewer->setStretch(conf.preview_stretch_level);
 	m_imager_viewer->setDebayer(conf.preview_bayer_pattern);
 	m_imager_viewer->setBalance(conf.preview_color_balance);
+	m_imager_viewer->enableSNRMode(true);  // Enable SNR mode for capture tab
 	m_visible_viewer = m_imager_viewer;
 
 	// Image guide viewer
@@ -396,6 +488,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_guider_viewer->setStretch(conf.guider_stretch_level);
 	m_guider_viewer->setDebayer(BAYER_PAT_AUTO);
 	m_guider_viewer->setBalance(conf.guider_color_balance);
+	m_guider_viewer->enableSNRMode(true);  // Enable SNR mode for guider tab
 	m_guider_viewer->setVisible(false);
 
 	m_sequence_editor2 = new IndigoSequence();
@@ -418,6 +511,10 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	// Load sequencer code from resource
 	load_sequencer_code();
 	// indigo_error("%s", m_sequencer_code.toUtf8().data());
+
+	//  Start up the client
+	IndigoClient::instance().enable_blobs(conf.blobs_enabled);
+	IndigoClient::instance().start("INDIGO Imager");
 
 	mServiceModel = &QServiceModel::instance();
 	indigo_debug("servicemodel %p", mServiceModel);
@@ -488,7 +585,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(&IndigoClient::instance(), &IndigoClient::property_defined, this, &ImagerWindow::on_message_sent);
 	connect(&IndigoClient::instance(), &IndigoClient::property_changed, this, &ImagerWindow::on_message_sent);
 	connect(&IndigoClient::instance(), &IndigoClient::property_deleted, this, &ImagerWindow::on_message_sent);
-	connect(&IndigoClient::instance(), &IndigoClient::message_sent, this, &ImagerWindow::on_message_sent);
+	connect(&IndigoClient::instance(), &IndigoClient::message_received_v2, this, &ImagerWindow::on_message_sent);
+	connect(&IndigoClient::instance(), &IndigoClient::message_received_v3, this, &ImagerWindow::on_message_received);
 
 	connect(
 		&IndigoClient::instance(),
@@ -516,12 +614,12 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	connect(&IndigoClient::instance(), &IndigoClient::property_defined, this, &ImagerWindow::on_property_define, Qt::BlockingQueuedConnection);
 	connect(&IndigoClient::instance(), &IndigoClient::property_changed, this, &ImagerWindow::on_property_change, Qt::BlockingQueuedConnection);
-	connect(&IndigoClient::instance(), &IndigoClient::property_deleted, this, &ImagerWindow::on_property_delete, Qt::BlockingQueuedConnection);
+	connect(&IndigoClient::instance(), &IndigoClient::property_deleted, this, &ImagerWindow::on_property_delete, Qt::QueuedConnection);
 
 	// in some cases Qt::BlockingQueuedConnection causes app to hang, use of Qt::QueuedConnection is safe as blob is cached
 	connect(&IndigoClient::instance(), &IndigoClient::create_preview, this, &ImagerWindow::on_create_preview, Qt::QueuedConnection);
 	//connect(&IndigoClient::instance(), &IndigoClient::obsolete_preview, this, &ImagerWindow::on_obsolete_preview, Qt::BlockingQueuedConnection);
-	connect(&IndigoClient::instance(), &IndigoClient::remove_preview, this, &ImagerWindow::on_remove_preview, Qt::BlockingQueuedConnection);
+	connect(&IndigoClient::instance(), &IndigoClient::remove_preview, this, &ImagerWindow::on_remove_preview, Qt::QueuedConnection);
 
 	connect(&Logger::instance(), &Logger::do_log, this, &ImagerWindow::on_window_log);
 
@@ -556,10 +654,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 			togglePolarAlignmentOverlay(true);
 	});
 
-	//  Start up the client
-	IndigoClient::instance().enable_blobs(conf.blobs_enabled);
-	IndigoClient::instance().start("INDIGO Imager");
-
 	// load manually configured services
 	mServiceModel->loadManualServices();
 
@@ -569,6 +663,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 ImagerWindow::~ImagerWindow () {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
+	preview_cache.clear_all();
 	QSize wsize = size();
 	conf.window_width = wsize.width();
 	conf.window_height = wsize.height();
@@ -577,6 +672,15 @@ ImagerWindow::~ImagerWindow () {
 		IndigoClient::instance().stop();
 	});
 	indigo_usleep(0.5 * ONE_SECOND_DELAY);
+	// Stop and detach the download spinner movie explicitly.
+	if (m_download_label) {
+		m_download_label->setMovie(nullptr);
+	}
+	if (m_download_spinner) {
+		m_download_spinner->stop();
+		delete m_download_spinner;
+		m_download_spinner = nullptr;
+	}
 	delete m_imager_viewer;
 	if (m_indigo_item) {
 		if (m_indigo_item->blob.value) {
@@ -678,6 +782,87 @@ bool ImagerWindow::show_preview_in_imager_viewer(QString &key) {
 	return false;
 }
 
+void ImagerWindow::setup_preview(const char *agent) {
+	int stretch_level, reference_channel;
+	bool is_imager = false;
+	if (!strncmp(agent, "Imager Agent", 12)) {
+		is_imager = true;
+		stretch_level = conf.preview_stretch_level;
+		reference_channel = (conf.preview_color_balance == CB_AUTO) ? 0 : 2;
+		change_agent_ccd_preview(agent, conf.preview_mode > GUIDER_COARSE_PREVIEW);
+	} else if (!strncmp(agent, "Guider Agent", 12)) {
+		is_imager = false;
+		stretch_level = conf.guider_stretch_level;
+		reference_channel = conf.guider_color_balance == CB_AUTO ? 0 : 2;
+		change_agent_ccd_preview(agent, conf.preview_mode > NO_PREVIEWS);
+	} else {
+		return;
+	}
+	switch (conf.preview_mode) {
+	case 0:
+		break;
+	case GUIDER_FINE_PREVIEW:
+		if (is_imager) break;
+		change_jpeg_settings_property(
+			agent,
+			93,
+			stretch_params_lut[stretch_level].brightness,
+			stretch_params_lut[stretch_level].contrast,
+			reference_channel
+		);
+		break;
+	case GUIDER_NORMAL_PREVIEW:
+		if (is_imager) break;
+		change_jpeg_settings_property(
+			agent,
+			89,
+			stretch_params_lut[stretch_level].brightness,
+			stretch_params_lut[stretch_level].contrast,
+			reference_channel
+		);
+		break;
+	case GUIDER_COARSE_PREVIEW:
+		if (is_imager) break;
+		change_jpeg_settings_property(
+			agent,
+			50,
+			stretch_params_lut[stretch_level].brightness,
+			stretch_params_lut[stretch_level].contrast,
+			reference_channel
+		);
+		break;
+	case ALL_FINE_PREVIEWS:
+		change_jpeg_settings_property(
+			agent,
+			93,
+			stretch_params_lut[stretch_level].brightness,
+			stretch_params_lut[stretch_level].contrast,
+			reference_channel
+		);
+		break;
+	case ALL_NORMAL_PREVIEWS:
+		change_jpeg_settings_property(
+			agent,
+			89,
+			stretch_params_lut[stretch_level].brightness,
+			stretch_params_lut[stretch_level].contrast,
+			reference_channel
+		);
+		break;
+	case ALL_COARSE_PREVIEWS:
+		change_jpeg_settings_property(
+			agent,
+			50,
+			stretch_params_lut[stretch_level].brightness,
+			stretch_params_lut[stretch_level].contrast,
+			reference_channel
+		);
+		break;
+	default:
+		break;
+	}
+}
+
 bool ImagerWindow::show_preview_in_guider_viewer(QString &key) {
 	preview_image *image = preview_cache.get(key);
 	if (image) {
@@ -696,7 +881,6 @@ void ImagerWindow::play_sound(int alarm) {
 		case AIN_NO_SOUND:
 			return;
 		case AIN_ALERT_SOUND:
-
 			sound_effect.setSource(QUrl::fromLocalFile(":/resource/error.wav"));
 			sound_effect.play();
 			return;
@@ -842,6 +1026,37 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		}
 	} else if (
 		get_selected_imager_agent(selected_agent) &&
+		client_match_device_property(property, selected_agent, CCD_PREVIEW_IMAGE_PROPERTY_NAME)
+	) {
+		if (m_indigo_item) {
+			if (m_indigo_item->blob.value) {
+				free(m_indigo_item->blob.value);
+			}
+			free(m_indigo_item);
+			m_indigo_item = nullptr;
+		}
+		m_indigo_item = item;
+		const stretch_config_t sconfig = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
+		preview_cache.create(property, m_indigo_item, sconfig);
+		QString key = preview_cache.create_key(property, m_indigo_item);
+		//preview_image *image = preview_cache.get(m_image_key);
+		if (show_preview_in_imager_viewer(key)) {
+			char message[PATH_LEN+100];
+			indigo_debug("m_imager_viewer = %p", m_imager_viewer);
+			m_imager_viewer->setText(QString("👁 Remote Image Preview"));
+			m_imager_viewer->setToolTip(QString("👁 Remote Image Preview - not the actual file"));
+			/*
+			if (!m_last_remote_image_file.isEmpty()) {
+				snprintf(message, sizeof(message), "%s Image saved remotely as '%s'", PREVIEW_REMOTE_INDICATOR, m_last_remote_image_file.toUtf8().constData());
+				m_last_remote_image_file = QString();
+				window_log(message);
+			}
+			*/
+			int size = (int)round(m_focus_star_radius->value() * 2 + 1);
+			move_resize_focuser_selection(m_star_x->value(), m_star_y->value(), size);
+		}
+	} else if (
+		get_selected_imager_agent(selected_agent) &&
 		client_match_device_property(property, selected_agent, AGENT_IMAGER_DOWNLOAD_IMAGE_PROPERTY_NAME)
 	) {
 		if (m_files_to_download.empty()) {
@@ -860,7 +1075,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 					break;
 				}
 			}
-			indigo_debug("Received: %s", file_name);
+
 			if (m_files_to_download.contains(file_name)) {
 				m_files_to_download.removeAll(file_name);
 				get_current_output_dir(location, conf.data_dir_prefix);
@@ -871,10 +1086,37 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 				c = strrchr(file_name, '_');
 				if (c && strlen(c+1) == 32) {
 					*c = '\0';
+
+					// Older indigo versions do not support %3I placeholder and is replaced by _3I
+					// Remove _idx_3I pattern only if it's at the end (before the hash)
+					char *idx_pos = strrchr(file_name, '_');
+					if (idx_pos && strncmp(idx_pos, "_3I", 3) == 0 && idx_pos[3] == '\0') {
+						*idx_pos = '\0';
+						char *idx_pos2 = strrchr(file_name, '_');
+						if (idx_pos2 && strncmp(idx_pos2, "_idx", 4) == 0 && idx_pos2[4] == '\0') {
+							*idx_pos2 = '\0';
+						} else { // put back "_" if "_idx" is not found
+							*idx_pos = '_';
+						}
+					}
+
+					// Remove _idxNNN pattern only if it's at the end (before the hash).
+					idx_pos = strrchr(file_name, '_');
+					if (
+						idx_pos &&
+						strncmp(idx_pos, "_idx", 4) == 0 &&
+						idx_pos[4] >= '0' && idx_pos[4] <= '9' &&
+						idx_pos[5] >= '0' && idx_pos[5] <= '9' &&
+						idx_pos[6] >= '0' && idx_pos[6] <= '9' &&
+						idx_pos[7] == '\0'
+					) {
+						*idx_pos = '\0';
+					}
+
 					strcat(location, file_name);
 					if (save_blob_item_with_prefix(item, location, file_name, false)) {
 						if (!conf.keep_images_on_server) {
-							snprintf(message, sizeof(message), "Image saved to '%s' and removed remotely", file_name);
+							snprintf(message, sizeof(message), "%s Image saved as '%s' and removed remotely", DOWNLOAD_REMOVE_INDICATOR, file_name);
 							QtConcurrent::run([=]() {
 								QString next_file = file_name_static;
 								char agent[INDIGO_VALUE_SIZE];
@@ -882,7 +1124,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 								request_file_remove(agent, next_file.toUtf8().constData());
 							});
 						} else {
-							snprintf(message, sizeof(message), "Image saved to '%s' and kept remotely", file_name);
+							snprintf(message, sizeof(message), "%s Image saved as '%s' and kept remotely", DOWNLOAD_INDICATOR, file_name);
 						}
 						window_log(message);
 					} else {
@@ -914,8 +1156,8 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		item->blob.value = nullptr;
 		free(item);
 	} else if (get_selected_guider_agent(selected_agent)) {
-		if ((client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME) && conf.guider_save_bandwidth == 0) ||
-			(client_match_device_property(property, selected_agent, CCD_PREVIEW_IMAGE_PROPERTY_NAME) && conf.guider_save_bandwidth > 0)) {
+		if ((client_match_device_property(property, selected_agent, CCD_IMAGE_PROPERTY_NAME) && conf.preview_mode == NO_PREVIEWS) ||
+			(client_match_device_property(property, selected_agent, CCD_PREVIEW_IMAGE_PROPERTY_NAME) && conf.preview_mode > NO_PREVIEWS)) {
 			const stretch_config_t sconfig = {(uint8_t)conf.guider_stretch_level, (uint8_t)conf.guider_color_balance, BAYER_PAT_AUTO};
 			preview_cache.create(property, item, sconfig);
 			QString key = preview_cache.create_key(property, item);
@@ -953,6 +1195,29 @@ void ImagerWindow::on_message_sent(indigo_property* property, char *message) {
 	free(message);
 }
 
+void ImagerWindow::on_message_received(char *device_name, char *property_name, int property_state, char *message) {
+	indigo_property *property = (indigo_property*)malloc(sizeof(indigo_property));
+	if (property) {
+		property->count = 0;
+		snprintf(property->device, INDIGO_NAME_SIZE, "%s", device_name ? device_name : "");
+		snprintf(property->name, INDIGO_NAME_SIZE, "%s", property_name ? property_name : "");
+		property->state = (indigo_property_state)property_state;
+	}
+
+	on_window_log(property, message);
+
+	if (property) {
+		free(property);
+	}
+	if (device_name) {
+		free(device_name);
+	}
+	if (property_name) {
+		free(property_name);
+	}
+	free(message);
+}
+
 void ImagerWindow::save_blob_item(indigo_item *item) {
 	if (item->blob.value != NULL) {
 		char file_name[PATH_LEN] = {0};
@@ -960,15 +1225,21 @@ void ImagerWindow::save_blob_item(indigo_item *item) {
 		char location[PATH_LEN];
 
 		if ((m_object_name_str == DEFAULT_OBJECT_NAME || m_object_name_str.isEmpty()) && !conf.save_noname_images) {
-			snprintf(message, sizeof(message), "Warning: image not saved, provide object name");
-			window_log(message, INDIGO_BUSY_STATE);
+			snprintf(message, sizeof(message), "⚠ Warning: image not saved locally, provide object name");
+			window_log(message);
 			return;
 		}
 		get_current_output_dir(location, conf.data_dir_prefix);
 		if (save_blob_item_with_prefix(item, location, file_name)) {
 			m_imager_viewer->setText(basename(file_name));
 			m_imager_viewer->setToolTip(file_name);
-			snprintf(message, sizeof(message), "Image saved to '%s'", file_name);
+			char *indicator;
+			if (conf.save_images_on_server) {
+				indicator = SAVE_BOTH_INDICATOR;
+			} else {
+				indicator = SAVE_LOCAL_INDICATOR;
+			}
+			snprintf(message, sizeof(message), "%s Image saved locally as: '%s'", indicator, file_name);
 			window_log(message);
 		} else {
 			snprintf(message, sizeof(message), "Error: can not save '%s'", file_name);
@@ -1180,10 +1451,10 @@ void ImagerWindow::on_image_save_act() {
 	if (save_blob_item(m_indigo_item, file_name.toUtf8().data())) {
 		m_imager_viewer->setText(basename(file_name.toUtf8().data()));
 		m_imager_viewer->setToolTip(file_name);
-		snprintf(message, sizeof(message), "Image saved to '%s'", file_name.toUtf8().data());
+		snprintf(message, sizeof(message), "%s Image saved as '%s'", DOWNLOAD_INDICATOR, file_name.toUtf8().data());
 		window_log(message);
 	} else {
-		snprintf(message, sizeof(message), "Can not save '%s'", file_name.toUtf8().data());
+		snprintf(message, sizeof(message), "Error: Can not save image as '%s'", file_name.toUtf8().data());
 		window_log(message, INDIGO_ALERT_STATE);
 	}
 }
@@ -1318,6 +1589,11 @@ void ImagerWindow::on_use_system_locale_changed(bool status) {
 
 void ImagerWindow::on_imager_stretch_changed(int level) {
 	conf.preview_stretch_level = (preview_stretch)level;
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		setup_preview(selected_agent);
+	});
 	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 	preview_cache.recreate(m_image_key, sc);
 	show_preview_in_imager_viewer(m_image_key);
@@ -1336,6 +1612,11 @@ void ImagerWindow::on_imager_debayer_changed(uint32_t bayer_pat) {
 
 void ImagerWindow::on_imager_cb_changed(int balance) {
 	conf.preview_color_balance = (color_balance)balance;
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_imager_agent(selected_agent);
+		setup_preview(selected_agent);
+	});
 	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 	preview_cache.recreate(m_image_key, sc);
 	show_preview_in_imager_viewer(m_image_key);
@@ -1359,6 +1640,11 @@ void ImagerWindow::on_guider_stretch_changed(int level) {
 
 void ImagerWindow::on_guider_cb_changed(int balance) {
 	conf.guider_color_balance = (color_balance)balance;
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_guider_agent(selected_agent);
+		setup_preview(selected_agent);
+	});
 	const stretch_config_t sc = {(uint8_t)conf.guider_stretch_level, (uint8_t)conf.guider_color_balance, BAYER_PAT_AUTO};
 	preview_cache.recreate(m_guider_key, sc);
 	show_preview_in_guider_viewer(m_guider_key);
@@ -1433,6 +1719,111 @@ void ImagerWindow::on_guide_show_xy_drift() {
 	select_guider_data(conf.guider_display);
 	if (m_guider_data_1 && m_guider_data_2) m_guider_graph->redraw_data2(*m_guider_data_1, *m_guider_data_2);
 	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_preview_mode_off() {
+	conf.preview_mode = NO_PREVIEWS;
+	write_conf();
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_imager_agent(selected_agent);
+		setup_preview(selected_agent);
+
+		get_selected_guider_agent(selected_agent);
+		setup_preview(selected_agent);
+	});
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_preview_mode_fine_guider() {
+	conf.preview_mode = GUIDER_FINE_PREVIEW;
+	write_conf();
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_imager_agent(selected_agent);
+		setup_preview(selected_agent);
+
+		get_selected_guider_agent(selected_agent);
+		setup_preview(selected_agent);
+	});
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_preview_mode_normal_guider() {
+	conf.preview_mode = GUIDER_NORMAL_PREVIEW;
+	write_conf();
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_imager_agent(selected_agent);
+		setup_preview(selected_agent);
+
+		get_selected_guider_agent(selected_agent);
+		setup_preview(selected_agent);
+	});
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_preview_mode_coarse_guider() {
+	conf.preview_mode = GUIDER_COARSE_PREVIEW;
+	write_conf();
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_imager_agent(selected_agent);
+		setup_preview(selected_agent);
+
+		get_selected_guider_agent(selected_agent);
+		setup_preview(selected_agent);
+	});
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_preview_mode_fine_all() {
+	conf.preview_mode = ALL_FINE_PREVIEWS;
+	write_conf();
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_imager_agent(selected_agent);
+		setup_preview(selected_agent);
+
+		get_selected_guider_agent(selected_agent);
+		setup_preview(selected_agent);
+	});
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_preview_mode_normal_all() {
+	conf.preview_mode = ALL_NORMAL_PREVIEWS;
+	write_conf();
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_imager_agent(selected_agent);
+		setup_preview(selected_agent);
+
+		get_selected_guider_agent(selected_agent);
+		setup_preview(selected_agent);
+	});
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_preview_mode_coarse_all() {
+	conf.preview_mode = ALL_COARSE_PREVIEWS;
+	write_conf();
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_imager_agent(selected_agent);
+		setup_preview(selected_agent);
+
+		get_selected_guider_agent(selected_agent);
+		setup_preview(selected_agent);
+	});
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
@@ -1631,8 +2022,10 @@ void ImagerWindow::togglePolarAlignmentOverlay(bool show) {
 		m_polarAlignWidget->setAttribute(Qt::WA_TransparentForMouseEvents, true);
 		m_polarAlignWidget->setWidgetOpacity(0.5);
 		m_polarAlignWidget->raise();
+		m_imager_viewer->enableSNRMode(false);
 		m_polarAlignWidget->setVisible(true);
 	} else {
+		m_imager_viewer->enableSNRMode(true);
 		m_polarAlignWidget->setVisible(false);
 	}
 }

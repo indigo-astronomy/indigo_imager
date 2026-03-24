@@ -1,0 +1,13 @@
+<RCC>
+  <qresource prefix="/">
+	<file>fonts/DejaVuSans-Bold.ttf</file>
+	<file>fonts/DejaVuSans-BoldOblique.ttf</file>
+	<file>fonts/DejaVuSans-ExtraLight.ttf</file>
+	<file>fonts/DejaVuSans-Oblique.ttf</file>
+	<file>fonts/DejaVuSans.ttf</file>
+	<file>fonts/Hack-Bold.ttf</file>
+	<file>fonts/Hack-BoldItalic.ttf</file>
+	<file>fonts/Hack-Italic.ttf</file>
+	<file>fonts/Hack-Regular.ttf</file>
+  </qresource>
+</RCC>

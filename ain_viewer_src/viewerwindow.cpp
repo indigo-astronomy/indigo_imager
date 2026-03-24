@@ -32,6 +32,8 @@
 #include <image_stats.h>
 #include <xisf.h>
 #include <QDateTime>
+#include <QGraphicsView>
+#include <QTimer>
 
 
 void write_conf();
@@ -72,9 +74,9 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	rootLayout->setSizeConstraint(QLayout::SetMinimumSize);
 	central->setLayout(rootLayout);
 
-	// Create menubar
-	QMenuBar *menu_bar = new QMenuBar;
-	QMenu *menu = new QMenu("&File");
+	// Create menubar and menus with a parent so Qt will manage their lifetimes
+	QMenuBar *menu_bar = new QMenuBar(this);
+	QMenu *menu = new QMenu("&File", this);
 	QAction *act;
 
 	act = menu->addAction(tr("&Open Image..."));
@@ -86,6 +88,11 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_I));
 	//act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_info_act);
+
+	act = menu->addAction(tr("&Save View as PNG..."));
+	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
+	//act->setShortcutVisibleInContextMenu(true);
+	connect(act, &QAction::triggered, this, &ViewerWindow::on_save_preview_act);
 
 	act = menu->addAction(tr("&Next Image"));
 	act->setShortcut(QKeySequence(Qt::Key_Right));
@@ -124,7 +131,7 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_exit_act);
 	menu_bar->addMenu(menu);
 
-	menu = new QMenu("&Settings");
+	menu = new QMenu("&Settings", this);
 
 	act = menu->addAction(tr("Open &last file at startup"));
 	act->setCheckable(true);
@@ -138,18 +145,6 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu->addSeparator();
 
-	act = menu->addAction(tr("Show image &statistics"));
-	act->setCheckable(true);
-	act->setChecked(conf.statistics_enabled);
-	connect(act, &QAction::toggled, this, &ViewerWindow::on_statistics_show);
-
-	act = menu->addAction(tr("Show image &center"));
-	act->setCheckable(true);
-	act->setChecked(conf.show_reference);
-	connect(act, &QAction::toggled, this, &ViewerWindow::on_viewer_show_reference);
-
-	menu->addSeparator();
-
 	act = menu->addAction(tr("Enable &antialiasing"));
 	act->setCheckable(true);
 	act->setChecked(conf.antialiasing_enabled);
@@ -157,7 +152,37 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu_bar->addMenu(menu);
 
-	menu = new QMenu("&Help");
+	QMenu *tools_menu = new QMenu("&Tools", this);
+	QAction *tools_act;
+
+	tools_act = tools_menu->addAction(tr("Image &statistics"));
+	tools_act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_H));
+	tools_act->setCheckable(true);
+	tools_act->setChecked(conf.statistics_enabled);
+	connect(tools_act, &QAction::toggled, this, &ViewerWindow::on_statistics_show);
+
+	tools_act = tools_menu->addAction(tr("Image &center"));
+	tools_act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_M));
+	tools_act->setCheckable(true);
+	tools_act->setChecked(conf.show_reference);
+	connect(tools_act, &QAction::toggled, this, &ViewerWindow::on_viewer_show_reference);
+
+	tools_act = tools_menu->addAction(tr("Image &Inspector"));
+	tools_act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_N));
+	tools_act->setCheckable(true);
+	connect(tools_act, &QAction::toggled, this, [this](bool checked){
+		if (!m_imager_viewer) return;
+		if (checked) {
+			m_imager_viewer->runImageInspection();
+			m_imager_viewer->showInspectionOverlay(true);
+		} else {
+			m_imager_viewer->showInspectionOverlay(false);
+		}
+	});
+
+	menu_bar->addMenu(tools_menu);
+
+	menu = new QMenu("&Help", this);
 
 	act = menu->addAction(tr("&About"));
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_about_act);
@@ -181,6 +206,7 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_imager_viewer->setStretch(conf.preview_stretch_level);
 	m_imager_viewer->setDebayer(conf.preview_bayer_pattern);
 	m_imager_viewer->setBalance(conf.preview_color_balance);
+	m_imager_viewer->enableSNRMode(true);  // Enable SNR mode for ain_viewer
 
 	connect(m_imager_viewer, &ImageViewer::stretchChanged, this, &ViewerWindow::on_stretch_changed);
 	connect(m_imager_viewer, &ImageViewer::debayerChanged, this, &ViewerWindow::on_debayer_changed);
@@ -427,7 +453,7 @@ void ViewerWindow::on_image_info_act() {
 			if (image_info.temperature > -273.15) {
 				text->append(QString("<b>Temperature:</b> ") + QString::number(image_info.temperature, 'f',2) + "°C" );
 			}
-			int demonimator = 1;
+
 			if (image_info.shutter > 0 && image_info.shutter < 1) {
 				int demon = rint(1 / image_info.shutter);
 				text->append(QString("<b>Shutter speed:</b> ") + "1/" + QString::number(demon) + " (" + QString::number(image_info.shutter, 'f', 4) + ") sec");
@@ -683,6 +709,91 @@ void ViewerWindow::on_statistics_show(bool enabled) {
 		m_imager_viewer->setImageStats(stats);
 	}
 	write_conf();
+}
+
+void ViewerWindow::enable_image_inspector(bool enable) {
+	if (!m_imager_viewer) return;
+	if (enable) {
+		m_imager_viewer->runImageInspection();
+		m_imager_viewer->showInspectionOverlay(true);
+	} else {
+		m_imager_viewer->showInspectionOverlay(false);
+	}
+}
+
+void ViewerWindow::on_save_preview_act() {
+	if (!m_imager_viewer || m_image_path[0] == '\0') {
+		show_message("Save View", "No image is currently loaded.", QMessageBox::Warning);
+		return;
+	}
+
+	QString suggested_name = save_view_default_filename();
+
+	QString file_name = QFileDialog::getSaveFileName(
+		this,
+		tr("Save View with Overlays"),
+		suggested_name,
+		tr("PNG Images (*.png)")
+	);
+
+	if (file_name.isEmpty()) {
+		return;
+	}
+
+	save_view(file_name, true);
+}
+
+void ViewerWindow::save_view_to_default_file_and_exit() {
+	if (!m_imager_viewer || m_image_path[0] == '\0') {
+		indigo_error("Cannot save view: No image is currently loaded.\n");
+		QApplication::quit();
+		return;
+	}
+
+	QString file_name = save_view_default_filename();
+	save_view(file_name, false);
+
+	// Exit cleanly after auto-save
+	QApplication::quit();
+}
+
+QString ViewerWindow::save_view_default_filename() const {
+	QString original_path(m_image_path);
+	QFileInfo file_info(original_path);
+	QString base_name = file_info.completeBaseName();
+	QString directory = file_info.absolutePath();
+	return directory + "/" + base_name + "_view.png";
+}
+
+bool ViewerWindow::save_view(const QString &file_name, bool show_errors_as_dialogs) {
+	QGraphicsView *view = m_imager_viewer->findChild<QGraphicsView*>();
+	if (!view) {
+		if (show_errors_as_dialogs) {
+			show_message("Save View", "Failed to access image view.", QMessageBox::Critical);
+		} else {
+			indigo_error("Cannot save view: Failed to access image view.\n");
+		}
+		return false;
+	}
+
+	QPixmap pixmap = view->viewport()->grab();
+
+	if (pixmap.save(file_name, "PNG")) {
+		indigo_debug("View saved to: %s\n", file_name.toUtf8().constData());
+		return true;
+	} else {
+		if (show_errors_as_dialogs) {
+			show_message("Save View", "Failed to save view image.", QMessageBox::Critical);
+		} else {
+			indigo_error("Failed to save view image to: %s\n", file_name.toUtf8().constData());
+		}
+		return false;
+	}
+}
+
+void ViewerWindow::schedule_auto_save(int seconds) {
+	QTimer::singleShot(seconds * 1000, this, &ViewerWindow::save_view_to_default_file_and_exit);
+	indigo_log("Auto-save scheduled in %d seconds\n", seconds);
 }
 
 void ViewerWindow::on_stretch_changed(int level) {

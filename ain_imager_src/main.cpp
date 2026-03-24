@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
 	conf.antialiasing_enabled = false;
 	conf.guider_antialiasing_enabled = false;
 	conf.focus_mode = 0;
-	conf.guider_save_bandwidth = 1;
+	conf.__unused_use_previews = 0;
 	conf.guider_subframe = 0;
 	conf.focuser_subframe = 0;
 	conf.focuser_display = SHOW_HFD;
@@ -128,7 +128,9 @@ int main(int argc, char *argv[]) {
 	conf.preview_bayer_pattern = 0;
 	conf.require_confirmation = false;
 	conf.compact_window_layout = false;
+	conf.preview_mode = NO_PREVIEWS;
 	read_conf();
+	conf.blobs_enabled = true; // Always enable BLOBs remove option from UI
 
 	if (!conf.use_system_locale) qunsetenv("LC_NUMERIC");
 
@@ -159,11 +161,37 @@ int main(int argc, char *argv[]) {
 	QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 	QApplication app(argc, argv);
 
-	QFont font("SansSerif", 10, QFont::Medium);
-	font.setStyleHint(QFont::SansSerif);
+	int id = QFontDatabase::addApplicationFont(":/fonts/Hack-Regular.ttf");
+	QFontDatabase::addApplicationFont(":/fonts/Hack-Bold.ttf");
+	QFontDatabase::addApplicationFont(":/fonts/Hack-Italic.ttf");
+	QFontDatabase::addApplicationFont(":/fonts/Hack-BoldItalic.ttf");
+	if (id != -1) {
+		QStringList families = QFontDatabase::applicationFontFamilies(id);
+		if (!families.isEmpty()) {
+			QString monoFamily = families.at(0);
+			QFont::insertSubstitution("monospace", monoFamily);
+		}
+	} else {
+		indigo_error("Failed to load embedded Hack Mono font, using system default.");
+	}
 
-	app.setFont(font);
-	//qDebug() << "Font: " << app.font().family() << app.font().pointSize() << app.font().weight();
+	id = QFontDatabase::addApplicationFont(":/fonts/DejaVuSans.ttf");
+	QFontDatabase::addApplicationFont(":/fonts/DejaVuSans-Bold.ttf");
+	QFontDatabase::addApplicationFont(":/fonts/DejaVuSans-Oblique.ttf");
+	QFontDatabase::addApplicationFont(":/fonts/DejaVuSans-BoldOblique.ttf");
+	QFontDatabase::addApplicationFont(":/fonts/DejaVuSans-ExtraLight.ttf");
+	if (id != -1) {
+		QString family = QFontDatabase::applicationFontFamilies(id).at(0);
+		QFont font = QFont(family, 10, QFont::Medium);
+		font.setKerning(false);
+		app.setFont(font);
+	} else {
+		indigo_error("Failed to load embedded DejaVu Sans font, using system default.");
+		QFont font("SansSerif", 10, QFont::Medium);
+		font.setStyleHint(QFont::SansSerif);
+		font.setKerning(false);
+		app.setFont(font);
+	}
 
 	QVersionNumber running_version = QVersionNumber::fromString(qVersion());
 	QVersionNumber threshod_version(5, 13, 0);

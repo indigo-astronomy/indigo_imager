@@ -73,11 +73,31 @@ int main(int argc, char *argv[]) {
 	if (!conf.reopen_file_at_start) {
 		conf.file_open[0] = '\0';
 	}
+	// always default to error log level unless overridden from command line
+	conf.indigo_log_level = INDIGO_LOG_ERROR;
 
 	qunsetenv("LC_NUMERIC");
 
-	if (argc > 1) {
-		strncpy(conf.file_open, argv[argc-1], PATH_MAX);
+	// Parse command line arguments
+	bool enable_inspector = false;
+	int auto_save_seconds = 0;
+	for (int i = 1; i < argc; i++) {
+		if (strcmp(argv[i], "-I") == 0) {
+			enable_inspector = true;
+		} else if (strcmp(argv[i], "-f") == 0 && i + 1 < argc) {
+			i++;
+			strncpy(conf.file_open, argv[i], PATH_MAX);
+		} else if (strcmp(argv[i], "-s") == 0 && i + 1 < argc) {
+			i++;
+			auto_save_seconds = atoi(argv[i]);
+		} else if (strcmp(argv[i], "-vv") == 0) {
+			conf.indigo_log_level = INDIGO_LOG_DEBUG;
+		} else if (strcmp(argv[i], "-v") == 0) {
+			conf.indigo_log_level = INDIGO_LOG_INFO;
+		} else if (argv[i][0] != '-') {
+			// Backwards compatibility: treat non-option as filename
+			strncpy(conf.file_open, argv[i], PATH_MAX);
+		}
 	}
 
 	indigo_set_log_level(conf.indigo_log_level);
@@ -85,11 +105,34 @@ int main(int argc, char *argv[]) {
 	QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 	QApplication app(argc, argv);
 
-	QFont font("SansSerif", 10, QFont::Medium);
-	font.setStyleHint(QFont::SansSerif);
+	int id = QFontDatabase::addApplicationFont(":/fonts/Hack-Regular.ttf");
+	QFontDatabase::addApplicationFont(":/fonts/Hack-Bold.ttf");
+	QFontDatabase::addApplicationFont(":/fonts/Hack-Italic.ttf");
+	QFontDatabase::addApplicationFont(":/fonts/Hack-BoldItalic.ttf");
+	if (id != -1) {
+		QStringList families = QFontDatabase::applicationFontFamilies(id);
+		if (!families.isEmpty()) {
+			QString monoFamily = families.at(0);
+			QFont::insertSubstitution("monospace", monoFamily);
+		}
+	} else {
+		indigo_error("Failed to load embedded Hack Mono font, using system default.");
+	}
 
-	app.setFont(font);
-	//qDebug() << "Font: " << app.font().family() << app.font().pointSize();
+	id = QFontDatabase::addApplicationFont(":/fonts/DejaVuSans.ttf");
+	QFontDatabase::addApplicationFont(":/fonts/DejaVuSans-Bold.ttf");
+	QFontDatabase::addApplicationFont(":/fonts/DejaVuSans-Oblique.ttf");
+	QFontDatabase::addApplicationFont(":/fonts/DejaVuSans-BoldOblique.ttf");
+	QFontDatabase::addApplicationFont(":/fonts/DejaVuSans-ExtraLight.ttf");
+	if (id != -1) {
+		QString family = QFontDatabase::applicationFontFamilies(id).at(0);
+		app.setFont(QFont(family, 10, QFont::Medium));
+	} else {
+		indigo_error("Failed to load embedded DejaVu Sans font, using system default.");
+		QFont font("SansSerif", 10, QFont::Medium);
+		font.setStyleHint(QFont::SansSerif);
+		app.setFont(font);
+	}
 
 	QVersionNumber running_version = QVersionNumber::fromString(qVersion());
 	QVersionNumber threshod_version(5, 13, 0);
@@ -105,6 +148,16 @@ int main(int argc, char *argv[]) {
 
 	ViewerWindow viewer_window;
 	viewer_window.show();
+
+	// Enable image analyzer if requested via command line
+	if (enable_inspector) {
+		viewer_window.enable_image_inspector(true);
+	}
+
+	// Schedule auto-save if requested
+	if (auto_save_seconds > 0) {
+		viewer_window.schedule_auto_save(auto_save_seconds);
+	}
 
 	return app.exec();
 }

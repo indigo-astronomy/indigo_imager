@@ -25,6 +25,7 @@
 #include <QMainWindow>
 #include <QComboBox>
 #include <indigo/indigo_bus.h>
+#include <indigo/indigo_names.h>
 #include <imageviewer.h>
 #include <widget_state.h>
 #include <conf.h>
@@ -58,6 +59,7 @@ class QIndigoServers;
 #include <QDial>
 #include <QDateTime>
 #include <QFileDialog>
+#include <QSoundEffect>
 #include <QTableView>
 #include <QThread>
 #include <QtConcurrentRun>
@@ -120,9 +122,15 @@ public:
 
 	void play_sound(int alarm);
 
+private:
+	QSoundEffect *m_sound_ok;
+	QSoundEffect *m_sound_warning;
+	QSoundEffect *m_sound_alert;
+
 	void property_delete(indigo_property* property, char *message);
 	void property_define(indigo_property* property, char *message);
 
+	friend void update_ccd_image_file(ImagerWindow *w, indigo_property *property);
 	friend void update_focus_failreturn(ImagerWindow *w, indigo_property *property);
 	friend void update_cooler_onoff(ImagerWindow *w, indigo_property *property);
 	friend void update_cooler_power(ImagerWindow *w, indigo_property *property);
@@ -179,6 +187,7 @@ public:
 	friend void define_ccd_exposure_property(ImagerWindow *w, indigo_property *property);
 	friend int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property);
 	friend void update_solver_agent_pa_settings(ImagerWindow *w, indigo_property *property);
+	friend void change_server_disk_usage(ImagerWindow *w, indigo_property *property);
 
 	bool m_is_sequence;
 
@@ -190,6 +199,8 @@ public:
 signals:
 	void enable_blobs(bool on);
 	void rebuild_blob_previews();
+
+	void update_server_disk_usage(double total_mb, double free_mb, int state);
 
 	void set_enabled(QWidget *widget, bool enabled);
 	void set_widget_state(QWidget *widget, int state);
@@ -231,6 +242,7 @@ signals:
 	void resize_guider_edge_clipping(double edge_clipping);
 
 public slots:
+	void on_update_server_disk_usage(double total_mb, double free_mb, int state);
 	void on_exposure_start_stop(bool clicked);
 	void on_sequence_start_stop(bool clicked);
 	void on_sequence_pause(bool clicked);
@@ -243,6 +255,7 @@ public slots:
 	void on_property_change(indigo_property* property, char *message);
 	void on_property_delete(indigo_property* property, char *message);
 	void on_message_sent(indigo_property* property, char *message);
+	void on_message_received(char *device_name, char *property_name, int property_state, char *message);
 	void on_blobs_changed(bool status);
 	void on_save_noname_images_changed(bool status);
 	void on_restore_window_size_changed(bool status);
@@ -365,7 +378,13 @@ public slots:
 	void on_guider_agent_aggressivity_changed(int value);
 	void on_change_guider_agent_i_gain_changed(double value);
 	void on_change_guider_agent_is_changed(int value);
-	void on_guider_bw_save_changed(int index);
+	void on_preview_mode_off();
+	void on_preview_mode_fine_guider();
+	void on_preview_mode_normal_guider();
+	void on_preview_mode_coarse_guider();
+	void on_preview_mode_fine_all();
+	void on_preview_mode_normal_all();
+	void on_preview_mode_coarse_all();
 	void on_guide_show_rd_drift();
 	void on_guide_show_rd_s_drift();
 	void on_guide_show_rd_pulse();
@@ -634,6 +653,7 @@ private:
 	QSpinBox *m_frame_delay;
 	QLineEdit *m_object_name;
 	QPushButton *m_pause_button;
+	QPushButton *m_abort_exposure_button;
 	QProgressBar *m_exposure_progress;
 	QProgressBar *m_process_progress;
 	QLabel *m_download_label;
@@ -650,6 +670,7 @@ private:
 	QPushButton *m_sync_files_button;
 	QPushButton *m_remove_synced_files_button;
 	QProgressBar *m_download_progress;
+	QLabel *m_server_disk_usage_label;
 	QString m_remote_object_name;
 	QStringList m_files_to_download;
 	QStringList m_files_to_remove;
@@ -665,6 +686,7 @@ private:
 	QPushButton *m_seq_start_button;
 	QPushButton *m_seq_pause_button;
 	QPushButton *m_seq_reset_button;
+	QPushButton *m_seq_abort_button;
 	QLabel *m_seq_esimated_duration;
 	QLabel *m_imager_status_label;
 	QString m_sequencer_code;
@@ -701,6 +723,7 @@ private:
 	QCheckBox *m_focuser_failreturn_cbox;
 	QDoubleSpinBox *m_focuser_exposure_time;
 	QPushButton *m_focusing_button;
+	QPushButton *m_focusing_abort_button;
 	QToolButton *m_focusing_in_button;
 	QToolButton *m_focusing_out_button;
 	QPushButton *m_focusing_preview_button;
@@ -733,7 +756,6 @@ private:
 	QSpinBox  *m_guide_star_radius;
 	QSpinBox  *m_guide_star_count;
 	QSpinBox  *m_guide_edge_clipping;
-	QComboBox *m_guider_save_bw_select;
 	QComboBox *m_guider_subframe_select;
 	QComboBox *m_guider_frame_size_select;
 	QSpinBox  *m_guider_gain;
@@ -777,6 +799,7 @@ private:
 	QPushButton *m_guider_guide_button;
 	QPushButton *m_guider_preview_button;
 	QPushButton *m_guider_calibrate_button;
+	QPushButton *m_guider_stop_button;
 
 	QComboBox *m_detection_mode_select;
 	QComboBox *m_dec_guiding_select;
@@ -929,15 +952,16 @@ private:
 	//char *m_image_formrat;
 	QString m_selected_filter;
 
+	QString m_last_remote_image_file;
+
 	void window_log(const char *message, int state = INDIGO_OK_STATE);
 
 	void change_jpeg_settings_property(
 		const char *agent,
 		const int jpeg_quality,
-		const double black_threshold,
-		const double white_threshold,
 		const double target_bg,
-		const double clipping_point
+		const double clipping_point,
+		const int ref_channel
 	);
 
 	void configure_spinbox_int(QSpinBox *widget, indigo_item *item, int perm);
@@ -1030,7 +1054,7 @@ private:
 	void change_guider_agent_aggressivity(const char *agent) const;
 	void change_guider_agent_i(const char *agent) const;
 	void change_guider_agent_edge_clipping(const char *agent) const;
-	void change_agent_ccd_peview(const char *agent, bool enable) const;
+	void change_agent_ccd_preview(const char *agent, bool enable) const;
 
 	void change_mount_agent_equatorial(const char *agent, bool sync = false) const;
 	void change_mount_agent_abort(const char *agent) const;

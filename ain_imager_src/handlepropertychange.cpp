@@ -148,7 +148,7 @@ static void add_items_to_combobox(ImagerWindow *w, indigo_property *property, QC
 	}
 }
 
-static void add_items_to_sequence_model(indigo_property *property, char *type, int parameter_index) {
+static void add_items_to_sequence_model(indigo_property *property, const char *type, int parameter_index) {
 	QStringList items;
 	for (int i = 0; i < property->count; i++) {
 		items.append(QString(property->items[i].label));
@@ -189,6 +189,28 @@ static void change_combobox_selection_filtered(ImagerWindow *w, indigo_property 
 	if (!selected) {
 		w->set_combobox_current_index(combobox, 0);
 		indigo_debug("[SELECT None]");
+	}
+}
+
+void update_ccd_image_file(ImagerWindow *w, indigo_property *property) {
+	if (property->state != INDIGO_OK_STATE) {
+		w->m_last_remote_image_file = QString();
+		return;
+	}
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], CCD_IMAGE_FILE_ITEM_NAME)) {
+			w->m_last_remote_image_file = QString(property->items[i].text.value);
+			char message[PATH_LEN+100];
+			char *indicator;
+			if (conf.preview_mode > GUIDER_COARSE_PREVIEW) {
+				indicator = PREVIEW_REMOTE_INDICATOR;
+			} else {
+				indicator = SAVE_REMOTE_INDICATOR;
+			}
+			snprintf(message, sizeof(message), "%s Image saved remotely as: '%s'", indicator, w->m_last_remote_image_file.toUtf8().constData());
+			w->window_log(message);
+			break;
+		}
 	}
 }
 
@@ -2058,7 +2080,7 @@ void handle_scripting_on_load_script(ImagerWindow *w, indigo_property *property)
 		}
 	}
 
-	QtConcurrent::run([=]() {
+	QThreadPool::globalInstance()->start([=]() {
 		if (enable_new) {
 			indigo_change_switch_property_1(
 				nullptr,
@@ -2461,6 +2483,21 @@ void agent_guider_start_process_change(ImagerWindow *w, indigo_property *propert
 	}
 }
 
+void change_server_disk_usage(ImagerWindow *w, indigo_property *property) {
+	if (!w || !property) return;
+	double free_space = 0;
+	double total_space = 0;
+
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], AGENT_IMAGER_DISK_USAGE_FREE_ITEM_NAME)) {
+			free_space = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_IMAGER_DISK_USAGE_TOTAL_ITEM_NAME)) {
+			total_space = property->items[i].number.value;
+		}
+	}
+	w->update_server_disk_usage(total_space, free_space, property->state);
+}
+
 
 void ImagerWindow::on_window_log(indigo_property* property, const char *message) {
 	char log_line[512];
@@ -2469,10 +2506,13 @@ void ImagerWindow::on_window_log(indigo_property* property, const char *message)
 	if (!message) return;
 
 	if (property) {
-		snprintf(log_line, 512, "%s.%s: %s", property->device, property->name, message);
+		if (property->name[0] != '\0') {
+			snprintf(log_line, 512, "%s.%s: %s", property->device, property->name, message);
+		} else {
+			snprintf(log_line, 512, "%s: %s", property->device, message);
+		}
 		state = property->state;
 	} else {
-		state = INDIGO_OK_STATE;
 		snprintf(log_line, 512, "%s", message);
 	}
 	window_log(log_line, state);
@@ -2568,7 +2608,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			}
 			char *device_name = (char*)malloc(INDIGO_NAME_SIZE);
 			strncpy(device_name, property->device, INDIGO_NAME_SIZE);
-			QtConcurrent::run([=]() {
+			QThreadPool::globalInstance()->start([=]() {
 				pthread_mutex_lock(&l_mutex);
 				if (imager_not_loaded) {
 					static const char *items[] = { "DRIVER" };
@@ -2678,7 +2718,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	// Imager Agent
 	if (client_match_device_property(property, selected_agent, CCD_LOCAL_MODE_PROPERTY_NAME)) {
 		update_ccd_local_mode(this, property);
-		QtConcurrent::run([=]() {
+		QThreadPool::globalInstance()->start([=]() {
 			init_ccd_localmode_property(selected_agent);
 		});
 	}
@@ -2709,6 +2749,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			set_enabled(m_focusing_preview_button, true);
 			set_widget_state(m_focusing_preview_button, INDIGO_OK_STATE);
 		}
+	}
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_DISK_USAGE_PROPERTY_NAME)) {
+		change_server_disk_usage(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, FILTER_WHEEL_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_wheel_select);
@@ -2767,7 +2810,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			}
 		}
 		if (m_focuser_subframe_select->currentIndex() * 5 != current_subframe) {
-			QtConcurrent::run([=]() {
+			QThreadPool::globalInstance()->start([=]() {
 				change_focuser_subframe(selected_agent);
 			});
 		}
@@ -2799,6 +2842,10 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_pause_process_property(this, property, m_pause_button);
 	}
+	if (client_match_device_property(property, selected_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME)) {
+		set_widget_state(m_abort_exposure_button, property->state);
+		set_widget_state(m_focusing_abort_button, property->state);
+	}
 	if (client_match_device_property(property, selected_agent, CCD_COOLER_PROPERTY_NAME)) {
 		update_cooler_onoff(this, property);
 	}
@@ -2817,6 +2864,11 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_STATS_PROPERTY_NAME) ||
 	    client_match_device_property(property, selected_agent, AGENT_START_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_stats_property(this, property);
+	}
+	if (client_match_device_property(property, selected_agent, CCD_PREVIEW_PROPERTY_NAME)) {
+		QThreadPool::globalInstance()->start([=]() {
+			change_agent_ccd_preview(selected_agent, conf.preview_mode > GUIDER_COARSE_PREVIEW);
+		});
 	}
 	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME)) {
 		define_ccd_exposure_property(this, property);
@@ -2849,14 +2901,17 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_scripting_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_pause_process_property(this, property, m_seq_pause_button);
 	}
+	if (client_match_device_property(property, selected_scripting_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME) ) {
+		set_widget_state(m_seq_abort_button, property->state);
+	}
 
 	// Guider Agent
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DITHERING_STRATEGY_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_dither_strategy_select);
 	}
 	if (client_match_device_property(property, selected_guider_agent, CCD_PREVIEW_PROPERTY_NAME)) {
-		QtConcurrent::run([=]() {
-			change_agent_ccd_peview(selected_guider_agent, (bool)conf.guider_save_bandwidth);
+		QThreadPool::globalInstance()->start([=]() {
+			change_agent_ccd_preview(selected_guider_agent, (bool)conf.preview_mode > NO_PREVIEWS);
 		});
 	}
 	if (client_match_device_property(property, selected_guider_agent, CCD_MODE_PROPERTY_NAME)) {
@@ -2866,7 +2921,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_agent_guider_focal_length_property(this, property);
 	}
 	if (client_match_device_property(property, selected_guider_agent, CCD_JPEG_SETTINGS_PROPERTY_NAME)) {
-		set_enabled(m_guider_save_bw_select, true);
+		// Nothing to do here for now
 	}
 	if (client_match_device_property(property, selected_guider_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_guider_camera_select);
@@ -2895,7 +2950,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			}
 		}
 		if (m_guider_subframe_select->currentIndex() * 5 != current_subframe) {
-			QtConcurrent::run([=]() {
+			QThreadPool::globalInstance()->start([=]() {
 				change_guider_agent_subframe(selected_guider_agent);
 			});
 		}
@@ -2927,8 +2982,14 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	    client_match_device_property(property, selected_guider_agent, CCD_OFFSET_PROPERTY_NAME)) {
 		update_agent_guider_gain_offset_property(this, property);
 	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME)) {
+		set_widget_state(m_guider_stop_button , property->state);
+	}
 
 	// Mount agent
+	if (client_match_device_property(property, selected_mount_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME)) {
+		set_widget_state(m_mount_abort_button, property->state);
+	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_MOUNT_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_mount_select);
 		add_items_to_sequence_model(property, SC_SELECT_MOUNT, 0);
@@ -3046,7 +3107,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		set_enabled(m_solver_exposure1, true);
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_SOLVE_IMAGES_PROPERTY_NAME)) {
-		QtConcurrent::run([=]() {
+		QThreadPool::globalInstance()->start([=]() {
 			m_property_mutex.lock();
 			//clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
 			disable_auto_solving(selected_solver_agent);
@@ -3057,7 +3118,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_solver_agent_wcs(this, property);
 		indigo_property *p = properties.get(property->device, AGENT_PLATESOLVER_PA_STATE_PROPERTY_NAME);
 		if ((property->state == INDIGO_ALERT_STATE || property->state == INDIGO_OK_STATE) && (p == nullptr || p->state != INDIGO_BUSY_STATE)) {
-			QtConcurrent::run([=]() {
+			QThreadPool::globalInstance()->start([=]() {
 				m_property_mutex.lock();
 				//clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
 				disable_auto_solving(selected_solver_agent);
@@ -3075,7 +3136,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		set_enabled(m_mount_pa_stop_button, true);
 		int state = update_solver_agent_pa_error(this, property);
 		if (property->state != INDIGO_BUSY_STATE && state == 0) {
-			QtConcurrent::run([=]() {
+			QThreadPool::globalInstance()->start([=]() {
 				m_property_mutex.lock();
 				//clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
 				disable_auto_solving(selected_solver_agent);
@@ -3127,8 +3188,14 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 
 	// Imager Agent
+	if (client_match_device_property(property, selected_agent, CCD_IMAGE_FILE_PROPERTY_NAME)) {
+		update_ccd_image_file(this, property);
+	}
 	if (client_match_device_property(property, selected_agent, CCD_LOCAL_MODE_PROPERTY_NAME)) {
 		update_ccd_local_mode(this, property);
+	}
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_DISK_USAGE_PROPERTY_NAME)) {
+		change_server_disk_usage(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_camera_select);
@@ -3226,6 +3293,10 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_agent, CCD_BIN_PROPERTY_NAME)) {
 		update_agent_imager_binning_property(this, property);
 	}
+	if (client_match_device_property(property, selected_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME)) {
+		set_widget_state(m_abort_exposure_button, property->state);
+		set_widget_state(m_focusing_abort_button, property->state);
+	}
 
 	// Scripting Agent
 	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE") ||
@@ -3239,6 +3310,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_scripting_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_pause_process_property(this, property, m_seq_pause_button);
+	}
+	if (client_match_device_property(property, selected_scripting_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME) ) {
+		set_widget_state(m_seq_abort_button, property->state);
 	}
 
 	// Guider Agent
@@ -3286,8 +3360,14 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	    client_match_device_property(property, selected_guider_agent, CCD_OFFSET_PROPERTY_NAME)) {
 		update_agent_guider_gain_offset_property(this, property);
 	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME)) {
+		set_widget_state(m_guider_stop_button , property->state);
+	}
 
 	// Mount Agent
+	if (client_match_device_property(property, selected_mount_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME)) {
+		set_widget_state(m_mount_abort_button, property->state);
+	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_MOUNT_LIST_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_mount_select);
 	}
@@ -3376,7 +3456,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		update_solver_agent_wcs(this, property);
 		indigo_property *p = properties.get(property->device, AGENT_PLATESOLVER_PA_STATE_PROPERTY_NAME);
 		if ((property->state == INDIGO_ALERT_STATE || property->state == INDIGO_OK_STATE) && (p == nullptr || p->state != INDIGO_BUSY_STATE)) {
-			QtConcurrent::run([=]() {
+			QThreadPool::globalInstance()->start([=]() {
 				m_property_mutex.lock();
 				//clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
 				disable_auto_solving(selected_solver_agent);
@@ -3391,7 +3471,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		set_enabled(m_mount_pa_stop_button, true);
 		int state = update_solver_agent_pa_error(this, property);
 		if (property->state != INDIGO_BUSY_STATE && state == 0) {
-			QtConcurrent::run([=]() {
+			QThreadPool::globalInstance()->start([=]() {
 				m_property_mutex.lock();
 				//clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
 				disable_auto_solving(selected_solver_agent);
@@ -3439,6 +3519,11 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		m_config_dialog->removeAgent(property->device);
 	}
 
+	// Imager Agent
+	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_DISK_USAGE_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		update_server_disk_usage(-1, -1, INDIGO_IDLE_STATE);
+	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_POSITION_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("REMOVE %s", property->name);
@@ -3518,6 +3603,12 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		SequenceItemModel::instance().clearComboOptions(SC_SELECT_FRAME_TYPE, 0);
 	}
+	if (client_match_device_property(property, selected_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_agent)) {
+		set_widget_state(m_abort_exposure_button, INDIGO_OK_STATE);
+		set_widget_state(m_focusing_abort_button, INDIGO_OK_STATE);
+	}
+
 	if (client_match_device_property(property, selected_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
@@ -3666,6 +3757,11 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_scripting_agent)) {
 		emit m_sequence_editor2->enable(true);
 		emit m_sequence_editor2->setSequenceIdle();
+	}
+
+	if (client_match_device_property(property, selected_scripting_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_scripting_agent)) {
+		set_widget_state(m_seq_abort_button, INDIGO_OK_STATE);
 	}
 
 	// Guider Agent
@@ -3833,7 +3929,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_guider_agent, CCD_JPEG_SETTINGS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
-		set_enabled(m_guider_save_bw_select, false);
+		// nothing to do here yet
 	}
 
 	if (client_match_device_property(property, selected_guider_agent, AGENT_START_PROCESS_PROPERTY_NAME) ||
@@ -3852,7 +3948,16 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_enabled(m_guider_offset, false);
 	}
 
+	if (client_match_device_property(property, selected_guider_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
+		set_widget_state(m_guider_stop_button, INDIGO_OK_STATE);
+	}
+
 	// Mount Agent
+	if (client_match_device_property(property, selected_mount_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		set_widget_state(m_mount_abort_button, INDIGO_OK_STATE);
+	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_MOUNT_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);

@@ -11,6 +11,7 @@
 #include <QHBoxLayout>
 #include <QToolButton>
 #include <QLabel>
+#include "antialiaseditems.h"
 
 // Graphics View with better mouse events handling
 class GraphicsView : public QGraphicsView {
@@ -44,6 +45,13 @@ protected:
 		}
 	}
 
+	void scrollContentsBy(int dx, int dy) override {
+		QGraphicsView::scrollContentsBy(dx, dy);
+		// Update SNR overlay position when scrolling
+		m_viewer->updateSNROverlayPosition();
+		m_viewer->updateInspectionOverlayPosition();
+	}
+
 	void enterEvent(QEnterEvent *event) override {
 		QGraphicsView::enterEvent(event);
 		viewport()->setCursor(Qt::CrossCursor);
@@ -68,6 +76,12 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 	, m_zoom_level(0)
 	, m_fit(true)
 	, m_bar_mode(ToolBarMode::Visible)
+	, m_inspection_overlay_visible(false)
+	, m_snr_star_x(0)
+	, m_snr_star_y(0)
+	, m_snr_star_radius(0)
+	, m_snr_background_inner_radius(0)
+	, m_snr_background_outer_radius(0)
 {
 	auto scene = new QGraphicsScene(this);
 	m_view = new GraphicsView(this);
@@ -78,6 +92,8 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 	scene->addItem(m_pixmap);
 	connect(m_pixmap, SIGNAL(mouseMoved(double,double)), SLOT(mouseAt(double,double)));
 	connect(m_pixmap, SIGNAL(mouseRightPress(double, double, Qt::KeyboardModifiers)), SLOT(mouseRightPressAt(double, double, Qt::KeyboardModifiers)));
+	connect(m_pixmap, SIGNAL(mouseLeftPress(double, double, Qt::KeyboardModifiers)), SLOT(mouseLeftPressAt(double, double, Qt::KeyboardModifiers)));
+	connect(m_pixmap, SIGNAL(mouseLeftDoubleClick(double, double, Qt::KeyboardModifiers)), SLOT(mouseLeftDoubleClickAt(double, double, Qt::KeyboardModifiers)));
 
 	m_ref_x = new QGraphicsLineItem(25,0,25,50, m_pixmap);
 	QPen pen;
@@ -99,7 +115,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 	m_ref_visible = false;
 	m_show_wcs = false;
 
-	m_selection = new QGraphicsRectItem(0,0,25,25, m_pixmap);
+	m_selection = new AntialiasedRectItem(0,0,25,25, m_pixmap);
 	m_selection->setBrush(QBrush(Qt::NoBrush));
 	pen.setCosmetic(true);
 	pen.setWidth(1);
@@ -109,7 +125,7 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 	m_selection->setVisible(false);
 	m_selection_visible = false;
 
-	m_edge_clipping = new QGraphicsRectItem(0,0,0,0, m_pixmap);
+	m_edge_clipping = new AntialiasedRectItem(0,0,0,0, m_pixmap);
 	m_edge_clipping_v = 0;
 	m_edge_clipping->setBrush(QBrush(Qt::NoBrush));
 	pen.setCosmetic(true);
@@ -145,6 +161,47 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 	m_image_stats->setTextFormat(Qt::RichText);
 	m_image_stats->raise();
 	m_image_stats->setVisible(false);
+
+	m_snr_overlay = new SNROverlay(m_view);
+	m_snr_overlay->setVisible(false);
+
+	// Inspection overlay (parent to viewport so mapFromScene coordinates align)
+	m_inspection_overlay = new ImageInspectorOverlay(m_view->viewport());
+	// give overlay a pointer to the view so it can map scene->view dynamically (keeps markers correct while zooming)
+	m_inspection_overlay->setView(m_view);
+	m_inspection_overlay->setVisible(false);
+	connect(m_inspection_overlay, &ImageInspectorOverlay::destroyed, [this](){ m_inspection_overlay = nullptr; });
+	m_snr_mode_enabled = false;  // SNR mode disabled by default
+	m_snr_overlay_visible = false;
+
+	// Create SNR visualization circles
+	QPen snr_pen;
+	snr_pen.setCosmetic(true);
+	snr_pen.setWidthF(1.5);
+	snr_pen.setColor(QColor(0, 255, 0));
+	snr_pen.setStyle(Qt::SolidLine);
+
+	m_snr_star_circle = new AntialiasedEllipseItem(0, 0, 20, 20, m_pixmap);
+	m_snr_star_circle->setBrush(QBrush(Qt::NoBrush));
+	m_snr_star_circle->setPen(snr_pen);
+	m_snr_star_circle->setOpacity(0.7);
+	m_snr_star_circle->setVisible(false);
+
+	// Inner annulus boundary (yellow)
+	snr_pen.setColor(QColor(255, 255, 0));
+	m_snr_background_inner_ring = new AntialiasedEllipseItem(0, 0, 40, 40, m_pixmap);
+	m_snr_background_inner_ring->setBrush(QBrush(Qt::NoBrush));
+	m_snr_background_inner_ring->setPen(snr_pen);
+	m_snr_background_inner_ring->setOpacity(0.5);
+	m_snr_background_inner_ring->setVisible(false);
+
+	// Outer annulus boundary (yellow)
+	snr_pen.setColor(QColor(255, 255, 0));
+	m_snr_background_outer_ring = new AntialiasedEllipseItem(0, 0, 60, 60, m_pixmap);
+	m_snr_background_outer_ring->setBrush(QBrush(Qt::NoBrush));
+	m_snr_background_outer_ring->setPen(snr_pen);
+	m_snr_background_outer_ring->setOpacity(0.5);
+	m_snr_background_outer_ring->setVisible(false);
 
 	m_extra_selections_visible = false;
 
@@ -183,7 +240,7 @@ void ImageViewer::makeToolbar(bool show_prev_next, bool show_debayer) {
 	m_zoomout_button->setShortcut(QKeySequence(Qt::Key_Minus));
 	connect(m_zoomout_button, SIGNAL(clicked()), SLOT(zoomOut()));
 
-	QMenu *menu = new QMenu("");
+	QMenu *menu = new QMenu(this);
 	QAction *act;
 
 	QActionGroup *stretch_group = new QActionGroup(this);
@@ -491,7 +548,7 @@ void ImageViewer::moveSelection(double x, double y) {
 
 void ImageViewer::showExtraSelection(bool show) {
 	m_extra_selections_visible = show;
-	QList<QGraphicsEllipseItem*>::iterator sel;
+	QList<AntialiasedEllipseItem*>::iterator sel;
 	for (sel = m_extra_selections.begin(); sel != m_extra_selections.end(); ++sel) {
 		if (!m_pixmap->pixmap().isNull()) (*sel)->setVisible(show);
 		else (*sel)->setVisible(false);
@@ -507,7 +564,7 @@ void ImageViewer::moveResizeExtraSelection(QList<QPointF> &point_list, int size)
 	//pen.setColor(QColor(255, 255, 0));
 	QList<QPointF>::iterator point;
 	for (point = point_list.begin(); point != point_list.end(); ++point) {
-		QGraphicsEllipseItem *selection = new QGraphicsEllipseItem(0, 0, size, size, m_pixmap);
+		AntialiasedEllipseItem *selection = new AntialiasedEllipseItem(0, 0, size, size, m_pixmap);
 		double x = point->x() - size / 2.0;
 		double y = point->y() - size / 2.0;
 		selection->setRect(0, 0, size, size);
@@ -628,6 +685,9 @@ const preview_image &ImageViewer::image() const {
 }
 
 void ImageViewer::onSetImage(preview_image &im) {
+	showSNROverlay(false); // hide SNR overlay when new image is displayed
+	// clear any existing inspection overlay immediately before updating the image
+	if (m_inspection_overlay) m_inspection_overlay->clearInspection();
 	m_pixmap->setImage(im);
 	if (!m_pixmap->pixmap().isNull()) {
 		if (m_selection_visible && !m_selection_p.isNull()) {
@@ -650,7 +710,7 @@ void ImageViewer::onSetImage(preview_image &im) {
 		}
 		resizeEdgeClipping(m_edge_clipping_v);
 
-		QList<QGraphicsEllipseItem*>::iterator sel;
+		QList<AntialiasedEllipseItem*>::iterator sel;
 		for (sel = m_extra_selections.begin(); sel != m_extra_selections.end(); ++sel) {
 			//QRectF rect = (*sel)->rect();
 			//if (rect.x() > 0 && rect.y() > 0) {
@@ -663,6 +723,16 @@ void ImageViewer::onSetImage(preview_image &im) {
 	m_view->scene()->setSceneRect(0, 0, im.width(), im.height());
 
 	if (m_fit) zoomFit();
+
+	// If inspection overlay is enabled, run inspection on the newly set image
+	if (m_inspection_overlay && m_inspection_overlay_visible) {
+		m_inspection_overlay->setGeometry(m_view->viewport()->rect());
+		// Use the stored pixmap image to ensure the overlay inspects the same data
+		const preview_image &piximg = m_pixmap->image();
+		m_inspection_overlay->runInspection(piximg);
+		m_inspection_overlay->raise();
+		m_inspection_overlay->update();
+	}
 
 	emit imageChanged();
 }
@@ -723,6 +793,8 @@ void ImageViewer::zoomFit() {
 	indigo_debug("Zoom FIT = %.2f", m_zoom_level);
 	m_fit = true;
 	emit zoomChanged(m_view->transform().m11());
+	updateSNROverlayPosition();  // Update SNR overlay position after zoom
+	updateInspectionOverlayPosition();
 }
 
 void ImageViewer::zoomOriginal() {
@@ -731,6 +803,8 @@ void ImageViewer::zoomOriginal() {
 	indigo_debug("Zoom 1:1 = %.2f", m_zoom_level);
 	m_fit = false;
 	setMatrix();
+	updateSNROverlayPosition();  // Update SNR overlay position after zoom
+	updateInspectionOverlayPosition();
 }
 
 void ImageViewer::zoomIn() {
@@ -754,6 +828,8 @@ void ImageViewer::zoomIn() {
 	indigo_debug("Zoom IN = %.2f", m_zoom_level);
 	m_fit = false;
 	setMatrix();
+	updateSNROverlayPosition();  // Update SNR overlay position after zoom
+	updateInspectionOverlayPosition();
 }
 
 void ImageViewer::zoomOut() {
@@ -781,6 +857,8 @@ void ImageViewer::zoomOut() {
 	indigo_debug("Zoom OUT = %.2f (fit = %.2f)", m_zoom_level, zoom_min);
 	m_fit = false;
 	setMatrix();
+	updateSNROverlayPosition();  // Update SNR overlay position after zoom
+	updateInspectionOverlayPosition();
 }
 
 void ImageViewer::mouseAt(double x, double y) {
@@ -844,11 +922,164 @@ void ImageViewer::mouseAt(double x, double y) {
 	}
 }
 
+void ImageViewer::showSNROverlay(bool show) {
+	m_snr_overlay_visible = show;
+	m_snr_overlay->setVisible(show);
+	m_snr_star_circle->setVisible(show);
+	m_snr_background_inner_ring->setVisible(show);
+	m_snr_background_outer_ring->setVisible(show);
+}
+
+void ImageViewer::showInspectionOverlay(bool show) {
+	m_inspection_overlay_visible = show;
+	if (m_inspection_overlay) {
+		m_inspection_overlay->setVisible(show);
+		m_inspection_overlay->update();
+	}
+}
+
+void ImageViewer::runImageInspection() {
+	if (!m_pixmap) return;
+	const preview_image &img = m_pixmap->image();
+	if (img.m_raw_data == nullptr) return;
+	if (!m_inspection_overlay) return;
+
+	// Delegate inspection to the overlay which owns an ImageInspector internally.
+	m_inspection_overlay->setGeometry(m_view->viewport()->rect());
+	m_inspection_overlay->runInspection(img);
+	m_inspection_overlay->raise();
+}
+
+void ImageViewer::calculateAndShowSNR(double x, double y) {
+	const preview_image &img = m_pixmap->image();
+	if (!img.valid(x, y) || !img.m_raw_data) {
+		return;
+	}
+
+	SNRResult result = calculateSNR(
+		reinterpret_cast<const uint8_t*>(img.m_raw_data),
+		img.width(),
+		img.height(),
+		img.m_pix_format,
+		x, y
+	);
+
+	if (result.valid) {
+		// Store star position for scroll updates
+		m_snr_star_x = result.star_x;
+		m_snr_star_y = result.star_y;
+		m_snr_star_radius = result.star_radius;
+		m_snr_background_inner_radius = result.background_inner_radius;
+		m_snr_background_outer_radius = result.background_outer_radius;
+
+		// Set the result first so the overlay gets sized properly
+		m_snr_overlay->setSNRResult(result);
+		showSNROverlay(true);
+		m_snr_overlay->updateGeometry();
+		updateSNROverlayPosition();
+
+		m_snr_overlay->raise();
+
+		// Show SNR visualization circles
+		m_snr_star_circle->setVisible(true);
+		m_snr_background_inner_ring->setVisible(true);
+		m_snr_background_outer_ring->setVisible(true);
+
+		// Draw aperture star circle
+		double diameter = result.star_radius * 2;
+		m_snr_star_circle->setRect(0, 0, diameter, diameter);
+		m_snr_star_circle->setPos(
+			result.star_x - result.star_radius,
+			result.star_y - result.star_radius
+		);
+
+		// Draw background annulus inner boundary
+		double bg_inner_diameter = result.background_inner_radius * 2.0;
+		m_snr_background_inner_ring->setRect(0, 0, bg_inner_diameter, bg_inner_diameter);
+		m_snr_background_inner_ring->setPos(
+			result.star_x - result.background_inner_radius,
+			result.star_y - result.background_inner_radius
+		);
+
+		// Draw background annulus outer boundary
+		double bg_outer_diameter = result.background_outer_radius * 2.0;
+		m_snr_background_outer_ring->setRect(0, 0, bg_outer_diameter, bg_outer_diameter);
+		m_snr_background_outer_ring->setPos(
+			result.star_x - result.background_outer_radius,
+			result.star_y - result.background_outer_radius
+		);
+	} else {
+		m_snr_star_radius = 0;
+		m_snr_background_inner_radius = 0;
+		m_snr_background_outer_radius = 0;
+
+		// Convert click position from scene to view coordinates
+		QPointF click_view = m_view->mapFromScene(QPointF(x, y));
+
+		QPoint view_pos(click_view.x() + 10, click_view.y() + 10);
+		m_snr_overlay->move(view_pos);
+
+		m_snr_overlay->setSNRResult(result);
+		m_snr_overlay->setVisible(true);
+		m_snr_overlay->raise();
+		m_snr_star_circle->setVisible(false);
+		m_snr_background_inner_ring->setVisible(false);
+		m_snr_background_outer_ring->setVisible(false);
+
+		m_snr_overlay_visible = true;
+	}
+}
+
+void ImageViewer::updateSNROverlayPosition() {
+	if (!m_snr_overlay_visible) {
+		return;
+	}
+
+	if (m_snr_star_radius <= 0) {
+		return;
+	}
+
+	// Ensure the widget has correct size
+	m_snr_overlay->adjustSize();
+	int overlay_width = m_snr_overlay->width();
+	int overlay_height = m_snr_overlay->height();
+
+	// Use actual background outer radius from SNR calculation
+	double annulus_radius_scene = m_snr_background_outer_radius;
+
+	// Convert annulus radius from scene to view coordinates (accounts for zoom)
+	QPointF star_view = m_view->mapFromScene(QPointF(m_snr_star_x, m_snr_star_y));
+	QPointF annulus_edge_view = m_view->mapFromScene(QPointF(m_snr_star_x + annulus_radius_scene, m_snr_star_y + annulus_radius_scene));
+	double annulus_radius_view = annulus_edge_view.x() - star_view.x(); // View space distance
+
+	QPoint view_pos(star_view.x() + annulus_radius_view, star_view.y() + annulus_radius_view);
+
+	QRect viewport_rect = m_view->viewport()->rect();
+
+	if (view_pos.x() + overlay_width > viewport_rect.right()) {
+		view_pos.setX(star_view.x() - annulus_radius_view - overlay_width);
+	}
+	if (view_pos.y() + overlay_height > viewport_rect.bottom()) {
+		view_pos.setY(star_view.y() - annulus_radius_view - overlay_height);
+	}
+
+	m_snr_overlay->move(view_pos);
+}
+
+void ImageViewer::updateInspectionOverlayPosition() {
+	if (!m_inspection_overlay || !m_inspection_overlay_visible) return;
+	if (!m_view) return;
+	// Make sure overlay covers the viewport and repaint so markers update position/scale
+	m_inspection_overlay->setGeometry(m_view->viewport()->rect());
+	m_inspection_overlay->update();
+}
+
 void ImageViewer::mouseRightPressAt(double x, double y, Qt::KeyboardModifiers modifiers) {
-	indigo_debug("RIGHT CLICK COORDS: %f %f" ,x,y);
+	indigo_debug("RIGHT CLICK COORDS: %f %f", x, y);
+
 	double ra, dec, telescope_ra, telescope_dec;
-	if (m_pixmap->image().valid(x,y)) {
-		moveSelection(x,y);
+	if (m_pixmap->image().valid(x, y)) {
+		moveSelection(x, y);
 		emit mouseRightPress(x, y, modifiers);
 		if (
 			m_pixmap->image().wcs_data(x, y, &ra, &dec, &telescope_ra, &telescope_dec) == 0 &&
@@ -856,6 +1087,32 @@ void ImageViewer::mouseRightPressAt(double x, double y, Qt::KeyboardModifiers mo
 		) {
 			emit mouseRightPressRADec(ra, dec, telescope_ra, telescope_dec, modifiers);
 		}
+	}
+}
+
+// Handle Ctrl+Left-click for SNR calculation
+void ImageViewer::mouseLeftPressAt(double x, double y, Qt::KeyboardModifiers modifiers) {
+	if ((modifiers & Qt::ControlModifier) && m_snr_mode_enabled) {
+		calculateAndShowSNR(x, y);
+		return;
+	}
+
+	// Hide SNR overlay if clicking elsewhere without Ctrl
+	if (m_snr_overlay_visible) {
+		showSNROverlay(false);
+	}
+}
+
+void ImageViewer::mouseLeftDoubleClickAt(double x, double y, Qt::KeyboardModifiers modifiers) {
+	if (m_snr_mode_enabled) {
+		calculateAndShowSNR(x, y);
+	}
+}
+
+void ImageViewer::enableSNRMode(bool enable) {
+	m_snr_mode_enabled = enable;
+	if (!enable && m_snr_overlay_visible) {
+		showSNROverlay(false);
 	}
 }
 
@@ -1046,7 +1303,7 @@ QRect ImageViewer::getImageFrameRect() const {
 }
 
 PixmapItem::PixmapItem(QGraphicsItem *parent) :
-	QObject(), QGraphicsPixmapItem(parent)
+	QObject(), QGraphicsPixmapItem(parent), m_is_double_click(false)
 {
 	//setTransformationMode(Qt::SmoothTransformation);
 	setAcceptHoverEvents(true);
@@ -1068,15 +1325,31 @@ void PixmapItem::setImage(preview_image im) {
 }
 
 void PixmapItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
-		if(event->button() == Qt::RightButton) {
+	if(event->button() == Qt::RightButton) {
+		auto pos = event->pos();
+		emit mouseRightPress(pos.x(), pos.y(), event->modifiers());
+	} else if(event->button() == Qt::LeftButton) {
+		// Don't emit single-click signal if this is part of a double-click
+		if (!m_is_double_click) {
 			auto pos = event->pos();
-			emit mouseRightPress(pos.x(), pos.y(), event->modifiers());
+			emit mouseLeftPress(pos.x(), pos.y(), event->modifiers());
 		}
+		m_is_double_click = false;
+	}
 	QGraphicsItem::mousePressEvent(event);
 }
 
 void PixmapItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
 	QGraphicsItem::mouseReleaseEvent(event);
+}
+
+void PixmapItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) {
+	if(event->button() == Qt::LeftButton) {
+		m_is_double_click = true;
+		auto pos = event->pos();
+		emit mouseLeftDoubleClick(pos.x(), pos.y(), event->modifiers());
+	}
+	QGraphicsItem::mouseDoubleClickEvent(event);
 }
 
 void PixmapItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event) {

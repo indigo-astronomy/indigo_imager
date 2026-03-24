@@ -46,6 +46,7 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	m_seq_imager_viewer->showStretchButton(false);
 	m_seq_imager_viewer->showZoomButtons(false);
 	m_seq_imager_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
+	m_seq_imager_viewer->enableSNRMode(true);  // Enable SNR mode for sequence tab
 	sequence_frame_layout->addWidget(m_seq_imager_viewer, row, 0, 1, 4);
 
 	row++;
@@ -77,12 +78,11 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	m_seq_reset_button->setIcon(QIcon(":resource/reload.png"));
 	connect(m_seq_reset_button, &QPushButton::clicked, this, &ImagerWindow::on_reset);
 
-	QPushButton *button = new QPushButton("Abort");
-	button->setStyleSheet("min-width: 30px");
-	button->setIcon(QIcon(":resource/stop.png"));
-	toolbox->addWidget(button);
-	connect(button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
-
+	m_seq_abort_button = new QPushButton("Abort");
+	m_seq_abort_button->setStyleSheet("min-width: 30px");
+	m_seq_abort_button->setIcon(QIcon(":resource/stop.png"));
+	toolbox->addWidget(m_seq_abort_button);
+	connect(m_seq_abort_button, &QPushButton::clicked, this, &ImagerWindow::on_abort);
 
 	row++;
 	spacer = new QSpacerItem(1, 5, QSizePolicy::Expanding, QSizePolicy::Maximum);

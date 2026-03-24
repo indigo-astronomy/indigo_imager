@@ -6,7 +6,7 @@ unix:mac {
 	ICON=$$PWD/../resource/ain_viewer.icns
 }
 
-QMAKE_CXXFLAGS += -O3
+QMAKE_CXXFLAGS += -O3 -g
 QMAKE_CXXFLAGS_RELEASE += -O3
 
 OBJECTS_DIR=object
@@ -31,15 +31,21 @@ SOURCES += \
 	$$PWD/../common_src/utils.cpp \
 	$$PWD/../common_src/imagepreview.cpp \
 	$$PWD/../common_src/imageviewer.cpp \
+	$$PWD/../common_src/antialiaseditems.cpp \
 	$$PWD/../common_src/image_stats.cpp \
 	$$PWD/../common_src/fits.c \
 	$$PWD/../common_src/raw_to_fits.c \
 	$$PWD/../common_src/xisf.c \
 	$$PWD/../common_src/xml.c \
 	$$PWD/../common_src/dslr_raw.c \
+	$$PWD/../common_src/snr_calculator.cpp \
+	$$PWD/../common_src/snr_overlay.cpp \
+	$$PWD/../common_src/image_inspector.cpp \
+	$$PWD/../common_src/image_inspector_overlay.cpp \
 	$$PWD/../common_src/stretcher.cpp
 
 RESOURCES += \
+	$$PWD/../resource/fonts.qrc \
 	$$PWD/../qdarkstyle/style.qrc \
 	$$PWD/../resource/ain_viewer.qrc \
 
@@ -65,6 +71,7 @@ HEADERS += \
 	$$PWD/../common_src/image_preview_lut.h \
 	$$PWD/../common_src/imagepreview.h \
 	$$PWD/../common_src/imageviewer.h \
+	$$PWD/../common_src/antialiaseditems.h \
 	$$PWD/../common_src/image_stats.h \
 	$$PWD/../common_src/fits.h \
 	$$PWD/../common_src/raw_to_fits.h \
@@ -72,6 +79,10 @@ HEADERS += \
 	$$PWD/../common_src/xml.h \
 	$$PWD/../common_src/pixelformat.h \
 	$$PWD/../common_src/coordconv.h \
+	$$PWD/../common_src/snr_calculator.h \
+	$$PWD/../common_src/snr_overlay.h \
+	$$PWD/../common_src/image_inspector_overlay.h \
+	$$PWD/../common_src/image_inspector.h \
 	$$PWD/../common_src/dslr_raw.h \
 	$$PWD/../common_src/stretcher.h
 
@@ -91,15 +102,36 @@ INCLUDEPATH += \
 
 LIBS += -L"$$PWD/../external/libraw/lib" -L"$$PWD/../external/lz4" -lraw -lz
 
+INDIGO_LIB_DIR = $$PWD/../indigo/build/lib
+
 unix:!mac {
 	INCLUDEPATH += "$$PWD/../external/libjpeg"
-	LIBS += -L"$$PWD/../external/libjpeg/.libs" -L"$$PWD/../indigo/build/lib" -l:libindigo.a -lz -ljpeg -l:liblz4.a
-	#LIBS += -L"$$PWD/../external/libjpeg/.libs" -L"$$PWD/../indigo/build/lib" -lindigo -ljpeg -l:liblz4.a
+	LIBS += -L"$$PWD/../external/libjpeg/.libs" -L"$$INDIGO_LIB_DIR"
+	exists($$INDIGO_LIB_DIR/libindigo_client.so) | exists($$INDIGO_LIB_DIR/libindigo_client.a) {
+		LIBS += -l:libindigo_client.a -lz -ljpeg -l:liblz4.a
+	} else {
+		INDIGO_SYS = $$system(ls /usr/local/lib /usr/lib /lib /usr/lib64 /usr/lib/x86_64-linux-gnu 2>/dev/null | grep -q libindigo_client && echo yes || echo no)
+		contains(INDIGO_SYS, yes) {
+			LIBS += -l:libindigo_client.a -lz -ljpeg -l:liblz4.a
+		} else {
+			LIBS += -l:libindigo.a -lz -ljpeg -l:liblz4.a
+		}
+	}
 }
 
 unix:mac {
 	INCLUDEPATH += "$$PWD/../external/libjpeg"
-	LIBS += -L"$$PWD/../external/libjpeg/.libs" -L"$$PWD/../indigo/build/lib" -lindigo -ljpeg $$PWD/../external/lz4/liblz4.a
+	LIBS += -L"$$PWD/../external/libjpeg/.libs" -L"$$INDIGO_LIB_DIR"
+	exists($$INDIGO_LIB_DIR/libindigo_client.dylib) | exists($$INDIGO_LIB_DIR/libindigo_client.a) {
+		LIBS += -lindigo_client -ljpeg -llz4
+	} else {
+		INDIGO_SYS = $$system(ls /usr/local/lib /usr/lib /opt/homebrew/lib 2>/dev/null | grep -q libindigo_client && echo yes || echo no)
+		contains(INDIGO_SYS, yes) {
+			LIBS += -lindigo_client -ljpeg -llz4
+		} else {
+			LIBS += -lindigo -ljpeg -llz4
+		}
+	}
 }
 
 DISTFILES += \

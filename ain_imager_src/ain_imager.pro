@@ -1,5 +1,5 @@
 QT += core gui widgets network printsupport concurrent multimedia
-CONFIG += c++11 release app_bundle
+CONFIG += c++11 debug app_bundle
 
 unix:mac {
 	CONFIG += app_bundle
@@ -59,14 +59,18 @@ SOURCES += \
 	$$PWD/../common_src/utils.cpp \
 	$$PWD/../common_src/imagepreview.cpp \
 	$$PWD/../common_src/imageviewer.cpp \
+	$$PWD/../common_src/antialiaseditems.cpp \
 	$$PWD/../common_src/fits.c \
 	$$PWD/../common_src/xisf.c \
 	$$PWD/../common_src/xml.c \
 	$$PWD/../common_src/stretcher.cpp \
 	$$PWD/../common_src/image_stats.cpp \
 	$$PWD/../common_src/dslr_raw.c \
+	$$PWD/../common_src/snr_calculator.cpp \
+	$$PWD/../common_src/snr_overlay.cpp \
+	$$PWD/../common_src/image_inspector.cpp \
+	$$PWD/../common_src/image_inspector_overlay.cpp \
 	$$PWD/../external/qcustomplot/qcustomplot.cpp
-
 
 RESOURCES += \
 	$$PWD/../resource/ain_imager.qrc \
@@ -114,6 +118,7 @@ HEADERS += \
 	$$PWD/../common_src/image_preview_lut.h \
 	$$PWD/../common_src/imagepreview.h \
 	$$PWD/../common_src/imageviewer.h \
+	$$PWD/../common_src/antialiaseditems.h \
 	$$PWD/../common_src/fits.h \
 	$$PWD/../common_src/xisf.h \
 	$$PWD/../common_src/xml.h \
@@ -122,7 +127,10 @@ HEADERS += \
 	$$PWD/../common_src/coordconv.h \
 	$$PWD/../common_src/stretcher.h \
 	$$PWD/../common_src/image_stats.h \
-	$$PWD/../common_src/dslr_raw.h
+	$$PWD/../common_src/snr_calculator.h \
+	$$PWD/../common_src/snr_overlay.h \
+	$$PWD/../common_src/image_inspector_overlay.h \
+	$$PWD/../common_src/image_inspector.h
 
 INCLUDEPATH += \
 	"$$PWD/../indigo/indigo_libs" \
@@ -142,14 +150,36 @@ unix {
 	INCLUDEPATH += "$$PWD/../external/libjpeg"
 }
 
+INDIGO_LIB_DIR = $$PWD/../indigo/build/lib
+
 unix:mac {
-	LIBS += \
-		-L"$$PWD/../external/libraw/lib" -L"$$PWD/../external/lz4" -lraw -lz \
-		-L"$$PWD/../external/libjpeg/.libs" -L"$$PWD/../indigo/build/lib" -lindigo -ljpeg $$PWD/../external/lz4/liblz4.a
+	LIBS += -L"$$PWD/../external/libraw/lib" -L"$$PWD/../external/lz4" -lraw -lz
+	LIBS += -L"$$PWD/../external/libjpeg/.libs" -L"$$INDIGO_LIB_DIR"
+	exists($$INDIGO_LIB_DIR/libindigo_client.dylib) | exists($$INDIGO_LIB_DIR/libindigo_client.a) {
+		LIBS += -lindigo_client
+	} else {
+		INDIGO_SYS = $$system(ls /usr/local/lib /usr/lib /opt/homebrew/lib 2>/dev/null | grep -q libindigo_client && echo yes || echo no)
+		contains(INDIGO_SYS, yes) {
+			LIBS += -lindigo_client
+		} else {
+			LIBS += -lindigo
+		}
+	}
+	LIBS += -ljpeg -llz4
 }
 
 unix:!mac {
-	LIBS += -L"$$PWD/../external/libjpeg/.libs" -L"$$PWD/../indigo/build/lib" -lindigo -ljpeg -l:liblz4.a
+	LIBS += -L"$$PWD/../external/libjpeg/.libs" -L"$$INDIGO_LIB_DIR"
+	exists($$INDIGO_LIB_DIR/libindigo_client.so) | exists($$INDIGO_LIB_DIR/libindigo_client.a) {
+		LIBS += -lindigo_client -ljpeg -l:liblz4.a
+	} else {
+		INDIGO_SYS = $$system(ls /usr/local/lib /usr/lib /lib /usr/lib64 /usr/lib/x86_64-linux-gnu 2>/dev/null | grep -q libindigo_client && echo yes || echo no)
+		contains(INDIGO_SYS, yes) {
+			LIBS += -lindigo_client -ljpeg -l:liblz4.a
+		} else {
+			LIBS += -lindigo -ljpeg -l:liblz4.a
+		}
+	}
 }
 
 DISTFILES += \

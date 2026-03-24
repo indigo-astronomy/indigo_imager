@@ -23,8 +23,9 @@
 #include <QHash>
 #include <imagepreview.h>
 #include <indigo/indigo_client.h>
+#include <memory>
 
-class blob_preview_cache: QHash<QString, preview_image*> {
+class blob_preview_cache: QHash<QString, std::shared_ptr<preview_image>> {
 public:
 	blob_preview_cache(): preview_mutex(PTHREAD_MUTEX_INITIALIZER) {
 		pthread_mutexattr_t attr;
@@ -34,16 +35,10 @@ public:
 	};
 
 	~blob_preview_cache() {
-		//indigo_debug("preview: %s()\n", __FUNCTION__);
-		blob_preview_cache::iterator i = begin();
-		while (i != end()) {
-			preview_image *preview = i.value();
-			if (preview != nullptr) {
-				delete(preview);
-			}
-			i = erase(i);
-		}
+		clear_all();
 	};
+
+	void clear_all();
 
 private:
 	pthread_mutex_t preview_mutex;

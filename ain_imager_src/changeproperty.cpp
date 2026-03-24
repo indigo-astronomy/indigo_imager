@@ -19,6 +19,7 @@
 #include <libgen.h>
 #include <imagerwindow.h>
 #include <propertycache.h>
+#include <indigo/indigo_names.h>
 #include <utils.h>
 #include <logger.h>
 #include <conf.h>
@@ -127,7 +128,7 @@ void ImagerWindow::change_ccd_localmode_property(const char *agent, const QStrin
 		strncpy(object_cstr, m_object_name_str.toUtf8().constData(), INDIGO_VALUE_SIZE);
 		char *values[] {
 			object_cstr,
-			"%o_%-D_%F_%C_%M"
+			"%o_%-D_%F_%C_idx%3I_%M"
 		};
 		indigo_change_text_property(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, 2, items, (const char **)values);
 	} else {
@@ -136,7 +137,7 @@ void ImagerWindow::change_ccd_localmode_property(const char *agent, const QStrin
 		add_fits_keyword_string(agent, "OBJECT", m_object_name_str.toUtf8().constData());
 
 		char value[INDIGO_VALUE_SIZE];
-		snprintf(value, INDIGO_VALUE_SIZE, "%s_%%-D_%%F_%%C_%%M", (char *)m_object_name_str.toUtf8().constData());
+		snprintf(value, INDIGO_VALUE_SIZE, "%s_%%-D_%%F_%%C_idx%%3I_%%M", (char *)m_object_name_str.toUtf8().constData());
 		indigo_debug("Setting prefix to: %s", value);
 
 		indigo_change_text_property_1_raw(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, CCD_LOCAL_MODE_PREFIX_ITEM_NAME, value);
@@ -145,7 +146,7 @@ void ImagerWindow::change_ccd_localmode_property(const char *agent, const QStrin
 
 void ImagerWindow::init_ccd_localmode_property(const char *agent) {
 	char value[INDIGO_VALUE_SIZE];
-	snprintf(value, INDIGO_VALUE_SIZE, "%%o_%%-D_%%F_%%C_%%M");
+	snprintf(value, INDIGO_VALUE_SIZE, "%%o_%%-D_%%F_%%C_idx%%3I_%%M");
 	indigo_debug("Setting prefix to: %s", value);
 
 	indigo_change_text_property_1_raw(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, CCD_LOCAL_MODE_PREFIX_ITEM_NAME, value);
@@ -474,28 +475,21 @@ void ImagerWindow::change_focuser_subframe(const char *agent) const {
 	indigo_change_number_property(nullptr, agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME, 1, items, values);
 }
 
-void ImagerWindow::change_jpeg_settings_property(const char *agent, const int jpeg_quality, const double black_threshold, const double white_threshold, const double target_bg,  const double clipping_point) {
+void ImagerWindow::change_jpeg_settings_property(const char *agent, const int jpeg_quality, const double target_bg,  const double clipping_point, const int ref_channel) {
 	static const char *items[] = {
 		CCD_JPEG_SETTINGS_QUALITY_ITEM_NAME,
 		CCD_JPEG_SETTINGS_TARGET_BACKGROUND_ITEM_NAME,
 		CCD_JPEG_SETTINGS_CLIPPING_POINT_ITEM_NAME,
-		// these are obsolete - kept for compatibility
-		CCD_JPEG_SETTINGS_BLACK_ITEM_NAME,
-		CCD_JPEG_SETTINGS_WHITE_ITEM_NAME,
-		CCD_JPEG_SETTINGS_BLACK_TRESHOLD_ITEM_NAME,
-		CCD_JPEG_SETTINGS_WHITE_TRESHOLD_ITEM_NAME
+		CCD_JPEG_SETTINGS_REF_CHANNEL_ITEM_NAME
 	};
-	static double values[7];
+	static double values[4];
 	values[0] = (double)jpeg_quality;
 	values[1] = target_bg;
 	values[2] = clipping_point;
-	// these are obsolete - kept for compatibility
-	values[3] = -1;
-	values[4] = -1;
-	values[5] = black_threshold;
-	values[6] = white_threshold;
+	values[3] = (double)ref_channel;
+	indigo_error("Changing JPEG settings \"%s\": Q=%d, BG=%.1f, CP=%.1f, RC=%d", agent, jpeg_quality, target_bg, clipping_point, ref_channel);
 
-	indigo_change_number_property(nullptr, agent, CCD_JPEG_SETTINGS_PROPERTY_NAME, 7, items, values);
+	indigo_change_number_property(nullptr, agent, CCD_JPEG_SETTINGS_PROPERTY_NAME, 4, items, values);
 }
 
 void ImagerWindow::change_focus_estimator_property(const char *agent) const {
@@ -638,7 +632,7 @@ void ImagerWindow::change_agent_abort_process_property(const char *agent) const 
 	indigo_change_switch_property(nullptr, agent, AGENT_ABORT_PROCESS_PROPERTY_NAME, 1, items, values);
 }
 
-void ImagerWindow::change_agent_ccd_peview(const char *agent, bool enable) const {
+void ImagerWindow::change_agent_ccd_preview(const char *agent, bool enable) const {
 	if (enable) {
 		indigo_change_switch_property_1(nullptr, agent, CCD_PREVIEW_PROPERTY_NAME, CCD_PREVIEW_ENABLED_ITEM_NAME, true);
 	} else {
@@ -803,7 +797,7 @@ void ImagerWindow::change_mount_agent_location(const char *agent, QString proper
 }
 
 void ImagerWindow::change_mount_agent_abort(const char *agent) const {
-	indigo_change_switch_property_1(nullptr, agent, MOUNT_ABORT_MOTION_PROPERTY_NAME, MOUNT_ABORT_MOTION_ITEM_NAME, true);
+	indigo_change_switch_property_1(nullptr, agent, AGENT_ABORT_PROCESS_PROPERTY_NAME, AGENT_ABORT_PROCESS_ITEM_NAME, true);
 }
 
 void ImagerWindow::change_solver_agent_abort(const char *agent) const {
