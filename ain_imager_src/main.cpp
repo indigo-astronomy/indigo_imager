@@ -161,6 +161,10 @@ int main(int argc, char *argv[]) {
 	QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 	QApplication app(argc, argv);
 
+#ifdef Q_OS_MACOS
+	QApplication::setStyle("Fusion");
+#endif
+
 	int id = QFontDatabase::addApplicationFont(":/fonts/Hack-Regular.ttf");
 	QFontDatabase::addApplicationFont(":/fonts/Hack-Bold.ttf");
 	QFontDatabase::addApplicationFont(":/fonts/Hack-Italic.ttf");
@@ -182,12 +186,20 @@ int main(int argc, char *argv[]) {
 	QFontDatabase::addApplicationFont(":/fonts/DejaVuSans-ExtraLight.ttf");
 	if (id != -1) {
 		QString family = QFontDatabase::applicationFontFamilies(id).at(0);
+#ifdef Q_OS_MACOS
+		QFont font = QFont(family, 13, QFont::Medium);
+#else
 		QFont font = QFont(family, 10, QFont::Medium);
+#endif
 		font.setKerning(false);
 		app.setFont(font);
 	} else {
 		indigo_error("Failed to load embedded DejaVu Sans font, using system default.");
+#ifdef Q_OS_MACOS
+		QFont font("SansSerif", 13, QFont::Medium);
+#else
 		QFont font("SansSerif", 10, QFont::Medium);
+#endif
 		font.setStyleHint(QFont::SansSerif);
 		font.setKerning(false);
 		app.setFont(font);
