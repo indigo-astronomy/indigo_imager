@@ -187,7 +187,7 @@ int main(int argc, char *argv[]) {
 	if (id != -1) {
 		QString family = QFontDatabase::applicationFontFamilies(id).at(0);
 #ifdef Q_OS_MACOS
-		QFont font = QFont(family, 13, QFont::Medium);
+		QFont font = QFont(family, 13, QFont::Light);
 #else
 		QFont font = QFont(family, 10, QFont::Medium);
 #endif
@@ -196,7 +196,7 @@ int main(int argc, char *argv[]) {
 	} else {
 		indigo_error("Failed to load embedded DejaVu Sans font, using system default.");
 #ifdef Q_OS_MACOS
-		QFont font("SansSerif", 13, QFont::Medium);
+		QFont font("SansSerif", 13, QFont::Light);
 #else
 		QFont font("SansSerif", 10, QFont::Medium);
 #endif
