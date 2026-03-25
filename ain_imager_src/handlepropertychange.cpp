@@ -2966,6 +2966,12 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_dec_guiding_select);
 	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_CORRECTION_MODE_RA_PROPERTY_NAME)) {
+		add_items_to_combobox(this, property, m_ra_correction_mode_select);
+	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_CORRECTION_MODE_DEC_PROPERTY_NAME)) {
+		add_items_to_combobox(this, property, m_dec_correction_mode_select);
+	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME)) {
 		update_guider_settings(this, property);
 	}
@@ -3343,6 +3349,12 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_dec_guiding_select);
+	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_CORRECTION_MODE_RA_PROPERTY_NAME)) {
+		change_combobox_selection(this, property, m_ra_correction_mode_select);
+	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_CORRECTION_MODE_DEC_PROPERTY_NAME)) {
+		change_combobox_selection(this, property, m_dec_correction_mode_select);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME)) {
 		update_guider_settings(this, property);
@@ -3836,6 +3848,17 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		clear_combobox(m_dec_guiding_select);
 	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_CORRECTION_MODE_RA_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		clear_combobox(m_ra_correction_mode_select);
+	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_CORRECTION_MODE_DEC_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		clear_combobox(m_dec_correction_mode_select);
+	}
+
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
 		set_spinbox_value(m_guider_exposure, 0);
