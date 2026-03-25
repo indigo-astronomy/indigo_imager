@@ -804,6 +804,9 @@ private:
 	QComboBox *m_detection_mode_select;
 	QComboBox *m_dec_guiding_select;
 
+	QComboBox *m_ra_correction_mode_select;
+	QComboBox *m_dec_correction_mode_select;
+
 	FILE *m_guide_log;
 	int m_guider_process;
 
