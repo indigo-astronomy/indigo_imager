@@ -363,6 +363,8 @@ public slots:
 	void on_guider_stop(bool clicked);
 	void on_detection_mode_selected(int index);
 	void on_dec_guiding_selected(int index);
+	void on_ra_correction_mode_selected(int index);
+	void on_dec_correction_mode_selected(int index);
 	void on_guider_clear_selection(bool clicked);
 	void on_guider_ccd_mode_selected(int index);
 	void on_agent_guider_gain_changed(int value);
@@ -1049,6 +1051,8 @@ private:
 	void change_agent_start_calibrate_property(const char *agent) const;
 	void change_detection_mode_property(const char *agent) const;
 	void change_dec_guiding_property(const char *agent) const;
+	void change_correction_mode_dec_property(const char *agent) const;
+	void change_correction_mode_ra_property(const char *agent) const;
 	void change_guider_agent_exposure(const char *agent) const;
 	void change_guider_agent_callibration(const char *agent) const;
 	void change_guider_agent_reverse_dec(const char *agent) const;

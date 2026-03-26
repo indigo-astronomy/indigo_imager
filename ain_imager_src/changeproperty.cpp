@@ -510,6 +510,18 @@ void ImagerWindow::change_dec_guiding_property(const char *agent) const {
 	indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME, selected_mode, true);
 }
 
+void ImagerWindow::change_correction_mode_ra_property(const char *agent) const {
+	static char selected_mode[INDIGO_NAME_SIZE];
+	strncpy(selected_mode, m_ra_correction_mode_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_CORRECTION_MODE_RA_PROPERTY_NAME, selected_mode, true);
+}
+
+void ImagerWindow::change_correction_mode_dec_property(const char *agent) const {
+	static char selected_mode[INDIGO_NAME_SIZE];
+	strncpy(selected_mode, m_dec_correction_mode_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_CORRECTION_MODE_DEC_PROPERTY_NAME, selected_mode, true);
+}
+
 void ImagerWindow::change_agent_focus_params_property(const char *agent, bool set_backlash) const {
 	static const char *items[] = {
 		AGENT_IMAGER_FOCUS_ITERATIVE_INITIAL_ITEM_NAME,

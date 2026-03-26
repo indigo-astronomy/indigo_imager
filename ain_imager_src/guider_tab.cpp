@@ -433,7 +433,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	correction_frame_layout->addWidget(label, correction_row, 0, 1, 1);
 	m_ra_correction_mode_select = new QComboBox();
 	correction_frame_layout->addWidget(m_ra_correction_mode_select, correction_row, 1, 1, 3);
-	// connect(m_ra_correction_mode_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_ra_correction_mode_selected);
+	connect(m_ra_correction_mode_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_ra_correction_mode_selected);
 
 	correction_row++;
 	label = new QLabel("Aggressivness (%):");
@@ -468,7 +468,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	correction_frame_layout->addWidget(label, correction_row, 0, 1, 1);
 	m_dec_correction_mode_select = new QComboBox();
 	correction_frame_layout->addWidget(m_dec_correction_mode_select, correction_row, 1, 1, 3);
-	// connect(m_dec_correction_mode_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_dec_correction_mode_selected);
+	connect(m_dec_correction_mode_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_dec_correction_mode_selected);
 
 	correction_row++;
 	label = new QLabel("Aggressivness (%):");
@@ -838,6 +838,30 @@ void ImagerWindow::on_dec_guiding_selected(int index) {
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_dec_guiding_property(selected_agent);
+	});
+}
+
+void ImagerWindow::on_ra_correction_mode_selected(int index) {
+	Q_UNUSED(index);
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_correction_mode_ra_property(selected_agent);
+	});
+}
+
+void ImagerWindow::on_dec_correction_mode_selected(int index) {
+	Q_UNUSED(index);
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_correction_mode_dec_property(selected_agent);
 	});
 }
 
