@@ -1410,6 +1410,7 @@ void update_focus_estimator_property(ImagerWindow *w, indigo_property *property)
 }
 
 void update_guider_correction_property(ImagerWindow *w, indigo_property *property) {
+	bool show_i_stack = false;
 	if (client_match_property(property, AGENT_GUIDER_CORRECTION_MODE_RA_PROPERTY_NAME)) {
 		for (int i = 0; i < property->count; i++) {
 			if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_PI_ITEM_NAME)) {
@@ -1424,6 +1425,7 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 					w->show_widget(w->m_hyst_guide_ra_aggr, false);
 					w->show_widget(w->m_hyst_guide_hysteresis_ra, false);
 					w->show_widget(w->m_lt_guide_ra_aggr, false);
+					show_i_stack = true;
 				}
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_HYSTERESIS_ITEM_NAME)) {
 				if (property->items[i].sw.value) {
@@ -1467,6 +1469,7 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 					w->show_widget(w->m_hyst_guide_dec_aggr, false);
 					w->show_widget(w->m_hyst_guide_hysteresis_dec, false);
 					w->show_widget(w->m_lt_guide_dec_aggr, false);
+					show_i_stack = true;
 				}
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_HYSTERESIS_ITEM_NAME)) {
 				if (property->items[i].sw.value) {
@@ -1496,6 +1499,13 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 				}
 			}
 		}
+	}
+	if (show_i_stack) {
+		w->show_widget(w->m_pi_i_stack_label, true);
+		w->show_widget(w->m_guide_is, true);
+	} else {
+		w->show_widget(w->m_pi_i_stack_label, false);
+		w->show_widget(w->m_guide_is, false);
 	}
 }
 
@@ -4030,6 +4040,11 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_text(m_guide_ra_param2_label, "Integral gain:");
 		show_widget(m_guide_ra_param1_label, true);
 		show_widget(m_guide_ra_param2_label, true);
+
+		show_widget(m_pi_i_stack_label, true);
+		set_spinbox_value(m_guide_is, 0);
+		set_enabled(m_guide_is, false);
+		show_widget(m_guide_is, true);
 
 		set_spinbox_value(m_hyst_guide_dec_aggr, 0);
 		set_enabled(m_hyst_guide_dec_aggr, false);
