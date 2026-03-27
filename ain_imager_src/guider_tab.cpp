@@ -300,76 +300,7 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	settings_frame_layout->addWidget(m_guide_edge_clipping, settings_row, 3);
 	connect(m_guide_edge_clipping, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_edge_clipping_changed);
 
-	QFrame *advanced_frame = new QFrame;
-	guider_tabbar->addTab(advanced_frame, "Advanced");
-
-	QGridLayout *advanced_frame_layout = new QGridLayout();
-	advanced_frame_layout->setAlignment(Qt::AlignTop);
-	advanced_frame->setLayout(advanced_frame_layout);
-	advanced_frame->setFrameShape(QFrame::StyledPanel);
-	//stats_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
-	advanced_frame->setContentsMargins(0, 0, 0, 0);
-
-	// Guiding pulse
-	int advanced_row=0;
-	label = new QLabel("Calibration:");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 4);
-
-	advanced_row++;
-	label = new QLabel("Calibration step (s):");
-	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
-	m_guide_cal_step = new QDoubleSpinBox();
-	m_guide_cal_step->setMaximum(1);
-	m_guide_cal_step->setMinimum(0);
-	m_guide_cal_step->setValue(0);
-	advanced_frame_layout->addWidget(m_guide_cal_step, advanced_row, 3);
-	connect(m_guide_cal_step, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_callibration_changed);
-
-	advanced_row++;
-	label = new QLabel("Dec Backlash (px):");
-	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 2);
-
-	m_guider_apply_backlash_cbox = new QCheckBox("");
-	m_guider_apply_backlash_cbox->setToolTip("Compensate declination backlash while guiding");
-	m_guider_apply_backlash_cbox->setEnabled(false);
-	advanced_frame_layout->addWidget(m_guider_apply_backlash_cbox, advanced_row, 2, Qt::AlignRight);
-	connect(m_guider_apply_backlash_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_guider_apply_backlash_changed);
-
-	m_guide_dec_backlash = new QDoubleSpinBox();
-	m_guide_dec_backlash->setMaximum(1);
-	m_guide_dec_backlash->setMinimum(0);
-	m_guide_dec_backlash->setValue(0);
-	advanced_frame_layout->addWidget(m_guide_dec_backlash, advanced_row, 3);
-	connect(m_guide_dec_backlash, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_callibration_changed);
-
-	advanced_row++;
-	label = new QLabel("Axis rotation angle (°):");
-	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 3);
-	m_guide_rotation = new QDoubleSpinBox();
-	m_guide_rotation->setMaximum(1);
-	m_guide_rotation->setMinimum(0);
-	m_guide_rotation->setValue(0);
-	advanced_frame_layout->addWidget(m_guide_rotation, advanced_row, 3);
-	connect(m_guide_rotation, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_callibration_changed);
-
-	advanced_row++;
-	label = new QLabel("RA/Dec speed (px/s):");
-	advanced_frame_layout->addWidget(label, advanced_row, 0, 1, 2);
-	m_guide_ra_speed = new QDoubleSpinBox();
-	m_guide_ra_speed->setMaximum(1);
-	m_guide_ra_speed->setMinimum(0);
-	m_guide_ra_speed->setValue(0);
-	advanced_frame_layout->addWidget(m_guide_ra_speed, advanced_row, 2);
-	connect(m_guide_ra_speed, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_callibration_changed);
-
-	m_guide_dec_speed = new QDoubleSpinBox();
-	m_guide_dec_speed->setMaximum(1);
-	m_guide_dec_speed->setMinimum(0);
-	m_guide_dec_speed->setValue(0);
-	advanced_frame_layout->addWidget(m_guide_dec_speed, advanced_row, 3);
-	connect(m_guide_dec_speed, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_callibration_changed);
-
+	// corrections tab
 	QFrame *correction_frame = new QFrame;
 	guider_tabbar->addTab(correction_frame, "Corrections");
 
@@ -435,25 +366,53 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	correction_frame_layout->addWidget(m_ra_correction_mode_select, correction_row, 1, 1, 3);
 	connect(m_ra_correction_mode_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_ra_correction_mode_selected);
 
+	// Parameter 1
 	correction_row++;
-	label = new QLabel("Aggressivness (%):");
-	correction_frame_layout->addWidget(label, correction_row, 0, 1, 2);
-	m_guide_ra_aggr = new QSpinBox();
-	m_guide_ra_aggr->setMaximum(100);
-	m_guide_ra_aggr->setMinimum(0);
-	m_guide_ra_aggr->setValue(0);
-	correction_frame_layout->addWidget(m_guide_ra_aggr, correction_row, 3);
-	connect(m_guide_ra_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_aggressivity_changed);
+	m_guide_ra_param1_label = new QLabel("Aggressivness (%):");
+	correction_frame_layout->addWidget(m_guide_ra_param1_label, correction_row, 0, 1, 2);
 
+	m_pi_guide_ra_aggr = new QSpinBox();
+	m_pi_guide_ra_aggr->setMaximum(100);
+	m_pi_guide_ra_aggr->setMinimum(0);
+	m_pi_guide_ra_aggr->setValue(0);
+	correction_frame_layout->addWidget(m_pi_guide_ra_aggr, correction_row, 3);
+	connect(m_pi_guide_ra_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_pi_aggressivity_changed);
+
+	m_hyst_guide_ra_aggr = new QSpinBox();
+	m_hyst_guide_ra_aggr->setMaximum(100);
+	m_hyst_guide_ra_aggr->setMinimum(0);
+	m_hyst_guide_ra_aggr->setValue(0);
+	m_hyst_guide_ra_aggr->hide();
+	correction_frame_layout->addWidget(m_hyst_guide_ra_aggr, correction_row, 3);
+	connect(m_hyst_guide_ra_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_hyst_aggressivity_changed);
+
+	m_lt_guide_ra_aggr = new QSpinBox();
+	m_lt_guide_ra_aggr->setMaximum(100);
+	m_lt_guide_ra_aggr->setMinimum(0);
+	m_lt_guide_ra_aggr->setValue(0);
+	m_lt_guide_ra_aggr->hide();
+	correction_frame_layout->addWidget(m_lt_guide_ra_aggr, correction_row, 3);
+	connect(m_lt_guide_ra_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_lt_aggressivity_changed);
+
+	// Parameter 2
 	correction_row++;
-	label = new QLabel("Integral gain:");
-	correction_frame_layout->addWidget(label, correction_row, 0, 1, 3);
-	m_guide_i_gain_ra = new QDoubleSpinBox();
-	m_guide_i_gain_ra->setMaximum(1);
-	m_guide_i_gain_ra->setMinimum(0);
-	m_guide_i_gain_ra->setValue(0);
-	correction_frame_layout->addWidget(m_guide_i_gain_ra, correction_row, 3);
-	connect(m_guide_i_gain_ra, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_change_guider_agent_i_gain_changed);
+	m_guide_ra_param2_label = new QLabel("Integral gain:");
+	correction_frame_layout->addWidget(m_guide_ra_param2_label, correction_row, 0, 1, 3);
+
+	m_pi_guide_i_gain_ra = new QDoubleSpinBox();
+	m_pi_guide_i_gain_ra->setMaximum(1);
+	m_pi_guide_i_gain_ra->setMinimum(0);
+	m_pi_guide_i_gain_ra->setValue(0);
+	correction_frame_layout->addWidget(m_pi_guide_i_gain_ra, correction_row, 3);
+	connect(m_pi_guide_i_gain_ra, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_change_guider_agent_i_gain_changed);
+
+	m_hyst_guide_hysteresis_ra = new QSpinBox();
+	m_hyst_guide_hysteresis_ra->setMaximum(1);
+	m_hyst_guide_hysteresis_ra->setMinimum(0);
+	m_hyst_guide_hysteresis_ra->setValue(0);
+	m_hyst_guide_hysteresis_ra->hide();
+	correction_frame_layout->addWidget(m_hyst_guide_hysteresis_ra, correction_row, 3);
+	connect(m_hyst_guide_hysteresis_ra, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_hyst_hysteresis_changed);
 
 	correction_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -470,39 +429,138 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	correction_frame_layout->addWidget(m_dec_correction_mode_select, correction_row, 1, 1, 3);
 	connect(m_dec_correction_mode_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_dec_correction_mode_selected);
 
+	// Parameter 1
 	correction_row++;
-	label = new QLabel("Aggressivness (%):");
-	correction_frame_layout->addWidget(label, correction_row, 0, 1, 2);
-	m_guide_dec_aggr = new QSpinBox();
-	m_guide_dec_aggr->setMaximum(100);
-	m_guide_dec_aggr->setMinimum(0);
-	m_guide_dec_aggr->setValue(0);
-	correction_frame_layout->addWidget(m_guide_dec_aggr, correction_row, 3);
-	connect(m_guide_dec_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_aggressivity_changed);
+	m_guide_dec_param1_label = new QLabel("Aggressivness (%):");
+	correction_frame_layout->addWidget(m_guide_dec_param1_label, correction_row, 0, 1, 2);
 
+	m_pi_guide_dec_aggr = new QSpinBox();
+	m_pi_guide_dec_aggr->setMaximum(100);
+	m_pi_guide_dec_aggr->setMinimum(0);
+	m_pi_guide_dec_aggr->setValue(0);
+	correction_frame_layout->addWidget(m_pi_guide_dec_aggr, correction_row, 3);
+	connect(m_pi_guide_dec_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_pi_aggressivity_changed);
+
+	m_hyst_guide_dec_aggr = new QSpinBox();
+	m_hyst_guide_dec_aggr->setMaximum(100);
+	m_hyst_guide_dec_aggr->setMinimum(0);
+	m_hyst_guide_dec_aggr->setValue(0);
+	m_hyst_guide_dec_aggr->hide();
+	correction_frame_layout->addWidget(m_hyst_guide_dec_aggr, correction_row, 3);
+	connect(m_hyst_guide_dec_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_hyst_aggressivity_changed);
+
+	m_lt_guide_dec_aggr = new QSpinBox();
+	m_lt_guide_dec_aggr->setMaximum(100);
+	m_lt_guide_dec_aggr->setMinimum(0);
+	m_lt_guide_dec_aggr->setValue(0);
+	m_lt_guide_dec_aggr->hide();
+	correction_frame_layout->addWidget(m_lt_guide_dec_aggr, correction_row, 3);
+	connect(m_lt_guide_dec_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_lt_aggressivity_changed);
+
+	// Parameter 2
 	correction_row++;
-	label = new QLabel("Integral gain:");
-	correction_frame_layout->addWidget(label, correction_row, 0, 1, 3);
-	m_guide_i_gain_dec = new QDoubleSpinBox();
-	m_guide_i_gain_dec->setMaximum(1);
-	m_guide_i_gain_dec->setMinimum(0);
-	m_guide_i_gain_dec->setValue(0);
-	correction_frame_layout->addWidget(m_guide_i_gain_dec, correction_row, 3);
-	connect(m_guide_i_gain_dec, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_change_guider_agent_i_gain_changed);
+	m_guide_dec_param2_label = new QLabel("Integral gain:");
+	correction_frame_layout->addWidget(m_guide_dec_param2_label, correction_row, 0, 1, 3);
+
+	m_pi_guide_i_gain_dec = new QDoubleSpinBox();
+	m_pi_guide_i_gain_dec->setMaximum(1);
+	m_pi_guide_i_gain_dec->setMinimum(0);
+	m_pi_guide_i_gain_dec->setValue(0);
+	correction_frame_layout->addWidget(m_pi_guide_i_gain_dec, correction_row, 3);
+	connect(m_pi_guide_i_gain_dec, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_change_guider_agent_i_gain_changed);
+
+	m_hyst_guide_hysteresis_dec = new QSpinBox();
+	m_hyst_guide_hysteresis_dec->setMaximum(1);
+	m_hyst_guide_hysteresis_dec->setMinimum(0);
+	m_hyst_guide_hysteresis_dec->setValue(0);
+	m_hyst_guide_hysteresis_dec->hide();
+	correction_frame_layout->addWidget(m_hyst_guide_hysteresis_dec, correction_row, 3);
+	connect(m_hyst_guide_hysteresis_dec, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_hyst_hysteresis_changed);
 
 	correction_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	correction_frame_layout->addItem(spacer, correction_row, 0);
 
 	correction_row++;
-	label = new QLabel("I stack (frames):");
-	correction_frame_layout->addWidget(label, correction_row, 0, 1, 3);
+	m_pi_i_stack_label = new QLabel("Proportional-Integral I stack (frames):");
+	correction_frame_layout->addWidget(m_pi_i_stack_label, correction_row, 0, 1, 3);
 	m_guide_is = new QSpinBox();
 	m_guide_is->setMaximum(20);
 	m_guide_is->setMinimum(0);
 	m_guide_is->setValue(0);
 	correction_frame_layout->addWidget(m_guide_is, correction_row, 3);
 	connect(m_guide_is, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_change_guider_agent_is_changed);
+
+	// Advanced tab
+	QFrame *calibration_frame = new QFrame;
+	guider_tabbar->addTab(calibration_frame, "Calibration");
+
+	QGridLayout *calibration_frame_layout = new QGridLayout();
+	calibration_frame_layout->setAlignment(Qt::AlignTop);
+	calibration_frame->setLayout(calibration_frame_layout);
+	calibration_frame->setFrameShape(QFrame::StyledPanel);
+	//stats_frame->setMinimumWidth(CAMERA_FRAME_MIN_WIDTH);
+	calibration_frame->setContentsMargins(0, 0, 0, 0);
+
+	// Guiding pulse
+	int calibration_row=0;
+	label = new QLabel("Calibration:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	calibration_frame_layout->addWidget(label, calibration_row, 0, 1, 4);
+
+	calibration_row++;
+	label = new QLabel("Calibration step (s):");
+	calibration_frame_layout->addWidget(label, calibration_row, 0, 1, 3);
+	m_guide_cal_step = new QDoubleSpinBox();
+	m_guide_cal_step->setMaximum(1);
+	m_guide_cal_step->setMinimum(0);
+	m_guide_cal_step->setValue(0);
+	calibration_frame_layout->addWidget(m_guide_cal_step, calibration_row, 3);
+	connect(m_guide_cal_step, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_callibration_changed);
+
+	calibration_row++;
+	label = new QLabel("Dec Backlash (px):");
+	calibration_frame_layout->addWidget(label, calibration_row, 0, 1, 2);
+
+	m_guider_apply_backlash_cbox = new QCheckBox("");
+	m_guider_apply_backlash_cbox->setToolTip("Compensate declination backlash while guiding");
+	m_guider_apply_backlash_cbox->setEnabled(false);
+	calibration_frame_layout->addWidget(m_guider_apply_backlash_cbox, calibration_row, 2, Qt::AlignRight);
+	connect(m_guider_apply_backlash_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_guider_apply_backlash_changed);
+
+	m_guide_dec_backlash = new QDoubleSpinBox();
+	m_guide_dec_backlash->setMaximum(1);
+	m_guide_dec_backlash->setMinimum(0);
+	m_guide_dec_backlash->setValue(0);
+	calibration_frame_layout->addWidget(m_guide_dec_backlash, calibration_row, 3);
+	connect(m_guide_dec_backlash, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_callibration_changed);
+
+	calibration_row++;
+	label = new QLabel("Axis rotation angle (°):");
+	calibration_frame_layout->addWidget(label, calibration_row, 0, 1, 3);
+	m_guide_rotation = new QDoubleSpinBox();
+	m_guide_rotation->setMaximum(1);
+	m_guide_rotation->setMinimum(0);
+	m_guide_rotation->setValue(0);
+	calibration_frame_layout->addWidget(m_guide_rotation, calibration_row, 3);
+	connect(m_guide_rotation, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_callibration_changed);
+
+	calibration_row++;
+	label = new QLabel("RA/Dec speed (px/s):");
+	calibration_frame_layout->addWidget(label, calibration_row, 0, 1, 2);
+	m_guide_ra_speed = new QDoubleSpinBox();
+	m_guide_ra_speed->setMaximum(1);
+	m_guide_ra_speed->setMinimum(0);
+	m_guide_ra_speed->setValue(0);
+	calibration_frame_layout->addWidget(m_guide_ra_speed, calibration_row, 2);
+	connect(m_guide_ra_speed, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_callibration_changed);
+
+	m_guide_dec_speed = new QDoubleSpinBox();
+	m_guide_dec_speed->setMaximum(1);
+	m_guide_dec_speed->setMinimum(0);
+	m_guide_dec_speed->setValue(0);
+	calibration_frame_layout->addWidget(m_guide_dec_speed, calibration_row, 3);
+	connect(m_guide_dec_speed, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_callibration_changed);
 
 	QFrame *misc_frame = new QFrame;
 	guider_tabbar->addTab(misc_frame, "Misc");
@@ -890,7 +948,7 @@ void ImagerWindow::on_guider_agent_pulse_changed(double value) {
 	});
 }
 
-void ImagerWindow::on_guider_agent_aggressivity_changed(int value) {
+void ImagerWindow::on_guider_agent_pi_aggressivity_changed(int value) {
 	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -898,7 +956,7 @@ void ImagerWindow::on_guider_agent_aggressivity_changed(int value) {
 		get_selected_guider_agent(selected_agent);
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-		change_guider_agent_aggressivity(selected_agent);
+		change_guider_agent_pi_aggressivity(selected_agent);
 	});
 }
 
@@ -916,6 +974,42 @@ void ImagerWindow::on_change_guider_agent_i_gain_changed(double value) {
 
 void ImagerWindow::on_change_guider_agent_is_changed(int value) {
 	on_change_guider_agent_i_gain_changed((double)value);
+}
+
+void ImagerWindow::on_guider_agent_hyst_aggressivity_changed(int value) {
+	Q_UNUSED(value);
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_guider_agent_hyst_aggressivity(selected_agent);
+	});
+}
+
+void ImagerWindow::on_guider_agent_lt_aggressivity_changed(int value) {
+	Q_UNUSED(value);
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_guider_agent_lt_aggressivity(selected_agent);
+	});
+}
+
+void ImagerWindow::on_guider_agent_hyst_hysteresis_changed(int value) {
+	Q_UNUSED(value);
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_guider_agent_hyst_hysteresis(selected_agent);
+	});
 }
 
 void ImagerWindow::on_guider_agent_callibration_changed(double value) {

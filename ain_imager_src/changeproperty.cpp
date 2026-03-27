@@ -736,14 +736,47 @@ void ImagerWindow::change_guider_agent_pulse_min_max(const char *agent) const {
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 3, items, values);
 }
 
-void ImagerWindow::change_guider_agent_aggressivity(const char *agent) const {
+void ImagerWindow::change_guider_agent_pi_aggressivity(const char *agent) const {
 	static const char *items[] = {
 		AGENT_GUIDER_SETTINGS_AGG_RA_ITEM_NAME,
 		AGENT_GUIDER_SETTINGS_AGG_DEC_ITEM_NAME
 	};
 	static double values[2];
-	values[0] = (double)m_guide_ra_aggr->value();
-	values[1] = (double)m_guide_dec_aggr->value();
+	values[0] = (double)m_pi_guide_ra_aggr->value();
+	values[1] = (double)m_pi_guide_dec_aggr->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 2, items, values);
+}
+
+void ImagerWindow::change_guider_agent_hyst_aggressivity(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_SETTINGS_HYSTERESIS_AGG_RA_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_HYSTERESIS_AGG_DEC_ITEM_NAME,
+	};
+	static double values[2];
+	values[0] = (double)m_hyst_guide_ra_aggr->value();
+	values[1] = (double)m_hyst_guide_dec_aggr->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 2, items, values);
+}
+
+void ImagerWindow::change_guider_agent_lt_aggressivity(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_SETTINGS_LINEAR_TREND_AGG_RA_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_LINEAR_TREND_AGG_DEC_ITEM_NAME,
+	};
+	static double values[2];
+	values[0] = (double)m_lt_guide_ra_aggr->value();
+	values[1] = (double)m_lt_guide_dec_aggr->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 2, items, values);
+}
+
+void ImagerWindow::change_guider_agent_hyst_hysteresis(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_SETTINGS_HYSTERESIS_HIST_RA_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_HYSTERESIS_HIST_DEC_ITEM_NAME,
+	};
+	static double values[2];
+	values[0] = (double)m_hyst_guide_hysteresis_ra->value();
+	values[1] = (double)m_hyst_guide_hysteresis_dec->value();
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 2, items, values);
 }
 
@@ -754,8 +787,8 @@ void ImagerWindow::change_guider_agent_i(const char *agent) const {
 		AGENT_GUIDER_SETTINGS_STACK_ITEM_NAME
 	};
 	static double values[3];
-	values[0] = (double)m_guide_i_gain_ra->value();
-	values[1] = (double)m_guide_i_gain_dec->value();
+	values[0] = (double)m_pi_guide_i_gain_ra->value();
+	values[1] = (double)m_pi_guide_i_gain_dec->value();
 	values[2] = (double)m_guide_is->value();
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 3, items, values);
 }
