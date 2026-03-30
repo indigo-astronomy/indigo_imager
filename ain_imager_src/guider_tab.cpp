@@ -457,6 +457,14 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	correction_frame_layout->addWidget(m_lt_guide_dec_aggr, correction_row, 3);
 	connect(m_lt_guide_dec_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_lt_aggressivity_changed);
 
+	m_rswitch_guide_dec_aggr = new QSpinBox();
+	m_rswitch_guide_dec_aggr->setMaximum(200);
+	m_rswitch_guide_dec_aggr->setMinimum(0);
+	m_rswitch_guide_dec_aggr->setValue(0);
+	m_rswitch_guide_dec_aggr->hide();
+	correction_frame_layout->addWidget(m_rswitch_guide_dec_aggr, correction_row, 3);
+	connect(m_rswitch_guide_dec_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_rswitch_aggressivity_changed);
+
 	// Parameter 2
 	correction_row++;
 	m_guide_dec_param2_label = new QLabel("Integral gain:");
@@ -476,6 +484,16 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_hyst_guide_hysteresis_dec->hide();
 	correction_frame_layout->addWidget(m_hyst_guide_hysteresis_dec, correction_row, 3);
 	connect(m_hyst_guide_hysteresis_dec, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_hyst_hysteresis_changed);
+
+	m_rswitch_fast_threshild = new QDoubleSpinBox();
+	m_rswitch_fast_threshild->setMaximum(20);
+	m_rswitch_fast_threshild->setMinimum(0);
+	m_rswitch_fast_threshild->setSingleStep(0.1);
+	m_rswitch_fast_threshild->setDecimals(1);
+	m_rswitch_fast_threshild->setValue(0);
+	m_rswitch_fast_threshild->hide();
+	correction_frame_layout->addWidget(m_rswitch_fast_threshild, correction_row, 3);
+	connect(m_rswitch_fast_threshild, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_rswitch_fast_threshild_changed);
 
 	correction_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -1009,6 +1027,30 @@ void ImagerWindow::on_guider_agent_hyst_hysteresis_changed(int value) {
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_guider_agent_hyst_hysteresis(selected_agent);
+	});
+}
+
+void ImagerWindow::on_guider_agent_rswitch_aggressivity_changed(int value) {
+	Q_UNUSED(value);
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_guider_agent_rswitch_aggressivity(selected_agent);
+	});
+}
+
+void ImagerWindow::on_guider_agent_rswitch_fast_threshild_changed(double value) {
+	Q_UNUSED(value);
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_guider_agent_rswitch_fast_threshild(selected_agent);
 	});
 }
 

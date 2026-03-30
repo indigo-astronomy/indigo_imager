@@ -780,6 +780,24 @@ void ImagerWindow::change_guider_agent_hyst_hysteresis(const char *agent) const 
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 2, items, values);
 }
 
+void ImagerWindow::change_guider_agent_rswitch_aggressivity(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_SETTINGS_RESIST_SWITCH_AGG_DEC_ITEM_NAME,
+	};
+	static double values[1];
+	values[0] = (double)m_rswitch_guide_dec_aggr->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 1, items, values);
+}
+
+void ImagerWindow::change_guider_agent_rswitch_fast_threshild(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_SETTINGS_RESIST_SWITCH_FAST_THRSH_DEC_ITEM_NAME,
+	};
+	static double values[1];
+	values[0] = m_rswitch_fast_threshild->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 1, items, values);
+}
+
 void ImagerWindow::change_guider_agent_i(const char *agent) const {
 	static const char *items[] = {
 		AGENT_GUIDER_SETTINGS_I_GAIN_RA_ITEM_NAME,

@@ -384,6 +384,8 @@ public slots:
 	void on_guider_agent_hyst_aggressivity_changed(int value);
 	void on_guider_agent_lt_aggressivity_changed(int value);
 	void on_guider_agent_hyst_hysteresis_changed(int value);
+	void on_guider_agent_rswitch_aggressivity_changed(int value);
+	void on_guider_agent_rswitch_fast_threshild_changed(double value);
 	void on_preview_mode_off();
 	void on_preview_mode_fine_guider();
 	void on_preview_mode_normal_guider();
@@ -801,6 +803,9 @@ private:
 	QSpinBox  *m_lt_guide_ra_aggr;
 	QSpinBox  *m_lt_guide_dec_aggr;
 
+	QSpinBox  *m_rswitch_guide_dec_aggr;
+	QDoubleSpinBox  *m_rswitch_fast_threshild;
+
 	FocusGraph *m_guider_graph;
 	QVector<double> m_drift_data_ra;
 	QVector<double> m_drift_data_dec;
@@ -1082,6 +1087,8 @@ private:
 	void change_guider_agent_hyst_aggressivity(const char *agent) const;
 	void change_guider_agent_lt_aggressivity(const char *agent) const;
 	void change_guider_agent_hyst_hysteresis(const char *agent) const;
+	void change_guider_agent_rswitch_aggressivity(const char *agent) const;
+	void change_guider_agent_rswitch_fast_threshild(const char *agent) const;
 	void change_guider_agent_i(const char *agent) const;
 	void change_guider_agent_edge_clipping(const char *agent) const;
 	void change_agent_ccd_preview(const char *agent, bool enable) const;

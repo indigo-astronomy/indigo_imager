@@ -1484,6 +1484,8 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 					w->show_widget(w->m_hyst_guide_dec_aggr, false);
 					w->show_widget(w->m_hyst_guide_hysteresis_dec, false);
 					w->show_widget(w->m_lt_guide_dec_aggr, false);
+					w->show_widget(w->m_rswitch_guide_dec_aggr, false);
+					w->show_widget(w->m_rswitch_fast_threshild, false);
 					show_i_stack = true;
 				}
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_HYSTERESIS_ITEM_NAME)) {
@@ -1498,6 +1500,8 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 					w->show_widget(w->m_hyst_guide_dec_aggr, true);
 					w->show_widget(w->m_hyst_guide_hysteresis_dec, true);
 					w->show_widget(w->m_lt_guide_dec_aggr, false);
+					w->show_widget(w->m_rswitch_guide_dec_aggr, false);
+					w->show_widget(w->m_rswitch_fast_threshild, false);
 				}
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_LINEAR_TREND_ITEM_NAME)) {
 				if (property->items[i].sw.value) {
@@ -1511,6 +1515,23 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 					w->show_widget(w->m_hyst_guide_dec_aggr, false);
 					w->show_widget(w->m_hyst_guide_hysteresis_dec, false);
 					w->show_widget(w->m_lt_guide_dec_aggr, true);
+					w->show_widget(w->m_rswitch_guide_dec_aggr, false);
+					w->show_widget(w->m_rswitch_fast_threshild, false);
+				}
+			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_RESIST_SWITCH_ITEM_NAME)) {
+				if (property->items[i].sw.value) {
+					w->set_text(w->m_guide_dec_param1_label, "Aggressiveness (%):");
+					w->set_text(w->m_guide_dec_param2_label, "Fast-switch threshold (px):");
+					w->show_widget(w->m_guide_dec_param1_label, true);
+					w->show_widget(w->m_guide_dec_param2_label, true);
+
+					w->show_widget(w->m_pi_guide_dec_aggr, false);
+					w->show_widget(w->m_pi_guide_i_gain_dec, false);
+					w->show_widget(w->m_hyst_guide_dec_aggr, false);
+					w->show_widget(w->m_hyst_guide_hysteresis_dec, false);
+					w->show_widget(w->m_lt_guide_dec_aggr, false);
+					w->show_widget(w->m_rswitch_guide_dec_aggr, true);
+					w->show_widget(w->m_rswitch_fast_threshild, true);
 				}
 			} else {
 				if (property->items[i].sw.value) {
@@ -1522,6 +1543,8 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 					w->show_widget(w->m_hyst_guide_dec_aggr, false);
 					w->show_widget(w->m_hyst_guide_hysteresis_dec, false);
 					w->show_widget(w->m_lt_guide_dec_aggr, false);
+					w->show_widget(w->m_rswitch_guide_dec_aggr, false);
+					w->show_widget(w->m_rswitch_fast_threshild, false);
 				}
 			}
 		}
@@ -2430,6 +2453,10 @@ void update_guider_settings(ImagerWindow *w, indigo_property *property) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_lt_guide_ra_aggr);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_LINEAR_TREND_AGG_DEC_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_lt_guide_dec_aggr);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_RESIST_SWITCH_AGG_DEC_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_rswitch_guide_dec_aggr);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_RESIST_SWITCH_FAST_THRSH_DEC_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_rswitch_fast_threshild);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_DITHERING_AMOUNT_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_dither_aggr);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_DITHERING_TIME_LIMIT_ITEM_NAME)) {
@@ -4095,6 +4122,14 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_spinbox_value(m_lt_guide_dec_aggr, 0);
 		set_enabled(m_lt_guide_dec_aggr, false);
 		show_widget(m_lt_guide_dec_aggr, false);
+
+		set_spinbox_value(m_rswitch_guide_dec_aggr, 0);
+		set_enabled(m_rswitch_guide_dec_aggr, false);
+		show_widget(m_rswitch_guide_dec_aggr, false);
+
+		set_spinbox_value(m_rswitch_fast_threshild, 0);
+		set_enabled(m_rswitch_fast_threshild, false);
+		show_widget(m_rswitch_fast_threshild, false);
 
 		set_spinbox_value(m_dither_aggr, 0);
 		set_enabled(m_dither_aggr, false);
