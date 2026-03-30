@@ -522,9 +522,30 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 
 	// Guiding pulse
 	int calibration_row=0;
-	label = new QLabel("Calibration:");
+	label = new QLabel("Calibration process settings:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	calibration_frame_layout->addWidget(label, calibration_row, 0, 1, 4);
+
+	calibration_row++;
+	label = new QLabel("Max calibration steps:");
+	calibration_frame_layout->addWidget(label, calibration_row, 0, 1, 3);
+	m_guide_cal_steps = new QSpinBox();
+	m_guide_cal_steps->setMaximum(50);
+	m_guide_cal_steps->setMinimum(0);
+	m_guide_cal_steps->setValue(0);
+	calibration_frame_layout->addWidget(m_guide_cal_steps, calibration_row, 3);
+	connect(m_guide_cal_steps, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_callibration_changed);
+
+	calibration_row++;
+	label = new QLabel("Min calibration drift (px):");
+	calibration_frame_layout->addWidget(label, calibration_row, 0, 1, 3);
+	m_guide_cal_drift = new QSpinBox();
+	m_guide_cal_drift->setMaximum(100);
+	m_guide_cal_drift->setMinimum(0);
+	m_guide_cal_drift->setSingleStep(5);
+	m_guide_cal_drift->setValue(0);
+	calibration_frame_layout->addWidget(m_guide_cal_drift, calibration_row, 3);
+	connect(m_guide_cal_drift, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_callibration_changed);
 
 	calibration_row++;
 	label = new QLabel("Calibration step (s):");
@@ -535,6 +556,15 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guide_cal_step->setValue(0);
 	calibration_frame_layout->addWidget(m_guide_cal_step, calibration_row, 3);
 	connect(m_guide_cal_step, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_callibration_changed);
+
+	calibration_row++;
+	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
+	calibration_frame_layout->addItem(spacer, calibration_row, 0);
+
+	calibration_row++;
+	label = new QLabel("Guider calibration data:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	calibration_frame_layout->addWidget(label, calibration_row, 0, 1, 4);
 
 	calibration_row++;
 	label = new QLabel("Dec Backlash (px):");

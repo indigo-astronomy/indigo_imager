@@ -2415,6 +2415,10 @@ void update_guider_settings(ImagerWindow *w, indigo_property *property) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guider_exposure);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_DELAY_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guider_delay);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_CAL_STEPS_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_cal_steps);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_CAL_DRIFT_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_cal_drift);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_STEP_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_cal_step);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_BACKLASH_ITEM_NAME)) {
@@ -4039,6 +4043,12 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		set_spinbox_value(m_guider_delay, 0);
 		set_enabled(m_guider_delay, false);
+
+		set_spinbox_value(m_guide_cal_steps, 0);
+		set_enabled(m_guide_cal_steps, false);
+
+		set_spinbox_value(m_guide_cal_drift, 0);
+		set_enabled(m_guide_cal_drift, false);
 
 		set_spinbox_value(m_guide_cal_step, 0);
 		set_enabled(m_guide_cal_step, false);

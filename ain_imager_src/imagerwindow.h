@@ -774,6 +774,8 @@ private:
 	QCheckBox *m_guider_reverse_dec_cbox;
 
 	QDoubleSpinBox  *m_guide_cal_step;
+	QSpinBox  *m_guide_cal_steps;
+	QSpinBox  *m_guide_cal_drift;
 	QDoubleSpinBox  *m_guide_rotation;
 	QDoubleSpinBox  *m_guide_ra_speed;
 	QDoubleSpinBox  *m_guide_dec_speed;
