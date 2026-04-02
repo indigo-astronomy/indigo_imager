@@ -1409,6 +1409,159 @@ void update_focus_estimator_property(ImagerWindow *w, indigo_property *property)
 	}
 }
 
+void update_guider_correction_property(ImagerWindow *w, indigo_property *property) {
+	bool show_i_stack = false;
+	if (client_match_property(property, AGENT_GUIDER_CORRECTION_MODE_RA_PROPERTY_NAME)) {
+		for (int i = 0; i < property->count; i++) {
+			if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_PI_ITEM_NAME)) {
+				if (property->items[i].sw.value) {
+					w->set_text(w->m_guide_ra_param1_label, "Aggressiveness (%):");
+					w->set_text(w->m_guide_ra_param2_label, "Integral gain:");
+					w->show_widget(w->m_guide_ra_param1_label, true);
+					w->show_widget(w->m_guide_ra_param2_label, true);
+
+					w->show_widget(w->m_pi_guide_ra_aggr, true);
+					w->show_widget(w->m_pi_guide_i_gain_ra, true);
+					w->show_widget(w->m_hyst_guide_ra_aggr, false);
+					w->show_widget(w->m_hyst_guide_hysteresis_ra, false);
+					w->show_widget(w->m_lt_guide_ra_aggr, false);
+					show_i_stack = true;
+				}
+			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_HYSTERESIS_ITEM_NAME)) {
+				if (property->items[i].sw.value) {
+					w->set_text(w->m_guide_ra_param1_label, "Aggressiveness (%):");
+					w->set_text(w->m_guide_ra_param2_label, "Hysteresis (%):");
+					w->show_widget(w->m_guide_ra_param1_label, true);
+					w->show_widget(w->m_guide_ra_param2_label, true);
+
+					w->show_widget(w->m_pi_guide_ra_aggr, false);
+					w->show_widget(w->m_pi_guide_i_gain_ra, false);
+					w->show_widget(w->m_hyst_guide_ra_aggr, true);
+					w->show_widget(w->m_hyst_guide_hysteresis_ra, true);
+					w->show_widget(w->m_lt_guide_ra_aggr, false);
+				}
+			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_LINEAR_TREND_ITEM_NAME)) {
+				if (property->items[i].sw.value) {
+					w->set_text(w->m_guide_ra_param1_label, "Aggressiveness (%):");
+					w->set_text(w->m_guide_ra_param2_label, "");
+					w->show_widget(w->m_guide_ra_param1_label, true);
+					w->show_widget(w->m_guide_ra_param2_label, false);
+
+					w->show_widget(w->m_pi_guide_ra_aggr, false);
+					w->show_widget(w->m_pi_guide_i_gain_ra, false);
+					w->show_widget(w->m_hyst_guide_ra_aggr, false);
+					w->show_widget(w->m_hyst_guide_hysteresis_ra, false);
+					w->show_widget(w->m_lt_guide_ra_aggr, true);
+				}
+			} else {
+				if (property->items[i].sw.value) {
+					w->show_widget(w->m_guide_ra_param1_label, false);
+					w->show_widget(w->m_guide_ra_param2_label, false);
+
+					w->show_widget(w->m_pi_guide_ra_aggr, false);
+					w->show_widget(w->m_pi_guide_i_gain_ra, false);
+					w->show_widget(w->m_hyst_guide_ra_aggr, false);
+					w->show_widget(w->m_hyst_guide_hysteresis_ra, false);
+					w->show_widget(w->m_lt_guide_ra_aggr, false);
+				}
+			}
+		}
+		// Dec correction mode is not updated so check if it is selected to decide if I stack should be shown
+		if (!strncmp(w->m_dec_correction_mode_select->currentData().toString().toUtf8().constData(), AGENT_GUIDER_CORRECTION_MODE_PI_ITEM_NAME, INDIGO_NAME_SIZE)) {
+			show_i_stack = true;
+		}
+	} else if (client_match_property(property, AGENT_GUIDER_CORRECTION_MODE_DEC_PROPERTY_NAME)) {
+		for (int i = 0; i < property->count; i++) {
+			if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_PI_ITEM_NAME)) {
+				if (property->items[i].sw.value) {
+					w->set_text(w->m_guide_dec_param1_label, "Aggressiveness (%):");
+					w->set_text(w->m_guide_dec_param2_label, "Integral gain:");
+					w->show_widget(w->m_guide_dec_param1_label, true);
+					w->show_widget(w->m_guide_dec_param2_label, true);
+
+					w->show_widget(w->m_pi_guide_dec_aggr, true);
+					w->show_widget(w->m_pi_guide_i_gain_dec, true);
+					w->show_widget(w->m_hyst_guide_dec_aggr, false);
+					w->show_widget(w->m_hyst_guide_hysteresis_dec, false);
+					w->show_widget(w->m_lt_guide_dec_aggr, false);
+					w->show_widget(w->m_rswitch_guide_dec_aggr, false);
+					w->show_widget(w->m_rswitch_fast_threshild, false);
+					show_i_stack = true;
+				}
+			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_HYSTERESIS_ITEM_NAME)) {
+				if (property->items[i].sw.value) {
+					w->set_text(w->m_guide_dec_param1_label, "Aggressiveness (%):");
+					w->set_text(w->m_guide_dec_param2_label, "Hysteresis (%):");
+					w->show_widget(w->m_guide_dec_param1_label, true);
+					w->show_widget(w->m_guide_dec_param2_label, true);
+
+					w->show_widget(w->m_pi_guide_dec_aggr, false);
+					w->show_widget(w->m_pi_guide_i_gain_dec, false);
+					w->show_widget(w->m_hyst_guide_dec_aggr, true);
+					w->show_widget(w->m_hyst_guide_hysteresis_dec, true);
+					w->show_widget(w->m_lt_guide_dec_aggr, false);
+					w->show_widget(w->m_rswitch_guide_dec_aggr, false);
+					w->show_widget(w->m_rswitch_fast_threshild, false);
+				}
+			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_LINEAR_TREND_ITEM_NAME)) {
+				if (property->items[i].sw.value) {
+					w->set_text(w->m_guide_dec_param1_label, "Aggressiveness (%):");
+					w->set_text(w->m_guide_dec_param2_label, "");
+					w->show_widget(w->m_guide_dec_param1_label, true);
+					w->show_widget(w->m_guide_dec_param2_label, false);
+
+					w->show_widget(w->m_pi_guide_dec_aggr, false);
+					w->show_widget(w->m_pi_guide_i_gain_dec, false);
+					w->show_widget(w->m_hyst_guide_dec_aggr, false);
+					w->show_widget(w->m_hyst_guide_hysteresis_dec, false);
+					w->show_widget(w->m_lt_guide_dec_aggr, true);
+					w->show_widget(w->m_rswitch_guide_dec_aggr, false);
+					w->show_widget(w->m_rswitch_fast_threshild, false);
+				}
+			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_RESIST_SWITCH_ITEM_NAME)) {
+				if (property->items[i].sw.value) {
+					w->set_text(w->m_guide_dec_param1_label, "Aggressiveness (%):");
+					w->set_text(w->m_guide_dec_param2_label, "Fast-switch threshold (px):");
+					w->show_widget(w->m_guide_dec_param1_label, true);
+					w->show_widget(w->m_guide_dec_param2_label, true);
+
+					w->show_widget(w->m_pi_guide_dec_aggr, false);
+					w->show_widget(w->m_pi_guide_i_gain_dec, false);
+					w->show_widget(w->m_hyst_guide_dec_aggr, false);
+					w->show_widget(w->m_hyst_guide_hysteresis_dec, false);
+					w->show_widget(w->m_lt_guide_dec_aggr, false);
+					w->show_widget(w->m_rswitch_guide_dec_aggr, true);
+					w->show_widget(w->m_rswitch_fast_threshild, true);
+				}
+			} else {
+				if (property->items[i].sw.value) {
+					w->show_widget(w->m_guide_dec_param1_label, false);
+					w->show_widget(w->m_guide_dec_param2_label, false);
+
+					w->show_widget(w->m_pi_guide_dec_aggr, false);
+					w->show_widget(w->m_pi_guide_i_gain_dec, false);
+					w->show_widget(w->m_hyst_guide_dec_aggr, false);
+					w->show_widget(w->m_hyst_guide_hysteresis_dec, false);
+					w->show_widget(w->m_lt_guide_dec_aggr, false);
+					w->show_widget(w->m_rswitch_guide_dec_aggr, false);
+					w->show_widget(w->m_rswitch_fast_threshild, false);
+				}
+			}
+		}
+		// RA correction mode is not updated so check if it is selected to decide if I stack should be shown
+		if (!strncmp(w->m_ra_correction_mode_select->currentData().toString().toUtf8().constData(), AGENT_GUIDER_CORRECTION_MODE_PI_ITEM_NAME, INDIGO_NAME_SIZE)) {
+			show_i_stack = true;
+		}
+	}
+	if (show_i_stack) {
+		w->show_widget(w->m_pi_i_stack_label, true);
+		w->show_widget(w->m_guide_is, true);
+	} else {
+		w->show_widget(w->m_pi_i_stack_label, false);
+		w->show_widget(w->m_guide_is, false);
+	}
+}
+
 void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("Set %s", property->name);
 	for (int i = 0; i < property->count; i++) {
@@ -2262,6 +2415,10 @@ void update_guider_settings(ImagerWindow *w, indigo_property *property) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guider_exposure);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_DELAY_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guider_delay);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_CAL_STEPS_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_cal_steps);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_CAL_DRIFT_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_cal_drift);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_STEP_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_cal_step);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_BACKLASH_ITEM_NAME)) {
@@ -2279,15 +2436,31 @@ void update_guider_settings(ImagerWindow *w, indigo_property *property) {
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_MAX_PULSE_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_max_pulse);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_AGG_RA_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_ra_aggr);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_pi_guide_ra_aggr);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_AGG_DEC_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_dec_aggr);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_pi_guide_dec_aggr);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_I_GAIN_RA_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_i_gain_ra);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_pi_guide_i_gain_ra);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_I_GAIN_DEC_ITEM_NAME)) {
-			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_i_gain_dec);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_pi_guide_i_gain_dec);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_STACK_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_is);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_HYSTERESIS_AGG_RA_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_hyst_guide_ra_aggr);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_HYSTERESIS_AGG_DEC_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_hyst_guide_dec_aggr);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_HYSTERESIS_HIST_RA_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_hyst_guide_hysteresis_ra);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_HYSTERESIS_HIST_DEC_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_hyst_guide_hysteresis_dec);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_LINEAR_TREND_AGG_RA_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_lt_guide_ra_aggr);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_LINEAR_TREND_AGG_DEC_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_lt_guide_dec_aggr);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_RESIST_SWITCH_AGG_DEC_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_rswitch_guide_dec_aggr);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_RESIST_SWITCH_FAST_THRSH_DEC_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_rswitch_fast_threshild);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_DITHERING_AMOUNT_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_dither_aggr);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_DITHERING_TIME_LIMIT_ITEM_NAME)) {
@@ -2966,6 +3139,14 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_dec_guiding_select);
 	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_CORRECTION_MODE_RA_PROPERTY_NAME)) {
+		add_items_to_combobox(this, property, m_ra_correction_mode_select);
+		update_guider_correction_property(this, property);
+	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_CORRECTION_MODE_DEC_PROPERTY_NAME)) {
+		add_items_to_combobox(this, property, m_dec_correction_mode_select);
+		update_guider_correction_property(this, property);
+	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME)) {
 		update_guider_settings(this, property);
 	}
@@ -3343,6 +3524,14 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_dec_guiding_select);
+	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_CORRECTION_MODE_RA_PROPERTY_NAME)) {
+		change_combobox_selection(this, property, m_ra_correction_mode_select);
+		update_guider_correction_property(this, property);
+	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_CORRECTION_MODE_DEC_PROPERTY_NAME)) {
+		change_combobox_selection(this, property, m_dec_correction_mode_select);
+		update_guider_correction_property(this, property);
 	}
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME)) {
 		update_guider_settings(this, property);
@@ -3836,6 +4025,17 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		clear_combobox(m_dec_guiding_select);
 	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_CORRECTION_MODE_RA_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		clear_combobox(m_ra_correction_mode_select);
+	}
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_CORRECTION_MODE_DEC_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
+		clear_combobox(m_dec_correction_mode_select);
+	}
+
 	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
 		set_spinbox_value(m_guider_exposure, 0);
@@ -3843,6 +4043,12 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		set_spinbox_value(m_guider_delay, 0);
 		set_enabled(m_guider_delay, false);
+
+		set_spinbox_value(m_guide_cal_steps, 0);
+		set_enabled(m_guide_cal_steps, false);
+
+		set_spinbox_value(m_guide_cal_drift, 0);
+		set_enabled(m_guide_cal_drift, false);
 
 		set_spinbox_value(m_guide_cal_step, 0);
 		set_enabled(m_guide_cal_step, false);
@@ -3871,17 +4077,69 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_spinbox_value(m_guide_max_pulse, 0);
 		set_enabled(m_guide_max_pulse, false);
 
-		set_spinbox_value(m_guide_ra_aggr, 0);
-		set_enabled(m_guide_ra_aggr, false);
+		set_spinbox_value(m_pi_guide_ra_aggr, 0);
+		set_enabled(m_pi_guide_ra_aggr, false);
+		show_widget(m_pi_guide_ra_aggr, true);
 
-		set_spinbox_value(m_guide_dec_aggr, 0);
-		set_enabled(m_guide_dec_aggr, false);
 
-		set_spinbox_value(m_guide_i_gain_ra, 0);
-		set_enabled(m_guide_i_gain_ra, false);
+		set_spinbox_value(m_pi_guide_dec_aggr, 0);
+		set_enabled(m_pi_guide_dec_aggr, false);
+		show_widget(m_pi_guide_dec_aggr, true);
 
-		set_spinbox_value(m_guide_i_gain_dec, 0);
-		set_enabled(m_guide_i_gain_dec, false);
+		set_spinbox_value(m_pi_guide_i_gain_ra, 0);
+		set_enabled(m_pi_guide_i_gain_ra, false);
+		show_widget(m_pi_guide_i_gain_ra, true);
+
+		set_spinbox_value(m_pi_guide_i_gain_dec, 0);
+		set_enabled(m_pi_guide_i_gain_dec, false);
+		show_widget(m_pi_guide_i_gain_dec, true);
+
+		set_spinbox_value(m_hyst_guide_ra_aggr, 0);
+		set_enabled(m_hyst_guide_ra_aggr, false);
+		show_widget(m_hyst_guide_ra_aggr, false);
+
+		set_text(m_guide_dec_param1_label, "Aggressiveness (%):");
+		set_text(m_guide_dec_param2_label, "Integral gain:");
+		show_widget(m_guide_dec_param1_label, true);
+		show_widget(m_guide_dec_param2_label, true);
+
+		set_text(m_guide_ra_param1_label, "Aggressiveness (%):");
+		set_text(m_guide_ra_param2_label, "Integral gain:");
+		show_widget(m_guide_ra_param1_label, true);
+		show_widget(m_guide_ra_param2_label, true);
+
+		show_widget(m_pi_i_stack_label, true);
+		set_spinbox_value(m_guide_is, 0);
+		set_enabled(m_guide_is, false);
+		show_widget(m_guide_is, true);
+
+		set_spinbox_value(m_hyst_guide_dec_aggr, 0);
+		set_enabled(m_hyst_guide_dec_aggr, false);
+		show_widget(m_hyst_guide_dec_aggr, false);
+
+		set_spinbox_value(m_hyst_guide_hysteresis_ra, 0);
+		set_enabled(m_hyst_guide_hysteresis_ra, false);
+		show_widget(m_hyst_guide_hysteresis_ra, false);
+
+		set_spinbox_value(m_hyst_guide_hysteresis_dec, 0);
+		set_enabled(m_hyst_guide_hysteresis_dec, false);
+		show_widget(m_hyst_guide_hysteresis_dec, false);
+
+		set_spinbox_value(m_lt_guide_ra_aggr, 0);
+		set_enabled(m_lt_guide_ra_aggr, false);
+		show_widget(m_lt_guide_ra_aggr, false);
+
+		set_spinbox_value(m_lt_guide_dec_aggr, 0);
+		set_enabled(m_lt_guide_dec_aggr, false);
+		show_widget(m_lt_guide_dec_aggr, false);
+
+		set_spinbox_value(m_rswitch_guide_dec_aggr, 0);
+		set_enabled(m_rswitch_guide_dec_aggr, false);
+		show_widget(m_rswitch_guide_dec_aggr, false);
+
+		set_spinbox_value(m_rswitch_fast_threshild, 0);
+		set_enabled(m_rswitch_fast_threshild, false);
+		show_widget(m_rswitch_fast_threshild, false);
 
 		set_spinbox_value(m_dither_aggr, 0);
 		set_enabled(m_dither_aggr, false);

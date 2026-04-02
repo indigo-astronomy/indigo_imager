@@ -510,6 +510,18 @@ void ImagerWindow::change_dec_guiding_property(const char *agent) const {
 	indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_DEC_MODE_PROPERTY_NAME, selected_mode, true);
 }
 
+void ImagerWindow::change_correction_mode_ra_property(const char *agent) const {
+	static char selected_mode[INDIGO_NAME_SIZE];
+	strncpy(selected_mode, m_ra_correction_mode_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_CORRECTION_MODE_RA_PROPERTY_NAME, selected_mode, true);
+}
+
+void ImagerWindow::change_correction_mode_dec_property(const char *agent) const {
+	static char selected_mode[INDIGO_NAME_SIZE];
+	strncpy(selected_mode, m_dec_correction_mode_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_CORRECTION_MODE_DEC_PROPERTY_NAME, selected_mode, true);
+}
+
 void ImagerWindow::change_agent_focus_params_property(const char *agent, bool set_backlash) const {
 	static const char *items[] = {
 		AGENT_IMAGER_FOCUS_ITERATIVE_INITIAL_ITEM_NAME,
@@ -696,19 +708,23 @@ void ImagerWindow::change_guider_agent_exposure(const char *agent) const {
 
 void ImagerWindow::change_guider_agent_callibration(const char *agent) const {
 	static const char *items[] = {
+		AGENT_GUIDER_SETTINGS_CAL_STEPS_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_CAL_DRIFT_ITEM_NAME,
 		AGENT_GUIDER_SETTINGS_STEP_ITEM_NAME,
 		AGENT_GUIDER_SETTINGS_BACKLASH_ITEM_NAME,
 		AGENT_GUIDER_SETTINGS_ANGLE_ITEM_NAME,
 		AGENT_GUIDER_SETTINGS_SPEED_RA_ITEM_NAME,
 		AGENT_GUIDER_SETTINGS_SPEED_DEC_ITEM_NAME
 	};
-	static double values[5];
-	values[0] = (double)m_guide_cal_step->value();
-	values[1] = (double)m_guide_dec_backlash->value();
-	values[2] = (double)m_guide_rotation->value();
-	values[3] = (double)m_guide_ra_speed->value();
-	values[4] = (double)m_guide_dec_speed->value();
-	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 5, items, values);
+	static double values[7];
+	values[0] = (double)m_guide_cal_steps->value();
+	values[1] = (double)m_guide_cal_drift->value();
+	values[2] = (double)m_guide_cal_step->value();
+	values[3] = (double)m_guide_dec_backlash->value();
+	values[4] = (double)m_guide_rotation->value();
+	values[5] = (double)m_guide_ra_speed->value();
+	values[6] = (double)m_guide_dec_speed->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 7, items, values);
 }
 
 void ImagerWindow::change_guider_agent_pulse_min_max(const char *agent) const {
@@ -724,15 +740,66 @@ void ImagerWindow::change_guider_agent_pulse_min_max(const char *agent) const {
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 3, items, values);
 }
 
-void ImagerWindow::change_guider_agent_aggressivity(const char *agent) const {
+void ImagerWindow::change_guider_agent_pi_aggressivity(const char *agent) const {
 	static const char *items[] = {
 		AGENT_GUIDER_SETTINGS_AGG_RA_ITEM_NAME,
 		AGENT_GUIDER_SETTINGS_AGG_DEC_ITEM_NAME
 	};
 	static double values[2];
-	values[0] = (double)m_guide_ra_aggr->value();
-	values[1] = (double)m_guide_dec_aggr->value();
+	values[0] = (double)m_pi_guide_ra_aggr->value();
+	values[1] = (double)m_pi_guide_dec_aggr->value();
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 2, items, values);
+}
+
+void ImagerWindow::change_guider_agent_hyst_aggressivity(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_SETTINGS_HYSTERESIS_AGG_RA_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_HYSTERESIS_AGG_DEC_ITEM_NAME,
+	};
+	static double values[2];
+	values[0] = (double)m_hyst_guide_ra_aggr->value();
+	values[1] = (double)m_hyst_guide_dec_aggr->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 2, items, values);
+}
+
+void ImagerWindow::change_guider_agent_lt_aggressivity(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_SETTINGS_LINEAR_TREND_AGG_RA_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_LINEAR_TREND_AGG_DEC_ITEM_NAME,
+	};
+	static double values[2];
+	values[0] = (double)m_lt_guide_ra_aggr->value();
+	values[1] = (double)m_lt_guide_dec_aggr->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 2, items, values);
+}
+
+void ImagerWindow::change_guider_agent_hyst_hysteresis(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_SETTINGS_HYSTERESIS_HIST_RA_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_HYSTERESIS_HIST_DEC_ITEM_NAME,
+	};
+	static double values[2];
+	values[0] = (double)m_hyst_guide_hysteresis_ra->value();
+	values[1] = (double)m_hyst_guide_hysteresis_dec->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 2, items, values);
+}
+
+void ImagerWindow::change_guider_agent_rswitch_aggressivity(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_SETTINGS_RESIST_SWITCH_AGG_DEC_ITEM_NAME,
+	};
+	static double values[1];
+	values[0] = (double)m_rswitch_guide_dec_aggr->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 1, items, values);
+}
+
+void ImagerWindow::change_guider_agent_rswitch_fast_threshild(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_SETTINGS_RESIST_SWITCH_FAST_THRSH_DEC_ITEM_NAME,
+	};
+	static double values[1];
+	values[0] = m_rswitch_fast_threshild->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 1, items, values);
 }
 
 void ImagerWindow::change_guider_agent_i(const char *agent) const {
@@ -742,8 +809,8 @@ void ImagerWindow::change_guider_agent_i(const char *agent) const {
 		AGENT_GUIDER_SETTINGS_STACK_ITEM_NAME
 	};
 	static double values[3];
-	values[0] = (double)m_guide_i_gain_ra->value();
-	values[1] = (double)m_guide_i_gain_dec->value();
+	values[0] = (double)m_pi_guide_i_gain_ra->value();
+	values[1] = (double)m_pi_guide_i_gain_dec->value();
 	values[2] = (double)m_guide_is->value();
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 3, items, values);
 }

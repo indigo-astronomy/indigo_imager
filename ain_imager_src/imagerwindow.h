@@ -164,6 +164,7 @@ private:
 	friend void update_guider_settings(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_apply_dec_backlash(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_reverse_dec(ImagerWindow *w, indigo_property *property);
+	friend void update_guider_correction_property(ImagerWindow *w, indigo_property *property);
 	friend void agent_guider_start_process_change(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_ra_dec(ImagerWindow *w, indigo_property *property, bool update_input);
 	friend void update_mount_az_alt(ImagerWindow *w, indigo_property *property);
@@ -363,6 +364,8 @@ public slots:
 	void on_guider_stop(bool clicked);
 	void on_detection_mode_selected(int index);
 	void on_dec_guiding_selected(int index);
+	void on_ra_correction_mode_selected(int index);
+	void on_dec_correction_mode_selected(int index);
 	void on_guider_clear_selection(bool clicked);
 	void on_guider_ccd_mode_selected(int index);
 	void on_agent_guider_gain_changed(int value);
@@ -375,9 +378,14 @@ public slots:
 	void on_guider_reverse_dec_changed(int state);
 	void on_guider_apply_backlash_changed(int state);
 	void on_guider_agent_pulse_changed(double value);
-	void on_guider_agent_aggressivity_changed(int value);
+	void on_guider_agent_pi_aggressivity_changed(int value);
 	void on_change_guider_agent_i_gain_changed(double value);
 	void on_change_guider_agent_is_changed(int value);
+	void on_guider_agent_hyst_aggressivity_changed(int value);
+	void on_guider_agent_lt_aggressivity_changed(int value);
+	void on_guider_agent_hyst_hysteresis_changed(int value);
+	void on_guider_agent_rswitch_aggressivity_changed(int value);
+	void on_guider_agent_rswitch_fast_threshild_changed(double value);
 	void on_preview_mode_off();
 	void on_preview_mode_fine_guider();
 	void on_preview_mode_normal_guider();
@@ -766,6 +774,8 @@ private:
 	QCheckBox *m_guider_reverse_dec_cbox;
 
 	QDoubleSpinBox  *m_guide_cal_step;
+	QSpinBox  *m_guide_cal_steps;
+	QSpinBox  *m_guide_cal_drift;
 	QDoubleSpinBox  *m_guide_rotation;
 	QDoubleSpinBox  *m_guide_ra_speed;
 	QDoubleSpinBox  *m_guide_dec_speed;
@@ -774,11 +784,30 @@ private:
 	QDoubleSpinBox  *m_guide_min_error;
 	QDoubleSpinBox  *m_guide_min_pulse;
 	QDoubleSpinBox  *m_guide_max_pulse;
-	QSpinBox  *m_guide_ra_aggr;
-	QSpinBox  *m_guide_dec_aggr;
-	QDoubleSpinBox  *m_guide_i_gain_ra;
-	QDoubleSpinBox  *m_guide_i_gain_dec;
+
+	QLabel *m_guide_ra_param1_label;
+	QLabel *m_guide_ra_param2_label;
+	QLabel *m_guide_dec_param1_label;
+	QLabel *m_guide_dec_param2_label;
+	QLabel *m_pi_i_stack_label;
+
+	QSpinBox  *m_pi_guide_ra_aggr;
+	QSpinBox  *m_pi_guide_dec_aggr;
+	QDoubleSpinBox  *m_pi_guide_i_gain_ra;
+	QDoubleSpinBox  *m_pi_guide_i_gain_dec;
 	QSpinBox  *m_guide_is;
+
+	QSpinBox  *m_hyst_guide_ra_aggr;
+	QSpinBox  *m_hyst_guide_dec_aggr;
+	QSpinBox  *m_hyst_guide_hysteresis_ra;
+	QSpinBox  *m_hyst_guide_hysteresis_dec;
+
+	QSpinBox  *m_lt_guide_ra_aggr;
+	QSpinBox  *m_lt_guide_dec_aggr;
+
+	QSpinBox  *m_rswitch_guide_dec_aggr;
+	QDoubleSpinBox  *m_rswitch_fast_threshild;
+
 	FocusGraph *m_guider_graph;
 	QVector<double> m_drift_data_ra;
 	QVector<double> m_drift_data_dec;
@@ -803,6 +832,9 @@ private:
 
 	QComboBox *m_detection_mode_select;
 	QComboBox *m_dec_guiding_select;
+
+	QComboBox *m_ra_correction_mode_select;
+	QComboBox *m_dec_correction_mode_select;
 
 	FILE *m_guide_log;
 	int m_guider_process;
@@ -1046,12 +1078,19 @@ private:
 	void change_agent_start_calibrate_property(const char *agent) const;
 	void change_detection_mode_property(const char *agent) const;
 	void change_dec_guiding_property(const char *agent) const;
+	void change_correction_mode_dec_property(const char *agent) const;
+	void change_correction_mode_ra_property(const char *agent) const;
 	void change_guider_agent_exposure(const char *agent) const;
 	void change_guider_agent_callibration(const char *agent) const;
 	void change_guider_agent_reverse_dec(const char *agent) const;
 	void change_guider_agent_apply_dec_backlash(const char *agent) const;
 	void change_guider_agent_pulse_min_max(const char *agent) const;
-	void change_guider_agent_aggressivity(const char *agent) const;
+	void change_guider_agent_pi_aggressivity(const char *agent) const;
+	void change_guider_agent_hyst_aggressivity(const char *agent) const;
+	void change_guider_agent_lt_aggressivity(const char *agent) const;
+	void change_guider_agent_hyst_hysteresis(const char *agent) const;
+	void change_guider_agent_rswitch_aggressivity(const char *agent) const;
+	void change_guider_agent_rswitch_fast_threshild(const char *agent) const;
 	void change_guider_agent_i(const char *agent) const;
 	void change_guider_agent_edge_clipping(const char *agent) const;
 	void change_agent_ccd_preview(const char *agent, bool enable) const;

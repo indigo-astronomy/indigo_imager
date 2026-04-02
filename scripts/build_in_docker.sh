@@ -19,7 +19,22 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-echo FROM $1 >Dockerfile
+baseImage="$1"
+# If image contains an architecture prefix like "amd64/debian:...", strip the prefix
+if echo "$baseImage" | grep -q "/"; then
+	baseImage="${baseImage#*/}"
+fi
+
+# Map short arch names to docker platforms
+case "$3" in
+	amd64) platform="linux/amd64" ;;
+	i386)  platform="linux/386" ;;
+	armhf) platform="linux/arm/v7" ;;
+	arm64) platform="linux/arm64" ;;
+	*)     platform="" ;;
+esac
+
+echo FROM $baseImage >Dockerfile
 cat >>Dockerfile <<EOF
 LABEL maintainer="rumenastro@gmail.com"
 RUN apt-get -y update && apt-get -y install wget unzip build-essential autoconf autotools-dev libtool cmake libudev-dev libavahi-compat-libdnssd-dev libusb-1.0-0-dev fxload libcurl4-gnutls-dev libgphoto2-dev libz-dev git curl bsdmainutils qtbase5-dev qtmultimedia5-dev devscripts cdbs apt-transport-https
@@ -33,7 +48,11 @@ WORKDIR ain-imager-$2
 RUN qmake
 RUN scripts/builddeb.sh $2
 EOF
-docker build -t ain .
+if [ -n "$platform" ]; then
+	docker build --platform="$platform" -t ain .
+else
+	docker build -t ain .
+fi
 docker create --name ain ain
 docker cp ain:/ain-imager_$2_$3.deb .
 docker container rm ain

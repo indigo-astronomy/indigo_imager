@@ -42,6 +42,12 @@ bool processed_device(char *device) {
 	}
 }
 
+bool client_match_property(indigo_property *property, const char *property_name) {
+	if (property == nullptr || property_name == nullptr) return false;
+
+	return (bool)(!strncmp(property->name, property_name, INDIGO_NAME_SIZE));
+}
+
 bool client_match_item(indigo_item *item, const char *item_name) {
 	if (item == nullptr || item_name == nullptr) return false;
 
