@@ -22,6 +22,10 @@
 #include <algorithm>
 #include <numeric>
 #include <limits>
+#include <QtConcurrent>
+#include <QVector>
+#include <utils.h>
+#include <chrono>
 
 // ---------------------------------------------------------------------------
 // Alignment parameters — NCC
@@ -139,48 +143,72 @@ std::vector<float> LiveStacker::buildLuminanceMap(preview_image *image, int ds) 
 	const char *raw = image->m_raw_data;
 
 	std::vector<float> lum(static_cast<size_t>(dW) * dH, 0.0f);
+	// Parallelize over output rows (by) using QtConcurrent pattern.
+	int num_threads = get_number_of_cores();
+	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
+	QVector<QFuture<void>> futures;
+	float *lumData = lum.data();
 
-	for (int by = 0; by < dH; ++by) {
-		for (int bx = 0; bx < dW; ++bx) {
-			double sum = 0.0;
-			int cnt = 0;
-			for (int dy = 0; dy < ds; ++dy) {
-				int y = by * ds + dy;
-				if (y >= H) continue;
-				for (int dx = 0; dx < ds; ++dx) {
-					int x = bx * ds + dx;
-					if (x >= W) continue;
-					int idx = y * W + x;
-					double val;
-					if (m_channels == 1) {
-						switch (m_pix_format) {
-							case PIX_FMT_Y8:  val = reinterpret_cast<const uint8_t  *>(raw)[idx]; break;
-							case PIX_FMT_Y16: val = reinterpret_cast<const uint16_t *>(raw)[idx]; break;
-							default:          val = reinterpret_cast<const float    *>(raw)[idx]; break;
+	for (int rank = 0; rank < num_threads; rank++) {
+		const int chunk = static_cast<int>(std::ceil(dH / (double)num_threads));
+		futures.append(QtConcurrent::run([=]() {
+			const int start_by = chunk * rank;
+			const int end_by = std::min(start_by + chunk, dH);
+			for (int by = start_by; by < end_by; ++by) {
+				for (int bx = 0; bx < dW; ++bx) {
+					double sum = 0.0;
+					int cnt = 0;
+					for (int dy = 0; dy < ds; ++dy) {
+						int y = by * ds + dy;
+						if (y >= H) continue;
+						for (int dx = 0; dx < ds; ++dx) {
+							int x = bx * ds + dx;
+							if (x >= W) continue;
+							int idx = y * W + x;
+							double val;
+							if (m_channels == 1) {
+								switch (m_pix_format) {
+									case PIX_FMT_Y8:  val = reinterpret_cast<const uint8_t  *>(raw)[idx]; break;
+									case PIX_FMT_Y16: val = reinterpret_cast<const uint16_t *>(raw)[idx]; break;
+									default:          val = reinterpret_cast<const float    *>(raw)[idx]; break;
+								}
+							} else {
+								int base = idx * 3;
+								double r, g, b;
+								switch (m_pix_format) {
+									case PIX_FMT_RGB24: { const auto *p = reinterpret_cast<const uint8_t  *>(raw); r=p[base]; g=p[base+1]; b=p[base+2]; break; }
+									case PIX_FMT_RGB48: { const auto *p = reinterpret_cast<const uint16_t *>(raw); r=p[base]; g=p[base+1]; b=p[base+2]; break; }
+									default:            { const auto *p = reinterpret_cast<const float    *>(raw); r=p[base]; g=p[base+1]; b=p[base+2]; break; }
+								}
+								val = 0.2126*r + 0.7152*g + 0.0722*b;
+							}
+							sum += val;
+							++cnt;
 						}
-					} else {
-						int base = idx * 3;
-						double r, g, b;
-						switch (m_pix_format) {
-							case PIX_FMT_RGB24: { const auto *p = reinterpret_cast<const uint8_t  *>(raw); r=p[base]; g=p[base+1]; b=p[base+2]; break; }
-							case PIX_FMT_RGB48: { const auto *p = reinterpret_cast<const uint16_t *>(raw); r=p[base]; g=p[base+1]; b=p[base+2]; break; }
-							default:            { const auto *p = reinterpret_cast<const float    *>(raw); r=p[base]; g=p[base+1]; b=p[base+2]; break; }
-						}
-						val = 0.2126*r + 0.7152*g + 0.0722*b;
 					}
-					sum += val;
-					++cnt;
+					lumData[by * dW + bx] = (cnt > 0) ? static_cast<float>(sum / cnt) : 0.0f;
 				}
 			}
-			lum[by * dW + bx] = (cnt > 0) ? static_cast<float>(sum / cnt) : 0.0f;
-		}
+		}));
 	}
+	for (QFuture<void> f : futures) f.waitForFinished();
 
-	// Subtract mean (removes sky background bias)
+	// Subtract mean (removes sky background bias) — compute mean then subtract in parallel.
 	double mean = 0.0;
-	for (float v : lum) mean += v;
-	mean /= static_cast<double>(lum.size());
-	for (float &v : lum) v -= static_cast<float>(mean);
+	const size_t total = static_cast<size_t>(dW) * dH;
+	for (size_t i = 0; i < total; ++i) mean += lumData[i];
+	mean /= static_cast<double>(total);
+
+	futures.clear();
+	for (int rank = 0; rank < num_threads; rank++) {
+		const size_t chunk = static_cast<size_t>(std::ceil(total / (double)num_threads));
+		futures.append(QtConcurrent::run([=]() {
+			const size_t start = chunk * rank;
+			const size_t end = std::min(start + chunk, total);
+			for (size_t i = start; i < end; ++i) lumData[i] = static_cast<float>(lumData[i] - mean);
+		}));
+	}
+	for (QFuture<void> f : futures) f.waitForFinished();
 
 	return lum;
 }
@@ -309,101 +337,123 @@ void LiveStacker::findShift(double &shift_x, double &shift_y,
 // ---------------------------------------------------------------------------
 
 void LiveStacker::accumulate(preview_image *image, double dx, double dy) {
-	const char *raw = image->m_raw_data;
-	const int W = m_width;
-	const int H = m_height;
+	const char *raw      = image->m_raw_data;
+	const int   W        = m_width;
+	const int   H        = m_height;
+	const int   channels = m_channels;
+	const int   pix_fmt  = m_pix_format;
+	double     *acc      = m_acc.data();
 
-	// Read one channel from buffer, clamping coordinates to image bounds.
-	auto readSample = [&](int sx, int sy, int ch) -> double {
+	// By-value captures only — safe to copy into QtConcurrent thread lambdas.
+	auto readSample = [raw, W, H, pix_fmt](int sx, int sy, int ch) -> double {
 		sx = std::max(0, std::min(W - 1, sx));
 		sy = std::max(0, std::min(H - 1, sy));
 		const int idx = sy * W + sx;
-		switch (m_pix_format) {
-			case PIX_FMT_Y8:    return reinterpret_cast<const uint8_t  *>(raw)[idx];
-			case PIX_FMT_Y16:   return reinterpret_cast<const uint16_t *>(raw)[idx];
-			case PIX_FMT_F32:   return reinterpret_cast<const float    *>(raw)[idx];
-			case PIX_FMT_RGB24: return reinterpret_cast<const uint8_t  *>(raw)[idx * 3 + ch];
-			case PIX_FMT_RGB48: return reinterpret_cast<const uint16_t *>(raw)[idx * 3 + ch];
-			default:            return reinterpret_cast<const float    *>(raw)[idx * 3 + ch];
+		switch (pix_fmt) {
+			case PIX_FMT_Y8:    return static_cast<double>(reinterpret_cast<const uint8_t  *>(raw)[idx]);
+			case PIX_FMT_Y16:   return static_cast<double>(reinterpret_cast<const uint16_t *>(raw)[idx]);
+			case PIX_FMT_F32:   return static_cast<double>(reinterpret_cast<const float    *>(raw)[idx]);
+			case PIX_FMT_RGB24: return static_cast<double>(reinterpret_cast<const uint8_t  *>(raw)[idx * 3 + ch]);
+			case PIX_FMT_RGB48: return static_cast<double>(reinterpret_cast<const uint16_t *>(raw)[idx * 3 + ch]);
+			default:            return static_cast<double>(reinterpret_cast<const float    *>(raw)[idx * 3 + ch]);
 		}
 	};
 
+	int num_threads = get_number_of_cores();
+	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
+	QVector<QFuture<void>> futures;
+
 	if (m_interp_method == INTERP_NEAREST) {
-		for (int y = 0; y < H; ++y) {
-			const int sy = static_cast<int>(std::round(y + dy));
-			if (sy < 0 || sy >= H) continue;
-			for (int x = 0; x < W; ++x) {
-				const int sx = static_cast<int>(std::round(x + dx));
-				if (sx < 0 || sx >= W) continue;
-				const int dst_idx = y * W + x;
-				for (int c = 0; c < m_channels; ++c)
-					m_acc[dst_idx * m_channels + c] += readSample(sx, sy, c);
-			}
+		for (int rank = 0; rank < num_threads; rank++) {
+			const int chunk = static_cast<int>(std::ceil(H / (double)num_threads));
+			futures.append(QtConcurrent::run([=]() {
+				const int start_row = chunk * rank;
+				const int end_row   = std::min(start_row + chunk, H);
+				for (int y = start_row; y < end_row; ++y) {
+					const int sy = static_cast<int>(std::round(y + dy));
+					if (sy < 0 || sy >= H) continue;
+					for (int x = 0; x < W; ++x) {
+						const int sx = static_cast<int>(std::round(x + dx));
+						if (sx < 0 || sx >= W) continue;
+						const int dst_idx = y * W + x;
+						for (int c = 0; c < channels; ++c)
+							acc[dst_idx * channels + c] += readSample(sx, sy, c);
+					}
+				}
+			}));
 		}
 	} else if (m_interp_method == INTERP_BILINEAR) {
-		for (int y = 0; y < H; ++y) {
-			const double sy_d = y + dy;
-			const int    y0   = static_cast<int>(std::floor(sy_d));
-			const double fy   = sy_d - y0;
-			const int    y1   = y0 + 1;
-
-			for (int x = 0; x < W; ++x) {
-				const double sx_d = x + dx;
-				const int    x0   = static_cast<int>(std::floor(sx_d));
-				const double fx   = sx_d - x0;
-				const int    x1   = x0 + 1;
-
-				const double w00 = (1.0 - fx) * (1.0 - fy);
-				const double w10 = fx          * (1.0 - fy);
-				const double w01 = (1.0 - fx) * fy;
-				const double w11 = fx          * fy;
-
-				const int dst_idx = y * W + x;
-				for (int c = 0; c < m_channels; ++c) {
-					const double val = w00 * readSample(x0, y0, c)
-					                 + w10 * readSample(x1, y0, c)
-					                 + w01 * readSample(x0, y1, c)
-					                 + w11 * readSample(x1, y1, c);
-					m_acc[dst_idx * m_channels + c] += val;
+		for (int rank = 0; rank < num_threads; rank++) {
+			const int chunk = static_cast<int>(std::ceil(H / (double)num_threads));
+			futures.append(QtConcurrent::run([=]() {
+				const int start_row = chunk * rank;
+				const int end_row   = std::min(start_row + chunk, H);
+				for (int y = start_row; y < end_row; ++y) {
+					const double sy_d = y + dy;
+					const int    y0   = static_cast<int>(std::floor(sy_d));
+					const double fy   = sy_d - y0;
+					const int    y1   = y0 + 1;
+					for (int x = 0; x < W; ++x) {
+						const double sx_d = x + dx;
+						const int    x0   = static_cast<int>(std::floor(sx_d));
+						const double fx   = sx_d - x0;
+						const int    x1   = x0 + 1;
+						const double w00  = (1.0 - fx) * (1.0 - fy);
+						const double w10  = fx          * (1.0 - fy);
+						const double w01  = (1.0 - fx) * fy;
+						const double w11  = fx          * fy;
+						const int dst_idx = y * W + x;
+						for (int c = 0; c < channels; ++c) {
+							const double val = w00 * readSample(x0, y0, c)
+							                 + w10 * readSample(x1, y0, c)
+							                 + w01 * readSample(x0, y1, c)
+							                 + w11 * readSample(x1, y1, c);
+							acc[dst_idx * channels + c] += val;
+						}
+					}
 				}
-			}
+			}));
 		}
 	} else {
-		// Catmull-Rom bicubic kernel (Keys a=-0.5)
-		auto cubic = [](double t) -> double {
-			t = std::abs(t);
-			if (t < 1.0) return (1.5*t - 2.5)*t*t + 1.0;
-			if (t < 2.0) return ((-0.5*t + 2.5)*t - 4.0)*t + 2.0;
-			return 0.0;
-		};
-
-		for (int y = 0; y < H; ++y) {
-			const double sy_d = y + dy;
-			const int    yi   = static_cast<int>(std::floor(sy_d));
-			const double fy   = sy_d - yi;
-
-			for (int x = 0; x < W; ++x) {
-				const double sx_d = x + dx;
-				const int    xi   = static_cast<int>(std::floor(sx_d));
-				const double fx   = sx_d - xi;
-
-				double wx[4], wy[4];
-				for (int k = 0; k < 4; ++k) {
-					wx[k] = cubic(fx - (k - 1));
-					wy[k] = cubic(fy - (k - 1));
+		// Catmull-Rom bicubic kernel (Keys a=-0.5) — no captures, trivially copyable.
+		for (int rank = 0; rank < num_threads; rank++) {
+			const int chunk = static_cast<int>(std::ceil(H / (double)num_threads));
+			futures.append(QtConcurrent::run([=]() {
+				auto cubic = [](double t) -> double {
+					t = std::abs(t);
+					if (t < 1.0) return (1.5*t - 2.5)*t*t + 1.0;
+					if (t < 2.0) return ((-0.5*t + 2.5)*t - 4.0)*t + 2.0;
+					return 0.0;
+				};
+				const int start_row = chunk * rank;
+				const int end_row   = std::min(start_row + chunk, H);
+				for (int y = start_row; y < end_row; ++y) {
+					const double sy_d = y + dy;
+					const int    yi   = static_cast<int>(std::floor(sy_d));
+					const double fy   = sy_d - yi;
+					for (int x = 0; x < W; ++x) {
+						const double sx_d = x + dx;
+						const int    xi   = static_cast<int>(std::floor(sx_d));
+						const double fx   = sx_d - xi;
+						double wx[4], wy[4];
+						for (int k = 0; k < 4; ++k) {
+							wx[k] = cubic(fx - (k - 1));
+							wy[k] = cubic(fy - (k - 1));
+						}
+						const int dst_idx = y * W + x;
+						for (int c = 0; c < channels; ++c) {
+							double val = 0.0;
+							for (int j = 0; j < 4; ++j)
+								for (int i = 0; i < 4; ++i)
+									val += wx[i] * wy[j] * readSample(xi + i - 1, yi + j - 1, c);
+							acc[dst_idx * channels + c] += val;
+						}
+					}
 				}
-
-				const int dst_idx = y * W + x;
-				for (int c = 0; c < m_channels; ++c) {
-					double val = 0.0;
-					for (int j = 0; j < 4; ++j)
-						for (int i = 0; i < 4; ++i)
-							val += wx[i] * wy[j] * readSample(xi + i - 1, yi + j - 1, c);
-					m_acc[dst_idx * m_channels + c] += val;
-				}
-			}
+			}));
 		}
 	}
+	for (QFuture<void> f : futures) f.waitForFinished();
 }
 
 // ---------------------------------------------------------------------------
@@ -443,53 +493,73 @@ std::vector<StarCentroid> LiveStacker::detectStars(preview_image *image) const {
 
 	const int nr = STAR_NMS_RADIUS;
 	const int wh = STAR_WIN_HALF;
-	std::vector<StarCentroid> candidates;
-	candidates.reserve(256);
+	// Parallel scan for local maxima with overlap to handle NMS window at chunk boundaries.
+	int num_threads = get_number_of_cores();
+	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
+	QVector<QFuture<std::vector<StarCentroid>>> futures;
+	const float *lumData = lum.data();
+	const int y_min = nr;
+	const int y_max = dH - nr; // exclusive upper bound
 
-	for (int y = nr; y < dH - nr; ++y) {
-		for (int x = nr; x < dW - nr; ++x) {
-			float v = lum[y * dW + x];
-			if (v < threshold) continue;
+	for (int rank = 0; rank < num_threads; rank++) {
+		const int chunk = static_cast<int>(std::ceil((double)(y_max - y_min) / (double)num_threads));
+		const int start = std::max(y_min, y_min + rank * chunk - nr);
+		const int end = std::min(y_max, y_min + (rank + 1) * chunk + nr);
+		if (start >= end) continue;
+		futures.append(QtConcurrent::run([=]() -> std::vector<StarCentroid> {
+			std::vector<StarCentroid> local;
+			for (int y = start; y < end; ++y) {
+				for (int x = nr; x < dW - nr; ++x) {
+					float v = lumData[y * dW + x];
+					if (v < threshold) continue;
 
-			// Non-maximum suppression: must be the brightest in the NMS window.
-			bool isMax = true;
-			for (int dy = -nr; dy <= nr && isMax; ++dy) {
-				for (int dx = -nr; dx <= nr && isMax; ++dx) {
-					if (dx == 0 && dy == 0) continue;
-					if (lum[(y + dy) * dW + (x + dx)] >= v) isMax = false;
+					bool isMax = true;
+					for (int dy = -nr; dy <= nr && isMax; ++dy) {
+						for (int dx = -nr; dx <= nr && isMax; ++dx) {
+							if (dx == 0 && dy == 0) continue;
+							if (lumData[(y + dy) * dW + (x + dx)] >= v) isMax = false;
+						}
+					}
+					if (!isMax) continue;
+
+					// Intensity-weighted centroid within the refinement window.
+					double cx = 0.0, cy = 0.0, flux = 0.0;
+					const int x0 = std::max(0, x - wh);
+					const int x1 = std::min(dW - 1, x + wh);
+					const int y0 = std::max(0, y - wh);
+					const int y1 = std::min(dH - 1, y + wh);
+					for (int py = y0; py <= y1; ++py) {
+						for (int px = x0; px <= x1; ++px) {
+							float w = std::max(0.0f, lumData[py * dW + px]);
+							cx += w * px;
+							cy += w * py;
+							flux += w;
+						}
+					}
+					if (flux < 1e-6f) continue;
+					cx /= flux;
+					cy /= flux;
+
+					StarCentroid sc;
+					sc.x = static_cast<float>(cx * ds);
+					sc.y = static_cast<float>(cy * ds);
+					sc.flux = static_cast<float>(flux);
+					local.push_back(sc);
 				}
 			}
-			if (!isMax) continue;
-
-			// Intensity-weighted centroid within the refinement window.
-			double cx   = 0.0, cy = 0.0, flux = 0.0;
-			const int x0 = std::max(0, x - wh);
-			const int x1 = std::min(dW - 1, x + wh);
-			const int y0 = std::max(0, y - wh);
-			const int y1 = std::min(dH - 1, y + wh);
-			for (int py = y0; py <= y1; ++py) {
-				for (int px = x0; px <= x1; ++px) {
-					float w = std::max(0.0f, lum[py * dW + px]);
-					cx   += w * px;
-					cy   += w * py;
-					flux += w;
-				}
-			}
-			if (flux < 1e-6f) continue;
-			cx /= flux;
-			cy /= flux;
-
-			StarCentroid sc;
-			sc.x    = static_cast<float>(cx * ds); // back to original coords
-			sc.y    = static_cast<float>(cy * ds);
-			sc.flux = static_cast<float>(flux);
-			candidates.push_back(sc);
-		}
+			return local;
+		}));
 	}
 
-	// Keep only the STAR_MAX_COUNT brightest stars.
+	// Gather results and keep the brightest stars.
+	std::vector<StarCentroid> candidates;
+	for (auto &f : futures) {
+		std::vector<StarCentroid> part = f.result();
+		candidates.insert(candidates.end(), part.begin(), part.end());
+	}
+
 	std::sort(candidates.begin(), candidates.end(),
-	          [](const StarCentroid &a, const StarCentroid &b){ return a.flux > b.flux; });
+			  [](const StarCentroid &a, const StarCentroid &b){ return a.flux > b.flux; });
 	if (static_cast<int>(candidates.size()) > STAR_MAX_COUNT)
 		candidates.resize(STAR_MAX_COUNT);
 
@@ -567,6 +637,9 @@ bool LiveStacker::addImage(preview_image *image) {
 	const int W = image->m_width;
 	const int H = image->m_height;
 
+	// Timing: measure how long adding a frame (alignment + accumulation) takes.
+	const auto t0 = std::chrono::steady_clock::now();
+
 	if (m_frame_count == 0) {
 		m_width      = W;
 		m_height     = H;
@@ -606,6 +679,13 @@ bool LiveStacker::addImage(preview_image *image) {
 	}
 
 	++m_frame_count;
+
+	const auto t1 = std::chrono::steady_clock::now();
+	const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+	int num_threads = get_number_of_cores();
+	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
+	indigo_error("LiveStacker::addImage: frame added in %lld ms using %d cores\n", (long long)ms, num_threads);
+
 	return true;
 }
 
@@ -624,8 +704,21 @@ preview_image *LiveStacker::currentStack() const {
 	float *dst = reinterpret_cast<float *>(owner.get());
 
 	const double inv = 1.0 / m_frame_count;
-	for (int i = 0; i < samples; ++i)
-		dst[i] = static_cast<float>(m_acc[i] * inv);
+
+	// Parallelize the conversion from accumulator (double) to preview float buffer.
+	int num_threads = get_number_of_cores();
+	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
+	QVector<QFuture<void>> futures;
+	const double *src = m_acc.data();
+	for (int rank = 0; rank < num_threads; rank++) {
+		const size_t chunk = static_cast<size_t>(std::ceil(samples / (double)num_threads));
+		futures.append(QtConcurrent::run([=]() {
+			const size_t start = chunk * rank;
+			const size_t end = std::min(start + chunk, static_cast<size_t>(samples));
+			for (size_t i = start; i < end; ++i) dst[i] = static_cast<float>(src[i] * inv);
+		}));
+	}
+	for (QFuture<void> f : futures) f.waitForFinished();
 
 	const int out_fmt = (m_channels == 1) ? PIX_FMT_F32 : PIX_FMT_RGBF;
 	stretch_config_t sconfig{};
