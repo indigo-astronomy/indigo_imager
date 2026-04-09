@@ -164,6 +164,7 @@ protected:
 private:
 	void setMatrix();
 	void makeToolbar(bool show_prev_next, bool show_debayer);
+	void refreshStackIfVisible();
 
 private:
 	void showZoom();

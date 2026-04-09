@@ -1243,29 +1243,44 @@ void ImageViewer::showEvent(QShowEvent *event) {
 	emit viewerShown();
 }
 
+void ImageViewer::refreshStackIfVisible() {
+	if (!m_show_stack) return;
+	preview_image *stack = m_stacker->currentStack();
+	if (stack) {
+		stretch_preview(stack, currentStretchConfig());
+		onSetImage(*stack);
+		delete stack;
+	}
+}
+
 void ImageViewer::stretchNone() {
 	m_stretch_level = PREVIEW_STRETCH_NONE;
 	emit stretchChanged(PREVIEW_STRETCH_NONE);
+	refreshStackIfVisible();
 }
 
 void ImageViewer::stretchSlight() {
 	m_stretch_level = PREVIEW_STRETCH_SLIGHT;
 	emit stretchChanged(PREVIEW_STRETCH_SLIGHT);
+	refreshStackIfVisible();
 }
 
 void ImageViewer::stretchModerate() {
 	m_stretch_level = PREVIEW_STRETCH_MODERATE;
 	emit stretchChanged(PREVIEW_STRETCH_MODERATE);
+	refreshStackIfVisible();
 }
 
 void ImageViewer::stretchNormal() {
 	m_stretch_level = PREVIEW_STRETCH_NORMAL;
 	emit stretchChanged(PREVIEW_STRETCH_NORMAL);
+	refreshStackIfVisible();
 }
 
 void ImageViewer::stretchHard() {
 	m_stretch_level = PREVIEW_STRETCH_HARD;
 	emit stretchChanged(PREVIEW_STRETCH_HARD);
+	refreshStackIfVisible();
 }
 
 void ImageViewer::debayerAuto() {
@@ -1301,11 +1316,13 @@ void ImageViewer::debayerBGGR() {
 void ImageViewer::onAutoBalance() {
 	m_color_balance = COLOR_BALANCE_AUTO;
 	emit BalanceChanged(COLOR_BALANCE_AUTO);
+	refreshStackIfVisible();
 }
 
 void ImageViewer::onNoBalance() {
 	m_color_balance = COLOR_BALANCE_NONE;
 	emit BalanceChanged(COLOR_BALANCE_NONE);
+	refreshStackIfVisible();
 }
 
 void ImageViewer::onPrevious() {
