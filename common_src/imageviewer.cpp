@@ -435,6 +435,29 @@ void ImageViewer::showStackButton(bool show) {
 		m_stack_button->setVisible(show);
 }
 
+void ImageViewer::setShowStack(bool show) {
+	if (!m_stack_button) return;
+	if (show == m_show_stack) return;
+	QSignalBlocker blocker(m_stack_button);
+	m_stack_button->setChecked(show);
+	m_show_stack = show;
+	if (show) {
+		m_stack_button->setText(tr("Stack"));
+		m_stack_button->setToolTip(tr("Showing live stack — click to show last frame"));
+		preview_image *stack = m_stacker->currentStack();
+		if (stack) {
+			stretch_preview(stack, currentStretchConfig());
+			onSetImage(*stack);
+			delete stack;
+		}
+	} else {
+		m_stack_button->setText(tr("Frame"));
+		m_stack_button->setToolTip(tr("Showing last frame — click to show live stack"));
+		if (!m_last_image.isNull())
+			onSetImage(m_last_image);
+	}
+}
+
 void ImageViewer::addToStack(preview_image &im) {
 	// Always keep a copy of the last raw frame so we can revert to it
 	m_last_image = im;

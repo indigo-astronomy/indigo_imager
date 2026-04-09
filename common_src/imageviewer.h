@@ -67,6 +67,7 @@ public:
 	void showStretchButton(bool show);
 	void showZoomButtons(bool show);
 	void showStackButton(bool show);
+	void setShowStack(bool show);
 
 	QRect getImageFrameRect() const;
 

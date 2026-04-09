@@ -118,6 +118,10 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	//act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_raw_to_fits);
 
+	act = menu->addAction(tr("&Quick Stack..."));
+	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_T));
+	connect(act, &QAction::triggered, this, &ViewerWindow::on_quick_stack_act);
+
 	menu->addSeparator();
 
 	act = menu->addAction(tr("&Delete File"));
@@ -272,6 +276,8 @@ void ViewerWindow::open_image(QString file_name) {
 	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat, sc);
 
 	if (m_preview_image) {
+		m_imager_viewer->showStackButton(false);
+		m_imager_viewer->resetStack();
 		m_imager_viewer->setImage(*m_preview_image);
 
 		ImageStats stats;
@@ -585,6 +591,91 @@ void ViewerWindow::on_image_prev_act() {
 	indigo_debug("prev_index = %d, %s\n", index, next_file.toUtf8().data());
 
 	open_image(next_file.toUtf8().data());
+}
+
+void ViewerWindow::on_quick_stack_act() {
+	char path[PATH_LEN];
+	strncpy(path, m_image_path, PATH_LEN);
+	QString qlocation(dirname(path));
+	if (m_image_path[0] == '\0') qlocation = QDir::toNativeSeparators(QDir::homePath());
+
+	QStringList file_names = QFileDialog::getOpenFileNames(
+		this,
+		tr("Select Images to Quick Stack..."),
+		qlocation,
+		QString(
+			"FITS (*.fit *.FIT *.fits *.FITS *.fts *.FTS );;"
+			"Indigo RAW (*.raw *.RAW);;"
+			"XISF (*.xisf *.XISF);;"
+			"FITS / Indigo RAW / XISF (*.fit *.FIT *.fits *.FITS *.fts *.FTS *.raw *.RAW *.xisf *.XISF);;"
+			"JPEG / TIFF / PNG (*.jpg *.JPG *.jpeg *.JPEG *.tif *.TIF *.tiff *.TIFF *.png *.PNG);;"
+			"All Files (*)"
+		)
+	);
+
+	int file_num = file_names.size();
+	if (file_num == 0) return;
+
+	// Reset any previous stack before starting a new one
+	m_imager_viewer->showStackButton(false);
+	m_imager_viewer->resetStack();
+
+	QProgressDialog progress("", "Abort", 0, file_num, this);
+	progress.setMinimumWidth(350);
+	progress.setMinimumDuration(0);
+	progress.setWindowModality(Qt::WindowModal);
+
+	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
+	char file_name[PATH_MAX];
+	int stacked = 0;
+	int failed = 0;
+
+	for (int i = 0; i < file_num; i++) {
+		progress.setValue(i);
+		if (progress.wasCanceled()) break;
+
+		strncpy(file_name, file_names.at(i).toUtf8().data(), PATH_MAX);
+		char message[PATH_MAX + 64];
+		snprintf(message, sizeof(message), "Stacking '%s'... (%d of %d)", basename(file_name), i + 1, file_num);
+		progress.setLabelText(message);
+		QCoreApplication::processEvents();
+
+		FILE *f = fopen(file_name, "rb");
+		if (!f) { failed++; continue; }
+		fseek(f, 0, SEEK_END);
+		size_t size = (size_t)ftell(f);
+		fseek(f, 0, SEEK_SET);
+		unsigned char *data = (unsigned char *)malloc(size + 1);
+		if (!data) { fclose(f); failed++; continue; }
+		fread(data, size, 1, f);
+		fclose(f);
+
+		char *ext = strrchr(file_name, '.');
+		preview_image *img = create_preview(data, size, (const char *)ext, sc);
+		free(data);
+
+		if (img) {
+			m_imager_viewer->addToStack(*img);
+			delete img;
+			stacked++;
+		} else {
+			failed++;
+		}
+	}
+	progress.setValue(file_num);
+
+	if (stacked > 0) {
+		m_imager_viewer->showStackButton(true);
+		m_imager_viewer->setShowStack(true);
+	}
+
+	if (failed > 0) {
+		char message[128];
+		snprintf(message, sizeof(message),
+			"%d file(s) stacked successfully.\n%d file(s) failed.",
+			stacked, failed);
+		show_message("Quick Stack", message);
+	}
 }
 
 void ViewerWindow::on_image_close_act() {
