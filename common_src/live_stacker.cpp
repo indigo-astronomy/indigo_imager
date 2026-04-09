@@ -102,6 +102,7 @@ static int bytesPerSample(int pix_format) {
 
 LiveStacker::LiveStacker()
 	: m_alignment_method(ALIGN_CENTROIDS)
+	, m_interp_method(INTERP_NEAREST)
 	, m_width(0)
 	, m_height(0)
 	, m_channels(0)
@@ -236,7 +237,7 @@ double LiveStacker::nccScore(const std::vector<float> &ref,
 // Parabolic sub-pixel refinement applied to the fine result.
 // ---------------------------------------------------------------------------
 
-void LiveStacker::findShift(int &shift_x, int &shift_y,
+void LiveStacker::findShift(double &shift_x, double &shift_y,
                              const std::vector<float> &cur_coarse,
                              const std::vector<float> &cur_fine) const {
 	// --- Level 1: coarse search ---
@@ -299,48 +300,107 @@ void LiveStacker::findShift(int &shift_x, int &shift_y,
 			subDyF = bestDyF - (f_p - f_m) / denom;
 	}
 
-	shift_x = static_cast<int>(std::round(subDxF * DS_FINE));
-	shift_y = static_cast<int>(std::round(subDyF * DS_FINE));
+	shift_x = subDxF * DS_FINE;
+	shift_y = subDyF * DS_FINE;
 }
 
 // ---------------------------------------------------------------------------
 // accumulate
 // ---------------------------------------------------------------------------
 
-void LiveStacker::accumulate(preview_image *image, int dx, int dy) {
+void LiveStacker::accumulate(preview_image *image, double dx, double dy) {
 	const char *raw = image->m_raw_data;
 	const int W = m_width;
 	const int H = m_height;
 
-	for (int y = 0; y < H; ++y) {
-		int sy = y + dy;
-		if (sy < 0 || sy >= H) continue;
-		for (int x = 0; x < W; ++x) {
-			int sx = x + dx;
-			if (sx < 0 || sx >= W) continue;
+	// Read one channel from buffer, clamping coordinates to image bounds.
+	auto readSample = [&](int sx, int sy, int ch) -> double {
+		sx = std::max(0, std::min(W - 1, sx));
+		sy = std::max(0, std::min(H - 1, sy));
+		const int idx = sy * W + sx;
+		switch (m_pix_format) {
+			case PIX_FMT_Y8:    return reinterpret_cast<const uint8_t  *>(raw)[idx];
+			case PIX_FMT_Y16:   return reinterpret_cast<const uint16_t *>(raw)[idx];
+			case PIX_FMT_F32:   return reinterpret_cast<const float    *>(raw)[idx];
+			case PIX_FMT_RGB24: return reinterpret_cast<const uint8_t  *>(raw)[idx * 3 + ch];
+			case PIX_FMT_RGB48: return reinterpret_cast<const uint16_t *>(raw)[idx * 3 + ch];
+			default:            return reinterpret_cast<const float    *>(raw)[idx * 3 + ch];
+		}
+	};
 
-			int dst_idx = y * W + x;
-			int src_idx = sy * W + sx;
+	if (m_interp_method == INTERP_NEAREST) {
+		for (int y = 0; y < H; ++y) {
+			const int sy = static_cast<int>(std::round(y + dy));
+			if (sy < 0 || sy >= H) continue;
+			for (int x = 0; x < W; ++x) {
+				const int sx = static_cast<int>(std::round(x + dx));
+				if (sx < 0 || sx >= W) continue;
+				const int dst_idx = y * W + x;
+				for (int c = 0; c < m_channels; ++c)
+					m_acc[dst_idx * m_channels + c] += readSample(sx, sy, c);
+			}
+		}
+	} else if (m_interp_method == INTERP_BILINEAR) {
+		for (int y = 0; y < H; ++y) {
+			const double sy_d = y + dy;
+			const int    y0   = static_cast<int>(std::floor(sy_d));
+			const double fy   = sy_d - y0;
+			const int    y1   = y0 + 1;
 
-			if (m_channels == 1) {
-				double val;
-				switch (m_pix_format) {
-					case PIX_FMT_Y8:  val = reinterpret_cast<const uint8_t  *>(raw)[src_idx]; break;
-					case PIX_FMT_Y16: val = reinterpret_cast<const uint16_t *>(raw)[src_idx]; break;
-					default:          val = reinterpret_cast<const float    *>(raw)[src_idx]; break;
+			for (int x = 0; x < W; ++x) {
+				const double sx_d = x + dx;
+				const int    x0   = static_cast<int>(std::floor(sx_d));
+				const double fx   = sx_d - x0;
+				const int    x1   = x0 + 1;
+
+				const double w00 = (1.0 - fx) * (1.0 - fy);
+				const double w10 = fx          * (1.0 - fy);
+				const double w01 = (1.0 - fx) * fy;
+				const double w11 = fx          * fy;
+
+				const int dst_idx = y * W + x;
+				for (int c = 0; c < m_channels; ++c) {
+					const double val = w00 * readSample(x0, y0, c)
+					                 + w10 * readSample(x1, y0, c)
+					                 + w01 * readSample(x0, y1, c)
+					                 + w11 * readSample(x1, y1, c);
+					m_acc[dst_idx * m_channels + c] += val;
 				}
-				m_acc[dst_idx] += val;
-			} else {
-				int base = src_idx * 3;
-				double r, g, b;
-				switch (m_pix_format) {
-					case PIX_FMT_RGB24: { const auto *p = reinterpret_cast<const uint8_t  *>(raw); r=p[base]; g=p[base+1]; b=p[base+2]; break; }
-					case PIX_FMT_RGB48: { const auto *p = reinterpret_cast<const uint16_t *>(raw); r=p[base]; g=p[base+1]; b=p[base+2]; break; }
-					default:            { const auto *p = reinterpret_cast<const float    *>(raw); r=p[base]; g=p[base+1]; b=p[base+2]; break; }
+			}
+		}
+	} else {
+		// Catmull-Rom bicubic kernel (Keys a=-0.5)
+		auto cubic = [](double t) -> double {
+			t = std::abs(t);
+			if (t < 1.0) return (1.5*t - 2.5)*t*t + 1.0;
+			if (t < 2.0) return ((-0.5*t + 2.5)*t - 4.0)*t + 2.0;
+			return 0.0;
+		};
+
+		for (int y = 0; y < H; ++y) {
+			const double sy_d = y + dy;
+			const int    yi   = static_cast<int>(std::floor(sy_d));
+			const double fy   = sy_d - yi;
+
+			for (int x = 0; x < W; ++x) {
+				const double sx_d = x + dx;
+				const int    xi   = static_cast<int>(std::floor(sx_d));
+				const double fx   = sx_d - xi;
+
+				double wx[4], wy[4];
+				for (int k = 0; k < 4; ++k) {
+					wx[k] = cubic(fx - (k - 1));
+					wy[k] = cubic(fy - (k - 1));
 				}
-				m_acc[dst_idx * 3    ] += r;
-				m_acc[dst_idx * 3 + 1] += g;
-				m_acc[dst_idx * 3 + 2] += b;
+
+				const int dst_idx = y * W + x;
+				for (int c = 0; c < m_channels; ++c) {
+					double val = 0.0;
+					for (int j = 0; j < 4; ++j)
+						for (int i = 0; i < 4; ++i)
+							val += wx[i] * wy[j] * readSample(xi + i - 1, yi + j - 1, c);
+					m_acc[dst_idx * m_channels + c] += val;
+				}
 			}
 		}
 	}
@@ -445,7 +505,7 @@ std::vector<StarCentroid> LiveStacker::detectStars(preview_image *image) const {
 // are found (caller should fall back to NCC).
 // ---------------------------------------------------------------------------
 
-bool LiveStacker::findShiftByCentroids(int &shift_x, int &shift_y,
+bool LiveStacker::findShiftByCentroids(double &shift_x, double &shift_y,
                                         const std::vector<StarCentroid> &cur_stars) const {
 	if (m_ref_stars.empty() || cur_stars.empty()) return false;
 
@@ -486,8 +546,8 @@ bool LiveStacker::findShiftByCentroids(int &shift_x, int &shift_y,
 	std::nth_element(dxs.begin(), dxs.begin() + mid, dxs.end());
 	std::nth_element(dys.begin(), dys.begin() + mid, dys.end());
 
-	shift_x = static_cast<int>(std::round(dxs[mid]));
-	shift_y = static_cast<int>(std::round(dys[mid]));
+	shift_x = dxs[mid];
+	shift_y = dys[mid];
 	return true;
 }
 
@@ -527,7 +587,7 @@ bool LiveStacker::addImage(preview_image *image) {
 		if (W != m_width || H != m_height || fmt != m_pix_format)
 			return false;
 
-		int dx = 0, dy = 0;
+		double dx = 0.0, dy = 0.0;
 
 		bool aligned = false;
 		if (m_alignment_method == ALIGN_CENTROIDS && !m_ref_stars.empty()) {

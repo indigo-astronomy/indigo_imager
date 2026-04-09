@@ -36,7 +36,8 @@ struct StarCentroid {
  *        aligning each new frame to the reference (first) frame.
  *
  * Two alignment methods are available (see AlignmentMethod).  Rotation
- * correction is not performed; only integer-pixel translation is applied.
+ * correction is not performed; sub-pixel translation is applied using
+ * bicubic (Catmull-Rom) interpolation.
  * The output stack is a newly allocated @c preview_image using PIX_FMT_F32
  * (mono) or PIX_FMT_RGBF (colour) whose raw data contains the per-pixel
  * mean value across all accumulated frames.
@@ -59,6 +60,13 @@ public:
 		ALIGN_CENTROIDS  ///< Multi-star centroid matching (Siril / N.I.N.A. style) — default.
 	};
 
+	/// Interpolation method used when resampling frames during accumulation.
+	enum InterpolationMethod {
+		INTERP_NEAREST,  ///< Nearest-neighbour — fastest, no sub-pixel smoothing.
+		INTERP_BILINEAR, ///< Bilinear interpolation — fast, smooth (default).
+		INTERP_BICUBIC   ///< Catmull-Rom bicubic — sharper, slightly slower.
+	};
+
 	LiveStacker();
 	~LiveStacker() = default;
 
@@ -66,6 +74,11 @@ public:
 	void setAlignmentMethod(AlignmentMethod method) { m_alignment_method = method; }
 	/// Returns the currently selected alignment algorithm.
 	AlignmentMethod alignmentMethod() const { return m_alignment_method; }
+
+	/// Select the sub-pixel interpolation method used during accumulation.
+	void setInterpolationMethod(InterpolationMethod method) { m_interp_method = method; }
+	/// Returns the currently selected interpolation method.
+	InterpolationMethod interpolationMethod() const { return m_interp_method; }
 
 	/// Start a new stack — identical to resetStack().
 	void startStack();
@@ -117,11 +130,10 @@ private:
 	 * DS_COARSE-downsampled map.  Fast because the map is tiny.
 	 *
 	 * Level 2 (fine): refine ±DS_COARSE pixels around the coarse result
-	 * using the DS_FINE-downsampled map.  Precise because DS_FINE is small.
-	 *
-	 * Returns the best shift in ORIGINAL pixel coordinates.
+	 * using the DS_FINE-downsampled map.  Then applies parabolic sub-pixel
+	 * refinement, returning a fractional shift in ORIGINAL pixel coordinates.
 	 */
-	void findShift(int &shift_x, int &shift_y,
+	void findShift(double &shift_x, double &shift_y,
 	               const std::vector<float> &cur_coarse,
 	               const std::vector<float> &cur_fine) const;
 
@@ -130,8 +142,9 @@ private:
 	                       const std::vector<float> &cur,
 	                       int dW, int dH, int dx, int dy);
 
-	/// Accumulate @p image into the internal buffer shifted by (dx, dy).
-	void accumulate(preview_image *image, int dx, int dy);
+	/// Accumulate @p image into the internal buffer shifted by (dx, dy)
+	/// using the selected interpolation method (bilinear or bicubic).
+	void accumulate(preview_image *image, double dx, double dy);
 
 	// ---- centroid-based alignment helpers ---------------------------------
 
@@ -156,7 +169,7 @@ private:
 	 * least STAR_MIN_MATCHES pairs; returns false (and leaves shift at 0)
 	 * when too few stars are matched.
 	 */
-	bool findShiftByCentroids(int &shift_x, int &shift_y,
+	bool findShiftByCentroids(double &shift_x, double &shift_y,
 	                          const std::vector<StarCentroid> &cur_stars) const;
 
 	std::vector<double>      m_acc;           ///< channels * height * width
@@ -164,6 +177,7 @@ private:
 	std::vector<float>       m_ref_fine;      ///< DS_FINE-downsampled  luminance of frame 0
 	std::vector<StarCentroid> m_ref_stars;    ///< Stars detected in frame 0 for centroid alignment
 	AlignmentMethod          m_alignment_method;
+	InterpolationMethod      m_interp_method;
 	int  m_width;
 	int  m_height;
 	int  m_channels;
