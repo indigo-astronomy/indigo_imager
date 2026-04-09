@@ -52,7 +52,7 @@ protected:
 		m_viewer->updateInspectionOverlayPosition();
 	}
 
-	void enterEvent(QEnterEvent *event) override {
+	void enterEvent(QEvent *event) override {
 		QGraphicsView::enterEvent(event);
 		viewport()->setCursor(Qt::CrossCursor);
 	}
@@ -1210,7 +1210,7 @@ void ImageViewer::enableSNRMode(bool enable) {
 	}
 }
 
-void ImageViewer::enterEvent(QEnterEvent *event) {
+void ImageViewer::enterEvent(QEvent *event) {
 	QFrame::enterEvent(event);
 	if (m_bar_mode == ToolBarMode::AutoHidden) {
 		m_toolbar->show();
