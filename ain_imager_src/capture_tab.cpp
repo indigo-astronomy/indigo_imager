@@ -571,6 +571,11 @@ void ImagerWindow::on_preview_start_stop(bool clicked) {
 		    ccd_exposure && ccd_exposure->state == INDIGO_BUSY_STATE) {
 			change_ccd_abort_exposure_property(selected_agent);
 		} else {
+			// Reset live stack so the preview starts fresh.
+			QMetaObject::invokeMethod(this, [this]() {
+				if (conf.live_stacking_enabled && m_imager_viewer)
+					m_imager_viewer->resetStack();
+			}, Qt::QueuedConnection);
 			setup_preview(selected_agent);
 			set_base_agent_relations();
 			QString obj_name = m_object_name->text();

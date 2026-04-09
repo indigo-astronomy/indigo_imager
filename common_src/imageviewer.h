@@ -4,6 +4,7 @@
 #include <QFrame>
 #include <image_stats.h>
 #include <imagepreview.h>
+#include "live_stacker.h"
 #include <QGraphicsPixmapItem>
 #include <snr_calculator.h>
 #include <snr_overlay.h>
@@ -65,6 +66,7 @@ public:
 	void setBalance(int Balance);
 	void showStretchButton(bool show);
 	void showZoomButtons(bool show);
+	void showStackButton(bool show);
 
 	QRect getImageFrameRect() const;
 
@@ -73,6 +75,13 @@ public slots:
 	void setToolTip(const QString &txt);
 	void onSetImage(preview_image &im);
 	void setImageStats(const ImageStats &stats);
+
+	/// Add @p im to the live stack.  If the stack-view toggle is active the
+	/// stacked result is shown; otherwise the raw frame is displayed.
+	void addToStack(preview_image &im);
+
+	/// Reset the live stack accumulator and switch back to the last-frame view.
+	void resetStack();
 
 	void showSelection(bool show);
 	void moveSelection(double x, double y);
@@ -142,6 +151,9 @@ signals:
 	void viewerResized();
 	void viewerShown();
 
+	/// Emitted whenever the number of stacked frames changes.
+	void stackCountChanged(int count);
+
 protected:
 	void enterEvent(QEnterEvent *event) override;
 	void leaveEvent(QEvent *event) override;
@@ -187,6 +199,21 @@ private:
 	SNROverlay *m_snr_overlay;
 	ImageInspectorOverlay *m_inspection_overlay;
 	QAction *m_inspection_act;
+	LiveStacker *m_stacker;
+	QToolButton *m_stack_button;
+	bool m_show_stack;
+	preview_image m_last_image;
+	int m_stretch_level;
+	uint32_t m_bayer_pat;
+	int m_color_balance;
+
+	stretch_config_t currentStretchConfig() const {
+		stretch_config_t sc;
+		sc.stretch_level = static_cast<uint8_t>(m_stretch_level);
+		sc.balance       = static_cast<uint8_t>(m_color_balance);
+		sc.bayer_pattern = m_bayer_pat;
+		return sc;
+	}
 	bool m_inspection_overlay_visible;
 	AntialiasedEllipseItem *m_snr_star_circle;
 	AntialiasedEllipseItem *m_snr_background_inner_ring;

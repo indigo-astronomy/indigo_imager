@@ -89,6 +89,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_stderr = dup(STDERR_FILENO);
 
 	m_has_clear_focuser_selection = false;
+	m_focusing_running = false;
 	m_has_clear_guider_selection = false;
 
 	//  Set central widget of window
@@ -288,6 +289,11 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setChecked(conf.antialiasing_enabled);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_antialias_view);
 
+	act = menu->addAction(tr("Live image S&tack"));
+	act->setCheckable(true);
+	act->setChecked(conf.live_stacking_enabled);
+	connect(act, &QAction::toggled, this, &ImagerWindow::on_live_stack_changed);
+
 	act = menu->addAction(tr("Enable guider &antialiasing"));
 	act->setCheckable(true);
 	act->setChecked(conf.guider_antialiasing_enabled);
@@ -479,6 +485,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_imager_viewer->setDebayer(conf.preview_bayer_pattern);
 	m_imager_viewer->setBalance(conf.preview_color_balance);
 	m_imager_viewer->enableSNRMode(true);  // Enable SNR mode for capture tab
+	m_imager_viewer->showStackButton(conf.live_stacking_enabled);
 	m_visible_viewer = m_imager_viewer;
 
 	// Image guide viewer
@@ -523,6 +530,9 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(m_imager_viewer, &ImageViewer::stretchChanged, this, &ImagerWindow::on_imager_stretch_changed);
 	connect(m_imager_viewer, &ImageViewer::debayerChanged, this, &ImagerWindow::on_imager_debayer_changed);
 	connect(m_imager_viewer, &ImageViewer::BalanceChanged, this, &ImagerWindow::on_imager_cb_changed);
+	connect(m_imager_viewer, &ImageViewer::stackCountChanged, this, [this](int count) {
+		Q_UNUSED(count);
+	});
 	connect(m_guider_viewer, &ImageViewer::stretchChanged, this, &ImagerWindow::on_guider_stretch_changed);
 	connect(m_guider_viewer, &ImageViewer::BalanceChanged, this, &ImagerWindow::on_guider_cb_changed);
 
@@ -764,7 +774,11 @@ void ImagerWindow::window_log(const char *message, int state) {
 bool ImagerWindow::show_preview_in_imager_viewer(QString &key) {
 	preview_image *image = preview_cache.get(key);
 	if (image) {
-		m_imager_viewer->setImage(*image);
+		if (conf.live_stacking_enabled && !m_focusing_running) {
+			m_imager_viewer->addToStack(*image);
+		} else {
+			m_imager_viewer->setImage(*image);
+		}
 		m_imager_viewer->centerReference();
 
 		m_seq_imager_viewer->setImage(*image);
@@ -1655,6 +1669,17 @@ void ImagerWindow::on_guider_cb_changed(int balance) {
 void ImagerWindow::on_antialias_view(bool status) {
 	conf.antialiasing_enabled = status;
 	m_imager_viewer->enableAntialiasing(status);
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_live_stack_changed(bool status) {
+	conf.live_stacking_enabled = status;
+	m_imager_viewer->showStackButton(status);
+	if (!status) {
+		// Switching live stack off: reset accumulator and revert view to last frame.
+		m_imager_viewer->resetStack();
+	}
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }

@@ -131,7 +131,8 @@ typedef struct {
 	bool require_confirmation;
 	bool compact_window_layout;
 	ain_preview_mode preview_mode;
-	char unused[100];
+	bool live_stacking_enabled;
+	char unused[99];
 } conf_t;
 
 extern conf_t conf;

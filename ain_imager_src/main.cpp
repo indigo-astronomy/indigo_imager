@@ -129,6 +129,7 @@ int main(int argc, char *argv[]) {
 	conf.require_confirmation = false;
 	conf.compact_window_layout = false;
 	conf.preview_mode = NO_PREVIEWS;
+	conf.live_stacking_enabled = false;
 	read_conf();
 	conf.blobs_enabled = true; // Always enable BLOBs remove option from UI
 

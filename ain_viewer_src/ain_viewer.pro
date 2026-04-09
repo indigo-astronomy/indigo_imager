@@ -31,6 +31,7 @@ SOURCES += \
 	$$PWD/../common_src/utils.cpp \
 	$$PWD/../common_src/imagepreview.cpp \
 	$$PWD/../common_src/imageviewer.cpp \
+	$$PWD/../common_src/live_stacker.cpp \
 	$$PWD/../common_src/antialiaseditems.cpp \
 	$$PWD/../common_src/image_stats.cpp \
 	$$PWD/../common_src/fits.c \
@@ -71,6 +72,7 @@ HEADERS += \
 	$$PWD/../common_src/image_preview_lut.h \
 	$$PWD/../common_src/imagepreview.h \
 	$$PWD/../common_src/imageviewer.h \
+	$$PWD/../common_src/live_stacker.h \
 	$$PWD/../common_src/antialiaseditems.h \
 	$$PWD/../common_src/image_stats.h \
 	$$PWD/../common_src/fits.h \

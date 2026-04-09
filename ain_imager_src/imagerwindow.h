@@ -251,6 +251,7 @@ public slots:
 	void on_abort(bool clicked);
 	void on_pause(bool clicked);
 	void on_reset(bool clicked);
+	void on_live_stack_changed(bool status);
 	void on_window_log(indigo_property* property, const char *message);
 	void on_property_define(indigo_property* property, char *message);
 	void on_property_change(indigo_property* property, char *message);
@@ -752,6 +753,7 @@ private:
 	int       m_max_focus_stars;
 
 	bool m_has_clear_focuser_selection;
+	bool m_focusing_running;
 
 	// Guider tab
 	QComboBox *m_agent_guider_select;
