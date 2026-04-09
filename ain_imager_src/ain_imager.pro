@@ -59,6 +59,7 @@ SOURCES += \
 	$$PWD/../common_src/utils.cpp \
 	$$PWD/../common_src/imagepreview.cpp \
 	$$PWD/../common_src/imageviewer.cpp \
+	$$PWD/../common_src/live_stacker.cpp \
 	$$PWD/../common_src/antialiaseditems.cpp \
 	$$PWD/../common_src/fits.c \
 	$$PWD/../common_src/xisf.c \
@@ -73,79 +74,8 @@ SOURCES += \
 	$$PWD/../external/qcustomplot/qcustomplot.cpp
 
 RESOURCES += \
-	$$PWD/scripts/Sequencer.js \
-	$$PWD/../resource/fonts.qrc \
-	$$PWD/../qdarkstyle/style.qrc \
-	$$PWD/../resource/control_panel.qss \
-	$$PWD/../resource/appicon.png \
-	$$PWD/../resource/indigo_logo.png \
-	$$PWD/../resource/save.png \
-	$$PWD/../resource/delete.png \
-	$$PWD/../resource/find.png \
-	$$PWD/../resource/zoom-fit-best.png \
-	$$PWD/../resource/zoom-original.png \
-	$$PWD/../resource/bonjour_service.png \
-	$$PWD/../resource/manual_service.png \
-	$$PWD/../resource/no-preview.png \
-	$$PWD/../resource/led-red.png \
-	$$PWD/../resource/led-grey.png \
-	$$PWD/../resource/led-green.png \
-	$$PWD/../resource/led-orange.png \
-	$$PWD/../resource/led-noexec.png \
-	$$PWD/../resource/led-red-cb.png \
-	$$PWD/../resource/led-green-cb.png \
-	$$PWD/../resource/led-orange-cb.png \
-	$$PWD/../resource/led-noexec-cb.png \
-	$$PWD/../resource/stop.png \
-	$$PWD/../resource/play.png \
-	$$PWD/../resource/pause.png \
-	$$PWD/../resource/record.png \
-	$$PWD/../resource/reload.png \
-	$$PWD/../resource/focus.png \
-	$$PWD/../resource/calibrate.png \
-	$$PWD/../resource/guide.png \
-	$$PWD/../resource/focus_in.png \
-	$$PWD/../resource/focus_out.png \
-	$$PWD/../resource/previous.png \
-	$$PWD/../resource/next.png \
-	$$PWD/../resource/zoom-in.png \
-	$$PWD/../resource/zoom-out.png \
-	$$PWD/../resource/arrow-up.png \
-	$$PWD/../resource/arrow-down.png \
-	$$PWD/../resource/edit.png \
-	$$PWD/../resource/folder.png \
-	$$PWD/../resource/download.png \
-	$$PWD/../resource/histogram.png \
-	$$PWD/../resource/loop-grey.png \
-	$$PWD/../resource/loop-orange.png \
-	$$PWD/../resource/loop-green.png \
-	$$PWD/../resource/loop-red.png \
-	$$PWD/../resource/condition-grey.png \
-	$$PWD/../resource/condition-green.png \
-	$$PWD/../resource/condition-orange.png \
-	$$PWD/../resource/condition-red.png \
-	$$PWD/../resource/resume-grey.png \
-	$$PWD/../resource/resume-green.png \
-	$$PWD/../resource/resume-orange.png \
-	$$PWD/../resource/resume-red.png \
-	$$PWD/../resource/recovery-point-grey.png \
-	$$PWD/../resource/recovery-point-green.png \
-	$$PWD/../resource/recovery_policy.png \
-	$$PWD/../resource/menu-loop-grey.png \
-	$$PWD/../resource/wheel-grey.png \
-	$$PWD/../resource/rotator-grey.png \
-	$$PWD/../resource/shutter-grey.png \
-	$$PWD/../resource/mount-grey.png \
-	$$PWD/../resource/focuser-grey.png \
-	$$PWD/../resource/guider-grey.png \
-	$$PWD/../resource/led-grey-dev.png \
-	$$PWD/../resource/server.png \
-	$$PWD/../resource/warning.png \
-	$$PWD/../resource/error.wav \
-	$$PWD/../resource/ok.wav \
-	$$PWD/../resource/warning.wav \
-	$$PWD/../resource/spinner.gif
-
+	$$PWD/../resource/ain_imager.qrc \
+	$$PWD/../qdarkstyle/style.qrc
 
 # Additional import path used to resolve QML modules in Qt Creator\'s code model
 QML_IMPORT_PATH =
@@ -189,6 +119,7 @@ HEADERS += \
 	$$PWD/../common_src/image_preview_lut.h \
 	$$PWD/../common_src/imagepreview.h \
 	$$PWD/../common_src/imageviewer.h \
+	$$PWD/../common_src/live_stacker.h \
 	$$PWD/../common_src/antialiaseditems.h \
 	$$PWD/../common_src/fits.h \
 	$$PWD/../common_src/xisf.h \

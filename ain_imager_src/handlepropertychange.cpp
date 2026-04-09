@@ -148,7 +148,7 @@ static void add_items_to_combobox(ImagerWindow *w, indigo_property *property, QC
 	}
 }
 
-static void add_items_to_sequence_model(indigo_property *property, char *type, int parameter_index) {
+static void add_items_to_sequence_model(indigo_property *property, const char *type, int parameter_index) {
 	QStringList items;
 	for (int i = 0; i < property->count; i++) {
 		items.append(QString(property->items[i].label));
@@ -1717,6 +1717,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 	static bool focusing_running = false;
 	static bool preview_running = false;
 	static int prev_frame = -1;
+	static int prev_exposure_frame = -1;
 	static double best_hfd = 0, best_contrast = 0, best_bahtinov = 0;
 	double FWHM = 0, HFD = 0, contrast = 0, bahtinov = 0;
 	int phase = INDIGO_IMAGER_PHASE_IDLE;
@@ -1772,6 +1773,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 				}
 			} else if (!strcmp(start_p->items[i].name, AGENT_IMAGER_START_FOCUSING_ITEM_NAME)) {
 				focusing_running = start_p->items[i].sw.value;
+				w->m_focusing_running = focusing_running;
 			} else if (!strcmp(start_p->items[i].name, AGENT_IMAGER_START_PREVIEW_ITEM_NAME)) {
 				preview_running = start_p->items[i].sw.value;
 			}
@@ -1848,6 +1850,14 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		w->set_widget_state(w->m_focusing_button, INDIGO_OK_STATE);
 		w->set_widget_state(w->m_focusing_preview_button, INDIGO_OK_STATE);
 		if (start_p->state == INDIGO_BUSY_STATE) {
+			// Detect start of a new batch within a sequence (frame counter resets to 0).
+			if (frames_complete == 0 && prev_exposure_frame > 0) {
+				QMetaObject::invokeMethod(w, [w]() {
+					if (conf.live_stacking_enabled && w->m_imager_viewer)
+						w->m_imager_viewer->resetStack();
+				}, Qt::QueuedConnection);
+			}
+			prev_exposure_frame = frames_complete;
 			//w->m_sequence_editor->on_set_current_batch(batch_index);
 			w->m_exposure_button->setIcon(QIcon(":resource/stop.png"));
 			w->set_enabled(w->m_exposure_button, true);
@@ -2233,7 +2243,7 @@ void handle_scripting_on_load_script(ImagerWindow *w, indigo_property *property)
 		}
 	}
 
-	QtConcurrent::run([=]() {
+	QThreadPool::globalInstance()->start([=]() {
 		if (enable_new) {
 			indigo_change_switch_property_1(
 				nullptr,
@@ -2781,7 +2791,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			}
 			char *device_name = (char*)malloc(INDIGO_NAME_SIZE);
 			strncpy(device_name, property->device, INDIGO_NAME_SIZE);
-			QtConcurrent::run([=]() {
+			QThreadPool::globalInstance()->start([=]() {
 				pthread_mutex_lock(&l_mutex);
 				if (imager_not_loaded) {
 					static const char *items[] = { "DRIVER" };
@@ -2891,7 +2901,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	// Imager Agent
 	if (client_match_device_property(property, selected_agent, CCD_LOCAL_MODE_PROPERTY_NAME)) {
 		update_ccd_local_mode(this, property);
-		QtConcurrent::run([=]() {
+		QThreadPool::globalInstance()->start([=]() {
 			init_ccd_localmode_property(selected_agent);
 		});
 	}
@@ -2983,7 +2993,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			}
 		}
 		if (m_focuser_subframe_select->currentIndex() * 5 != current_subframe) {
-			QtConcurrent::run([=]() {
+			QThreadPool::globalInstance()->start([=]() {
 				change_focuser_subframe(selected_agent);
 			});
 		}
@@ -3039,7 +3049,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_agent_imager_stats_property(this, property);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_PREVIEW_PROPERTY_NAME)) {
-		QtConcurrent::run([=]() {
+		QThreadPool::globalInstance()->start([=]() {
 			change_agent_ccd_preview(selected_agent, conf.preview_mode > GUIDER_COARSE_PREVIEW);
 		});
 	}
@@ -3083,7 +3093,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		add_items_to_combobox(this, property, m_dither_strategy_select);
 	}
 	if (client_match_device_property(property, selected_guider_agent, CCD_PREVIEW_PROPERTY_NAME)) {
-		QtConcurrent::run([=]() {
+		QThreadPool::globalInstance()->start([=]() {
 			change_agent_ccd_preview(selected_guider_agent, (bool)conf.preview_mode > NO_PREVIEWS);
 		});
 	}
@@ -3123,7 +3133,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			}
 		}
 		if (m_guider_subframe_select->currentIndex() * 5 != current_subframe) {
-			QtConcurrent::run([=]() {
+			QThreadPool::globalInstance()->start([=]() {
 				change_guider_agent_subframe(selected_guider_agent);
 			});
 		}
@@ -3288,7 +3298,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		set_enabled(m_solver_exposure1, true);
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_SOLVE_IMAGES_PROPERTY_NAME)) {
-		QtConcurrent::run([=]() {
+		QThreadPool::globalInstance()->start([=]() {
 			m_property_mutex.lock();
 			//clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
 			disable_auto_solving(selected_solver_agent);
@@ -3299,7 +3309,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_solver_agent_wcs(this, property);
 		indigo_property *p = properties.get(property->device, AGENT_PLATESOLVER_PA_STATE_PROPERTY_NAME);
 		if ((property->state == INDIGO_ALERT_STATE || property->state == INDIGO_OK_STATE) && (p == nullptr || p->state != INDIGO_BUSY_STATE)) {
-			QtConcurrent::run([=]() {
+			QThreadPool::globalInstance()->start([=]() {
 				m_property_mutex.lock();
 				//clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
 				disable_auto_solving(selected_solver_agent);
@@ -3317,7 +3327,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		set_enabled(m_mount_pa_stop_button, true);
 		int state = update_solver_agent_pa_error(this, property);
 		if (property->state != INDIGO_BUSY_STATE && state == 0) {
-			QtConcurrent::run([=]() {
+			QThreadPool::globalInstance()->start([=]() {
 				m_property_mutex.lock();
 				//clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
 				disable_auto_solving(selected_solver_agent);
@@ -3562,6 +3572,19 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_EQUATORIAL_COORDINATES_PROPERTY_NAME)) {
 		update_mount_ra_dec(this, property);
+		// Reset live stack when the mount starts slewing (new field after goto).
+		static bool mount_was_slewing = false;
+		if (property->state == INDIGO_BUSY_STATE) {
+			if (!mount_was_slewing) {
+				QMetaObject::invokeMethod(this, [this]() {
+					if (conf.live_stacking_enabled && m_imager_viewer)
+						m_imager_viewer->resetStack();
+				}, Qt::QueuedConnection);
+			}
+			mount_was_slewing = true;
+		} else {
+			mount_was_slewing = false;
+		}
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_HORIZONTAL_COORDINATES_PROPERTY_NAME)) {
 		update_mount_az_alt(this, property);
@@ -3645,7 +3668,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		update_solver_agent_wcs(this, property);
 		indigo_property *p = properties.get(property->device, AGENT_PLATESOLVER_PA_STATE_PROPERTY_NAME);
 		if ((property->state == INDIGO_ALERT_STATE || property->state == INDIGO_OK_STATE) && (p == nullptr || p->state != INDIGO_BUSY_STATE)) {
-			QtConcurrent::run([=]() {
+			QThreadPool::globalInstance()->start([=]() {
 				m_property_mutex.lock();
 				//clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
 				disable_auto_solving(selected_solver_agent);
@@ -3660,7 +3683,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		set_enabled(m_mount_pa_stop_button, true);
 		int state = update_solver_agent_pa_error(this, property);
 		if (property->state != INDIGO_BUSY_STATE && state == 0) {
-			QtConcurrent::run([=]() {
+			QThreadPool::globalInstance()->start([=]() {
 				m_property_mutex.lock();
 				//clear_solver_agent_releated_agents(selected_solver_agent); // Should be removed in the futue
 				disable_auto_solving(selected_solver_agent);

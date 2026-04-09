@@ -34,7 +34,6 @@
 #include "version.h"
 #include <imageviewer.h>
 #include <image_stats.h>
-#include <QSound>
 #include <QSoundEffect>
 #include <QFileInfo>
 #include <QUrl>
@@ -90,6 +89,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_stderr = dup(STDERR_FILENO);
 
 	m_has_clear_focuser_selection = false;
+	m_focusing_running = false;
 	m_has_clear_guider_selection = false;
 
 	//  Set central widget of window
@@ -289,6 +289,11 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setChecked(conf.antialiasing_enabled);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_antialias_view);
 
+	act = menu->addAction(tr("Live image S&tack"));
+	act->setCheckable(true);
+	act->setChecked(conf.live_stacking_enabled);
+	connect(act, &QAction::toggled, this, &ImagerWindow::on_live_stack_changed);
+
 	act = menu->addAction(tr("Enable guider &antialiasing"));
 	act->setCheckable(true);
 	act->setChecked(conf.guider_antialiasing_enabled);
@@ -480,6 +485,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_imager_viewer->setDebayer(conf.preview_bayer_pattern);
 	m_imager_viewer->setBalance(conf.preview_color_balance);
 	m_imager_viewer->enableSNRMode(true);  // Enable SNR mode for capture tab
+	m_imager_viewer->showStackButton(conf.live_stacking_enabled);
 	m_visible_viewer = m_imager_viewer;
 
 	// Image guide viewer
@@ -524,6 +530,9 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(m_imager_viewer, &ImageViewer::stretchChanged, this, &ImagerWindow::on_imager_stretch_changed);
 	connect(m_imager_viewer, &ImageViewer::debayerChanged, this, &ImagerWindow::on_imager_debayer_changed);
 	connect(m_imager_viewer, &ImageViewer::BalanceChanged, this, &ImagerWindow::on_imager_cb_changed);
+	connect(m_imager_viewer, &ImageViewer::stackCountChanged, this, [this](int count) {
+		Q_UNUSED(count);
+	});
 	connect(m_guider_viewer, &ImageViewer::stretchChanged, this, &ImagerWindow::on_guider_stretch_changed);
 	connect(m_guider_viewer, &ImageViewer::BalanceChanged, this, &ImagerWindow::on_guider_cb_changed);
 
@@ -765,7 +774,11 @@ void ImagerWindow::window_log(const char *message, int state) {
 bool ImagerWindow::show_preview_in_imager_viewer(QString &key) {
 	preview_image *image = preview_cache.get(key);
 	if (image) {
-		m_imager_viewer->setImage(*image);
+		if (conf.live_stacking_enabled && !m_focusing_running) {
+			m_imager_viewer->addToStack(*image);
+		} else {
+			m_imager_viewer->setImage(*image);
+		}
 		m_imager_viewer->centerReference();
 
 		m_seq_imager_viewer->setImage(*image);
@@ -877,18 +890,22 @@ bool ImagerWindow::show_preview_in_guider_viewer(QString &key) {
 
 void ImagerWindow::play_sound(int alarm) {
 	if (conf.sound_notification_level) {
+		static QSoundEffect sound_effect; // static otherwise it will not play sounds with Qt6
 		switch (alarm) {
 		case AIN_NO_SOUND:
 			return;
 		case AIN_ALERT_SOUND:
-			if (m_sound_alert) m_sound_alert->play();
+			sound_effect.setSource(QUrl::fromLocalFile(":/resource/error.wav"));
+			sound_effect.play();
 			return;
 		case AIN_WARNING_SOUND:
-			if (m_sound_warning) m_sound_warning->play();
+			sound_effect.setSource(QUrl::fromLocalFile(":/resource/warning.wav"));
+			sound_effect.play();
 			return;
 		case AIN_OK_SOUND:
 			if (conf.sound_notification_level > AIN_WARNING_SOUND) {
-				if (m_sound_ok) m_sound_ok->play();
+				sound_effect.setSource(QUrl::fromLocalFile(":/resource/ok.wav"));
+				sound_effect.play();
 			}
 			return;
 		}
@@ -1656,6 +1673,17 @@ void ImagerWindow::on_antialias_view(bool status) {
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
+void ImagerWindow::on_live_stack_changed(bool status) {
+	conf.live_stacking_enabled = status;
+	m_imager_viewer->showStackButton(status);
+	if (!status) {
+		// Switching live stack off: reset accumulator and revert view to last frame.
+		m_imager_viewer->resetStack();
+	}
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
 void ImagerWindow::on_imager_show_reference(bool status) {
 	conf.imager_show_reference = status;
 	on_tab_changed(m_tools_tabbar->currentIndex());
@@ -1990,6 +2018,7 @@ void ImagerWindow::on_about_act() {
 		AIN_VERSION
 		" (" + QString::number(platform_bits) + "bit) <br>"
 		"<br>INDIGO framework version " + QString(indigo_version) + "<br>"
+		"<br>Qt version: " + QT_VERSION_STR + "<br>"
 		"<br>"
 		"Author:<br>"
 		"Rumen G.Bogdanovski<br>"

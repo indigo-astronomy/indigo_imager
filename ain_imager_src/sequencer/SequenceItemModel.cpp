@@ -347,7 +347,7 @@ const QMap<QString, SequenceItemModel::WidgetTypeInfo>& SequenceItemModel::getWi
 	return widgetTypeMap;
 }
 
-const QLinkedList<QPair<QString, QStringList>>& SequenceItemModel::getCategories() const {
+const QList<QPair<QString, QStringList>>& SequenceItemModel::getCategories() const {  // Changed from QLinkedList to QList
 	return categoriesList;
 }
 

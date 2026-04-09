@@ -31,6 +31,7 @@ SOURCES += \
 	$$PWD/../common_src/utils.cpp \
 	$$PWD/../common_src/imagepreview.cpp \
 	$$PWD/../common_src/imageviewer.cpp \
+	$$PWD/../common_src/live_stacker.cpp \
 	$$PWD/../common_src/antialiaseditems.cpp \
 	$$PWD/../common_src/image_stats.cpp \
 	$$PWD/../common_src/fits.c \
@@ -47,19 +48,8 @@ SOURCES += \
 RESOURCES += \
 	$$PWD/../resource/fonts.qrc \
 	$$PWD/../qdarkstyle/style.qrc \
-	$$PWD/../resource/control_panel.qss \
-	$$PWD/../resource/ain_viewer.png \
-	$$PWD/../resource/previous.png \
-	$$PWD/../resource/next.png \
-	$$PWD/../resource/indigo_logo.png \
-	$$PWD/../resource/zoom-fit-best.png \
-	$$PWD/../resource/zoom-original.png \
-	$$PWD/../resource/bonjour_service.png \
-	$$PWD/../resource/manual_service.png \
-	$$PWD/../resource/no-preview.png \
-	$$PWD/../resource/zoom-in.png \
-	$$PWD/../resource/zoom-out.png \
-	$$PWD/../resource/histogram.png
+	$$PWD/../resource/ain_viewer.qrc \
+
 
 
 # Additional import path used to resolve QML modules in Qt Creator\'s code model
@@ -82,6 +72,7 @@ HEADERS += \
 	$$PWD/../common_src/image_preview_lut.h \
 	$$PWD/../common_src/imagepreview.h \
 	$$PWD/../common_src/imageviewer.h \
+	$$PWD/../common_src/live_stacker.h \
 	$$PWD/../common_src/antialiaseditems.h \
 	$$PWD/../common_src/image_stats.h \
 	$$PWD/../common_src/fits.h \

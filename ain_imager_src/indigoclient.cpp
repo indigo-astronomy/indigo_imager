@@ -174,7 +174,7 @@ static bool download_blob_async(indigo_property *property, QAtomicInt *downloadi
 
 		if (remaining < 0) {
 			// should not happen, but just in case
-			downloading->store(0);
+			*downloading = 0;  // Changed from downloading->store(0)
 		}
 	});
 
@@ -239,14 +239,14 @@ static indigo_result client_define_property(indigo_client *client, indigo_device
 		//reset download flags
 		if (!strncmp(property->device, "Imager Agent", 12)) {
 			if (!strncmp(property->name, CCD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
-				client_instance.imager_downloading.store(0);
+				client_instance.imager_downloading = 0;  // Changed from .store(0)
 			} else if (!strncmp(property->name, AGENT_IMAGER_DOWNLOAD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
-				client_instance.imager_downloading_saved_frame.store(0);
+				client_instance.imager_downloading_saved_frame = 0;  // Changed from .store(0)
 			}
 		} else if (!strncmp(property->device, "Guider Agent", 12)) {
-			client_instance.guider_downloading.store(0);
+			client_instance.guider_downloading = 0;  // Changed from .store(0)
 		} else {
-			client_instance.other_downloading.store(0);
+			client_instance.other_downloading = 0;  // Changed from .store(0)
 		}
 		if (device->version < INDIGO_VERSION_2_0)
 			client_instance.m_logger->log(property, "BLOB can be used in INDI legacy mode");
