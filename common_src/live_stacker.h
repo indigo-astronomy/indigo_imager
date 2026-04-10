@@ -56,8 +56,9 @@ class LiveStacker {
 public:
 	/// Alignment algorithm used when adding frames.
 	enum AlignmentMethod {
-		ALIGN_NCC,       ///< Two-level pyramid normalised cross-correlation.
-		ALIGN_CENTROIDS  ///< Multi-star centroid matching (Siril / N.I.N.A. style) — default.
+		ALIGN_NCC,        ///< Two-level pyramid normalised cross-correlation.
+		ALIGN_CENTROIDS,  ///< Multi-star centroid matching (nearest-neighbour + median).
+		ALIGN_HOUGH       ///< Hough-style translation-histogram voting over all star pairs — default.
 	};
 
 	/// Interpolation method used when resampling frames during accumulation.
@@ -171,6 +172,22 @@ private:
 	 */
 	bool findShiftByCentroids(double &shift_x, double &shift_y,
 	                          const std::vector<StarCentroid> &cur_stars) const;
+
+	/**
+	 * @brief Estimate the translation shift using Hough-style histogram voting.
+	 *
+	 * For every (ref_i, cur_j) star pair, casts a weighted vote for the
+	 * translation (cur_j.x - ref_i.x, cur_j.y - ref_i.y) into a 2-D histogram
+	 * binned at HOUGH_BIN_PX resolution.  The peak bin (refined to sub-bin
+	 * precision via a flux-weighted centroid in its 3×3 neighbourhood) is the
+	 * estimated shift.  Because wrong pairs scatter their votes uniformly, the
+	 * correct translation always produces the dominant spike, even with few stars
+	 * or a sparse field.  Returns false when the peak attracts fewer than
+	 * STAR_MIN_MATCHES pairs (NCC fallback recommended).  O(N×M) = ~10 000 ops
+	 * for 100-star lists.
+	 */
+	bool findShiftByHough(double &shift_x, double &shift_y,
+	                      const std::vector<StarCentroid> &cur_stars) const;
 
 	std::vector<double>      m_acc;           ///< channels * height * width
 	std::vector<float>       m_ref_coarse;    ///< DS_COARSE-downsampled luminance of frame 0

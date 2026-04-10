@@ -73,6 +73,14 @@ static const float STAR_MATCH_RADIUS = 50.0f;
 static const int STAR_MIN_MATCHES = 3;
 
 // ---------------------------------------------------------------------------
+// Alignment parameters — Hough translation histogram
+// ---------------------------------------------------------------------------
+
+// Bin size for the 2-D translation histogram, in ORIGINAL pixel coordinates.
+// Smaller = finer resolution but larger memory; 4 px is a good compromise.
+static const int HOUGH_BIN_PX = 4;
+
+// ---------------------------------------------------------------------------
 // Format helpers
 // ---------------------------------------------------------------------------
 
@@ -106,7 +114,7 @@ static int bytesPerSample(int pix_format) {
 
 LiveStacker::LiveStacker()
 	: m_alignment_method(ALIGN_CENTROIDS)
-	, m_interp_method(INTERP_NEAREST)
+	, m_interp_method(INTERP_BICUBIC)
 	, m_width(0)
 	, m_height(0)
 	, m_channels(0)
@@ -622,6 +630,106 @@ bool LiveStacker::findShiftByCentroids(double &shift_x, double &shift_y,
 }
 
 // ---------------------------------------------------------------------------
+// findShiftByHough
+//
+// Hough-style translation histogram (also called "generalised Hough transform
+// for translation" or simply "voting alignment").
+//
+// For every ordered pair (ref_star_i, cur_star_j) vote for the translation
+//
+//   T = (cur_j.x − ref_i.x,  cur_j.y − ref_i.y)
+//
+// with weight = sqrt(ref_i.flux × cur_j.flux) (geometric mean — bright, clean
+// stars contribute more than faint noisy ones).
+//
+// Votes are accumulated into a 2-D histogram with HOUGH_BIN_PX-sized bins
+// covering ±SEARCH_PX in both axes.  Because "wrong" pairs (i ≠ j as physical
+// stars) produce votes scattered uniformly across all bins, while every
+// correctly corresponding pair votes for the same bin, the true translation
+// appears as a sharp spike regardless of field density or match-radius.
+//
+// Sub-bin precision: after finding the peak bin, a flux-weighted centroid
+// over the 3×3 neighbourhood refines the result to ≈1 original pixel.
+//
+// Reliability gate: the number of (ref, cur) pairs whose vote falls in the
+// 3×3 neighbourhood of the peak must reach STAR_MIN_MATCHES; otherwise the
+// detection is considered unreliable and false is returned.
+//
+// Complexity: O(N×M) — for N=M=100 stars this is only 10 000 iterations.
+// ---------------------------------------------------------------------------
+
+bool LiveStacker::findShiftByHough(double &shift_x, double &shift_y,
+                                    const std::vector<StarCentroid> &cur_stars) const {
+	if (m_ref_stars.empty() || cur_stars.empty()) return false;
+
+	// Histogram geometry
+	const int BIN    = HOUGH_BIN_PX;
+	const int RANGE  = SEARCH_PX;           // half-range in original pixels
+	const int BINS   = 2 * RANGE / BIN + 1; // e.g. 2*512/4+1 = 257
+	const int CENTRE = RANGE / BIN;          // index corresponding to delta=0
+
+	std::vector<float> hist(static_cast<size_t>(BINS) * BINS, 0.0f);
+
+	// --- Voting pass ---
+	for (const StarCentroid &ref : m_ref_stars) {
+		for (const StarCentroid &cur : cur_stars) {
+			const float ddx = cur.x - ref.x;
+			const float ddy = cur.y - ref.y;
+			if (ddx < -RANGE || ddx > RANGE || ddy < -RANGE || ddy > RANGE) continue;
+
+			const int bx = static_cast<int>(std::round(ddx / BIN)) + CENTRE;
+			const int by = static_cast<int>(std::round(ddy / BIN)) + CENTRE;
+			if (bx < 0 || bx >= BINS || by < 0 || by >= BINS) continue;
+
+			const float weight = std::sqrt(ref.flux * cur.flux);
+			hist[by * BINS + bx] += weight;
+		}
+	}
+
+	// --- Find peak bin ---
+	const auto it = std::max_element(hist.begin(), hist.end());
+	if (*it <= 0.0f) { shift_x = shift_y = 0; return false; }
+
+	const int peak_idx = static_cast<int>(it - hist.begin());
+	const int peak_bx  = peak_idx % BINS;
+	const int peak_by  = peak_idx / BINS;
+
+	// --- Sub-bin refinement: flux-weighted centroid over 3×3 neighbourhood ---
+	double cx = 0.0, cy = 0.0, wsum = 0.0;
+	for (int dy = -1; dy <= 1; ++dy) {
+		for (int dx = -1; dx <= 1; ++dx) {
+			const int nx = peak_bx + dx;
+			const int ny = peak_by + dy;
+			if (nx < 0 || nx >= BINS || ny < 0 || ny >= BINS) continue;
+			const float w = hist[ny * BINS + nx];
+			cx   += w * nx;
+			cy   += w * ny;
+			wsum += w;
+		}
+	}
+	if (wsum < 1e-9) { shift_x = shift_y = 0; return false; }
+	cx /= wsum;
+	cy /= wsum;
+
+	shift_x = (cx - CENTRE) * BIN;
+	shift_y = (cy - CENTRE) * BIN;
+
+	// --- Reliability gate: count how many star pairs voted into the peak neighbourhood ---
+	int vote_count = 0;
+	for (const StarCentroid &ref : m_ref_stars) {
+		for (const StarCentroid &cur : cur_stars) {
+			const float ddx = cur.x - ref.x;
+			const float ddy = cur.y - ref.y;
+			const int bx = static_cast<int>(std::round(ddx / BIN)) + CENTRE;
+			const int by = static_cast<int>(std::round(ddy / BIN)) + CENTRE;
+			if (std::abs(bx - peak_bx) <= 1 && std::abs(by - peak_by) <= 1)
+				++vote_count;
+		}
+	}
+	return (vote_count >= STAR_MIN_MATCHES);
+}
+
+// ---------------------------------------------------------------------------
 // addImage
 // ---------------------------------------------------------------------------
 
@@ -651,8 +759,8 @@ bool LiveStacker::addImage(preview_image *image) {
 		m_ref_coarse = buildLuminanceMap(image, DS_COARSE);
 		m_ref_fine   = buildLuminanceMap(image, DS_FINE);
 
-		// Centroid reference stars — built when ALIGN_CENTROIDS is selected.
-		if (m_alignment_method == ALIGN_CENTROIDS)
+		// Centroid/Hough reference stars — built when a star-based method is selected.
+		if (m_alignment_method == ALIGN_CENTROIDS || m_alignment_method == ALIGN_HOUGH)
 			m_ref_stars = detectStars(image);
 
 		accumulate(image, 0, 0);
@@ -663,12 +771,15 @@ bool LiveStacker::addImage(preview_image *image) {
 		double dx = 0.0, dy = 0.0;
 
 		bool aligned = false;
-		if (m_alignment_method == ALIGN_CENTROIDS && !m_ref_stars.empty()) {
+		if ((m_alignment_method == ALIGN_CENTROIDS || m_alignment_method == ALIGN_HOUGH) && !m_ref_stars.empty()) {
 			std::vector<StarCentroid> cur_stars = detectStars(image);
-			aligned = findShiftByCentroids(dx, dy, cur_stars);
+			if (m_alignment_method == ALIGN_HOUGH)
+				aligned = findShiftByHough(dx, dy, cur_stars);
+			else
+				aligned = findShiftByCentroids(dx, dy, cur_stars);
 		}
 
-		// Fallback to NCC when centroid method is not selected or failed.
+		// Fallback to NCC when star-based method is not selected or failed.
 		if (!aligned) {
 			std::vector<float> cur_coarse = buildLuminanceMap(image, DS_COARSE);
 			std::vector<float> cur_fine   = buildLuminanceMap(image, DS_FINE);

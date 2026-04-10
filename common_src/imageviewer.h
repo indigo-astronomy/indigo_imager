@@ -12,6 +12,7 @@
 
 QT_BEGIN_NAMESPACE
 class QLabel;
+class QEnterEvent;
 QT_END_NAMESPACE
 
 class PixmapItem;
@@ -156,7 +157,7 @@ signals:
 	void stackCountChanged(int count);
 
 protected:
-	void enterEvent(QEvent *event) override;
+	void enterEvent(QEnterEvent *event) override;
 	void leaveEvent(QEvent *event) override;
 	void resizeEvent(QResizeEvent *event) override;
 	void showEvent(QShowEvent *event) override;
