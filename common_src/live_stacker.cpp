@@ -22,8 +22,8 @@
 #include <algorithm>
 #include <numeric>
 #include <limits>
-#include <QtConcurrent>
-#include <QVector>
+#include <thread>
+#include <future>
 #include <utils.h>
 #include <chrono>
 
@@ -151,15 +151,15 @@ std::vector<float> LiveStacker::buildLuminanceMap(preview_image *image, int ds) 
 	const char *raw = image->m_raw_data;
 
 	std::vector<float> lum(static_cast<size_t>(dW) * dH, 0.0f);
-	// Parallelize over output rows (by) using QtConcurrent pattern.
+	// Parallelize over output rows (by).
 	int num_threads = get_number_of_cores();
 	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
-	QVector<QFuture<void>> futures;
+	std::vector<std::thread> threads;
 	float *lumData = lum.data();
 
 	for (int rank = 0; rank < num_threads; rank++) {
 		const int chunk = static_cast<int>(std::ceil(dH / (double)num_threads));
-		futures.append(QtConcurrent::run([=]() {
+		threads.emplace_back([=]() {
 			const int start_by = chunk * rank;
 			const int end_by = std::min(start_by + chunk, dH);
 			for (int by = start_by; by < end_by; ++by) {
@@ -197,9 +197,9 @@ std::vector<float> LiveStacker::buildLuminanceMap(preview_image *image, int ds) 
 					lumData[by * dW + bx] = (cnt > 0) ? static_cast<float>(sum / cnt) : 0.0f;
 				}
 			}
-		}));
+		});
 	}
-	for (QFuture<void> f : futures) f.waitForFinished();
+	for (auto &t : threads) t.join();
 
 	// Subtract mean (removes sky background bias) — compute mean then subtract in parallel.
 	double mean = 0.0;
@@ -207,16 +207,16 @@ std::vector<float> LiveStacker::buildLuminanceMap(preview_image *image, int ds) 
 	for (size_t i = 0; i < total; ++i) mean += lumData[i];
 	mean /= static_cast<double>(total);
 
-	futures.clear();
+	threads.clear();
 	for (int rank = 0; rank < num_threads; rank++) {
 		const size_t chunk = static_cast<size_t>(std::ceil(total / (double)num_threads));
-		futures.append(QtConcurrent::run([=]() {
+		threads.emplace_back([=]() {
 			const size_t start = chunk * rank;
 			const size_t end = std::min(start + chunk, total);
 			for (size_t i = start; i < end; ++i) lumData[i] = static_cast<float>(lumData[i] - mean);
-		}));
+		});
 	}
-	for (QFuture<void> f : futures) f.waitForFinished();
+	for (auto &t : threads) t.join();
 
 	return lum;
 }
@@ -352,7 +352,7 @@ void LiveStacker::accumulate(preview_image *image, double dx, double dy) {
 	const int   pix_fmt  = m_pix_format;
 	double     *acc      = m_acc.data();
 
-	// By-value captures only — safe to copy into QtConcurrent thread lambdas.
+	// By-value captures only — safe to copy into thread lambdas.
 	auto readSample = [raw, W, H, pix_fmt](int sx, int sy, int ch) -> double {
 		sx = std::max(0, std::min(W - 1, sx));
 		sy = std::max(0, std::min(H - 1, sy));
@@ -369,12 +369,12 @@ void LiveStacker::accumulate(preview_image *image, double dx, double dy) {
 
 	int num_threads = get_number_of_cores();
 	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
-	QVector<QFuture<void>> futures;
+	std::vector<std::thread> threads;
 
 	if (m_interp_method == INTERP_NEAREST) {
 		for (int rank = 0; rank < num_threads; rank++) {
 			const int chunk = static_cast<int>(std::ceil(H / (double)num_threads));
-			futures.append(QtConcurrent::run([=]() {
+			threads.emplace_back([=]() {
 				const int start_row = chunk * rank;
 				const int end_row   = std::min(start_row + chunk, H);
 				for (int y = start_row; y < end_row; ++y) {
@@ -388,12 +388,12 @@ void LiveStacker::accumulate(preview_image *image, double dx, double dy) {
 							acc[dst_idx * channels + c] += readSample(sx, sy, c);
 					}
 				}
-			}));
+			});
 		}
 	} else if (m_interp_method == INTERP_BILINEAR) {
 		for (int rank = 0; rank < num_threads; rank++) {
 			const int chunk = static_cast<int>(std::ceil(H / (double)num_threads));
-			futures.append(QtConcurrent::run([=]() {
+			threads.emplace_back([=]() {
 				const int start_row = chunk * rank;
 				const int end_row   = std::min(start_row + chunk, H);
 				for (int y = start_row; y < end_row; ++y) {
@@ -420,13 +420,13 @@ void LiveStacker::accumulate(preview_image *image, double dx, double dy) {
 						}
 					}
 				}
-			}));
+			});
 		}
 	} else {
 		// Catmull-Rom bicubic kernel (Keys a=-0.5) — no captures, trivially copyable.
 		for (int rank = 0; rank < num_threads; rank++) {
 			const int chunk = static_cast<int>(std::ceil(H / (double)num_threads));
-			futures.append(QtConcurrent::run([=]() {
+			threads.emplace_back([=]() {
 				auto cubic = [](double t) -> double {
 					t = std::abs(t);
 					if (t < 1.0) return (1.5*t - 2.5)*t*t + 1.0;
@@ -458,10 +458,10 @@ void LiveStacker::accumulate(preview_image *image, double dx, double dy) {
 						}
 					}
 				}
-			}));
+			});
 		}
 	}
-	for (QFuture<void> f : futures) f.waitForFinished();
+	for (auto &t : threads) t.join();
 }
 
 // ---------------------------------------------------------------------------
@@ -504,7 +504,7 @@ std::vector<StarCentroid> LiveStacker::detectStars(preview_image *image) const {
 	// Parallel scan for local maxima with overlap to handle NMS window at chunk boundaries.
 	int num_threads = get_number_of_cores();
 	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
-	QVector<QFuture<std::vector<StarCentroid>>> futures;
+	std::vector<std::future<std::vector<StarCentroid>>> futures;
 	const float *lumData = lum.data();
 	const int y_min = nr;
 	const int y_max = dH - nr; // exclusive upper bound
@@ -514,7 +514,7 @@ std::vector<StarCentroid> LiveStacker::detectStars(preview_image *image) const {
 		const int start = std::max(y_min, y_min + rank * chunk - nr);
 		const int end = std::min(y_max, y_min + (rank + 1) * chunk + nr);
 		if (start >= end) continue;
-		futures.append(QtConcurrent::run([=]() -> std::vector<StarCentroid> {
+		futures.push_back(std::async(std::launch::async, [=]() -> std::vector<StarCentroid> {
 			std::vector<StarCentroid> local;
 			for (int y = start; y < end; ++y) {
 				for (int x = nr; x < dW - nr; ++x) {
@@ -562,7 +562,7 @@ std::vector<StarCentroid> LiveStacker::detectStars(preview_image *image) const {
 	// Gather results and keep the brightest stars.
 	std::vector<StarCentroid> candidates;
 	for (auto &f : futures) {
-		std::vector<StarCentroid> part = f.result();
+		std::vector<StarCentroid> part = f.get();
 		candidates.insert(candidates.end(), part.begin(), part.end());
 	}
 
@@ -981,17 +981,17 @@ preview_image *LiveStacker::currentStack() const {
 	// Parallelize the conversion from accumulator (double) to preview float buffer.
 	int num_threads = get_number_of_cores();
 	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
-	QVector<QFuture<void>> futures;
+	std::vector<std::thread> threads;
 	const double *src = m_acc.data();
 	for (int rank = 0; rank < num_threads; rank++) {
 		const size_t chunk = static_cast<size_t>(std::ceil(samples / (double)num_threads));
-		futures.append(QtConcurrent::run([=]() {
+		threads.emplace_back([=]() {
 			const size_t start = chunk * rank;
 			const size_t end = std::min(start + chunk, static_cast<size_t>(samples));
 			for (size_t i = start; i < end; ++i) dst[i] = static_cast<float>(src[i] * inv);
-		}));
+		});
 	}
-	for (QFuture<void> f : futures) f.waitForFinished();
+	for (auto &t : threads) t.join();
 
 	const int out_fmt = (m_channels == 1) ? PIX_FMT_F32 : PIX_FMT_RGBF;
 	stretch_config_t sconfig{};
