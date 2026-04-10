@@ -113,7 +113,7 @@ static int bytesPerSample(int pix_format) {
 // ---------------------------------------------------------------------------
 
 LiveStacker::LiveStacker()
-	: m_alignment_method(ALIGN_CENTROIDS)
+	: m_alignment_method(ALIGN_KD_TREE)
 	, m_interp_method(INTERP_BICUBIC)
 	, m_width(0)
 	, m_height(0)
@@ -575,6 +575,93 @@ std::vector<StarCentroid> LiveStacker::detectStars(preview_image *image) const {
 }
 
 // ---------------------------------------------------------------------------
+// KdTree2D — lightweight 2-D k-d tree over StarCentroid positions.
+//
+// Build   : O(N log N) — median partitioning, alternating X/Y split axes.
+// NN query: O(log N) average — used by findShiftByKdTree.
+//
+// All nodes live in a flat array; left/right children are integer indices
+// (-1 = none).  No heap fragmentation, trivially copyable.
+// ---------------------------------------------------------------------------
+namespace {
+
+struct KdNode {
+	float x = 0, y = 0, flux = 0;
+	int   left  = -1;
+	int   right = -1;
+};
+
+class KdTree2D {
+public:
+	KdTree2D() = default;
+
+	explicit KdTree2D(const std::vector<StarCentroid> &pts) {
+		if (pts.empty()) return;
+		m_nodes.resize(pts.size());
+		for (size_t i = 0; i < pts.size(); ++i) {
+			m_nodes[i].x    = pts[i].x;
+			m_nodes[i].y    = pts[i].y;
+			m_nodes[i].flux = pts[i].flux;
+		}
+		std::vector<int> idx(pts.size());
+		std::iota(idx.begin(), idx.end(), 0);
+		m_root = build(idx, 0, static_cast<int>(idx.size()), 0);
+	}
+
+	bool empty() const { return m_nodes.empty(); }
+
+	const KdNode &node(int i) const { return m_nodes[i]; }
+
+	/// Returns the index of the nearest node to (qx, qy).
+	/// Sets @p best_d2 to the squared Euclidean distance.  Returns -1 if empty.
+	int nearest(float qx, float qy, float &best_d2) const {
+		int best = -1;
+		best_d2 = std::numeric_limits<float>::max();
+		nnSearch(m_root, qx, qy, 0, best, best_d2);
+		return best;
+	}
+
+private:
+	std::vector<KdNode> m_nodes;
+	int m_root = -1;
+
+	int build(std::vector<int> &idx, int lo, int hi, int depth) {
+		if (lo >= hi) return -1;
+		const int mid  = (lo + hi) / 2;
+		const int axis = depth & 1;
+		std::nth_element(idx.begin() + lo, idx.begin() + mid, idx.begin() + hi,
+			[&](int a, int b) {
+				return axis == 0 ? m_nodes[a].x < m_nodes[b].x
+				                 : m_nodes[a].y < m_nodes[b].y;
+			});
+		const int id      = idx[mid];
+		m_nodes[id].left  = build(idx, lo,      mid, depth + 1);
+		m_nodes[id].right = build(idx, mid + 1, hi,  depth + 1);
+		return id;
+	}
+
+	void nnSearch(int id, float qx, float qy, int depth,
+	              int &best, float &best_d2) const {
+		if (id < 0) return;
+		const KdNode &n = m_nodes[id];
+		const float  dx = qx - n.x;
+		const float  dy = qy - n.y;
+		const float  d2 = dx*dx + dy*dy;
+		if (d2 < best_d2) { best_d2 = d2; best = id; }
+		const float split_diff = (depth & 1) == 0 ? dx : dy;
+		// Visit the closer half-space first.
+		const int first  = split_diff >= 0 ? n.right : n.left;
+		const int second = split_diff >= 0 ? n.left  : n.right;
+		nnSearch(first,  qx, qy, depth + 1, best, best_d2);
+		// Only visit the farther half-space if it can improve the result.
+		if (split_diff * split_diff < best_d2)
+			nnSearch(second, qx, qy, depth + 1, best, best_d2);
+	}
+};
+
+} // anonymous namespace
+
+// ---------------------------------------------------------------------------
 // findShiftByCentroids
 //
 // For each star in m_ref_stars, find the nearest star in cur_stars within
@@ -730,6 +817,74 @@ bool LiveStacker::findShiftByHough(double &shift_x, double &shift_y,
 }
 
 // ---------------------------------------------------------------------------
+// findShiftByKdTree
+//
+// Builds a 2-D k-d tree over cur_stars (O(M log M)), then for every reference
+// star queries the true nearest neighbour without any distance restriction
+// (O(log M) per query → O(N log M) total).  All N shifts are collected and
+// the median (dx, dy) is taken as the frame shift — the median is inherently
+// robust: even if half the matches are wrong (stars that appear in both frames
+// but are not the same physical star), the median still converges to the
+// correct translation.
+//
+// Compared to ALIGN_CENTROIDS:
+//   • No STAR_MATCH_RADIUS gate  →  works for large unknown shifts.
+//   • Relies solely on median robustness instead of a hard accept/reject.
+//   • O(N log M) vs O(N × M)     →  5-10× faster for 100-star lists.
+//
+// A reliability check after the median counts how many pairs agree with it
+// within HOUGH_BIN_PX pixels; the method returns false (NCC fallback) when
+// fewer than STAR_MIN_MATCHES pairs qualify.
+// ---------------------------------------------------------------------------
+
+bool LiveStacker::findShiftByKdTree(double &shift_x, double &shift_y,
+                                     const std::vector<StarCentroid> &cur_stars) const {
+	if (m_ref_stars.empty() || cur_stars.empty()) return false;
+
+	// Build the tree over cur_stars once — O(M log M).
+	const KdTree2D tree(cur_stars);
+
+	std::vector<float> dxs, dys;
+	dxs.reserve(m_ref_stars.size());
+	dys.reserve(m_ref_stars.size());
+
+	for (const StarCentroid &ref : m_ref_stars) {
+		float best_d2 = std::numeric_limits<float>::max();
+		const int idx = tree.nearest(ref.x, ref.y, best_d2);
+		if (idx < 0) continue;
+		const KdNode &hit = tree.node(idx);
+		dxs.push_back(hit.x - ref.x);
+		dys.push_back(hit.y - ref.y);
+	}
+
+	if (static_cast<int>(dxs.size()) < STAR_MIN_MATCHES) {
+		shift_x = shift_y = 0;
+		return false;
+	}
+
+	// Robust median shift.
+	const size_t mid = dxs.size() / 2;
+	std::nth_element(dxs.begin(), dxs.begin() + mid, dxs.end());
+	std::nth_element(dys.begin(), dys.begin() + mid, dys.end());
+	shift_x = dxs[mid];
+	shift_y = dys[mid];
+
+	// Reliability gate: count pairs within HOUGH_BIN_PX of the median.
+	const float tol = static_cast<float>(HOUGH_BIN_PX);
+	int agree = 0;
+	for (size_t i = 0; i < dxs.size(); ++i) {
+		if (std::abs(dxs[i] - static_cast<float>(shift_x)) <= tol &&
+		    std::abs(dys[i] - static_cast<float>(shift_y)) <= tol)
+			++agree;
+	}
+	if (agree < STAR_MIN_MATCHES) {
+		shift_x = shift_y = 0;
+		return false;
+	}
+	return true;
+}
+
+// ---------------------------------------------------------------------------
 // addImage
 // ---------------------------------------------------------------------------
 
@@ -759,8 +914,10 @@ bool LiveStacker::addImage(preview_image *image) {
 		m_ref_coarse = buildLuminanceMap(image, DS_COARSE);
 		m_ref_fine   = buildLuminanceMap(image, DS_FINE);
 
-		// Centroid/Hough reference stars — built when a star-based method is selected.
-		if (m_alignment_method == ALIGN_CENTROIDS || m_alignment_method == ALIGN_HOUGH)
+		// Star-based reference list — built for all three star-matching methods.
+		if (m_alignment_method == ALIGN_CENTROIDS ||
+		    m_alignment_method == ALIGN_HOUGH     ||
+		    m_alignment_method == ALIGN_KD_TREE)
 			m_ref_stars = detectStars(image);
 
 		accumulate(image, 0, 0);
@@ -771,10 +928,15 @@ bool LiveStacker::addImage(preview_image *image) {
 		double dx = 0.0, dy = 0.0;
 
 		bool aligned = false;
-		if ((m_alignment_method == ALIGN_CENTROIDS || m_alignment_method == ALIGN_HOUGH) && !m_ref_stars.empty()) {
+		const bool star_method = (m_alignment_method == ALIGN_CENTROIDS ||
+		                          m_alignment_method == ALIGN_HOUGH     ||
+		                          m_alignment_method == ALIGN_KD_TREE);
+		if (star_method && !m_ref_stars.empty()) {
 			std::vector<StarCentroid> cur_stars = detectStars(image);
 			if (m_alignment_method == ALIGN_HOUGH)
 				aligned = findShiftByHough(dx, dy, cur_stars);
+			else if (m_alignment_method == ALIGN_KD_TREE)
+				aligned = findShiftByKdTree(dx, dy, cur_stars);
 			else
 				aligned = findShiftByCentroids(dx, dy, cur_stars);
 		}

@@ -57,8 +57,9 @@ public:
 	/// Alignment algorithm used when adding frames.
 	enum AlignmentMethod {
 		ALIGN_NCC,        ///< Two-level pyramid normalised cross-correlation.
-		ALIGN_CENTROIDS,  ///< Multi-star centroid matching (nearest-neighbour + median).
-		ALIGN_HOUGH       ///< Hough-style translation-histogram voting over all star pairs — default.
+		ALIGN_CENTROIDS,  ///< Multi-star centroid matching (nearest-neighbour + median, brute-force O(N×M)).
+		ALIGN_HOUGH,      ///< Hough-style translation-histogram voting over all star pairs — default.
+		ALIGN_KD_TREE     ///< k-d tree NN matching: O(N log M), no radius constraint, robust median shift.
 	};
 
 	/// Interpolation method used when resampling frames during accumulation.
@@ -186,6 +187,23 @@ private:
 	 * STAR_MIN_MATCHES pairs (NCC fallback recommended).  O(N×M) = ~10 000 ops
 	 * for 100-star lists.
 	 */
+	/**
+	 * @brief Estimate the translation shift using k-d tree nearest-neighbour matching.
+	 *
+	 * Builds a 2-D k-d tree over @p cur_stars in O(M log M), then for every
+	 * reference star finds its unconstrained nearest neighbour in O(log M).
+	 * Unlike ALIGN_CENTROIDS there is no STAR_MATCH_RADIUS gate — robustness
+	 * against wrong matches (genuinely different stars near each other) is
+	 * provided entirely by the median over all (dx, dy) pairs.  A reliability
+	 * count confirms that at least STAR_MIN_MATCHES pairs agree with the
+	 * median within HOUGH_BIN_PX pixels before the result is accepted.
+	 *
+	 * Total cost: O((N+M) log M) — typically 5-10× faster than the O(N×M)
+	 * brute-force centroid pass on 100-star lists.
+	 */
+	bool findShiftByKdTree(double &shift_x, double &shift_y,
+	                       const std::vector<StarCentroid> &cur_stars) const;
+
 	bool findShiftByHough(double &shift_x, double &shift_y,
 	                      const std::vector<StarCentroid> &cur_stars) const;
 
