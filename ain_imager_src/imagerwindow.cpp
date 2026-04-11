@@ -531,6 +531,18 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(m_imager_viewer, &ImageViewer::debayerChanged,   this, &ImagerWindow::on_imager_debayer_changed);
 	connect(m_imager_viewer, &ImageViewer::BalanceChanged,   this, &ImagerWindow::on_imager_cb_changed);
 	connect(m_imager_viewer, &ImageViewer::stackUpdated,     this, &ImagerWindow::on_stack_updated);
+	connect(m_imager_viewer, &ImageViewer::showStackChanged, this, [this](bool showing_stack) {
+		// User toggled back to frame view — refresh stats from the last captured frame.
+		if (!showing_stack) {
+			preview_image *image = preview_cache.get(m_image_key);
+			if (image) {
+				ImageStats stats;
+				if (conf.statistics_enabled)
+					stats = imageStats((const uint8_t*)image->m_raw_data, image->m_width, image->m_height, image->m_pix_format);
+				m_imager_viewer->setImageStats(stats);
+			}
+		}
+	});
 	connect(m_imager_viewer, &ImageViewer::stackCountChanged, this, [this](int count) {
 		Q_UNUSED(count);
 	});
@@ -784,11 +796,17 @@ bool ImagerWindow::show_preview_in_imager_viewer(QString &key) {
 
 		m_seq_imager_viewer->setImage(*image);
 
-		ImageStats stats;
-		if (conf.statistics_enabled) {
-			stats = imageStats((const uint8_t*)(image->m_raw_data), image->m_width, image->m_height, image->m_pix_format);
+		// Only show frame stats when displaying the frame.  When the stack
+		// is visible, on_stack_updated() has already set the stack stats above
+		// (stackUpdated is a direct connection and fires synchronously inside
+		// addToStack), so don't overwrite them with per-frame stats.
+		if (!m_imager_viewer->isShowingStack()) {
+			ImageStats stats;
+			if (conf.statistics_enabled) {
+				stats = imageStats((const uint8_t*)(image->m_raw_data), image->m_width, image->m_height, image->m_pix_format);
+			}
+			m_imager_viewer->setImageStats(stats);
 		}
-		m_imager_viewer->setImageStats(stats);
 
 		m_image_key = key;
 		indigo_debug("IMAGER PREVIEW: %s\n", key.toUtf8().constData());
@@ -1683,7 +1701,8 @@ void ImagerWindow::on_live_stack_changed(bool status) {
 	conf.live_stacking_enabled = status;
 	m_imager_viewer->showStackButton(status);
 	if (!status) {
-		// Switching live stack off: reset accumulator and revert view to last frame.
+		// Switching live stack off: clear the accumulator.  showStackButton(false)
+		// above has already hidden the button and reset the view to Frame mode.
 		m_imager_viewer->resetStack();
 	}
 	write_conf();
@@ -1700,6 +1719,10 @@ void ImagerWindow::on_stack_updated() {
 	};
 	stretch_preview(stack, sc);
 	m_imager_viewer->setImage(*stack);
+	ImageStats stats;
+	if (conf.statistics_enabled)
+		stats = imageStats((const uint8_t*)stack->m_raw_data, stack->m_width, stack->m_height, stack->m_pix_format);
+	m_imager_viewer->setImageStats(stats);
 	delete stack;
 }
 
@@ -1713,13 +1736,19 @@ void ImagerWindow::on_imager_show_reference(bool status) {
 
 void ImagerWindow::on_statistics_show(bool enabled) {
 	conf.statistics_enabled = enabled;
-	preview_image *image = preview_cache.get(m_image_key);
-	if (image) {
-		ImageStats stats;
-		if (enabled) {
-			stats = imageStats((const uint8_t*)(image->m_raw_data), image->m_width, image->m_height, image->m_pix_format);
+	if (m_imager_viewer->isShowingStack()) {
+		if (enabled)
+			on_stack_updated(); // re-stretches stack and sets stack stats
+		else
+			m_imager_viewer->setImageStats(ImageStats());
+	} else {
+		preview_image *image = preview_cache.get(m_image_key);
+		if (image) {
+			ImageStats stats;
+			if (enabled)
+				stats = imageStats((const uint8_t*)(image->m_raw_data), image->m_width, image->m_height, image->m_pix_format);
+			m_imager_viewer->setImageStats(stats);
 		}
-		m_imager_viewer->setImageStats(stats);
 	}
 	write_conf();
 }

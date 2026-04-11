@@ -171,6 +171,11 @@ signals:
 	/// apply stretch and call setImage() with the result of currentStack().
 	void stackUpdated();
 
+	/// Emitted whenever the frame/stack toggle changes.
+	/// @param showing_stack  true  → stack is now displayed
+	///                       false → last raw frame is now displayed
+	void showStackChanged(bool showing_stack);
+
 protected:
 	void enterEvent(QEnterEvent *event) override;
 	void leaveEvent(QEvent *event) override;

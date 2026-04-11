@@ -216,6 +216,15 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(m_imager_viewer, &ImageViewer::debayerChanged, this, &ViewerWindow::on_debayer_changed);
 	connect(m_imager_viewer, &ImageViewer::BalanceChanged, this, &ViewerWindow::on_cb_changed);
 	connect(m_imager_viewer, &ImageViewer::stackUpdated,   this, &ViewerWindow::on_stack_updated);
+	connect(m_imager_viewer, &ImageViewer::showStackChanged, this, [this](bool showing_stack) {
+		// User toggled back to frame view — refresh stats from the current preview image.
+		if (!showing_stack && m_preview_image) {
+			ImageStats stats;
+			if (conf.statistics_enabled)
+				stats = imageStats((const uint8_t*)m_preview_image->m_raw_data, m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
+			m_imager_viewer->setImageStats(stats);
+		}
+	});
 	connect(m_imager_viewer, &ImageViewer::previousRequested, this, &ViewerWindow::on_image_prev_act);
 	connect(m_imager_viewer, &ImageViewer::nextRequested, this, &ViewerWindow::on_image_next_act);
 
@@ -793,11 +802,15 @@ void ViewerWindow::on_viewer_show_reference(bool status) {
 
 void ViewerWindow::on_statistics_show(bool enabled) {
 	conf.statistics_enabled = enabled;
-	if (m_preview_image) {
+	if (m_imager_viewer->isShowingStack()) {
+		if (enabled)
+			on_stack_updated(); // re-stretches stack and sets stack stats
+		else
+			m_imager_viewer->setImageStats(ImageStats());
+	} else if (m_preview_image) {
 		ImageStats stats;
-		if (enabled) {
+		if (enabled)
 			stats = imageStats((const uint8_t*)(m_preview_image->m_raw_data), m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
-		}
 		m_imager_viewer->setImageStats(stats);
 	}
 	write_conf();
@@ -979,6 +992,10 @@ void ViewerWindow::on_stack_updated() {
 	};
 	stretch_preview(stack, sc);
 	m_imager_viewer->setImage(*stack);
+	ImageStats stats;
+	if (conf.statistics_enabled)
+		stats = imageStats((const uint8_t*)stack->m_raw_data, stack->m_width, stack->m_height, stack->m_pix_format);
+	m_imager_viewer->setImageStats(stats);
 	delete stack;
 }
 
