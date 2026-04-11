@@ -252,6 +252,7 @@ public slots:
 	void on_pause(bool clicked);
 	void on_reset(bool clicked);
 	void on_live_stack_changed(bool status);
+	void on_stack_updated();
 	void on_window_log(indigo_property* property, const char *message);
 	void on_property_define(indigo_property* property, char *message);
 	void on_property_change(indigo_property* property, char *message);

@@ -85,9 +85,6 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 	, m_stacker(new LiveStacker)
 	, m_stack_button(nullptr)
 	, m_show_stack(false)
-	, m_stretch_level(PREVIEW_STRETCH_NONE)
-	, m_bayer_pat(BAYER_PAT_AUTO)
-	, m_color_balance(COLOR_BALANCE_AUTO)
 {
 	auto scene = new QGraphicsScene(this);
 	m_view = new GraphicsView(this);
@@ -405,12 +402,7 @@ void ImageViewer::makeToolbar(bool show_prev_next, bool show_debayer) {
 		if (checked) {
 			m_stack_button->setText(tr("Stack"));
 			m_stack_button->setToolTip(tr("Showing live stack — click to show last frame"));
-			preview_image *stack = m_stacker->currentStack();
-			if (stack) {
-				stretch_preview(stack, currentStretchConfig());
-				onSetImage(*stack);
-				delete stack;
-			}
+			emit stackUpdated();
 		} else {
 			m_stack_button->setText(tr("Frame"));
 			m_stack_button->setToolTip(tr("Showing last frame — click to show live stack"));
@@ -444,12 +436,7 @@ void ImageViewer::setShowStack(bool show) {
 	if (show) {
 		m_stack_button->setText(tr("Stack"));
 		m_stack_button->setToolTip(tr("Showing live stack — click to show last frame"));
-		preview_image *stack = m_stacker->currentStack();
-		if (stack) {
-			stretch_preview(stack, currentStretchConfig());
-			onSetImage(*stack);
-			delete stack;
-		}
+		emit stackUpdated();
 	} else {
 		m_stack_button->setText(tr("Frame"));
 		m_stack_button->setToolTip(tr("Showing last frame — click to show live stack"));
@@ -466,13 +453,8 @@ void ImageViewer::addToStack(preview_image &im) {
 	emit stackCountChanged(m_stacker->stackCount());
 
 	if (m_show_stack) {
-		// Display the updated stack with the current stretch settings
-		preview_image *stack = m_stacker->currentStack();
-		if (stack) {
-			stretch_preview(stack, currentStretchConfig());
-			onSetImage(*stack);
-			delete stack;
-		}
+		// Ask the caller to apply stretch and display the updated stack
+		emit stackUpdated();
 	} else {
 		// Display the raw frame as usual
 		onSetImage(im);
@@ -487,6 +469,11 @@ void ImageViewer::resetStack() {
 	// Since the stack is now empty, just show the last frame image.
 	if (!m_last_image.isNull())
 		onSetImage(m_last_image);
+}
+
+void ImageViewer::restretchLastFrame(const stretch_config_t &sc) {
+	if (!m_last_image.isNull())
+		stretch_preview(&m_last_image, sc);
 }
 
 void ImageViewer::setImageStats(const ImageStats &stats) {
@@ -1243,86 +1230,60 @@ void ImageViewer::showEvent(QShowEvent *event) {
 	emit viewerShown();
 }
 
-void ImageViewer::refreshStackIfVisible() {
-	if (!m_show_stack) return;
-	preview_image *stack = m_stacker->currentStack();
-	if (stack) {
-		stretch_preview(stack, currentStretchConfig());
-		onSetImage(*stack);
-		delete stack;
-	}
+preview_image *ImageViewer::currentStack() const {
+	return m_stacker->currentStack();
 }
 
 void ImageViewer::stretchNone() {
-	m_stretch_level = PREVIEW_STRETCH_NONE;
 	emit stretchChanged(PREVIEW_STRETCH_NONE);
-	refreshStackIfVisible();
 }
 
 void ImageViewer::stretchSlight() {
-	m_stretch_level = PREVIEW_STRETCH_SLIGHT;
 	emit stretchChanged(PREVIEW_STRETCH_SLIGHT);
-	refreshStackIfVisible();
 }
 
 void ImageViewer::stretchModerate() {
-	m_stretch_level = PREVIEW_STRETCH_MODERATE;
 	emit stretchChanged(PREVIEW_STRETCH_MODERATE);
-	refreshStackIfVisible();
 }
 
 void ImageViewer::stretchNormal() {
-	m_stretch_level = PREVIEW_STRETCH_NORMAL;
 	emit stretchChanged(PREVIEW_STRETCH_NORMAL);
-	refreshStackIfVisible();
 }
 
 void ImageViewer::stretchHard() {
-	m_stretch_level = PREVIEW_STRETCH_HARD;
 	emit stretchChanged(PREVIEW_STRETCH_HARD);
-	refreshStackIfVisible();
 }
 
 void ImageViewer::debayerAuto() {
-	m_bayer_pat = BAYER_PAT_AUTO;
 	emit debayerChanged(BAYER_PAT_AUTO);
 }
 
 void ImageViewer::debayerNone() {
-	m_bayer_pat = BAYER_PAT_NONE;
 	emit debayerChanged(BAYER_PAT_NONE);
 }
 
 void ImageViewer::debayerGBRG() {
-	m_bayer_pat = BAYER_PAT_GBRG;
 	emit debayerChanged(BAYER_PAT_GBRG);
 }
 
 void ImageViewer::debayerGRBG() {
-	m_bayer_pat = BAYER_PAT_GRBG;
 	emit debayerChanged(BAYER_PAT_GRBG);
 }
 
 void ImageViewer::debayerRGGB() {
-	m_bayer_pat = BAYER_PAT_RGGB;
 	emit debayerChanged(BAYER_PAT_RGGB);
 }
 
 void ImageViewer::debayerBGGR() {
-	m_bayer_pat = BAYER_PAT_BGGR;
 	emit debayerChanged(BAYER_PAT_BGGR);
 }
 
 void ImageViewer::onAutoBalance() {
-	m_color_balance = COLOR_BALANCE_AUTO;
 	emit BalanceChanged(COLOR_BALANCE_AUTO);
-	refreshStackIfVisible();
 }
 
 void ImageViewer::onNoBalance() {
-	m_color_balance = COLOR_BALANCE_NONE;
 	emit BalanceChanged(COLOR_BALANCE_NONE);
-	refreshStackIfVisible();
 }
 
 void ImageViewer::onPrevious() {

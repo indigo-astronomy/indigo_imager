@@ -215,6 +215,7 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(m_imager_viewer, &ImageViewer::stretchChanged, this, &ViewerWindow::on_stretch_changed);
 	connect(m_imager_viewer, &ImageViewer::debayerChanged, this, &ViewerWindow::on_debayer_changed);
 	connect(m_imager_viewer, &ImageViewer::BalanceChanged, this, &ViewerWindow::on_cb_changed);
+	connect(m_imager_viewer, &ImageViewer::stackUpdated,   this, &ViewerWindow::on_stack_updated);
 	connect(m_imager_viewer, &ImageViewer::previousRequested, this, &ViewerWindow::on_image_prev_act);
 	connect(m_imager_viewer, &ImageViewer::nextRequested, this, &ViewerWindow::on_image_next_act);
 
@@ -889,64 +890,91 @@ void ViewerWindow::schedule_auto_save(int seconds) {
 
 void ViewerWindow::on_stretch_changed(int level) {
 	conf.preview_stretch_level = (preview_stretch)level;
+	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 	if (m_preview_image) {
 		block_scrolling(true);
 		int width = m_preview_image->width();
 		int height = m_preview_image->height();
 		int pix_format = m_preview_image->m_pix_format;
-		const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 		preview_image *new_preview = create_preview(width, height, pix_format, m_preview_image->m_raw_data, sc);
 		if (new_preview) {
 			delete m_preview_image;
 			m_preview_image = new_preview;
-			m_imager_viewer->setImage(*m_preview_image);
+			if (!m_imager_viewer->isShowingStack())
+				m_imager_viewer->setImage(*m_preview_image);
 		}
 		block_scrolling(false);
+	}
+	if (m_imager_viewer->isShowingStack()) {
+		m_imager_viewer->restretchLastFrame(sc);
+		on_stack_updated();
 	}
 	write_conf();
 }
 
 void ViewerWindow::on_debayer_changed(uint32_t bayer_pat) {
 	conf.preview_bayer_pattern = bayer_pat;
+	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 	if (m_preview_image) {
 		block_scrolling(true);
-		const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 		preview_image *new_preview = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat, sc);
 		if (new_preview) {
 			delete m_preview_image;
 			m_preview_image = new_preview;
-			m_imager_viewer->setImage(*m_preview_image);
-
-			ImageStats stats;
-			if (conf.statistics_enabled) {
-				stats = imageStats((const uint8_t*)(m_preview_image->m_raw_data), m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
+			if (!m_imager_viewer->isShowingStack()) {
+				m_imager_viewer->setImage(*m_preview_image);
+				ImageStats stats;
+				if (conf.statistics_enabled) {
+					stats = imageStats((const uint8_t*)(m_preview_image->m_raw_data), m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
+				}
+				m_imager_viewer->setImageStats(stats);
 			}
-			m_imager_viewer->setImageStats(stats);
 		}
 		block_scrolling(false);
+	}
+	if (m_imager_viewer->isShowingStack()) {
+		m_imager_viewer->restretchLastFrame(sc);
+		on_stack_updated();
 	}
 	write_conf();
 }
 
 void ViewerWindow::on_cb_changed(int balance) {
 	conf.preview_color_balance = (color_balance)balance;
+	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 	if (m_preview_image) {
 		block_scrolling(true);
 		int width = m_preview_image->width();
 		int height = m_preview_image->height();
 		int pix_format = m_preview_image->m_pix_format;
-		const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 		preview_image *new_preview = create_preview(width, height, pix_format, m_preview_image->m_raw_data, sc);
 		if (new_preview) {
 			delete m_preview_image;
 			m_preview_image = new_preview;
-			m_imager_viewer->setImage(*m_preview_image);
+			if (!m_imager_viewer->isShowingStack())
+				m_imager_viewer->setImage(*m_preview_image);
 		}
 		block_scrolling(false);
+	}
+	if (m_imager_viewer->isShowingStack()) {
+		m_imager_viewer->restretchLastFrame(sc);
+		on_stack_updated();
 	}
 	write_conf();
 }
 
+void ViewerWindow::on_stack_updated() {
+	preview_image *stack = m_imager_viewer->currentStack();
+	if (!stack) return;
+	const stretch_config_t sc = {
+		(uint8_t)conf.preview_stretch_level,
+		(uint8_t)conf.preview_color_balance,
+		conf.preview_bayer_pattern
+	};
+	stretch_preview(stack, sc);
+	m_imager_viewer->setImage(*stack);
+	delete stack;
+}
 
 void ViewerWindow::on_about_act() {
 	QMessageBox msgBox(this);

@@ -70,6 +70,17 @@ public:
 	void showStackButton(bool show);
 	void setShowStack(bool show);
 
+	/// Re-stretch the stored last-frame copy in-place using @p sc.
+	/// Call this when stretch settings change while the stack is showing, so that
+	/// toggling back to Frame view always displays the frame at the current stretch.
+	void restretchLastFrame(const stretch_config_t &sc);
+
+	/// Return the current stack as a new preview_image (caller owns it), or nullptr if empty.
+	preview_image *currentStack() const;
+
+	/// True when the stack-view toggle is active (showing the stack, not the last frame).
+	bool isShowingStack() const { return m_show_stack; }
+
 	QRect getImageFrameRect() const;
 
 public slots:
@@ -156,6 +167,10 @@ signals:
 	/// Emitted whenever the number of stacked frames changes.
 	void stackCountChanged(int count);
 
+	/// Emitted when the displayed stack has changed and the caller should
+	/// apply stretch and call setImage() with the result of currentStack().
+	void stackUpdated();
+
 protected:
 	void enterEvent(QEnterEvent *event) override;
 	void leaveEvent(QEvent *event) override;
@@ -165,7 +180,6 @@ protected:
 private:
 	void setMatrix();
 	void makeToolbar(bool show_prev_next, bool show_debayer);
-	void refreshStackIfVisible();
 
 private:
 	void showZoom();
@@ -206,17 +220,6 @@ private:
 	QToolButton *m_stack_button;
 	bool m_show_stack;
 	preview_image m_last_image;
-	int m_stretch_level;
-	uint32_t m_bayer_pat;
-	int m_color_balance;
-
-	stretch_config_t currentStretchConfig() const {
-		stretch_config_t sc;
-		sc.stretch_level = static_cast<uint8_t>(m_stretch_level);
-		sc.balance       = static_cast<uint8_t>(m_color_balance);
-		sc.bayer_pattern = m_bayer_pat;
-		return sc;
-	}
 	bool m_inspection_overlay_visible;
 	AntialiasedEllipseItem *m_snr_star_circle;
 	AntialiasedEllipseItem *m_snr_background_inner_ring;

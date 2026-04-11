@@ -527,9 +527,10 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	indigo_debug("servicemodel %p", mServiceModel);
 	mServiceModel->enable_auto_connect(conf.auto_connect);
 
-	connect(m_imager_viewer, &ImageViewer::stretchChanged, this, &ImagerWindow::on_imager_stretch_changed);
-	connect(m_imager_viewer, &ImageViewer::debayerChanged, this, &ImagerWindow::on_imager_debayer_changed);
-	connect(m_imager_viewer, &ImageViewer::BalanceChanged, this, &ImagerWindow::on_imager_cb_changed);
+	connect(m_imager_viewer, &ImageViewer::stretchChanged,   this, &ImagerWindow::on_imager_stretch_changed);
+	connect(m_imager_viewer, &ImageViewer::debayerChanged,   this, &ImagerWindow::on_imager_debayer_changed);
+	connect(m_imager_viewer, &ImageViewer::BalanceChanged,   this, &ImagerWindow::on_imager_cb_changed);
+	connect(m_imager_viewer, &ImageViewer::stackUpdated,     this, &ImagerWindow::on_stack_updated);
 	connect(m_imager_viewer, &ImageViewer::stackCountChanged, this, [this](int count) {
 		Q_UNUSED(count);
 	});
@@ -1682,6 +1683,19 @@ void ImagerWindow::on_live_stack_changed(bool status) {
 	}
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_stack_updated() {
+	preview_image *stack = m_imager_viewer->currentStack();
+	if (!stack) return;
+	const stretch_config_t sc = {
+		(uint8_t)conf.preview_stretch_level,
+		(uint8_t)conf.preview_color_balance,
+		conf.preview_bayer_pattern
+	};
+	stretch_preview(stack, sc);
+	m_imager_viewer->setImage(*stack);
+	delete stack;
 }
 
 void ImagerWindow::on_imager_show_reference(bool status) {
