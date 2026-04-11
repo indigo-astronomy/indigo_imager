@@ -4,9 +4,11 @@
 //#include <indigo/indigo_bus.h>
 //#include <indigo/indigo_raw_utils.h>
 
+#include <algorithm>
+#include <cstring>
 #include <math.h>
-#include <QCoreApplication>
-#include <QtConcurrent>
+#include <thread>
+#include <vector>
 #include <utils.h>
 
 // Returns the median value of the vector.
@@ -56,24 +58,28 @@ void stretchOneChannel(
 	const float k1 = (midtones - 1) * hsRangeFactor * maxOutput / maxInput;
 	const float k2 = ((2 * midtones) - 1) * hsRangeFactor / maxInput;
 
-	QVector<QFuture<void>> futures;
+	const int output_width = (image_width + sampling - 1) / sampling;
+	const int output_height = (image_height + sampling - 1) / sampling;
+	std::vector<QRgb> pixels(static_cast<size_t>(output_width) * output_height);
+
 	int num_threads = get_number_of_cores();
 	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
+	num_threads = std::min(num_threads, output_height > 0 ? output_height : 1);
+	std::vector<std::thread> threads;
+	threads.reserve(num_threads);
 	for (int rank = 0; rank < num_threads; rank++) {
-		const int chunk = ceil(image_height / (double)num_threads);
-		futures.append(QtConcurrent::run([ = ]() {
-			int start_row = chunk * rank;
-			int end_row = start_row + chunk;
-			end_row = (end_row > image_height) ? image_height : end_row;
-			//indigo_debug("stretchOneChannel(): %d - start_row %d, end_row %d, rows %d", rank, start_row, end_row, end_row-start_row);
-			for (int j = start_row, jout = start_row; j < end_row; j += sampling, jout++) {
-				T * inputLine  = input_buffer + j * image_width;
-				auto * scanLine = reinterpret_cast<QRgb*>(output_image->scanLine(jout));
-				QCoreApplication::processEvents();
+		const int chunk = static_cast<int>(ceil(output_height / (double)num_threads));
+		threads.emplace_back([=, &pixels]() {
+			const int start_row = chunk * rank;
+			const int end_row = std::min(start_row + chunk, output_height);
+			for (int jout = start_row; jout < end_row; ++jout) {
+				const int j = jout * sampling;
+				T *inputLine = input_buffer + j * image_width;
+				QRgb *scanLine = pixels.data() + static_cast<size_t>(jout) * output_width;
 				for (int i = 0, iout = 0; i < image_width; i += sampling, iout++) {
 					const T input = inputLine[i];
-					if (input < nativeShadows) output_image->setPixel(iout, jout, qRgb(0, 0, 0));
-					else if (input >= nativeHighlights) output_image->setPixel(iout, jout, qRgb(maxOutput,maxOutput,maxOutput));
+					if (input < nativeShadows) scanLine[iout] = qRgb(0, 0, 0);
+					else if (input >= nativeHighlights) scanLine[iout] = qRgb(maxOutput, maxOutput, maxOutput);
 					else {
 						const T inputFloored = (input - nativeShadows);
 						int val = (inputFloored * k1) / (inputFloored * k2 - midtones);
@@ -81,9 +87,14 @@ void stretchOneChannel(
 					}
 				}
 			}
-		}));
+		});
 	}
-	for(QFuture<void> future : futures) future.waitForFinished();
+	for (auto &thread : threads)
+		thread.join();
+
+	for (int y = 0; y < output_height; ++y) {
+		std::memcpy(output_image->scanLine(y), pixels.data() + static_cast<size_t>(y) * output_width, static_cast<size_t>(output_width) * sizeof(QRgb));
+	}
 }
 
 template <typename T>
@@ -142,24 +153,29 @@ void stretchThreeChannels(
 	const int skip = sampling * 3;
 	const int imageWidth3 = imageWidth * 3;
 
-	QVector<QFuture<void>> futures;
+	const int output_width = (imageWidth + sampling - 1) / sampling;
+	const int output_height = (imageHeight + sampling - 1) / sampling;
+	std::vector<QRgb> pixels(static_cast<size_t>(output_width) * output_height);
+
 	int num_threads = get_number_of_cores();
-	num_threads = (num_threads > 0) ?  num_threads : AIN_DEFAULT_THREADS;
+	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
+	num_threads = std::min(num_threads, output_height > 0 ? output_height : 1);
+	std::vector<std::thread> threads;
+	threads.reserve(num_threads);
 	for (int rank = 0; rank < num_threads; rank++) {
-		const int chunk = ceil(imageHeight / (double)num_threads);
-		futures.append(QtConcurrent::run([ = ]() {
-			int start_row = chunk * rank;
-			int end_row = start_row + chunk;
-			end_row = (end_row > imageHeight) ? imageHeight : end_row;
-			//indigo_error("stretchThreeChannels(): %d - start_row %d, end_row %d, rows %d", rank, start_row, end_row, end_row-start_row);
-			int index = start_row * imageWidth3;
-			for (int j = start_row, jout = start_row; j < end_row; j += sampling, jout++) {
-				QCoreApplication::processEvents();
-				auto * scanLine = reinterpret_cast<QRgb*>(outputImage->scanLine(jout));
-				for (int i = 0, iout = 0; i < imageWidth3; i += skip, iout++) {
-					const T inputR = inputBuffer[index++];
-					const T inputG = inputBuffer[index++];
-					const T inputB = inputBuffer[index++];
+		const int chunk = static_cast<int>(ceil(output_height / (double)num_threads));
+		threads.emplace_back([=, &pixels]() {
+			const int start_row = chunk * rank;
+			const int end_row = std::min(start_row + chunk, output_height);
+			for (int jout = start_row; jout < end_row; ++jout) {
+				const int j = jout * sampling;
+				const int base_index = j * imageWidth3;
+				QRgb *scanLine = pixels.data() + static_cast<size_t>(jout) * output_width;
+				for (int i = 0, iout = 0, index = base_index; i < imageWidth3; i += skip, iout++) {
+					const T inputR = inputBuffer[index + 0];
+					const T inputG = inputBuffer[index + 1];
+					const T inputB = inputBuffer[index + 2];
+					index += skip;
 
 					uint8_t red, green, blue;
 
@@ -186,9 +202,14 @@ void stretchThreeChannels(
 					scanLine[iout] = qRgb(red, green, blue);
 				}
 			}
-		}));
+		});
 	}
-	for(QFuture<void> future : futures) future.waitForFinished();
+	for (auto &thread : threads)
+		thread.join();
+
+	for (int y = 0; y < output_height; ++y) {
+		std::memcpy(outputImage->scanLine(y), pixels.data() + static_cast<size_t>(y) * output_width, static_cast<size_t>(output_width) * sizeof(QRgb));
+	}
 }
 
 template <typename T>

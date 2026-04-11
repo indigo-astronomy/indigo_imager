@@ -472,8 +472,11 @@ void ImageViewer::resetStack() {
 }
 
 void ImageViewer::restretchLastFrame(const stretch_config_t &sc) {
-	if (!m_last_image.isNull())
+	if (!m_last_image.isNull()) {
 		stretch_preview(&m_last_image, sc);
+		if (!m_show_stack)
+			onSetImage(m_last_image);
+	}
 }
 
 void ImageViewer::setImageStats(const ImageStats &stats) {

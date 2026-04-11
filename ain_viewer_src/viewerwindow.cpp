@@ -905,8 +905,8 @@ void ViewerWindow::on_stretch_changed(int level) {
 		}
 		block_scrolling(false);
 	}
+	m_imager_viewer->restretchLastFrame(sc);
 	if (m_imager_viewer->isShowingStack()) {
-		m_imager_viewer->restretchLastFrame(sc);
 		on_stack_updated();
 	}
 	write_conf();
@@ -932,8 +932,8 @@ void ViewerWindow::on_debayer_changed(uint32_t bayer_pat) {
 		}
 		block_scrolling(false);
 	}
+	m_imager_viewer->restretchLastFrame(sc);
 	if (m_imager_viewer->isShowingStack()) {
-		m_imager_viewer->restretchLastFrame(sc);
 		on_stack_updated();
 	}
 	write_conf();
@@ -956,8 +956,8 @@ void ViewerWindow::on_cb_changed(int balance) {
 		}
 		block_scrolling(false);
 	}
+	m_imager_viewer->restretchLastFrame(sc);
 	if (m_imager_viewer->isShowingStack()) {
-		m_imager_viewer->restretchLastFrame(sc);
 		on_stack_updated();
 	}
 	write_conf();
