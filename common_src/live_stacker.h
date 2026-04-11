@@ -145,8 +145,16 @@ private:
 	                       int dW, int dH, int dx, int dy);
 
 	/// Accumulate @p image into the internal buffer shifted by (dx, dy)
-	/// using the selected interpolation method (bilinear or bicubic).
+	/// using the selected interpolation method.  Dispatches to one of the
+	/// three specialised helpers below.
 	void accumulate(preview_image *image, double dx, double dy);
+
+	/// Nearest-neighbour accumulation worker.
+	void accumulateNearest (preview_image *image, double dx, double dy);
+	/// Bilinear accumulation worker.
+	void accumulateBilinear(preview_image *image, double dx, double dy);
+	/// Catmull-Rom bicubic accumulation worker.
+	void accumulateBicubic (preview_image *image, double dx, double dy);
 
 	// ---- centroid-based alignment helpers ---------------------------------
 

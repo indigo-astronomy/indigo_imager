@@ -341,10 +341,31 @@ void LiveStacker::findShift(double &shift_x, double &shift_y,
 }
 
 // ---------------------------------------------------------------------------
-// accumulate
+// accumulate — shared sample reader + per-method workers + dispatcher
 // ---------------------------------------------------------------------------
 
-void LiveStacker::accumulate(preview_image *image, double dx, double dy) {
+// readSample is declared as a file-local helper so all three workers can
+// share the same clamped pixel-access logic without code duplication.
+static inline double readSample(const char *raw, int W, int H, int pix_fmt,
+                                int sx, int sy, int ch) {
+	sx = std::max(0, std::min(W - 1, sx));
+	sy = std::max(0, std::min(H - 1, sy));
+	const int idx = sy * W + sx;
+	switch (pix_fmt) {
+		case PIX_FMT_Y8:    return static_cast<double>(reinterpret_cast<const uint8_t  *>(raw)[idx]);
+		case PIX_FMT_Y16:   return static_cast<double>(reinterpret_cast<const uint16_t *>(raw)[idx]);
+		case PIX_FMT_F32:   return static_cast<double>(reinterpret_cast<const float    *>(raw)[idx]);
+		case PIX_FMT_RGB24: return static_cast<double>(reinterpret_cast<const uint8_t  *>(raw)[idx * 3 + ch]);
+		case PIX_FMT_RGB48: return static_cast<double>(reinterpret_cast<const uint16_t *>(raw)[idx * 3 + ch]);
+		default:            return static_cast<double>(reinterpret_cast<const float    *>(raw)[idx * 3 + ch]);
+	}
+}
+
+// ---------------------------------------------------------------------------
+// accumulateNearest
+// ---------------------------------------------------------------------------
+
+void LiveStacker::accumulateNearest(preview_image *image, double dx, double dy) {
 	const char *raw      = image->m_raw_data;
 	const int   W        = m_width;
 	const int   H        = m_height;
@@ -352,116 +373,146 @@ void LiveStacker::accumulate(preview_image *image, double dx, double dy) {
 	const int   pix_fmt  = m_pix_format;
 	double     *acc      = m_acc.data();
 
-	// By-value captures only — safe to copy into thread lambdas.
-	auto readSample = [raw, W, H, pix_fmt](int sx, int sy, int ch) -> double {
-		sx = std::max(0, std::min(W - 1, sx));
-		sy = std::max(0, std::min(H - 1, sy));
-		const int idx = sy * W + sx;
-		switch (pix_fmt) {
-			case PIX_FMT_Y8:    return static_cast<double>(reinterpret_cast<const uint8_t  *>(raw)[idx]);
-			case PIX_FMT_Y16:   return static_cast<double>(reinterpret_cast<const uint16_t *>(raw)[idx]);
-			case PIX_FMT_F32:   return static_cast<double>(reinterpret_cast<const float    *>(raw)[idx]);
-			case PIX_FMT_RGB24: return static_cast<double>(reinterpret_cast<const uint8_t  *>(raw)[idx * 3 + ch]);
-			case PIX_FMT_RGB48: return static_cast<double>(reinterpret_cast<const uint16_t *>(raw)[idx * 3 + ch]);
-			default:            return static_cast<double>(reinterpret_cast<const float    *>(raw)[idx * 3 + ch]);
-		}
-	};
+	int num_threads = get_number_of_cores();
+	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
+	std::vector<std::thread> threads;
+
+	for (int rank = 0; rank < num_threads; rank++) {
+		const int chunk = static_cast<int>(std::ceil(H / (double)num_threads));
+		threads.emplace_back([=]() {
+			const int start_row = chunk * rank;
+			const int end_row   = std::min(start_row + chunk, H);
+			for (int y = start_row; y < end_row; ++y) {
+				const int sy = static_cast<int>(std::round(y + dy));
+				if (sy < 0 || sy >= H) continue;
+				for (int x = 0; x < W; ++x) {
+					const int sx = static_cast<int>(std::round(x + dx));
+					if (sx < 0 || sx >= W) continue;
+					const int dst_idx = y * W + x;
+					for (int c = 0; c < channels; ++c)
+						acc[dst_idx * channels + c] += readSample(raw, W, H, pix_fmt, sx, sy, c);
+				}
+			}
+		});
+	}
+	for (auto &t : threads) t.join();
+}
+
+// ---------------------------------------------------------------------------
+// accumulateBilinear
+// ---------------------------------------------------------------------------
+
+void LiveStacker::accumulateBilinear(preview_image *image, double dx, double dy) {
+	const char *raw      = image->m_raw_data;
+	const int   W        = m_width;
+	const int   H        = m_height;
+	const int   channels = m_channels;
+	const int   pix_fmt  = m_pix_format;
+	double     *acc      = m_acc.data();
 
 	int num_threads = get_number_of_cores();
 	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
 	std::vector<std::thread> threads;
 
-	if (m_interp_method == INTERP_NEAREST) {
-		for (int rank = 0; rank < num_threads; rank++) {
-			const int chunk = static_cast<int>(std::ceil(H / (double)num_threads));
-			threads.emplace_back([=]() {
-				const int start_row = chunk * rank;
-				const int end_row   = std::min(start_row + chunk, H);
-				for (int y = start_row; y < end_row; ++y) {
-					const int sy = static_cast<int>(std::round(y + dy));
-					if (sy < 0 || sy >= H) continue;
-					for (int x = 0; x < W; ++x) {
-						const int sx = static_cast<int>(std::round(x + dx));
-						if (sx < 0 || sx >= W) continue;
-						const int dst_idx = y * W + x;
-						for (int c = 0; c < channels; ++c)
-							acc[dst_idx * channels + c] += readSample(sx, sy, c);
+	for (int rank = 0; rank < num_threads; rank++) {
+		const int chunk = static_cast<int>(std::ceil(H / (double)num_threads));
+		threads.emplace_back([=]() {
+			const int start_row = chunk * rank;
+			const int end_row   = std::min(start_row + chunk, H);
+			for (int y = start_row; y < end_row; ++y) {
+				const double sy_d = y + dy;
+				const int    y0   = static_cast<int>(std::floor(sy_d));
+				const double fy   = sy_d - y0;
+				const int    y1   = y0 + 1;
+				for (int x = 0; x < W; ++x) {
+					const double sx_d = x + dx;
+					const int    x0   = static_cast<int>(std::floor(sx_d));
+					const double fx   = sx_d - x0;
+					const int    x1   = x0 + 1;
+					const double w00  = (1.0 - fx) * (1.0 - fy);
+					const double w10  = fx          * (1.0 - fy);
+					const double w01  = (1.0 - fx) * fy;
+					const double w11  = fx          * fy;
+					const int dst_idx = y * W + x;
+					for (int c = 0; c < channels; ++c) {
+						const double val = w00 * readSample(raw, W, H, pix_fmt, x0, y0, c)
+						                 + w10 * readSample(raw, W, H, pix_fmt, x1, y0, c)
+						                 + w01 * readSample(raw, W, H, pix_fmt, x0, y1, c)
+						                 + w11 * readSample(raw, W, H, pix_fmt, x1, y1, c);
+						acc[dst_idx * channels + c] += val;
 					}
 				}
-			});
-		}
-	} else if (m_interp_method == INTERP_BILINEAR) {
-		for (int rank = 0; rank < num_threads; rank++) {
-			const int chunk = static_cast<int>(std::ceil(H / (double)num_threads));
-			threads.emplace_back([=]() {
-				const int start_row = chunk * rank;
-				const int end_row   = std::min(start_row + chunk, H);
-				for (int y = start_row; y < end_row; ++y) {
-					const double sy_d = y + dy;
-					const int    y0   = static_cast<int>(std::floor(sy_d));
-					const double fy   = sy_d - y0;
-					const int    y1   = y0 + 1;
-					for (int x = 0; x < W; ++x) {
-						const double sx_d = x + dx;
-						const int    x0   = static_cast<int>(std::floor(sx_d));
-						const double fx   = sx_d - x0;
-						const int    x1   = x0 + 1;
-						const double w00  = (1.0 - fx) * (1.0 - fy);
-						const double w10  = fx          * (1.0 - fy);
-						const double w01  = (1.0 - fx) * fy;
-						const double w11  = fx          * fy;
-						const int dst_idx = y * W + x;
-						for (int c = 0; c < channels; ++c) {
-							const double val = w00 * readSample(x0, y0, c)
-							                 + w10 * readSample(x1, y0, c)
-							                 + w01 * readSample(x0, y1, c)
-							                 + w11 * readSample(x1, y1, c);
-							acc[dst_idx * channels + c] += val;
-						}
-					}
-				}
-			});
-		}
-	} else {
-		// Catmull-Rom bicubic kernel (Keys a=-0.5) — no captures, trivially copyable.
-		for (int rank = 0; rank < num_threads; rank++) {
-			const int chunk = static_cast<int>(std::ceil(H / (double)num_threads));
-			threads.emplace_back([=]() {
-				auto cubic = [](double t) -> double {
-					t = std::abs(t);
-					if (t < 1.0) return (1.5*t - 2.5)*t*t + 1.0;
-					if (t < 2.0) return ((-0.5*t + 2.5)*t - 4.0)*t + 2.0;
-					return 0.0;
-				};
-				const int start_row = chunk * rank;
-				const int end_row   = std::min(start_row + chunk, H);
-				for (int y = start_row; y < end_row; ++y) {
-					const double sy_d = y + dy;
-					const int    yi   = static_cast<int>(std::floor(sy_d));
-					const double fy   = sy_d - yi;
-					for (int x = 0; x < W; ++x) {
-						const double sx_d = x + dx;
-						const int    xi   = static_cast<int>(std::floor(sx_d));
-						const double fx   = sx_d - xi;
-						double wx[4], wy[4];
-						for (int k = 0; k < 4; ++k) {
-							wx[k] = cubic(fx - (k - 1));
-							wy[k] = cubic(fy - (k - 1));
-						}
-						const int dst_idx = y * W + x;
-						for (int c = 0; c < channels; ++c) {
-							double val = 0.0;
-							for (int j = 0; j < 4; ++j)
-								for (int i = 0; i < 4; ++i)
-									val += wx[i] * wy[j] * readSample(xi + i - 1, yi + j - 1, c);
-							acc[dst_idx * channels + c] += val;
-						}
-					}
-				}
-			});
-		}
+			}
+		});
 	}
 	for (auto &t : threads) t.join();
+}
+
+// ---------------------------------------------------------------------------
+// accumulateBicubic  (Catmull-Rom, Keys a=-0.5)
+// ---------------------------------------------------------------------------
+
+void LiveStacker::accumulateBicubic(preview_image *image, double dx, double dy) {
+	const char *raw      = image->m_raw_data;
+	const int   W        = m_width;
+	const int   H        = m_height;
+	const int   channels = m_channels;
+	const int   pix_fmt  = m_pix_format;
+	double     *acc      = m_acc.data();
+
+	int num_threads = get_number_of_cores();
+	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
+	std::vector<std::thread> threads;
+
+	for (int rank = 0; rank < num_threads; rank++) {
+		const int chunk = static_cast<int>(std::ceil(H / (double)num_threads));
+		threads.emplace_back([=]() {
+			auto cubic = [](double t) -> double {
+				t = std::abs(t);
+				if (t < 1.0) return (1.5*t - 2.5)*t*t + 1.0;
+				if (t < 2.0) return ((-0.5*t + 2.5)*t - 4.0)*t + 2.0;
+				return 0.0;
+			};
+			const int start_row = chunk * rank;
+			const int end_row   = std::min(start_row + chunk, H);
+			for (int y = start_row; y < end_row; ++y) {
+				const double sy_d = y + dy;
+				const int    yi   = static_cast<int>(std::floor(sy_d));
+				const double fy   = sy_d - yi;
+				for (int x = 0; x < W; ++x) {
+					const double sx_d = x + dx;
+					const int    xi   = static_cast<int>(std::floor(sx_d));
+					const double fx   = sx_d - xi;
+					double wx[4], wy[4];
+					for (int k = 0; k < 4; ++k) {
+						wx[k] = cubic(fx - (k - 1));
+						wy[k] = cubic(fy - (k - 1));
+					}
+					const int dst_idx = y * W + x;
+					for (int c = 0; c < channels; ++c) {
+						double val = 0.0;
+						for (int j = 0; j < 4; ++j)
+							for (int i = 0; i < 4; ++i)
+								val += wx[i] * wy[j] * readSample(raw, W, H, pix_fmt, xi + i - 1, yi + j - 1, c);
+						acc[dst_idx * channels + c] += val;
+					}
+				}
+			}
+		});
+	}
+	for (auto &t : threads) t.join();
+}
+
+// ---------------------------------------------------------------------------
+// accumulate — dispatcher
+// ---------------------------------------------------------------------------
+
+void LiveStacker::accumulate(preview_image *image, double dx, double dy) {
+	switch (m_interp_method) {
+		case INTERP_NEAREST:  accumulateNearest (image, dx, dy); break;
+		case INTERP_BILINEAR: accumulateBilinear(image, dx, dy); break;
+		case INTERP_BICUBIC:  accumulateBicubic (image, dx, dy); break;
+	}
 }
 
 // ---------------------------------------------------------------------------
