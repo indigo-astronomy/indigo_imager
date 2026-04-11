@@ -6,7 +6,9 @@
 
 #include <algorithm>
 #include <cstring>
+#include <future>
 #include <math.h>
+#include <QCoreApplication>
 #include <thread>
 #include <vector>
 #include <utils.h>
@@ -65,11 +67,11 @@ void stretchOneChannel(
 	int num_threads = get_number_of_cores();
 	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
 	num_threads = std::min(num_threads, output_height > 0 ? output_height : 1);
-	std::vector<std::thread> threads;
-	threads.reserve(num_threads);
+	std::vector<std::future<void>> futures;
+	futures.reserve(num_threads);
 	for (int rank = 0; rank < num_threads; rank++) {
 		const int chunk = static_cast<int>(ceil(output_height / (double)num_threads));
-		threads.emplace_back([=, &pixels]() {
+		futures.emplace_back(std::async(std::launch::async, [=, &pixels]() {
 			const int start_row = chunk * rank;
 			const int end_row = std::min(start_row + chunk, output_height);
 			for (int jout = start_row; jout < end_row; ++jout) {
@@ -87,10 +89,13 @@ void stretchOneChannel(
 					}
 				}
 			}
-		});
+		}));
 	}
-	for (auto &thread : threads)
-		thread.join();
+	for (auto &future : futures) {
+		while (future.wait_for(std::chrono::milliseconds(10)) != std::future_status::ready)
+			QCoreApplication::processEvents();
+		future.get();
+	}
 
 	for (int y = 0; y < output_height; ++y) {
 		std::memcpy(output_image->scanLine(y), pixels.data() + static_cast<size_t>(y) * output_width, static_cast<size_t>(output_width) * sizeof(QRgb));
@@ -160,11 +165,11 @@ void stretchThreeChannels(
 	int num_threads = get_number_of_cores();
 	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
 	num_threads = std::min(num_threads, output_height > 0 ? output_height : 1);
-	std::vector<std::thread> threads;
-	threads.reserve(num_threads);
+	std::vector<std::future<void>> futures;
+	futures.reserve(num_threads);
 	for (int rank = 0; rank < num_threads; rank++) {
 		const int chunk = static_cast<int>(ceil(output_height / (double)num_threads));
-		threads.emplace_back([=, &pixels]() {
+		futures.emplace_back(std::async(std::launch::async, [=, &pixels]() {
 			const int start_row = chunk * rank;
 			const int end_row = std::min(start_row + chunk, output_height);
 			for (int jout = start_row; jout < end_row; ++jout) {
@@ -202,10 +207,13 @@ void stretchThreeChannels(
 					scanLine[iout] = qRgb(red, green, blue);
 				}
 			}
-		});
+		}));
 	}
-	for (auto &thread : threads)
-		thread.join();
+	for (auto &future : futures) {
+		while (future.wait_for(std::chrono::milliseconds(10)) != std::future_status::ready)
+			QCoreApplication::processEvents();
+		future.get();
+	}
 
 	for (int y = 0; y < output_height; ++y) {
 		std::memcpy(outputImage->scanLine(y), pixels.data() + static_cast<size_t>(y) * output_width, static_cast<size_t>(output_width) * sizeof(QRgb));
