@@ -1618,6 +1618,11 @@ void ImagerWindow::on_imager_stretch_changed(int level) {
 
 void ImagerWindow::on_imager_debayer_changed(uint32_t bayer_pat) {
 	conf.preview_bayer_pattern = bayer_pat;
+	// Reset the live stack so the next frame starts a fresh accumulation with
+	// the new bayer pattern.  Without this, addToStack() silently rejects the
+	// frame when the pixel format changes (e.g. RGB48 → Y16 for "no debayer"),
+	// or accumulates a corrupted mix when only the pattern changes.
+	m_imager_viewer->resetStack();
 	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 	preview_cache.recreate(m_image_key, m_indigo_item, sc);
 	show_preview_in_imager_viewer(m_image_key);

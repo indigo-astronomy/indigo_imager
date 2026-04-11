@@ -921,21 +921,27 @@ void ViewerWindow::on_debayer_changed(uint32_t bayer_pat) {
 		if (new_preview) {
 			delete m_preview_image;
 			m_preview_image = new_preview;
-			if (!m_imager_viewer->isShowingStack()) {
-				m_imager_viewer->setImage(*m_preview_image);
-				ImageStats stats;
-				if (conf.statistics_enabled) {
-					stats = imageStats((const uint8_t*)(m_preview_image->m_raw_data), m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
-				}
-				m_imager_viewer->setImageStats(stats);
+			// When the bayer pattern changes the pixel format of the decoded
+			// image can change (e.g. RGB48 ↔ Y16).  Reset the live stack so
+			// the new frame is not silently rejected by the format check, and
+			// so the accumulated frames (built with the old pattern) are
+			// discarded.  The image is then always displayed below.
+			if (m_imager_viewer->isShowingStack()) {
+				m_imager_viewer->resetStack();
 			}
+			m_imager_viewer->setImage(*m_preview_image);
+			ImageStats stats;
+			if (conf.statistics_enabled) {
+				stats = imageStats((const uint8_t*)(m_preview_image->m_raw_data), m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
+			}
+			m_imager_viewer->setImageStats(stats);
 		}
 		block_scrolling(false);
 	}
-	m_imager_viewer->restretchLastFrame(sc);
-	if (m_imager_viewer->isShowingStack()) {
-		on_stack_updated();
-	}
+	// Do NOT call restretchLastFrame here: create_preview already bakes the
+	// current stretch into m_preview_image, and m_last_image (the last
+	// addToStack frame) may have a different pixel format from the old bayer
+	// pattern — passing it through stretch would display the wrong image.
 	write_conf();
 }
 

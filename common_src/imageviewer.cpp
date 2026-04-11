@@ -425,6 +425,13 @@ void ImageViewer::showZoomButtons(bool show) {
 void ImageViewer::showStackButton(bool show) {
 	if (m_stack_button)
 		m_stack_button->setVisible(show);
+	// Disable debayer selection while live stacking is active: changing the
+	// bayer pattern mid-stack would produce a corrupted accumulation (or be
+	// silently rejected on a format change), so it must be prevented.
+	for (int i = 0; i < DEBAYER_COUNT; ++i) {
+		if (m_debayer_act[i])
+			m_debayer_act[i]->setEnabled(!show);
+	}
 }
 
 void ImageViewer::setShowStack(bool show) {
@@ -465,8 +472,17 @@ void ImageViewer::resetStack() {
 	m_stacker->resetStack();
 	emit stackCountChanged(0);
 
-	// Keep the current Frame/Stack toggle state — do not force it back.
-	// Since the stack is now empty, just show the last frame image.
+	// An empty stack cannot be meaningfully shown.  Switch back to Frame mode
+	// so that subsequent stretch / balance / debayer changes update the
+	// displayed frame rather than waiting for a non-existent stack update.
+	if (m_stack_button && m_show_stack) {
+		QSignalBlocker blocker(m_stack_button);
+		m_show_stack = false;
+		m_stack_button->setChecked(false);
+		m_stack_button->setText(tr("Frame"));
+		m_stack_button->setToolTip(tr("Showing last frame — click to show live stack"));
+	}
+
 	if (!m_last_image.isNull())
 		onSetImage(m_last_image);
 }
