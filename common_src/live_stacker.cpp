@@ -28,17 +28,11 @@
 #include <chrono>
 
 // ---------------------------------------------------------------------------
-// Alignment parameters — NCC
+// Alignment parameters
 // ---------------------------------------------------------------------------
 
-// Downsample factor for the coarse cross-correlation pass.
-// A 4000x3000 frame → 250x187 at DS=16.  Fast to correlate.
-static const int DS_COARSE = 16;
-
-// Downsample factor for the fine cross-correlation pass.
-static const int DS_FINE = 4;
-
 // Maximum translation to search for, in ORIGINAL pixel coordinates.
+// Used by the Hough histogram alignment.
 static const int SEARCH_PX = 512;
 
 // ---------------------------------------------------------------------------
@@ -69,7 +63,7 @@ static const int STAR_MAX_COUNT = 100;
 static const float STAR_MATCH_RADIUS = 50.0f;
 
 // Minimum number of matched star pairs required for a valid centroid shift.
-// If fewer pairs are found the method falls back to NCC.
+// If fewer pairs are found the method returns false (no alignment).
 static const int STAR_MIN_MATCHES = 3;
 
 // ---------------------------------------------------------------------------
@@ -126,8 +120,6 @@ void LiveStacker::startStack() { resetStack(); }
 
 void LiveStacker::resetStack() {
 	m_acc.clear();
-	m_ref_coarse.clear();
-	m_ref_fine.clear();
 	m_ref_stars.clear();
 	m_width       = 0;
 	m_height      = 0;
@@ -140,7 +132,7 @@ void LiveStacker::resetStack() {
 // buildLuminanceMap
 //
 // Box-average downsampled by factor @p ds, then subtract the mean.
-// The DC-removed map makes NCC scores independent of sky background level.
+// The DC-removed map is used by star detection to suppress sky background.
 // ---------------------------------------------------------------------------
 
 std::vector<float> LiveStacker::buildLuminanceMap(preview_image *image, int ds) const {
@@ -219,125 +211,6 @@ std::vector<float> LiveStacker::buildLuminanceMap(preview_image *image, int ds) 
 	for (auto &t : threads) t.join();
 
 	return lum;
-}
-
-// ---------------------------------------------------------------------------
-// nccScore
-//
-// Normalised cross-correlation between ref and cur at integer shift (dx, dy)
-// (in the downsampled coordinate system).  Returns a value in [−1, 1];
-// higher = better alignment.  Only considers the overlapping region.
-// ---------------------------------------------------------------------------
-
-double LiveStacker::nccScore(const std::vector<float> &ref,
-                              const std::vector<float> &cur,
-                              int dW, int dH, int dx, int dy) {
-	int rx_start = std::max(0, -dx);
-	int rx_end   = std::min(dW, dW - dx);
-	int ry_start = std::max(0, -dy);
-	int ry_end   = std::min(dH, dH - dy);
-
-	if (rx_end <= rx_start || ry_end <= ry_start) return -1.0;
-
-	double dot = 0.0, refNorm = 0.0, curNorm = 0.0;
-	for (int ry = ry_start; ry < ry_end; ++ry) {
-		int sy = ry + dy;
-		const float *rRow = ref.data() + ry * dW + rx_start;
-		const float *cRow = cur.data() + sy * dW + rx_start + dx;
-		int count = rx_end - rx_start;
-		for (int i = 0; i < count; ++i) {
-			double rv = rRow[i];
-			double cv = cRow[i];
-			dot     += rv * cv;
-			refNorm += rv * rv;
-			curNorm += cv * cv;
-		}
-	}
-
-	double denom = std::sqrt(refNorm * curNorm);
-	return (denom > 1e-12) ? dot / denom : -1.0;
-}
-
-// ---------------------------------------------------------------------------
-// findShift  (2-level pyramid)
-//
-// Level 1 – coarse (DS_COARSE):
-//   Search ±SEARCH_PX original pixels → ±(SEARCH_PX/DS_COARSE) downsampled.
-//   E.g. 512/32 = 16 → 33×33 = 1089 evaluations on a ~125×93 map → ~12 M ops.
-//
-// Level 2 – fine (DS_FINE):
-//   Refine ±(DS_COARSE/DS_FINE) downsampled pixels around the coarse result.
-//   E.g. ±(32/4) = ±8 → 17×17 = 289 evaluations on a ~1000×750 map → ~217 M ops.
-//   At ~4 GFLOP/s scalar: < 100 ms per frame.
-//
-// Parabolic sub-pixel refinement applied to the fine result.
-// ---------------------------------------------------------------------------
-
-void LiveStacker::findShift(double &shift_x, double &shift_y,
-                             const std::vector<float> &cur_coarse,
-                             const std::vector<float> &cur_fine) const {
-	// --- Level 1: coarse search ---
-	const int dW_c = m_width  / DS_COARSE;
-	const int dH_c = m_height / DS_COARSE;
-	const int srC  = SEARCH_PX / DS_COARSE;
-
-	double bestC = -2.0;
-	int bestDxC = 0, bestDyC = 0;
-	for (int tdy = -srC; tdy <= srC; ++tdy) {
-		for (int tdx = -srC; tdx <= srC; ++tdx) {
-			double s = nccScore(m_ref_coarse, cur_coarse, dW_c, dH_c, tdx, tdy);
-			if (s > bestC) { bestC = s; bestDxC = tdx; bestDyC = tdy; }
-		}
-	}
-
-	// Convert coarse result to original pixel coordinates
-	int coarse_ox = bestDxC * DS_COARSE;
-	int coarse_oy = bestDyC * DS_COARSE;
-
-	// --- Level 2: fine search around coarse result ---
-	const int dW_f = m_width  / DS_FINE;
-	const int dH_f = m_height / DS_FINE;
-	// In downsampled-fine space, the coarse result maps to:
-	int centre_fx = coarse_ox / DS_FINE;
-	int centre_fy = coarse_oy / DS_FINE;
-	// Search ±(DS_COARSE/DS_FINE) = ±8 fine pixels around it
-	const int srF = DS_COARSE / DS_FINE + 1;  // a little extra margin
-
-	double bestF = -2.0;
-	int bestDxF = centre_fx, bestDyF = centre_fy;
-	for (int tdy = centre_fy - srF; tdy <= centre_fy + srF; ++tdy) {
-		for (int tdx = centre_fx - srF; tdx <= centre_fx + srF; ++tdx) {
-			double s = nccScore(m_ref_fine, cur_fine, dW_f, dH_f, tdx, tdy);
-			if (s > bestF) { bestF = s; bestDxF = tdx; bestDyF = tdy; }
-		}
-	}
-
-	// --- Parabolic sub-pixel refinement of fine result ---
-	double subDxF = bestDxF, subDyF = bestDyF;
-
-	auto scoreF = [&](int ddx, int ddy) {
-		return nccScore(m_ref_fine, cur_fine, dW_f, dH_f, ddx, ddy);
-	};
-
-	if (bestDxF > -(dW_f-1) && bestDxF < (dW_f-1)) {
-		double f_m = scoreF(bestDxF - 1, bestDyF);
-		double f_0 = bestF;
-		double f_p = scoreF(bestDxF + 1, bestDyF);
-		double denom = 2.0*(f_m - 2.0*f_0 + f_p);
-		if (std::abs(denom) > 1e-12)
-			subDxF = bestDxF - (f_p - f_m) / denom;
-	}
-	if (bestDyF > -(dH_f-1) && bestDyF < (dH_f-1)) {
-		double f_m = scoreF(bestDxF, bestDyF - 1);
-		double f_0 = bestF;
-		double f_p = scoreF(bestDxF, bestDyF + 1);
-		double denom = 2.0*(f_m - 2.0*f_0 + f_p);
-		if (std::abs(denom) > 1e-12)
-			subDyF = bestDyF - (f_p - f_m) / denom;
-	}
-
-	shift_x = subDxF * DS_FINE;
-	shift_y = subDyF * DS_FINE;
 }
 
 // ---------------------------------------------------------------------------
@@ -718,7 +591,7 @@ private:
 // For each star in m_ref_stars, find the nearest star in cur_stars within
 // STAR_MATCH_RADIUS original pixels.  The shift is the median (dx, dy) over
 // all matched pairs.  Returns false when fewer than STAR_MIN_MATCHES pairs
-// are found (caller should fall back to NCC).
+// are found.
 // ---------------------------------------------------------------------------
 
 bool LiveStacker::findShiftByCentroids(double &shift_x, double &shift_y,
@@ -884,7 +757,7 @@ bool LiveStacker::findShiftByHough(double &shift_x, double &shift_y,
 //   • O(N log M) vs O(N × M)     →  5-10× faster for 100-star lists.
 //
 // A reliability check after the median counts how many pairs agree with it
-// within HOUGH_BIN_PX pixels; the method returns false (NCC fallback) when
+// within HOUGH_BIN_PX pixels; the method returns false when
 // fewer than STAR_MIN_MATCHES pairs qualify.
 // ---------------------------------------------------------------------------
 
@@ -961,15 +834,8 @@ bool LiveStacker::addImage(preview_image *image) {
 		m_pix_format = fmt;
 		m_acc.assign(static_cast<size_t>(W) * H * ch, 0.0);
 
-		// NCC reference maps — always built so the fallback path always works.
-		m_ref_coarse = buildLuminanceMap(image, DS_COARSE);
-		m_ref_fine   = buildLuminanceMap(image, DS_FINE);
-
-		// Star-based reference list — built for all three star-matching methods.
-		if (m_alignment_method == ALIGN_CENTROIDS ||
-		    m_alignment_method == ALIGN_HOUGH     ||
-		    m_alignment_method == ALIGN_KD_TREE)
-			m_ref_stars = detectStars(image);
+		// Star-based reference list.
+		m_ref_stars = detectStars(image);
 
 		accumulate(image, 0, 0);
 	} else {
@@ -979,10 +845,7 @@ bool LiveStacker::addImage(preview_image *image) {
 		double dx = 0.0, dy = 0.0;
 
 		bool aligned = false;
-		const bool star_method = (m_alignment_method == ALIGN_CENTROIDS ||
-		                          m_alignment_method == ALIGN_HOUGH     ||
-		                          m_alignment_method == ALIGN_KD_TREE);
-		if (star_method && !m_ref_stars.empty()) {
+		if (!m_ref_stars.empty()) {
 			std::vector<StarCentroid> cur_stars = detectStars(image);
 			if (m_alignment_method == ALIGN_HOUGH)
 				aligned = findShiftByHough(dx, dy, cur_stars);
@@ -992,12 +855,8 @@ bool LiveStacker::addImage(preview_image *image) {
 				aligned = findShiftByCentroids(dx, dy, cur_stars);
 		}
 
-		// Fallback to NCC when star-based method is not selected or failed.
-		if (!aligned) {
-			std::vector<float> cur_coarse = buildLuminanceMap(image, DS_COARSE);
-			std::vector<float> cur_fine   = buildLuminanceMap(image, DS_FINE);
-			findShift(dx, dy, cur_coarse, cur_fine);
-		}
+		if (!aligned)
+			indigo_error("LiveStacker::addImage: alignment failed, stacking without shift\n");
 
 		accumulate(image, dx, dy);
 	}

@@ -56,7 +56,6 @@ class LiveStacker {
 public:
 	/// Alignment algorithm used when adding frames.
 	enum AlignmentMethod {
-		ALIGN_NCC,        ///< Two-level pyramid normalised cross-correlation.
 		ALIGN_CENTROIDS,  ///< Multi-star centroid matching (nearest-neighbour + median, brute-force O(N×M)).
 		ALIGN_HOUGH,      ///< Hough-style translation-histogram voting over all star pairs — default.
 		ALIGN_KD_TREE     ///< k-d tree NN matching: O(N log M), no radius constraint, robust median shift.
@@ -123,26 +122,9 @@ public:
 
 private:
 	/// Build a downsampled, mean-subtracted luminance map at 1/@p ds resolution.
+	/// Used by star-detection (detectStars) to build a background-subtracted
+	/// luminance map for finding peak candidates.
 	std::vector<float> buildLuminanceMap(preview_image *image, int ds) const;
-
-	/**
-	 * Two-level pyramid shift estimation.
-	 *
-	 * Level 1 (coarse): search ±SEARCH_PX in original coords using the
-	 * DS_COARSE-downsampled map.  Fast because the map is tiny.
-	 *
-	 * Level 2 (fine): refine ±DS_COARSE pixels around the coarse result
-	 * using the DS_FINE-downsampled map.  Then applies parabolic sub-pixel
-	 * refinement, returning a fractional shift in ORIGINAL pixel coordinates.
-	 */
-	void findShift(double &shift_x, double &shift_y,
-	               const std::vector<float> &cur_coarse,
-	               const std::vector<float> &cur_fine) const;
-
-	/// Returns the NCC score for shifting @p cur by (dx, dy) relative to @p ref.
-	static double nccScore(const std::vector<float> &ref,
-	                       const std::vector<float> &cur,
-	                       int dW, int dH, int dx, int dy);
 
 	/// Accumulate @p image into the internal buffer shifted by (dx, dy)
 	/// using the selected interpolation method.  Dispatches to one of the
@@ -192,7 +174,7 @@ private:
 	 * estimated shift.  Because wrong pairs scatter their votes uniformly, the
 	 * correct translation always produces the dominant spike, even with few stars
 	 * or a sparse field.  Returns false when the peak attracts fewer than
-	 * STAR_MIN_MATCHES pairs (NCC fallback recommended).  O(N×M) = ~10 000 ops
+	 * STAR_MIN_MATCHES pairs.  O(N×M) = ~10 000 ops
 	 * for 100-star lists.
 	 */
 	/**
@@ -216,8 +198,6 @@ private:
 	                      const std::vector<StarCentroid> &cur_stars) const;
 
 	std::vector<double>      m_acc;           ///< channels * height * width
-	std::vector<float>       m_ref_coarse;    ///< DS_COARSE-downsampled luminance of frame 0
-	std::vector<float>       m_ref_fine;      ///< DS_FINE-downsampled  luminance of frame 0
 	std::vector<StarCentroid> m_ref_stars;    ///< Stars detected in frame 0 for centroid alignment
 	AlignmentMethod          m_alignment_method;
 	InterpolationMethod      m_interp_method;
