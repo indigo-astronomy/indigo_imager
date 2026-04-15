@@ -396,17 +396,7 @@ void ImageViewer::makeToolbar(bool show_prev_next, bool show_debayer) {
 	m_stack_button->setCheckable(true);
 	m_stack_button->setChecked(false);
 	m_stack_button->setVisible(false);
-	connect(m_stack_button, &QToolButton::toggled, this, [this](bool checked) {
-		m_show_stack = checked;
-		if (checked) {
-			m_stack_button->setText(tr("Stack"));
-			m_stack_button->setToolTip(tr("Showing live stack — click to show last frame"));
-		} else {
-			m_stack_button->setText(tr("Frame"));
-			m_stack_button->setToolTip(tr("Showing last frame — click to show live stack"));
-		}
-		emit showStackChanged(checked);
-	});
+	connect(m_stack_button, &QToolButton::toggled, this, &ImageViewer::setShowStack);
 	box->addWidget(m_stack_button);
 }
 

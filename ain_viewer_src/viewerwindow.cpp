@@ -805,15 +805,11 @@ void ViewerWindow::on_viewer_show_reference(bool status) {
 
 void ViewerWindow::on_statistics_show(bool enabled) {
 	conf.statistics_enabled = enabled;
-	if (m_imager_viewer->isShowingStack()) {
-		if (enabled)
-			on_stack_updated(); // re-stretches stack and sets stack stats
-		else
-			m_imager_viewer->setImageStats(ImageStats());
-	} else if (m_preview_image) {
+	if (m_preview_image) {
 		ImageStats stats;
-		if (enabled)
+		if (enabled) {
 			stats = imageStats((const uint8_t*)(m_preview_image->m_raw_data), m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
+		}
 		m_imager_viewer->setImageStats(stats);
 	}
 	write_conf();
@@ -906,43 +902,34 @@ void ViewerWindow::schedule_auto_save(int seconds) {
 
 void ViewerWindow::on_stretch_changed(int level) {
 	conf.preview_stretch_level = (preview_stretch)level;
-	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 	if (m_preview_image) {
 		block_scrolling(true);
 		int width = m_preview_image->width();
 		int height = m_preview_image->height();
 		int pix_format = m_preview_image->m_pix_format;
+		const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 		preview_image *new_preview = create_preview(width, height, pix_format, m_preview_image->m_raw_data, sc);
 		if (new_preview) {
 			delete m_preview_image;
 			m_preview_image = new_preview;
-			if (!m_imager_viewer->isShowingStack())
-				m_imager_viewer->setImage(*m_preview_image);
+			m_imager_viewer->setImage(*m_preview_image);
 		}
 		block_scrolling(false);
-	}
-	if (m_imager_viewer->isShowingStack()) {
-		on_stack_updated();
 	}
 	write_conf();
 }
 
 void ViewerWindow::on_debayer_changed(uint32_t bayer_pat) {
 	conf.preview_bayer_pattern = bayer_pat;
-	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 	if (m_preview_image) {
 		block_scrolling(true);
+		const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 		preview_image *new_preview = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat, sc);
 		if (new_preview) {
 			delete m_preview_image;
 			m_preview_image = new_preview;
-			// When the bayer pattern changes the pixel format of the decoded
-			// image can change (e.g. RGB48 ↔ Y16).  Reset the live stack so
-			// the new frame is not silently rejected by the format check, and
-			// so the accumulated frames (built with the old pattern) are
-			// discarded.  The image is then always displayed below.
-			m_stacker->resetStack();
 			m_imager_viewer->setImage(*m_preview_image);
+
 			ImageStats stats;
 			if (conf.statistics_enabled) {
 				stats = imageStats((const uint8_t*)(m_preview_image->m_raw_data), m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
@@ -951,32 +938,24 @@ void ViewerWindow::on_debayer_changed(uint32_t bayer_pat) {
 		}
 		block_scrolling(false);
 	}
-	// Do NOT call restretch() here: create_preview already bakes the
-	// current stretch into m_preview_image, and any previously stacked
-	// frames may have a different pixel format from the old bayer
-	// pattern — the stack was already reset above.
 	write_conf();
 }
 
 void ViewerWindow::on_cb_changed(int balance) {
 	conf.preview_color_balance = (color_balance)balance;
-	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 	if (m_preview_image) {
 		block_scrolling(true);
 		int width = m_preview_image->width();
 		int height = m_preview_image->height();
 		int pix_format = m_preview_image->m_pix_format;
+		const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 		preview_image *new_preview = create_preview(width, height, pix_format, m_preview_image->m_raw_data, sc);
 		if (new_preview) {
 			delete m_preview_image;
 			m_preview_image = new_preview;
-			if (!m_imager_viewer->isShowingStack())
-				m_imager_viewer->setImage(*m_preview_image);
+			m_imager_viewer->setImage(*m_preview_image);
 		}
 		block_scrolling(false);
-	}
-	if (m_imager_viewer->isShowingStack()) {
-		on_stack_updated();
 	}
 	write_conf();
 }
