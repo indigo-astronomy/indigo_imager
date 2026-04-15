@@ -71,7 +71,7 @@ public slots:
 	void on_image_close_act();
 	void on_image_raw_to_fits();
 	void on_quick_stack_act();
-	void on_stack_updated();
+	void on_stack_updated(bool showing_stack);
 	void on_image_info_act();
 	void on_save_preview_act();
 	void on_exit_act();
@@ -93,6 +93,7 @@ private:
 	ImageViewer *m_imager_viewer;
 	LiveStacker *m_stacker;
 	preview_image *m_preview_image;
+	preview_image *m_stack_last_image;
 	unsigned char *m_image_data;
 	size_t m_image_size;
 	char m_image_path[PATH_LEN];

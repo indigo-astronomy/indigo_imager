@@ -51,6 +51,7 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_image_formrat = nullptr;
 	m_image_path[0] = '\0';
 	m_preview_image = nullptr;
+	m_stack_last_image = nullptr;
 	m_stacker = new LiveStacker();
 
 	QIcon icon(":resource/ain_viewer.png");
@@ -216,17 +217,7 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(m_imager_viewer, &ImageViewer::stretchChanged, this, &ViewerWindow::on_stretch_changed);
 	connect(m_imager_viewer, &ImageViewer::debayerChanged, this, &ViewerWindow::on_debayer_changed);
 	connect(m_imager_viewer, &ImageViewer::BalanceChanged, this, &ViewerWindow::on_cb_changed);
-	connect(m_imager_viewer, &ImageViewer::showStackChanged, this, [this](bool showing_stack) {
-		if (showing_stack) {
-			on_stack_updated();
-		} else if (m_preview_image) {
-			m_imager_viewer->setImage(*m_preview_image);
-			ImageStats stats;
-			if (conf.statistics_enabled)
-				stats = imageStats((const uint8_t*)m_preview_image->m_raw_data, m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
-			m_imager_viewer->setImageStats(stats);
-		}
-	});
+	connect(m_imager_viewer, &ImageViewer::showStackChanged, this, &ViewerWindow::on_stack_updated);
 	connect(m_imager_viewer, &ImageViewer::previousRequested, this, &ViewerWindow::on_image_prev_act);
 	connect(m_imager_viewer, &ImageViewer::nextRequested, this, &ViewerWindow::on_image_next_act);
 
@@ -242,6 +233,7 @@ ViewerWindow::~ViewerWindow () {
 	conf.window_height = wsize.height();
 	write_conf();
 	if (m_image_data) free(m_image_data);
+	delete m_stack_last_image;
 	delete m_preview_image;
 	delete m_stacker;
 	delete m_imager_viewer;
@@ -291,6 +283,8 @@ void ViewerWindow::open_image(QString file_name) {
 	if (m_preview_image) {
 		m_imager_viewer->showStackButton(false);
 		m_stacker->resetStack();
+		delete m_stack_last_image;
+		m_stack_last_image = nullptr;
 		m_imager_viewer->setImage(*m_preview_image);
 
 		ImageStats stats;
@@ -620,10 +614,19 @@ void ViewerWindow::on_quick_stack_act() {
 			"FITS (*.fit *.FIT *.fits *.FITS *.fts *.FTS );;"
 			"Indigo RAW (*.raw *.RAW);;"
 			"XISF (*.xisf *.XISF);;"
-			"FITS / Indigo RAW / XISF (*.fit *.FIT *.fits *.FITS *.fts *.FTS *.raw *.RAW *.xisf *.XISF);;"
-			"JPEG / TIFF / PNG (*.jpg *.JPG *.jpeg *.JPEG *.tif *.TIF *.tiff *.TIFF *.png *.PNG);;"
+			"FITS / Indigo RAW / XISF (*.fit *FIT *.fits *.FITS *.fts *.FTS *.raw *.RAW *.raw *.RAW);;"
+			"Nikon NEF / NRW (*.nef *.NEF *.nrw *.NRW);;"
+			"Canon CRW / CR2 (*.crw *.CRW *.cr2 *.CR2);;"
+			"Sony ARW / SR2 (*.arw *.ARW *.sr2 *.SR2);;"
+			"Pentax PEF (*.pef *.PEF);;"
+			"Panasonic RW2 / RAW (*.rw2 *.RW2 *.raw *.RAW);;"
+			"Olympus ORF (*.orf *.ORF);;"
+			"Digital negative (*.dng *.DNG);;"
+			"Other RAW formats (*.3fr *.3FR *.mef *.MEF *.mrw *.MRW);;"
+			"JPEG / TIFF / PNG (*.jpg *.JPG *.jpeg *.JPEG *.jpe *.JPE *.tif *.TIF *.tiff *.TIFF *.png *.PNG);;"
 			"All Files (*)"
-		)
+		),
+		&m_selected_filter
 	);
 
 	int file_num = file_names.size();
@@ -632,6 +635,8 @@ void ViewerWindow::on_quick_stack_act() {
 	// Reset any previous stack before starting a new one
 	m_imager_viewer->showStackButton(false);
 	m_stacker->resetStack();
+	delete m_stack_last_image;
+	m_stack_last_image = nullptr;
 
 	QProgressDialog progress("", "Abort", 0, file_num, this);
 	progress.setMinimumWidth(350);
@@ -669,7 +674,10 @@ void ViewerWindow::on_quick_stack_act() {
 
 		if (img) {
 			m_stacker->addImage(img);
-			delete img;
+			delete m_stack_last_image;
+			m_stack_last_image = img;
+			strncpy(m_image_path, file_name, PATH_MAX);
+			m_image_formrat = strrchr(m_image_path, '.');
 			stacked++;
 		} else {
 			failed++;
@@ -699,6 +707,10 @@ void ViewerWindow::on_image_close_act() {
 		delete(m_preview_image);
 		m_preview_image = nullptr;
 		m_imager_viewer->setImageStats(ImageStats());
+	}
+	if (m_stack_last_image) {
+		delete(m_stack_last_image);
+		m_stack_last_image = nullptr;
 	}
 	preview_image *pi = new preview_image();
 	m_imager_viewer->setImage(*pi);
@@ -960,21 +972,29 @@ void ViewerWindow::on_cb_changed(int balance) {
 	write_conf();
 }
 
-void ViewerWindow::on_stack_updated() {
-	preview_image *stack = m_stacker->currentStack();
-	if (!stack) return;
+void ViewerWindow::on_stack_updated(bool showing_stack) {
 	const stretch_config_t sc = {
 		(uint8_t)conf.preview_stretch_level,
 		(uint8_t)conf.preview_color_balance,
 		conf.preview_bayer_pattern
 	};
-	stretch_preview(stack, sc);
-	m_imager_viewer->setImage(*stack);
+	if (showing_stack) {
+		preview_image *stack = m_stacker->currentStack();
+		if (!stack) return;
+		delete m_preview_image;
+		m_preview_image = stack;
+		stretch_preview(m_preview_image, sc);
+	} else if (m_stack_last_image) {
+		delete m_preview_image;
+		m_preview_image = new preview_image(*m_stack_last_image);
+		stretch_preview(m_preview_image, sc);
+	}
+	if (!m_preview_image) return;
+	m_imager_viewer->setImage(*m_preview_image);
 	ImageStats stats;
 	if (conf.statistics_enabled)
-		stats = imageStats((const uint8_t*)stack->m_raw_data, stack->m_width, stack->m_height, stack->m_pix_format);
+		stats = imageStats((const uint8_t*)m_preview_image->m_raw_data, m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
 	m_imager_viewer->setImageStats(stats);
-	delete stack;
 }
 
 void ViewerWindow::on_about_act() {
