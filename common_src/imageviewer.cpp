@@ -82,7 +82,6 @@ ImageViewer::ImageViewer(QWidget *parent, bool show_prev_next, bool show_debayer
 	, m_snr_star_radius(0)
 	, m_snr_background_inner_radius(0)
 	, m_snr_background_outer_radius(0)
-	, m_stacker(new LiveStacker)
 	, m_stack_button(nullptr)
 	, m_show_stack(false)
 {
@@ -402,12 +401,9 @@ void ImageViewer::makeToolbar(bool show_prev_next, bool show_debayer) {
 		if (checked) {
 			m_stack_button->setText(tr("Stack"));
 			m_stack_button->setToolTip(tr("Showing live stack — click to show last frame"));
-			emit stackUpdated();
 		} else {
 			m_stack_button->setText(tr("Frame"));
 			m_stack_button->setToolTip(tr("Showing last frame — click to show live stack"));
-			if (!m_last_image.isNull())
-				onSetImage(m_last_image);
 		}
 		emit showStackChanged(checked);
 	});
@@ -455,56 +451,11 @@ void ImageViewer::setShowStack(bool show) {
 	if (show) {
 		m_stack_button->setText(tr("Stack"));
 		m_stack_button->setToolTip(tr("Showing live stack — click to show last frame"));
-		emit stackUpdated();
 	} else {
 		m_stack_button->setText(tr("Frame"));
 		m_stack_button->setToolTip(tr("Showing last frame — click to show live stack"));
-		if (!m_last_image.isNull())
-			onSetImage(m_last_image);
 	}
 	emit showStackChanged(show);
-}
-
-void ImageViewer::addToStack(preview_image &im) {
-	// Always keep a copy of the last raw frame so we can revert to it
-	m_last_image = im;
-
-	m_stacker->addImage(&im);
-	emit stackCountChanged(m_stacker->stackCount());
-
-	if (m_show_stack) {
-		// Ask the caller to apply stretch and display the updated stack
-		emit stackUpdated();
-	} else {
-		// Display the raw frame as usual
-		onSetImage(im);
-	}
-}
-
-void ImageViewer::resetStack() {
-	m_stacker->resetStack();
-	emit stackCountChanged(0);
-
-	// Preserve the user's Frame/Stack toggle preference — do not force it back
-	// to Frame mode.  After a reset the stack is empty; the last raw frame is
-	// still available in m_last_image and is shown here so something sensible
-	// appears immediately.  When new frames arrive they will repopulate the
-	// stack while keeping whatever view mode the user had selected.
-	if (!m_last_image.isNull())
-		onSetImage(m_last_image);
-}
-
-void ImageViewer::restretchLastFrame(const stretch_config_t &sc) {
-	if (!m_last_image.isNull()) {
-		stretch_preview(&m_last_image, sc);
-		// Show the updated frame when:
-		//  a) Frame mode is active, OR
-		//  b) Stack mode is active but the stack is empty (just reset or no
-		//     frames accumulated yet) — avoids a frozen display while waiting
-		//     for the first frame to arrive after a reset.
-		if (!m_show_stack || m_stacker->stackCount() == 0)
-			onSetImage(m_last_image);
-	}
 }
 
 void ImageViewer::setImageStats(const ImageStats &stats) {
@@ -1259,10 +1210,6 @@ void ImageViewer::showEvent(QShowEvent *event) {
 	if (m_fit)
 		zoomFit();
 	emit viewerShown();
-}
-
-preview_image *ImageViewer::currentStack() const {
-	return m_stacker->currentStack();
 }
 
 void ImageViewer::stretchNone() {

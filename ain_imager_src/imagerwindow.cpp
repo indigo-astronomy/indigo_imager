@@ -91,6 +91,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_has_clear_focuser_selection = false;
 	m_focusing_running = false;
 	m_has_clear_guider_selection = false;
+	m_stacker = new LiveStacker();
 
 	//  Set central widget of window
 	QWidget *central = new QWidget;
@@ -530,21 +531,19 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(m_imager_viewer, &ImageViewer::stretchChanged,   this, &ImagerWindow::on_imager_stretch_changed);
 	connect(m_imager_viewer, &ImageViewer::debayerChanged,   this, &ImagerWindow::on_imager_debayer_changed);
 	connect(m_imager_viewer, &ImageViewer::BalanceChanged,   this, &ImagerWindow::on_imager_cb_changed);
-	connect(m_imager_viewer, &ImageViewer::stackUpdated,     this, &ImagerWindow::on_stack_updated);
 	connect(m_imager_viewer, &ImageViewer::showStackChanged, this, [this](bool showing_stack) {
-		// User toggled back to frame view — refresh stats from the last captured frame.
-		if (!showing_stack) {
+		if (showing_stack) {
+			on_stack_updated();
+		} else {
 			preview_image *image = preview_cache.get(m_image_key);
 			if (image) {
+				m_imager_viewer->setImage(*image);
 				ImageStats stats;
 				if (conf.statistics_enabled)
 					stats = imageStats((const uint8_t*)image->m_raw_data, image->m_width, image->m_height, image->m_pix_format);
 				m_imager_viewer->setImageStats(stats);
 			}
 		}
-	});
-	connect(m_imager_viewer, &ImageViewer::stackCountChanged, this, [this](int count) {
-		Q_UNUSED(count);
 	});
 	connect(m_guider_viewer, &ImageViewer::stretchChanged, this, &ImagerWindow::on_guider_stretch_changed);
 	connect(m_guider_viewer, &ImageViewer::BalanceChanged, this, &ImagerWindow::on_guider_cb_changed);
@@ -705,6 +704,7 @@ ImagerWindow::~ImagerWindow () {
 		m_download_spinner = nullptr;
 	}
 	delete m_imager_viewer;
+	delete m_stacker;
 	if (m_indigo_item) {
 		if (m_indigo_item->blob.value) {
 			free(m_indigo_item->blob.value);
@@ -788,7 +788,12 @@ bool ImagerWindow::show_preview_in_imager_viewer(QString &key) {
 	preview_image *image = preview_cache.get(key);
 	if (image) {
 		if (conf.live_stacking_enabled && !m_focusing_running) {
-			m_imager_viewer->addToStack(*image);
+			m_stacker->addImage(image);
+			if (m_imager_viewer->isShowingStack()) {
+				on_stack_updated();
+			} else {
+				m_imager_viewer->setImage(*image);
+			}
 		} else {
 			m_imager_viewer->setImage(*image);
 		}
@@ -798,8 +803,8 @@ bool ImagerWindow::show_preview_in_imager_viewer(QString &key) {
 
 		// Only show frame stats when displaying the frame.  When the stack
 		// is visible, on_stack_updated() has already set the stack stats above
-		// (stackUpdated is a direct connection and fires synchronously inside
-		// addToStack), so don't overwrite them with per-frame stats.
+		// (it is called synchronously inside show_preview_in_imager_viewer),
+		// so don't overwrite them with per-frame stats.
 		if (!m_imager_viewer->isShowingStack()) {
 			ImageStats stats;
 			if (conf.statistics_enabled) {
@@ -1637,10 +1642,10 @@ void ImagerWindow::on_imager_stretch_changed(int level) {
 void ImagerWindow::on_imager_debayer_changed(uint32_t bayer_pat) {
 	conf.preview_bayer_pattern = bayer_pat;
 	// Reset the live stack so the next frame starts a fresh accumulation with
-	// the new bayer pattern.  Without this, addToStack() silently rejects the
-	// frame when the pixel format changes (e.g. RGB48 → Y16 for "no debayer"),
+	// the new bayer pattern.  Without this, stacker->addImage() silently rejects
+	// the frame when the pixel format changes (e.g. RGB48 → Y16 for "no debayer"),
 	// or accumulates a corrupted mix when only the pattern changes.
-	m_imager_viewer->resetStack();
+	m_stacker->resetStack();
 	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 	preview_cache.recreate(m_image_key, m_indigo_item, sc);
 	show_preview_in_imager_viewer(m_image_key);
@@ -1703,14 +1708,14 @@ void ImagerWindow::on_live_stack_changed(bool status) {
 	if (!status) {
 		// Switching live stack off: clear the accumulator.  showStackButton(false)
 		// above has already hidden the button and reset the view to Frame mode.
-		m_imager_viewer->resetStack();
+		m_stacker->resetStack();
 	}
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
 void ImagerWindow::on_stack_updated() {
-	preview_image *stack = m_imager_viewer->currentStack();
+	preview_image *stack = m_stacker->currentStack();
 	if (!stack) return;
 	const stretch_config_t sc = {
 		(uint8_t)conf.preview_stretch_level,

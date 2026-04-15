@@ -51,6 +51,7 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_image_formrat = nullptr;
 	m_image_path[0] = '\0';
 	m_preview_image = nullptr;
+	m_stacker = new LiveStacker();
 
 	QIcon icon(":resource/ain_viewer.png");
 	this->setWindowIcon(icon);
@@ -215,10 +216,11 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(m_imager_viewer, &ImageViewer::stretchChanged, this, &ViewerWindow::on_stretch_changed);
 	connect(m_imager_viewer, &ImageViewer::debayerChanged, this, &ViewerWindow::on_debayer_changed);
 	connect(m_imager_viewer, &ImageViewer::BalanceChanged, this, &ViewerWindow::on_cb_changed);
-	connect(m_imager_viewer, &ImageViewer::stackUpdated,   this, &ViewerWindow::on_stack_updated);
 	connect(m_imager_viewer, &ImageViewer::showStackChanged, this, [this](bool showing_stack) {
-		// User toggled back to frame view — refresh stats from the current preview image.
-		if (!showing_stack && m_preview_image) {
+		if (showing_stack) {
+			on_stack_updated();
+		} else if (m_preview_image) {
+			m_imager_viewer->setImage(*m_preview_image);
 			ImageStats stats;
 			if (conf.statistics_enabled)
 				stats = imageStats((const uint8_t*)m_preview_image->m_raw_data, m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
@@ -241,6 +243,7 @@ ViewerWindow::~ViewerWindow () {
 	write_conf();
 	if (m_image_data) free(m_image_data);
 	delete m_preview_image;
+	delete m_stacker;
 	delete m_imager_viewer;
 	delete m_image_info_dlg;
 }
@@ -287,7 +290,7 @@ void ViewerWindow::open_image(QString file_name) {
 
 	if (m_preview_image) {
 		m_imager_viewer->showStackButton(false);
-		m_imager_viewer->resetStack();
+		m_stacker->resetStack();
 		m_imager_viewer->setImage(*m_preview_image);
 
 		ImageStats stats;
@@ -628,7 +631,7 @@ void ViewerWindow::on_quick_stack_act() {
 
 	// Reset any previous stack before starting a new one
 	m_imager_viewer->showStackButton(false);
-	m_imager_viewer->resetStack();
+	m_stacker->resetStack();
 
 	QProgressDialog progress("", "Abort", 0, file_num, this);
 	progress.setMinimumWidth(350);
@@ -665,7 +668,7 @@ void ViewerWindow::on_quick_stack_act() {
 		free(data);
 
 		if (img) {
-			m_imager_viewer->addToStack(*img);
+			m_stacker->addImage(img);
 			delete img;
 			stacked++;
 		} else {
@@ -918,7 +921,6 @@ void ViewerWindow::on_stretch_changed(int level) {
 		}
 		block_scrolling(false);
 	}
-	m_imager_viewer->restretchLastFrame(sc);
 	if (m_imager_viewer->isShowingStack()) {
 		on_stack_updated();
 	}
@@ -939,9 +941,7 @@ void ViewerWindow::on_debayer_changed(uint32_t bayer_pat) {
 			// the new frame is not silently rejected by the format check, and
 			// so the accumulated frames (built with the old pattern) are
 			// discarded.  The image is then always displayed below.
-			if (m_imager_viewer->isShowingStack()) {
-				m_imager_viewer->resetStack();
-			}
+			m_stacker->resetStack();
 			m_imager_viewer->setImage(*m_preview_image);
 			ImageStats stats;
 			if (conf.statistics_enabled) {
@@ -951,10 +951,10 @@ void ViewerWindow::on_debayer_changed(uint32_t bayer_pat) {
 		}
 		block_scrolling(false);
 	}
-	// Do NOT call restretchLastFrame here: create_preview already bakes the
-	// current stretch into m_preview_image, and m_last_image (the last
-	// addToStack frame) may have a different pixel format from the old bayer
-	// pattern — passing it through stretch would display the wrong image.
+	// Do NOT call restretch() here: create_preview already bakes the
+	// current stretch into m_preview_image, and any previously stacked
+	// frames may have a different pixel format from the old bayer
+	// pattern — the stack was already reset above.
 	write_conf();
 }
 
@@ -975,7 +975,6 @@ void ViewerWindow::on_cb_changed(int balance) {
 		}
 		block_scrolling(false);
 	}
-	m_imager_viewer->restretchLastFrame(sc);
 	if (m_imager_viewer->isShowingStack()) {
 		on_stack_updated();
 	}
@@ -983,7 +982,7 @@ void ViewerWindow::on_cb_changed(int balance) {
 }
 
 void ViewerWindow::on_stack_updated() {
-	preview_image *stack = m_imager_viewer->currentStack();
+	preview_image *stack = m_stacker->currentStack();
 	if (!stack) return;
 	const stretch_config_t sc = {
 		(uint8_t)conf.preview_stretch_level,

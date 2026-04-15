@@ -4,7 +4,6 @@
 #include <QFrame>
 #include <image_stats.h>
 #include <imagepreview.h>
-#include "live_stacker.h"
 #include <QGraphicsPixmapItem>
 #include <snr_calculator.h>
 #include <snr_overlay.h>
@@ -70,14 +69,6 @@ public:
 	void showStackButton(bool show);
 	void setShowStack(bool show);
 
-	/// Re-stretch the stored last-frame copy in-place using @p sc.
-	/// Call this when stretch settings change while the stack is showing, so that
-	/// toggling back to Frame view always displays the frame at the current stretch.
-	void restretchLastFrame(const stretch_config_t &sc);
-
-	/// Return the current stack as a new preview_image (caller owns it), or nullptr if empty.
-	preview_image *currentStack() const;
-
 	/// True when the stack-view toggle is active (showing the stack, not the last frame).
 	bool isShowingStack() const { return m_show_stack; }
 
@@ -88,13 +79,6 @@ public slots:
 	void setToolTip(const QString &txt);
 	void onSetImage(preview_image &im);
 	void setImageStats(const ImageStats &stats);
-
-	/// Add @p im to the live stack.  If the stack-view toggle is active the
-	/// stacked result is shown; otherwise the raw frame is displayed.
-	void addToStack(preview_image &im);
-
-	/// Reset the live stack accumulator and switch back to the last-frame view.
-	void resetStack();
 
 	void showSelection(bool show);
 	void moveSelection(double x, double y);
@@ -164,13 +148,6 @@ signals:
 	void viewerResized();
 	void viewerShown();
 
-	/// Emitted whenever the number of stacked frames changes.
-	void stackCountChanged(int count);
-
-	/// Emitted when the displayed stack has changed and the caller should
-	/// apply stretch and call setImage() with the result of currentStack().
-	void stackUpdated();
-
 	/// Emitted whenever the frame/stack toggle changes.
 	/// @param showing_stack  true  → stack is now displayed
 	///                       false → last raw frame is now displayed
@@ -221,10 +198,8 @@ private:
 	SNROverlay *m_snr_overlay;
 	ImageInspectorOverlay *m_inspection_overlay;
 	QAction *m_inspection_act;
-	LiveStacker *m_stacker;
 	QToolButton *m_stack_button;
 	bool m_show_stack;
-	preview_image m_last_image;
 	bool m_inspection_overlay_visible;
 	AntialiasedEllipseItem *m_snr_star_circle;
 	AntialiasedEllipseItem *m_snr_background_inner_ring;

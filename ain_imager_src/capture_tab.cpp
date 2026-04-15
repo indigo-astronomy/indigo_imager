@@ -574,7 +574,7 @@ void ImagerWindow::on_preview_start_stop(bool clicked) {
 			// Reset live stack so the preview starts fresh.
 			QMetaObject::invokeMethod(this, [this]() {
 				if (conf.live_stacking_enabled && m_imager_viewer)
-					m_imager_viewer->resetStack();
+					m_stacker->resetStack();
 			}, Qt::QueuedConnection);
 			setup_preview(selected_agent);
 			set_base_agent_relations();

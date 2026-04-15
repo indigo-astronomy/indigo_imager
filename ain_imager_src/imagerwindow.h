@@ -27,6 +27,7 @@
 #include <indigo/indigo_bus.h>
 #include <indigo/indigo_names.h>
 #include <imageviewer.h>
+#include <live_stacker.h>
 #include <widget_state.h>
 #include <conf.h>
 #include <PolarAlignmentWidget/PolarAlignmentWidget.h>
@@ -755,6 +756,7 @@ private:
 
 	bool m_has_clear_focuser_selection;
 	bool m_focusing_running;
+	LiveStacker *m_stacker;
 
 	// Guider tab
 	QComboBox *m_agent_guider_select;

@@ -1854,7 +1854,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 			if (frames_complete == 0 && prev_exposure_frame > 0) {
 				QMetaObject::invokeMethod(w, [w]() {
 					if (conf.live_stacking_enabled && w->m_imager_viewer)
-						w->m_imager_viewer->resetStack();
+						w->m_stacker->resetStack();
 				}, Qt::QueuedConnection);
 			}
 			prev_exposure_frame = frames_complete;
@@ -3578,7 +3578,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 			if (!mount_was_slewing) {
 				QMetaObject::invokeMethod(this, [this]() {
 					if (conf.live_stacking_enabled && m_imager_viewer)
-						m_imager_viewer->resetStack();
+						m_stacker->resetStack();
 				}, Qt::QueuedConnection);
 			}
 			mount_was_slewing = true;

@@ -27,6 +27,7 @@
 #include <indigo/indigo_bus.h>
 #include <imageviewer.h>
 #include <imagepreview.h>
+#include <live_stacker.h>
 #include <textdialog.h>
 
 #include <conf.h>
@@ -90,6 +91,7 @@ private:
 	// Image viewer
 	TextDialog *m_image_info_dlg;
 	ImageViewer *m_imager_viewer;
+	LiveStacker *m_stacker;
 	preview_image *m_preview_image;
 	unsigned char *m_image_data;
 	size_t m_image_size;
