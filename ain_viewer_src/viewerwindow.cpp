@@ -1001,9 +1001,11 @@ void ViewerWindow::on_stack_updated(bool showing_stack) {
 	if (!m_preview_image) return;
 	m_imager_viewer->setImage(*m_preview_image);
 	ImageStats stats;
-	if (conf.statistics_enabled)
+	if (conf.statistics_enabled) {
 		stats = imageStats((const uint8_t*)m_preview_image->m_raw_data, m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
+	}
 	m_imager_viewer->setImageStats(stats);
+	m_imager_viewer->centerReference();
 }
 
 void ViewerWindow::on_about_act() {

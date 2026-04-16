@@ -14,5 +14,7 @@
 		<file>zoom-out.png</file>
 		<file>histogram.png</file>
 		<file>calibrate.png</file>
+		<file>stack.png</file>
+		<file>frame.png</file>
 	</qresource>
 </RCC>
