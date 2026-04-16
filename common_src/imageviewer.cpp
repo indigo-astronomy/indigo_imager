@@ -452,7 +452,7 @@ void ImageViewer::setImageStats(const ImageStats &stats) {
 	if (stats.channels == 1) {
 		QString stats_str = "<b>Statistics</b>";
 		if(stats.bitdepth == -32) {
-			stats_str += " (float)";
+			stats_str += " (float)<br>";
 		} else {
 			stats_str += " (" + QString::number(stats.bitdepth) + "bit)<br>";
 		}
@@ -474,7 +474,7 @@ void ImageViewer::setImageStats(const ImageStats &stats) {
 	} else if (stats.channels == 3) {
 		QString stats_str = "<b>Statistics</b> ";
 		if(stats.bitdepth == -32) {
-			stats_str += " (float)";
+			stats_str += " (float)<br>";
 		} else {
 			stats_str += " (" + QString::number(stats.bitdepth) + "bit)<br>";
 		}
