@@ -121,7 +121,7 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	//act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_raw_to_fits);
 
-	act = menu->addAction(tr("&Quick Stack..."));
+	act = menu->addAction(tr("&Quick Stack"));
 	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_T));
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_quick_stack_act);
 
@@ -990,7 +990,7 @@ void ViewerWindow::on_stack_updated(bool showing_stack) {
 		delete m_preview_image;
 		m_preview_image = stack;
 		stretch_preview(m_preview_image, sc);
-		setWindowTitle(tr("Ain Imager - stack"));
+		setWindowTitle(tr("Ain Imager - Quick Stack"));
 	} else if (m_stack_last_image) {
 		delete m_preview_image;
 		m_preview_image = new preview_image(*m_stack_last_image);
@@ -1005,6 +1005,26 @@ void ViewerWindow::on_stack_updated(bool showing_stack) {
 		stats = imageStats((const uint8_t*)m_preview_image->m_raw_data, m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
 	}
 	m_imager_viewer->setImageStats(stats);
+
+	// Update preview text/tooltip to reflect the shown image (stack or last frame)
+	char info[256] = {};
+	int iw = m_preview_image->width();
+	int ih = m_preview_image->height();
+	if (showing_stack) {
+		snprintf(info, sizeof(info), "Quick Stack [%d x %d]", iw, ih);
+		m_imager_viewer->setText(info);
+		m_imager_viewer->setToolTip(tr("Live stack"));
+	} else {
+		char *name = (m_stack_last_image_path[0] != '\0') ? m_stack_last_image_path : m_image_path;
+		if (name && name[0] != '\0') {
+			snprintf(info, sizeof(info), "%s [%d x %d]", basename(name), iw, ih);
+		} else {
+			snprintf(info, sizeof(info), "%s [%d x %d]", "Image", iw, ih);
+		}
+		m_imager_viewer->setText(info);
+		m_imager_viewer->setToolTip(QDir::toNativeSeparators(QString(name)));
+	}
+
 	m_imager_viewer->centerReference();
 }
 
