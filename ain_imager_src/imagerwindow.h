@@ -254,6 +254,7 @@ public slots:
 	void on_reset(bool clicked);
 	void on_live_stack_changed(bool status);
 	void on_stack_updated();
+	void reset_live_stack();
 	void on_window_log(indigo_property* property, const char *message);
 	void on_property_define(indigo_property* property, char *message);
 	void on_property_change(indigo_property* property, char *message);
@@ -755,7 +756,7 @@ private:
 	int       m_max_focus_stars;
 
 	bool m_has_clear_focuser_selection;
-	bool m_focusing_running;
+	bool m_batch_running;
 	LiveStacker *m_stacker;
 
 	// Guider tab

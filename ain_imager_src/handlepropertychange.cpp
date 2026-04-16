@@ -1773,11 +1773,13 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 				}
 			} else if (!strcmp(start_p->items[i].name, AGENT_IMAGER_START_FOCUSING_ITEM_NAME)) {
 				focusing_running = start_p->items[i].sw.value;
-				w->m_focusing_running = focusing_running;
 			} else if (!strcmp(start_p->items[i].name, AGENT_IMAGER_START_PREVIEW_ITEM_NAME)) {
 				preview_running = start_p->items[i].sw.value;
 			}
 		}
+		w->m_batch_running = exposure_running;
+	} else {
+		w->m_batch_running = false;
 	}
 
 	w->m_max_focus_stars = 3; // if the server does not have MAX_STARS_TO_USE item show all selections
@@ -1850,12 +1852,9 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		w->set_widget_state(w->m_focusing_button, INDIGO_OK_STATE);
 		w->set_widget_state(w->m_focusing_preview_button, INDIGO_OK_STATE);
 		if (start_p->state == INDIGO_BUSY_STATE) {
-			// Detect start of a new batch within a sequence (frame counter resets to 0).
-			if (frames_complete == 0 && prev_exposure_frame > 0) {
-				QMetaObject::invokeMethod(w, [w]() {
-					if (conf.live_stacking_enabled && w->m_imager_viewer)
-						w->m_stacker->resetStack();
-				}, Qt::QueuedConnection);
+			// Reset stack at the start of every batch (first start: prev==-1; new batch in sequence: prev>0).
+			if (frames_complete == 0 && prev_exposure_frame != 0) {
+				w->reset_live_stack();
 			}
 			prev_exposure_frame = frames_complete;
 			//w->m_sequence_editor->on_set_current_batch(batch_index);
@@ -2022,6 +2021,7 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 		focusing_running = false;
 		preview_running = false;
 		exposure_running = false;
+		prev_exposure_frame = -1; // allow detection of next batch start
 	}
 
 	if (property == start_p) {
@@ -3576,10 +3576,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		static bool mount_was_slewing = false;
 		if (property->state == INDIGO_BUSY_STATE) {
 			if (!mount_was_slewing) {
-				QMetaObject::invokeMethod(this, [this]() {
-					if (conf.live_stacking_enabled && m_imager_viewer)
-						m_stacker->resetStack();
-				}, Qt::QueuedConnection);
+				reset_live_stack();
 			}
 			mount_was_slewing = true;
 		} else {

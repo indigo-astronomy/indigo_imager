@@ -89,7 +89,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_stderr = dup(STDERR_FILENO);
 
 	m_has_clear_focuser_selection = false;
-	m_focusing_running = false;
+	m_batch_running = false;
 	m_has_clear_guider_selection = false;
 	m_stacker = new LiveStacker();
 
@@ -787,7 +787,7 @@ void ImagerWindow::window_log(const char *message, int state) {
 bool ImagerWindow::show_preview_in_imager_viewer(QString &key) {
 	preview_image *image = preview_cache.get(key);
 	if (image) {
-		if (conf.live_stacking_enabled && !m_focusing_running) {
+		if (conf.live_stacking_enabled && m_batch_running) {
 			m_stacker->addImage(image);
 			if (m_imager_viewer->isShowingStack()) {
 				on_stack_updated();
@@ -1641,11 +1641,6 @@ void ImagerWindow::on_imager_stretch_changed(int level) {
 
 void ImagerWindow::on_imager_debayer_changed(uint32_t bayer_pat) {
 	conf.preview_bayer_pattern = bayer_pat;
-	// Reset the live stack so the next frame starts a fresh accumulation with
-	// the new bayer pattern.  Without this, stacker->addImage() silently rejects
-	// the frame when the pixel format changes (e.g. RGB48 → Y16 for "no debayer"),
-	// or accumulates a corrupted mix when only the pattern changes.
-	m_stacker->resetStack();
 	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 	preview_cache.recreate(m_image_key, m_indigo_item, sc);
 	show_preview_in_imager_viewer(m_image_key);
@@ -1702,14 +1697,19 @@ void ImagerWindow::on_antialias_view(bool status) {
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
+void ImagerWindow::reset_live_stack() {
+	if (!conf.live_stacking_enabled || !m_imager_viewer) return;
+	QMetaObject::invokeMethod(this, [this]() {
+		m_stacker->resetStack();
+		indigo_debug("Live stack reset\n");
+	}, Qt::AutoConnection);
+}
+
 void ImagerWindow::on_live_stack_changed(bool status) {
 	conf.live_stacking_enabled = status;
 	m_imager_viewer->showStackButton(status);
-	if (!status) {
-		// Switching live stack off: clear the accumulator.  showStackButton(false)
-		// above has already hidden the button and reset the view to Frame mode.
-		m_stacker->resetStack();
-	}
+	// Reset accumulator whenever live stacking is toggled on or off.
+	reset_live_stack();
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }

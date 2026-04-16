@@ -748,6 +748,7 @@ void ImagerWindow::on_focus_start_stop(bool clicked) {
 		if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
 			change_agent_abort_process_property(selected_agent);
 		} else {
+			reset_live_stack();
 			setup_preview(selected_agent);
 			m_focus_hfd_data.clear();
 			m_focus_bahtinov_data.clear();
