@@ -692,6 +692,7 @@ void ViewerWindow::on_quick_stack_act() {
 		strncpy(m_image_path, file_name, PATH_MAX);
 		strncpy(m_stack_last_image_path, file_name, PATH_LEN);
 		m_image_formrat = strrchr(m_image_path, '.');
+		m_image_list.clear();
 		m_image_list.append(QFileInfo(file_name).fileName());
 	}
 
