@@ -389,14 +389,18 @@ void ImageViewer::makeToolbar(bool show_prev_next, bool show_debayer) {
 
 	// Stack toggle button — hidden until the caller enables stacking via showStackButton()
 	m_stack_button = new QToolButton(this);
-	m_stack_button->setToolTip(tr("Toggle between live stack and last frame"));
-	m_stack_button->setIcon(QIcon(":resource/calibrate.png"));
-	m_stack_button->setText(tr("Frame"));
-	m_stack_button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-	m_stack_button->setCheckable(true);
-	m_stack_button->setChecked(false);
+	m_stack_button->setCheckable(false);
+	if (m_show_stack) {
+		m_stack_button->setIcon(QIcon(":resource/stack.png"));
+		m_stack_button->setToolTip(tr("Showing live stack — click to show last frame"));
+	} else {
+		m_stack_button->setIcon(QIcon(":resource/frame.png"));
+		m_stack_button->setToolTip(tr("Showing last frame — click to show live stack"));
+	}
 	m_stack_button->setVisible(false);
-	connect(m_stack_button, &QToolButton::toggled, this, &ImageViewer::setShowStack);
+	connect(m_stack_button, &QToolButton::clicked, this, [this]() {
+		setShowStack(!m_show_stack);
+	});
 	box->addWidget(m_stack_button);
 }
 
@@ -423,10 +427,8 @@ void ImageViewer::showStackButton(bool show) {
 	// Stack mode, so reset the internal flag to Frame.  This keeps
 	// isShowingStack() consistent with the visible UI state.
 	if (!show && m_show_stack && m_stack_button) {
-		QSignalBlocker blocker(m_stack_button);
 		m_show_stack = false;
-		m_stack_button->setChecked(false);
-		m_stack_button->setText(tr("Frame"));
+		m_stack_button->setIcon(QIcon(":resource/frame.png"));
 		m_stack_button->setToolTip(tr("Showing last frame — click to show live stack"));
 		emit showStackChanged(false);
 	}
@@ -435,14 +437,12 @@ void ImageViewer::showStackButton(bool show) {
 void ImageViewer::setShowStack(bool show) {
 	if (!m_stack_button) return;
 	if (show == m_show_stack) return;
-	QSignalBlocker blocker(m_stack_button);
-	m_stack_button->setChecked(show);
 	m_show_stack = show;
 	if (show) {
-		m_stack_button->setText(tr("Stack"));
+		m_stack_button->setIcon(QIcon(":resource/stack.png"));
 		m_stack_button->setToolTip(tr("Showing live stack — click to show last frame"));
 	} else {
-		m_stack_button->setText(tr("Frame"));
+		m_stack_button->setIcon(QIcon(":resource/frame.png"));
 		m_stack_button->setToolTip(tr("Showing last frame — click to show live stack"));
 	}
 	emit showStackChanged(show);
