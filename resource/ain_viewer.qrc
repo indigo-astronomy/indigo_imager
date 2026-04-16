@@ -13,5 +13,6 @@
 		<file>zoom-in.png</file>
 		<file>zoom-out.png</file>
 		<file>histogram.png</file>
+		<file>calibrate.png</file>
 	</qresource>
 </RCC>

@@ -52,6 +52,7 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_image_path[0] = '\0';
 	m_preview_image = nullptr;
 	m_stack_last_image = nullptr;
+	m_stack_last_image_path[0] = '\0';
 	m_stacker = new LiveStacker();
 
 	QIcon icon(":resource/ain_viewer.png");
@@ -281,10 +282,7 @@ void ViewerWindow::open_image(QString file_name) {
 	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat, sc);
 
 	if (m_preview_image) {
-		m_imager_viewer->showStackButton(false);
-		m_stacker->resetStack();
-		delete m_stack_last_image;
-		m_stack_last_image = nullptr;
+		m_imager_viewer->setShowStack(false);
 		m_imager_viewer->setImage(*m_preview_image);
 
 		ImageStats stats;
@@ -522,6 +520,11 @@ void ViewerWindow::on_image_open_act() {
 		),
 		&m_selected_filter
 	);
+	m_imager_viewer->showStackButton(false);
+	m_stacker->resetStack();
+	delete m_stack_last_image;
+	m_stack_last_image = nullptr;
+	m_stack_last_image_path[0] = '\0';
 	open_image(file_name);
 }
 
@@ -676,8 +679,6 @@ void ViewerWindow::on_quick_stack_act() {
 			m_stacker->addImage(img);
 			delete m_stack_last_image;
 			m_stack_last_image = img;
-			strncpy(m_image_path, file_name, PATH_MAX);
-			m_image_formrat = strrchr(m_image_path, '.');
 			stacked++;
 		} else {
 			failed++;
@@ -688,6 +689,10 @@ void ViewerWindow::on_quick_stack_act() {
 	if (stacked > 0) {
 		m_imager_viewer->showStackButton(true);
 		m_imager_viewer->setShowStack(true);
+		strncpy(m_image_path, file_name, PATH_MAX);
+		strncpy(m_stack_last_image_path, file_name, PATH_LEN);
+		m_image_formrat = strrchr(m_image_path, '.');
+		m_image_list.append(QFileInfo(file_name).fileName());
 	}
 
 	if (failed > 0) {
@@ -722,6 +727,7 @@ void ViewerWindow::on_image_close_act() {
 	m_image_list.clear();
 	m_image_size = 0;
 	m_image_path[0] = '\0';
+	m_stack_last_image_path[0] = '\0';
 	m_image_formrat = nullptr;
 }
 
@@ -984,10 +990,13 @@ void ViewerWindow::on_stack_updated(bool showing_stack) {
 		delete m_preview_image;
 		m_preview_image = stack;
 		stretch_preview(m_preview_image, sc);
+		setWindowTitle(tr("Ain Imager - stack"));
 	} else if (m_stack_last_image) {
 		delete m_preview_image;
 		m_preview_image = new preview_image(*m_stack_last_image);
 		stretch_preview(m_preview_image, sc);
+		setWindowTitle("Ain Imager - " + QString(m_stack_last_image_path));
+		strncpy(m_image_path, m_stack_last_image_path, PATH_LEN);
 	}
 	if (!m_preview_image) return;
 	m_imager_viewer->setImage(*m_preview_image);

@@ -97,6 +97,7 @@ private:
 	unsigned char *m_image_data;
 	size_t m_image_size;
 	char m_image_path[PATH_LEN];
+	char m_stack_last_image_path[PATH_LEN];
 	char *m_image_formrat;
 	QString m_selected_filter;
 	QStringList m_image_list;
