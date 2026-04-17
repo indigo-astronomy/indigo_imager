@@ -109,6 +109,7 @@ static int bytesPerSample(int pix_format) {
 LiveStacker::LiveStacker()
 	: m_alignment_method(ALIGN_KD_TREE)
 	, m_interp_method(INTERP_BICUBIC)
+	, m_enable_rotation(true)
 	, m_width(0)
 	, m_height(0)
 	, m_channels(0)
@@ -238,13 +239,17 @@ static inline double readSample(const char *raw, int W, int H, int pix_fmt,
 // accumulateNearest
 // ---------------------------------------------------------------------------
 
-void LiveStacker::accumulateNearest(preview_image *image, double dx, double dy) {
+void LiveStacker::accumulateNearest(preview_image *image, double dx, double dy, double theta) {
 	const char *raw      = image->m_raw_data;
 	const int   W        = m_width;
 	const int   H        = m_height;
 	const int   channels = m_channels;
 	const int   pix_fmt  = m_pix_format;
 	double     *acc      = m_acc.data();
+	const double cx      = (W - 1) * 0.5;
+	const double cy      = (H - 1) * 0.5;
+	const double cos_t   = std::cos(theta);
+	const double sin_t   = std::sin(theta);
 
 	int num_threads = get_number_of_cores();
 	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
@@ -256,11 +261,12 @@ void LiveStacker::accumulateNearest(preview_image *image, double dx, double dy) 
 			const int start_row = chunk * rank;
 			const int end_row   = std::min(start_row + chunk, H);
 			for (int y = start_row; y < end_row; ++y) {
-				const int sy = static_cast<int>(std::round(y + dy));
-				if (sy < 0 || sy >= H) continue;
+				const double ry = y - cy;
 				for (int x = 0; x < W; ++x) {
-					const int sx = static_cast<int>(std::round(x + dx));
-					if (sx < 0 || sx >= W) continue;
+					const double rx = x - cx;
+					const int sx = static_cast<int>(std::round(rx * cos_t - ry * sin_t + cx + dx));
+					const int sy = static_cast<int>(std::round(rx * sin_t + ry * cos_t + cy + dy));
+					if (sx < 0 || sx >= W || sy < 0 || sy >= H) continue;
 					const int dst_idx = y * W + x;
 					for (int c = 0; c < channels; ++c)
 						acc[dst_idx * channels + c] += readSample(raw, W, H, pix_fmt, sx, sy, c);
@@ -275,13 +281,17 @@ void LiveStacker::accumulateNearest(preview_image *image, double dx, double dy) 
 // accumulateBilinear
 // ---------------------------------------------------------------------------
 
-void LiveStacker::accumulateBilinear(preview_image *image, double dx, double dy) {
+void LiveStacker::accumulateBilinear(preview_image *image, double dx, double dy, double theta) {
 	const char *raw      = image->m_raw_data;
 	const int   W        = m_width;
 	const int   H        = m_height;
 	const int   channels = m_channels;
 	const int   pix_fmt  = m_pix_format;
 	double     *acc      = m_acc.data();
+	const double cx      = (W - 1) * 0.5;
+	const double cy      = (H - 1) * 0.5;
+	const double cos_t   = std::cos(theta);
+	const double sin_t   = std::sin(theta);
 
 	int num_threads = get_number_of_cores();
 	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
@@ -293,20 +303,22 @@ void LiveStacker::accumulateBilinear(preview_image *image, double dx, double dy)
 			const int start_row = chunk * rank;
 			const int end_row   = std::min(start_row + chunk, H);
 			for (int y = start_row; y < end_row; ++y) {
-				const double sy_d = y + dy;
-				const int    y0   = static_cast<int>(std::floor(sy_d));
-				const double fy   = sy_d - y0;
-				const int    y1   = y0 + 1;
+				const double ry = y - cy;
 				for (int x = 0; x < W; ++x) {
-					const double sx_d = x + dx;
-					const int    x0   = static_cast<int>(std::floor(sx_d));
-					const double fx   = sx_d - x0;
-					const int    x1   = x0 + 1;
-					const double w00  = (1.0 - fx) * (1.0 - fy);
-					const double w10  = fx          * (1.0 - fy);
-					const double w01  = (1.0 - fx) * fy;
-					const double w11  = fx          * fy;
-					const int dst_idx = y * W + x;
+					const double rx    = x - cx;
+					const double sx_d  = rx * cos_t - ry * sin_t + cx + dx;
+					const double sy_d  = rx * sin_t + ry * cos_t + cy + dy;
+					const int    x0    = static_cast<int>(std::floor(sx_d));
+					const int    y0    = static_cast<int>(std::floor(sy_d));
+					const double fx    = sx_d - x0;
+					const double fy    = sy_d - y0;
+					const int    x1    = x0 + 1;
+					const int    y1    = y0 + 1;
+					const double w00   = (1.0 - fx) * (1.0 - fy);
+					const double w10   = fx         * (1.0 - fy);
+					const double w01   = (1.0 - fx) * fy;
+					const double w11   = fx         * fy;
+					const int dst_idx  = y * W + x;
 					for (int c = 0; c < channels; ++c) {
 						const double val = w00 * readSample(raw, W, H, pix_fmt, x0, y0, c)
 						                 + w10 * readSample(raw, W, H, pix_fmt, x1, y0, c)
@@ -325,13 +337,17 @@ void LiveStacker::accumulateBilinear(preview_image *image, double dx, double dy)
 // accumulateBicubic  (Catmull-Rom, Keys a=-0.5)
 // ---------------------------------------------------------------------------
 
-void LiveStacker::accumulateBicubic(preview_image *image, double dx, double dy) {
+void LiveStacker::accumulateBicubic(preview_image *image, double dx, double dy, double theta) {
 	const char *raw      = image->m_raw_data;
 	const int   W        = m_width;
 	const int   H        = m_height;
 	const int   channels = m_channels;
 	const int   pix_fmt  = m_pix_format;
 	double     *acc      = m_acc.data();
+	const double cx      = (W - 1) * 0.5;
+	const double cy      = (H - 1) * 0.5;
+	const double cos_t   = std::cos(theta);
+	const double sin_t   = std::sin(theta);
 
 	int num_threads = get_number_of_cores();
 	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
@@ -349,13 +365,15 @@ void LiveStacker::accumulateBicubic(preview_image *image, double dx, double dy) 
 			const int start_row = chunk * rank;
 			const int end_row   = std::min(start_row + chunk, H);
 			for (int y = start_row; y < end_row; ++y) {
-				const double sy_d = y + dy;
-				const int    yi   = static_cast<int>(std::floor(sy_d));
-				const double fy   = sy_d - yi;
+				const double ry = y - cy;
 				for (int x = 0; x < W; ++x) {
-					const double sx_d = x + dx;
+					const double rx   = x - cx;
+					const double sx_d = rx * cos_t - ry * sin_t + cx + dx;
+					const double sy_d = rx * sin_t + ry * cos_t + cy + dy;
 					const int    xi   = static_cast<int>(std::floor(sx_d));
+					const int    yi   = static_cast<int>(std::floor(sy_d));
 					const double fx   = sx_d - xi;
+					const double fy   = sy_d - yi;
 					double wx[4], wy[4];
 					for (int k = 0; k < 4; ++k) {
 						wx[k] = cubic(fx - (k - 1));
@@ -380,11 +398,17 @@ void LiveStacker::accumulateBicubic(preview_image *image, double dx, double dy) 
 // accumulate — dispatcher
 // ---------------------------------------------------------------------------
 
-void LiveStacker::accumulate(preview_image *image, double dx, double dy) {
+void LiveStacker::accumulate(preview_image *image, double dx, double dy, double theta) {
 	switch (m_interp_method) {
-		case INTERP_NEAREST:  accumulateNearest (image, dx, dy); break;
-		case INTERP_BILINEAR: accumulateBilinear(image, dx, dy); break;
-		case INTERP_BICUBIC:  accumulateBicubic (image, dx, dy); break;
+		case INTERP_NEAREST:
+			accumulateNearest(image, dx, dy, theta);
+			break;
+		case INTERP_BILINEAR:
+			accumulateBilinear(image, dx, dy, theta);
+			break;
+		case INTERP_BICUBIC:
+			accumulateBicubic(image, dx, dy, theta);
+			break;
 	}
 }
 
@@ -490,10 +514,10 @@ std::vector<StarCentroid> LiveStacker::detectStars(preview_image *image) const {
 		candidates.insert(candidates.end(), part.begin(), part.end());
 	}
 
-	std::sort(candidates.begin(), candidates.end(),
-			  [](const StarCentroid &a, const StarCentroid &b){ return a.flux > b.flux; });
-	if (static_cast<int>(candidates.size()) > STAR_MAX_COUNT)
+	std::sort(candidates.begin(), candidates.end(), [](const StarCentroid &a, const StarCentroid &b){ return a.flux > b.flux; });
+	if (static_cast<int>(candidates.size()) > STAR_MAX_COUNT) {
 		candidates.resize(STAR_MAX_COUNT);
+	}
 
 	return candidates;
 }
@@ -637,6 +661,167 @@ bool LiveStacker::findShiftByCentroids(double &shift_x, double &shift_y,
 
 	shift_x = dxs[mid];
 	shift_y = dys[mid];
+	return true;
+}
+
+// ---------------------------------------------------------------------------
+// findRotationAndShift
+//
+// Estimates a rigid-body transform (rotation θ around image centre +
+// residual translation) from matched star pairs.
+//
+// Step 1 — k-d-tree matching: build a tree from cur_stars, query each
+//   reference star.  This gives a set of matched pairs regardless of
+//   the user-selected alignment method.
+//
+// Step 2 — rotation estimation: for each matched pair compute the polar
+//   angle of the reference vector (ref - centre) and the current vector
+//   (cur - centre), take the angular difference θ_i.  The median over all
+//   pairs is the frame rotation.  Handles large rotations (meridian flip
+//   ≈ π) and small drifts alike.
+//
+// Step 3 — residual translation: rotate every reference-star position by
+//   θ and compute the residual per-pair shift.  The median is (shift_x,
+//   shift_y).
+// ---------------------------------------------------------------------------
+
+bool LiveStacker::findRotationAndShift(double &shift_x, double &shift_y, double &theta,
+									   const std::vector<StarCentroid> &cur_stars) const {
+	shift_x = shift_y = theta = 0.0;
+	if (m_ref_stars.empty() || cur_stars.empty()) return false;
+
+	const double cx = (m_width  - 1) * 0.5;
+	const double cy = (m_height - 1) * 0.5;
+
+	// --- Step 1: matching via k-d tree ---
+	const KdTree2D tree(cur_stars);
+
+	struct Pair { float rx, ry, cx_s, cy_s; }; // reference and current star coords
+	std::vector<Pair> pairs;
+	pairs.reserve(m_ref_stars.size());
+
+	for (const StarCentroid &ref : m_ref_stars) {
+		float best_d2 = std::numeric_limits<float>::max();
+		const int idx = tree.nearest(ref.x, ref.y, best_d2);
+		if (idx < 0) continue;
+		const KdNode &hit = tree.node(idx);
+		pairs.push_back({ref.x, ref.y, hit.x, hit.y});
+	}
+
+	if (static_cast<int>(pairs.size()) < STAR_MIN_MATCHES) return false;
+
+	// --- Step 2: per-pair rotation angles — circular median ---
+	//
+	// A plain arithmetic median fails when the rotation is near ±180° (e.g.
+	// after a meridian flip): some pairs give dt ≈ +π while others give dt ≈ -π
+	// (equally valid, but on opposite sides of the atan2 branch cut).  Their
+	// arithmetic median converges to 0 — completely wrong.
+	//
+	// Fix: two-pass circular median.
+	//   Pass 1 — circular mean via atan2(Σsin, Σcos) to find the approximate
+	//            rotation.  The complex-number mean is immune to branch cuts.
+	//   Pass 2 — re-wrap every per-pair angle to be within (-π,π] of the
+	//            circular mean, then take the arithmetic median of the adjusted
+	//            values.  After re-wrapping the values form a tight cluster
+	//            regardless of where they sit on the circle, so the arithmetic
+	//            median is exact.
+	//
+	// Stars very close to the image centre have a tiny radius vector, making
+	// their angle estimate noisy.  We weight each pair's contribution by the
+	// minimum of the two radii to avoid letting near-centre pairs corrupt the
+	// sum.
+
+	// Minimum radius (original pixels) for a pair to be included in the
+	// rotation estimate.  Stars closer to the centre than this are skipped
+	// because their angular position is dominated by centroid noise.
+	const double MIN_RADIUS_PX = 30.0;
+
+	std::vector<double> thetas;
+	thetas.reserve(pairs.size());
+	double sum_sin = 0.0, sum_cos = 0.0;
+	for (const Pair &p : pairs) {
+		const double rr2 = (p.rx - cx) * (p.rx - cx) + (p.ry - cy) * (p.ry - cy);
+		const double rc2 = (p.cx_s - cx) * (p.cx_s - cx) + (p.cy_s - cy) * (p.cy_s - cy);
+		if (rr2 < MIN_RADIUS_PX * MIN_RADIUS_PX || rc2 < MIN_RADIUS_PX * MIN_RADIUS_PX) continue;
+		const double ar = std::atan2(p.ry - cy, p.rx - cx);
+		const double ac = std::atan2(p.cy_s - cy, p.cx_s - cx);
+		double dt = ac - ar;
+		while (dt >  M_PI) dt -= 2.0 * M_PI;
+		while (dt < -M_PI) dt += 2.0 * M_PI;
+		// Weight by the smaller of the two radii to down-weight noisy near-centre pairs.
+		const double w = std::sqrt(std::min(rr2, rc2));
+		sum_sin += w * std::sin(dt);
+		sum_cos += w * std::cos(dt);
+		thetas.push_back(dt);
+	}
+
+	if (static_cast<int>(thetas.size()) < STAR_MIN_MATCHES) {
+		// Fall back: if too few stars survive the radius filter, use all pairs
+		// unweighted.
+		thetas.clear();
+		sum_sin = sum_cos = 0.0;
+		for (const Pair &p : pairs) {
+			const double ar = std::atan2(p.ry - cy, p.rx - cx);
+			const double ac = std::atan2(p.cy_s - cy, p.cx_s - cx);
+			double dt = ac - ar;
+			while (dt >  M_PI) dt -= 2.0 * M_PI;
+			while (dt < -M_PI) dt += 2.0 * M_PI;
+			sum_sin += std::sin(dt);
+			sum_cos += std::cos(dt);
+			thetas.push_back(dt);
+		}
+	}
+
+	// Circular mean — gives the "centre" of the angle cluster.
+	const double theta_mean = std::atan2(sum_sin, sum_cos);
+
+	// Re-wrap each per-pair angle to (-π,π] relative to the circular mean,
+	// then take the arithmetic median of the re-centred values.
+	for (double &dt : thetas) {
+		dt -= theta_mean;
+		while (dt >  M_PI) dt -= 2.0 * M_PI;
+		while (dt < -M_PI) dt += 2.0 * M_PI;
+	}
+	const size_t mid = thetas.size() / 2;
+	std::nth_element(thetas.begin(), thetas.begin() + mid, thetas.end());
+	theta = theta_mean + thetas[mid];
+
+	// --- Step 3: residual translation after rotation ---
+	const double cos_t = std::cos(theta);
+	const double sin_t = std::sin(theta);
+	std::vector<float> dxs, dys;
+	dxs.reserve(pairs.size());
+	dys.reserve(pairs.size());
+	for (const Pair &p : pairs) {
+		// Where does the reference star land after rotating by theta?
+		const double rot_x = (p.rx - cx) * cos_t - (p.ry - cy) * sin_t + cx;
+		const double rot_y = (p.rx - cx) * sin_t + (p.ry - cy) * cos_t + cy;
+		dxs.push_back(static_cast<float>(p.cx_s - rot_x));
+		dys.push_back(static_cast<float>(p.cy_s - rot_y));
+	}
+	const size_t mid2 = dxs.size() / 2;
+	std::nth_element(dxs.begin(), dxs.begin() + mid2, dxs.end());
+	std::nth_element(dys.begin(), dys.begin() + mid2, dys.end());
+	shift_x = dxs[mid2];
+	shift_y = dys[mid2];
+
+	// Reliability: count pairs that agree with the median transform.
+	// Use a generous tolerance (10× bin size) because we are validating a
+	// rotation+translation together; small angle errors magnify to larger
+	// positional residuals for stars far from the centre.
+	const float tol = static_cast<float>(HOUGH_BIN_PX * 10);
+	int agree = 0;
+	for (const Pair &p : pairs) {
+		const double rot_x = (p.rx - cx) * cos_t - (p.ry - cy) * sin_t + cx + shift_x;
+		const double rot_y = (p.rx - cx) * sin_t + (p.ry - cy) * cos_t + cy + shift_y;
+		if (std::abs(p.cx_s - rot_x) <= tol && std::abs(p.cy_s - rot_y) <= tol) {
+			++agree;
+		}
+	}
+	if (agree < STAR_MIN_MATCHES) {
+		shift_x = shift_y = theta = 0.0;
+		return false;
+	}
 	return true;
 }
 
@@ -842,23 +1027,46 @@ bool LiveStacker::addImage(preview_image *image) {
 		if (W != m_width || H != m_height || fmt != m_pix_format)
 			return false;
 
-		double dx = 0.0, dy = 0.0;
+		double dx = 0.0, dy = 0.0, theta = 0.0;
 
 		bool aligned = false;
 		if (!m_ref_stars.empty()) {
 			std::vector<StarCentroid> cur_stars = detectStars(image);
-			if (m_alignment_method == ALIGN_HOUGH)
-				aligned = findShiftByHough(dx, dy, cur_stars);
-			else if (m_alignment_method == ALIGN_KD_TREE)
-				aligned = findShiftByKdTree(dx, dy, cur_stars);
-			else
-				aligned = findShiftByCentroids(dx, dy, cur_stars);
+			if (m_enable_rotation) {
+				// Rotation + translation: always uses k-d-tree matching internally.
+				aligned = findRotationAndShift(dx, dy, theta, cur_stars);
+				if (aligned) {
+					indigo_error("LiveStacker::addImage: rotation %.4f deg, shift (%.2f, %.2f)\n", theta * 180.0 / M_PI, dx, dy);
+				} else {
+					// Rotation estimate failed — fall back to translation-only.
+					if (m_alignment_method == ALIGN_HOUGH) {
+						aligned = findShiftByHough(dx, dy, cur_stars);
+					} else if (m_alignment_method == ALIGN_KD_TREE) {
+						aligned = findShiftByKdTree(dx, dy, cur_stars);
+					} else {
+						aligned = findShiftByCentroids(dx, dy, cur_stars);
+					}
+					if (aligned) {
+						indigo_error("LiveStacker::addImage: rotation failed, translation-only shift (%.2f, %.2f)\n", dx, dy);
+					}
+				}
+			} else {
+				// Translation-only path.
+				if (m_alignment_method == ALIGN_HOUGH) {
+					aligned = findShiftByHough(dx, dy, cur_stars);
+				} else if (m_alignment_method == ALIGN_KD_TREE) {
+					aligned = findShiftByKdTree(dx, dy, cur_stars);
+				} else {
+					aligned = findShiftByCentroids(dx, dy, cur_stars);
+				}
+			}
 		}
 
-		if (!aligned)
+		if (!aligned) {
 			indigo_error("LiveStacker::addImage: alignment failed, stacking without shift\n");
+		}
 
-		accumulate(image, dx, dy);
+		accumulate(image, dx, dy, theta);
 	}
 
 	++m_frame_count;

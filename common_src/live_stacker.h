@@ -35,8 +35,9 @@ struct StarCentroid {
  * @brief LiveStacker accumulates frames in a double-precision float buffer,
  *        aligning each new frame to the reference (first) frame.
  *
- * Two alignment methods are available (see AlignmentMethod).  Rotation
- * correction is not performed; sub-pixel translation is applied using
+ * Two alignment methods are available (see AlignmentMethod).  Optional
+ * rotation correction (field rotation, meridian flip) is estimated from the
+ * same star matches and applied together with sub-pixel translation using
  * bicubic (Catmull-Rom) interpolation.
  * The output stack is a newly allocated @c preview_image using PIX_FMT_F32
  * (mono) or PIX_FMT_RGBF (colour) whose raw data contains the per-pixel
@@ -80,6 +81,15 @@ public:
 	void setInterpolationMethod(InterpolationMethod method) { m_interp_method = method; }
 	/// Returns the currently selected interpolation method.
 	InterpolationMethod interpolationMethod() const { return m_interp_method; }
+
+	/// Enable or disable rotation alignment (field rotation / meridian-flip correction).
+	/// When enabled the stacker estimates a per-frame rotation angle (radians) around
+	/// the image centre from the same star matches used for translation, and applies a
+	/// full rigid-body transform (rotation + translation) during accumulation.
+	/// Default: enabled.
+	void setRotationAlignment(bool enable) { m_enable_rotation = enable; }
+	/// Returns true when rotation correction is active.
+	bool rotationAlignmentEnabled() const { return m_enable_rotation; }
 
 	/// Start a new stack — identical to resetStack().
 	void startStack();
@@ -126,17 +136,17 @@ private:
 	/// luminance map for finding peak candidates.
 	std::vector<float> buildLuminanceMap(preview_image *image, int ds) const;
 
-	/// Accumulate @p image into the internal buffer shifted by (dx, dy)
-	/// using the selected interpolation method.  Dispatches to one of the
-	/// three specialised helpers below.
-	void accumulate(preview_image *image, double dx, double dy);
+	/// Accumulate @p image into the internal buffer applying translation (dx, dy)
+	/// and rotation @p theta (radians, around image centre) using the selected
+	/// interpolation method.  Dispatches to one of the three specialised helpers.
+	void accumulate(preview_image *image, double dx, double dy, double theta = 0.0);
 
 	/// Nearest-neighbour accumulation worker.
-	void accumulateNearest (preview_image *image, double dx, double dy);
+	void accumulateNearest (preview_image *image, double dx, double dy, double theta);
 	/// Bilinear accumulation worker.
-	void accumulateBilinear(preview_image *image, double dx, double dy);
+	void accumulateBilinear(preview_image *image, double dx, double dy, double theta);
 	/// Catmull-Rom bicubic accumulation worker.
-	void accumulateBicubic (preview_image *image, double dx, double dy);
+	void accumulateBicubic (preview_image *image, double dx, double dy, double theta);
 
 	// ---- centroid-based alignment helpers ---------------------------------
 
@@ -197,10 +207,34 @@ private:
 	bool findShiftByHough(double &shift_x, double &shift_y,
 	                      const std::vector<StarCentroid> &cur_stars) const;
 
+	/**
+	 * @brief Estimate a rigid-body transform (rotation around image centre + translation)
+	 *        from matched star pairs.
+	 *
+	 * Uses the same k-d tree nearest-neighbour matching as ALIGN_KD_TREE to
+	 * build matched pairs regardless of the selected alignment method, because
+	 * the per-pair angle computation requires individual correspondences.
+	 *
+	 * Algorithm:
+	 *  1. Match each reference star to its nearest neighbour in @p cur_stars.
+	 *  2. For each matched pair, compute the angle of the reference vector from
+	 *     the image centre and the angle of the corresponding current vector;
+	 *     the difference is the per-pair rotation estimate.
+	 *  3. Take the median rotation over all pairs as @p theta.
+	 *  4. Rotate every reference-star position by @p theta and compute residual
+	 *     translation shifts; take the median residual as (shift_x, shift_y).
+	 *
+	 * Returns @c false (and leaves outputs at 0) when fewer than
+	 * STAR_MIN_MATCHES pairs can be established.
+	 */
+	bool findRotationAndShift(double &shift_x, double &shift_y, double &theta,
+	                          const std::vector<StarCentroid> &cur_stars) const;
+
 	std::vector<double>      m_acc;           ///< channels * height * width
 	std::vector<StarCentroid> m_ref_stars;    ///< Stars detected in frame 0 for centroid alignment
 	AlignmentMethod          m_alignment_method;
 	InterpolationMethod      m_interp_method;
+	bool m_enable_rotation;  ///< When true, per-frame rotation angle is estimated and applied.
 	int  m_width;
 	int  m_height;
 	int  m_channels;
