@@ -786,30 +786,99 @@ bool LiveStacker::findRotationAndShift(double &shift_x, double &shift_y, double 
 	std::nth_element(thetas.begin(), thetas.begin() + mid, thetas.end());
 	theta = theta_mean + thetas[mid];
 
-	// --- Step 3: residual translation after rotation ---
-	const double cos_t = std::cos(theta);
-	const double sin_t = std::sin(theta);
-	std::vector<float> dxs, dys;
-	dxs.reserve(pairs.size());
-	dys.reserve(pairs.size());
-	for (const Pair &p : pairs) {
-		// Where does the reference star land after rotating by theta?
-		const double rot_x = (p.rx - cx) * cos_t - (p.ry - cy) * sin_t + cx;
-		const double rot_y = (p.rx - cx) * sin_t + (p.ry - cy) * cos_t + cy;
-		dxs.push_back(static_cast<float>(p.cx_s - rot_x));
-		dys.push_back(static_cast<float>(p.cy_s - rot_y));
-	}
-	const size_t mid2 = dxs.size() / 2;
-	std::nth_element(dxs.begin(), dxs.begin() + mid2, dxs.end());
-	std::nth_element(dys.begin(), dys.begin() + mid2, dys.end());
-	shift_x = dxs[mid2];
-	shift_y = dys[mid2];
+	// Helper: given a rotation angle, compute the median residual translation.
+	auto computeShift = [&](double angle, double &sx, double &sy) {
+		const double ct = std::cos(angle);
+		const double st = std::sin(angle);
+		std::vector<float> dxv, dyv;
+		dxv.reserve(pairs.size());
+		dyv.reserve(pairs.size());
+		for (const Pair &p : pairs) {
+			const double rot_x = (p.rx - cx) * ct - (p.ry - cy) * st + cx;
+			const double rot_y = (p.rx - cx) * st + (p.ry - cy) * ct + cy;
+			dxv.push_back(static_cast<float>(p.cx_s - rot_x));
+			dyv.push_back(static_cast<float>(p.cy_s - rot_y));
+		}
+		const size_t m = dxv.size() / 2;
+		std::nth_element(dxv.begin(), dxv.begin() + m, dxv.end());
+		std::nth_element(dyv.begin(), dyv.begin() + m, dyv.end());
+		sx = dxv[m];
+		sy = dyv[m];
+	};
 
-	// Reliability: count pairs that agree with the median transform.
+	// Helper: given translation-corrected star positions, re-estimate the
+	// rotation angle using the same circular-mean + arithmetic-median approach.
+	auto refineTheta = [&](double cur_sx, double cur_sy) -> double {
+		std::vector<double> dt_vec;
+		dt_vec.reserve(pairs.size());
+		double ss = 0.0, sc = 0.0;
+		// First pass with radius filter.
+		for (const Pair &p : pairs) {
+			// Remove the known translation so only rotation remains.
+			const double ccx = p.cx_s - cur_sx;
+			const double ccy = p.cy_s - cur_sy;
+			const double rr2 = (p.rx - cx) * (p.rx - cx) + (p.ry - cy) * (p.ry - cy);
+			const double rc2 = (ccx - cx) * (ccx - cx) + (ccy - cy) * (ccy - cy);
+			if (rr2 < MIN_RADIUS_PX * MIN_RADIUS_PX || rc2 < MIN_RADIUS_PX * MIN_RADIUS_PX) continue;
+			const double ar = std::atan2(p.ry - cy, p.rx - cx);
+			const double ac = std::atan2(ccy - cy, ccx - cx);
+			double dt = ac - ar;
+			while (dt >  M_PI) dt -= 2.0 * M_PI;
+			while (dt < -M_PI) dt += 2.0 * M_PI;
+			const double w = std::sqrt(std::min(rr2, rc2));
+			ss += w * std::sin(dt);
+			sc += w * std::cos(dt);
+			dt_vec.push_back(dt);
+		}
+		if (static_cast<int>(dt_vec.size()) < STAR_MIN_MATCHES) {
+			// Fall back: all pairs unweighted.
+			dt_vec.clear();
+			ss = sc = 0.0;
+			for (const Pair &p : pairs) {
+				const double ccx = p.cx_s - cur_sx;
+				const double ccy = p.cy_s - cur_sy;
+				const double ar = std::atan2(p.ry - cy, p.rx - cx);
+				const double ac = std::atan2(ccy - cy, ccx - cx);
+				double dt = ac - ar;
+				while (dt >  M_PI) dt -= 2.0 * M_PI;
+				while (dt < -M_PI) dt += 2.0 * M_PI;
+				ss += std::sin(dt);
+				sc += std::cos(dt);
+				dt_vec.push_back(dt);
+			}
+		}
+		const double t_mean = std::atan2(ss, sc);
+		for (double &dt : dt_vec) {
+			dt -= t_mean;
+			while (dt >  M_PI) dt -= 2.0 * M_PI;
+			while (dt < -M_PI) dt += 2.0 * M_PI;
+		}
+		const size_t midv = dt_vec.size() / 2;
+		std::nth_element(dt_vec.begin(), dt_vec.begin() + midv, dt_vec.end());
+		return t_mean + dt_vec[midv];
+	};
+
+	// --- Step 3: residual translation after rotation (coarse) ---
+	computeShift(theta, shift_x, shift_y);
+
+	// --- Step 4: refine theta using shift-corrected positions, then recompute shift ---
+	// The first theta estimate is biased because the translation (shift_x, shift_y)
+	// contaminates the atan2-based angle computation by ~shift/radius radians.
+	// One refinement iteration removes most of that bias.
+	theta   = refineTheta(shift_x, shift_y);
+	computeShift(theta, shift_x, shift_y);
+
+	// Optionally do a second refinement iteration for extra accuracy.
+	theta   = refineTheta(shift_x, shift_y);
+	computeShift(theta, shift_x, shift_y);
+
+	// Reliability: count pairs that agree with the final transform.
 	// Use a generous tolerance (10× bin size) because we are validating a
 	// rotation+translation together; small angle errors magnify to larger
 	// positional residuals for stars far from the centre.
 	const float tol = static_cast<float>(HOUGH_BIN_PX * 10);
+	const double cos_t = std::cos(theta);
+	const double sin_t = std::sin(theta);
 	int agree = 0;
 	for (const Pair &p : pairs) {
 		const double rot_x = (p.rx - cx) * cos_t - (p.ry - cy) * sin_t + cx + shift_x;
