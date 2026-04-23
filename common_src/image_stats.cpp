@@ -30,7 +30,7 @@ ImageStats imageStatsOneChannel(T const *buffer, int count) {
 	ImageStats stats;
 	if (count < 1) return stats;
 
-	double sum = 0, min = INFINITY, max = 0;
+	double sum = 0, min = INFINITY, max = -INFINITY;
 	for (int i = 0; i < count; i++) {
 		sum += buffer[i];
 		if (buffer[i] > max) max = buffer[i];
@@ -56,7 +56,12 @@ ImageStats imageStatsOneChannel(T const *buffer, int count) {
 	double d;
 	double stddev_sum = 0, mad_sum = 0;
 	for (int i = 0; i < count; i++) {
-		stats.grey_red.histogram[(int)(buffer[i] / hist_max * 255)] ++;
+		if (hist_max > 0) {
+			int idx = (int)(buffer[i] / hist_max * 255);
+			if (idx < 0) idx = 0;
+			if (idx > 255) idx = 255;
+			stats.grey_red.histogram[idx]++;
+		}
 		d = buffer[i] - mean;
 		stddev_sum += d * d;
 		mad_sum += fabs(d);
@@ -72,7 +77,7 @@ ImageStats imageStatsOneChannel(T const *buffer, int count) {
 	stats.grey_red.mad = mad;
 	//for (int i = 0; i < 256; i++) {
 	//	indigo_error("%d -> %d", i, stats.grey_red.histogram[i]);
-	//} 
+	//}
 	return stats;
 }
 
@@ -83,7 +88,7 @@ ImageStats imageStatsThreeChannels(T const *buffer, int count) {
 
 	double sum_r = 0, sum_g = 0, sum_b = 0;
 	double min_r = INFINITY, min_g = INFINITY, min_b = INFINITY;
-	double max_r = 0, max_g = 0, max_b = 0;
+	double max_r = -INFINITY, max_g = -INFINITY, max_b = -INFINITY;
 
 	for (int i = 0; i < count * 3; i += 3) {
 		sum_r += buffer[i];
@@ -122,17 +127,30 @@ ImageStats imageStatsThreeChannels(T const *buffer, int count) {
 	double stddev_sum_r = 0, stddev_sum_g = 0, stddev_sum_b = 0;
 	double mad_sum_r = 0, mad_sum_g = 0, mad_sum_b = 0;
 	for (int i = 0; i < count * 3; i += 3) {
-		stats.grey_red.histogram[(int)(buffer[i] / hist_max * 255)] ++;
+		if (hist_max > 0) {
+			int idx_r = (int)(buffer[i] / hist_max * 255);
+			if (idx_r < 0) idx_r = 0;
+			if (idx_r > 255) idx_r = 255;
+			stats.grey_red.histogram[idx_r]++;
+
+			int idx_g = (int)(buffer[i + 1] / hist_max * 255);
+			if (idx_g < 0) idx_g = 0;
+			if (idx_g > 255) idx_g = 255;
+			stats.green.histogram[idx_g]++;
+
+			int idx_b = (int)(buffer[i + 2] / hist_max * 255);
+			if (idx_b < 0) idx_b = 0;
+			if (idx_b > 255) idx_b = 255;
+			stats.blue.histogram[idx_b]++;
+		}
 		d = buffer[i] - mean_r;
 		stddev_sum_r += d * d;
 		mad_sum_r += fabs(d);
 
-		stats.green.histogram[(int)(buffer[i + 1] / hist_max * 255)] ++;
 		d = buffer[i + 1] - mean_g;
 		stddev_sum_g += d * d;
 		mad_sum_g += fabs(d);
 
-		stats.blue.histogram[(int)(buffer[i + 2] / hist_max * 255)] ++;
 		d = buffer[i + 2] - mean_b;
 		stddev_sum_b += d * d;
 		mad_sum_b += fabs(d);
@@ -168,6 +186,7 @@ ImageStats imageStatsThreeChannels(T const *buffer, int count) {
 }
 
 ImageStats imageStats(uint8_t const *input, int width, int height, int pix_fmt) {
+	if (input == nullptr) return ImageStats();
 	switch (pix_fmt) {
 		case PIX_FMT_Y8:
 			return imageStatsOneChannel(reinterpret_cast<uint8_t const*>(input), width * height);
