@@ -52,7 +52,11 @@ protected:
 		m_viewer->updateInspectionOverlayPosition();
 	}
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 	void enterEvent(QEnterEvent *event) override {
+#else
+	void enterEvent(QEvent *event) override {
+#endif
 		QGraphicsView::enterEvent(event);
 		viewport()->setCursor(Qt::CrossCursor);
 	}
@@ -1169,7 +1173,11 @@ void ImageViewer::enableSNRMode(bool enable) {
 	}
 }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 void ImageViewer::enterEvent(QEnterEvent *event) {
+#else
+void ImageViewer::enterEvent(QEvent *event) {
+#endif
 	QFrame::enterEvent(event);
 	if (m_bar_mode == ToolBarMode::AutoHidden) {
 		m_toolbar->show();

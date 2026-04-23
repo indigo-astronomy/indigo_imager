@@ -11,7 +11,9 @@
 
 QT_BEGIN_NAMESPACE
 class QLabel;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 class QEnterEvent;
+#endif
 QT_END_NAMESPACE
 
 class PixmapItem;
@@ -154,7 +156,11 @@ signals:
 	void showStackChanged(bool showing_stack);
 
 protected:
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 	void enterEvent(QEnterEvent *event) override;
+#else
+	void enterEvent(QEvent *event) override;
+#endif
 	void leaveEvent(QEvent *event) override;
 	void resizeEvent(QResizeEvent *event) override;
 	void showEvent(QShowEvent *event) override;

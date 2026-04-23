@@ -1,4 +1,3 @@
-QT_MIN_VERSION = 6.2.0
 TEMPLATE = subdirs
 SUBDIRS = ain_imager_src ain_viewer_src
 ain_imager_src.file = ain_imager_src/ain_imager.pro
