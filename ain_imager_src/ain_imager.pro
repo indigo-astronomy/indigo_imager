@@ -74,6 +74,7 @@ SOURCES += \
 	$$PWD/../external/qcustomplot/qcustomplot.cpp
 
 RESOURCES += \
+	$$PWD/../resource/fonts.qrc \
 	$$PWD/../resource/ain_imager.qrc \
 	$$PWD/../qdarkstyle/style.qrc
 

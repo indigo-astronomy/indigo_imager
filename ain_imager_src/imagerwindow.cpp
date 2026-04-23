@@ -919,16 +919,16 @@ void ImagerWindow::play_sound(int alarm) {
 		case AIN_NO_SOUND:
 			return;
 		case AIN_ALERT_SOUND:
-			sound_effect.setSource(QUrl::fromLocalFile(":/resource/error.wav"));
+			sound_effect.setSource(QUrl("qrc:/resource/error.wav"));
 			sound_effect.play();
 			return;
 		case AIN_WARNING_SOUND:
-			sound_effect.setSource(QUrl::fromLocalFile(":/resource/warning.wav"));
+			sound_effect.setSource(QUrl("qrc:/resource/warning.wav"));
 			sound_effect.play();
 			return;
 		case AIN_OK_SOUND:
 			if (conf.sound_notification_level > AIN_WARNING_SOUND) {
-				sound_effect.setSource(QUrl::fromLocalFile(":/resource/ok.wav"));
+				sound_effect.setSource(QUrl("qrc:/resource/ok.wav"));
 				sound_effect.play();
 			}
 			return;
