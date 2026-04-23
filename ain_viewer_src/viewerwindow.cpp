@@ -272,6 +272,11 @@ void ViewerWindow::open_image(QString file_name) {
 		return;
 	}
 
+	// Reset stack-view mode BEFORE deleting m_preview_image. QImageData could end up
+	// freed before on_stack_updated calls stretch_preview, causing the
+	// invalid-read.
+	m_imager_viewer->setShowStack(false);
+
 	if (m_preview_image) {
 		delete(m_preview_image);
 		m_preview_image = nullptr;
@@ -282,7 +287,6 @@ void ViewerWindow::open_image(QString file_name) {
 	m_preview_image = create_preview(m_image_data, m_image_size, (const char*)m_image_formrat, sc);
 
 	if (m_preview_image) {
-		m_imager_viewer->setShowStack(false);
 		m_imager_viewer->setImage(*m_preview_image);
 
 		ImageStats stats;
