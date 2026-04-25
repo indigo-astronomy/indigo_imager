@@ -1078,7 +1078,7 @@ bool LiveStacker::findShiftByKdTree(double &shift_x, double &shift_y, const std:
 // addImage
 // ---------------------------------------------------------------------------
 
-bool LiveStacker::addImage(preview_image *image) {
+bool LiveStacker::addImage(preview_image *image, bool align) {
 	if (!image || !image->m_raw_data)
 		return false;
 
@@ -1099,7 +1099,11 @@ bool LiveStacker::addImage(preview_image *image) {
 		m_pix_format = fmt;
 		m_acc.assign(static_cast<size_t>(W) * H * ch, 0.0);
 
-		m_ref_stars = detectStars(image);
+		if (align) {
+			m_ref_stars = detectStars(image);
+		} else {
+			m_ref_stars.clear();
+		}
 
 		accumulate(image, 0, 0);
 	} else {
@@ -1109,7 +1113,7 @@ bool LiveStacker::addImage(preview_image *image) {
 		double dx = 0.0, dy = 0.0, theta = 0.0;
 
 		bool aligned = false;
-		if (!m_ref_stars.empty()) {
+		if (align && !m_ref_stars.empty()) {
 			std::vector<StarCentroid> cur_stars = detectStars(image);
 			if (m_alignment_method == ALIGN_KD_TREE_ROTATION) {
 				aligned = findRotationAndShift(dx, dy, theta, cur_stars);
@@ -1131,7 +1135,7 @@ bool LiveStacker::addImage(preview_image *image) {
 			}
 		}
 
-		if (!aligned) {
+		if (align && !aligned) {
 			indigo_error("LiveStacker::addImage: alignment failed, stacking without shift\n");
 		}
 

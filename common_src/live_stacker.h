@@ -91,17 +91,21 @@ public:
 	/**
 	 * @brief Add @p image to the stack.
 	 *
-	 * The first frame added after a reset becomes the alignment reference.
-	 * Every subsequent frame is translated to align with the reference before
-	 * being accumulated.  Alignment uses the method set by setAlignmentMethod().
+	 * The first frame added after a reset becomes the alignment reference when
+	 * @p align is true. Every subsequent frame is translated to align with the
+	 * reference before being accumulated. Alignment uses the method set by
+	 * setAlignmentMethod(). When @p align is false, the frame is accumulated as-is
+	 * and no star detection is attempted.
 	 *
 	 * @param image  Source frame.  The stacker does NOT take ownership; the
 	 *               pointer must remain valid for the duration of the call.
+	 * @param align  If @c true, detect stars and align against the reference.
+	 *               If @c false, accumulate the frame without alignment.
 	 * @return @c true on success; @c false when @p image is nullptr, has no
 	 *         raw data, or has a different size / pixel format from the
 	 *         reference frame already stored in the stack.
 	 */
-	bool addImage(preview_image *image);
+	bool addImage(preview_image *image, bool align = true);
 
 	/// Number of frames accumulated since the last reset.
 	int stackCount() const { return m_frame_count; }

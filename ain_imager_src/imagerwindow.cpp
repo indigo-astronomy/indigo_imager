@@ -788,7 +788,8 @@ bool ImagerWindow::show_preview_in_imager_viewer(QString &key) {
 	preview_image *image = preview_cache.get(key);
 	if (image) {
 		if (conf.live_stacking_enabled && m_batch_running) {
-			m_stacker->addImage(image);
+			const bool align_live_stack = (m_frame_type.compare("Light", Qt::CaseInsensitive) == 0);
+			m_stacker->addImage(image, align_live_stack);
 			if (m_imager_viewer->isShowingStack()) {
 				on_stack_updated();
 			} else {
