@@ -1304,25 +1304,129 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 	QString object_name("");
 
 	if (auto_construct) {
-		object_name = m_object_name_str.trimmed();
-		if (object_name == "") object_name = DEFAULT_OBJECT_NAME;
-		QString filter_name = m_filter_name;
-		QString frame_type = m_frame_type;
-		QDateTime date = date.currentDateTime();
-		QString date_str = date.toString("yyyy-MM-dd");
-
-		if (date.time().hour() < 12) {
-			// a.m.
+		QDateTime now = QDateTime::currentDateTime();
+		if (now.time().hour() < 12) {
 			time_flag = 'a';
 		} else {
-			// p.m.
 			time_flag = 'p';
 		}
-		if ((filter_name !=  "") && ((frame_type == "Light") || (frame_type == "Flat"))) {
-			object_name = object_name + "_" + date_str + "_" + frame_type + "_" + filter_name;
-		} else {
-			object_name = object_name + "_" + date_str + "_" + frame_type + "_nofilter";
+
+		// Sanitize helper: replace disallowed characters with '_'
+		auto sanitize_str = [](const QString &s) -> QString {
+			static const QString allowed = "-_. ()[]{}+=@#$%&!~^";
+			QString out = s;
+			for (int i = 0; i < out.size(); i++) {
+				QChar c = out.at(i);
+				if (!c.isLetterOrNumber() && !allowed.contains(c))
+					out[i] = QChar('_');
+			}
+			return out;
+		};
+
+		// Build expanded filename from template
+		QString tpl = conf.filename_template[0] != '\0' ? QString(conf.filename_template) : QString(DEFAULT_FILENAME_TEMPLATE);
+
+		// Strip %nI and %M (not supported locally)
+		tpl.remove(QRegularExpression("%[1-5]I"));
+		tpl.remove(QRegularExpression("%M"));
+
+		QString result = tpl;
+
+		// %o - object name
+		{
+			QString obj = m_object_name_str.trimmed();
+			if (obj.isEmpty()) obj = QString(DEFAULT_OBJECT_NAME);
+			result.replace("%o", sanitize_str(obj));
 		}
+
+		// %F - frame type
+		result.replace("%F", sanitize_str(m_frame_type.isEmpty() ? QString("Light") : m_frame_type));
+
+		// %C - filter name
+		{
+			QString filter = m_filter_name.trimmed();
+			if (filter.isEmpty()) filter = "nofilter";
+			result.replace("%C", sanitize_str(filter));
+		}
+
+		// %nE or %E - exposure time
+		{
+			QRegularExpression re_nE("%(\\d)E");
+			QRegularExpressionMatchIterator it = re_nE.globalMatch(result);
+			// Collect replacements to avoid invalidating iterators
+			QList<QPair<QString, QString>> repl;
+			while (it.hasNext()) {
+				QRegularExpressionMatch m2 = it.next();
+				int n = m2.captured(1).toInt();
+				repl.append({m2.captured(0), QString::number(m_exposure_time->value(), 'f', n)});
+			}
+			for (auto &p : repl)
+				result.replace(p.first, p.second);
+
+			// %E - auto precision exposure
+			if (result.contains("%E")) {
+				double exp = m_exposure_time->value();
+				int digits = 0;
+				if (exp < 0.001) digits = 4;
+				else if (exp < 0.01) digits = 3;
+				else if (exp < 0.1) digits = 2;
+				else if (exp < 1) digits = 1;
+				result.replace("%E", QString::number(exp, 'f', digits));
+			}
+		}
+
+		// %T - sensor temperature (current)
+		result.replace("%T", m_current_temp->text().trimmed()+QString("C"));
+
+		// %D, %-D, %.D - date
+		result.replace("%-D", now.toString("yyyy-MM-dd"));
+		result.replace("%.D", now.toString("yyyy.MM.dd"));
+		result.replace("%D", now.toString("yyyyMMdd"));
+
+		// %H, %-H, %.H - time
+		result.replace("%-H", now.toString("HH-mm-ss"));
+		result.replace("%.H", now.toString("HH.mm.ss"));
+		result.replace("%H", now.toString("HHmmss"));
+
+		// %R - resolution (WxH from frame ROI)
+		{
+			int w = m_roi_w->value();
+			int h = m_roi_h->value();
+			result.replace("%R", QString("%1x%2").arg(w).arg(h));
+		}
+
+		// %B - binning
+		{
+			int bx = m_imager_bin_x->value();
+			int by = m_imager_bin_y->value();
+			QString bin_str;
+			if (bx == by) {
+				bin_str = QString("BIN%1").arg(bx);
+			} else {
+				bin_str = QString("BIN%1x%2").arg(bx).arg(by);
+			}
+			result.replace("%B", bin_str);
+		}
+
+		// %G - gain
+		result.replace("%G", QString::number(m_imager_gain->value()));
+
+		// %O - offset
+		result.replace("%O", QString::number(m_imager_offset->value()));
+
+		// %P - focuser position (NA if no focuser selected)
+		{
+			QString pos = (m_focuser_select->currentData().toString().compare("NONE") == 0 || m_focuser_select->count() == 0)
+				? QString("NA")
+				: QString::number(m_focus_position->value());
+			result.replace("%P", pos);
+		}
+
+		// %nS - sequential number placeholder: since we always append _%c%03d at the end,
+		// %nS in the template is stripped (file number is appended regardless)
+		result.remove(QRegularExpression("%[1-5]S"));
+
+		object_name = result;
 	}
 
 	do {
@@ -1566,7 +1670,6 @@ void ImagerWindow::on_data_directory_prefix_act() {
 		{ "%R",   "resolution (WxH)"              },
 		{ "%B",   "binning"                       },
 		{ "%P",   "focuser position"              },
-		{ "%nS",  "seq. number, n digits (1-5)"   },
 	};
 	const int N = (int)(sizeof(entries) / sizeof(entries[0]));
 	const int half = (N + 1) / 2;
@@ -1587,7 +1690,7 @@ void ImagerWindow::on_data_directory_prefix_act() {
 
 	ph_vbox->addLayout(grid);
 
-	QLabel *note = new QLabel(tr("<i>Note: <b>%nI</b> and <b>%M</b> (MD5 hash) are always appended automatically as <b>_idx%3I_%M</b></i>"));
+	QLabel *note = new QLabel(tr("<i><b>Note:</b> <b>%nI</b> and <b>%M</b> (MD5 hash) are always appended automatically as <b>_idx%3I_%M</b></i>"));
 	note->setFont(small_font);
 	note->setWordWrap(true);
 	ph_vbox->addWidget(note);
