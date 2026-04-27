@@ -1629,7 +1629,7 @@ void ImagerWindow::on_data_directory_prefix_act() {
 	// Build a custom dialog with two fields: output directory and filename template
 	QDialog dlg(this);
 	dlg.setWindowTitle(tr("Select output data directory and filename template"));
-	dlg.setMinimumWidth(550);
+	dlg.setMinimumWidth(650);
 	QVBoxLayout *vbox = new QVBoxLayout(&dlg);
 
 	// Use a form layout for aligned labels/controls
@@ -1641,18 +1641,21 @@ void ImagerWindow::on_data_directory_prefix_act() {
 	dir_h->setContentsMargins(0,0,0,0);
 	dir_h->addWidget(dir_edit);
 	dir_h->addWidget(dir_btn);
-	form->addRow(new QLabel(tr("Output directory:")), dir_widget);
+	QLabel *out_label = new QLabel(tr("<b>Output directory:</b>"));
+	form->addRow(out_label, dir_widget);
 
 	const char *tpl_default = DEFAULT_FILENAME_TEMPLATE;
 	QLineEdit *tpl_edit = new QLineEdit(
 		conf.filename_template[0] != '\0' ? QString(conf.filename_template) : QString(tpl_default)
 	);
-	form->addRow(new QLabel(tr("Filename template:")), tpl_edit);
+	QLabel *tpl_label = new QLabel(tr("<b>Filename template:</b>"));
+	form->addRow(tpl_label, tpl_edit);
 
 	vbox->addLayout(form);
 
 	// Framed group box with two-column placeholder reference
 	QGroupBox *ph_box = new QGroupBox(tr("Supported placeholders"));
+	ph_box->setStyleSheet("QGroupBox { font-weight: normal; }");
 	QVBoxLayout *ph_vbox = new QVBoxLayout(ph_box);
 
 	QFont bold_font;
@@ -1695,7 +1698,7 @@ void ImagerWindow::on_data_directory_prefix_act() {
 			QLabel *lph = new QLabel(entries[start + i].ph);
 			lph->setFont(bold_font);
 			lph->setTextInteractionFlags(Qt::TextSelectableByMouse);
-			QLabel *ldesc = new QLabel(QString("- ") + entries[start + i].desc);
+			QLabel *ldesc = new QLabel(QString(" ") + entries[start + i].desc);
 			ldesc->setFont(small_font);
 			grid->addWidget(lph,   i, base_col,     Qt::AlignLeft | Qt::AlignVCenter);
 			grid->addWidget(ldesc, i, base_col + 1, Qt::AlignLeft | Qt::AlignVCenter);
@@ -1715,9 +1718,12 @@ void ImagerWindow::on_data_directory_prefix_act() {
 
 	// Buttons
 	QHBoxLayout *buttons = new QHBoxLayout;
-	buttons->addStretch();
+	QPushButton *defaults = new QPushButton(tr("Defaults"));
 	QPushButton *ok = new QPushButton(tr("OK"));
 	QPushButton *cancel = new QPushButton(tr("Cancel"));
+	// Place Defaults on the left and keep OK/Cancel on the right
+	buttons->addWidget(defaults);
+	buttons->addStretch();
 	buttons->addWidget(ok);
 	buttons->addWidget(cancel);
 	vbox->addLayout(buttons);
@@ -1732,6 +1738,11 @@ void ImagerWindow::on_data_directory_prefix_act() {
 
 	connect(cancel, &QPushButton::clicked, &dlg, &QDialog::reject);
 	connect(ok, &QPushButton::clicked, &dlg, &QDialog::accept);
+
+	connect(defaults, &QPushButton::clicked, this, [dir_edit, tpl_edit, tpl_default]() {
+		dir_edit->setText(QDir::toNativeSeparators(QDir::homePath()));
+		tpl_edit->setText(QString(tpl_default));
+	});
 
 	if (dlg.exec() != QDialog::Accepted) return;
 
