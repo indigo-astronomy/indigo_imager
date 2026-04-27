@@ -1345,7 +1345,7 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 		// %C - filter name
 		{
 			QString filter = m_filter_name.trimmed();
-			if (filter.isEmpty()) filter = "nofilter";
+			if (filter.isEmpty()) filter = "NA";
 			result.replace("%C", sanitize_str(filter));
 		}
 
@@ -1360,23 +1360,39 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 				int n = m2.captured(1).toInt();
 				repl.append({m2.captured(0), QString::number(m_exposure_time->value(), 'f', n)});
 			}
-			for (auto &p : repl)
+			for (auto &p : repl) {
 				result.replace(p.first, p.second);
+			}
 
 			// %E - auto precision exposure
 			if (result.contains("%E")) {
 				double exp = m_exposure_time->value();
 				int digits = 0;
-				if (exp < 0.001) digits = 4;
-				else if (exp < 0.01) digits = 3;
-				else if (exp < 0.1) digits = 2;
-				else if (exp < 1) digits = 1;
+				if (exp < 0.001) {
+					digits = 4;
+				} else if (exp < 0.01) {
+					digits = 3;
+				} else if (exp < 0.1) {
+					digits = 2;
+				} else if (exp < 1) {
+					digits = 1;
+				}
 				result.replace("%E", QString::number(exp, 'f', digits));
 			}
 		}
 
 		// %T - sensor temperature (current)
-		result.replace("%T", m_current_temp->text().trimmed()+QString("C"));
+		if (m_current_temp->text().trimmed().isEmpty()) {
+			result.replace("%T", "NA");
+		} else {
+			bool ok = false;
+			double t = m_current_temp->text().trimmed().toDouble(&ok);
+			if (ok) {
+				result.replace("%T", QString::number(t, 'f', 1));
+			} else {
+				result.replace("%T", m_current_temp->text().trimmed());
+			}
+		}
 
 		// %D, %-D, %.D - date
 		result.replace("%-D", now.toString("yyyy-MM-dd"));
