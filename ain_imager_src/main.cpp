@@ -117,6 +117,9 @@ int main(int argc, char *argv[]) {
 	conf.indigo_save_log = false;
 	conf.save_noname_images = false;
 	conf.data_dir_prefix[0] = '\0';
+	// Default filename template (placeholders like %o, %-D, %F, %C etc.).
+	// Note: %nI and %M are always appended by the application as "_idx%3I_%M".
+	strncpy(conf.filename_template, DEFAULT_FILENAME_TEMPLATE, INDIGO_VALUE_SIZE);
 	conf.window_width = 0;
 	conf.window_height = 0;
 	conf.restore_window_size = true;
@@ -131,6 +134,10 @@ int main(int argc, char *argv[]) {
 	conf.preview_mode = NO_PREVIEWS;
 	conf.live_stacking_enabled = false;
 	read_conf();
+	// If filename_template was not saved in an older config, restore the default
+	if (conf.filename_template[0] == '\0') {
+		strncpy(conf.filename_template, DEFAULT_FILENAME_TEMPLATE, INDIGO_VALUE_SIZE);
+	}
 	conf.blobs_enabled = true; // Always enable BLOBs remove option from UI
 
 	if (!conf.use_system_locale) qunsetenv("LC_NUMERIC");

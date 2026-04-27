@@ -43,6 +43,9 @@
 
 #define AIN_SEQUENCE_NAME "AinSequence"
 
+// Default filename template used when no user template is specified.
+#define DEFAULT_FILENAME_TEMPLATE "%o_%-D_%F_%C"
+
 typedef enum {
 	STRETCH_NONE = 0,
 	STRETCH_SLIGHT = 1,
@@ -132,6 +135,7 @@ typedef struct {
 	bool compact_window_layout;
 	ain_preview_mode preview_mode;
 	bool live_stacking_enabled;
+	char filename_template[INDIGO_VALUE_SIZE];
 	char unused[99];
 } conf_t;
 

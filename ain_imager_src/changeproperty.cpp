@@ -126,9 +126,11 @@ void ImagerWindow::change_ccd_localmode_property(const char *agent, const QStrin
 
 		char object_cstr[INDIGO_VALUE_SIZE];
 		strncpy(object_cstr, m_object_name_str.toUtf8().constData(), INDIGO_VALUE_SIZE);
-		char *values[] {
+		char prefix[INDIGO_VALUE_SIZE];
+		snprintf(prefix, INDIGO_VALUE_SIZE, "%s_idx%%3I_%%M", conf.filename_template);
+		char *values[] = {
 			object_cstr,
-			"%o_%-D_%F_%C_idx%3I_%M"
+			prefix
 		};
 		indigo_change_text_property(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, 2, items, (const char **)values);
 	} else {
@@ -136,8 +138,22 @@ void ImagerWindow::change_ccd_localmode_property(const char *agent, const QStrin
 		m_remote_object_name = object;
 		add_fits_keyword_string(agent, "OBJECT", m_object_name_str.toUtf8().constData());
 
+		// Build prefix: if template contains %o replace with object name, otherwise prepend object name
+		QString tpl = QString(conf.filename_template);
+		QString built;
+		if (tpl.contains("%o")) {
+			built = tpl;
+			built.replace("%o", m_object_name_str);
+		} else {
+			if (m_object_name_str.isEmpty() || m_object_name_str == QString(DEFAULT_OBJECT_NAME))
+				built = tpl;
+			else
+				built = QString("%1_%2").arg(m_object_name_str, tpl);
+		}
+		// append the mandatory index + M placeholders
+		built += QString("_idx%3I_%M");
 		char value[INDIGO_VALUE_SIZE];
-		snprintf(value, INDIGO_VALUE_SIZE, "%s_%%-D_%%F_%%C_idx%%3I_%%M", (char *)m_object_name_str.toUtf8().constData());
+		strncpy(value, built.toUtf8().constData(), INDIGO_VALUE_SIZE);
 		indigo_debug("Setting prefix to: %s", value);
 
 		indigo_change_text_property_1_raw(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, CCD_LOCAL_MODE_PREFIX_ITEM_NAME, value);
@@ -146,7 +162,7 @@ void ImagerWindow::change_ccd_localmode_property(const char *agent, const QStrin
 
 void ImagerWindow::init_ccd_localmode_property(const char *agent) {
 	char value[INDIGO_VALUE_SIZE];
-	snprintf(value, INDIGO_VALUE_SIZE, "%%o_%%-D_%%F_%%C_idx%%3I_%%M");
+	snprintf(value, INDIGO_VALUE_SIZE, "%s_idx%%3I_%%M", conf.filename_template);
 	indigo_debug("Setting prefix to: %s", value);
 
 	indigo_change_text_property_1_raw(nullptr, agent, CCD_LOCAL_MODE_PROPERTY_NAME, CCD_LOCAL_MODE_PREFIX_ITEM_NAME, value);
