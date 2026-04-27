@@ -1442,6 +1442,9 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 		// %nS in the template is stripped (file number is appended regardless)
 		result.remove(QRegularExpression("%[1-5]S"));
 
+		// Replace any remaining unrecognised %X placeholders: % -> _
+		result.replace(QRegularExpression("%"), "_");
+
 		object_name = result;
 	}
 
