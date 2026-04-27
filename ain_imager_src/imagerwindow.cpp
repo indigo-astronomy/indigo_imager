@@ -1635,7 +1635,11 @@ void ImagerWindow::on_imager_stretch_changed(int level) {
 	});
 	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 	preview_cache.recreate(m_image_key, sc);
-	show_preview_in_imager_viewer(m_image_key);
+	if (m_imager_viewer->isShowingStack()) {
+		on_stack_updated();
+	} else {
+		show_preview_in_imager_viewer(m_image_key);
+	}
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
@@ -1644,7 +1648,11 @@ void ImagerWindow::on_imager_debayer_changed(uint32_t bayer_pat) {
 	conf.preview_bayer_pattern = bayer_pat;
 	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 	preview_cache.recreate(m_image_key, m_indigo_item, sc);
-	show_preview_in_imager_viewer(m_image_key);
+	if (m_imager_viewer->isShowingStack()) {
+		on_stack_updated();
+	} else {
+		show_preview_in_imager_viewer(m_image_key);
+	}
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
@@ -1658,7 +1666,11 @@ void ImagerWindow::on_imager_cb_changed(int balance) {
 	});
 	const stretch_config_t sc = {(uint8_t)conf.preview_stretch_level, (uint8_t)conf.preview_color_balance, conf.preview_bayer_pattern};
 	preview_cache.recreate(m_image_key, sc);
-	show_preview_in_imager_viewer(m_image_key);
+	if (m_imager_viewer->isShowingStack()) {
+		on_stack_updated();
+	} else {
+		show_preview_in_imager_viewer(m_image_key);
+	}
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
