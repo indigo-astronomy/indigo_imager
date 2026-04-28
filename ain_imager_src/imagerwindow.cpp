@@ -294,11 +294,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	act->setChecked(conf.antialiasing_enabled);
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_antialias_view);
 
-	act = menu->addAction(tr("Live image S&tack"));
-	act->setCheckable(true);
-	act->setChecked(conf.live_stacking_enabled);
-	connect(act, &QAction::toggled, this, &ImagerWindow::on_live_stack_changed);
-
 	act = menu->addAction(tr("Enable guider &antialiasing"));
 	act->setCheckable(true);
 	act->setChecked(conf.guider_antialiasing_enabled);
@@ -403,6 +398,13 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 			m_imager_viewer->showInspectionOverlay(false);
 		}
 	});
+
+	tools_menu->addSeparator();
+
+	tools_act = tools_menu->addAction(tr("Live image S&tack"));
+	tools_act->setCheckable(true);
+	tools_act->setChecked(conf.live_stacking_enabled);
+	connect(tools_act, &QAction::toggled, this, &ImagerWindow::on_live_stack_changed);
 
 	menu_bar->addMenu(tools_menu);
 

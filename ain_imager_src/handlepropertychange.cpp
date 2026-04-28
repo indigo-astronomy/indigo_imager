@@ -3904,11 +3904,13 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("REMOVE %s", property->name);
 		set_text(m_cooler_pwr, "");
+		set_widget_state(m_cooler_pwr, INDIGO_OK_STATE);
 	}
 	if (client_match_device_property(property, selected_agent, CCD_TEMPERATURE_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("REMOVE %s", property->name);
 		set_text(m_current_temp, "");
+		set_widget_state(m_current_temp, INDIGO_OK_STATE);
 		set_enabled(m_set_temp, false);
 
 		SequenceItemModel::instance().setNumericRange(SC_ENABLE_COOLER, 0, -150.0, 30.0);
