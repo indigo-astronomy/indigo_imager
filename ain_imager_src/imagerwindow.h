@@ -280,7 +280,7 @@ public slots:
 	void on_image_save_act();
 	void on_service_config_act();
 	void on_start_control_panel_act();
-	void on_data_directory_prefix_act();
+	void on_output_settings_act();
 	void on_acl_load_act();
 	void on_acl_append_act();
 	void on_acl_save_act();

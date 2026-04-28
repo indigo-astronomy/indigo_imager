@@ -138,8 +138,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	menu->addSeparator();
 
-	act = menu->addAction(tr("Select &Data Directory..."));
-	connect(act, &QAction::triggered, this, &ImagerWindow::on_data_directory_prefix_act);
+	act = menu->addAction(tr("Image Output &Settings..."));
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_output_settings_act);
 
 	menu->addSeparator();
 
@@ -1616,7 +1616,7 @@ void ImagerWindow::on_image_save_act() {
 	}
 }
 
-void ImagerWindow::on_data_directory_prefix_act() {
+void ImagerWindow::on_output_settings_act() {
 	char message[PATH_LEN+100];
 	QString qlocation = QDir::toNativeSeparators(QDir::homePath());
 	if (conf.data_dir_prefix[0] != '\0') qlocation = QString(conf.data_dir_prefix);

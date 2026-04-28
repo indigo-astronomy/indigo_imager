@@ -19,7 +19,6 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QFont>
-#include <QFormLayout>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -48,29 +47,29 @@ QString FilenameTemplateDialog::filenameTemplate() const {
 FilenameTemplateDialog::FilenameTemplateDialog(const QString &initialDir, const QString &initialTemplate, QWidget *parent)
 	: QDialog(parent)
 {
-	setWindowTitle(tr("Select output data directory and filename template"));
-	setMinimumWidth(650);
+	setWindowTitle(tr("Image output settings"));
+	setMinimumWidth(600);
 
 	QVBoxLayout *vbox = new QVBoxLayout(this);
 
-	// Form with output directory and filename template rows
-	QFormLayout *form = new QFormLayout;
-
+	// Output directory + filename template rows, labels aligned in column 0
 	m_dir_edit = new QLineEdit(initialDir);
 	QPushButton *dir_btn = new QPushButton(tr("Browse..."));
-	QWidget *dir_widget = new QWidget;
-	QHBoxLayout *dir_h = new QHBoxLayout(dir_widget);
-	dir_h->setContentsMargins(0, 0, 0, 0);
-	dir_h->addWidget(m_dir_edit);
-	dir_h->addWidget(dir_btn);
 	QLabel *out_label = new QLabel(tr("<b>Output directory:</b>"));
-	form->addRow(out_label, dir_widget);
+	out_label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
 	m_template_edit = new QLineEdit(initialTemplate);
 	QLabel *template_label = new QLabel(tr("<b>Filename template:</b>"));
-	form->addRow(template_label, m_template_edit);
+	template_label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
-	vbox->addLayout(form);
+	QGridLayout *fields_grid = new QGridLayout;
+	fields_grid->setColumnStretch(1, 1);
+	fields_grid->addWidget(out_label,       0, 0, Qt::AlignLeft | Qt::AlignVCenter);
+	fields_grid->addWidget(m_dir_edit,      0, 1);
+	fields_grid->addWidget(dir_btn,         0, 2);
+	fields_grid->addWidget(template_label,  1, 0, Qt::AlignLeft | Qt::AlignVCenter);
+	fields_grid->addWidget(m_template_edit, 1, 1, 1, 2);
+	vbox->addLayout(fields_grid);
 
 	// Framed group box with supported placeholder reference
 	QGroupBox *placeholder_box = new QGroupBox(tr("Supported placeholders"));
@@ -91,10 +90,10 @@ FilenameTemplateDialog::FilenameTemplateDialog(const QString &initialDir, const 
 	addPlaceholderEntries(grid, bold_font, small_font);
 	placeholder_vbox->addLayout(grid);
 
-	QLabel *note = new QLabel(tr("<i><b>Note:</b> <b>%nI</b> and <b>%M</b> (MD5 hash) are always appended automatically as <b>_idx%3I_%M</b></i>"));
-	note->setFont(small_font);
-	note->setWordWrap(true);
-	placeholder_vbox->addWidget(note);
+	//QLabel *note = new QLabel(tr("<i><b>Note:</b> <b>%nI</b> and <b>%M</b> (MD5 hash) are always appended automatically as <b>_idx%3I_%M</b></i>"));
+	//note->setFont(small_font);
+	//note->setWordWrap(true);
+	//placeholder_vbox->addWidget(note);
 
 	vbox->addWidget(placeholder_box);
 
