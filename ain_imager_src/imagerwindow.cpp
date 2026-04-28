@@ -1442,8 +1442,7 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 			QRegularExpressionMatch m_nI = re_nI.match(result);
 			if (m_nI.hasMatch()) {
 				int n = m_nI.captured(1).toInt();
-				if (n < 1) n = 1;
-				if (n > 5) n = 5;
+				if (n < 1 || n > 5) n = 3;
 
 				// Prefix = everything before %nI; extension = blob format
 				// The suffix *after* %nI is intentionally not used for matching,
@@ -1474,14 +1473,14 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 				QString idx_str = QString("%1").arg(max_index + 1, n, 10, QChar('0'));
 				result.replace(m_nI.capturedStart(), m_nI.capturedLength(), idx_str);
 
-				// Any additional %nI placeholders are replaced with n zeros
+				// Any additional %nI placeholders are replaced with n-1 zeros followed by 1 (i.e. the "first" index)
+				// If n is 0 or >5, use 3 digits.
 				QRegularExpressionMatchIterator rest = re_nI.globalMatch(result);
 				while (rest.hasNext()) {
 					QRegularExpressionMatch rm = rest.next();
 					int rn = rm.captured(1).toInt();
-					if (rn < 1) rn = 1;
-					if (rn > 5) rn = 5;
-					result.replace(rm.capturedStart(), rm.capturedLength(), QString(rn, QChar('0')));
+					if (rn < 1 || rn > 5) rn = 3;
+					result.replace(rm.capturedStart(), rm.capturedLength(), QString(rn - 1, QChar('0')) + QChar('1'));
 					rest = re_nI.globalMatch(result); // restart after modification
 				}
 			}
