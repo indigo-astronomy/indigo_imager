@@ -125,7 +125,7 @@ FilenameTemplateDialog::FilenameTemplateDialog(const QString &initialDir, const 
 
 	// Buttons: Defaults on left, OK/Cancel on right
 	QHBoxLayout *buttons = new QHBoxLayout;
-	QPushButton *defaults_btn = new QPushButton(tr("Defaults"));
+	QPushButton *defaults_btn = new QPushButton(tr("Restore defaults"));
 	QPushButton *ok_btn       = new QPushButton(tr("OK"));
 	QPushButton *cancel_btn   = new QPushButton(tr("Cancel"));
 	buttons->addWidget(defaults_btn);
@@ -161,7 +161,6 @@ void FilenameTemplateDialog::onTemplateContextMenu(const QPoint &pos) {
 	QMenu *menu = m_template_edit->createStandardContextMenu();
 	menu->addSeparator();
 	QMenu *insert_menu = menu->addMenu(tr("Insert placeholder"));
-
 	for (int i = 0; i < k_n; i++) {
 		const auto &e = k_placeholders[i];
 		// %nE is excluded from the context menu as it requires a number and is less convenient to insert via menu. Users can still type it manually if needed.
@@ -174,6 +173,12 @@ void FilenameTemplateDialog::onTemplateContextMenu(const QPoint &pos) {
 			m_template_edit->insert(ph);
 		});
 	}
+
+	menu->addSeparator();
+	QAction *default_act = menu->addAction(tr("Restore default template"));
+	connect(default_act, &QAction::triggered, this, [this]() {
+		m_template_edit->setText(QString(DEFAULT_FILENAME_TEMPLATE));
+	});
 
 	menu->exec(m_template_edit->mapToGlobal(pos));
 	delete menu;
