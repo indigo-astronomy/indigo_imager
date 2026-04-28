@@ -46,6 +46,7 @@ static const PlaceholderEntry k_placeholders[] = {
 	{ "%T",  "Sensor temperature: \u00b0C"   },
 	{ "%E",  "Exposure time: s"              },
 	{ "%nE", "Exposure, n decimal digits"    },
+	{ "%nI", "Sequential index, n digits"    },
 	{ "%G",  "Gain"                          },
 	{ "%O",  "Offset"                        },
 	{ "%R",  "Resolution: WxH"               },
@@ -63,7 +64,6 @@ QString FilenameTemplateDialog::filenameTemplate() const {
 	QString t = m_template_edit->text().trimmed();
 	// Strip placeholders that are always appended automatically and are disallowed in user templates
 	t.remove(QRegularExpression("%I"));
-	t.remove(QRegularExpression("%[1-9]I"));
 	t.remove(QRegularExpression("%M"));
 	t.remove(QRegularExpression("%[1-9]S"));
 	t.remove(QRegularExpression("%S"));
@@ -181,6 +181,7 @@ void FilenameTemplateDialog::onTemplateContextMenu(const QPoint &pos) {
 		// %nE is excluded from the context menu as it requires a number and is less convenient to insert via menu. Users can still type it manually if needed.
 		if (QLatin1String(e.placeholder) == QLatin1String("%nE")) continue;
 		QString ph = e.placeholder;
+		if (ph == QLatin1String("%nI")) ph = QStringLiteral("%3I");
 		QString label = QString("%2 (%1)").arg(ph).arg(e.desc);
 		QAction *act = insert_menu->addAction(label);
 		connect(act, &QAction::triggered, this, [this, ph, click_pos]() {

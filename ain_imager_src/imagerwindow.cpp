@@ -1436,6 +1436,57 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 			result.replace("%P", pos);
 		}
 
+		// %nI - prefix/extension based sequential index (like INDIGO %nI)
+		{
+			QRegularExpression re_nI("%(\\d)I");
+			QRegularExpressionMatch m_nI = re_nI.match(result);
+			if (m_nI.hasMatch()) {
+				int n = m_nI.captured(1).toInt();
+				if (n < 1) n = 1;
+				if (n > 5) n = 5;
+
+				// Prefix = everything before %nI; extension = blob format
+				// The suffix *after* %nI is intentionally not used for matching,
+				// matching INDIGO behaviour: only prefix + digits + extension must agree.
+				QString file_prefix = result.left(m_nI.capturedStart());
+				QString ext = QString(item->blob.format);
+
+				// Build regex: <prefix><one-or-more-digits><anything><ext>
+				QRegularExpression scan_re(
+					"^" + QRegularExpression::escape(file_prefix) +
+					"(\\d+)" +
+					".*" +
+					QRegularExpression::escape(ext) + "$"
+				);
+
+				int max_index = 0;
+				QDir scan_dir = QDir(QString(prefix));
+				for (const QString &entry : scan_dir.entryList(QDir::Files)) {
+					QRegularExpressionMatch em = scan_re.match(entry);
+					if (!em.hasMatch()) continue;
+					bool ok = false;
+					int idx = em.captured(1).toInt(&ok);
+					if (ok && idx > max_index) {
+						max_index = idx;
+					}
+				}
+
+				QString idx_str = QString("%1").arg(max_index + 1, n, 10, QChar('0'));
+				result.replace(m_nI.capturedStart(), m_nI.capturedLength(), idx_str);
+
+				// Any additional %nI placeholders are replaced with n zeros
+				QRegularExpressionMatchIterator rest = re_nI.globalMatch(result);
+				while (rest.hasNext()) {
+					QRegularExpressionMatch rm = rest.next();
+					int rn = rm.captured(1).toInt();
+					if (rn < 1) rn = 1;
+					if (rn > 5) rn = 5;
+					result.replace(rm.capturedStart(), rm.capturedLength(), QString(rn, QChar('0')));
+					rest = re_nI.globalMatch(result); // restart after modification
+				}
+			}
+		}
+
 		// Replace any remaining unrecognised %X placeholders: % -> _
 		result.replace(QRegularExpression("%"), "_");
 
