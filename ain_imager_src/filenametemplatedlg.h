@@ -35,6 +35,7 @@ public:
 private slots:
 	void onBrowseDirectory();
 	void onRestoreDefaults();
+	void onTemplateContextMenu(const QPoint &pos);
 
 private:
 	void addPlaceholderEntries(QGridLayout *grid, const QFont &boldFont, const QFont &smallFont);
