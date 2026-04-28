@@ -181,7 +181,9 @@ void FilenameTemplateDialog::onTemplateContextMenu(const QPoint &pos) {
 		// %nE is excluded from the context menu as it requires a number and is less convenient to insert via menu. Users can still type it manually if needed.
 		if (QLatin1String(e.placeholder) == QLatin1String("%nE")) continue;
 		QString ph = e.placeholder;
-		if (ph == QLatin1String("%nI")) ph = QStringLiteral("%3I");
+		if (ph == QLatin1String("%nI")) {
+			ph = QStringLiteral("%3I");
+		}
 		QString label = QString("%2 (%1)").arg(ph).arg(e.desc);
 		QAction *act = insert_menu->addAction(label);
 		connect(act, &QAction::triggered, this, [this, ph, click_pos]() {
