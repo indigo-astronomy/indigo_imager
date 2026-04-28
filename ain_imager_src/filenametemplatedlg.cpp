@@ -158,6 +158,21 @@ void FilenameTemplateDialog::onRestoreDefaults() {
 
 void FilenameTemplateDialog::onTemplateContextMenu(const QPoint &pos) {
 	int click_pos = m_template_edit->cursorPositionAt(pos);
+
+	// If the click landed inside an existing placeholder, move the insertion
+	// point to just after its end so we don't split it.
+	// Placeholder syntax: % + optional modifier([-.[1-9]) + one letter
+	static const QRegularExpression ph_re(QStringLiteral("%[-.[1-9]?[A-Za-z]"));
+	const QString text = m_template_edit->text();
+	QRegularExpressionMatchIterator it = ph_re.globalMatch(text);
+	while (it.hasNext()) {
+		QRegularExpressionMatch m = it.next();
+		if (click_pos > m.capturedStart() && click_pos < m.capturedEnd()) {
+			click_pos = m.capturedEnd();
+			break;
+		}
+	}
+
 	QMenu *menu = m_template_edit->createStandardContextMenu();
 	menu->addSeparator();
 	QMenu *insert_menu = menu->addMenu(tr("Insert placeholder"));
