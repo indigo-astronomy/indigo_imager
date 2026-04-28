@@ -40,6 +40,7 @@
 #include <QRegularExpression>
 #include <QGroupBox>
 #include <QGridLayout>
+#include "filenametemplatedlg.h"
 //#include <IndigoSequence.h>
 
 void write_conf();
@@ -1324,13 +1325,8 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 		};
 
 		// Build expanded filename from template
-		QString tpl = conf.filename_template[0] != '\0' ? QString(conf.filename_template) : QString(DEFAULT_FILENAME_TEMPLATE);
-
-		// Strip %nI and %M (not supported locally)
-		tpl.remove(QRegularExpression("%[1-5]I"));
-		tpl.remove(QRegularExpression("%M"));
-
-		QString result = tpl;
+		QString name_template = conf.filename_template[0] != '\0' ? QString(conf.filename_template) : QString(DEFAULT_FILENAME_TEMPLATE);
+		QString result = name_template;
 
 		// %o - object name
 		{
@@ -1437,10 +1433,6 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 				: QString::number(m_focus_position->value());
 			result.replace("%P", pos);
 		}
-
-		// %nS - sequential number placeholder: since we always append _%c%03d at the end,
-		// %nS in the template is stripped (file number is appended regardless)
-		result.remove(QRegularExpression("%[1-5]S"));
 
 		// Replace any remaining unrecognised %X placeholders: % -> _
 		result.replace(QRegularExpression("%"), "_");
@@ -1629,128 +1621,15 @@ void ImagerWindow::on_data_directory_prefix_act() {
 	QString qlocation = QDir::toNativeSeparators(QDir::homePath());
 	if (conf.data_dir_prefix[0] != '\0') qlocation = QString(conf.data_dir_prefix);
 
-	// Build a custom dialog with two fields: output directory and filename template
-	QDialog dlg(this);
-	dlg.setWindowTitle(tr("Select output data directory and filename template"));
-	dlg.setMinimumWidth(650);
-	QVBoxLayout *vbox = new QVBoxLayout(&dlg);
-
-	// Use a form layout for aligned labels/controls
-	QFormLayout *form = new QFormLayout;
-	QLineEdit *dir_edit = new QLineEdit(qlocation);
-	QPushButton *dir_btn = new QPushButton(tr("Browse..."));
-	QWidget *dir_widget = new QWidget;
-	QHBoxLayout *dir_h = new QHBoxLayout(dir_widget);
-	dir_h->setContentsMargins(0,0,0,0);
-	dir_h->addWidget(dir_edit);
-	dir_h->addWidget(dir_btn);
-	QLabel *out_label = new QLabel(tr("<b>Output directory:</b>"));
-	form->addRow(out_label, dir_widget);
-
-	const char *tpl_default = DEFAULT_FILENAME_TEMPLATE;
-	QLineEdit *tpl_edit = new QLineEdit(
-		conf.filename_template[0] != '\0' ? QString(conf.filename_template) : QString(tpl_default)
+	FilenameTemplateDialog template_dialog(
+		qlocation,
+		conf.filename_template[0] != '\0' ? QString(conf.filename_template) : QString(DEFAULT_FILENAME_TEMPLATE),
+		this
 	);
-	QLabel *tpl_label = new QLabel(tr("<b>Filename template:</b>"));
-	form->addRow(tpl_label, tpl_edit);
+	if (template_dialog.exec() != QDialog::Accepted) return;
 
-	vbox->addLayout(form);
-
-	// Framed group box with two-column placeholder reference
-	QGroupBox *ph_box = new QGroupBox(tr("Supported placeholders"));
-	ph_box->setStyleSheet("QGroupBox { font-weight: normal; }");
-	QVBoxLayout *ph_vbox = new QVBoxLayout(ph_box);
-
-	QFont bold_font;
-	bold_font.setBold(true);
-	QFont small_font;
-	small_font.setPointSizeF(small_font.pointSizeF() - 1.0);
-
-	// columns: [ph] [desc] [stretch] [ph] [desc]
-	// col 0,1 = left group; col 2 = stretch; col 3,4 = right group
-	QGridLayout *grid = new QGridLayout;
-	grid->setHorizontalSpacing(4);
-	grid->setVerticalSpacing(2);
-	grid->setColumnStretch(2, 1);  // stretch between the two column groups
-
-	struct PlaceholderEntry { const char *ph; const char *desc; };
-	static const PlaceholderEntry entries[] = {
-		{ "%o",   "object name"                   },
-		{ "%F",   "frame type: Light, Dark, etc." },
-		{ "%C",   "filter name: R, G, Ha, etc."   },
-		{ "%D",   "date: YYYYMMDD"                },
-		{ "%-D",  "date: YYYY-MM-DD"              },
-		{ "%.D",  "date: YYYY.MM.DD"              },
-		{ "%H",   "time: HHMMSS"                  },
-		{ "%-H",  "time: HH-MM-SS"                },
-		{ "%.H",  "time: HH.MM.SS"                },
-		{ "%T",   "sensor temperature (°C)"       },
-		{ "%E",   "exposure time"                 },
-		{ "%nE",  "exposure, n decimal digits"    },
-		{ "%G",   "gain"                          },
-		{ "%O",   "offset"                        },
-		{ "%R",   "resolution (WxH)"              },
-		{ "%B",   "binning"                       },
-		{ "%P",   "focuser position"              },
-	};
-	const int N = (int)(sizeof(entries) / sizeof(entries[0]));
-	const int half = (N + 1) / 2;
-
-	auto add_entries = [&](int start, int count, int base_col) {
-		for (int i = 0; i < count; i++) {
-			QLabel *lph = new QLabel(entries[start + i].ph);
-			lph->setFont(bold_font);
-			lph->setTextInteractionFlags(Qt::TextSelectableByMouse);
-			QLabel *ldesc = new QLabel(QString(" ") + entries[start + i].desc);
-			ldesc->setFont(small_font);
-			grid->addWidget(lph,   i, base_col,     Qt::AlignLeft | Qt::AlignVCenter);
-			grid->addWidget(ldesc, i, base_col + 1, Qt::AlignLeft | Qt::AlignVCenter);
-		}
-	};
-	add_entries(0,    half,     0);
-	add_entries(half, N - half, 3);
-
-	ph_vbox->addLayout(grid);
-
-	QLabel *note = new QLabel(tr("<i><b>Note:</b> <b>%nI</b> and <b>%M</b> (MD5 hash) are always appended automatically as <b>_idx%3I_%M</b></i>"));
-	note->setFont(small_font);
-	note->setWordWrap(true);
-	ph_vbox->addWidget(note);
-
-	vbox->addWidget(ph_box);
-
-	// Buttons
-	QHBoxLayout *buttons = new QHBoxLayout;
-	QPushButton *defaults = new QPushButton(tr("Defaults"));
-	QPushButton *ok = new QPushButton(tr("OK"));
-	QPushButton *cancel = new QPushButton(tr("Cancel"));
-	// Place Defaults on the left and keep OK/Cancel on the right
-	buttons->addWidget(defaults);
-	buttons->addStretch();
-	buttons->addWidget(ok);
-	buttons->addWidget(cancel);
-	vbox->addLayout(buttons);
-
-	connect(dir_btn, &QPushButton::clicked, this, [dir_edit, this]() {
-		QString start = dir_edit->text();
-		if (start.isEmpty()) start = QDir::toNativeSeparators(QDir::homePath());
-		QString d = QFileDialog::getExistingDirectory(nullptr, tr("Select output data directory..."), start,
-			QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
-		if (!d.isEmpty()) dir_edit->setText(d);
-	});
-
-	connect(cancel, &QPushButton::clicked, &dlg, &QDialog::reject);
-	connect(ok, &QPushButton::clicked, &dlg, &QDialog::accept);
-
-	connect(defaults, &QPushButton::clicked, this, [dir_edit, tpl_edit, tpl_default]() {
-		dir_edit->setText(QDir::toNativeSeparators(QDir::homePath()));
-		tpl_edit->setText(QString(tpl_default));
-	});
-
-	if (dlg.exec() != QDialog::Accepted) return;
-
-	QString dir = dir_edit->text().trimmed();
-	QString tpl = tpl_edit->text().trimmed();
+	QString dir = template_dialog.directory();
+	QString name_template = template_dialog.filenameTemplate();
 	if (dir.isEmpty()) return;
 
 	QFileInfo dir_info(QDir::toNativeSeparators(dir));
@@ -1760,18 +1639,8 @@ void ImagerWindow::on_data_directory_prefix_act() {
 		return;
 	}
 
-	// Sanitize template: remove %nI (any digit) and %M if present (these are always appended)
-	QString sanitized = tpl;
-	sanitized.remove(QRegularExpression("%[1-5]I"));
-	sanitized.remove(QRegularExpression("%M"));
-
-	if (sanitized != tpl) {
-		snprintf(message, sizeof(message), "Template contained disallowed placeholders and was adjusted.");
-		window_log(message, INDIGO_ALERT_STATE);
-	}
-
 	strncpy(conf.data_dir_prefix, dir.toUtf8().data(), PATH_LEN);
-	strncpy(conf.filename_template, sanitized.toUtf8().data(), INDIGO_VALUE_SIZE);
+	strncpy(conf.filename_template, name_template.toUtf8().data(), INDIGO_VALUE_SIZE);
 	snprintf(message, sizeof(message), "Data will be saved to: '%s' (template: '%s')", conf.data_dir_prefix, conf.filename_template);
 	window_log(message);
 	write_conf();

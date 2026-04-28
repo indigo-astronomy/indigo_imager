@@ -34,6 +34,7 @@ SOURCES += \
 	$$PWD/customobject.cpp \
 	$$PWD/customobjectmodel.cpp \
 	$$PWD/qaddcustomobject.cpp \
+	$$PWD/filenametemplatedlg.cpp \
 	$$PWD/solver_tab.cpp \
 	$$PWD/imagerwindow.cpp \
 	$$PWD/qindigoservice.cpp \
@@ -98,6 +99,7 @@ HEADERS += \
 	$$PWD/customobject.h \
 	$$PWD/customobjectmodel.h \
 	$$PWD/qaddcustomobject.h \
+	$$PWD/filenametemplatedlg.h \
 	$$PWD/qindigoservers.h \
 	$$PWD/logger.h \
 	$$PWD/focusgraph.h \
