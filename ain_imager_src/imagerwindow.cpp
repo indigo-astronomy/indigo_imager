@@ -1641,7 +1641,7 @@ void ImagerWindow::on_output_settings_act() {
 
 	strncpy(conf.data_dir_prefix, dir.toUtf8().data(), PATH_LEN);
 	strncpy(conf.filename_template, name_template.toUtf8().data(), INDIGO_VALUE_SIZE);
-	snprintf(message, sizeof(message), "Data will be saved to: '%s' (template: '%s')", conf.data_dir_prefix, conf.filename_template);
+	snprintf(message, sizeof(message), "Images will be saved to: '%s/%s/YYYY-MM-DD/%s'", conf.data_dir_prefix, AIN_DATA_DIR, conf.filename_template);
 	window_log(message);
 	write_conf();
 }

@@ -198,8 +198,8 @@ void get_current_output_dir(char *output_dir, char *prefix) {
 		if (!path_prefix.endsWith("/")) {
 			path_prefix = path_prefix + QString("/");
 		}
-		if (!path_prefix.endsWith("/ain_data/")) {
-			path_prefix = path_prefix + QString("ain_data/");
+		if (!path_prefix.endsWith("/" AIN_DATA_DIR "/")) {
+			path_prefix = path_prefix + QString(AIN_DATA_DIR "/");
 		}
 		QString qlocation = QDir::toNativeSeparators(path_prefix + QString(date_str) + QString("/"));
 		QDir dir = QDir::root();

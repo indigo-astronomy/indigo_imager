@@ -20,6 +20,7 @@
 #define _UTILS_H
 
 #define AIN_DEFAULT_THREADS 4
+#define AIN_DATA_DIR "ain_data"
 
 int get_number_of_cores();
 
