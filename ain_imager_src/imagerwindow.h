@@ -1136,7 +1136,7 @@ private:
 	void setup_preview(const char *agent);
 	bool open_image(QString file_name, int *image_size, unsigned char **image_data);
 
-	bool show_preview_in_imager_viewer(QString &key);
+	bool show_preview_in_imager_viewer(QString &key, bool is_batch_image = false);
 	bool show_preview_in_guider_viewer(QString &key);
 	void show_selected_preview_in_solver_tab(QString &solver_source);
 	bool save_blob_item_with_prefix(indigo_item *item, const char *prefix, char *file_name, bool auto_construct = true);

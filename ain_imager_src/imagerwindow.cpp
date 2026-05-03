@@ -790,10 +790,11 @@ void ImagerWindow::window_log(const char *message, int state) {
 	mLog->verticalScrollBar()->setValue(mLog->verticalScrollBar()->maximum());
 }
 
-bool ImagerWindow::show_preview_in_imager_viewer(QString &key) {
+bool ImagerWindow::show_preview_in_imager_viewer(QString &key, bool is_batch_image) {
 	preview_image *image = preview_cache.get(key);
 	if (image) {
-		if (conf.live_stacking_enabled && m_batch_running) {
+		const bool should_stack = conf.live_stacking_enabled && (m_batch_running || is_batch_image);
+		if (should_stack) {
 			const bool align_live_stack = (m_frame_type.compare("Light", Qt::CaseInsensitive) == 0);
 			m_stacker->addImage(image, align_live_stack);
 			if (m_imager_viewer->isShowingStack()) {
@@ -1057,7 +1058,7 @@ void ImagerWindow::on_create_preview(indigo_property *property, indigo_item *ite
 		preview_cache.create(property, m_indigo_item, sconfig);
 		QString key = preview_cache.create_key(property, m_indigo_item);
 		//preview_image *image = preview_cache.get(m_image_key);
-		if (show_preview_in_imager_viewer(key)) {
+		if (show_preview_in_imager_viewer(key, save_blob)) {
 			indigo_debug("m_imager_viewer = %p", m_imager_viewer);
 			m_imager_viewer->setText(QString("Unsaved") + QString(m_indigo_item->blob.format));
 			m_imager_viewer->setToolTip(QString("Unsaved") + QString(m_indigo_item->blob.format));
