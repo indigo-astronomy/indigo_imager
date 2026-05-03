@@ -1380,17 +1380,17 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 			}
 		}
 
-		// %T - sensor temperature (current)
-		if (m_current_temp->text().trimmed().isEmpty()) {
-			result.replace("%T", "NA");
-		} else {
-			bool ok = false;
-			double t = m_current_temp->text().trimmed().toDouble(&ok);
-			if (ok) {
-				result.replace("%T", QString::number(t, 'f', 1));
-			} else {
-				result.replace("%T", m_current_temp->text().trimmed());
+		// %T or %nT - sensor target temperature (n = decimal digits 0-5, default 0; clamped to 5)
+		QRegularExpression re_T("%([0-9]?)T");
+		QRegularExpressionMatch m = re_T.match(result);
+		while (m.hasMatch()) {
+			QString t = "NA";
+			if (m_set_temp->isEnabled() && m_cooler_onoff->isEnabled() && m_cooler_onoff->isChecked()) {
+				int digits = m.captured(1).isEmpty() ? 0 : qMin(m.captured(1).toInt(), 5);
+				t = QString::number(m_set_temp->value(), 'f', digits);
 			}
+			result.replace(m.capturedStart(), m.capturedLength(), t);
+			m = re_T.match(result);
 		}
 
 		// %D, %-D, %.D - date
