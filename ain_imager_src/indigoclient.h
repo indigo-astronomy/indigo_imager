@@ -51,6 +51,7 @@ public:
 
 	~IndigoClient() {
 		m_is_exposing.clear();
+		m_blob_pending.clear();
 		stop();
 	}
 
@@ -63,6 +64,7 @@ public:
 	};
 
 	bool is_exposing(const char* device);
+	bool consume_is_exposing(const char* device);
 	void remove_is_exposing_entry(const char* device);
 
 	void start(const char *name);
@@ -98,6 +100,7 @@ signals:
 
 private:
 	QHash<QString, bool> m_is_exposing;
+	QHash<QString, bool> m_blob_pending;
 };
 
 inline IndigoClient& IndigoClient::instance() {

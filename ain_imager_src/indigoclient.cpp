@@ -102,6 +102,14 @@ bool IndigoClient::is_exposing(const char* device) {
 	return false;
 }
 
+// Like is_exposing(), but also returns true once for the frame that was
+// already in-flight when AGENT_START_PROCESS transitioned to non-BUSY
+// (i.e. when AGENT_START_PROCESS OK beats CCD_IMAGE OK to the client).
+bool IndigoClient::consume_is_exposing(const char* device) {
+	const bool was_pending = m_blob_pending.take(device);
+	return was_pending || is_exposing(device);
+}
+
 void IndigoClient::remove_is_exposing_entry(const char* device) {
 	m_is_exposing.remove(device);
 }
@@ -122,6 +130,12 @@ void IndigoClient::update_save_blob(indigo_property *property)	 {
 				}
 			}
 			is_exposing = sequence_running || batch_running;
+		}
+		// If a batch just ended, latch a one-shot flag so that a CCD_IMAGE
+		// blob that was already in-flight (URL sent before AGENT_START_PROCESS
+		// went OK) is still treated as a batch frame.
+		if (m_is_exposing.value(property->device, false) && !is_exposing) {
+			m_blob_pending.insert(property->device, true);
 		}
 		m_is_exposing.insert(property->device, is_exposing);
 	}
@@ -187,7 +201,7 @@ static void handle_blob_property(indigo_property *property) {
 	if (property->state == INDIGO_OK_STATE && property->perm != INDIGO_WO_PERM) {
 		if (!strncmp(property->device, "Imager Agent", 12)) {
 			if (!strncmp(property->name, CCD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE) && (conf.preview_mode < ALL_FINE_PREVIEWS)) {
-				if (!download_blob_async(property, &client.imager_downloading, client.is_exposing(property->device))) {
+				if (!download_blob_async(property, &client.imager_downloading, client.consume_is_exposing(property->device))) {
 					client.m_logger->log(property, error_message);
 				}
 			} else if (!strncmp(property->name, AGENT_IMAGER_DOWNLOAD_IMAGE_PROPERTY_NAME, INDIGO_NAME_SIZE)) {
