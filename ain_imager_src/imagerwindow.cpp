@@ -1438,7 +1438,10 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 		}
 
 		// %nI - prefix/extension based sequential index (like INDIGO %nI)
+		// %I (no digit) is treated as %3I
 		{
+			result.replace(QRegularExpression("%(?!\\d)I"), "%3I");
+
 			QRegularExpression re_nI("%(\\d)I");
 			QRegularExpressionMatch m_nI = re_nI.match(result);
 			if (m_nI.hasMatch()) {
