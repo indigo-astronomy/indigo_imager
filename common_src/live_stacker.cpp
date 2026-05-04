@@ -1118,7 +1118,7 @@ bool LiveStacker::addImage(preview_image *image, bool align) {
 			if (m_alignment_method == ALIGN_KD_TREE_ROTATION) {
 				aligned = findRotationAndShift(dx, dy, theta, cur_stars);
 				if (aligned) {
-					indigo_error("LiveStacker::addImage: rotation %.4f deg, shift (%.2f, %.2f)\n", theta * 180.0 / M_PI, dx, dy);
+					indigo_debug("LiveStacker::addImage: rotation %.4f deg, shift (%.2f, %.2f)\n", theta * 180.0 / M_PI, dx, dy);
 				} else {
 					// Rotation estimate failed — fall back to KD_TREE translation-only.
 					aligned = findShiftByKdTree(dx, dy, cur_stars);
@@ -1148,7 +1148,7 @@ bool LiveStacker::addImage(preview_image *image, bool align) {
 	const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
 	int num_threads = get_number_of_cores();
 	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
-	indigo_error("LiveStacker::addImage: frame added in %lld ms using %d cores\n", (long long)ms, num_threads);
+	indigo_debug("LiveStacker::addImage: frame added in %lld ms using %d cores\n", (long long)ms, num_threads);
 
 	return true;
 }
