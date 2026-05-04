@@ -686,9 +686,29 @@ private:
 	QString m_remote_object_name;
 	QStringList m_files_to_download;
 	QStringList m_files_to_remove;
-	QString m_filter_name;
-	QString m_frame_type;
 	QString m_object_name_str;
+
+	// INDIGO property values for filename placeholder substitution.
+	// Updated from property-change handlers and read in save_blob_item_with_prefix.
+	// All access happens on the Qt GUI thread (BlockingQueuedConnection /
+	// QueuedConnection), so no explicit synchronization is required.
+	struct FilenameContext {
+		double  exposure_time             = 0.0;  // %E / %nE
+		double  set_temp                  = 0.0;  // %T / %nT
+		bool    cooler_on                 = false; // guard for %T
+		bool    cooler_controls_available = false; // guard for %T
+		int     roi_w                     = 0;     // %R
+		int     roi_h                     = 0;     // %R
+		int     bin_x                     = 1;     // %B
+		int     bin_y                     = 1;     // %B
+		int     gain                      = 0;     // %G
+		int     offset                    = 0;     // %O
+		int     focus_pos                 = 0;     // %P
+		QString filter_name;                       // %C
+		QString frame_type;                        // %F
+		QString object_name;                       // %o
+	};
+	FilenameContext m_fn_ctx;
 
 	// Sequence tabbar
 	QComboBox *m_agent_scripting_select;

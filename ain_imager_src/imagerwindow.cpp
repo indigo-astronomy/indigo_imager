@@ -621,15 +621,16 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 		&IndigoClient::imager_download_started,
 		this,
 		[this]() {
-			// we need to get the filter name and frame when we start the download
-			// otherwise they can be changed before download is completed
+			// Snapshot names at download-start so they can't be changed mid-download.
 			m_object_name_str = m_remote_object_name.trimmed();
-			m_filter_name = m_filter_select->currentText().trimmed();
-			m_frame_type = m_frame_type_select->currentText().trimmed();
+			m_fn_ctx.object_name = m_object_name_str;
+			m_fn_ctx.filter_name = m_filter_select->currentText().trimmed();
+			m_fn_ctx.frame_type  = m_frame_type_select->currentText().trimmed();
 			m_download_label->setMovie(m_download_spinner);
 			m_download_spinner->start();
 		}
 	);
+
 	connect(
 		&IndigoClient::instance(),
 		&IndigoClient::imager_download_completed,
@@ -795,7 +796,7 @@ bool ImagerWindow::show_preview_in_imager_viewer(QString &key, bool is_batch_ima
 	if (image) {
 		const bool should_stack = conf.live_stacking_enabled && (m_batch_running || is_batch_image);
 		if (should_stack) {
-			const bool align_live_stack = (m_frame_type.compare("Light", Qt::CaseInsensitive) == 0);
+			const bool align_live_stack = (m_fn_ctx.frame_type.compare("Light", Qt::CaseInsensitive) == 0);
 			m_stacker->addImage(image, align_live_stack);
 			if (m_imager_viewer->isShowingStack()) {
 				on_stack_updated();
@@ -1315,6 +1316,10 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 			time_flag = 'p';
 		}
 
+		// Take a snapshot of the confirmed INDIGO values used for filename placeholder substitution.
+		// All access is on the Qt GUI thread so no locking is needed.
+		FilenameContext fn_ctx = m_fn_ctx;
+
 		// Sanitize helper: replace disallowed characters with '_'
 		auto sanitize_str = [](const QString &s) -> QString {
 			static const QString allowed = "-_. ()[]{}+=@#$%&!~^";
@@ -1333,17 +1338,17 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 
 		// %o - object name
 		{
-			QString obj = m_object_name_str.trimmed();
+			QString obj = fn_ctx.object_name.trimmed();
 			if (obj.isEmpty()) obj = QString(DEFAULT_OBJECT_NAME);
 			result.replace("%o", sanitize_str(obj));
 		}
 
 		// %F - frame type
-		result.replace("%F", sanitize_str(m_frame_type.isEmpty() ? QString("Light") : m_frame_type));
+		result.replace("%F", sanitize_str(fn_ctx.frame_type.isEmpty() ? QString("Light") : fn_ctx.frame_type));
 
 		// %C - filter name
 		{
-			QString filter = m_filter_name.trimmed();
+			QString filter = fn_ctx.filter_name.trimmed();
 			if (filter.isEmpty()) filter = "NA";
 			result.replace("%C", sanitize_str(filter));
 		}
@@ -1357,7 +1362,7 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 			while (it.hasNext()) {
 				QRegularExpressionMatch m2 = it.next();
 				int n = m2.captured(1).toInt();
-				repl.append({m2.captured(0), QString::number(m_exposure_time->value(), 'f', n)});
+				repl.append({m2.captured(0), QString::number(fn_ctx.exposure_time, 'f', n)});
 			}
 			for (auto &p : repl) {
 				result.replace(p.first, p.second);
@@ -1365,7 +1370,7 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 
 			// %E - auto precision exposure
 			if (result.contains("%E")) {
-				double exp = m_exposure_time->value();
+				double exp = fn_ctx.exposure_time;
 				int digits = 0;
 				if (exp < 0.001) {
 					digits = 4;
@@ -1385,9 +1390,9 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 		QRegularExpressionMatch m = re_T.match(result);
 		while (m.hasMatch()) {
 			QString t = "NA";
-			if (m_set_temp->isEnabled() && m_cooler_onoff->isEnabled() && m_cooler_onoff->isChecked()) {
+			if (fn_ctx.cooler_controls_available && fn_ctx.cooler_on) {
 				int digits = m.captured(1).isEmpty() ? 0 : qMin(m.captured(1).toInt(), 5);
-				t = QString::number(m_set_temp->value(), 'f', digits);
+				t = QString::number(fn_ctx.set_temp, 'f', digits);
 			}
 			result.replace(m.capturedStart(), m.capturedLength(), t);
 			m = re_T.match(result);
@@ -1404,16 +1409,12 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 		result.replace("%H", now.toString("HHmmss"));
 
 		// %R - resolution (WxH from frame ROI)
-		{
-			int w = m_roi_w->value();
-			int h = m_roi_h->value();
-			result.replace("%R", QString("%1x%2").arg(w).arg(h));
-		}
+		result.replace("%R", QString("%1x%2").arg(fn_ctx.roi_w).arg(fn_ctx.roi_h));
 
 		// %B - binning
 		{
-			int bx = m_imager_bin_x->value();
-			int by = m_imager_bin_y->value();
+			int bx = fn_ctx.bin_x;
+			int by = fn_ctx.bin_y;
 			QString bin_str;
 			if (bx == by) {
 				bin_str = QString("BIN%1").arg(bx);
@@ -1424,16 +1425,16 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 		}
 
 		// %G - gain
-		result.replace("%G", QString::number(m_imager_gain->value()));
+		result.replace("%G", QString::number(fn_ctx.gain));
 
 		// %O - offset
-		result.replace("%O", QString::number(m_imager_offset->value()));
+		result.replace("%O", QString::number(fn_ctx.offset));
 
 		// %P - focuser position (NA if no focuser selected)
 		{
 			QString pos = (m_focuser_select->currentData().toString().compare("NONE") == 0 || m_focuser_select->count() == 0)
 				? QString("NA")
-				: QString::number(m_focus_position->value());
+				: QString::number(fn_ctx.focus_pos);
 			result.replace("%P", pos);
 		}
 

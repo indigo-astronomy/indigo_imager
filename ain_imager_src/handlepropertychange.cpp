@@ -229,6 +229,7 @@ void update_cooler_onoff(ImagerWindow *w, indigo_property *property) {
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], CCD_COOLER_ON_ITEM_NAME)) {
 			w->set_checkbox_checked(w->m_cooler_onoff, property->items[i].sw.value);
+			w->m_fn_ctx.cooler_on = property->items[i].sw.value;
 			break;
 		}
 	}
@@ -1080,10 +1081,12 @@ void update_agent_imager_gain_offset_property(ImagerWindow *w, indigo_property *
 			configure_spinbox(w, &property->items[i], property->perm, w->m_imager_gain);
 			SequenceItemModel::instance().setNumericRange(SC_SET_GAIN, 0, property->items[i].number.min, property->items[i].number.max);
 			SequenceItemModel::instance().setNumericIncrement(SC_SET_GAIN, 0, property->items[i].number.step);
+			w->m_fn_ctx.gain = (int)property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], CCD_OFFSET_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_imager_offset);
 			SequenceItemModel::instance().setNumericRange(SC_SET_OFFSET, 0, property->items[i].number.min, property->items[i].number.max);
 			SequenceItemModel::instance().setNumericIncrement(SC_SET_OFFSET, 0, property->items[i].number.step);
+			w->m_fn_ctx.offset = (int)property->items[i].number.value;
 		}
 	}
 }
@@ -1092,8 +1095,10 @@ void update_agent_imager_binning_property(ImagerWindow *w, indigo_property *prop
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], CCD_BIN_HORIZONTAL_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_imager_bin_x);
+			w->m_fn_ctx.bin_x = (int)property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], CCD_BIN_VERTICAL_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_imager_bin_y);
+			w->m_fn_ctx.bin_y = (int)property->items[i].number.value;
 		}
 	}
 }
@@ -1151,6 +1156,7 @@ void update_focuser_poition(ImagerWindow *w, indigo_property *property, bool upd
 			char position[INDIGO_VALUE_SIZE];
 			snprintf(position, INDIGO_VALUE_SIZE, "%7d", (int)property->items[i].number.value);
 			w->set_text(w->m_focus_position_label, position);
+			w->m_fn_ctx.focus_pos = (int)property->items[i].number.value;
 		}
 	}
 	if (property->state == INDIGO_BUSY_STATE) {
@@ -1568,6 +1574,7 @@ void update_agent_imager_batch_property(ImagerWindow *w, indigo_property *proper
 		indigo_debug("Set %s = %f", property->items[i].name, property->items[i].number.value);
 		if (client_match_item(&property->items[i], AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_exposure_time);
+			w->m_fn_ctx.exposure_time = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_BATCH_DELAY_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_exposure_delay);
 		} else if (client_match_item(&property->items[i], AGENT_IMAGER_BATCH_COUNT_ITEM_NAME)) {
@@ -1664,11 +1671,13 @@ void update_ccd_frame_property(ImagerWindow *w, indigo_property *property, bool 
 			w_min = (int)property->items[i].number.min;
 			w_max = (int)property->items[i].number.max;
 			w_step = (int)property->items[i].number.step;
+			w->m_fn_ctx.roi_w = (int)property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], CCD_FRAME_HEIGHT_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_roi_h);
 			h_min = (int)property->items[i].number.min;
 			h_max = (int)property->items[i].number.max;
 			h_step = (int)property->items[i].number.step;
+			w->m_fn_ctx.roi_h = (int)property->items[i].number.value;
 		}
 	}
 	if (is_define) {
@@ -2955,6 +2964,12 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_TYPE_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_frame_type_select);
 		add_items_to_sequence_model(property, SC_SELECT_FRAME_TYPE, 0);
+		for (int i = 0; i < property->count; i++) {
+			if (property->items[i].sw.value) {
+				m_fn_ctx.frame_type = QString(property->items[i].label);
+				break;
+			}
+		}
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {
 		update_agent_process_features(this, property);
@@ -3021,6 +3036,12 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_agent, AGENT_WHEEL_FILTER_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_filter_select);
 		add_items_to_sequence_model(property, SC_SELECT_FILTER, 0);
+		for (int i = 0; i < property->count; i++) {
+			if (property->items[i].sw.value) {
+				m_fn_ctx.filter_name = QString(property->items[i].label);
+				break;
+			}
+		}
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PAUSE_PROCESS_PROPERTY_NAME)) {
 		update_agent_imager_pause_process_property(this, property, m_pause_button);
@@ -3041,6 +3062,8 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			if (client_match_item(&property->items[i], CCD_TEMPERATURE_ITEM_NAME)) {
 				SequenceItemModel::instance().setNumericRange(SC_ENABLE_COOLER, 0, property->items[i].number.min, property->items[i].number.max);
 				SequenceItemModel::instance().setNumericIncrement(SC_ENABLE_COOLER, 0, property->items[i].number.step);
+				m_fn_ctx.set_temp = property->items[i].number.target;
+				m_fn_ctx.cooler_controls_available = (property->perm != INDIGO_RO_PERM);
 			}
 		}
 	}
@@ -3426,6 +3449,12 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_TYPE_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_frame_type_select);
+		for (int i = 0; i < property->count; i++) {
+			if (property->items[i].sw.value) {
+				m_fn_ctx.frame_type = QString(property->items[i].label);
+				break;
+			}
+		}
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {
 		update_agent_process_features(this, property);
@@ -3433,6 +3462,12 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_WHEEL_FILTER_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_filter_select);
+		for (int i = 0; i < property->count; i++) {
+			if (property->items[i].sw.value) {
+				m_fn_ctx.filter_name = QString(property->items[i].label);
+				break;
+			}
+		}
 	}
 	if (client_match_device_property(property, selected_agent, AGENT_IMAGER_SELECTION_PROPERTY_NAME)) {
 		update_imager_selection_property(this, property);
@@ -3451,6 +3486,13 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		//update_agent_imager_batch_property(this, property);
 		update_agent_imager_batch_dithering(this, property);
 		update_agent_imager_meridian_flip_label(this, property);
+		// Update exposure time in filename context without disturbing the UI spinbox
+		for (int i = 0; i < property->count; i++) {
+			if (client_match_item(&property->items[i], AGENT_IMAGER_BATCH_EXPOSURE_ITEM_NAME)) {
+				m_fn_ctx.exposure_time = property->items[i].number.value;
+				break;
+			}
+		}
 	}
 	if (client_match_device_property(property, selected_agent, CCD_EXPOSURE_PROPERTY_NAME)) {
 		indigo_property *p = properties.get(property->device, AGENT_START_PROCESS_PROPERTY_NAME);
@@ -3476,6 +3518,13 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_agent, CCD_TEMPERATURE_PROPERTY_NAME)) {
 		update_ccd_temperature(this, property, m_current_temp, m_set_temp);
+		for (int i = 0; i < property->count; i++) {
+			if (client_match_item(&property->items[i], CCD_TEMPERATURE_ITEM_NAME)) {
+				m_fn_ctx.set_temp = property->items[i].number.target;
+				m_fn_ctx.cooler_controls_available = (property->perm != INDIGO_RO_PERM);
+				break;
+			}
+		}
 	}
 	if (client_match_device_property(property, selected_agent, CCD_GAIN_PROPERTY_NAME) ||
 	    client_match_device_property(property, selected_agent, CCD_OFFSET_PROPERTY_NAME)) {
@@ -3740,6 +3789,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_widget_state(m_focus_position_label, INDIGO_OK_STATE);
 		SequenceItemModel::instance().setNumericRange(SC_SET_FOCUSER_POSITION, 0, 0, 100000);
 		SequenceItemModel::instance().setNumericIncrement(SC_SET_FOCUSER_POSITION, 0, 1);
+		m_fn_ctx.focus_pos = 0;
 	}
 	if (client_match_device_property(property, selected_agent, FOCUSER_STEPS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
@@ -3809,6 +3859,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		clear_combobox(m_frame_type_select);
+		m_fn_ctx.frame_type.clear();
 
 		SequenceItemModel::instance().clearComboOptions(SC_SELECT_FRAME_TYPE, 0);
 	}
@@ -3852,6 +3903,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		char message[100];
 		get_flip_string(0, 0, message);
 		set_text(m_mount_meridian_flip_label, message);
+		m_fn_ctx.exposure_time = 0.0;
 	}
 	if (client_match_device_property(property, selected_agent, CCD_FRAME_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
@@ -3864,6 +3916,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_enabled(m_roi_w, false);
 		set_spinbox_value(m_roi_h, 0);
 		set_enabled(m_roi_h, false);
+		m_fn_ctx.roi_w = 0;
+		m_fn_ctx.roi_h = 0;
 
 		//SequenceItemModel::instance().setNumericRange(SC_SET_FRAME, 0, 0, 50000);  // Left
 		SequenceItemModel::instance().setNumericIncrement(SC_SET_FRAME, 0, 1.0);
@@ -3885,6 +3939,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		clear_combobox(m_filter_select);
+		m_fn_ctx.filter_name.clear();
 
 		SequenceItemModel::instance().clearComboOptions(SC_SELECT_FILTER, 0);
 	}
@@ -3899,6 +3954,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_agent)) {
 		set_enabled(m_cooler_onoff, false);
 		set_checkbox_checked(m_cooler_onoff, false);
+		m_fn_ctx.cooler_on = false;
 	}
 	if (client_match_device_property(property, selected_agent, CCD_COOLER_POWER_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_agent)) {
@@ -3912,6 +3968,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_text(m_current_temp, "");
 		set_widget_state(m_current_temp, INDIGO_OK_STATE);
 		set_enabled(m_set_temp, false);
+		m_fn_ctx.set_temp = 0.0;
+		m_fn_ctx.cooler_controls_available = false;
 
 		SequenceItemModel::instance().setNumericRange(SC_ENABLE_COOLER, 0, -150.0, 30.0);
 		SequenceItemModel::instance().setNumericIncrement(SC_ENABLE_COOLER, 0, 0.5);
@@ -3949,6 +4007,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		set_spinbox_value(m_imager_offset, 0);
 		set_enabled(m_imager_offset, false);
+		m_fn_ctx.gain = 0;
+		m_fn_ctx.offset = 0;
 
 		SequenceItemModel::instance().setNumericRange(SC_SET_OFFSET, 0, 0, 1000);
 		SequenceItemModel::instance().setNumericIncrement(SC_SET_OFFSET, 0, 1.0);
@@ -3961,6 +4021,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		set_spinbox_value(m_imager_bin_y, 0);
 		set_enabled(m_imager_bin_y, false);
+		m_fn_ctx.bin_x = 1;
+		m_fn_ctx.bin_y = 1;
 	}
 
 	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE") ||
