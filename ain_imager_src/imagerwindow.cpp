@@ -626,6 +626,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 			m_fn_ctx.object_name = m_object_name_str;
 			m_fn_ctx.filter_name = m_filter_select->currentText().trimmed();
 			m_fn_ctx.frame_type  = m_frame_type_select->currentText().trimmed();
+			// use snapshot of fn_ctx to ensure values don't change mid-download.
+			m_fn_ctx_snapshot = m_fn_ctx;
 			m_download_label->setMovie(m_download_spinner);
 			m_download_spinner->start();
 		}
@@ -1316,10 +1318,6 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 			time_flag = 'p';
 		}
 
-		// Take a snapshot of the confirmed INDIGO values used for filename placeholder substitution.
-		// All access is on the Qt GUI thread so no locking is needed.
-		FilenameContext fn_ctx = m_fn_ctx;
-
 		// Sanitize helper: replace disallowed characters with '_'
 		auto sanitize_str = [](const QString &s) -> QString {
 			static const QString allowed = "-_. ()[]{}+=@#$%&!~^";
@@ -1338,17 +1336,17 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 
 		// %o - object name
 		{
-			QString obj = fn_ctx.object_name.trimmed();
+			QString obj = m_fn_ctx_snapshot.object_name.trimmed();
 			if (obj.isEmpty()) obj = QString(DEFAULT_OBJECT_NAME);
 			result.replace("%o", sanitize_str(obj));
 		}
 
 		// %F - frame type
-		result.replace("%F", sanitize_str(fn_ctx.frame_type.isEmpty() ? QString("Light") : fn_ctx.frame_type));
+		result.replace("%F", sanitize_str(m_fn_ctx_snapshot.frame_type.isEmpty() ? QString("Light") : m_fn_ctx_snapshot.frame_type));
 
 		// %C - filter name
 		{
-			QString filter = fn_ctx.filter_name.trimmed();
+			QString filter = m_fn_ctx_snapshot.filter_name.trimmed();
 			if (filter.isEmpty()) filter = "NA";
 			result.replace("%C", sanitize_str(filter));
 		}
@@ -1362,7 +1360,7 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 			while (it.hasNext()) {
 				QRegularExpressionMatch m2 = it.next();
 				int n = m2.captured(1).toInt();
-				repl.append({m2.captured(0), QString::number(fn_ctx.exposure_time, 'f', n)});
+				repl.append({m2.captured(0), QString::number(m_fn_ctx_snapshot.exposure_time, 'f', n)});
 			}
 			for (auto &p : repl) {
 				result.replace(p.first, p.second);
@@ -1370,7 +1368,7 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 
 			// %E - auto precision exposure
 			if (result.contains("%E")) {
-				double exp = fn_ctx.exposure_time;
+				double exp = m_fn_ctx_snapshot.exposure_time;
 				int digits = 0;
 				if (exp < 0.001) {
 					digits = 4;
@@ -1390,9 +1388,9 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 		QRegularExpressionMatch m = re_T.match(result);
 		while (m.hasMatch()) {
 			QString t = "NA";
-			if (fn_ctx.cooler_controls_available && fn_ctx.cooler_on) {
+			if (m_fn_ctx_snapshot.cooler_controls_available && m_fn_ctx_snapshot.cooler_on) {
 				int digits = m.captured(1).isEmpty() ? 0 : qMin(m.captured(1).toInt(), 5);
-				t = QString::number(fn_ctx.set_temp, 'f', digits);
+				t = QString::number(m_fn_ctx_snapshot.set_temp, 'f', digits);
 			}
 			result.replace(m.capturedStart(), m.capturedLength(), t);
 			m = re_T.match(result);
@@ -1409,12 +1407,12 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 		result.replace("%H", now.toString("HHmmss"));
 
 		// %R - resolution (WxH from frame ROI)
-		result.replace("%R", QString("%1x%2").arg(fn_ctx.roi_w).arg(fn_ctx.roi_h));
+		result.replace("%R", QString("%1x%2").arg(m_fn_ctx_snapshot.roi_w).arg(m_fn_ctx_snapshot.roi_h));
 
 		// %B - binning
 		{
-			int bx = fn_ctx.bin_x;
-			int by = fn_ctx.bin_y;
+			int bx = m_fn_ctx_snapshot.bin_x;
+			int by = m_fn_ctx_snapshot.bin_y;
 			QString bin_str;
 			if (bx == by) {
 				bin_str = QString("BIN%1").arg(bx);
@@ -1425,16 +1423,16 @@ bool ImagerWindow::save_blob_item_with_prefix(indigo_item *item, const char *pre
 		}
 
 		// %G - gain
-		result.replace("%G", QString::number(fn_ctx.gain));
+		result.replace("%G", QString::number(m_fn_ctx_snapshot.gain));
 
 		// %O - offset
-		result.replace("%O", QString::number(fn_ctx.offset));
+		result.replace("%O", QString::number(m_fn_ctx_snapshot.offset));
 
 		// %P - focuser position (NA if no focuser selected)
 		{
 			QString pos = (m_focuser_select->currentData().toString().compare("NONE") == 0 || m_focuser_select->count() == 0)
 				? QString("NA")
-				: QString::number(fn_ctx.focus_pos);
+				: QString::number(m_fn_ctx_snapshot.focus_pos);
 			result.replace("%P", pos);
 		}
 

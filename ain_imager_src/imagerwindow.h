@@ -708,7 +708,8 @@ private:
 		QString frame_type;                        // %F
 		QString object_name;                       // %o
 	};
-	FilenameContext m_fn_ctx;
+	FilenameContext m_fn_ctx, m_fn_ctx_snapshot;
+
 
 	// Sequence tabbar
 	QComboBox *m_agent_scripting_select;
