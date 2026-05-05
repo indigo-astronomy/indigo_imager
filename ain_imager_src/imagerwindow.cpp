@@ -2101,7 +2101,7 @@ void ImagerWindow::on_guider_save_log(bool status) {
 	char time_str[255];
 	if (conf.guider_save_log) {
 		if (m_guide_log == nullptr) {
-			char file_name[255];
+			char file_name[PATH_LEN];
 			char path[PATH_LEN];
 			get_date_jd(time_str);
 			get_current_output_dir(path, conf.data_dir_prefix);
@@ -2132,7 +2132,7 @@ void ImagerWindow::on_indigo_save_log(bool status) {
 
 	if (status) {
 		char time_str[PATH_LEN];
-		char file_name[255];
+		char file_name[PATH_LEN];
 		char path[PATH_LEN];
 		get_date_jd(time_str);
 		get_current_output_dir(path, conf.data_dir_prefix);
