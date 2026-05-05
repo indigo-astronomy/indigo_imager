@@ -108,7 +108,6 @@ indigo_property* property_cache::get(const char *device_name, const char *proper
 }
 
 indigo_item* property_cache::get_item(const char *device_name, const char *property_name, const char *item_name) {
-	indigo_error("property: %s() - %s\n", __FUNCTION__, item_name);
 	pthread_mutex_lock(&property_mutex);
 	QString key = create_key(device_name, property_name);
 	if (contains(key)) {
@@ -127,7 +126,6 @@ indigo_item* property_cache::get_item(const char *device_name, const char *prope
 }
 
 indigo_item* property_cache::get_item(indigo_property *property, const char *item_name) {
-	indigo_error("property: %s() - %s\n", __FUNCTION__, item_name);
 	pthread_mutex_lock(&property_mutex);
 	for (int i = 0; i< property->count; i++) {
 		if (!strcmp(property->items[i].name, item_name)) {
