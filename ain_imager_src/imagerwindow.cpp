@@ -622,10 +622,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 		this,
 		[this]() {
 			// Snapshot names at download-start so they can't be changed mid-download.
-			m_object_name_str = m_remote_object_name.trimmed();
-			m_fn_ctx.object_name = m_object_name_str;
-			m_fn_ctx.filter_name = m_filter_select->currentText().trimmed();
-			m_fn_ctx.frame_type  = m_frame_type_select->currentText().trimmed();
+			m_fn_ctx.object_name = m_remote_object_name.trimmed();
 			// use snapshot of fn_ctx to ensure values don't change mid-download.
 			m_fn_ctx_snapshot = m_fn_ctx;
 			m_download_label->setMovie(m_download_spinner);
@@ -1273,7 +1270,7 @@ void ImagerWindow::save_blob_item(indigo_item *item) {
 		char message[PATH_LEN+100];
 		char location[PATH_LEN];
 
-		if ((m_object_name_str == DEFAULT_OBJECT_NAME || m_object_name_str.isEmpty()) && !conf.save_noname_images) {
+		if ((m_fn_ctx.object_name == DEFAULT_OBJECT_NAME || m_fn_ctx.object_name.isEmpty()) && !conf.save_noname_images) {
 			snprintf(message, sizeof(message), "⚠ Warning: image not saved locally, provide object name");
 			window_log(message);
 			return;

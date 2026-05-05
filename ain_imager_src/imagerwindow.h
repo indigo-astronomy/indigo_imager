@@ -686,7 +686,6 @@ private:
 	QString m_remote_object_name;
 	QStringList m_files_to_download;
 	QStringList m_files_to_remove;
-	QString m_object_name_str;
 
 	// INDIGO property values for filename placeholder substitution.
 	// Updated from property-change handlers and read in save_blob_item_with_prefix.

@@ -520,10 +520,10 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 
 		// Start sequence or exposure
 		set_base_agent_relations();
-		m_object_name_str = m_object_name->text().trimmed();
+		m_fn_ctx.object_name = m_object_name->text().trimmed();
 		change_agent_batch_property(selected_imager_agent);
 		change_ccd_frame_property(selected_imager_agent);
-		change_ccd_localmode_property(selected_imager_agent, m_object_name_str);
+		change_ccd_localmode_property(selected_imager_agent, m_fn_ctx.object_name);
 		if(conf.save_images_on_server || conf.preview_mode > GUIDER_COARSE_PREVIEW) {
 			setup_preview(selected_imager_agent);
 			change_ccd_upload_property(selected_imager_agent, CCD_UPLOAD_MODE_BOTH_ITEM_NAME);

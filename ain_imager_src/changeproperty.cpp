@@ -108,11 +108,11 @@ void ImagerWindow::change_ccd_upload_property(const char *agent, const char *ite
 void ImagerWindow::change_ccd_localmode_property(const char *agent, const QString &object_name) {
 	QString object;
 	if (object_name.trimmed().isEmpty() || object_name.trimmed() == DEFAULT_OBJECT_NAME) {
-		m_object_name_str = QString(DEFAULT_OBJECT_NAME);
+		m_fn_ctx.object_name = QString(DEFAULT_OBJECT_NAME);
 		object = "";
 	} else {
-		m_object_name_str = object_name.trimmed();
-		object = m_object_name_str;
+		m_fn_ctx.object_name = object_name.trimmed();
+		object = m_fn_ctx.object_name;
 	}
 	indigo_property *p = properties.get(agent, CCD_LOCAL_MODE_PROPERTY_NAME);
 	if (p == nullptr) return;
@@ -125,7 +125,7 @@ void ImagerWindow::change_ccd_localmode_property(const char *agent, const QStrin
 		};
 
 		char object_cstr[INDIGO_VALUE_SIZE];
-		strncpy(object_cstr, m_object_name_str.toUtf8().constData(), INDIGO_VALUE_SIZE);
+		strncpy(object_cstr, m_fn_ctx.object_name.toUtf8().constData(), INDIGO_VALUE_SIZE);
 		char prefix[INDIGO_VALUE_SIZE];
 		snprintf(prefix, INDIGO_VALUE_SIZE, "%s_idx%%3I_%%M", conf.filename_template);
 		char *values[] = {
@@ -136,19 +136,19 @@ void ImagerWindow::change_ccd_localmode_property(const char *agent, const QStrin
 	} else {
 		indigo_debug("LOCAL_MODE property does not have OBJECT item");
 		m_remote_object_name = object;
-		add_fits_keyword_string(agent, "OBJECT", m_object_name_str.toUtf8().constData());
+		add_fits_keyword_string(agent, "OBJECT", m_fn_ctx.object_name.toUtf8().constData());
 
 		// Build prefix: if template contains %o replace with object name, otherwise prepend object name
 		QString tpl = QString(conf.filename_template);
 		QString built;
 		if (tpl.contains("%o")) {
 			built = tpl;
-			built.replace("%o", m_object_name_str);
+			built.replace("%o", m_fn_ctx.object_name);
 		} else {
-			if (m_object_name_str.isEmpty() || m_object_name_str == QString(DEFAULT_OBJECT_NAME))
+			if (m_fn_ctx.object_name.isEmpty() || m_fn_ctx.object_name == QString(DEFAULT_OBJECT_NAME))
 				built = tpl;
 			else
-				built = QString("%1_%2").arg(m_object_name_str, tpl);
+				built = QString("%1_%2").arg(m_fn_ctx.object_name, tpl);
 		}
 		// append the mandatory index + M placeholders
 		built += QString("_idx%3I_%M");
