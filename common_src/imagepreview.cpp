@@ -188,7 +188,7 @@ template <typename T> static inline void debayer(T *raw, int index, int row, int
 }
 
 template <typename T> void parallel_debayer(T *input_buffer, int width, int height, int offsets, T *output_buffer) {
-	const int size = width * height;
+	const size_t size = width * height;
 	if (size < MIN_SIZE_TO_PARALLELIZE) {
 		int input_index = 0;
 		for (int row_index = 0; row_index < height; row_index++) {
@@ -316,7 +316,7 @@ preview_image* create_jpeg_preview(unsigned char *jpg_buffer, unsigned long jpg_
 #else // INDIGO Mac and Linux
 
 	unsigned char *bmp_buffer = nullptr;
-	unsigned long bmp_size;
+	size_t bmp_size;
 
 	struct jpeg_decompress_struct cinfo;
 	struct jpeg_error_mgr jerr;

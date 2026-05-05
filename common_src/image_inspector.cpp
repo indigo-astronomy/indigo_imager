@@ -499,8 +499,8 @@ std::vector<std::pair<int, int>> GridAnalyzer::getTargetCells() const {
 }
 
 std::vector<CellStatistics> GridAnalyzer::analyzeTargetCells(const preview_image& img) const {
-	int gx = m_config.grid_x;
-	int gy = m_config.grid_y;
+	int gx = m_config.grid_x > 0 ? m_config.grid_x : 1;
+	int gy = m_config.grid_y > 0 ? m_config.grid_y : 1;
 	int cell_w = img.width() / gx;
 	int cell_h = img.height() / gy;
 
@@ -541,8 +541,8 @@ ResultAssembler::ResultAssembler(const InspectorConfig& config)
 {}
 
 int ResultAssembler::cellToDirectionIndex(int cell_x, int cell_y) const {
-	int gx = m_config.grid_x;
-	int gy = m_config.grid_y;
+	int gx = m_config.grid_x > 0 ? m_config.grid_x : 1;
+	int gy = m_config.grid_y > 0 ? m_config.grid_y : 1;
 	int cx = gx / 2;
 	int cy = gy / 2;
 
@@ -565,8 +565,8 @@ bool ResultAssembler::isCenterCell(int cell_x, int cell_y) const {
 
 InspectionResult ResultAssembler::assemble(const std::vector<CellStatistics>& cell_stats, const std::vector<StarCandidate>& global_used) const {
 	InspectionResult res;
-	int gx = m_config.grid_x;
-	int gy = m_config.grid_y;
+	int gx = m_config.grid_x > 0 ? m_config.grid_x : 1;
+	int gy = m_config.grid_y > 0 ? m_config.grid_y : 1;
 
 	res.dirs.resize(8, 0.0);
 	res.detected_dirs.resize(8, 0);
