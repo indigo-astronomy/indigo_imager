@@ -252,7 +252,9 @@ void ViewerWindow::open_image(QString file_name) {
 	FILE *file;
 	block_scrolling(true);
 	strncpy(m_image_path, file_name.toUtf8().data(), PATH_LEN);
+	m_image_path[PATH_LEN - 1] = '\0';
 	strncpy(conf.file_open, file_name.toUtf8().data(), PATH_LEN);
+	conf.file_open[PATH_LEN - 1] = '\0';
 	file = fopen(m_image_path, "rb");
 	if (file) {
 		fseek(file, 0, SEEK_END);
@@ -310,7 +312,7 @@ void ViewerWindow::open_image(QString file_name) {
 		char info[256] = {};
 		int w = m_preview_image->width();
 		int h = m_preview_image->height();
-		sprintf(info, "%s [%d x %d]", basename(m_image_path), w, h);
+		snprintf(info, sizeof(info), "%s [%d x %d]", basename(m_image_path), w, h);
 		setWindowTitle(tr("Ain Viewer - ") + QString(m_image_path));
 		m_imager_viewer->setText(info);
 
@@ -666,12 +668,19 @@ void ViewerWindow::on_quick_stack_act() {
 		QCoreApplication::processEvents();
 
 		FILE *f = fopen(file_name, "rb");
-		if (!f) { failed++; continue; }
+		if (!f) {
+			failed++;
+			continue;
+		}
 		fseek(f, 0, SEEK_END);
 		size_t size = (size_t)ftell(f);
 		fseek(f, 0, SEEK_SET);
 		unsigned char *data = (unsigned char *)malloc(size + 1);
-		if (!data) { fclose(f); failed++; continue; }
+		if (!data) {
+			fclose(f);
+			failed++;
+			continue;
+		}
 		fread(data, size, 1, f);
 		fclose(f);
 
@@ -694,7 +703,7 @@ void ViewerWindow::on_quick_stack_act() {
 		m_imager_viewer->showStackButton(true);
 		m_imager_viewer->setShowStack(true);
 		strncpy(m_image_path, file_name, PATH_MAX);
-		strncpy(m_stack_last_image_path, file_name, PATH_LEN);
+		m_image_path[PATH_MAX - 1] = '\0';
 		m_image_formrat = strrchr(m_image_path, '.');
 		m_image_list.clear();
 		m_image_list.append(QFileInfo(file_name).fileName());
