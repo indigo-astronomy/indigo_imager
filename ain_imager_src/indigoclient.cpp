@@ -273,8 +273,10 @@ static indigo_result client_define_property(indigo_client *client, indigo_device
 	if (message) {
 		char *message_copy;
 		message_copy = (char*)malloc(INDIGO_VALUE_SIZE);
-		strncpy(message_copy, message, INDIGO_VALUE_SIZE);
-		message_copy[INDIGO_VALUE_SIZE - 1] = '\0';
+		if (message_copy) {
+			strncpy(message_copy, message, INDIGO_VALUE_SIZE);
+			message_copy[INDIGO_VALUE_SIZE - 1] = '\0';
+		}
 		emit(IndigoClient::instance().property_defined(property, message_copy));
 	} else {
 		emit(IndigoClient::instance().property_defined(property, NULL));
@@ -300,8 +302,10 @@ static indigo_result client_update_property(indigo_client *client, indigo_device
 	if (message) {
 		char *message_copy;
 		message_copy = (char*)malloc(INDIGO_VALUE_SIZE);
-		strncpy(message_copy, message, INDIGO_VALUE_SIZE);
-		message_copy[INDIGO_VALUE_SIZE - 1] = '\0';
+		if (message_copy) {
+			strncpy(message_copy, message, INDIGO_VALUE_SIZE);
+			message_copy[INDIGO_VALUE_SIZE - 1] = '\0';
+		}
 		emit(IndigoClient::instance().property_changed(property, message_copy));
 	} else {
 		emit(IndigoClient::instance().property_changed(property, NULL));
@@ -334,8 +338,10 @@ static indigo_result client_delete_property(indigo_client *client, indigo_device
 	if (message) {
 		char *msg;
 		msg = (char*)malloc(INDIGO_VALUE_SIZE);
-		strncpy(msg, message, INDIGO_VALUE_SIZE);
-		msg[INDIGO_VALUE_SIZE - 1] = '\0';
+		if (msg) {
+			strncpy(msg, message, INDIGO_VALUE_SIZE);
+			msg[INDIGO_VALUE_SIZE - 1] = '\0';
+		}
 		emit(IndigoClient::instance().property_deleted(property_copy, msg));
 	} else {
 		emit(IndigoClient::instance().property_deleted(property_copy, NULL));
@@ -352,25 +358,31 @@ static indigo_result client_receive_message(indigo_client *client, indigo_device
 	char *message_copy;
 	message_copy = (char*)malloc(INDIGO_VALUE_SIZE);
 	snprintf(message_copy, INDIGO_VALUE_SIZE, "%s", message);
+	if (message_copy) {
+		if (property) {
+			char *device_name_copy = (char*)malloc(INDIGO_NAME_SIZE);
+			if (device_name_copy) {
+				strncpy(device_name_copy, property->device, INDIGO_NAME_SIZE);
+				device_name_copy[INDIGO_NAME_SIZE - 1] = '\0';
+			}
 
-	if (property) {
-		char *device_name_copy = (char*)malloc(INDIGO_NAME_SIZE);
-		strncpy(device_name_copy, property->device, INDIGO_NAME_SIZE);
-
-		char *property_name_copy = NULL;
-		if (
-			strcmp(property->name, OK_PROPERTY->name) != 0 &&
-			strcmp(property->name, ALERT_PROPERTY->name) != 0 &&
-			strcmp(property->name, BUSY_PROPERTY->name) != 0 &&
-			strcmp(property->name, IDLE_PROPERTY->name) != 0
-		) {
-			property_name_copy = (char*)malloc(INDIGO_NAME_SIZE);
-			strncpy(property_name_copy, property->name, INDIGO_NAME_SIZE);
+			char *property_name_copy = NULL;
+			if (
+				strcmp(property->name, OK_PROPERTY->name) != 0 &&
+				strcmp(property->name, ALERT_PROPERTY->name) != 0 &&
+				strcmp(property->name, BUSY_PROPERTY->name) != 0 &&
+				strcmp(property->name, IDLE_PROPERTY->name) != 0
+			) {
+				property_name_copy = (char*)malloc(INDIGO_NAME_SIZE);
+				if (property_name_copy) {
+					strncpy(property_name_copy, property->name, INDIGO_NAME_SIZE);
+					property_name_copy[INDIGO_NAME_SIZE - 1] = '\0';
+				}
+			}
+			emit(IndigoClient::instance().message_received_v3(device_name_copy, property_name_copy, property->state, message_copy));
+		} else {
+			emit(IndigoClient::instance().message_received_v3(NULL, NULL, 0, message_copy));
 		}
-
-		emit(IndigoClient::instance().message_received_v3(device_name_copy, property_name_copy, property->state, message_copy));
-	} else {
-		emit(IndigoClient::instance().message_received_v3(NULL, NULL, 0, message_copy));
 	}
 
 	return INDIGO_OK;
@@ -385,13 +397,15 @@ static indigo_result client_receive_message(indigo_client *client, indigo_device
 
 	char *message_copy;
 	message_copy = (char*)malloc(INDIGO_VALUE_SIZE);
-	if ((device) && (device->name[0]) && (device->name[0] != '@')) {
-		// We have device name
-		snprintf(message_copy, INDIGO_VALUE_SIZE, "%s: %s", device->name, message);
-	} else {
-		snprintf(message_copy, INDIGO_VALUE_SIZE, "%s", message);
+	if (message_copy) {
+		if ((device) && (device->name[0]) && (device->name[0] != '@')) {
+			// We have device name
+			snprintf(message_copy, INDIGO_VALUE_SIZE, "%s: %s", device->name, message);
+		} else {
+			snprintf(message_copy, INDIGO_VALUE_SIZE, "%s", message);
+		}
+		emit(IndigoClient::instance().message_received_v2(NULL, message_copy));
 	}
-	emit(IndigoClient::instance().message_received_v2(NULL, message_copy));
 	return INDIGO_OK;
 }
 #endif
