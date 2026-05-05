@@ -216,14 +216,14 @@ QImage makeHistogram(ImageStats stats) {
 	double hist_b[hist_width];
 	if (stats.channels == 1) {
 		for (int i = 0; i < hist_width; i++) {
-			hist_r[i] = hist_g[i] = hist_b[i] = log(stats.grey_red.histogram[i]);
+			hist_r[i] = hist_g[i] = hist_b[i] = log(std::max<uint32_t>(stats.grey_red.histogram[i], 1u));
 			max_well = (hist_r[i] > max_well) ? hist_r[i] : max_well;
 		}
 	} else if (stats.channels == 3) {
 		for (int i = 0; i < hist_width; i++) {
-			hist_r[i] = log(stats.grey_red.histogram[i]);
-			hist_g[i] = log(stats.green.histogram[i]);
-			hist_b[i] = log(stats.blue.histogram[i]);
+			hist_r[i] = log(std::max<uint32_t>(stats.grey_red.histogram[i], 1u));
+			hist_g[i] = log(std::max<uint32_t>(stats.green.histogram[i], 1u));
+			hist_b[i] = log(std::max<uint32_t>(stats.blue.histogram[i], 1u));
 			max_well = (hist_r[i] > max_well) ? hist_r[i] : max_well;
 			max_well = (hist_g[i] > max_well) ? hist_g[i] : max_well;
 			max_well = (hist_b[i] > max_well) ? hist_b[i] : max_well;
