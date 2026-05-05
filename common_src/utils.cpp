@@ -206,7 +206,7 @@ void get_current_output_dir(char *output_dir, char *prefix) {
 		dir.mkpath(qlocation);
 		strncpy(output_dir, qlocation.toUtf8().constData(), PATH_LEN);
 	} else {
-		if (!getcwd(output_dir, sizeof(output_dir))) {
+		if (!getcwd(output_dir, PATH_LEN)) {
 			output_dir[0] = '\0';
 		}
 	}
