@@ -505,14 +505,14 @@ void ImagerWindow::exposure_start_stop(bool clicked, bool is_sequence) {
 		if (is_sequence) {
 			indigo_property *agent_sequence_state = properties.get(selected_scripting_agent, "SEQUENCE_STATE");
 			if (agent_sequence_state && agent_sequence_state->state == INDIGO_BUSY_STATE) {
-				change_agent_abort_process_property(selected_imager_agent);
+				change_agent_abort_process_property(selected_scripting_agent);
 				indigo_debug("Sequence is running, aborting it.");
 				return;
 			}
 		} else {
 			indigo_property *agent_start_process = properties.get(selected_imager_agent, AGENT_START_PROCESS_PROPERTY_NAME);
 			if (agent_start_process && agent_start_process->state == INDIGO_BUSY_STATE ) {
-				change_agent_abort_process_property(selected_scripting_agent);
+				change_agent_abort_process_property(selected_imager_agent);
 				indigo_debug("Exposure is running, aborting it.");
 				return;
 			}
