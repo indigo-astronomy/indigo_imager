@@ -72,6 +72,7 @@
 		<file>spinner.gif</file>
 		<file>stack.png</file>
 		<file>frame.png</file>
+		<file>no-stack.png</file>
 	</qresource>
 	<qresource prefix="/scripts">
 		<file alias="Sequencer.js">../ain_imager_src/scripts/Sequencer.js</file>

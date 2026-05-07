@@ -16,5 +16,6 @@
 		<file>calibrate.png</file>
 		<file>stack.png</file>
 		<file>frame.png</file>
+		<file>no-stack.png</file>
 	</qresource>
 </RCC>
