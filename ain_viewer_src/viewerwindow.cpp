@@ -656,6 +656,7 @@ void ViewerWindow::on_quick_stack_act() {
 	char file_name[PATH_MAX];
 	int stacked = 0;
 	int failed = 0;
+	int unsupported = 0;
 
 	for (int i = 0; i < file_num; i++) {
 		progress.setValue(i);
@@ -688,11 +689,15 @@ void ViewerWindow::on_quick_stack_act() {
 		preview_image *img = create_preview(data, size, (const char *)ext, sc);
 		free(data);
 
-		if (img) {
+		if (img && img->m_raw_data) {
 			m_stacker->addImage(img);
 			delete m_stack_last_image;
 			m_stack_last_image = img;
 			stacked++;
+		} else if (img && img->m_raw_data == nullptr) {
+			unsupported++;
+			delete img;
+			img = nullptr;
 		} else {
 			failed++;
 		}
@@ -709,11 +714,10 @@ void ViewerWindow::on_quick_stack_act() {
 		m_image_list.append(QFileInfo(file_name).fileName());
 	}
 
-	if (failed > 0) {
+	if (failed > 0 || unsupported > 0) {
 		char message[128];
 		snprintf(message, sizeof(message),
-			"%d file(s) stacked successfully.\n%d file(s) failed.",
-			stacked, failed);
+			"%d file(s) stacked successfully.\n%d file(s) failed.\n%d file(s) unsupported.", stacked, failed, unsupported);
 		show_message("Quick Stack", message);
 	}
 }
