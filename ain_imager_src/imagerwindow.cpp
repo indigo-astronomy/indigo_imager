@@ -794,7 +794,12 @@ bool ImagerWindow::show_preview_in_imager_viewer(QString &key, bool is_batch_ima
 	preview_image *image = preview_cache.get(key);
 	if (image) {
 		const bool should_stack = conf.live_stacking_enabled && (m_batch_running || is_batch_image);
-		if (should_stack) {
+		// JPEG/TIFF images have no raw data and cannot be stacked; show them
+		// directly and reset any stale stack so it isn't displayed afterwards.
+		if (should_stack && image->m_raw_data == nullptr) {
+			m_stacker->resetStack();
+			m_imager_viewer->setImage(*image);
+		} else if (should_stack) {
 			const bool align_live_stack = (m_fn_ctx.frame_type.compare("Light", Qt::CaseInsensitive) == 0);
 			m_stacker->addImage(image, align_live_stack);
 			if (m_imager_viewer->isShowingStack()) {
