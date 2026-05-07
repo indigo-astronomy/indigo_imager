@@ -438,6 +438,22 @@ void ImageViewer::showStackButton(bool show) {
 	}
 }
 
+void ImageViewer::setStackableIndicator(bool stackable) {
+	if (!m_stack_button) return;
+	if (stackable) {
+		if (m_show_stack) {
+			m_stack_button->setIcon(QIcon(":resource/stack.png"));
+			m_stack_button->setToolTip(tr("Showing live stack — click to show last frame"));
+		} else {
+			m_stack_button->setIcon(QIcon(":resource/frame.png"));
+			m_stack_button->setToolTip(tr("Showing last frame — click to show live stack"));
+		}
+	} else {
+		m_stack_button->setIcon(QIcon(":resource/frame.png"));
+		m_stack_button->setToolTip(tr("Image not stackable — JPEG/TIFF image"));
+	}
+}
+
 void ImageViewer::setShowStack(bool show) {
 	if (!m_stack_button) return;
 	if (show == m_show_stack) return;

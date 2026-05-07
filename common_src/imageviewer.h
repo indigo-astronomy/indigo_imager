@@ -70,6 +70,7 @@ public:
 	void showZoomButtons(bool show);
 	void showStackButton(bool show);
 	void setShowStack(bool show);
+	void setStackableIndicator(bool stackable);
 
 	/// True when the stack-view toggle is active (showing the stack, not the last frame).
 	bool isShowingStack() const { return m_show_stack; }

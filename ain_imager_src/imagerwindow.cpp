@@ -798,8 +798,10 @@ bool ImagerWindow::show_preview_in_imager_viewer(QString &key, bool is_batch_ima
 		// directly and reset any stale stack so it isn't displayed afterwards.
 		if (should_stack && image->m_raw_data == nullptr) {
 			m_stacker->resetStack();
+			m_imager_viewer->setStackableIndicator(false);
 			m_imager_viewer->setImage(*image);
 		} else if (should_stack) {
+			m_imager_viewer->setStackableIndicator(true);
 			const bool align_live_stack = (m_fn_ctx.frame_type.compare("Light", Qt::CaseInsensitive) == 0);
 			m_stacker->addImage(image, align_live_stack);
 			if (m_imager_viewer->isShowingStack()) {
