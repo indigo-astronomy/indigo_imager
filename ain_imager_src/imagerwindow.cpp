@@ -800,6 +800,7 @@ bool ImagerWindow::show_preview_in_imager_viewer(QString &key, bool is_batch_ima
 			m_stacker->resetStack();
 			m_imager_viewer->setStackableIndicator(false);
 			m_imager_viewer->setImage(*image);
+			m_imager_viewer->setImageStats(ImageStats{});
 		} else if (should_stack) {
 			m_imager_viewer->setStackableIndicator(true);
 			const bool align_live_stack = (m_fn_ctx.frame_type.compare("Light", Qt::CaseInsensitive) == 0);
