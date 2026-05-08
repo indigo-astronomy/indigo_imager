@@ -278,6 +278,8 @@ void ViewerWindow::open_image(QString file_name) {
 	// freed before on_stack_updated calls stretch_preview, causing the
 	// invalid-read.
 	m_imager_viewer->setShowStack(false);
+	//strncpy(m_image_path, file_name.toUtf8().data(), PATH_LEN);
+	//m_image_path[PATH_LEN - 1] = '\0';
 
 	if (m_preview_image) {
 		delete(m_preview_image);
@@ -569,6 +571,14 @@ void ViewerWindow::on_image_next_act() {
 	char path[PATH_LEN];
 
 	if (m_image_path[0] == '\0') return;
+
+	// When showing a stack, first press exits stack view and displays the last
+	// stacked frame.  Subsequent presses cycle normally through the directory.
+	if (m_imager_viewer->isShowingStack()) {
+		m_imager_viewer->setShowStack(false);
+		return;
+	}
+
 	strncpy(path, m_image_path, PATH_LEN);
 
 	char *file_name = basename(path);
@@ -591,6 +601,14 @@ void ViewerWindow::on_image_prev_act() {
 	char path[PATH_LEN];
 
 	if (m_image_path[0] == '\0') return;
+
+	// When showing a stack, first press exits stack view and displays the last
+	// stacked frame.  Subsequent presses cycle normally through the directory.
+	if (m_imager_viewer->isShowingStack()) {
+		m_imager_viewer->setShowStack(false);
+		return;
+	}
+
 	strncpy(path, m_image_path, PATH_LEN);
 
 	char *file_name = basename(path);
@@ -709,9 +727,12 @@ void ViewerWindow::on_quick_stack_act() {
 		m_imager_viewer->setShowStack(true);
 		strncpy(m_image_path, file_name, PATH_MAX);
 		m_image_path[PATH_MAX - 1] = '\0';
+		strncpy(m_stack_last_image_path, file_name, PATH_LEN);
+		m_stack_last_image_path[PATH_LEN - 1] = '\0';
 		m_image_formrat = strrchr(m_image_path, '.');
-		m_image_list.clear();
-		m_image_list.append(QFileInfo(file_name).fileName());
+		// Rebuild full directory listing so normal navigation works after exiting stack view.
+		QDir stack_dir(QFileInfo(QString(file_name)).absolutePath());
+		m_image_list = stack_dir.entryList(QStringList() << "*" + QString(m_image_formrat), QDir::Files);
 	}
 
 	if (failed > 0 || unsupported > 0) {
