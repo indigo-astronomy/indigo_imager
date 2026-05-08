@@ -47,6 +47,7 @@ struct ImageStats {
 	int channels;
 	int pix_fmt;
 	int8_t bitdepth;
+	int stack_count; ///< Number of stacked frames; 0 means not a stack
 	ImageStats1Channel grey_red;
 	ImageStats1Channel green;
 	ImageStats1Channel blue;
@@ -55,7 +56,8 @@ struct ImageStats {
 	ImageStats() {
 		channels =
 		pix_fmt =
-		bitdepth = 0;
+		bitdepth =
+		stack_count = 0;
 	}
 };
 

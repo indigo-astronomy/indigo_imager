@@ -1951,8 +1951,10 @@ void ImagerWindow::on_stack_updated() {
 	stretch_preview(stack, sc);
 	m_imager_viewer->setImage(*stack);
 	ImageStats stats;
-	if (conf.statistics_enabled)
+	if (conf.statistics_enabled) {
 		stats = imageStats((const uint8_t*)stack->m_raw_data, stack->m_width, stack->m_height, stack->m_pix_format);
+	}
+	stats.stack_count = m_stacker->stackCount();
 	m_imager_viewer->setImageStats(stats);
 	delete stack;
 }

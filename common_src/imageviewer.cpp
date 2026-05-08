@@ -472,9 +472,13 @@ void ImageViewer::setImageStats(const ImageStats &stats) {
 	if (stats.channels == 1) {
 		QString stats_str = "<b>Statistics</b>";
 		if(stats.bitdepth == -32) {
-			stats_str += " (float)<br>";
+			stats_str += " (float)";
 		} else {
-			stats_str += " (" + QString::number(stats.bitdepth) + "bit)<br>";
+			stats_str += " (" + QString::number(stats.bitdepth) + "bit)";
+		}
+		stats_str += "<br>";
+		if (stats.stack_count > 0) {
+			stats_str += "<b>Stack:  </b>" + QString::number(stats.stack_count) + " frames<br>";
 		}
 		stats_str += "<table cellspacing=1>";
 		stats_str += "<tr><td><b>Min </b></td><td align=right> " + QString::number(stats.grey_red.min) + "</td></tr>";
@@ -492,11 +496,15 @@ void ImageViewer::setImageStats(const ImageStats &stats) {
 		m_image_histogram->adjustSize();
 		m_image_histogram->setVisible(true);
 	} else if (stats.channels == 3) {
-		QString stats_str = "<b>Statistics</b> ";
+		QString stats_str = "<b>Statistics</b>";
 		if(stats.bitdepth == -32) {
-			stats_str += " (float)<br>";
+			stats_str += " (float)";
 		} else {
-			stats_str += " (" + QString::number(stats.bitdepth) + "bit)<br>";
+			stats_str += " (" + QString::number(stats.bitdepth) + "bit)";
+		}
+		stats_str += "<br>";
+		if (stats.stack_count > 0) {
+			stats_str += "<b>Stack:  </b>" + QString::number(stats.stack_count) + " frames<br>";
 		}
 		stats_str += "<table cellspacing=1>";
 		stats_str += "<tr><td><b>Min </b></td>";

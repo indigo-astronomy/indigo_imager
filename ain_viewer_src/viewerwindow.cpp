@@ -846,6 +846,9 @@ void ViewerWindow::on_statistics_show(bool enabled) {
 		if (enabled) {
 			stats = imageStats((const uint8_t*)(m_preview_image->m_raw_data), m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
 		}
+		if (m_imager_viewer->isShowingStack()) {
+			stats.stack_count = m_stacker->stackCount();
+		}
 		m_imager_viewer->setImageStats(stats);
 	}
 	write_conf();
@@ -1021,6 +1024,9 @@ void ViewerWindow::on_stack_updated(bool showing_stack) {
 	ImageStats stats;
 	if (conf.statistics_enabled) {
 		stats = imageStats((const uint8_t*)m_preview_image->m_raw_data, m_preview_image->m_width, m_preview_image->m_height, m_preview_image->m_pix_format);
+	}
+	if (showing_stack) {
+		stats.stack_count = m_stacker->stackCount();
 	}
 	m_imager_viewer->setImageStats(stats);
 
