@@ -252,6 +252,7 @@ public slots:
 	void on_abort(bool clicked);
 	void on_pause(bool clicked);
 	void on_reset(bool clicked);
+	void on_live_stack_reset();
 	void on_live_stack_changed(bool status);
 	void on_stack_updated();
 	void reset_live_stack();

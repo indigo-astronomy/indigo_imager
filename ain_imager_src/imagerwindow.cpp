@@ -406,6 +406,9 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	tools_act->setChecked(conf.live_stacking_enabled);
 	connect(tools_act, &QAction::toggled, this, &ImagerWindow::on_live_stack_changed);
 
+	tools_act = tools_menu->addAction(tr("&Reset live stack"));
+	connect(tools_act, &QAction::triggered, this, &ImagerWindow::on_live_stack_reset);
+
 	menu_bar->addMenu(tools_menu);
 
 	menu = new QMenu("&Help");
@@ -1901,6 +1904,31 @@ void ImagerWindow::reset_live_stack() {
 		m_stacker->resetStack();
 		indigo_debug("Live stack reset\n");
 	}, Qt::AutoConnection);
+}
+
+void ImagerWindow::on_live_stack_reset() {
+	m_stacker->resetStack();
+	m_imager_viewer->setImageStats(ImageStats{});
+	preview_image *image = preview_cache.get(m_image_key);
+	if (image && image->m_raw_data != nullptr) {
+		// Re-seed the fresh stack with the last frame so stacking resumes
+		// from a meaningful base rather than an empty accumulator.
+		const bool align = (m_fn_ctx.frame_type.compare("Light", Qt::CaseInsensitive) == 0);
+		m_stacker->addImage(image, align);
+		if (m_imager_viewer->isShowingStack()) {
+			on_stack_updated();
+		} else {
+			m_imager_viewer->setImage(*image);
+			ImageStats stats;
+			if (conf.statistics_enabled) {
+				stats = imageStats((const uint8_t*)image->m_raw_data, image->m_width, image->m_height, image->m_pix_format);
+			}
+			m_imager_viewer->setImageStats(stats);
+		}
+	} else if (image) {
+		m_imager_viewer->setImage(*image);
+	}
+	window_log("Live stack reset");
 }
 
 void ImagerWindow::on_live_stack_changed(bool status) {
