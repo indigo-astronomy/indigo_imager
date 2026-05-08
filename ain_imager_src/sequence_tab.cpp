@@ -22,6 +22,8 @@
 #include <conf.h>
 #include <utils.h>
 
+void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property);
+
 void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	QGridLayout *sequence_frame_layout = new QGridLayout();
 	sequence_frame_layout->setAlignment(Qt::AlignTop);
@@ -202,6 +204,16 @@ void ImagerWindow::on_request_sequence() {
 			}
 		}
 		m_sequence_editor2->loadScriptToView(sequence);
+
+		// If the sequence is already running on the server, reflect that state now.
+		indigo_property *seq_state = properties.get(selected_agent, "SEQUENCE_STATE");
+		if (seq_state && seq_state->state == INDIGO_BUSY_STATE) {
+			update_scripting_sequence_state(this, seq_state);
+			indigo_property *step_state = properties.get(selected_agent, "SEQUENCE_STEP_STATE");
+			if (step_state) {
+				update_scripting_sequence_state(this, step_state);
+			}
+		}
 	}
 	on_recalculate_exposure();
 }

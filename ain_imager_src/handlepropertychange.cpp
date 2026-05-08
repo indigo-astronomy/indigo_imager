@@ -2125,11 +2125,15 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 
 		int executed_index = w->m_sequence_editor2->getItemIndexByExecutedStep(sequence_step);
 
+		// Only alter the editor when the local step count matches the server's.
+		indigo_property *step_state_p = properties.get(property->device, "SEQUENCE_STEP_STATE");
+		bool steps_match = (step_state_p == nullptr || step_state_p->count == w->m_sequence_editor2->itemCount());
+
 		int complete = (progress_total != 0) ? (int)((double)progress / progress_total * 100 + 0.5) : 0;
 		w->m_seq_sequence_progress->setRange(0, 100);
 
 		if (executed_index >= 0 && property->state == INDIGO_BUSY_STATE) {
-			w->m_sequence_editor2->enable(false);
+			if (steps_match) w->m_sequence_editor2->enable(false);
 			if (executed_index == 0 && progress == 0) {
 				w->m_seq_exposure_progress->setRange(0, 1);
 				w->m_seq_exposure_progress->setValue(0);
@@ -2151,14 +2155,15 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			w->set_widget_state(w->m_seq_start_button, INDIGO_BUSY_STATE);
 			w->m_seq_start_button->setIcon(QIcon(":resource/stop.png"));
 
-			w->m_sequence_editor2->scrollToItem(executed_index);
-			IndigoSequenceItem *seq_item = nullptr;
-			int item_count = w->m_sequence_editor2->itemCount();
-
-			for (int i = executed_index + 1; i < item_count; i++) {
-				seq_item = w->m_sequence_editor2->getItemAt(i);
-				if (seq_item) {
-					seq_item->setIdle();
+			if (steps_match) {
+				w->m_sequence_editor2->scrollToItem(executed_index);
+				IndigoSequenceItem *seq_item = nullptr;
+				int item_count = w->m_sequence_editor2->itemCount();
+				for (int i = executed_index + 1; i < item_count; i++) {
+					seq_item = w->m_sequence_editor2->getItemAt(i);
+					if (seq_item) {
+						seq_item->setIdle();
+					}
 				}
 			}
 
@@ -2166,7 +2171,7 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			w->m_seq_sequence_progress->setValue(complete);
 			w->m_seq_sequence_progress->setFormat("Sequence: %v\% complete");
 		} else if (property->state == INDIGO_OK_STATE) {
-			w->m_sequence_editor2->enable(true);
+			if (steps_match) w->m_sequence_editor2->enable(true);
 			w->set_text(w->m_imager_status_label, "<img src=\":resource/led-green.png\"> Complete");
 			w->set_widget_state(w->m_seq_start_button, INDIGO_OK_STATE);
 			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
@@ -2189,7 +2194,7 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 				w->set_text(w->m_seq_esimated_duration, QString("Total exposure: ") + QString(indigo_dtos(0, "%02d:%02d:%02.0f")));
 			}
 		} else if (property->state == INDIGO_ALERT_STATE) {
-			w->m_sequence_editor2->enable(true);
+			if (steps_match) w->m_sequence_editor2->enable(true);
 			w->set_text(w->m_seq_esimated_duration, QString("Total exposure: ") + QString(indigo_dtos(exposure_total, "%02d:%02d:%02.0f")));
 			w->set_widget_state(w->m_seq_start_button, INDIGO_OK_STATE);
 			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
@@ -2199,6 +2204,12 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 			w->m_seq_sequence_progress->setFormat("Sequence: Failed (%v\% cpmplete)");
 		}
 	} else if (!strcmp(property->name, "SEQUENCE_STEP_STATE")) {
+		// If the server reports a different number of steps than the local editor holds,
+		// the sequences are out of sync — leave the editor enabled and untouched.
+		if (property->count != w->m_sequence_editor2->itemCount()) {
+			w->m_sequence_editor2->enable(true);
+			return;
+		}
 		int loop_iteration = -1;
 		int loop_at_step = -1;
 		indigo_property *p = properties.get(property->device, "LOOP_0");
@@ -3092,8 +3103,40 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 
 	// Scripting Agent
-	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE") ||
-	    client_match_device_property(property, selected_scripting_agent, "LOOP_0") ||
+	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE")) {
+		if (property->state == INDIGO_BUSY_STATE) {
+			// On reconnect: if the editor is empty, or if the local script matches the server's
+			// script, load the sequence from the server so running state is shown correctly.
+			// If the editor has different (locally edited) content, leave it untouched.
+			bool should_load = (m_sequence_editor2->itemCount() == 0);
+			if (!should_load) {
+				// Fetch remote script and compare with local content
+				char sequence_script[INDIGO_NAME_SIZE] = {0};
+				indigo_property *sp = nullptr;
+				for (int i = 0; i < 32; i++) {
+					snprintf(sequence_script, sizeof(sequence_script), AGENT_SCRIPTING_SCRIPT_PROPERTY_NAME, i);
+					sp = properties.get(selected_scripting_agent, sequence_script);
+					if (sp && !strcmp(sp->label, AIN_SEQUENCE_NAME)) break;
+					sp = nullptr;
+				}
+				if (sp) {
+					QString remote_script;
+					for (int i = 0; i < sp->count; i++) {
+						if (client_match_item(&sp->items[i], AGENT_SCRIPTING_SCRIPT_ITEM_NAME)) {
+							remote_script = indigo_get_text_item_value(&sp->items[i]);
+							break;
+						}
+					}
+					should_load = (m_sequence_editor2->makeScriptFromView().trimmed() == remote_script.trimmed());
+				}
+			}
+			if (should_load) {
+				on_request_sequence();
+			}
+		}
+		update_scripting_sequence_state(this, property);
+	}
+	if (client_match_device_property(property, selected_scripting_agent, "LOOP_0") ||
 	    client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STEP_STATE")) {
 		update_scripting_sequence_state(this, property);
 	}
