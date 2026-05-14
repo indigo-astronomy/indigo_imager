@@ -2,5 +2,29 @@
 
 export DH_VERBOSE=1
 
-include /usr/share/cdbs/1/rules/debhelper.mk
-include /usr/share/cdbs/1/class/qmake.mk
+# Set INDIGO_VERSION=3 to build the ain-imager-indigo3 package variant.
+# Default is 2 (builds ain-imager, depends on indigo).
+INDIGO_VERSION ?= 2
+
+ifeq ($(INDIGO_VERSION),3)
+  PACKAGE_NAME      = ain-imager-indigo3
+  INDIGO_DEPENDS    = indigo3 (>= 3.0-1)
+  PACKAGE_CONFLICTS = ain-imager
+else
+  PACKAGE_NAME      = ain-imager
+  INDIGO_DEPENDS    = indigo (>= 2.0-226)
+  PACKAGE_CONFLICTS = ain-imager-indigo3
+endif
+
+-include /usr/share/cdbs/1/rules/debhelper.mk
+-include /usr/share/cdbs/1/class/qmake.mk
+
+# Generate debian/control from the template before any packaging step.
+# This target must be run manually (or via build_deb.sh) before dpkg-buildpackage
+# because dpkg reads debian/control before executing any rules targets.
+gen-control:
+	sed \
+		-e 's|@PACKAGE_NAME@|$(PACKAGE_NAME)|g' \
+		-e 's|@INDIGO_DEPENDS@|$(INDIGO_DEPENDS)|g' \
+		-e 's|@PACKAGE_CONFLICTS@|$(PACKAGE_CONFLICTS)|g' \
+		debian/control.in > debian/control

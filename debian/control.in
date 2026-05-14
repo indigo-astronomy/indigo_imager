@@ -7,10 +7,10 @@ Standards-Version: 3.9.5
 Homepage: https://www.indigo-astronomy.org
 Vcs-Git: git://github.com/indigo-astronomy/control-panel.git
 
-Package: ain-imager
+Package: @PACKAGE_NAME@
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, qt5-image-formats-plugins, indigo (>= 2.0-226)
-Conflicts: ain-imager-indigo3
-Replaces: ain-imager-indigo3
+Depends: ${shlibs:Depends}, ${misc:Depends}, qt5-image-formats-plugins, @INDIGO_DEPENDS@
+Conflicts: @PACKAGE_CONFLICTS@
+Replaces: @PACKAGE_CONFLICTS@
 Description: Ain INDIGO Imager
  Ain INDIGO Imager is a program for astrophotography based on indigo framework.

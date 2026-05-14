@@ -34,19 +34,29 @@ case "$3" in
 	*)     platform="" ;;
 esac
 
+# $4: INDIGO version string (e.g. "3.0-1" or "2.0-226"); major version is derived automatically
+INDIGO_VERSION=$(echo "${4:-2}" | cut -d. -f1)
+if [ "$INDIGO_VERSION" = "3" ]; then
+	INDIGO_PKG="indigo3"
+	PKG_NAME="ain-imager-indigo3"
+else
+	INDIGO_PKG="indigo"
+	PKG_NAME="ain-imager"
+fi
+
 echo FROM $baseImage >Dockerfile
 cat >>Dockerfile <<EOF
 LABEL maintainer="rumenastro@gmail.com"
 RUN apt-get -y update && apt-get -y install wget unzip build-essential autoconf autotools-dev libtool cmake libudev-dev libavahi-compat-libdnssd-dev libusb-1.0-0-dev fxload libcurl4-gnutls-dev libgphoto2-dev libz-dev git curl bsdmainutils qtbase5-dev qtmultimedia5-dev devscripts cdbs apt-transport-https
 RUN echo 'deb [trusted=yes] https://indigo-astronomy.github.io/indigo_ppa/ppa indigo main' >>/etc/apt/sources.list
 RUN apt-get update
-RUN apt-get -y install indigo
+RUN apt-get -y install ${INDIGO_PKG}
 COPY ain-imager-$2.tar.gz .
 RUN tar -zxf ain-imager-$2.tar.gz
 RUN rm ain-imager-$2.tar.gz
 WORKDIR ain-imager-$2
 RUN qmake
-RUN scripts/builddeb.sh $2
+RUN scripts/builddeb.sh $2 $4
 EOF
 if [ -n "$platform" ]; then
 	docker build --platform="$platform" -t ain .
@@ -54,7 +64,7 @@ else
 	docker build -t ain .
 fi
 docker create --name ain ain
-docker cp ain:/ain-imager_$2_$3.deb .
+docker cp ain:/${PKG_NAME}_$2_$3.deb .
 docker container rm ain
 docker image rm ain
 rm Dockerfile
