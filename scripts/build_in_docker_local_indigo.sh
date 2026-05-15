@@ -25,6 +25,19 @@ if echo "$baseImage" | grep -q "/"; then
 	baseImage="${baseImage#*/}"
 fi
 
+# INDIGO flavor to build against: "indigo" (default, v2) or "indigo3" (v3).
+# The local INDIGO .deb is expected to be named "<flavor>-<indigo_version>-<arch>.deb".
+flavor="${5:-indigo}"
+if [ "$flavor" != "indigo" ] && [ "$flavor" != "indigo3" ]; then
+	echo "Invalid INDIGO flavor '$flavor', expected 'indigo' or 'indigo3'"
+	exit 1
+fi
+if [ "$flavor" = "indigo3" ]; then
+	debName="ain-imager-indigo3"
+else
+	debName="ain-imager"
+fi
+
 # Map short arch names to docker platforms
 case "$3" in
 	amd64) platform="linux/amd64" ;;
@@ -40,14 +53,15 @@ LABEL maintainer="rumenastro@gmail.com"
 RUN apt-get -y update && apt-get -y install wget unzip build-essential autoconf autotools-dev libtool cmake libudev-dev libavahi-compat-libdnssd-dev libusb-1.0-0-dev fxload libcurl4-gnutls-dev libgphoto2-dev libz-dev git curl bsdmainutils qtbase5-dev qtmultimedia5-dev devscripts cdbs apt-transport-https
 RUN echo 'deb [trusted=yes] https://indigo-astronomy.github.io/indigo_ppa/ppa indigo main' >>/etc/apt/sources.list
 RUN apt-get update
-COPY indigo-$4-$3.deb .
-RUN apt-get -y install ./indigo-$4-$3.deb
+COPY $flavor-$4-$3.deb .
+RUN apt-get -y install ./$flavor-$4-$3.deb
+ENV AIN_INDIGO_FLAVOR=$flavor
 COPY ain-imager-$2.tar.gz .
 RUN tar -zxf ain-imager-$2.tar.gz
 RUN rm ain-imager-$2.tar.gz
 WORKDIR ain-imager-$2
 RUN qmake
-RUN scripts/builddeb.sh $2
+RUN scripts/builddeb.sh $2 $flavor
 EOF
 if [ -n "$platform" ]; then
 	docker build --platform="$platform" -t ain .
@@ -55,7 +69,7 @@ else
 	docker build -t ain .
 fi
 docker create --name ain ain
-docker cp ain:/ain-imager_$2_$3.deb .
+docker cp ain:/${debName}_$2_$3.deb .
 docker container rm ain
 docker image rm ain
 rm Dockerfile
