@@ -1,17 +1,22 @@
 #!/bin/bash
 
-if [ -z $1 ]
+if [ -z "$1" ]
 then
-	echo "Please specify git tag"
+	echo "Please specify version"
 	exit 1
 fi
 
-if [ -z `git tag | grep -w $1` ]
+VERSION=$1
+
+if git rev-parse --verify --quiet "refs/tags/${VERSION}" >/dev/null
 then
-	echo "Specified tag not found, building tarball from HEAD"
-	git archive --format=tar --prefix=ain-imager-$1/ HEAD | gzip >ain-imager-$1.tar.gz
-	exit 0
+	echo "Building tarball from tag ${VERSION}"
+	REF=${VERSION}
+else
+	BRANCH=$(git rev-parse --abbrev-ref HEAD)
+	COMMIT=$(git rev-parse --short HEAD)
+	echo "Tag '${VERSION}' not found, building tarball from last commit of branch '${BRANCH}' (${COMMIT})"
+	REF=HEAD
 fi
-	
-echo "Building tarball from tag $1"
-git archive --format=tar --prefix=ain-imager-$1/ $1 | gzip >ain-imager-$1.tar.gz
+
+git archive --format=tar --prefix=ain-imager-${VERSION}/ ${REF} | gzip >ain-imager-${VERSION}.tar.gz
