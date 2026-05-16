@@ -25,13 +25,20 @@ if echo "$baseImage" | grep -q "/"; then
 	baseImage="${baseImage#*/}"
 fi
 
-# INDIGO flavor to build against: "indigo" (default, v2) or "indigo3" (v3).
-# The local INDIGO .deb is expected to be named "<flavor>-<indigo_version>-<arch>.deb".
-flavor="${5:-indigo}"
-if [ "$flavor" != "indigo" ] && [ "$flavor" != "indigo3" ]; then
-	echo "Invalid INDIGO flavor '$flavor', expected 'indigo' or 'indigo3'"
+# Local INDIGO version to build against, e.g. "2.0-364" or "3.0-1". The flavor
+# (indigo / indigo3) is inferred from its major version, so no separate flavor
+# argument is needed. The local .deb is expected to be named
+# "<flavor>-<indigo_version>-<arch>.deb".
+indigoVersion="$4"
+if [ -z "$indigoVersion" ]; then
+	echo "Please specify the local INDIGO version"
 	exit 1
 fi
+case "$indigoVersion" in
+	3.*) flavor="indigo3" ;;
+	2.*) flavor="indigo" ;;
+	*)   echo "Cannot infer INDIGO flavor from version '$indigoVersion' (expected it to start with '2.' or '3.')"; exit 1 ;;
+esac
 if [ "$flavor" = "indigo3" ]; then
 	debName="ain-imager-indigo3"
 else
@@ -53,8 +60,8 @@ LABEL maintainer="rumenastro@gmail.com"
 RUN apt-get -y update && apt-get -y install wget unzip build-essential autoconf autotools-dev libtool cmake libudev-dev libavahi-compat-libdnssd-dev libusb-1.0-0-dev fxload libcurl4-gnutls-dev libgphoto2-dev libz-dev git curl bsdmainutils qtbase5-dev qtmultimedia5-dev devscripts cdbs apt-transport-https
 RUN echo 'deb [trusted=yes] https://indigo-astronomy.github.io/indigo_ppa/ppa indigo main' >>/etc/apt/sources.list
 RUN apt-get update
-COPY $flavor-$4-$3.deb .
-RUN apt-get -y install ./$flavor-$4-$3.deb
+COPY $flavor-$indigoVersion-$3.deb .
+RUN apt-get -y install ./$flavor-$indigoVersion-$3.deb
 ENV AIN_INDIGO_FLAVOR=$flavor
 COPY ain-imager-$2.tar.gz .
 RUN tar -zxf ain-imager-$2.tar.gz
