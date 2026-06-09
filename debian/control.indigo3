@@ -12,6 +12,5 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, qt5-image-formats-plugins, indigo3
 Conflicts: ain-imager
 Replaces: ain-imager
-Provides: ain-imager
 Description: Ain INDIGO Imager
  Ain INDIGO Imager is a program for astrophotography based on indigo framework.
