@@ -33,8 +33,10 @@ if [ "$flavor" != "indigo" ] && [ "$flavor" != "indigo3" ]; then
 fi
 if [ "$flavor" = "indigo3" ]; then
 	debName="ain-imager-indigo3"
+	containerName="ain-indigo3"
 else
 	debName="ain-imager"
+	containerName="ain"
 fi
 
 # Map short arch names to docker platforms
@@ -62,12 +64,12 @@ RUN qmake
 RUN scripts/builddeb.sh $2 $flavor
 EOF
 if [ -n "$platform" ]; then
-	docker build --platform="$platform" -t ain .
+	docker build --platform="$platform" -t $containerName .
 else
-	docker build -t ain .
+	docker build -t $containerName .
 fi
-docker create --name ain ain
-docker cp ain:/${debName}_$2_$3.deb .
-docker container rm ain
-docker image rm ain
+docker create --name $containerName $containerName
+docker cp $containerName:/${debName}_$2_$3.deb .
+docker container rm $containerName
+docker image rm $containerName
 rm Dockerfile
