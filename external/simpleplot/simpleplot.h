@@ -166,8 +166,18 @@ public:
 	void setRingPen(const QPen &pen);
 	void setCrosshairPen(const QPen &pen);
 	void setPointColor(const QColor &c);
+	void setTrailColor(const QColor &c);
+	QColor trailColor() const { return mTrailColor; }
+	void setLatestPointColor(const QColor &c);
+	QColor latestPointColor() const { return mLatestPointColor; }
 	void setPointSize(double s);
 	double pointSize() const { return mPointSize; }
+	void setLatestPointSize(double s);
+	double latestPointSize() const { return mLatestPointSize; }
+	void setTraceLength(int hops);
+	int traceLength() const { return mTraceLength; }
+	void setNonFadingFraction(double f);
+	double nonFadingFraction() const { return mNonFadingFraction; }
 	void setAxisLabels(const QString &horizontal, const QString &vertical);
 	void setUnit(const QString &unit);
 	QString unit() const { return mUnit; }
@@ -179,14 +189,20 @@ private:
 	SimplePlot *mPlot;
 	QVector<double> mXs;
 	QVector<double> mYs;
-	int mHistorySize = 100;
+	int mHistorySize = 150;
 	double mRadius = 4.0;
 	bool mAutoScale = false;
 	int mRingCount = 4;
 	QPen mRingPen{QColor(120, 120, 120)};
 	QPen mCrosshairPen{QColor(150, 150, 150)};
-	QColor mPointColor{QColor(255, 215, 0)};
+	//QColor mPointColor{QColor(255, 215, 0)};
+	QColor mPointColor{QColor(230, 255, 0)};
+	QColor mTrailColor{QColor(255, 215, 0, 90)};
+	QColor mLatestPointColor{QColor(255, 50, 50)};
 	double mPointSize = 3.0;
+	double mLatestPointSize = 5.0;
+	int mTraceLength = 3;          // number of connecting hops in the history trail
+	double mNonFadingFraction = 0.3;  // fraction of newest points drawn at full opacity
 	QString mLabelH{QStringLiteral("RA")};
 	QString mLabelV{QStringLiteral("Dec")};
 	QString mUnit;
@@ -259,6 +275,16 @@ inline void SimpleTarget::setCrosshairPen(const QPen &pen) {
 
 inline void SimpleTarget::setPointColor(const QColor &c) {
 	mPointColor = c;
+	if (mPlot) mPlot->replot();
+}
+
+inline void SimpleTarget::setTrailColor(const QColor &c) {
+	mTrailColor = c;
+	if (mPlot) mPlot->replot();
+}
+
+inline void SimpleTarget::setLatestPointColor(const QColor &c) {
+	mLatestPointColor = c;
 	if (mPlot) mPlot->replot();
 }
 

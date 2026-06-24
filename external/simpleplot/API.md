@@ -236,8 +236,18 @@ last few. Obtain it via `SimplePlot::target()`.
 | `void setRingPen(const QPen &pen)` | Pen for the rings. Default grey `(120,120,120)`. |
 | `void setCrosshairPen(const QPen &pen)` | Pen for the centre crosshair and diagonals. Default grey `(150,150,150)`. |
 | `void setPointColor(const QColor &c)` | Colour of the samples (older ones fade in alpha; the latest is always drawn red). Default gold `(255,215,0)`. |
-| `void setPointSize(double s)` | Sample marker diameter in px (clamped to ≥0; the latest sample is drawn 2px larger). Repaints. Default `3.0`. |
+| `void setTrailColor(const QColor &c)` | Colour of the history trail line connecting the most recent samples. Default semi-transparent gold `(255,215,0,90)`. |
+| `QColor trailColor() const` | Current trail colour. |
+| `void setLatestPointColor(const QColor &c)` | Colour of the most recent sample dot. Default red `(255,80,80)`. |
+| `QColor latestPointColor() const` | Current latest-sample colour. |
+| `void setPointSize(double s)` | Sample marker diameter in px (clamped to ≥0). Repaints. Default `3.0`. |
 | `double pointSize() const` | Current marker diameter. |
+| `void setLatestPointSize(double s)` | Diameter in px of the most recent (red) sample. Default `5.0`. |
+| `double latestPointSize() const` | Current latest-sample diameter. |
+| `void setTraceLength(int hops)` | Number of connecting hops drawn in the history trail (`1` = only the last segment, `0` = no trail). Clamped to ≥0. Default `1`. |
+| `int traceLength() const` | Current trail length in hops. |
+| `void setNonFadingFraction(double f)` | Fraction (0..1) of the newest points drawn at full opacity; the rest fade linearly from 25% (oldest) up to full. `0` = all fade, `1` = none fade. Clamped. Default `0.3`. |
+| `double nonFadingFraction() const` | Current non-fading fraction. |
 | `void setAxisLabels(const QString &horizontal, const QString &vertical)` | Captions at the axis ends. Defaults `"RA"` / `"Dec"`. |
 | `void setUnit(const QString &unit)` | String appended to each ring's radius number (e.g. `"\""` for arcsec, `"'"` for arcmin, `" px"`). Empty by default. |
 | `QString unit() const` | Current unit suffix. |

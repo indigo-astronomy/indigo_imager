@@ -167,6 +167,21 @@ void SimpleTarget::setPointSize(double s) {
 	if (mPlot) mPlot->replot();
 }
 
+void SimpleTarget::setLatestPointSize(double s) {
+	mLatestPointSize = qMax(0.0, s);
+	if (mPlot) mPlot->replot();
+}
+
+void SimpleTarget::setTraceLength(int hops) {
+	mTraceLength = qMax(0, hops);
+	if (mPlot) mPlot->replot();
+}
+
+void SimpleTarget::setNonFadingFraction(double f) {
+	mNonFadingFraction = qBound(0.0, f, 1.0);
+	if (mPlot) mPlot->replot();
+}
+
 double SimpleTarget::rms() const {
 	if (mXs.isEmpty()) return 0.0;
 	double sum = 0.0;
@@ -548,11 +563,12 @@ void SimplePlot::paintTarget(QPainter &p) {
 	p.drawLine(QPointF(center.x() - d, center.y() - d), QPointF(center.x() + d, center.y() + d));
 	p.drawLine(QPointF(center.x() - d, center.y() + d), QPointF(center.x() + d, center.y() - d));
 
-	// --- axis captions ----------------------------------------------------
+	// Axis captions, placed just inside the outer ring (in the outermost gap)
+	// and off the crosshairs so they don't sit on top of the ring circles.
 	p.setPen(QColor(220, 220, 220));
-	p.drawText(QRectF(center.x() + pixR - 30, center.y() + 3, 34, 16),
+	p.drawText(QRectF(center.x() + pixR - 38, center.y() + 3, 30, 16),
 	           Qt::AlignRight | Qt::AlignTop, mTarget->mLabelH);
-	p.drawText(QRectF(center.x() + 3, center.y() - pixR, 40, 16),
+	p.drawText(QRectF(center.x() + 4, center.y() - pixR + 5, 40, 16),
 	           Qt::AlignLeft | Qt::AlignTop, mTarget->mLabelV);
 
 	// --- samples ----------------------------------------------------------
@@ -561,25 +577,27 @@ void SimplePlot::paintTarget(QPainter &p) {
 	for (int i = 0; i < n; ++i) {
 		const QPointF c(center.x() + mTarget->mXs[i] * scale,
 		                center.y() - mTarget->mYs[i] * scale);
-		// fade: oldest ~ 25% alpha, newest full; newest also a touch larger.
+		// fade: the most recent nonFadingFraction of points are full opacity;
+		// the older ones fade linearly from 25% (oldest) up to full. Newest is
+		// also larger.
 		const double age = (n > 1) ? double(i) / (n - 1) : 1.0;
+		const double fadeFrac = 1.0 - mTarget->mNonFadingFraction;  // older portion that fades
 		QColor col = mTarget->mPointColor;
-		col.setAlphaF(0.25 + 0.75 * age);
+		col.setAlphaF(age >= fadeFrac ? 1.0 : 0.25 + 0.75 * (age / fadeFrac));
 		const bool latest = (i == n - 1);
-		if (latest) col = QColor(255, 80, 80);
+		if (latest) col = mTarget->mLatestPointColor;
 		p.setPen(Qt::NoPen);
 		p.setBrush(col);
-		const double sz = latest ? ps + 2.0 : ps;
+		const double sz = latest ? mTarget->mLatestPointSize : ps;
 		p.drawEllipse(c, sz / 2, sz / 2);
 	}
 
-	// connect the most recent few points with a faint trail
-	if (n >= 2) {
-		QColor trail = mTarget->mPointColor; trail.setAlpha(90);
-		p.setPen(QPen(trail, 1.0));
+	// connect the most recent mTraceLength hops with a trail
+	if (n >= 2 && mTarget->mTraceLength >= 1) {
+		p.setPen(QPen(mTarget->mTrailColor, 1.0));
 		p.setBrush(Qt::NoBrush);
 		QPainterPath path;
-		const int from = qMax(0, n - 10);
+		const int from = qMax(0, n - 1 - mTarget->mTraceLength);
 		path.moveTo(QPointF(center.x() + mTarget->mXs[from] * scale,
 		                    center.y() - mTarget->mYs[from] * scale));
 		for (int i = from + 1; i < n; ++i)
