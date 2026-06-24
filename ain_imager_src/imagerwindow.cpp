@@ -37,6 +37,8 @@
 #include <QSoundEffect>
 #include <QFileInfo>
 #include <QUrl>
+#include <QDesktopServices>
+#include <QScrollBar>
 #include <QRegularExpression>
 #include <QGroupBox>
 #include <QGridLayout>
@@ -666,6 +668,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	select_focuser_data(conf.focuser_display);
 	select_guider_data(conf.guider_display);
+	update_guider_display_mode();
 	m_imager_viewer->enableAntialiasing(conf.antialiasing_enabled);
 	m_imager_viewer->showReference(conf.imager_show_reference);
 	m_guider_viewer->enableAntialiasing(conf.guider_antialiasing_enabled);
@@ -1993,10 +1996,32 @@ void ImagerWindow::on_antialias_guide_view(bool status) {
 	indigo_debug("%s\n", __FUNCTION__);
 }
 
+void ImagerWindow::redraw_guider_data() {
+	if (!m_guider_data_1 || !m_guider_data_2) return;
+	if (conf.guider_target_plot) {
+		m_guider_target->target()->setData(*m_guider_data_1, *m_guider_data_2);
+	} else {
+		m_guider_graph->redraw_data2(*m_guider_data_1, *m_guider_data_2);
+	}
+}
+
+void ImagerWindow::update_guider_display_mode() {
+	m_guider_target->setVisible(conf.guider_target_plot);
+	m_guider_graph->setVisible(!conf.guider_target_plot);
+}
+
+void ImagerWindow::on_guider_target_plot_changed(bool status) {
+	conf.guider_target_plot = status;
+	update_guider_display_mode();
+	redraw_guider_data();
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
 void ImagerWindow::on_guide_show_rd_drift() {
 	conf.guider_display = SHOW_RA_DEC_DRIFT;
 	select_guider_data(conf.guider_display);
-	if (m_guider_data_1 && m_guider_data_2) m_guider_graph->redraw_data2(*m_guider_data_1, *m_guider_data_2);
+	redraw_guider_data();
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
@@ -2007,7 +2032,7 @@ void ImagerWindow::on_guide_show_rd_s_drift() {
 	}
 	conf.guider_display = SHOW_RA_DEC_S_DRIFT;
 	select_guider_data(conf.guider_display);
-	if (m_guider_data_1 && m_guider_data_2) m_guider_graph->redraw_data2(*m_guider_data_1, *m_guider_data_2);
+	redraw_guider_data();
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
@@ -2015,7 +2040,7 @@ void ImagerWindow::on_guide_show_rd_s_drift() {
 void ImagerWindow::on_guide_show_rd_pulse() {
 	conf.guider_display = SHOW_RA_DEC_PULSE;
 	select_guider_data(conf.guider_display);
-	if (m_guider_data_1 && m_guider_data_2) m_guider_graph->redraw_data2(*m_guider_data_1, *m_guider_data_2);
+	redraw_guider_data();
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }
@@ -2023,7 +2048,7 @@ void ImagerWindow::on_guide_show_rd_pulse() {
 void ImagerWindow::on_guide_show_xy_drift() {
 	conf.guider_display = SHOW_X_Y_DRIFT;
 	select_guider_data(conf.guider_display);
-	if (m_guider_data_1 && m_guider_data_2) m_guider_graph->redraw_data2(*m_guider_data_1, *m_guider_data_2);
+	redraw_guider_data();
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }

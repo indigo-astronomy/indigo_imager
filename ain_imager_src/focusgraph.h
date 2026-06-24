@@ -2,9 +2,9 @@
 #define FOCUSGRAPH_H
 
 #include <QMainWindow>
-#include <qcustomplot/qcustomplot.h>
+#include <simpleplot/simpleplot.h>
 
-class FocusGraph : public QCustomPlot
+class FocusGraph : public SimplePlot
 {
 	Q_OBJECT
 public:

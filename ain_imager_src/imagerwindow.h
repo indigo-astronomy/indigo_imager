@@ -62,6 +62,7 @@ class QIndigoServers;
 #include <QFileDialog>
 #include <QSoundEffect>
 #include <QTableView>
+#include <QListWidget>
 #include <QThread>
 #include <QtConcurrentRun>
 #include <QProcess>
@@ -381,6 +382,7 @@ public slots:
 	void on_guider_agent_exposure_changed(double value);
 	void on_guider_agent_callibration_changed(double value);
 	void on_guider_reverse_dec_changed(int state);
+	void on_guider_target_plot_changed(bool status);
 	void on_guider_apply_backlash_changed(int state);
 	void on_guider_agent_pulse_changed(double value);
 	void on_guider_agent_pi_aggressivity_changed(int value);
@@ -799,6 +801,7 @@ private:
 	QSpinBox  *m_imager_bin_x;
 	QSpinBox  *m_imager_bin_y;
 	QCheckBox *m_guider_reverse_dec_cbox;
+	QCheckBox *m_guider_target_plot_cbox;
 
 	QDoubleSpinBox  *m_guide_cal_step;
 	QSpinBox  *m_guide_cal_steps;
@@ -836,6 +839,7 @@ private:
 	QDoubleSpinBox  *m_rswitch_fast_threshild;
 
 	FocusGraph *m_guider_graph;
+	SimplePlot *m_guider_target;
 	QVector<double> m_drift_data_ra;
 	QVector<double> m_drift_data_dec;
 	QVector<double> m_drift_data_dec_s;
@@ -1153,6 +1157,8 @@ private:
 	void change_scripting_agent_sequence(const char *agent, QString sequence) const;
 
 	void select_guider_data(guider_display_data show);
+	void redraw_guider_data();
+	void update_guider_display_mode();
 
 	void setup_preview(const char *agent);
 	bool open_image(QString file_name, int *image_size, unsigned char **image_data);

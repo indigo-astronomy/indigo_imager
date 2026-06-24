@@ -2337,11 +2337,11 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 		if (focal_length <= 0 && w->m_guider_data_1 == &w->m_drift_data_ra_s) {
 			indigo_log("Guider focal length not set will use pixels");
 			w->select_guider_data(SHOW_RA_DEC_DRIFT);
-			if (w->m_guider_data_1 && w->m_guider_data_2) w->m_guider_graph->redraw_data2(*(w->m_guider_data_1), *(w->m_guider_data_2));
+			w->redraw_guider_data();
 		} else if (focal_length > 0 && w->m_guider_data_1 != &w->m_drift_data_ra_s) {
 			indigo_log("Focal length set will use arcseconds");
 			w->select_guider_data(SHOW_RA_DEC_S_DRIFT);
-			if (w->m_guider_data_1 && w->m_guider_data_2) w->m_guider_graph->redraw_data2(*(w->m_guider_data_1), *(w->m_guider_data_2));
+			w->redraw_guider_data();
 		}
 	}
 
@@ -2366,7 +2366,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 					w->m_pulse_data_dec.clear();
 					w->m_drift_data_x.clear();
 					w->m_drift_data_y.clear();
-					w->m_guider_graph->redraw_data2(*(w->m_guider_data_1), *(w->m_guider_data_2));
+					w->redraw_guider_data();
 				} else if (frame_count > 0 && frame_count > w->m_guider_frame_count) {
 					w->m_drift_data_ra.append(d_ra);
 					w->m_drift_data_dec.append(d_dec);
@@ -2387,7 +2387,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 						w->m_drift_data_x.removeFirst();
 						w->m_drift_data_y.removeFirst();
 					}
-					w->m_guider_graph->redraw_data2(*(w->m_guider_data_1), *(w->m_guider_data_2));
+					w->redraw_guider_data();
 				}
 				w->m_guider_frame_count = frame_count;
 				break;

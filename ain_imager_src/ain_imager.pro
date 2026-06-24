@@ -1,4 +1,4 @@
-QT += core gui widgets network printsupport concurrent multimedia
+QT += core gui widgets network concurrent multimedia
 CONFIG += c++11 debug app_bundle
 
 unix:mac {
@@ -72,7 +72,7 @@ SOURCES += \
 	$$PWD/../common_src/snr_overlay.cpp \
 	$$PWD/../common_src/image_inspector.cpp \
 	$$PWD/../common_src/image_inspector_overlay.cpp \
-	$$PWD/../external/qcustomplot/qcustomplot.cpp
+	$$PWD/../external/simpleplot/simpleplot.cpp
 
 RESOURCES += \
 	$$PWD/../resource/fonts.qrc \
@@ -128,7 +128,7 @@ HEADERS += \
 	$$PWD/../common_src/xisf.h \
 	$$PWD/../common_src/xml.h \
 	$$PWD/../common_src/pixelformat.h \
-	$$PWD/../external/qcustomplot/qcustomplot.h \
+	$$PWD/../external/simpleplot/simpleplot.h \
 	$$PWD/../common_src/coordconv.h \
 	$$PWD/../common_src/stretcher.h \
 	$$PWD/../common_src/image_stats.h \

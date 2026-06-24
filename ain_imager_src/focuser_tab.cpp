@@ -20,6 +20,7 @@
 #include "propertycache.h"
 #include "conf.h"
 #include "widget_state.h"
+#include <QShortcut>
 
 void write_conf();
 

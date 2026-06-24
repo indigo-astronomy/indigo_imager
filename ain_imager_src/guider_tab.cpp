@@ -19,6 +19,7 @@
 #include "imagerwindow.h"
 #include "propertycache.h"
 #include "conf.h"
+#include <QShortcut>
 
 #include <image_preview_lut.h>
 
@@ -123,6 +124,18 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guider_graph->setMinimumHeight(250);
 	stats_frame_layout->addWidget(m_guider_graph, stats_row, 0, 1, 2);
 
+	// Polar target plot, shares the same cell as the line graph; only one is
+	// visible at a time, toggled from the guider Settings tab.
+	m_guider_target = new SimplePlot(SimplePlot::Target);
+	m_guider_target->setMinimumHeight(250);
+	SimpleTarget *guider_target = m_guider_target->target();
+	guider_target->setAutoScale(true);
+	guider_target->setRingCount(4);
+	guider_target->setHistorySize(0);
+	guider_target->setAxisLabels("RA", "Dec");
+	guider_target->setUnit(" px");
+	stats_frame_layout->addWidget(m_guider_target, stats_row, 0, 1, 2);
+
 	stats_row++;
 	label = new QLabel("Drift RA / Dec:");
 	stats_frame_layout->addWidget(label, stats_row, 0);
@@ -223,6 +236,13 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guider_reverse_dec_cbox->setEnabled(false);
 	settings_frame_layout->addWidget(m_guider_reverse_dec_cbox, settings_row, 0, 1, 4);
 	connect(m_guider_reverse_dec_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_guider_reverse_dec_changed);
+
+	settings_row++;
+	m_guider_target_plot_cbox = new QCheckBox("Show drift as target plot");
+	m_guider_target_plot_cbox->setToolTip("Display the guider drift as a polar target plot instead of a line graph");
+	m_guider_target_plot_cbox->setChecked(conf.guider_target_plot);
+	settings_frame_layout->addWidget(m_guider_target_plot_cbox, settings_row, 0, 1, 4);
+	connect(m_guider_target_plot_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_guider_target_plot_changed);
 
 	settings_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -720,6 +740,29 @@ void ImagerWindow::select_guider_data(guider_display_data show) {
 			m_guider_data_1 = nullptr;
 			m_guider_data_2 = nullptr;
 			m_guider_frame_count = 0;
+	}
+
+	if (m_guider_target) {
+		SimpleTarget *t = m_guider_target->target();
+		switch (show) {
+			case SHOW_RA_DEC_S_DRIFT:
+				t->setAxisLabels("RA", "Dec");
+				t->setUnit("\"");
+				break;
+			case SHOW_RA_DEC_PULSE:
+				t->setAxisLabels("RA", "Dec");
+				t->setUnit(" s");
+				break;
+			case SHOW_X_Y_DRIFT:
+				t->setAxisLabels("X", "Y");
+				t->setUnit(" px");
+				break;
+			case SHOW_RA_DEC_DRIFT:
+			default:
+				t->setAxisLabels("RA", "Dec");
+				t->setUnit(" px");
+				break;
+		}
 	}
 }
 

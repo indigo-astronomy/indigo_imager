@@ -1,7 +1,7 @@
 #include <QMainWindow>
 #include <focusgraph.h>
 
-FocusGraph::FocusGraph(QWidget *parent) : QCustomPlot(parent) {
+FocusGraph::FocusGraph(QWidget *parent) : SimplePlot(SimplePlot::Graph, parent) {
 	addGraph();
 	graph(0)->setPen(QPen(Qt::red));
 	addGraph();
@@ -34,9 +34,7 @@ FocusGraph::FocusGraph(QWidget *parent) : QCustomPlot(parent) {
 	xAxis->setTickLabelColor(QColor(255, 255, 255));
 	yAxis->setTickLabelColor(QColor(255, 255, 255));
 
-	// make left and bottom axes always transfer their ranges to right and top axes:
-	connect(xAxis, SIGNAL(rangeChanged(QCPRange)), xAxis2, SLOT(setRange(QCPRange)));
-	connect(yAxis, SIGNAL(rangeChanged(QCPRange)), yAxis2, SLOT(setRange(QCPRange)));
+	// xAxis2/yAxis2 mirror the primary axes' ranges automatically in SimplePlot.
 }
 
 void FocusGraph::set_yaxis_range(double min, double max) {
