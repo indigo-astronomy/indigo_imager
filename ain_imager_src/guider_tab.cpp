@@ -117,12 +117,14 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guider_graph_label = new QLabel();
 	m_guider_graph_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	stats_frame_layout->addWidget(m_guider_graph_label, stats_row, 0);
-	// Target/graph toggle, at the right of the graph label.
-	m_guider_target_plot_cbox = new QCheckBox("Target");
-	m_guider_target_plot_cbox->setToolTip("Display the guider drift as a polar target plot instead of a line graph");
-	m_guider_target_plot_cbox->setChecked(conf.guider_target_plot);
-	stats_frame_layout->addWidget(m_guider_target_plot_cbox, stats_row, 1, Qt::AlignRight);
-	connect(m_guider_target_plot_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_guider_target_plot_changed);
+	// Graph/Target selector, at the right of the graph label.
+	m_guider_plot_select = new QComboBox();
+	m_guider_plot_select->addItem("Graph");
+	m_guider_plot_select->addItem("Target");
+	m_guider_plot_select->setToolTip("Display the guider drift as a line graph or a polar target plot");
+	m_guider_plot_select->setCurrentIndex(conf.guider_target_plot ? 1 : 0);
+	stats_frame_layout->addWidget(m_guider_plot_select, stats_row, 1, Qt::AlignRight);
+	connect(m_guider_plot_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_target_plot_changed);
 
 	stats_row++;
 	m_guider_graph = new FocusGraph();

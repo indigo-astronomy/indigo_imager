@@ -383,7 +383,7 @@ public slots:
 	void on_guider_agent_exposure_changed(double value);
 	void on_guider_agent_callibration_changed(double value);
 	void on_guider_reverse_dec_changed(int state);
-	void on_guider_target_plot_changed(bool status);
+	void on_guider_target_plot_changed(int index);
 	void on_guider_apply_backlash_changed(int state);
 	void on_guider_agent_pulse_changed(double value);
 	void on_guider_agent_pi_aggressivity_changed(int value);
@@ -802,7 +802,7 @@ private:
 	QSpinBox  *m_imager_bin_x;
 	QSpinBox  *m_imager_bin_y;
 	QCheckBox *m_guider_reverse_dec_cbox;
-	QCheckBox *m_guider_target_plot_cbox;
+	QComboBox *m_guider_plot_select;
 
 	QDoubleSpinBox  *m_guide_cal_step;
 	QSpinBox  *m_guide_cal_steps;

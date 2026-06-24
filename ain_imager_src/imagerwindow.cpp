@@ -2011,8 +2011,8 @@ void ImagerWindow::update_guider_display_mode() {
 		                        : static_cast<QWidget *>(m_guider_graph));
 }
 
-void ImagerWindow::on_guider_target_plot_changed(bool status) {
-	conf.guider_target_plot = status;
+void ImagerWindow::on_guider_target_plot_changed(int index) {
+	conf.guider_target_plot = (index == 1);
 	update_guider_display_mode();
 	redraw_guider_data();
 	write_conf();
