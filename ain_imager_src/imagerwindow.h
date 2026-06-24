@@ -63,6 +63,7 @@ class QIndigoServers;
 #include <QSoundEffect>
 #include <QTableView>
 #include <QListWidget>
+#include <QStackedWidget>
 #include <QThread>
 #include <QtConcurrentRun>
 #include <QProcess>
@@ -840,6 +841,7 @@ private:
 
 	FocusGraph *m_guider_graph;
 	SimplePlot *m_guider_target;
+	QStackedWidget *m_guider_graph_stack;
 	QVector<double> m_drift_data_ra;
 	QVector<double> m_drift_data_dec;
 	QVector<double> m_drift_data_dec_s;

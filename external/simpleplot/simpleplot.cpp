@@ -501,7 +501,7 @@ void SimplePlot::paintTarget(QPainter &p) {
 	if (!mTarget) return;
 	const QRect r = rect();
 	const QPointF center(r.center());
-	const double pixR = qMax(10.0, qMin(r.width(), r.height()) / 2.0 - 18.0);
+	const double pixR = qMax(10.0, qMin(r.width(), r.height()) / 2.0 - 8.0);
 
 	// Determine the data radius represented by the outer ring.
 	double dataR = mTarget->mRadius;

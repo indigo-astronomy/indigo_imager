@@ -116,25 +116,36 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	int stats_row = 0;
 	m_guider_graph_label = new QLabel();
 	m_guider_graph_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	stats_frame_layout->addWidget(m_guider_graph_label, stats_row, 0, 1, 2);
+	stats_frame_layout->addWidget(m_guider_graph_label, stats_row, 0);
+	// Target/graph toggle, at the right of the graph label.
+	m_guider_target_plot_cbox = new QCheckBox("Target");
+	m_guider_target_plot_cbox->setToolTip("Display the guider drift as a polar target plot instead of a line graph");
+	m_guider_target_plot_cbox->setChecked(conf.guider_target_plot);
+	stats_frame_layout->addWidget(m_guider_target_plot_cbox, stats_row, 1, Qt::AlignRight);
+	connect(m_guider_target_plot_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_guider_target_plot_changed);
 
 	stats_row++;
 	m_guider_graph = new FocusGraph();
 	m_guider_graph->set_yaxis_range(-6, 6);
-	m_guider_graph->setMinimumHeight(250);
-	stats_frame_layout->addWidget(m_guider_graph, stats_row, 0, 1, 2);
 
-	// Polar target plot, shares the same cell as the line graph; only one is
-	// visible at a time, toggled from the guider Settings tab.
+	// Polar target plot. Stacked with the line graph so both occupy exactly the
+	// same space (same height); the "Target" toggle switches between them.
 	m_guider_target = new SimplePlot(SimplePlot::Target);
-	m_guider_target->setMinimumHeight(250);
 	SimpleTarget *guider_target = m_guider_target->target();
-	guider_target->setAutoScale(true);
-	guider_target->setRingCount(4);
+	// Fixed range; the radius and unit are set per display mode in
+	// select_guider_data() (6 px / 6" for drift, 1.5 s for pulses).
+	guider_target->setAutoScale(false);
+	guider_target->setRadius(6.0);
+	guider_target->setRingCount(3);
 	guider_target->setHistorySize(0);
 	guider_target->setAxisLabels("RA", "Dec");
 	guider_target->setUnit(" px");
-	stats_frame_layout->addWidget(m_guider_target, stats_row, 0, 1, 2);
+
+	m_guider_graph_stack = new QStackedWidget();
+	m_guider_graph_stack->addWidget(m_guider_graph);
+	m_guider_graph_stack->addWidget(m_guider_target);
+	m_guider_graph_stack->setMinimumHeight(250);
+	stats_frame_layout->addWidget(m_guider_graph_stack, stats_row, 0, 1, 2);
 
 	stats_row++;
 	label = new QLabel("Drift RA / Dec:");
@@ -236,13 +247,6 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guider_reverse_dec_cbox->setEnabled(false);
 	settings_frame_layout->addWidget(m_guider_reverse_dec_cbox, settings_row, 0, 1, 4);
 	connect(m_guider_reverse_dec_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_guider_reverse_dec_changed);
-
-	settings_row++;
-	m_guider_target_plot_cbox = new QCheckBox("Show drift as target plot");
-	m_guider_target_plot_cbox->setToolTip("Display the guider drift as a polar target plot instead of a line graph");
-	m_guider_target_plot_cbox->setChecked(conf.guider_target_plot);
-	settings_frame_layout->addWidget(m_guider_target_plot_cbox, settings_row, 0, 1, 4);
-	connect(m_guider_target_plot_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_guider_target_plot_changed);
 
 	settings_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -748,19 +752,23 @@ void ImagerWindow::select_guider_data(guider_display_data show) {
 			case SHOW_RA_DEC_S_DRIFT:
 				t->setAxisLabels("RA", "Dec");
 				t->setUnit("\"");
+				t->setRadius(6.0);
 				break;
 			case SHOW_RA_DEC_PULSE:
 				t->setAxisLabels("RA", "Dec");
 				t->setUnit(" s");
+				t->setRadius(1.5);
 				break;
 			case SHOW_X_Y_DRIFT:
 				t->setAxisLabels("X", "Y");
 				t->setUnit(" px");
+				t->setRadius(6.0);
 				break;
 			case SHOW_RA_DEC_DRIFT:
 			default:
 				t->setAxisLabels("RA", "Dec");
 				t->setUnit(" px");
+				t->setRadius(6.0);
 				break;
 		}
 	}

@@ -2006,8 +2006,9 @@ void ImagerWindow::redraw_guider_data() {
 }
 
 void ImagerWindow::update_guider_display_mode() {
-	m_guider_target->setVisible(conf.guider_target_plot);
-	m_guider_graph->setVisible(!conf.guider_target_plot);
+	m_guider_graph_stack->setCurrentWidget(
+		conf.guider_target_plot ? static_cast<QWidget *>(m_guider_target)
+		                        : static_cast<QWidget *>(m_guider_graph));
 }
 
 void ImagerWindow::on_guider_target_plot_changed(bool status) {
