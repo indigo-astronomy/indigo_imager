@@ -571,6 +571,13 @@ void SimplePlot::paintTarget(QPainter &p) {
 	p.drawText(QRectF(center.x() + 4, center.y() - pixR + 5, 40, 16),
 	           Qt::AlignLeft | Qt::AlignTop, mTarget->mLabelV);
 
+	// Clip the samples and trail to the outermost ring, so points that drift
+	// beyond the largest circle are clipped at its edge instead of spilling out.
+	p.save();
+	QPainterPath clip;
+	clip.addEllipse(center, pixR + 5, pixR + 5);  // +5 to avoid antialiasing halo
+	p.setClipPath(clip);
+
 	// --- samples ----------------------------------------------------------
 	const int n = mTarget->mXs.size();
 	const double ps = mTarget->mPointSize;
@@ -605,4 +612,6 @@ void SimplePlot::paintTarget(QPainter &p) {
 			                    center.y() - mTarget->mYs[i] * scale));
 		p.drawPath(path);
 	}
+
+	p.restore();
 }
