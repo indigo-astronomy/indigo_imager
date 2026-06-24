@@ -295,20 +295,29 @@ void SimplePlot::paintGraph(QPainter &p) {
 	// --- grid + ticks -----------------------------------------------------
 	const double xstep = niceTickStep(xspan, xAxis->autoTickCount());
 	const double ystep = niceTickStep(yspan, yAxis->autoTickCount());
-	QPen gridPen(QColor(255, 255, 255, 28));
+	QPen gridPen(QColor(255, 255, 255, 50));
 	gridPen.setWidth(0);
+	// The x == 0 / y == 0 grid lines are drawn more opaque so the origin stands out.
+	QPen zeroPen(QColor(255, 255, 255, 120));
+	zeroPen.setWidth(0);
 
 	QFont f = p.font();
 	f.setPointSizeF(qMax(7.0, f.pointSizeF() - 1.0));
 	p.setFont(f);
 	QFontMetrics fm(f);
 
+	// Grid, frame and tick marks are all horizontal/vertical lines: draw them
+	// with antialiasing OFF so they stay crisp 1px and never bleed a faint halo
+	// outside the frame (text labels keep their own TextAntialiasing hint).
+	// Antialiasing is restored before the data curves are drawn.
+	p.setRenderHint(QPainter::Antialiasing, false);
+
 	// vertical grid lines + x tick labels
 	const double xStart = std::ceil(xr.lower / xstep) * xstep;
 	double xLastTick = xr.lower - xstep; // last labelled tick value
 	for (double x = xStart; x <= xr.upper + xstep * 1e-6; x += xstep) {
 		const double px = mapX(x);
-		p.setPen(gridPen);
+		p.setPen(std::fabs(x) < xstep * 1e-6 ? zeroPen : gridPen);
 		p.drawLine(QPointF(px, area.top()), QPointF(px, area.bottom()));
 		if (xAxis->visible() && xAxis->tickLabels()) {
 			p.setPen(xAxis->tickLabelColor());
@@ -336,7 +345,7 @@ void SimplePlot::paintGraph(QPainter &p) {
 	double yLastTick = yr.lower - ystep;
 	for (double y = yStart; y <= yr.upper + ystep * 1e-6; y += ystep) {
 		const double py = mapY(y);
-		p.setPen(gridPen);
+		p.setPen(std::fabs(y) < ystep * 1e-6 ? zeroPen : gridPen);
 		p.drawLine(QPointF(area.left(), py), QPointF(area.right(), py));
 		if (yAxis->visible() && yAxis->tickLabels()) {
 			p.setPen(yAxis->tickLabelColor());
@@ -380,18 +389,25 @@ void SimplePlot::paintGraph(QPainter &p) {
 	auto drawXTicks = [&](SimpleAxis *ax, double yBase, double inward) {
 		if (!ax || !ax->visible()) return;
 		const double subStep = xstep / subTickDivisions(xstep);
-		p.setPen(ax->subTickPen());
+		// Hairline (cosmetic) pens keep the tick marks thin and crisp.
+		QPen subPen = ax->subTickPen(); subPen.setWidthF(0.0);
+		QPen majPen = ax->tickPen();    majPen.setWidthF(0.0);
+		p.setPen(subPen);
 		for (double x = std::ceil(xr.lower / subStep) * subStep;
 		     x <= xr.upper + subStep * 1e-6; x += subStep) {
 			const double px = mapX(x);
 			p.drawLine(QPointF(px, yBase), QPointF(px, yBase + inward * subLen));
 		}
-		p.setPen(ax->tickPen());
+		p.setPen(majPen);
 		for (double x = xStart; x <= xr.upper + xstep * 1e-6; x += xstep) {
 			const double px = mapX(x);
 			p.drawLine(QPointF(px, yBase), QPointF(px, yBase + inward * majLen));
 		}
 	};
+	// Clip the tick marks to the plot area so they can never bleed outside the
+	// frame, independent of antialiasing / device-pixel snapping on any backend.
+	p.save();
+	p.setClipRect(area);
 	drawXTicks(xAxis, area.bottom(), -1.0);
 	drawXTicks(xAxis2, area.top(), +1.0);
 
@@ -399,13 +415,16 @@ void SimplePlot::paintGraph(QPainter &p) {
 	auto drawYTicks = [&](SimpleAxis *ax, double xBase, double inward) {
 		if (!ax || !ax->visible()) return;
 		const double subStep = ystep / subTickDivisions(ystep);
-		p.setPen(ax->subTickPen());
+		// Hairline (cosmetic) pens keep the tick marks thin and crisp.
+		QPen subPen = ax->subTickPen(); subPen.setWidthF(0.0);
+		QPen majPen = ax->tickPen();    majPen.setWidthF(0.0);
+		p.setPen(subPen);
 		for (double y = std::ceil(yr.lower / subStep) * subStep;
 		     y <= yr.upper + subStep * 1e-6; y += subStep) {
 			const double py = mapY(y);
 			p.drawLine(QPointF(xBase, py), QPointF(xBase + inward * subLen, py));
 		}
-		p.setPen(ax->tickPen());
+		p.setPen(majPen);
 		for (double y = yStart; y <= yr.upper + ystep * 1e-6; y += ystep) {
 			const double py = mapY(y);
 			p.drawLine(QPointF(xBase, py), QPointF(xBase + inward * majLen, py));
@@ -413,8 +432,10 @@ void SimplePlot::paintGraph(QPainter &p) {
 	};
 	drawYTicks(yAxis, area.left(), +1.0);
 	drawYTicks(yAxis2, area.right(), -1.0);
+	p.restore();
 
 	// --- data -------------------------------------------------------------
+	p.setRenderHint(QPainter::Antialiasing, true);
 	p.setClipRect(area);
 	for (SimpleGraph *g : mGraphs) {
 		if (g->mKeys.isEmpty()) continue;

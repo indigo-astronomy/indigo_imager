@@ -186,7 +186,7 @@ private:
 	QPen mRingPen{QColor(120, 120, 120)};
 	QPen mCrosshairPen{QColor(150, 150, 150)};
 	QColor mPointColor{QColor(255, 215, 0)};
-	double mPointSize = 5.0;
+	double mPointSize = 3.0;
 	QString mLabelH{QStringLiteral("RA")};
 	QString mLabelV{QStringLiteral("Dec")};
 	QString mUnit;

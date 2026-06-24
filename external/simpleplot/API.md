@@ -236,7 +236,7 @@ last few. Obtain it via `SimplePlot::target()`.
 | `void setRingPen(const QPen &pen)` | Pen for the rings. Default grey `(120,120,120)`. |
 | `void setCrosshairPen(const QPen &pen)` | Pen for the centre crosshair and diagonals. Default grey `(150,150,150)`. |
 | `void setPointColor(const QColor &c)` | Colour of the samples (older ones fade in alpha; the latest is always drawn red). Default gold `(255,215,0)`. |
-| `void setPointSize(double s)` | Sample marker diameter in px (clamped to ≥0; the latest sample is drawn 2px larger). Repaints. Default `5.0`. |
+| `void setPointSize(double s)` | Sample marker diameter in px (clamped to ≥0; the latest sample is drawn 2px larger). Repaints. Default `3.0`. |
 | `double pointSize() const` | Current marker diameter. |
 | `void setAxisLabels(const QString &horizontal, const QString &vertical)` | Captions at the axis ends. Defaults `"RA"` / `"Dec"`. |
 | `void setUnit(const QString &unit)` | String appended to each ring's radius number (e.g. `"\""` for arcsec, `"'"` for arcmin, `" px"`). Empty by default. |
