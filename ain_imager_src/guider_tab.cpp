@@ -160,9 +160,8 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	plot_layout->addWidget(m_guider_graph, 1);
 	// Fixed height: the graphs do not scale vertically, so the stats labels stay
 	// right below them (extra space goes to the bottom via the top-aligned grid).
-	m_guider_plot_container->setFixedHeight(250);
+	m_guider_plot_container->setFixedHeight(225);
 	m_guider_plot_container->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-	m_guider_plot_container->installEventFilter(this);
 	stats_frame_layout->addWidget(m_guider_plot_container, stats_row, 0, 1, 2);
 
 	stats_row++;
@@ -1289,23 +1288,21 @@ void ImagerWindow::update_guider_display_mode() {
 	m_guider_graph->xAxis->setAutoTickCount(mode == 2 ? 4 : 5);
 	QBoxLayout *lay = qobject_cast<QBoxLayout *>(m_guider_plot_container->layout());
 	if (mode == 2) {
-		// Both: keep the full 250px row height, but the graph and the (square)
-		// target are the same smaller height, both vertically centered.
-		m_guider_plot_container->setMinimumHeight(250);
-		int h = m_guider_plot_container->height();
-		if (h <= 0) h = 250;
-		int side = h * 2 / 3;
+		// Both: the (square) target is 2/3 of the single height; the graph is the
+		// target height plus its bottom margin (room for the x-axis caption), and
+		// the container shrinks to fit the graphs (no empty space).
+		int side = 250 * 2 / 3;
+		int graph_h = side + m_guider_graph->marginBottom() / 2;
 		m_guider_target->setFixedSize(side, side);
-		// Graph is the target's height plus its bottom margin, so the extra space
-		// at the bottom holds the x-axis caption.
-		m_guider_graph->setFixedHeight(side + m_guider_graph->marginBottom()/2);
+		m_guider_graph->setFixedHeight(graph_h);
+		m_guider_plot_container->setFixedHeight(graph_h);
 		if (lay) {
 			lay->setAlignment(m_guider_target, Qt::AlignVCenter);
 			lay->setAlignment(m_guider_graph, Qt::AlignVCenter);
 		}
 	} else {
 		// Single view: full height, fills the whole width.
-		m_guider_plot_container->setMinimumHeight(250);
+		m_guider_plot_container->setFixedHeight(225);
 		m_guider_target->setMinimumSize(0, 0);
 		m_guider_target->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
 		m_guider_graph->setMinimumHeight(0);
@@ -1315,20 +1312,6 @@ void ImagerWindow::update_guider_display_mode() {
 			lay->setAlignment(m_guider_graph, Qt::Alignment());
 		}
 	}
-}
-
-bool ImagerWindow::eventFilter(QObject *obj, QEvent *event) {
-	if (obj == m_guider_plot_container && event->type() == QEvent::Resize &&
-	    conf.guider_plot_mode == 2 && m_guider_target) {
-		// Target square (2/3 of the row); graph is target height + bottom margin.
-		int h = m_guider_plot_container->height();
-		int side = h * 2 / 3;
-		if (m_guider_target->width() != side) {
-			m_guider_target->setFixedSize(side, side);
-			m_guider_graph->setFixedHeight(side + m_guider_graph->marginBottom()/2);
-		}
-	}
-	return QMainWindow::eventFilter(obj, event);
 }
 
 void ImagerWindow::on_guider_target_plot_changed(int index) {
