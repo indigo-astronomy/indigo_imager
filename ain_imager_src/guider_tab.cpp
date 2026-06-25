@@ -1260,3 +1260,81 @@ void ImagerWindow::on_agent_guider_focal_length_changed(int value) {
 		change_agent_lens_profile_property(selected_agent, m_guider_focal_lenght);
 	});
 }
+
+void ImagerWindow::redraw_guider_data() {
+	if (!m_guider_data_1 || !m_guider_data_2) return;
+	const int mode = conf.guider_plot_mode;
+	if (mode == 1 || mode == 2) {  // Target or Both
+		m_guider_target->target()->setData(*m_guider_data_1, *m_guider_data_2);
+	}
+	if (mode == 0 || mode == 2) {  // Graph or Both
+		if (mode == 2) {
+			// In Both mode the graph is narrower: show only the most recent 45%
+			// of the collected points.
+			const int from = m_guider_data_1->size() * 0.55;
+			m_guider_graph->redraw_data2(m_guider_data_1->mid(from), m_guider_data_2->mid(from));
+		} else {
+			m_guider_graph->redraw_data2(*m_guider_data_1, *m_guider_data_2);
+		}
+	}
+}
+
+void ImagerWindow::update_guider_display_mode() {
+	const int mode = conf.guider_plot_mode;
+	const bool show_graph = (mode == 0 || mode == 2);
+	const bool show_target = (mode == 1 || mode == 2);
+	m_guider_graph->setVisible(show_graph);
+	m_guider_target->setVisible(show_target);
+	// Half the vertical grid lines in Both mode (narrower graph).
+	m_guider_graph->xAxis->setAutoTickCount(mode == 2 ? 4 : 5);
+	QBoxLayout *lay = qobject_cast<QBoxLayout *>(m_guider_plot_container->layout());
+	if (mode == 2) {
+		// Both: keep the full 250px row height, but the graph and the (square)
+		// target are the same smaller height, both vertically centered.
+		m_guider_plot_container->setMinimumHeight(250);
+		int h = m_guider_plot_container->height();
+		if (h <= 0) h = 250;
+		int side = h * 2 / 3;
+		m_guider_target->setFixedSize(side, side);
+		// Graph is the target's height plus its bottom margin, so the extra space
+		// at the bottom holds the x-axis caption.
+		m_guider_graph->setFixedHeight(side + m_guider_graph->marginBottom()/2);
+		if (lay) {
+			lay->setAlignment(m_guider_target, Qt::AlignVCenter);
+			lay->setAlignment(m_guider_graph, Qt::AlignVCenter);
+		}
+	} else {
+		// Single view: full height, fills the whole width.
+		m_guider_plot_container->setMinimumHeight(250);
+		m_guider_target->setMinimumSize(0, 0);
+		m_guider_target->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
+		m_guider_graph->setMinimumHeight(0);
+		m_guider_graph->setMaximumHeight(QWIDGETSIZE_MAX);
+		if (lay) {
+			lay->setAlignment(m_guider_target, Qt::Alignment());
+			lay->setAlignment(m_guider_graph, Qt::Alignment());
+		}
+	}
+}
+
+bool ImagerWindow::eventFilter(QObject *obj, QEvent *event) {
+	if (obj == m_guider_plot_container && event->type() == QEvent::Resize &&
+	    conf.guider_plot_mode == 2 && m_guider_target) {
+		// Target square (2/3 of the row); graph is target height + bottom margin.
+		int h = m_guider_plot_container->height();
+		int side = h * 2 / 3;
+		if (m_guider_target->width() != side) {
+			m_guider_target->setFixedSize(side, side);
+			m_guider_graph->setFixedHeight(side + m_guider_graph->marginBottom()/2);
+		}
+	}
+	return QMainWindow::eventFilter(obj, event);
+}
+
+void ImagerWindow::on_guider_target_plot_changed(int index) {
+	conf.guider_plot_mode = index;
+	update_guider_display_mode();
+	redraw_guider_data();
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
