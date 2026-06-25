@@ -121,18 +121,23 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guider_plot_select = new QComboBox();
 	m_guider_plot_select->addItem("Graph");
 	m_guider_plot_select->addItem("Target");
-	m_guider_plot_select->setToolTip("Display the guider drift as a line graph or a polar target plot");
-	m_guider_plot_select->setCurrentIndex(conf.guider_target_plot ? 1 : 0);
+	m_guider_plot_select->addItem("Both");
+	m_guider_plot_select->setToolTip("Display the guider drift as a line graph, a polar target plot, or both side by side");
+	m_guider_plot_select->setCurrentIndex(conf.guider_plot_mode);
 	stats_frame_layout->addWidget(m_guider_plot_select, stats_row, 1, Qt::AlignRight);
 	connect(m_guider_plot_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_guider_target_plot_changed);
 
 	stats_row++;
 	m_guider_graph = new FocusGraph();
 	m_guider_graph->set_yaxis_range(-6, 6);
+	m_guider_graph->setPlotMargins(22, m_guider_graph->marginTop(),
+	                               m_guider_graph->marginRight(), m_guider_graph->marginBottom());
 
-	// Polar target plot. Stacked with the line graph so both occupy exactly the
-	// same space (same height); the "Target" toggle switches between them.
+	m_guider_graph->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+	// Polar target plot.
 	m_guider_target = new SimplePlot(SimplePlot::Target);
+	m_guider_target->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	SimpleTarget *guider_target = m_guider_target->target();
 	// Fixed range; the radius and unit are set per display mode in
 	// select_guider_data() (6 px / 6" for drift, 1.5 s for pulses).
@@ -143,11 +148,22 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	guider_target->setAxisLabels("RA", "Dec");
 	guider_target->setUnit(" px");
 
-	m_guider_graph_stack = new QStackedWidget();
-	m_guider_graph_stack->addWidget(m_guider_graph);
-	m_guider_graph_stack->addWidget(m_guider_target);
-	m_guider_graph_stack->setMinimumHeight(250);
-	stats_frame_layout->addWidget(m_guider_graph_stack, stats_row, 0, 1, 2);
+	// Target + graph share a horizontal row. In Graph/Target mode one is hidden
+	// and the other fills the row; in Both mode the target is squared (width =
+	// height) on the left and the graph fills the remaining width on the right.
+	// update_guider_display_mode() controls visibility/sizing.
+	m_guider_plot_container = new QWidget();
+	QHBoxLayout *plot_layout = new QHBoxLayout(m_guider_plot_container);
+	plot_layout->setContentsMargins(0, 0, 0, 0);
+	plot_layout->setSpacing(4);
+	plot_layout->addWidget(m_guider_target, 0);
+	plot_layout->addWidget(m_guider_graph, 1);
+	// Fixed height: the graphs do not scale vertically, so the stats labels stay
+	// right below them (extra space goes to the bottom via the top-aligned grid).
+	m_guider_plot_container->setFixedHeight(250);
+	m_guider_plot_container->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+	m_guider_plot_container->installEventFilter(this);
+	stats_frame_layout->addWidget(m_guider_plot_container, stats_row, 0, 1, 2);
 
 	stats_row++;
 	label = new QLabel("Drift RA / Dec:");

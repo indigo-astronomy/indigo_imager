@@ -225,6 +225,14 @@ public:
 	QBrush background() const { return mBackground; }
 	void replot();
 
+	// Plot-area margins in px, to leave room for the axis captions/tick labels
+	// where needed (Graph only).
+	void setPlotMargins(int left, int top, int right, int bottom);
+	int marginLeft() const { return mMarginLeft; }
+	int marginTop() const { return mMarginTop; }
+	int marginRight() const { return mMarginRight; }
+	int marginBottom() const { return mMarginBottom; }
+
 	// Graph chart members (nullptr on a Target plot)
 	SimpleAxis *xAxis = nullptr;    // bottom (primary key axis)
 	SimpleAxis *yAxis = nullptr;    // left   (primary value axis)
@@ -249,6 +257,10 @@ private:
 
 	ChartType mType;
 	QBrush mBackground{QColor(0, 0, 0, 0)};
+	int mMarginLeft = 42;
+	int mMarginTop = 8;
+	int mMarginRight = 8;
+	int mMarginBottom = 22;
 	QVector<SimpleGraph *> mGraphs;
 	SimpleTarget *mTarget = nullptr;
 };

@@ -841,7 +841,7 @@ private:
 
 	FocusGraph *m_guider_graph;
 	SimplePlot *m_guider_target;
-	QStackedWidget *m_guider_graph_stack;
+	QWidget *m_guider_plot_container;
 	QVector<double> m_drift_data_ra;
 	QVector<double> m_drift_data_dec;
 	QVector<double> m_drift_data_dec_s;
@@ -1161,6 +1161,7 @@ private:
 	void select_guider_data(guider_display_data show);
 	void redraw_guider_data();
 	void update_guider_display_mode();
+	bool eventFilter(QObject *obj, QEvent *event) override;
 
 	void setup_preview(const char *agent);
 	bool open_image(QString file_name, int *image_size, unsigned char **image_data);

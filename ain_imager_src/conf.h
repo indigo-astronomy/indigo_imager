@@ -136,8 +136,8 @@ typedef struct {
 	ain_preview_mode preview_mode;
 	bool live_stacking_enabled;
 	char filename_template[INDIGO_VALUE_SIZE];
-	bool guider_target_plot;
-	char unused[98];
+	int guider_plot_mode;   // 0 = Graph, 1 = Target, 2 = Both
+	char unused[95];
 } conf_t;
 
 extern conf_t conf;

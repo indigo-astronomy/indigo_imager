@@ -224,6 +224,14 @@ void SimplePlot::setBackground(const QBrush &brush) {
 
 void SimplePlot::replot() { update(); }
 
+void SimplePlot::setPlotMargins(int left, int top, int right, int bottom) {
+	mMarginLeft = left;
+	mMarginTop = top;
+	mMarginRight = right;
+	mMarginBottom = bottom;
+	update();
+}
+
 SimpleGraph *SimplePlot::addGraph() {
 	if (mType != Graph) return nullptr;
 	SimpleGraph *g = new SimpleGraph(this);
@@ -247,8 +255,7 @@ void SimplePlot::clearGraphs() {
 
 QRect SimplePlot::plotArea() const {
 	// Margins leave room for tick labels / axis captions.
-	const int left = 46, right = 12, top = 10, bottom = 26;
-	QRect r = rect().adjusted(left, top, -right, -bottom);
+	QRect r = rect().adjusted(mMarginLeft, mMarginTop, -mMarginRight, -mMarginBottom);
 	if (r.width() < 10) r.setWidth(10);
 	if (r.height() < 10) r.setHeight(10);
 	return r;

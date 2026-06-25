@@ -66,6 +66,8 @@ explicit SimplePlot(ChartType type = Graph, QWidget *parent = nullptr);
 | `void setBackground(const QBrush &brush)` | Fill colour/brush of the whole widget. Default is transparent (`QColor(0,0,0,0)`), letting the parent background show through. |
 | `QBrush background() const` | Current background brush. |
 | `void replot()` | Schedule a repaint (alias of `update()`, named for QCustomPlot source compatibility). |
+| `void setPlotMargins(int left, int top, int right, int bottom)` | Plot-area margins in px, leaving room for the axis tick labels/captions. Defaults `42 / 8 / 8 / 22`. Graph charts only. |
+| `int marginLeft() const` / `marginTop()` / `marginRight()` / `marginBottom()` | Current margins. |
 
 ### Graph chart members
 
