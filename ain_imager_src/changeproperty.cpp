@@ -818,6 +818,25 @@ void ImagerWindow::change_guider_agent_rswitch_fast_threshild(const char *agent)
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 1, items, values);
 }
 
+#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
+void ImagerWindow::change_guider_agent_ppec(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_SETTINGS_PPEC_REACTIVE_GAIN_RA_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_PPEC_PRED_GAIN_RA_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_PPEC_PERIOD_RA_ITEM_NAME,
+	};
+	static double values[3];
+	values[0] = (double)m_ppec_guide_reactive_gain_ra->value();
+	values[1] = (double)m_ppec_guide_pred_gain_ra->value();
+	values[2] = (double)m_ppec_guide_period_ra->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 3, items, values);
+}
+
+void ImagerWindow::change_guider_agent_reset_ppec(const char *agent) const {
+	indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_RESET_PPEC_PROPERTY_NAME, AGENT_GUIDER_RESET_PPEC_ITEM_NAME, true);
+}
+#endif
+
 void ImagerWindow::change_guider_agent_i(const char *agent) const {
 	static const char *items[] = {
 		AGENT_GUIDER_SETTINGS_I_GAIN_RA_ITEM_NAME,

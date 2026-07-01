@@ -1431,6 +1431,11 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 					w->show_widget(w->m_hyst_guide_ra_aggr, false);
 					w->show_widget(w->m_hyst_guide_hysteresis_ra, false);
 					w->show_widget(w->m_lt_guide_ra_aggr, false);
+#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
+					w->show_widget(w->m_ppec_guide_reactive_gain_ra, false);
+					w->show_widget(w->m_ppec_guide_pred_gain_ra, false);
+					w->show_widget(w->m_ppec_guide_period_ra, false);
+#endif
 					show_i_stack = true;
 				}
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_HYSTERESIS_ITEM_NAME)) {
@@ -1445,6 +1450,11 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 					w->show_widget(w->m_hyst_guide_ra_aggr, true);
 					w->show_widget(w->m_hyst_guide_hysteresis_ra, true);
 					w->show_widget(w->m_lt_guide_ra_aggr, false);
+#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
+					w->show_widget(w->m_ppec_guide_reactive_gain_ra, false);
+					w->show_widget(w->m_ppec_guide_pred_gain_ra, false);
+					w->show_widget(w->m_ppec_guide_period_ra, false);
+#endif
 				}
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_LINEAR_TREND_ITEM_NAME)) {
 				if (property->items[i].sw.value) {
@@ -1458,7 +1468,30 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 					w->show_widget(w->m_hyst_guide_ra_aggr, false);
 					w->show_widget(w->m_hyst_guide_hysteresis_ra, false);
 					w->show_widget(w->m_lt_guide_ra_aggr, true);
+#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
+					w->show_widget(w->m_ppec_guide_reactive_gain_ra, false);
+					w->show_widget(w->m_ppec_guide_pred_gain_ra, false);
+					w->show_widget(w->m_ppec_guide_period_ra, false);
+#endif
 				}
+#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
+			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME)) {
+				if (property->items[i].sw.value) {
+					w->set_text(w->m_guide_ra_param1_label, "Reactive/Prediction gain (%):");
+					w->set_text(w->m_guide_ra_param2_label, "Worm period (s):");
+					w->show_widget(w->m_guide_ra_param1_label, true);
+					w->show_widget(w->m_guide_ra_param2_label, true);
+
+					w->show_widget(w->m_pi_guide_ra_aggr, false);
+					w->show_widget(w->m_pi_guide_i_gain_ra, false);
+					w->show_widget(w->m_hyst_guide_ra_aggr, false);
+					w->show_widget(w->m_hyst_guide_hysteresis_ra, false);
+					w->show_widget(w->m_lt_guide_ra_aggr, false);
+					w->show_widget(w->m_ppec_guide_reactive_gain_ra, true);
+					w->show_widget(w->m_ppec_guide_pred_gain_ra, true);
+					w->show_widget(w->m_ppec_guide_period_ra, true);
+				}
+#endif
 			} else {
 				if (property->items[i].sw.value) {
 					w->show_widget(w->m_guide_ra_param1_label, false);
@@ -1469,6 +1502,11 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 					w->show_widget(w->m_hyst_guide_ra_aggr, false);
 					w->show_widget(w->m_hyst_guide_hysteresis_ra, false);
 					w->show_widget(w->m_lt_guide_ra_aggr, false);
+#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
+					w->show_widget(w->m_ppec_guide_reactive_gain_ra, false);
+					w->show_widget(w->m_ppec_guide_pred_gain_ra, false);
+					w->show_widget(w->m_ppec_guide_period_ra, false);
+#endif
 				}
 			}
 		}
@@ -2295,6 +2333,9 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	double d_x = 0, d_y = 0;
 	int frame_count = -1;
 	bool is_dithering = false;
+#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
+	double ppec_learning = 0;
+#endif
 
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_FRAME_ITEM_NAME)) {
@@ -2329,6 +2370,10 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 			cor_dec = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_DITHERING_ITEM_NAME)) {
 			dither_rmse = property->items[i].number.value;
+#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_PPEC_LEARNING_ITEM_NAME)) {
+			ppec_learning = property->items[i].number.value;
+#endif
 		}
 	}
 
@@ -2435,6 +2480,11 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 
 	snprintf(label_str, 50, "%+.2f  %+.2f s", cor_ra, cor_dec);
 	w->set_text(w->m_guider_pulse_label, label_str);
+
+#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
+	snprintf(label_str, 50, "Model %.0f%% complete", ppec_learning);
+	w->set_text(w->m_guider_ppec_learning_label, label_str);
+#endif
 }
 
 void update_guider_settings(ImagerWindow *w, indigo_property *property) {
@@ -2491,6 +2541,14 @@ void update_guider_settings(ImagerWindow *w, indigo_property *property) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_rswitch_guide_dec_aggr);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_RESIST_SWITCH_FAST_THRSH_DEC_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_rswitch_fast_threshild);
+#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_PPEC_REACTIVE_GAIN_RA_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_ppec_guide_reactive_gain_ra);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_PPEC_PRED_GAIN_RA_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_ppec_guide_pred_gain_ra);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_PPEC_PERIOD_RA_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_ppec_guide_period_ra);
+#endif
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_DITHERING_AMOUNT_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_dither_aggr);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_DITHERING_TIME_LIMIT_ITEM_NAME)) {
