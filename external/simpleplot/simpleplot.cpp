@@ -120,11 +120,9 @@ void SimpleTarget::addSample(double x, double y) {
 
 void SimpleTarget::setData(const QVector<double> &xs, const QVector<double> &ys) {
 	const int n = qMin(xs.size(), ys.size());
-	mXs = xs.mid(0, n);
-	mYs = ys.mid(0, n);
-	if (mHistorySize > 0) {
-		while (mXs.size() > mHistorySize) { mXs.removeFirst(); mYs.removeFirst(); }
-	}
+	const int from = (mHistorySize > 0 && n > mHistorySize) ? n - mHistorySize : 0;
+	mXs = xs.mid(from, n - from);
+	mYs = ys.mid(from, n - from);
 	if (mPlot) mPlot->replot();
 }
 
@@ -136,8 +134,10 @@ void SimpleTarget::clear() {
 
 void SimpleTarget::setHistorySize(int n) {
 	mHistorySize = qMax(0, n);
-	if (mHistorySize > 0) {
-		while (mXs.size() > mHistorySize) { mXs.removeFirst(); mYs.removeFirst(); }
+	if (mHistorySize > 0 && mXs.size() > mHistorySize) {
+		const int from = mXs.size() - mHistorySize;
+		mXs = mXs.mid(from);
+		mYs = mYs.mid(from);
 	}
 	if (mPlot) mPlot->replot();
 }
