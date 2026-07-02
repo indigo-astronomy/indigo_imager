@@ -2402,17 +2402,15 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 					w->set_guider_label(INDIGO_BUSY_STATE, " Dithering... ");
 				}
 
-				if (frame_count == 0) {
-					w->m_drift_data_ra.clear();
-					w->m_drift_data_dec.clear();
-					w->m_drift_data_ra_s.clear();
-					w->m_drift_data_dec_s.clear();
-					w->m_pulse_data_ra.clear();
-					w->m_pulse_data_dec.clear();
-					w->m_drift_data_x.clear();
-					w->m_drift_data_y.clear();
-					w->redraw_guider_data();
-				} else if (frame_count > 0 && frame_count > w->m_guider_frame_count) {
+				if (frame_count == 0 || frame_count < w->m_guider_frame_count) {
+					// New guiding session: frame_count == 0 marks a fresh start;
+					// a frame_count that went backwards means we missed the frame 0
+					// update (e.g. after a reconnect, or the switch was cached after
+					// the stats update) - reset so we do not append to stale data
+					// from the previous session.
+					w->reset_guider_data();
+				}
+				if (frame_count > 0 && frame_count > w->m_guider_frame_count) {
 					w->m_drift_data_ra.append(d_ra);
 					w->m_drift_data_dec.append(d_dec);
 					w->m_drift_data_ra_s.append(d_ra_s);

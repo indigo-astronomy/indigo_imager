@@ -1350,6 +1350,19 @@ void ImagerWindow::on_agent_guider_focal_length_changed(int value) {
 	});
 }
 
+void ImagerWindow::reset_guider_data() {
+	m_guider_frame_count = 0;
+	m_drift_data_ra.clear();
+	m_drift_data_dec.clear();
+	m_drift_data_ra_s.clear();
+	m_drift_data_dec_s.clear();
+	m_pulse_data_ra.clear();
+	m_pulse_data_dec.clear();
+	m_drift_data_x.clear();
+	m_drift_data_y.clear();
+	redraw_guider_data();
+}
+
 void ImagerWindow::redraw_guider_data() {
 	if (!m_guider_data_1 || !m_guider_data_2) return;
 	const int mode = conf.guider_plot_mode;

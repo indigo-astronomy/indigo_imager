@@ -1180,6 +1180,7 @@ private:
 
 	void select_guider_data(guider_display_data show);
 	void redraw_guider_data();
+	void reset_guider_data();
 	void update_guider_display_mode();
 
 	void setup_preview(const char *agent);
