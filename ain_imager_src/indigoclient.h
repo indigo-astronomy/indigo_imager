@@ -23,6 +23,7 @@
 #include <QObject>
 #include <QHash>
 #include <QAtomicInt>
+#include <QMutex>
 #include <indigo/indigo_bus.h>
 #include <indigo/indigo_names.h>
 #include "logger.h"
@@ -99,6 +100,7 @@ signals:
 	void no_preview(indigo_property* property, indigo_item *item);
 
 private:
+	QMutex m_exposing_mutex;
 	QHash<QString, bool> m_is_exposing;
 	QHash<QString, bool> m_blob_pending;
 };

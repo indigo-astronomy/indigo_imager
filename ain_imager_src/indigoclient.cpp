@@ -96,21 +96,21 @@ static indigo_result client_attach(indigo_client *client) {
 }
 
 bool IndigoClient::is_exposing(const char* device) {
-	if (m_is_exposing.contains(device)) {
-		return m_is_exposing.value(device);
-	}
-	return false;
+	QMutexLocker locker(&m_exposing_mutex);
+	return m_is_exposing.value(device, false);
 }
 
 // Like is_exposing(), but also returns true once for the frame that was
 // already in-flight when AGENT_START_PROCESS transitioned to non-BUSY
 // (i.e. when AGENT_START_PROCESS OK beats CCD_IMAGE OK to the client).
 bool IndigoClient::consume_is_exposing(const char* device) {
+	QMutexLocker locker(&m_exposing_mutex);
 	const bool was_pending = m_blob_pending.take(device);
-	return was_pending || is_exposing(device);
+	return was_pending || m_is_exposing.value(device, false);
 }
 
 void IndigoClient::remove_is_exposing_entry(const char* device) {
+	QMutexLocker locker(&m_exposing_mutex);
 	m_is_exposing.remove(device);
 }
 
@@ -131,6 +131,7 @@ void IndigoClient::update_save_blob(indigo_property *property)	 {
 			}
 			is_exposing = sequence_running || batch_running;
 		}
+		QMutexLocker locker(&m_exposing_mutex);
 		// If a batch just ended, latch a one-shot flag so that a CCD_IMAGE
 		// blob that was already in-flight (URL sent before AGENT_START_PROCESS
 		// went OK) is still treated as a batch frame.
