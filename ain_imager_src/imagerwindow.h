@@ -367,9 +367,7 @@ public slots:
 	void on_guider_image_right_click(double x, double y);
 	void on_guider_preview_start_stop(bool clicked);
 	void on_guider_calibrate_start_stop(bool clicked);
-#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
 	void on_guider_reset_ppec(bool clicked);
-#endif
 	void on_guider_guide_start_stop(bool clicked);
 	void on_guider_stop(bool clicked);
 	void on_detection_mode_selected(int index);
@@ -397,9 +395,7 @@ public slots:
 	void on_guider_agent_hyst_hysteresis_changed(int value);
 	void on_guider_agent_rswitch_aggressivity_changed(int value);
 	void on_guider_agent_rswitch_fast_threshild_changed(double value);
-#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
 	void on_guider_agent_ppec_changed(int value);
-#endif
 	void on_preview_mode_off();
 	void on_preview_mode_fine_guider();
 	void on_preview_mode_normal_guider();
@@ -845,11 +841,9 @@ private:
 	QSpinBox  *m_rswitch_guide_dec_aggr;
 	QDoubleSpinBox  *m_rswitch_fast_threshild;
 
-#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
 	QSpinBox  *m_ppec_guide_reactive_gain_ra;
 	QSpinBox  *m_ppec_guide_pred_gain_ra;
 	QSpinBox  *m_ppec_guide_period_ra;
-#endif
 
 	FocusGraph *m_guider_graph;
 	SimplePlot *m_guider_target;
@@ -874,10 +868,8 @@ private:
 	QPushButton *m_guider_preview_button;
 	QPushButton *m_guider_calibrate_button;
 	QPushButton *m_guider_stop_button;
-#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
 	QLabel *m_guider_ppec_learning_label;
 	QToolButton *m_ppec_reset_button;
-#endif
 
 	QComboBox *m_detection_mode_select;
 	QComboBox *m_dec_guiding_select;
@@ -1151,10 +1143,8 @@ private:
 	void change_guider_agent_hyst_hysteresis(const char *agent) const;
 	void change_guider_agent_rswitch_aggressivity(const char *agent) const;
 	void change_guider_agent_rswitch_fast_threshild(const char *agent) const;
-#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
 	void change_guider_agent_ppec(const char *agent) const;
 	void change_guider_agent_reset_ppec(const char *agent) const;
-#endif
 	void change_guider_agent_i(const char *agent) const;
 	void change_guider_agent_edge_clipping(const char *agent) const;
 	void change_agent_ccd_preview(const char *agent, bool enable) const;

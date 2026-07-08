@@ -435,7 +435,6 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	correction_frame_layout->addWidget(m_lt_guide_ra_aggr, correction_row, 3);
 	connect(m_lt_guide_ra_aggr, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_lt_aggressivity_changed);
 
-#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
 	m_ppec_guide_reactive_gain_ra = new QSpinBox();
 	m_ppec_guide_reactive_gain_ra->setMaximum(100);
 	m_ppec_guide_reactive_gain_ra->setMinimum(0);
@@ -451,7 +450,6 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_ppec_guide_pred_gain_ra->hide();
 	correction_frame_layout->addWidget(m_ppec_guide_pred_gain_ra, correction_row, 3);
 	connect(m_ppec_guide_pred_gain_ra, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_ppec_changed);
-#endif
 
 	// Parameter 2
 	correction_row++;
@@ -473,7 +471,6 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	correction_frame_layout->addWidget(m_hyst_guide_hysteresis_ra, correction_row, 3);
 	connect(m_hyst_guide_hysteresis_ra, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_hyst_hysteresis_changed);
 
-#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
 	m_ppec_guide_period_ra = new QSpinBox();
 	m_ppec_guide_period_ra->setMaximum(2000);
 	m_ppec_guide_period_ra->setMinimum(0);
@@ -482,7 +479,6 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_ppec_guide_period_ra->hide();
 	correction_frame_layout->addWidget(m_ppec_guide_period_ra, correction_row, 3);
 	connect(m_ppec_guide_period_ra, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_ppec_changed);
-#endif
 
 	correction_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -680,7 +676,6 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	calibration_frame_layout->addWidget(m_guide_dec_speed, calibration_row, 3);
 	connect(m_guide_dec_speed, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_callibration_changed);
 
-#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
 	calibration_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	calibration_frame_layout->addItem(spacer, calibration_row, 0);
@@ -699,7 +694,6 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_ppec_reset_button->setToolTip("Reset learned Predictive PEC model");
 	calibration_frame_layout->addWidget(m_ppec_reset_button, calibration_row, 3, Qt::AlignRight);
 	connect(m_ppec_reset_button, &QToolButton::clicked, this, &ImagerWindow::on_guider_reset_ppec);
-#endif
 
 	QFrame *misc_frame = new QFrame;
 	guider_tabbar->addTab(misc_frame, "Misc");
@@ -1009,7 +1003,6 @@ void ImagerWindow::on_guider_calibrate_start_stop(bool clicked) {
 	});
 }
 
-#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
 void ImagerWindow::on_guider_reset_ppec(bool clicked) {
 	Q_UNUSED(clicked);
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
@@ -1033,7 +1026,6 @@ void ImagerWindow::on_guider_reset_ppec(bool clicked) {
 		change_guider_agent_reset_ppec(selected_agent);
 	});
 }
-#endif
 
 
 void ImagerWindow::on_guider_guide_start_stop(bool clicked) {
@@ -1230,7 +1222,6 @@ void ImagerWindow::on_guider_agent_rswitch_fast_threshild_changed(double value) 
 	});
 }
 
-#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
 void ImagerWindow::on_guider_agent_ppec_changed(int value) {
 	Q_UNUSED(value);
 	QtConcurrent::run([=]() {
@@ -1242,7 +1233,6 @@ void ImagerWindow::on_guider_agent_ppec_changed(int value) {
 		change_guider_agent_ppec(selected_agent);
 	});
 }
-#endif
 
 void ImagerWindow::on_guider_agent_callibration_changed(double value) {
 	Q_UNUSED(value);

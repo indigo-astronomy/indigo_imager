@@ -818,7 +818,6 @@ void ImagerWindow::change_guider_agent_rswitch_fast_threshild(const char *agent)
 	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 1, items, values);
 }
 
-#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
 void ImagerWindow::change_guider_agent_ppec(const char *agent) const {
 	static const char *items[] = {
 		AGENT_GUIDER_SETTINGS_PPEC_REACTIVE_GAIN_RA_ITEM_NAME,
@@ -835,7 +834,6 @@ void ImagerWindow::change_guider_agent_ppec(const char *agent) const {
 void ImagerWindow::change_guider_agent_reset_ppec(const char *agent) const {
 	indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_RESET_PPEC_PROPERTY_NAME, AGENT_GUIDER_RESET_PPEC_ITEM_NAME, true);
 }
-#endif
 
 void ImagerWindow::change_guider_agent_i(const char *agent) const {
 	static const char *items[] = {
