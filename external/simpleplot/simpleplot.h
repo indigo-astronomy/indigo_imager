@@ -16,6 +16,7 @@
 #include <QBrush>
 #include <QColor>
 #include <QRect>
+#include <QStringList>
 
 class QPainter;
 class QPaintEvent;
@@ -224,6 +225,8 @@ public:
 	void setBackground(const QBrush &brush);
 	QBrush background() const { return mBackground; }
 	void replot();
+	void setCustomXAxisTicks(const QVector<double> &positions, const QStringList &labels);
+	void clearCustomXAxisTicks();
 
 	// Plot-area margins in px, to leave room for the axis captions/tick labels
 	// where needed (Graph only).
@@ -257,6 +260,8 @@ private:
 
 	ChartType mType;
 	QBrush mBackground{QColor(0, 0, 0, 0)};
+	QVector<double> mCustomXAxisTickPositions;
+	QStringList mCustomXAxisTickLabels;
 	int mMarginLeft = 42;
 	int mMarginTop = 8;
 	int mMarginRight = 8;

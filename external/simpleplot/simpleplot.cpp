@@ -224,6 +224,20 @@ void SimplePlot::setBackground(const QBrush &brush) {
 
 void SimplePlot::replot() { update(); }
 
+void SimplePlot::setCustomXAxisTicks(const QVector<double> &positions, const QStringList &labels) {
+	const int n = qMin(positions.size(), labels.size());
+	mCustomXAxisTickPositions = positions.mid(0, n);
+	mCustomXAxisTickLabels = labels.mid(0, n);
+	update();
+}
+
+void SimplePlot::clearCustomXAxisTicks() {
+	if (mCustomXAxisTickPositions.isEmpty() && mCustomXAxisTickLabels.isEmpty()) return;
+	mCustomXAxisTickPositions.clear();
+	mCustomXAxisTickLabels.clear();
+	update();
+}
+
 void SimplePlot::setPlotMargins(int left, int top, int right, int bottom) {
 	mMarginLeft = left;
 	mMarginTop = top;
@@ -335,19 +349,38 @@ void SimplePlot::paintGraph(QPainter &p) {
 	p.setRenderHint(QPainter::Antialiasing, false);
 
 	// vertical grid lines + x tick labels
+	const bool hasCustomXTicks = !mCustomXAxisTickPositions.isEmpty() &&
+	                          mCustomXAxisTickPositions.size() == mCustomXAxisTickLabels.size();
 	const double xStart = std::ceil(xr.lower / xstep) * xstep;
 	double xLastTick = xr.lower - xstep; // last labelled tick value
-	for (double x = xStart; x <= xr.upper + xstep * 1e-6; x += xstep) {
-		const double px = mapX(x);
-		p.setPen(std::fabs(x) < xstep * 1e-6 ? zeroPen : gridPen);
-		p.drawLine(QPointF(px, area.top()), QPointF(px, area.bottom()));
-		if (xAxis->visible() && xAxis->tickLabels()) {
-			p.setPen(xAxis->tickLabelColor());
-			const QString s = fmtTick(x, xstep);
-			p.drawText(QRectF(px - 40, area.bottom() + 3, 80, 16),
-			           Qt::AlignHCenter | Qt::AlignTop, s);
+	if (hasCustomXTicks) {
+		for (int i = 0; i < mCustomXAxisTickPositions.size(); ++i) {
+			const double x = mCustomXAxisTickPositions[i];
+			if (x < xr.lower - xstep * 1e-6 || x > xr.upper + xstep * 1e-6) continue;
+			const double px = mapX(x);
+			p.setPen(std::fabs(x) < xstep * 1e-6 ? zeroPen : gridPen);
+			p.drawLine(QPointF(px, area.top()), QPointF(px, area.bottom()));
+			if (xAxis->visible() && xAxis->tickLabels()) {
+				p.setPen(xAxis->tickLabelColor());
+				const QString s = mCustomXAxisTickLabels[i];
+				p.drawText(QRectF(px - 52, area.bottom() + 3, 104, 16),
+				           Qt::AlignHCenter | Qt::AlignTop, s);
+			}
+			xLastTick = x;
 		}
-		xLastTick = x;
+	} else {
+		for (double x = xStart; x <= xr.upper + xstep * 1e-6; x += xstep) {
+			const double px = mapX(x);
+			p.setPen(std::fabs(x) < xstep * 1e-6 ? zeroPen : gridPen);
+			p.drawLine(QPointF(px, area.top()), QPointF(px, area.bottom()));
+			if (xAxis->visible() && xAxis->tickLabels()) {
+				p.setPen(xAxis->tickLabelColor());
+				const QString s = fmtTick(x, xstep);
+				p.drawText(QRectF(px - 40, area.bottom() + 3, 80, 16),
+				           Qt::AlignHCenter | Qt::AlignTop, s);
+			}
+			xLastTick = x;
+		}
 	}
 	// optional label at the range end (e.g. the latest sample index)
 	if (xAxis->visible() && xAxis->tickLabels() && xAxis->showEndLabel() &&
@@ -421,9 +454,18 @@ void SimplePlot::paintGraph(QPainter &p) {
 			p.drawLine(QPointF(px, yBase), QPointF(px, yBase + inward * subLen));
 		}
 		p.setPen(majPen);
-		for (double x = xStart; x <= xr.upper + xstep * 1e-6; x += xstep) {
-			const double px = mapX(x);
-			p.drawLine(QPointF(px, yBase), QPointF(px, yBase + inward * majLen));
+		if (hasCustomXTicks) {
+			for (int i = 0; i < mCustomXAxisTickPositions.size(); ++i) {
+				const double x = mCustomXAxisTickPositions[i];
+				if (x < xr.lower - xstep * 1e-6 || x > xr.upper + xstep * 1e-6) continue;
+				const double px = mapX(x);
+				p.drawLine(QPointF(px, yBase), QPointF(px, yBase + inward * majLen));
+			}
+		} else {
+			for (double x = xStart; x <= xr.upper + xstep * 1e-6; x += xstep) {
+				const double px = mapX(x);
+				p.drawLine(QPointF(px, yBase), QPointF(px, yBase + inward * majLen));
+			}
 		}
 	};
 	// Clip the tick marks to the plot area so they can never bleed outside the
