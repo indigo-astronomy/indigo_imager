@@ -843,6 +843,8 @@ void ImagerWindow::select_guider_data(guider_display_data show) {
 
 void ImagerWindow::on_guider_agent_selected(int index) {
 	Q_UNUSED(index);
+	m_ra_correction_mode = GUIDER_CORRECTION_UNKNOWN;
+	m_dec_correction_mode = GUIDER_CORRECTION_UNKNOWN;
 	QtConcurrent::run([=]() {
 		// Clear controls
 		indigo_property *property = (indigo_property*)malloc(sizeof(indigo_property));

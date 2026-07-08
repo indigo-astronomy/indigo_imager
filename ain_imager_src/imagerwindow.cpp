@@ -97,6 +97,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_has_clear_focuser_selection = false;
 	m_batch_running = false;
 	m_has_clear_guider_selection = false;
+	m_ra_correction_mode = GUIDER_CORRECTION_UNKNOWN;
+	m_dec_correction_mode = GUIDER_CORRECTION_UNKNOWN;
 	m_stacker = new LiveStacker();
 
 	//  Set central widget of window

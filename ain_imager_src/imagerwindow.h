@@ -885,6 +885,17 @@ private:
 	QComboBox *m_ra_correction_mode_select;
 	QComboBox *m_dec_correction_mode_select;
 
+	enum GuiderCorrectionMode {
+		GUIDER_CORRECTION_UNKNOWN = 0,
+		GUIDER_CORRECTION_PI,
+		GUIDER_CORRECTION_HYSTERESIS,
+		GUIDER_CORRECTION_LINEAR_TREND,
+		GUIDER_CORRECTION_RESIST_SWITCH,
+		GUIDER_CORRECTION_PPEC
+	};
+	GuiderCorrectionMode m_ra_correction_mode;
+	GuiderCorrectionMode m_dec_correction_mode;
+
 	FILE *m_guide_log;
 	int m_guider_process;
 

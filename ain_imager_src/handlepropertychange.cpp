@@ -1421,6 +1421,7 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 		for (int i = 0; i < property->count; i++) {
 			if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_PI_ITEM_NAME)) {
 				if (property->items[i].sw.value) {
+					w->m_ra_correction_mode = ImagerWindow::GUIDER_CORRECTION_PI;
 					w->set_text(w->m_guide_ra_param1_label, "Aggressiveness (%):");
 					w->set_text(w->m_guide_ra_param2_label, "Integral gain:");
 					w->show_widget(w->m_guide_ra_param1_label, true);
@@ -1440,6 +1441,7 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 				}
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_HYSTERESIS_ITEM_NAME)) {
 				if (property->items[i].sw.value) {
+					w->m_ra_correction_mode = ImagerWindow::GUIDER_CORRECTION_HYSTERESIS;
 					w->set_text(w->m_guide_ra_param1_label, "Aggressiveness (%):");
 					w->set_text(w->m_guide_ra_param2_label, "Hysteresis (%):");
 					w->show_widget(w->m_guide_ra_param1_label, true);
@@ -1458,6 +1460,7 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 				}
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_LINEAR_TREND_ITEM_NAME)) {
 				if (property->items[i].sw.value) {
+					w->m_ra_correction_mode = ImagerWindow::GUIDER_CORRECTION_LINEAR_TREND;
 					w->set_text(w->m_guide_ra_param1_label, "Aggressiveness (%):");
 					w->set_text(w->m_guide_ra_param2_label, "");
 					w->show_widget(w->m_guide_ra_param1_label, true);
@@ -1477,6 +1480,7 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 #ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME)) {
 				if (property->items[i].sw.value) {
+					w->m_ra_correction_mode = ImagerWindow::GUIDER_CORRECTION_PPEC;
 					w->set_text(w->m_guide_ra_param1_label, "Reactive/Prediction gain (%):");
 					w->set_text(w->m_guide_ra_param2_label, "Worm period (s):");
 					w->show_widget(w->m_guide_ra_param1_label, true);
@@ -1494,6 +1498,7 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 #endif
 			} else {
 				if (property->items[i].sw.value) {
+					w->m_ra_correction_mode = ImagerWindow::GUIDER_CORRECTION_UNKNOWN;
 					w->show_widget(w->m_guide_ra_param1_label, false);
 					w->show_widget(w->m_guide_ra_param2_label, false);
 
@@ -1518,6 +1523,7 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 		for (int i = 0; i < property->count; i++) {
 			if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_PI_ITEM_NAME)) {
 				if (property->items[i].sw.value) {
+					w->m_dec_correction_mode = ImagerWindow::GUIDER_CORRECTION_PI;
 					w->set_text(w->m_guide_dec_param1_label, "Aggressiveness (%):");
 					w->set_text(w->m_guide_dec_param2_label, "Integral gain:");
 					w->show_widget(w->m_guide_dec_param1_label, true);
@@ -1534,6 +1540,7 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 				}
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_HYSTERESIS_ITEM_NAME)) {
 				if (property->items[i].sw.value) {
+					w->m_dec_correction_mode = ImagerWindow::GUIDER_CORRECTION_HYSTERESIS;
 					w->set_text(w->m_guide_dec_param1_label, "Aggressiveness (%):");
 					w->set_text(w->m_guide_dec_param2_label, "Hysteresis (%):");
 					w->show_widget(w->m_guide_dec_param1_label, true);
@@ -1549,6 +1556,7 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 				}
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_LINEAR_TREND_ITEM_NAME)) {
 				if (property->items[i].sw.value) {
+					w->m_dec_correction_mode = ImagerWindow::GUIDER_CORRECTION_LINEAR_TREND;
 					w->set_text(w->m_guide_dec_param1_label, "Aggressiveness (%):");
 					w->set_text(w->m_guide_dec_param2_label, "");
 					w->show_widget(w->m_guide_dec_param1_label, true);
@@ -1564,6 +1572,7 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 				}
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_RESIST_SWITCH_ITEM_NAME)) {
 				if (property->items[i].sw.value) {
+					w->m_dec_correction_mode = ImagerWindow::GUIDER_CORRECTION_RESIST_SWITCH;
 					w->set_text(w->m_guide_dec_param1_label, "Aggressiveness (%):");
 					w->set_text(w->m_guide_dec_param2_label, "Fast-switch threshold (px):");
 					w->show_widget(w->m_guide_dec_param1_label, true);
@@ -1579,6 +1588,7 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 				}
 			} else {
 				if (property->items[i].sw.value) {
+					w->m_dec_correction_mode = ImagerWindow::GUIDER_CORRECTION_UNKNOWN;
 					w->show_widget(w->m_guide_dec_param1_label, false);
 					w->show_widget(w->m_guide_dec_param2_label, false);
 
@@ -2626,6 +2636,17 @@ void log_guide_header(ImagerWindow *w, char *device_name) {
 		double i_gain_ra = 0;
 		double i_gain_dec = 0;
 		double stack = 0;
+		double hyst_aggr_ra = 0;
+		double hyst_aggr_dec = 0;
+		double hyst_hist_ra = 0;
+		double hyst_hist_dec = 0;
+		double lt_aggr_ra = 0;
+		double lt_aggr_dec = 0;
+		double rs_aggr_dec = 0;
+		double rs_fast_thresh_dec = 0;
+		double ppec_reactive_gain_ra = 0;
+		double ppec_pred_gain_ra = 0;
+		double ppec_period_ra = 0;
 		for (int i = 0; i < p->count; i++) {
 			if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_EXPOSURE_ITEM_NAME)) {
 				exposure = p->items[i].number.value;
@@ -2647,6 +2668,30 @@ void log_guide_header(ImagerWindow *w, char *device_name) {
 				i_gain_dec = p->items[i].number.value;
 			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_STACK_ITEM_NAME)) {
 				stack = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_HYSTERESIS_AGG_RA_ITEM_NAME)) {
+				hyst_aggr_ra = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_HYSTERESIS_AGG_DEC_ITEM_NAME)) {
+				hyst_aggr_dec = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_HYSTERESIS_HIST_RA_ITEM_NAME)) {
+				hyst_hist_ra = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_HYSTERESIS_HIST_DEC_ITEM_NAME)) {
+				hyst_hist_dec = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_LINEAR_TREND_AGG_RA_ITEM_NAME)) {
+				lt_aggr_ra = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_LINEAR_TREND_AGG_DEC_ITEM_NAME)) {
+				lt_aggr_dec = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_RESIST_SWITCH_AGG_DEC_ITEM_NAME)) {
+				rs_aggr_dec = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_RESIST_SWITCH_FAST_THRSH_DEC_ITEM_NAME)) {
+				rs_fast_thresh_dec = p->items[i].number.value;
+#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_PPEC_REACTIVE_GAIN_RA_ITEM_NAME)) {
+				ppec_reactive_gain_ra = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_PPEC_PRED_GAIN_RA_ITEM_NAME)) {
+				ppec_pred_gain_ra = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_PPEC_PERIOD_RA_ITEM_NAME)) {
+				ppec_period_ra = p->items[i].number.value;
+#endif
 			}
 		}
 		fprintf(
@@ -2658,15 +2703,42 @@ void log_guide_header(ImagerWindow *w, char *device_name) {
 			min_pulse,
 			max_pulse
 		);
-		fprintf(
-			w->m_guide_log,
-			"PI Settings: RA Aggr = %.3f %%, Dec Aggr = %.3f %%, RA I Gain = %.3f, Dec I Gain = %.3f, Stack = %.0f\n",
-			ra_aggr,
-			dec_aggr,
-			i_gain_ra,
-			i_gain_dec,
-			stack
-		);
+
+		switch (w->m_ra_correction_mode) {
+			case ImagerWindow::GUIDER_CORRECTION_PI:
+				fprintf(w->m_guide_log, "RA Settings [PI]: Aggr = %.3f %%, I Gain = %.3f, PI Stack = %.0f\n", ra_aggr, i_gain_ra, stack);
+				break;
+			case ImagerWindow::GUIDER_CORRECTION_HYSTERESIS:
+				fprintf(w->m_guide_log, "RA Settings [Hysteresis]: Aggr = %.3f %%, Hysteresis = %.3f %%\n", hyst_aggr_ra, hyst_hist_ra);
+				break;
+			case ImagerWindow::GUIDER_CORRECTION_LINEAR_TREND:
+				fprintf(w->m_guide_log, "RA Settings [Linear Trend]: Aggr = %.3f %%\n", lt_aggr_ra);
+				break;
+			case ImagerWindow::GUIDER_CORRECTION_PPEC:
+				fprintf(w->m_guide_log, "RA Settings [PPEC]: Reactive Gain = %.3f %%, Predictive Gain = %.3f %%, Worm Period = %.3f s\n", ppec_reactive_gain_ra, ppec_pred_gain_ra, ppec_period_ra);
+				break;
+			default:
+				fprintf(w->m_guide_log, "RA Settings [Unknown]: Correction algorithm not available\n");
+				break;
+		}
+
+		switch (w->m_dec_correction_mode) {
+			case ImagerWindow::GUIDER_CORRECTION_PI:
+				fprintf(w->m_guide_log, "Dec Settings [PI]: Aggr = %.3f %%, I Gain = %.3f, PI Stack = %.0f\n", dec_aggr, i_gain_dec, stack);
+				break;
+			case ImagerWindow::GUIDER_CORRECTION_HYSTERESIS:
+				fprintf(w->m_guide_log, "Dec Settings [Hysteresis]: Aggr = %.3f %%, Hysteresis = %.3f %%\n", hyst_aggr_dec, hyst_hist_dec);
+				break;
+			case ImagerWindow::GUIDER_CORRECTION_LINEAR_TREND:
+				fprintf(w->m_guide_log, "Dec Settings [Linear Trend]: Aggr = %.3f %%\n", lt_aggr_dec);
+				break;
+			case ImagerWindow::GUIDER_CORRECTION_RESIST_SWITCH:
+				fprintf(w->m_guide_log, "Dec Settings [Resist Switch]: Aggr = %.3f %%, Fast-switch Threshold = %.3f px\n", rs_aggr_dec, rs_fast_thresh_dec);
+				break;
+			default:
+				fprintf(w->m_guide_log, "Dec Settings [Unknown]: Correction algorithm not available\n");
+				break;
+		}
 	}
 	fprintf(w->m_guide_log, "Timestamp, X Dif, Y Dif, RA Dif, Dec Dif, RA Dif(\"), Dec Dif(\"), RMSE RA, RMSE Dec, RMSE RA(\"), RMSE Dec(\"), Ra Correction, Dec Correction, Dithering\n");
 	fflush(w->m_guide_log);
