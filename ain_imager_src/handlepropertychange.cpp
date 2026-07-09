@@ -25,16 +25,6 @@
 #include <QStringList>
 #include <SequenceItemModel.h>
 
-/* Fallback defines for PPEC if not available in older INDIGO versions */
-#ifndef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
-#define AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME "PPEC_CONTROLLER"
-#define AGENT_GUIDER_SETTINGS_PPEC_REACTIVE_GAIN_RA_ITEM_NAME "PPEC_REACTIVE_GAIN_RA"
-#define AGENT_GUIDER_SETTINGS_PPEC_PRED_GAIN_RA_ITEM_NAME "PPEC_PRED_GAIN_RA"
-#define AGENT_GUIDER_SETTINGS_PPEC_PERIOD_RA_ITEM_NAME "PPEC_PERIOD_RA"
-#define AGENT_GUIDER_RESET_PPEC_PROPERTY_NAME "AGENT_GUIDER_RESET_PPEC"
-#define AGENT_GUIDER_RESET_PPEC_ITEM_NAME "RESET"
-#endif
-
 static void get_flip_string(bool flip_enambled, double flip_time, char *message) {
 	if (flip_enambled) {
 		if (flip_time < 0) {

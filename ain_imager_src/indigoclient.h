@@ -32,6 +32,15 @@
 #define AGENT_PLATESOLVER_PA_STATE_ACCURACY_WARNING_ITEM_NAME	"ACCURACY_WARNING"
 #endif
 
+#if !defined(AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME)
+#define AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME "PPEC_CONTROLLER"
+#define AGENT_GUIDER_SETTINGS_PPEC_REACTIVE_GAIN_RA_ITEM_NAME "PPEC_REACTIVE_GAIN_RA"
+#define AGENT_GUIDER_SETTINGS_PPEC_PRED_GAIN_RA_ITEM_NAME "PPEC_PRED_GAIN_RA"
+#define AGENT_GUIDER_SETTINGS_PPEC_PERIOD_RA_ITEM_NAME "PPEC_PERIOD_RA"
+#define AGENT_GUIDER_RESET_PPEC_PROPERTY_NAME "AGENT_GUIDER_RESET_PPEC"
+#define AGENT_GUIDER_RESET_PPEC_ITEM_NAME "RESET"
+#endif
+
 extern bool client_match_device_property(indigo_property *property, const char *device_name, const char *property_name);
 extern bool client_match_device_no_property(indigo_property *property, const char *device_name);
 extern bool client_match_property(indigo_property *property, const char *property_name);
