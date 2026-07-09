@@ -39,6 +39,7 @@
 #define AGENT_GUIDER_SETTINGS_PPEC_PERIOD_RA_ITEM_NAME "PPEC_PERIOD_RA"
 #define AGENT_GUIDER_RESET_PPEC_PROPERTY_NAME "AGENT_GUIDER_RESET_PPEC"
 #define AGENT_GUIDER_RESET_PPEC_ITEM_NAME "RESET"
+#define AGENT_GUIDER_STATS_PPEC_LEARNING_ITEM_NAME "PPEC_LEARNING"
 #endif
 
 extern bool client_match_device_property(indigo_property *property, const char *device_name, const char *property_name);
