@@ -19,7 +19,7 @@
 #include <libgen.h>
 #include <imagerwindow.h>
 #include <propertycache.h>
-#include <indigo/indigo_names.h>
+#include <indigoclient.h>
 #include <utils.h>
 #include <logger.h>
 #include <conf.h>
