@@ -19,10 +19,14 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
 	$$PWD/main.cpp \
 	$$PWD/guideloganalyzerwindow.cpp \
+	$$PWD/guidelogparser.cpp \
+	$$PWD/guidelogstats.cpp \
 	$$PWD/../external/simpleplot/simpleplot.cpp
 
 HEADERS += \
 	$$PWD/guideloganalyzerwindow.h \
+	$$PWD/guidelogparser.h \
+	$$PWD/guidelogstats.h \
 	$$PWD/../external/simpleplot/simpleplot.h
 
 RESOURCES += \

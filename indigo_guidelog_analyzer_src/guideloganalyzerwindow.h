@@ -7,6 +7,9 @@
 #include <QMainWindow>
 #include <QVector>
 #include <QStringList>
+#include <QList>
+
+#include "guidelogparser.h"
 
 class QLabel;
 class QComboBox;
@@ -19,16 +22,15 @@ class QPushButton;
 class QSpinBox;
 class SimplePlot;
 
-struct GuideSession {
-	QString title;
-	QStringList metadata;
-	QStringList headers;
-	QVector<QStringList> rows;
-};
+struct GuideAxisStats;
+struct GuideStatsResult;
 
 class GuideLogAnalyzerWindow : public QMainWindow {
 public:
 	explicit GuideLogAnalyzerWindow(QWidget *parent = nullptr);
+
+protected:
+	bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
 	void createUi();
@@ -39,14 +41,15 @@ private:
 	void applySelectedSession();
 	void rebuildTable();
 	void rebuildColumnSelectors();
+	void fitDataColumns();
 	void updatePlot();
 
-	static QStringList splitCsvLine(const QString &line);
-	static bool isLikelyDataRow(const QStringList &columns);
-	static QStringList sanitizeMetadataLines(const QStringList &lines, const QStringList &headers);
-	static QString makeSessionTitle(int index, const GuideSession &session);
+	QList<int> selectedTableRows() const;
+	bool renderPlot(const QVector<int> &visibleRows, const QList<int> &selectedRows, bool verticalMarkerMode);
+	void showStats(const GuideStatsResult &result);
+	void showStatsMessage(const QString &message);
+	void clearStatsValues();
 
-	QPushButton *m_openButton;
 	QLabel *m_fileLabel;
 	QLabel *m_statusLabel;
 	QComboBox *m_sessionCombo;
@@ -55,6 +58,10 @@ private:
 	QComboBox *m_xAxisCombo;
 	QSpinBox *m_yRangeSpin;
 	QSpinBox *m_xRangeSpin;
+	QCheckBox *m_excludeDitherCheck;
+	QLabel *m_statsSummaryLabel;
+	QTableView *m_statsTable;
+	QStandardItemModel *m_statsModel;
 	QScrollArea *m_yColumnsScroll;
 	QWidget *m_yColumnsContainer;
 	QHBoxLayout *m_yColumnsLayout;
@@ -65,6 +72,7 @@ private:
 
 	QString m_loadedPath;
 	QVector<GuideSession> m_sessions;
+	bool m_fittingColumns = false;
 	int m_selectedSessionIndex;
 	QStringList m_headers;
 	QVector<QStringList> m_rows;

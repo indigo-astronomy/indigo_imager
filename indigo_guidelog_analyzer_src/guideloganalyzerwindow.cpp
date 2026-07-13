@@ -3,24 +3,30 @@
 
 #include "guideloganalyzerwindow.h"
 
+#include "guidelogstats.h"
+
 #include <QAbstractItemView>
+#include <QBrush>
 #include <QCheckBox>
+#include <QEvent>
 #include <QComboBox>
 #include <QFile>
 #include <QFileDialog>
+#include <QFont>
+#include <QFrame>
 #include <QHeaderView>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMainWindow>
 #include <QMenu>
 #include <QMenuBar>
+#include <QMouseEvent>
 #include <QMessageBox>
 #include <QItemSelectionModel>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QSignalBlocker>
 #include <QSpinBox>
-#include <QSplitter>
 #include <QStandardItem>
 #include <QStandardItemModel>
 #include <QTableView>
@@ -28,11 +34,49 @@
 #include <QVBoxLayout>
 #include <QSet>
 
+#include <cmath>
 #include <algorithm>
 
 #include <simpleplot.h>
 
 namespace {
+
+// Row order of the statistics table (column 0 = axis name).
+enum StatsRow {
+	StatsRowRa = 0,
+	StatsRowDec,
+	StatsRowTotal,
+	StatsRowCount
+};
+
+const char *const kStatsRowNames[StatsRowCount] = {
+	"RA",
+	"Dec",
+	"Total"
+};
+
+// Axis label colours, matching the RA/Dec plot conventions.
+const QColor kStatsRowColors[StatsRowCount] = {
+	QColor(255, 80, 80),    // RA  - red
+	QColor(60, 170, 245),   // Dec - blue
+	QColor(150, 220, 150)   // Total - green
+};
+
+// Statistics value columns (column 0 holds the axis name).
+enum StatsColumn {
+	StatsColumnAxis = 0,
+	StatsColumnRmseArc,
+	StatsColumnPeakArc,
+	StatsColumnRmsePx,
+	StatsColumnPeakPx,
+	StatsColumnCount
+};
+
+// Formats a value with 2 decimals and its unit, or "n/a" when the unit system
+// is absent (e.g. "1.20\"" or "2.60 px").
+QString formatValue(bool valid, double value, const QString &unit) {
+	return valid ? (QString::number(value, 'f', 2) + unit) : QString("n/a");
+}
 
 QColor colorForGuideColumn(const QString &header, int column) {
 	const QString h = header.trimmed().toLower();
@@ -129,7 +173,6 @@ void GuideLogAnalyzerWindow::createUi() {
 	rootLayout->setSpacing(6);
 
 	QHBoxLayout *toolbarLayout = new QHBoxLayout();
-	m_openButton = new QPushButton("Open Log");
 	m_sessionCombo = new QComboBox(this);
 	m_sessionCombo->setMinimumWidth(260);
 	m_sessionCombo->addItem("No guiding sessions");
@@ -137,82 +180,127 @@ void GuideLogAnalyzerWindow::createUi() {
 	m_fileLabel = new QLabel("No file loaded");
 	m_statusLabel = new QLabel("Load an Ain guiding log to begin.");
 	m_statusLabel->setMinimumWidth(420);
-	toolbarLayout->addWidget(m_openButton);
 	toolbarLayout->addWidget(new QLabel("Session:"));
 	toolbarLayout->addWidget(m_sessionCombo);
 	toolbarLayout->addWidget(m_fileLabel, 1);
 	toolbarLayout->addWidget(m_statusLabel);
 	rootLayout->addLayout(toolbarLayout);
 
-	QSplitter *splitter = new QSplitter(Qt::Horizontal, this);
+	// --- Stats table (built first so we can size the top row to match it) ---
+	m_statsModel = new QStandardItemModel(StatsRowCount, StatsColumnCount, central);
+	m_statsModel->setHorizontalHeaderLabels({"Axis", "RMSE (\")", "Peak (\")", "RMSE (px)", "Peak (px)"});
+	for (int row = 0; row < StatsRowCount; row++) {
+		QStandardItem *name = new QStandardItem(kStatsRowNames[row]);
+		name->setEditable(false);
+		name->setForeground(QBrush(kStatsRowColors[row]));
+		QFont nameFont = name->font();
+		nameFont.setBold(true);
+		name->setFont(nameFont);
+		m_statsModel->setItem(row, StatsColumnAxis, name);
+		for (int col = StatsColumnAxis + 1; col < StatsColumnCount; col++) {
+			QStandardItem *value = new QStandardItem("n/a");
+			value->setEditable(false);
+			value->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+			m_statsModel->setItem(row, col, value);
+		}
+	}
 
-	QWidget *leftPane = new QWidget(splitter);
-	QVBoxLayout *leftLayout = new QVBoxLayout(leftPane);
-	leftLayout->setContentsMargins(0, 0, 0, 0);
-	leftLayout->setSpacing(6);
+	m_statsTable = new QTableView(central);
+	m_statsTable->setModel(m_statsModel);
+	m_statsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+	m_statsTable->setSelectionMode(QAbstractItemView::NoSelection);
+	m_statsTable->setFocusPolicy(Qt::NoFocus);
+	m_statsTable->verticalHeader()->setVisible(false);
+	m_statsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+	m_statsTable->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	m_statsTable->setMinimumWidth(360);
+	const int statsRowHeight = m_statsTable->verticalHeader()->defaultSectionSize();
+	const int topRowHeight = statsRowHeight * (StatsRowCount + 1) + 4;
+	m_statsTable->setFixedHeight(topRowHeight);
 
-	QLabel *yColumnsLabel = new QLabel("Y Columns");
-	m_yColumnsScroll = new QScrollArea(leftPane);
+	// Stats table and the exclude-dithering toggle share one framed box.
+	m_excludeDitherCheck = new QCheckBox("Exclude dithering frames", central);
+	m_excludeDitherCheck->setChecked(true);
+
+	QFrame *statsFrame = new QFrame(central);
+	statsFrame->setFrameShape(QFrame::StyledPanel);
+	QVBoxLayout *statsFrameLayout = new QVBoxLayout(statsFrame);
+	statsFrameLayout->setContentsMargins(6, 6, 6, 6);
+	statsFrameLayout->setSpacing(4);
+	statsFrameLayout->addWidget(m_statsTable);
+	statsFrameLayout->addWidget(m_excludeDitherCheck);
+
+	const int frameHeight = topRowHeight + m_excludeDitherCheck->sizeHint().height() + 4 + 12;
+	statsFrame->setFixedHeight(frameHeight);
+
+	// --- Top row: guiding session header lines (left) + stats frame (right) ---
+	m_metadataLabel = new QLabel("Session metadata will appear here.", central);
+	m_metadataLabel->setWordWrap(true);
+	m_metadataLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+	m_metadataLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
+
+	QScrollArea *metadataScroll = new QScrollArea(central);
+	metadataScroll->setWidgetResizable(true);
+	metadataScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+	metadataScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+	metadataScroll->setWidget(m_metadataLabel);
+	metadataScroll->setFixedHeight(frameHeight);
+
+	QHBoxLayout *topInfoLayout = new QHBoxLayout();
+	topInfoLayout->addWidget(metadataScroll, 1);
+	topInfoLayout->addWidget(statsFrame);
+	rootLayout->addLayout(topInfoLayout);
+
+	// --- Y column selector, above the graph ---
+	m_yColumnsScroll = new QScrollArea(central);
 	m_yColumnsScroll->setWidgetResizable(true);
 	m_yColumnsScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 	m_yColumnsScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	m_yColumnsScroll->setFixedHeight(58);
+	m_yColumnsScroll->setFixedHeight(38);
 	m_yColumnsContainer = new QWidget(m_yColumnsScroll);
 	m_yColumnsLayout = new QHBoxLayout(m_yColumnsContainer);
 	m_yColumnsLayout->setContentsMargins(4, 4, 4, 4);
 	m_yColumnsLayout->setSpacing(10);
 	m_yColumnsLayout->addStretch();
 	m_yColumnsScroll->setWidget(m_yColumnsContainer);
+	rootLayout->addWidget(m_yColumnsScroll);
 
-	QLabel *tableLabel = new QLabel("Parsed Data Table");
-	m_tableView = new QTableView(leftPane);
-	m_tableModel = new QStandardItemModel(leftPane);
-	m_tableView->setModel(m_tableModel);
-	m_tableView->setAlternatingRowColors(true);
-	m_tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
-	m_tableView->setSelectionMode(QAbstractItemView::ExtendedSelection);
-	m_tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-	m_tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-	m_tableView->horizontalHeader()->setStretchLastSection(true);
+	m_statsSummaryLabel = new QLabel("Stats will appear here.", central);
+	m_statsSummaryLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+	m_statsSummaryLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
-	leftLayout->addWidget(yColumnsLabel);
-	leftLayout->addWidget(m_yColumnsScroll);
-	leftLayout->addWidget(tableLabel);
-	leftLayout->addWidget(m_tableView, 1);
-
-	QWidget *rightPane = new QWidget(splitter);
-	QVBoxLayout *rightLayout = new QVBoxLayout(rightPane);
-	rightLayout->setContentsMargins(0, 0, 0, 0);
-	rightLayout->setSpacing(6);
-
+	// Plot controls row, kept tight above the graph. The combo and spin boxes
+	// are fixed to just fit their contents; the stats summary fills the rest.
 	QHBoxLayout *xAxisLayout = new QHBoxLayout();
 	QLabel *xAxisLabel = new QLabel("X Axis:");
-	m_xAxisCombo = new QComboBox(rightPane);
-	m_yRangeSpin = new QSpinBox(rightPane);
+	m_xAxisCombo = new QComboBox(central);
+	m_xAxisCombo->setFixedWidth(130);
+	m_yRangeSpin = new QSpinBox(central);
 	m_yRangeSpin->setRange(0, 1000);
 	m_yRangeSpin->setSingleStep(1);
 	m_yRangeSpin->setValue(6);
 	m_yRangeSpin->setSpecialValueText("Auto");
-	m_xRangeSpin = new QSpinBox(rightPane);
+	m_yRangeSpin->setFixedWidth(70);
+	m_xRangeSpin = new QSpinBox(central);
 	m_xRangeSpin->setRange(0, 1000000);
 	m_xRangeSpin->setSingleStep(100);
 	m_xRangeSpin->setValue(200);
 	m_xRangeSpin->setSpecialValueText("All");
+	m_xRangeSpin->setFixedWidth(90);
 	xAxisLayout->addWidget(xAxisLabel);
-	xAxisLayout->addWidget(m_xAxisCombo, 1);
+	xAxisLayout->addWidget(m_xAxisCombo);
 	xAxisLayout->addSpacing(8);
 	xAxisLayout->addWidget(new QLabel("Y Range:"));
 	xAxisLayout->addWidget(m_yRangeSpin);
 	xAxisLayout->addSpacing(8);
 	xAxisLayout->addWidget(new QLabel("X Range:"));
 	xAxisLayout->addWidget(m_xRangeSpin);
+	xAxisLayout->addSpacing(12);
+	xAxisLayout->addWidget(m_statsSummaryLabel, 1);
+	rootLayout->addLayout(xAxisLayout);
 
-	m_metadataLabel = new QLabel("Session metadata will appear here.", rightPane);
-	m_metadataLabel->setWordWrap(true);
-	m_metadataLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
-	m_metadataLabel->setMinimumHeight(48);
-
-	m_plot = new SimplePlot(SimplePlot::Graph, rightPane);
+	// --- Graph (grows vertically) ---
+	m_plot = new SimplePlot(SimplePlot::Graph, central);
 	m_plot->setPlotMargins(48, 12, 16, 28);
 	m_plot->xAxis->setLabel("Sample index");
 	m_plot->yAxis->setLabel("Value");
@@ -220,20 +308,28 @@ void GuideLogAnalyzerWindow::createUi() {
 	m_plot->yAxis2->setVisible(true);
 	m_plot->xAxis2->setTickLabels(true);
 	m_plot->yAxis2->setTickLabels(true);
+	rootLayout->addWidget(m_plot, 1);
 
-	rightLayout->addLayout(xAxisLayout);
-	rightLayout->addWidget(m_metadataLabel);
-	rightLayout->addWidget(m_plot, 1);
-
-	splitter->addWidget(leftPane);
-	splitter->addWidget(rightPane);
-	splitter->setStretchFactor(0, 45);
-	splitter->setStretchFactor(1, 55);
-	rootLayout->addWidget(splitter, 1);
+	// --- Parsed data table, below the graph (grows vertically) ---
+	m_tableView = new QTableView(central);
+	m_tableModel = new QStandardItemModel(central);
+	m_tableView->setModel(m_tableModel);
+	m_tableView->setAlternatingRowColors(true);
+	m_tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+	m_tableView->setSelectionMode(QAbstractItemView::ExtendedSelection);
+	m_tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+	// Columns are sized in fitDataColumns(): each keeps at least its natural
+	// (content + header) width, and any spare width is shared out proportionally.
+	m_tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
+	m_tableView->viewport()->installEventFilter(this);
+	// Use the same header/index font as the stats table for a consistent look.
+	const QFont tableHeaderFont = m_statsTable->horizontalHeader()->font();
+	m_tableView->horizontalHeader()->setFont(tableHeaderFont);
+	m_tableView->verticalHeader()->setFont(tableHeaderFont);
+	rootLayout->addWidget(m_tableView, 1);
 }
 
 void GuideLogAnalyzerWindow::connectSignals() {
-	connect(m_openButton, &QPushButton::clicked, this, [this]() { openLogFileDialog(); });
 	connect(m_sessionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {
 		applySelectedSession();
 	});
@@ -244,6 +340,9 @@ void GuideLogAnalyzerWindow::connectSignals() {
 		updatePlot();
 	});
 	connect(m_xRangeSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int) {
+		updatePlot();
+	});
+	connect(m_excludeDitherCheck, &QCheckBox::toggled, this, [this](bool) {
 		updatePlot();
 	});
 	connect(m_tableView->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
@@ -263,117 +362,16 @@ void GuideLogAnalyzerWindow::openLogFileDialog() {
 	}
 }
 
-QStringList GuideLogAnalyzerWindow::splitCsvLine(const QString &line) {
-	QStringList columns = line.split(',', Qt::KeepEmptyParts);
-	for (QString &column : columns) {
-		column = column.trimmed();
-	}
-	return columns;
-}
-
-bool GuideLogAnalyzerWindow::isLikelyDataRow(const QStringList &columns) {
-	int numericCount = 0;
-	for (int i = 1; i < columns.size(); i++) {
-		bool ok = false;
-		columns.at(i).toDouble(&ok);
-		if (ok) {
-			numericCount++;
-		}
-	}
-	return numericCount >= 3;
-}
-
 bool GuideLogAnalyzerWindow::loadLogFile(const QString &filePath) {
-	QFile file(filePath);
-	if (!file.open(QFile::ReadOnly | QFile::Text)) {
-		QMessageBox::warning(this, "Open failed", QString("Failed to open %1").arg(filePath));
+	QString error;
+	QVector<GuideSession> sessions = GuideLogParser::parseFile(filePath, &error);
+	if (sessions.isEmpty()) {
+		QMessageBox::warning(this, "Load failed",
+			error.isEmpty() ? QString("Failed to load %1").arg(filePath) : error);
 		return false;
 	}
 
-	m_sessions.clear();
-	GuideSession currentSession;
-	bool inGuidingSession = false;
-	bool expectingDataRows = false;
-
-	auto finalizeSession = [this](GuideSession &session) {
-		if (!session.rows.isEmpty()) {
-			session.metadata = sanitizeMetadataLines(session.metadata, session.headers);
-			m_sessions.append(session);
-		}
-		session = GuideSession();
-	};
-
-	QTextStream stream(&file);
-	while (!stream.atEnd()) {
-		QString line = stream.readLine().trimmed();
-		if (line.isEmpty()) {
-			continue;
-		}
-
-		QString lower = line.toLower();
-
-		if (lower.contains("guiding started")) {
-			if (inGuidingSession) {
-				finalizeSession(currentSession);
-			}
-			inGuidingSession = true;
-			expectingDataRows = false;
-			currentSession = GuideSession();
-			currentSession.metadata.append(line);
-			continue;
-		}
-
-		if (lower.contains("guiding finished")) {
-			if (inGuidingSession) {
-				currentSession.metadata.append(line);
-				finalizeSession(currentSession);
-			}
-			inGuidingSession = false;
-			expectingDataRows = false;
-			continue;
-		}
-
-		// Files can omit explicit start/finish markers. In that case treat
-		// the whole block as one session (or until next explicit start line).
-		if (!inGuidingSession) {
-			inGuidingSession = true;
-			currentSession = GuideSession();
-			expectingDataRows = false;
-		}
-
-		if (line.startsWith("Timestamp,")) {
-			currentSession.headers = splitCsvLine(line);
-			expectingDataRows = true;
-			continue;
-		}
-
-		if (!expectingDataRows || currentSession.headers.isEmpty()) {
-			currentSession.metadata.append(line);
-			continue;
-		}
-
-		QStringList columns = splitCsvLine(line);
-		if (columns.size() == currentSession.headers.size() && isLikelyDataRow(columns)) {
-			currentSession.rows.append(columns);
-			continue;
-		}
-
-		currentSession.metadata.append(line);
-	}
-
-	if (inGuidingSession) {
-		finalizeSession(currentSession);
-	}
-
-	if (m_sessions.isEmpty()) {
-		QMessageBox::warning(this, "Parse failed", "No guiding data rows were found in the selected file.");
-		return false;
-	}
-
-	for (int i = 0; i < m_sessions.size(); i++) {
-		m_sessions[i].title = makeSessionTitle(i, m_sessions[i]);
-	}
-
+	m_sessions = sessions;
 	m_loadedPath = filePath;
 	rebuildSessionSelector();
 	applySelectedSession();
@@ -386,22 +384,6 @@ bool GuideLogAnalyzerWindow::loadLogFile(const QString &filePath) {
 	m_statusLabel->setText(QString("Loaded %1 guiding sessions, %2 total rows").arg(m_sessions.size()).arg(totalRows));
 
 	return true;
-}
-
-QStringList GuideLogAnalyzerWindow::sanitizeMetadataLines(const QStringList &lines, const QStringList &headers) {
-	QStringList sanitized;
-	for (const QString &line : lines) {
-		if (line.startsWith("Timestamp,")) {
-			continue;
-		}
-
-		QStringList columns = splitCsvLine(line);
-		if (!headers.isEmpty() && columns.size() == headers.size() && isLikelyDataRow(columns)) {
-			continue;
-		}
-		sanitized.append(line);
-	}
-	return sanitized;
 }
 
 void GuideLogAnalyzerWindow::rebuildSessionSelector() {
@@ -527,7 +509,74 @@ void GuideLogAnalyzerWindow::rebuildTable() {
 		}
 	}
 
-	m_tableView->resizeColumnsToContents();
+	fitDataColumns();
+}
+
+// Sizes the data-table columns so every column keeps at least its natural width
+// (the wider of its data and its header, so nothing is clipped) and any leftover
+// horizontal space is shared out among all columns in proportion to that width.
+void GuideLogAnalyzerWindow::fitDataColumns() {
+	if (m_fittingColumns) {
+		return;
+	}
+	const int columnCount = m_tableModel->columnCount();
+	if (columnCount <= 0) {
+		return;
+	}
+
+	QHeaderView *header = m_tableView->horizontalHeader();
+
+	m_fittingColumns = true;
+
+	// Natural widths = the wider of content and header, obtained by letting Qt
+	// resize to contents, then read back and switch to manual sizing.
+	header->setSectionResizeMode(QHeaderView::ResizeToContents);
+	QVector<int> natural(columnCount);
+	long long total = 0;
+	for (int col = 0; col < columnCount; col++) {
+		natural[col] = header->sectionSize(col);
+		total += natural[col];
+	}
+	header->setSectionResizeMode(QHeaderView::Interactive);
+	if (total <= 0) {
+		m_fittingColumns = false;
+		return;
+	}
+
+	const int available = m_tableView->viewport()->width();
+	if (available <= total) {
+		// Not enough room: keep natural widths and let the view scroll.
+		for (int col = 0; col < columnCount; col++) {
+			header->resizeSection(col, natural[col]);
+		}
+	} else {
+		const long long spare = available - total;
+		long long distributed = 0;
+		for (int col = 0; col < columnCount; col++) {
+			const long long extra = (col == columnCount - 1)
+				? (spare - distributed)
+				: (spare * natural[col] / total);
+			distributed += extra;
+			header->resizeSection(col, natural[col] + static_cast<int>(extra));
+		}
+	}
+	m_fittingColumns = false;
+}
+
+bool GuideLogAnalyzerWindow::eventFilter(QObject *watched, QEvent *event) {
+	if (watched == m_tableView->viewport()) {
+		if (event->type() == QEvent::Resize) {
+			fitDataColumns();
+		} else if (event->type() == QEvent::MouseButtonPress) {
+			// A right-click clears the current row selection.
+			QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
+			if (mouseEvent->button() == Qt::RightButton) {
+				m_tableView->clearSelection();
+				return true;
+			}
+		}
+	}
+	return QMainWindow::eventFilter(watched, event);
 }
 
 void GuideLogAnalyzerWindow::rebuildColumnSelectors() {
@@ -555,9 +604,6 @@ void GuideLogAnalyzerWindow::rebuildColumnSelectors() {
 	int timestampColumn = m_headers.indexOf("Timestamp");
 	if (timestampColumn >= 0) {
 		m_xAxisCombo->addItem("Timestamp", -2);
-	}
-	for (int col : m_numericColumns) {
-		m_xAxisCombo->addItem(m_headers.at(col), col);
 	}
 	m_xAxisCombo->setCurrentIndex(0);
 	m_xAxisCombo->blockSignals(false);
@@ -609,48 +655,99 @@ void GuideLogAnalyzerWindow::updatePlot() {
 	m_plot->clearCustomXAxisTicks();
 
 	if (m_rows.isEmpty()) {
+		showStatsMessage("No data loaded.");
 		m_plot->replot();
 		return;
 	}
 
-	QList<int> selectedRows;
-	for (const QModelIndex &index : m_tableView->selectionModel()->selectedRows()) {
-		selectedRows.append(index.row());
-	}
-
-	std::sort(selectedRows.begin(), selectedRows.end());
-	selectedRows.erase(std::unique(selectedRows.begin(), selectedRows.end()), selectedRows.end());
-
-	QSet<int> selectedRowSet;
-	for (int row : selectedRows) {
-		selectedRowSet.insert(row);
-	}
-
+	const QList<int> selectedRows = selectedTableRows();
 	const bool selectionOnlyMode = selectedRows.size() > 1;
 	const bool verticalMarkerMode = selectedRows.size() == 1;
 	const int selectedRow = selectedRows.isEmpty() ? -1 : selectedRows.at(selectedRows.size() / 2);
-	const int xRangePoints = m_xRangeSpin->value();
-	const bool xWindowMode = (xRangePoints > 0 && selectedRow >= 0 && !selectionOnlyMode);
-	int xWindowStart = 0;
-	int xWindowEnd = m_rows.size() - 1;
-	if (xWindowMode) {
-		const int windowSize = qMax(1, xRangePoints);
-		const int halfWindow = windowSize / 2;
-		xWindowStart = selectedRow - halfWindow;
-		xWindowEnd = xWindowStart + windowSize - 1;
-		if (xWindowStart < 0) {
-			xWindowStart = 0;
-			xWindowEnd = qMin(m_rows.size() - 1, windowSize - 1);
-		}
-		if (xWindowEnd >= m_rows.size()) {
-			xWindowEnd = m_rows.size() - 1;
-			xWindowStart = qMax(0, xWindowEnd - windowSize + 1);
-		}
+
+	const GuideColumns columns(m_headers);
+
+	const bool excludeDither = m_excludeDitherCheck && m_excludeDitherCheck->isChecked();
+
+	// Translate the current UI state into a unit-independent row filter. Dither
+	// exclusion is applied to the statistics only, not to the plotted rows.
+	GuideRowFilter filter;
+	filter.selectionOnly = selectionOnlyMode;
+	for (int row : selectedRows) {
+		filter.selectedRows.insert(row);
 	}
 
-	int xColumn = m_xAxisCombo->currentData().toInt();
-	int timestampColumn = m_headers.indexOf("Timestamp");
+	const int xRangePoints = m_xRangeSpin->value();
+	if (xRangePoints > 0 && !selectionOnlyMode) {
+		const int windowSize = qMax(1, xRangePoints);
+		int windowStart;
+		int windowEnd;
+		if (selectedRow >= 0) {
+			// A single row is selected: centre the window on it.
+			const int halfWindow = windowSize / 2;
+			windowStart = selectedRow - halfWindow;
+			windowEnd = windowStart + windowSize - 1;
+			if (windowStart < 0) {
+				windowStart = 0;
+				windowEnd = qMin(m_rows.size() - 1, windowSize - 1);
+			}
+			if (windowEnd >= m_rows.size()) {
+				windowEnd = m_rows.size() - 1;
+				windowStart = qMax(0, windowEnd - windowSize + 1);
+			}
+		} else {
+			// Nothing selected: show the first X-range values instead of all data.
+			windowStart = 0;
+			windowEnd = qMin(m_rows.size() - 1, windowSize - 1);
+		}
+		filter.useWindow = true;
+		filter.windowStart = windowStart;
+		filter.windowEnd = windowEnd;
+	}
+
+	const GuideRowSelection selection = GuideLogStats::filterRows(m_rows, columns, filter);
+
+	// The graph shows every visible row (dither included). Statistics are taken
+	// over the same rows minus dithering frames when the option is enabled.
+	QVector<int> statsRows = selection.visibleRows;
+	int ditherRowsExcluded = 0;
+	if (excludeDither) {
+		const GuideRowSelection statsSelection =
+			GuideLogStats::excludeDitherRows(m_rows, selection.visibleRows, columns);
+		statsRows = statsSelection.visibleRows;
+		ditherRowsExcluded = statsSelection.ditherRowsExcluded;
+	}
+
+	// Draw the plot; only report statistics when something was actually plotted.
+	if (renderPlot(selection.visibleRows, selectedRows, verticalMarkerMode)) {
+		GuideStatsResult stats = GuideLogStats::compute(
+			m_rows, statsRows, columns, m_rows.size(), ditherRowsExcluded);
+		// "Rows shown" reflects what is on the graph, not the stats subset.
+		stats.rowsShown = selection.visibleRows.size();
+		showStats(stats);
+	} else {
+		showStatsMessage("No plotted points after applying the current filters.");
+	}
+}
+
+QList<int> GuideLogAnalyzerWindow::selectedTableRows() const {
+	QList<int> rows;
+	if (!m_tableView->selectionModel()) {
+		return rows;
+	}
+	for (const QModelIndex &index : m_tableView->selectionModel()->selectedRows()) {
+		rows.append(index.row());
+	}
+	std::sort(rows.begin(), rows.end());
+	rows.erase(std::unique(rows.begin(), rows.end()), rows.end());
+	return rows;
+}
+
+bool GuideLogAnalyzerWindow::renderPlot(const QVector<int> &visibleRows, const QList<int> &selectedRows, bool verticalMarkerMode) {
+	const int xColumn = m_xAxisCombo->currentData().toInt();
+	const int timestampColumn = m_headers.indexOf("Timestamp");
 	const bool useTimestampXAxis = (xColumn == -2 && timestampColumn >= 0);
+
 	double xMin = 0;
 	double xMax = 0;
 	double yMin = 0;
@@ -668,18 +765,10 @@ void GuideLogAnalyzerWindow::updatePlot() {
 
 		QVector<double> keys;
 		QVector<double> values;
-		keys.reserve(m_rows.size());
-		values.reserve(m_rows.size());
+		keys.reserve(visibleRows.size());
+		values.reserve(visibleRows.size());
 
-		for (int row = 0; row < m_rows.size(); row++) {
-			if (xWindowMode && (row < xWindowStart || row > xWindowEnd)) {
-				continue;
-			}
-
-			if (selectionOnlyMode && !selectedRowSet.contains(row)) {
-				continue;
-			}
-
+		for (int row : visibleRows) {
 			bool yOk = false;
 			double y = m_rows.at(row).at(yColumn).toDouble(&yOk);
 			if (!yOk) {
@@ -726,7 +815,7 @@ void GuideLogAnalyzerWindow::updatePlot() {
 		m_plot->xAxis->setRange(0, 1);
 		m_plot->yAxis->setRange(0, 1);
 		m_plot->replot();
-		return;
+		return false;
 	}
 
 	double xSpan = xMax - xMin;
@@ -740,24 +829,9 @@ void GuideLogAnalyzerWindow::updatePlot() {
 	}
 
 	if (useTimestampXAxis) {
-		QList<int> candidateRows;
-		if (selectionOnlyMode) {
-			candidateRows = selectedRows;
-		} else if (xWindowMode) {
-			candidateRows.reserve(xWindowEnd - xWindowStart + 1);
-			for (int i = xWindowStart; i <= xWindowEnd; ++i) {
-				candidateRows.append(i);
-			}
-		} else {
-			candidateRows.reserve(m_rows.size());
-			for (int i = 0; i < m_rows.size(); ++i) {
-				candidateRows.append(i);
-			}
-		}
-
-		if (!candidateRows.isEmpty()) {
+		if (!visibleRows.isEmpty()) {
 			const int targetTickCount = qMax(2, m_plot->xAxis->autoTickCount());
-			const int sourceCount = candidateRows.size();
+			const int sourceCount = visibleRows.size();
 			QVector<double> tickPositions;
 			QStringList tickLabels;
 			tickPositions.reserve(targetTickCount + 1);
@@ -766,7 +840,7 @@ void GuideLogAnalyzerWindow::updatePlot() {
 			int previousRow = -1;
 			for (int i = 0; i < targetTickCount; ++i) {
 				int sourceIndex = (targetTickCount == 1) ? 0 : ((sourceCount - 1) * i) / (targetTickCount - 1);
-				int row = candidateRows.at(sourceIndex);
+				int row = visibleRows.at(sourceIndex);
 				if (row == previousRow || row < 0 || row >= m_rows.size()) {
 					continue;
 				}
@@ -793,7 +867,7 @@ void GuideLogAnalyzerWindow::updatePlot() {
 	m_plot->xAxis2->setRange(xAxisLower, xAxisUpper);
 	m_plot->yAxis2->setRange(yAxisLower, yAxisUpper);
 
-	if (verticalMarkerMode) {
+	if (verticalMarkerMode && !selectedRows.isEmpty()) {
 		int row = selectedRows.first();
 		double markerX = static_cast<double>(row);
 		if (xColumn >= 0) {
@@ -821,20 +895,47 @@ void GuideLogAnalyzerWindow::updatePlot() {
 	}
 	m_plot->xAxis->setLabel(xLabel);
 	m_plot->yAxis->setLabel(activeYLabels.isEmpty() ? QString("Value") : activeYLabels.join(" | "));
+
 	m_plot->replot();
+	return true;
 }
 
-QString GuideLogAnalyzerWindow::makeSessionTitle(int index, const GuideSession &session) {
-	if (session.rows.isEmpty()) {
-		return QString("Guiding %1").arg(index + 1);
-	}
+void GuideLogAnalyzerWindow::showStats(const GuideStatsResult &result) {
+	m_statsSummaryLabel->setText(QString("Rows shown: %1 / %2").arg(result.rowsShown).arg(result.totalRows));
 
-	int timestampColumn = session.headers.indexOf("Timestamp");
-	if (timestampColumn >= 0) {
-		QString firstTimestamp = session.rows.first().at(timestampColumn);
-		QString lastTimestamp = session.rows.last().at(timestampColumn);
-		return QString("Guiding %1 (%2 to %3)").arg(index + 1).arg(firstTimestamp).arg(lastTimestamp);
-	}
+	const GuideAxisStats &px = result.pixels;
+	const GuideAxisStats &arc = result.arcsec;
+	const bool pxOk = px.isValid();
+	const bool arcOk = arc.isValid();
 
-	return QString("Guiding %1 (%2 rows)").arg(index + 1).arg(session.rows.size());
+	const QString arcUnit = "\"";
+	const QString pxUnit = " px";
+
+	m_statsModel->item(StatsRowRa, StatsColumnRmseArc)->setText(formatValue(arcOk, arc.raRmse, arcUnit));
+	m_statsModel->item(StatsRowRa, StatsColumnPeakArc)->setText(formatValue(arcOk, arc.raPeak, arcUnit));
+	m_statsModel->item(StatsRowRa, StatsColumnRmsePx)->setText(formatValue(pxOk, px.raRmse, pxUnit));
+	m_statsModel->item(StatsRowRa, StatsColumnPeakPx)->setText(formatValue(pxOk, px.raPeak, pxUnit));
+
+	m_statsModel->item(StatsRowDec, StatsColumnRmseArc)->setText(formatValue(arcOk, arc.decRmse, arcUnit));
+	m_statsModel->item(StatsRowDec, StatsColumnPeakArc)->setText(formatValue(arcOk, arc.decPeak, arcUnit));
+	m_statsModel->item(StatsRowDec, StatsColumnRmsePx)->setText(formatValue(pxOk, px.decRmse, pxUnit));
+	m_statsModel->item(StatsRowDec, StatsColumnPeakPx)->setText(formatValue(pxOk, px.decPeak, pxUnit));
+
+	m_statsModel->item(StatsRowTotal, StatsColumnRmseArc)->setText(formatValue(arcOk, arc.combinedRmse, arcUnit));
+	m_statsModel->item(StatsRowTotal, StatsColumnPeakArc)->setText(formatValue(arcOk, arc.combinedPeak, arcUnit));
+	m_statsModel->item(StatsRowTotal, StatsColumnRmsePx)->setText(formatValue(pxOk, px.combinedRmse, pxUnit));
+	m_statsModel->item(StatsRowTotal, StatsColumnPeakPx)->setText(formatValue(pxOk, px.combinedPeak, pxUnit));
+}
+
+void GuideLogAnalyzerWindow::showStatsMessage(const QString &message) {
+	m_statsSummaryLabel->setText(message);
+	clearStatsValues();
+}
+
+void GuideLogAnalyzerWindow::clearStatsValues() {
+	for (int row = 0; row < StatsRowCount; row++) {
+		for (int col = StatsColumnAxis + 1; col < StatsColumnCount; col++) {
+			m_statsModel->item(row, col)->setText("n/a");
+		}
+	}
 }
