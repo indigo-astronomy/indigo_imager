@@ -16,6 +16,7 @@ class QScrollArea;
 class QTableView;
 class QStandardItemModel;
 class QPushButton;
+class QSpinBox;
 class SimplePlot;
 
 struct GuideSession {
@@ -52,6 +53,8 @@ private:
 	QLabel *m_metadataLabel;
 
 	QComboBox *m_xAxisCombo;
+	QSpinBox *m_yRangeSpin;
+	QSpinBox *m_xRangeSpin;
 	QScrollArea *m_yColumnsScroll;
 	QWidget *m_yColumnsContainer;
 	QHBoxLayout *m_yColumnsLayout;

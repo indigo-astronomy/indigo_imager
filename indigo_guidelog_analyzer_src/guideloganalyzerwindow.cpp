@@ -19,6 +19,7 @@
 #include <QPushButton>
 #include <QScrollArea>
 #include <QSignalBlocker>
+#include <QSpinBox>
 #include <QSplitter>
 #include <QStandardItem>
 #include <QStandardItemModel>
@@ -187,8 +188,24 @@ void GuideLogAnalyzerWindow::createUi() {
 	QHBoxLayout *xAxisLayout = new QHBoxLayout();
 	QLabel *xAxisLabel = new QLabel("X Axis:");
 	m_xAxisCombo = new QComboBox(rightPane);
+	m_yRangeSpin = new QSpinBox(rightPane);
+	m_yRangeSpin->setRange(0, 1000);
+	m_yRangeSpin->setSingleStep(1);
+	m_yRangeSpin->setValue(6);
+	m_yRangeSpin->setSpecialValueText("Auto");
+	m_xRangeSpin = new QSpinBox(rightPane);
+	m_xRangeSpin->setRange(0, 1000000);
+	m_xRangeSpin->setSingleStep(100);
+	m_xRangeSpin->setValue(200);
+	m_xRangeSpin->setSpecialValueText("All");
 	xAxisLayout->addWidget(xAxisLabel);
 	xAxisLayout->addWidget(m_xAxisCombo, 1);
+	xAxisLayout->addSpacing(8);
+	xAxisLayout->addWidget(new QLabel("Y Range:"));
+	xAxisLayout->addWidget(m_yRangeSpin);
+	xAxisLayout->addSpacing(8);
+	xAxisLayout->addWidget(new QLabel("X Range:"));
+	xAxisLayout->addWidget(m_xRangeSpin);
 
 	m_metadataLabel = new QLabel("Session metadata will appear here.", rightPane);
 	m_metadataLabel->setWordWrap(true);
@@ -221,6 +238,12 @@ void GuideLogAnalyzerWindow::connectSignals() {
 		applySelectedSession();
 	});
 	connect(m_xAxisCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {
+		updatePlot();
+	});
+	connect(m_yRangeSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int) {
+		updatePlot();
+	});
+	connect(m_xRangeSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int) {
 		updatePlot();
 	});
 	connect(m_tableView->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
@@ -605,6 +628,25 @@ void GuideLogAnalyzerWindow::updatePlot() {
 
 	const bool selectionOnlyMode = selectedRows.size() > 1;
 	const bool verticalMarkerMode = selectedRows.size() == 1;
+	const int selectedRow = selectedRows.isEmpty() ? -1 : selectedRows.at(selectedRows.size() / 2);
+	const int xRangePoints = m_xRangeSpin->value();
+	const bool xWindowMode = (xRangePoints > 0 && selectedRow >= 0 && !selectionOnlyMode);
+	int xWindowStart = 0;
+	int xWindowEnd = m_rows.size() - 1;
+	if (xWindowMode) {
+		const int windowSize = qMax(1, xRangePoints);
+		const int halfWindow = windowSize / 2;
+		xWindowStart = selectedRow - halfWindow;
+		xWindowEnd = xWindowStart + windowSize - 1;
+		if (xWindowStart < 0) {
+			xWindowStart = 0;
+			xWindowEnd = qMin(m_rows.size() - 1, windowSize - 1);
+		}
+		if (xWindowEnd >= m_rows.size()) {
+			xWindowEnd = m_rows.size() - 1;
+			xWindowStart = qMax(0, xWindowEnd - windowSize + 1);
+		}
+	}
 
 	int xColumn = m_xAxisCombo->currentData().toInt();
 	int timestampColumn = m_headers.indexOf("Timestamp");
@@ -630,6 +672,10 @@ void GuideLogAnalyzerWindow::updatePlot() {
 		values.reserve(m_rows.size());
 
 		for (int row = 0; row < m_rows.size(); row++) {
+			if (xWindowMode && (row < xWindowStart || row > xWindowEnd)) {
+				continue;
+			}
+
 			if (selectionOnlyMode && !selectedRowSet.contains(row)) {
 				continue;
 			}
@@ -685,13 +731,23 @@ void GuideLogAnalyzerWindow::updatePlot() {
 
 	double xSpan = xMax - xMin;
 	double ySpan = yMax - yMin;
-	double xPad = (xSpan > 0) ? xSpan * 0.05 : 1.0;
 	double yPad = (ySpan > 0) ? ySpan * 0.08 : 1.0;
+	double xAxisLower = xMin;
+	double xAxisUpper = xMax;
+	if (xSpan <= 0.0) {
+		xAxisLower = xMin - 0.5;
+		xAxisUpper = xMax + 0.5;
+	}
 
 	if (useTimestampXAxis) {
 		QList<int> candidateRows;
 		if (selectionOnlyMode) {
 			candidateRows = selectedRows;
+		} else if (xWindowMode) {
+			candidateRows.reserve(xWindowEnd - xWindowStart + 1);
+			for (int i = xWindowStart; i <= xWindowEnd; ++i) {
+				candidateRows.append(i);
+			}
 		} else {
 			candidateRows.reserve(m_rows.size());
 			for (int i = 0; i < m_rows.size(); ++i) {
@@ -725,10 +781,17 @@ void GuideLogAnalyzerWindow::updatePlot() {
 		}
 	}
 
-	m_plot->xAxis->setRange(xMin - xPad, xMax + xPad);
-	m_plot->yAxis->setRange(yMin - yPad, yMax + yPad);
-	m_plot->xAxis2->setRange(xMin - xPad, xMax + xPad);
-	m_plot->yAxis2->setRange(yMin - yPad, yMax + yPad);
+	double yAxisLower = yMin - yPad;
+	double yAxisUpper = yMax + yPad;
+	if (m_yRangeSpin->value() > 0) {
+		yAxisLower = -m_yRangeSpin->value();
+		yAxisUpper = m_yRangeSpin->value();
+	}
+
+	m_plot->xAxis->setRange(xAxisLower, xAxisUpper);
+	m_plot->yAxis->setRange(yAxisLower, yAxisUpper);
+	m_plot->xAxis2->setRange(xAxisLower, xAxisUpper);
+	m_plot->yAxis2->setRange(yAxisLower, yAxisUpper);
 
 	if (verticalMarkerMode) {
 		int row = selectedRows.first();
@@ -746,7 +809,7 @@ void GuideLogAnalyzerWindow::updatePlot() {
 		markerPen.setWidth(1);
 		markerPen.setStyle(Qt::DashLine);
 		marker->setPen(markerPen);
-		marker->setData(QVector<double>{markerX, markerX}, QVector<double>{yMin - yPad, yMax + yPad});
+		marker->setData(QVector<double>{markerX, markerX}, QVector<double>{yAxisLower, yAxisUpper});
 		marker->setName("Selection");
 	}
 
