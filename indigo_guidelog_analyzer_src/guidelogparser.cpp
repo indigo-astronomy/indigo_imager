@@ -6,8 +6,14 @@
 #include <QFile>
 #include <QTextStream>
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#define QT_SKIP_EMPTY_PARTS Qt::SkipEmptyParts
+#else
+#define QT_SKIP_EMPTY_PARTS QString::SkipEmptyParts
+#endif
+
 QStringList GuideLogParser::splitCsvLine(const QString &line) {
-	QStringList columns = line.split(',', Qt::KeepEmptyParts);
+	QStringList columns = line.split(',', QT_SKIP_EMPTY_PARTS);
 	for (QString &column : columns) {
 		column = column.trimmed();
 	}

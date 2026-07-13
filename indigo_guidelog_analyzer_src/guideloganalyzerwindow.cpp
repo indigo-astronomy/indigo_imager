@@ -59,7 +59,7 @@ const char *const kStatsRowNames[StatsRowCount] = {
 const QColor kStatsRowColors[StatsRowCount] = {
 	QColor(255, 80, 80),    // RA  - red
 	QColor(60, 170, 245),   // Dec - blue
-	QColor(150, 220, 150)   // Total - green
+	QColor(150, 150, 150)   // Total - gray
 };
 
 // Statistics value columns (column 0 holds the axis name).
@@ -215,7 +215,7 @@ void GuideLogAnalyzerWindow::createUi() {
 	m_statsTable->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	m_statsTable->setMinimumWidth(360);
 	const int statsRowHeight = m_statsTable->verticalHeader()->defaultSectionSize();
-	const int topRowHeight = statsRowHeight * (StatsRowCount + 1) + 4;
+	const int topRowHeight = statsRowHeight * (StatsRowCount + 1) + 8;
 	m_statsTable->setFixedHeight(topRowHeight);
 
 	// Stats table and the exclude-dithering toggle share one framed box.
@@ -256,7 +256,7 @@ void GuideLogAnalyzerWindow::createUi() {
 	m_yColumnsScroll->setWidgetResizable(true);
 	m_yColumnsScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 	m_yColumnsScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	m_yColumnsScroll->setFixedHeight(38);
+	m_yColumnsScroll->setFixedHeight(48);
 	m_yColumnsContainer = new QWidget(m_yColumnsScroll);
 	m_yColumnsLayout = new QHBoxLayout(m_yColumnsContainer);
 	m_yColumnsLayout->setContentsMargins(4, 4, 4, 4);
@@ -284,7 +284,7 @@ void GuideLogAnalyzerWindow::createUi() {
 	m_xRangeSpin = new QSpinBox(central);
 	m_xRangeSpin->setRange(0, 1000000);
 	m_xRangeSpin->setSingleStep(100);
-	m_xRangeSpin->setValue(200);
+	m_xRangeSpin->setValue(600);
 	m_xRangeSpin->setSpecialValueText("All");
 	m_xRangeSpin->setFixedWidth(90);
 	xAxisLayout->addWidget(xAxisLabel);
