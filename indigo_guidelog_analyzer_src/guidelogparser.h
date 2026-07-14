@@ -26,6 +26,7 @@ public:
 
 private:
 	static QStringList splitCsvLine(const QString &line);
+	static bool isHeaderLine(const QString &line);
 	static bool isLikelyDataRow(const QStringList &columns);
 	static QStringList sanitizeMetadataLines(const QStringList &lines, const QStringList &headers);
 	static QString makeSessionTitle(int index, const GuideSession &session);

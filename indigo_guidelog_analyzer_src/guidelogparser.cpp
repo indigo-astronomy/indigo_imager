@@ -6,18 +6,49 @@
 #include <QFile>
 #include <QTextStream>
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-#define QT_SKIP_EMPTY_PARTS Qt::SkipEmptyParts
-#else
-#define QT_SKIP_EMPTY_PARTS QString::SkipEmptyParts
-#endif
-
+// RFC 4180 style CSV line splitter, tolerant of the older log format.
+//
+// A field may be quoted with either double or single quotes (older logs used
+// single quotes; current logs use double). Whichever quote opens a field also
+// closes it, and a doubled quote inside that field is a literal quote (e.g. the
+// arc-second unit in "RA Dif("")" -> RA Dif(")). Commas inside a quoted field
+// are not separators. Unquoted fields are taken verbatim, so an unquoted header
+// like Timestamp,RA Dif(") still parses correctly.
 QStringList GuideLogParser::splitCsvLine(const QString &line) {
-	QStringList columns = line.split(',', QT_SKIP_EMPTY_PARTS);
-	for (QString &column : columns) {
-		column = column.trimmed();
+	QStringList columns;
+	QString field;
+	QChar quoteChar; // null unless currently inside a quoted field
+	for (int i = 0; i < line.size(); i++) {
+		const QChar c = line.at(i);
+		if (!quoteChar.isNull()) {
+			if (c == quoteChar) {
+				if (i + 1 < line.size() && line.at(i + 1) == quoteChar) {
+					field.append(c); // doubled quote -> literal quote
+					i++;
+				} else {
+					quoteChar = QChar();
+				}
+			} else {
+				field.append(c);
+			}
+		} else if ((c == '"' || c == '\'') && field.trimmed().isEmpty()) {
+			quoteChar = c; // quote only opens a field at its start
+		} else if (c == ',') {
+			columns.append(field.trimmed());
+			field.clear();
+		} else {
+			field.append(c);
+		}
 	}
+	columns.append(field.trimmed());
 	return columns;
+}
+
+bool GuideLogParser::isHeaderLine(const QString &line) {
+	// The header row may or may not quote its fields, so compare the first
+	// column after CSV splitting (which strips quotes) rather than the raw text.
+	QStringList columns = splitCsvLine(line);
+	return !columns.isEmpty() && columns.first() == "Timestamp";
 }
 
 bool GuideLogParser::isLikelyDataRow(const QStringList &columns) {
@@ -35,7 +66,7 @@ bool GuideLogParser::isLikelyDataRow(const QStringList &columns) {
 QStringList GuideLogParser::sanitizeMetadataLines(const QStringList &lines, const QStringList &headers) {
 	QStringList sanitized;
 	for (const QString &line : lines) {
-		if (line.startsWith("Timestamp,")) {
+		if (isHeaderLine(line)) {
 			continue;
 		}
 
@@ -124,7 +155,7 @@ QVector<GuideSession> GuideLogParser::parseFile(const QString &filePath, QString
 			expectingDataRows = false;
 		}
 
-		if (line.startsWith("Timestamp,")) {
+		if (isHeaderLine(line)) {
 			currentSession.headers = splitCsvLine(line);
 			expectingDataRows = true;
 			continue;
