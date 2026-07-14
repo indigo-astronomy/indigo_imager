@@ -1,7 +1,7 @@
 // Copyright (c) 2026
 // All rights reserved.
 
-#include "guideloganalyzerwindow.h"
+#include "guidelogviewerwindow.h"
 
 #include "guidelogstats.h"
 
@@ -140,10 +140,10 @@ QString timeOnlyLabel(const QString &timestamp) {
 
 } // namespace
 
-GuideLogAnalyzerWindow::GuideLogAnalyzerWindow(QWidget *parent) : QMainWindow(parent), m_selectedSessionIndex(-1) {
-	setWindowTitle(tr("INDIGO Guide Log Analyzer"));
+GuideLogViewerWindow::GuideLogViewerWindow(QWidget *parent) : QMainWindow(parent), m_selectedSessionIndex(-1) {
+	setWindowTitle(tr("Ain Guide Log Viewer"));
 	resize(1400, 840);
-	setWindowIcon(QIcon(":/resource/indigo_guidelog_analyzer.png"));
+	setWindowIcon(QIcon(":/resource/ain_guidelog_viewer.png"));
 
 	QFile f(":/resource/control_panel.qss");
 	if (f.open(QFile::ReadOnly | QFile::Text)) {
@@ -156,7 +156,7 @@ GuideLogAnalyzerWindow::GuideLogAnalyzerWindow(QWidget *parent) : QMainWindow(pa
 	connectSignals();
 }
 
-void GuideLogAnalyzerWindow::createUi() {
+void GuideLogViewerWindow::createUi() {
 	QMenu *fileMenu = menuBar()->addMenu("&File");
 	QAction *openAction = fileMenu->addAction("&Open Guiding Log...");
 	openAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_O));
@@ -329,7 +329,7 @@ void GuideLogAnalyzerWindow::createUi() {
 	rootLayout->addWidget(m_tableView, 1);
 }
 
-void GuideLogAnalyzerWindow::connectSignals() {
+void GuideLogViewerWindow::connectSignals() {
 	connect(m_sessionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {
 		applySelectedSession();
 	});
@@ -350,7 +350,7 @@ void GuideLogAnalyzerWindow::connectSignals() {
 	});
 }
 
-void GuideLogAnalyzerWindow::openLogFileDialog() {
+void GuideLogViewerWindow::openLogFileDialog() {
 	QString filePath = QFileDialog::getOpenFileName(
 		this,
 		"Open Ain Guiding Log",
@@ -362,7 +362,7 @@ void GuideLogAnalyzerWindow::openLogFileDialog() {
 	}
 }
 
-bool GuideLogAnalyzerWindow::loadLogFile(const QString &filePath) {
+bool GuideLogViewerWindow::loadLogFile(const QString &filePath) {
 	QString error;
 	QVector<GuideSession> sessions = GuideLogParser::parseFile(filePath, &error);
 	if (sessions.isEmpty()) {
@@ -386,7 +386,7 @@ bool GuideLogAnalyzerWindow::loadLogFile(const QString &filePath) {
 	return true;
 }
 
-void GuideLogAnalyzerWindow::rebuildSessionSelector() {
+void GuideLogViewerWindow::rebuildSessionSelector() {
 	const QSignalBlocker blocker(m_sessionCombo);
 	m_sessionCombo->clear();
 
@@ -400,7 +400,7 @@ void GuideLogAnalyzerWindow::rebuildSessionSelector() {
 	}
 }
 
-void GuideLogAnalyzerWindow::applySelectedSession() {
+void GuideLogViewerWindow::applySelectedSession() {
 	QString previousXAxisHeader;
 	if (m_xAxisCombo->currentData().toInt() >= 0 && m_xAxisCombo->currentIndex() >= 0) {
 		previousXAxisHeader = m_xAxisCombo->currentText();
@@ -494,7 +494,7 @@ void GuideLogAnalyzerWindow::applySelectedSession() {
 	updatePlot();
 }
 
-void GuideLogAnalyzerWindow::rebuildTable() {
+void GuideLogViewerWindow::rebuildTable() {
 	m_tableModel->clear();
 	m_tableModel->setColumnCount(m_headers.size());
 	m_tableModel->setRowCount(m_rows.size());
@@ -515,7 +515,7 @@ void GuideLogAnalyzerWindow::rebuildTable() {
 // Sizes the data-table columns so every column keeps at least its natural width
 // (the wider of its data and its header, so nothing is clipped) and any leftover
 // horizontal space is shared out among all columns in proportion to that width.
-void GuideLogAnalyzerWindow::fitDataColumns() {
+void GuideLogViewerWindow::fitDataColumns() {
 	if (m_fittingColumns) {
 		return;
 	}
@@ -563,7 +563,7 @@ void GuideLogAnalyzerWindow::fitDataColumns() {
 	m_fittingColumns = false;
 }
 
-bool GuideLogAnalyzerWindow::eventFilter(QObject *watched, QEvent *event) {
+bool GuideLogViewerWindow::eventFilter(QObject *watched, QEvent *event) {
 	if (watched == m_tableView->viewport()) {
 		if (event->type() == QEvent::Resize) {
 			fitDataColumns();
@@ -579,7 +579,7 @@ bool GuideLogAnalyzerWindow::eventFilter(QObject *watched, QEvent *event) {
 	return QMainWindow::eventFilter(watched, event);
 }
 
-void GuideLogAnalyzerWindow::rebuildColumnSelectors() {
+void GuideLogViewerWindow::rebuildColumnSelectors() {
 	m_numericColumns.clear();
 	for (int col = 0; col < m_headers.size(); col++) {
 		int validCount = 0;
@@ -650,7 +650,7 @@ void GuideLogAnalyzerWindow::rebuildColumnSelectors() {
 	}
 }
 
-void GuideLogAnalyzerWindow::updatePlot() {
+void GuideLogViewerWindow::updatePlot() {
 	m_plot->clearGraphs();
 	m_plot->clearCustomXAxisTicks();
 
@@ -730,7 +730,7 @@ void GuideLogAnalyzerWindow::updatePlot() {
 	}
 }
 
-QList<int> GuideLogAnalyzerWindow::selectedTableRows() const {
+QList<int> GuideLogViewerWindow::selectedTableRows() const {
 	QList<int> rows;
 	if (!m_tableView->selectionModel()) {
 		return rows;
@@ -743,7 +743,7 @@ QList<int> GuideLogAnalyzerWindow::selectedTableRows() const {
 	return rows;
 }
 
-bool GuideLogAnalyzerWindow::renderPlot(const QVector<int> &visibleRows, const QList<int> &selectedRows, bool verticalMarkerMode) {
+bool GuideLogViewerWindow::renderPlot(const QVector<int> &visibleRows, const QList<int> &selectedRows, bool verticalMarkerMode) {
 	const int xColumn = m_xAxisCombo->currentData().toInt();
 	const int timestampColumn = m_headers.indexOf("Timestamp");
 	const bool useTimestampXAxis = (xColumn == -2 && timestampColumn >= 0);
@@ -900,7 +900,7 @@ bool GuideLogAnalyzerWindow::renderPlot(const QVector<int> &visibleRows, const Q
 	return true;
 }
 
-void GuideLogAnalyzerWindow::showStats(const GuideStatsResult &result) {
+void GuideLogViewerWindow::showStats(const GuideStatsResult &result) {
 	m_statsSummaryLabel->setText(QString("Rows shown: %1 / %2").arg(result.rowsShown).arg(result.totalRows));
 
 	const GuideAxisStats &px = result.pixels;
@@ -927,12 +927,12 @@ void GuideLogAnalyzerWindow::showStats(const GuideStatsResult &result) {
 	m_statsModel->item(StatsRowTotal, StatsColumnPeakPx)->setText(formatValue(pxOk, px.combinedPeak, pxUnit));
 }
 
-void GuideLogAnalyzerWindow::showStatsMessage(const QString &message) {
+void GuideLogViewerWindow::showStatsMessage(const QString &message) {
 	m_statsSummaryLabel->setText(message);
 	clearStatsValues();
 }
 
-void GuideLogAnalyzerWindow::clearStatsValues() {
+void GuideLogViewerWindow::clearStatsValues() {
 	for (int row = 0; row < StatsRowCount; row++) {
 		for (int col = StatsColumnAxis + 1; col < StatsColumnCount; col++) {
 			m_statsModel->item(row, col)->setText("n/a");

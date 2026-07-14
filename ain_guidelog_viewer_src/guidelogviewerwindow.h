@@ -1,8 +1,8 @@
 // Copyright (c) 2026
 // All rights reserved.
 
-#ifndef GUIDELOGANALYZERWINDOW_H
-#define GUIDELOGANALYZERWINDOW_H
+#ifndef GUIDELOGVIEWERWINDOW_H
+#define GUIDELOGVIEWERWINDOW_H
 
 #include <QMainWindow>
 #include <QVector>
@@ -25,9 +25,9 @@ class SimplePlot;
 struct GuideAxisStats;
 struct GuideStatsResult;
 
-class GuideLogAnalyzerWindow : public QMainWindow {
+class GuideLogViewerWindow : public QMainWindow {
 public:
-	explicit GuideLogAnalyzerWindow(QWidget *parent = nullptr);
+	explicit GuideLogViewerWindow(QWidget *parent = nullptr);
 
 protected:
 	bool eventFilter(QObject *watched, QEvent *event) override;
@@ -79,4 +79,4 @@ private:
 	QVector<int> m_numericColumns;
 };
 
-#endif // GUIDELOGANALYZERWINDOW_H
+#endif // GUIDELOGVIEWERWINDOW_H

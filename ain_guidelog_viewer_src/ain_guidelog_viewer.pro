@@ -1,7 +1,7 @@
 QT += core gui widgets
 CONFIG += c++11 debug app_bundle
 
-TARGET = indigo_guidelog_analyzer
+TARGET = ain_guidelog_viewer
 
 unix:mac {
 	CONFIG += app_bundle
@@ -18,20 +18,20 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
 	$$PWD/main.cpp \
-	$$PWD/guideloganalyzerwindow.cpp \
+	$$PWD/guidelogviewerwindow.cpp \
 	$$PWD/guidelogparser.cpp \
 	$$PWD/guidelogstats.cpp \
 	$$PWD/../external/simpleplot/simpleplot.cpp
 
 HEADERS += \
-	$$PWD/guideloganalyzerwindow.h \
+	$$PWD/guidelogviewerwindow.h \
 	$$PWD/guidelogparser.h \
 	$$PWD/guidelogstats.h \
 	$$PWD/../external/simpleplot/simpleplot.h
 
 RESOURCES += \
 	$$PWD/../resource/fonts.qrc \
-	$$PWD/../resource/indigo_guidelog_analyzer.qrc \
+	$$PWD/../resource/ain_guidelog_viewer.qrc \
 	$$PWD/../qdarkstyle/style.qrc
 
 INCLUDEPATH += \

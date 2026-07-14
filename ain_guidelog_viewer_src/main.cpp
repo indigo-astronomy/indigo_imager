@@ -8,7 +8,7 @@
 #include <QTextStream>
 #include <QVersionNumber>
 
-#include "guideloganalyzerwindow.h"
+#include "guidelogviewerwindow.h"
 
 int main(int argc, char *argv[]) {
 	QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
 		f.close();
 	}
 
-	GuideLogAnalyzerWindow window;
+	GuideLogViewerWindow window;
 	window.show();
 
 	return app.exec();
