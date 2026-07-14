@@ -2343,6 +2343,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	double d_x = 0, d_y = 0;
 	int frame_count = -1;
 	bool is_dithering = false;
+	int guider_phase = 0;
 #ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
 	double ppec_learning = 0;
 #endif
@@ -2350,6 +2351,8 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_FRAME_ITEM_NAME)) {
 			frame_count = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_PHASE_ITEM_NAME)) {
+			guider_phase = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_REFERENCE_X_ITEM_NAME)) {
 			ref_x = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_REFERENCE_Y_ITEM_NAME)) {
@@ -2448,7 +2451,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 		}
 		if (p->state == INDIGO_BUSY_STATE) {
 			w->move_guider_reference(ref_x, ref_y);
-			if (w->m_guider_process && w->m_guide_log && conf.guider_save_log && frame_count > 1) {
+			if (w->m_guider_process && w->m_guide_log && conf.guider_save_log && frame_count > 1 && guider_phase != INDIGO_GUIDER_PHASE_DONE) {
 				char time_str[255];
 				get_timestamp(time_str);
 				fprintf(
