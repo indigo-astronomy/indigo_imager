@@ -1,6 +1,6 @@
 <RCC>
 	<qresource prefix="/resource">
-		<file alias="ain_guidelog_viewer.png">appicon.png</file>
+		<file>ain_guidelog_viewer.png</file>
 		<file>control_panel.qss</file>
 	</qresource>
 </RCC>
