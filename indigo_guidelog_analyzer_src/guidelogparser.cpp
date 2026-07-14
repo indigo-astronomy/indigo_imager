@@ -80,18 +80,20 @@ QStringList GuideLogParser::sanitizeMetadataLines(const QStringList &lines, cons
 }
 
 QString GuideLogParser::makeSessionTitle(int index, const GuideSession &session) {
+	QString kind = session.kind.isEmpty() ? QString("Guiding") : session.kind;
+
 	if (session.rows.isEmpty()) {
-		return QString("Guiding %1").arg(index + 1);
+		return QString("%1 %2").arg(kind).arg(index + 1);
 	}
 
 	int timestampColumn = session.headers.indexOf("Timestamp");
 	if (timestampColumn >= 0) {
 		QString firstTimestamp = session.rows.first().at(timestampColumn);
 		QString lastTimestamp = session.rows.last().at(timestampColumn);
-		return QString("Guiding %1 (%2 to %3)").arg(index + 1).arg(firstTimestamp).arg(lastTimestamp);
+		return QString("%1 %2 (%3 to %4)").arg(kind).arg(index + 1).arg(firstTimestamp).arg(lastTimestamp);
 	}
 
-	return QString("Guiding %1 (%2 rows)").arg(index + 1).arg(session.rows.size());
+	return QString("%1 %2 (%3 rows)").arg(kind).arg(index + 1).arg(session.rows.size());
 }
 
 QVector<GuideSession> GuideLogParser::parseFile(const QString &filePath, QString *errorMessage) {
@@ -126,18 +128,27 @@ QVector<GuideSession> GuideLogParser::parseFile(const QString &filePath, QString
 
 		QString lower = line.toLower();
 
-		if (lower.contains("guiding started")) {
+		// Marker matching is case insensitive. A session starts with either a
+		// guiding or a calibration "started" line and ends with the matching
+		// "finished"/"ended" line.
+		bool calibrationStart = lower.contains("calibration started");
+		bool guidingStart = lower.contains("guiding started");
+		if (guidingStart || calibrationStart) {
 			if (inGuidingSession) {
 				finalizeSession(currentSession);
 			}
 			inGuidingSession = true;
 			expectingDataRows = false;
 			currentSession = GuideSession();
+			currentSession.kind = calibrationStart ? "Calibration" : "Guiding";
 			currentSession.metadata.append(line);
 			continue;
 		}
 
-		if (lower.contains("guiding finished")) {
+		bool sessionFinished =
+			lower.contains("guiding finished") || lower.contains("guiding ended") ||
+			lower.contains("calibration finished") || lower.contains("calibration ended");
+		if (sessionFinished) {
 			if (inGuidingSession) {
 				currentSession.metadata.append(line);
 				finalizeSession(currentSession);

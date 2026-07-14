@@ -8,9 +8,11 @@
 #include <QStringList>
 #include <QVector>
 
-// One guiding session parsed out of an Ain guiding log.
+// One session parsed out of an Ain guiding log. A session is either a guiding
+// run or a calibration run, distinguished by its start/finish markers.
 struct GuideSession {
 	QString title;
+	QString kind = "Guiding"; // "Guiding" or "Calibration"
 	QStringList metadata;
 	QStringList headers;
 	QVector<QStringList> rows;

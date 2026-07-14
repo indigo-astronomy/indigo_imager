@@ -355,7 +355,7 @@ void GuideLogAnalyzerWindow::openLogFileDialog() {
 		this,
 		"Open Ain Guiding Log",
 		QString(),
-		"Log files (*.log *.txt);;All files (*)"
+		"Log files (*.log *.txt *.csv);;All files (*)"
 	);
 	if (!filePath.isEmpty()) {
 		loadLogFile(filePath);
