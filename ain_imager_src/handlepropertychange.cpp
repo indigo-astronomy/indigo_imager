@@ -2433,7 +2433,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 					w->m_drift_data_x.append(d_x);
 					w->m_drift_data_y.append(d_y);
 
-					if (w->m_drift_data_dec.size() > 120) {
+					if (w->m_drift_data_dec.size() > GUIDER_MAX_DATA_POINTS) {
 						w->m_drift_data_dec.removeFirst();
 						w->m_drift_data_ra.removeFirst();
 						w->m_drift_data_dec_s.removeFirst();

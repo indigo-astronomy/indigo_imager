@@ -20,6 +20,10 @@
 #ifndef IMAGERWINDOW_H
 #define IMAGERWINDOW_H
 
+// Maximum number of guider samples kept and plotted
+#define GUIDER_MAX_DATA_POINTS 120
+#define GUIDER_GRAPH_BOTH_POINTS 54
+
 #include <stdio.h>
 #include <QApplication>
 #include <QMainWindow>

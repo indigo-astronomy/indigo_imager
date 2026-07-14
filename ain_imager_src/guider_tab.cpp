@@ -1372,10 +1372,10 @@ void ImagerWindow::redraw_guider_data() {
 		m_guider_target->target()->setData(*m_guider_data_1, *m_guider_data_2);
 	}
 	if (mode == 0 || mode == 2) {  // Graph or Both
-		if (mode == 2) {
-			// In Both mode the graph is narrower: show only the most recent 45%
-			// of the collected points.
-			const int from = m_guider_data_1->size() * 0.55;
+		const int max_points = (mode == 2) ? GUIDER_GRAPH_BOTH_POINTS : GUIDER_MAX_DATA_POINTS;
+		const int size = m_guider_data_1->size();
+		if (size > max_points) {
+			const int from = size - max_points;
 			m_guider_graph->redraw_data2(m_guider_data_1->mid(from), m_guider_data_2->mid(from));
 		} else {
 			m_guider_graph->redraw_data2(*m_guider_data_1, *m_guider_data_2);
