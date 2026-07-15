@@ -3,8 +3,44 @@
 
 #include "guidelogparser.h"
 
+#include <QDateTime>
 #include <QFile>
 #include <QTextStream>
+
+namespace {
+
+// Parses a log timestamp ("yyyy-MM-dd HH:mm:ss.zzz", optionally quoted). Returns
+// an invalid QDateTime on failure.
+QDateTime parseLogTimestamp(QString value) {
+	value = value.trimmed();
+	if (value.size() >= 2 && value.startsWith('"') && value.endsWith('"')) {
+		value = value.mid(1, value.size() - 2);
+	}
+	QDateTime dt = QDateTime::fromString(value, "yyyy-MM-dd HH:mm:ss.zzz");
+	if (!dt.isValid()) {
+		dt = QDateTime::fromString(value, "yyyy-MM-dd HH:mm:ss");
+	}
+	return dt;
+}
+
+// Formats a duration in seconds as "1h 05m", "12m 34s" or "45s".
+QString formatDuration(qint64 seconds) {
+	if (seconds < 0) {
+		seconds = 0;
+	}
+	const qint64 h = seconds / 3600;
+	const qint64 m = (seconds % 3600) / 60;
+	const qint64 s = seconds % 60;
+	if (h > 0) {
+		return QString("%1h %2m").arg(h).arg(m, 2, 10, QChar('0'));
+	}
+	if (m > 0) {
+		return QString("%1m %2s").arg(m).arg(s, 2, 10, QChar('0'));
+	}
+	return QString("%1s").arg(s);
+}
+
+} // namespace
 
 // RFC 4180 style CSV line splitter, tolerant of the older log format.
 //
@@ -86,14 +122,20 @@ QString GuideLogParser::makeSessionTitle(int index, const GuideSession &session)
 		return QString("%1 %2").arg(kind).arg(index + 1);
 	}
 
+	const int rowCount = session.rows.size();
 	int timestampColumn = session.headers.indexOf("Timestamp");
 	if (timestampColumn >= 0) {
-		QString firstTimestamp = session.rows.first().at(timestampColumn);
-		QString lastTimestamp = session.rows.last().at(timestampColumn);
-		return QString("%1 %2 (%3 to %4)").arg(kind).arg(index + 1).arg(firstTimestamp).arg(lastTimestamp);
+		const QDateTime start = parseLogTimestamp(session.rows.first().at(timestampColumn));
+		const QDateTime end = parseLogTimestamp(session.rows.last().at(timestampColumn));
+		if (start.isValid() && end.isValid()) {
+			const QString startStr = start.toString("yyyy-MM-dd HH:mm:ss");
+			const QString durationStr = formatDuration(start.secsTo(end));
+			return QString("%1 %2 · %3 · %4 · %5 pts")
+			    .arg(kind).arg(index + 1).arg(startStr).arg(durationStr).arg(rowCount);
+		}
 	}
 
-	return QString("%1 %2 (%3 rows)").arg(kind).arg(index + 1).arg(session.rows.size());
+	return QString("%1 %2 · %3 pts").arg(kind).arg(index + 1).arg(rowCount);
 }
 
 QVector<GuideSession> GuideLogParser::parseFile(const QString &filePath, QString *errorMessage) {

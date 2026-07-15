@@ -177,6 +177,9 @@ void GuideLogViewerWindow::createUi() {
 	QHBoxLayout *toolbarLayout = new QHBoxLayout();
 	m_sessionCombo = new QComboBox(this);
 	m_sessionCombo->setMinimumWidth(260);
+	// Grow the combo (and its popup) to fit the whole session description.
+	m_sessionCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+	m_sessionCombo->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 	m_sessionCombo->addItem("No guiding sessions");
 	m_sessionCombo->setEnabled(false);
 	m_fileLabel = new QLabel("No file loaded");
