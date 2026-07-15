@@ -71,7 +71,8 @@ GuideColumns::GuideColumns(const QStringList &headers) {
 	decPixel = findColumn(headers, {"Dec Dif", "Dec Dif(\")"});
 	raArc = findColumn(headers, {"RA Dif(\")"});
 	decArc = findColumn(headers, {"Dec Dif(\")"});
-	dither = findColumn(headers, {"Dithering"});
+	raCorr = findColumn(headers, {"Ra Correction", "RA Corr", "RA Correction"});
+	dither = findColumn(headers, {"Dithering", "Dither"});
 }
 
 GuideRowSelection GuideLogStats::filterRows(const QVector<QStringList> &rows,

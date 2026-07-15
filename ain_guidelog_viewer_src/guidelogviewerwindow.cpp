@@ -4,6 +4,7 @@
 #include "guidelogviewerwindow.h"
 
 #include "guidelogstats.h"
+#include "pecurvewindow.h"
 
 #include <QAbstractItemView>
 #include <QBrush>
@@ -33,6 +34,7 @@
 #include <QTextStream>
 #include <QVBoxLayout>
 #include <QSet>
+#include <QRegularExpression>
 
 #include <cmath>
 #include <algorithm>
@@ -297,6 +299,11 @@ void GuideLogViewerWindow::createUi() {
 	xAxisLayout->addWidget(m_xRangeSpin);
 	xAxisLayout->addSpacing(12);
 	xAxisLayout->addWidget(m_statsSummaryLabel, 1);
+	m_peButton = new QPushButton("PE Curve…", central);
+	m_peButton->setToolTip("Reconstruct the RA periodic error from the corrections and residual\n"
+	                       "of the samples currently shown on the graph.");
+	m_peButton->setEnabled(false);
+	xAxisLayout->addWidget(m_peButton);
 	rootLayout->addLayout(xAxisLayout);
 
 	// --- Graph (grows vertically) ---
@@ -347,6 +354,9 @@ void GuideLogViewerWindow::connectSignals() {
 	});
 	connect(m_tableView->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
 		updatePlot();
+	});
+	connect(m_peButton, &QPushButton::clicked, this, [this]() {
+		openPeCurveWindow();
 	});
 }
 
@@ -426,6 +436,7 @@ void GuideLogViewerWindow::applySelectedSession() {
 		m_headers.clear();
 		m_rows.clear();
 		m_metadataLabel->setText("Session metadata will appear here.");
+		m_peButton->setEnabled(false);
 		rebuildTable();
 		rebuildColumnSelectors();
 		updatePlot();
@@ -433,6 +444,7 @@ void GuideLogViewerWindow::applySelectedSession() {
 	}
 
 	m_selectedSessionIndex = sessionIndex;
+	m_peButton->setEnabled(true);
 	const GuideSession &session = m_sessions.at(sessionIndex);
 	m_headers = session.headers;
 	m_rows = session.rows;
@@ -657,6 +669,7 @@ void GuideLogViewerWindow::updatePlot() {
 	if (m_rows.isEmpty()) {
 		showStatsMessage("No data loaded.");
 		m_plot->replot();
+		syncPeWindow({});
 		return;
 	}
 
@@ -727,6 +740,68 @@ void GuideLogViewerWindow::updatePlot() {
 		showStats(stats);
 	} else {
 		showStatsMessage("No plotted points after applying the current filters.");
+	}
+
+	// Keep the PE window in step with the rows currently on the graph.
+	syncPeWindow(selection.visibleRows);
+}
+
+double GuideLogViewerWindow::currentSessionCalibration() const {
+	if (m_selectedSessionIndex < 0 || m_selectedSessionIndex >= m_sessions.size()) {
+		return 0.0;
+	}
+	// Look for a "Calibration: RA = <n> px/s, ..." line in the session metadata.
+	static const QRegularExpression re(
+		"calibration.*\\bRA\\s*=\\s*([-+]?[0-9]*\\.?[0-9]+)\\s*px/s",
+		QRegularExpression::CaseInsensitiveOption);
+	for (const QString &line : m_sessions.at(m_selectedSessionIndex).metadata) {
+		const QRegularExpressionMatch match = re.match(line);
+		if (match.hasMatch()) {
+			bool ok = false;
+			const double value = match.captured(1).toDouble(&ok);
+			if (ok && value > 0.0) {
+				return value;
+			}
+		}
+	}
+	return 0.0;
+}
+
+void GuideLogViewerWindow::openPeCurveWindow() {
+	if (!m_peWindow) {
+		m_peWindow = new PECurveWindow(this);
+		// Force a full session push (with calibration pre-fill) into the fresh
+		// window. Once open it stays in sync via updatePlot()/syncPeWindow(), so
+		// re-clicking the button just re-shows it without clobbering a
+		// hand-entered calibration.
+		m_pePushedSession = -1;
+		updatePlot();
+	}
+	m_peWindow->show();
+	m_peWindow->raise();
+	m_peWindow->activateWindow();
+}
+
+void GuideLogViewerWindow::syncPeWindow(const QVector<int> &visibleRows) {
+	if (!m_peWindow) {
+		return;
+	}
+
+	QVector<QStringList> subset;
+	subset.reserve(visibleRows.size());
+	for (int row : visibleRows) {
+		if (row >= 0 && row < m_rows.size()) {
+			subset.append(m_rows.at(row));
+		}
+	}
+
+	if (m_pePushedSession != m_selectedSessionIndex) {
+		// New session: reset the window and pre-fill the calibration from the log.
+		m_peWindow->setSession(m_headers, subset, currentSessionCalibration());
+		m_pePushedSession = m_selectedSessionIndex;
+	} else {
+		// Same session, the graph window just changed: keep the user's calibration.
+		m_peWindow->updateRows(m_headers, subset);
 	}
 }
 

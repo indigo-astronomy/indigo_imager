@@ -32,6 +32,7 @@ struct GuideColumns {
 	int decPixel = -1;
 	int raArc = -1;
 	int decArc = -1;
+	int raCorr = -1;
 	int dither = -1;
 };
 

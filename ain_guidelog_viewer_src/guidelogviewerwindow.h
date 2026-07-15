@@ -21,6 +21,7 @@ class QStandardItemModel;
 class QPushButton;
 class QSpinBox;
 class SimplePlot;
+class PECurveWindow;
 
 struct GuideAxisStats;
 struct GuideStatsResult;
@@ -43,6 +44,11 @@ private:
 	void rebuildColumnSelectors();
 	void fitDataColumns();
 	void updatePlot();
+	void openPeCurveWindow();
+	// Pushes the rows currently visible on the graph into the PE window so its
+	// reconstruction always matches what is displayed.
+	void syncPeWindow(const QVector<int> &visibleRows);
+	double currentSessionCalibration() const;
 
 	QList<int> selectedTableRows() const;
 	bool renderPlot(const QVector<int> &visibleRows, const QList<int> &selectedRows, bool verticalMarkerMode);
@@ -59,6 +65,7 @@ private:
 	QSpinBox *m_yRangeSpin;
 	QSpinBox *m_xRangeSpin;
 	QCheckBox *m_excludeDitherCheck;
+	QPushButton *m_peButton;
 	QLabel *m_statsSummaryLabel;
 	QTableView *m_statsTable;
 	QStandardItemModel *m_statsModel;
@@ -77,6 +84,8 @@ private:
 	QStringList m_headers;
 	QVector<QStringList> m_rows;
 	QVector<int> m_numericColumns;
+	PECurveWindow *m_peWindow = nullptr;
+	int m_pePushedSession = -1;
 };
 
 #endif // GUIDELOGVIEWERWINDOW_H
