@@ -57,8 +57,10 @@ PECurveData PECurve::reconstruct(const QStringList &headers,
 	}
 
 	const double rate = options.ratePxPerS; // px/s
-	const double sign = options.invert ? -1.0 : 1.0;
 	out.hasRate = (rate > 0.0);
+	// The driver applies pulses of correction/(SPEED_RA*cos_dec), so the star
+	// actually moves correction*SPEED_RA*cos_dec. Undo that same cos(dec) scale.
+	const double cosDec = std::cos(options.decDeg * 0.017453292519943295); // deg->rad
 
 	// arcsec-per-pixel scale, derived from the log's paired px / arcsec columns.
 	double arcsecPerPx = 1.0;
@@ -125,7 +127,8 @@ PECurveData PECurve::reconstruct(const QStringList &headers,
 		bool corrOk = false;
 		const double corrSec = row.at(columns.raCorr).toDouble(&corrOk);
 		if (corrOk) {
-			cumCorrPx += sign * corrSec * rate;
+			// Corrections oppose the drift, so undo them by subtracting.
+			cumCorrPx -= corrSec * rate * cosDec;
 		}
 		rowRes[i] = resPx * unitScale;
 		rowPe[i] = (resPx + cumCorrPx) * unitScale;
@@ -179,11 +182,11 @@ PECurveData PECurve::reconstruct(const QStringList &headers,
 	}
 
 	// Optionally remove the linear drift (e.g. from polar-alignment error) so the
-	// periodic error is not swamped by a slope. Applied to both curves so the
-	// suppression figures compare the periodic components on equal footing.
+	// periodic error is not swamped by a slope. Only the reconstructed PE carries
+	// that drift (it accumulates in the corrections); the residual is left as
+	// measured so its RMS still matches the guided error shown elsewhere.
 	if (options.removeDrift) {
 		out.pe = detrend(out.x, out.pe);
-		out.residual = detrend(out.x, out.residual);
 	}
 
 	out.valid = true;

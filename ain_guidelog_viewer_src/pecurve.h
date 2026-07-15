@@ -11,7 +11,7 @@
 // Parameters controlling the RA periodic-error reconstruction.
 struct PECurveOptions {
 	double ratePxPerS = 0.0;   // RA guide rate (pixels per second of guide pulse)
-	bool invert = false;       // flip the applied-correction sign convention
+	double decDeg = 0.0;       // target declination, for the cos(dec) pulse scale
 	bool arcsec = true;        // output unit: arcsec (true) or pixels (false)
 	bool excludeDither = true; // drop dithering rows and interpolate the gaps
 	bool removeDrift = false;  // subtract the linear drift trend (isolate the PE)
@@ -33,9 +33,11 @@ struct PECurveData {
 // out of the window code (cf. GuideLogStats).
 //
 // The mount's periodic error is mostly cancelled by the guide pulses, so it is
-// recovered by adding the residual back to the cumulative corrections:
+// recovered by undoing the corrections. The INDIGO guider always drives the
+// correction opposite to the drift (response = -gain*drift, see
+// indigo_guider_reponse), so the cumulative corrections are subtracted:
 //
-//     PE(n) = residual(n) + sign * sum_{k<=n} ( correction_seconds(k) * rate )
+//     PE(n) = residual(n) - sum_{k<=n} ( correction_seconds(k) * rate )
 class PECurve {
 public:
 	static PECurveData reconstruct(const QStringList &headers,

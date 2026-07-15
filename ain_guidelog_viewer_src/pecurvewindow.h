@@ -46,9 +46,10 @@ private:
 	void recompute();
 
 	QDoubleSpinBox *m_calibrationSpin;
+	QDoubleSpinBox *m_decSpin;
 	QComboBox *m_unitCombo;
-	QCheckBox *m_invertCheck;
 	QCheckBox *m_smoothCheck;
+	QCheckBox *m_smoothResidualCheck;
 	QCheckBox *m_detrendCheck;
 	QLabel *m_summaryLabel;
 	QLabel *m_xCaptionLabel;

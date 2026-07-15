@@ -98,19 +98,29 @@ void PECurveWindow::createUi() {
 	m_calibrationSpin->setToolTip("RA guide rate in pixels per second of guide pulse.\n"
 	                              "Taken from the log's Calibration line when present.");
 
+	m_decSpin = new QDoubleSpinBox(central);
+	m_decSpin->setDecimals(1);
+	m_decSpin->setRange(-89.0, 89.0);
+	m_decSpin->setSingleStep(1.0);
+	m_decSpin->setValue(0.0);
+	m_decSpin->setSuffix("°");
+	m_decSpin->setFixedWidth(80);
+	m_decSpin->setToolTip("Target declination. The guider scales RA pulses by cos(dec),\n"
+	                      "so this rescales the reconstruction to match. Not stored in\n"
+	                      "the log — enter it by hand (0 = no scaling).");
+
 	m_unitCombo = new QComboBox(central);
 	m_unitCombo->addItem("arcsec", QStringLiteral("arcsec"));
 	m_unitCombo->addItem("pixels", QStringLiteral("px"));
 	m_unitCombo->setFixedWidth(90);
 
-	m_invertCheck = new QCheckBox("Invert correction sign", central);
-	m_invertCheck->setToolTip("Flip the sign convention of the applied corrections.\n"
-	                          "The correct orientation yields a PE curve with a larger\n"
-	                          "amplitude than the residual.");
+	m_smoothCheck = new QCheckBox("PE smoothing", central);
+	m_smoothCheck->setToolTip("Show the periodic-error curve as a moving-average\n"
+	                          "smoothed trace to reveal the underlying trend.");
 
-	m_smoothCheck = new QCheckBox("Smooth", central);
-	m_smoothCheck->setToolTip("Show the PE curve as a moving-average smoothed trace\n"
-	                          "to reveal the underlying periodic trend.");
+	m_smoothResidualCheck = new QCheckBox("Residual smoothing", central);
+	m_smoothResidualCheck->setToolTip("Show the residual-error curve as a moving-average\n"
+	                                  "smoothed trace.");
 
 	m_detrendCheck = new QCheckBox("Remove drift", central);
 	m_detrendCheck->setChecked(true);
@@ -134,14 +144,17 @@ void PECurveWindow::createUi() {
 	controls->addWidget(new QLabel("Calibration (px/s):"));
 	controls->addWidget(m_calibrationSpin);
 	controls->addSpacing(8);
+	controls->addWidget(new QLabel("Dec:"));
+	controls->addWidget(m_decSpin);
+	controls->addSpacing(8);
 	controls->addWidget(new QLabel("Units:"));
 	controls->addWidget(m_unitCombo);
 	controls->addSpacing(8);
-	controls->addWidget(m_invertCheck);
+	controls->addWidget(m_detrendCheck);
 	controls->addSpacing(8);
 	controls->addWidget(m_smoothCheck);
 	controls->addSpacing(8);
-	controls->addWidget(m_detrendCheck);
+	controls->addWidget(m_smoothResidualCheck);
 	controls->addStretch(1);
 	rootLayout->addLayout(controls);
 
@@ -181,10 +194,12 @@ void PECurveWindow::createUi() {
 
 	connect(m_calibrationSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
 	        this, [this](double) { recompute(); });
+	connect(m_decSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+	        this, [this](double) { recompute(); });
 	connect(m_unitCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
 	        this, [this](int) { recompute(); });
-	connect(m_invertCheck, &QCheckBox::toggled, this, [this](bool) { recompute(); });
 	connect(m_smoothCheck, &QCheckBox::toggled, this, [this](bool) { recompute(); });
+	connect(m_smoothResidualCheck, &QCheckBox::toggled, this, [this](bool) { recompute(); });
 	connect(m_detrendCheck, &QCheckBox::toggled, this, [this](bool) { recompute(); });
 }
 
@@ -225,7 +240,7 @@ void PECurveWindow::recompute() {
 
 	PECurveOptions options;
 	options.ratePxPerS = m_calibrationSpin->value();
-	options.invert = m_invertCheck->isChecked();
+	options.decDeg = m_decSpin->value();
 	options.arcsec = arcsecUnit;
 	options.removeDrift = m_detrendCheck->isChecked();
 
@@ -238,25 +253,28 @@ void PECurveWindow::recompute() {
 		return;
 	}
 
-	// The Smooth toggle switches the PE trace between raw and smoothed; the two
-	// are not shown together.
-	const bool smooth = m_smoothCheck->isChecked();
+	// The smoothing toggles only change what is drawn (moving-average traces);
+	// the reported numbers below are unaffected.
+	const bool smoothPe = m_smoothCheck->isChecked();
+	const bool smoothRes = m_smoothResidualCheck->isChecked();
 	const QVector<double> peSeries =
-		smooth ? PECurve::smooth(data.pe, PECurve::autoSmoothWindow(data.pe.size())) : data.pe;
+		smoothPe ? PECurve::smooth(data.pe, PECurve::autoSmoothWindow(data.pe.size())) : data.pe;
+	const QVector<double> resSeries =
+		smoothRes ? PECurve::smooth(data.residual, PECurve::autoSmoothWindow(data.residual.size())) : data.residual;
 
 	m_xCaptionLabel->setText(data.usedTime ? "Elapsed time (s)" : "Sample index");
 
 	SimpleGraph *gResidual = m_plot->addGraph();
 	gResidual->setPen(QPen(QColor(120, 120, 120)));
-	gResidual->setData(data.x, data.residual);
-	gResidual->setName("Residual");
+	gResidual->setData(data.x, resSeries);
+	gResidual->setName(smoothRes ? "Residual (smoothed)" : "Residual");
 
 	SimpleGraph *gPe = m_plot->addGraph();
 	QPen pePen(QColor(255, 190, 40));
 	pePen.setWidth(2);
 	gPe->setPen(pePen);
 	gPe->setData(data.x, peSeries);
-	gPe->setName(smooth ? "Periodic error (smoothed)" : "Periodic error");
+	gPe->setName(smoothPe ? "Periodic error (smoothed)" : "Periodic error");
 
 	double xLower = data.x.first();
 	double xUpper = data.x.last();
@@ -267,17 +285,20 @@ void PECurveWindow::recompute() {
 	m_plot->xAxis->setRange(xLower, xUpper);
 
 	// Fit the vertical range to whatever is actually drawn (residual + PE).
-	const double yLo = std::min(*std::min_element(data.residual.begin(), data.residual.end()),
+	const double yLo = std::min(*std::min_element(resSeries.begin(), resSeries.end()),
 	                            *std::min_element(peSeries.begin(), peSeries.end()));
-	const double yHi = std::max(*std::max_element(data.residual.begin(), data.residual.end()),
+	const double yHi = std::max(*std::max_element(resSeries.begin(), resSeries.end()),
 	                            *std::max_element(peSeries.begin(), peSeries.end()));
 	const double span = yHi - yLo;
 	const double pad = (span > 0.0) ? span * 0.1 : 1.0;
 	m_plot->yAxis->setRange(yLo - pad, yHi + pad);
 	m_plot->replot();
 
+	// Peak-to-peak follows the displayed PE trace (smoothed p-p is meaningful;
+	// raw p-p is just noise spikes), but RMS stays on the raw curve so it does
+	// not drift as the smoothing box is toggled.
 	const double peP2P = PECurve::peakToPeak(peSeries);
-	const double peRms = PECurve::rms(peSeries);
+	const double peRms = PECurve::rms(data.pe);
 
 	auto num = [](double v, int prec) { return QString::number(v, 'f', prec); };
 	const QString &u = unitLabel;
