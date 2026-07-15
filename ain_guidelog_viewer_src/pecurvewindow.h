@@ -49,6 +49,7 @@ private:
 	QComboBox *m_unitCombo;
 	QCheckBox *m_invertCheck;
 	QCheckBox *m_smoothCheck;
+	QCheckBox *m_detrendCheck;
 	QLabel *m_summaryLabel;
 	QLabel *m_xCaptionLabel;
 	VerticalLabel *m_yCaptionLabel;

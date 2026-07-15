@@ -14,6 +14,7 @@ struct PECurveOptions {
 	bool invert = false;       // flip the applied-correction sign convention
 	bool arcsec = true;        // output unit: arcsec (true) or pixels (false)
 	bool excludeDither = true; // drop dithering rows and interpolate the gaps
+	bool removeDrift = false;  // subtract the linear drift trend (isolate the PE)
 };
 
 // Result of a reconstruction. Series are in the requested unit; x is elapsed
@@ -47,6 +48,11 @@ public:
 
 	// A sensible odd smoothing window (~2% of the samples each side, min 3).
 	static int autoSmoothWindow(int sampleCount);
+
+	// Subtracts the least-squares straight-line fit of y over x (removes the
+	// linear drift trend and DC offset). Returns the input unchanged if it can't
+	// fit (fewer than two points, mismatched sizes, or all x equal).
+	static QVector<double> detrend(const QVector<double> &x, const QVector<double> &y);
 
 	// Peak-to-peak (max-min) and RMS of a series; 0 for empty input.
 	static double peakToPeak(const QVector<double> &data);

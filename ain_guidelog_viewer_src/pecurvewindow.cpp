@@ -112,6 +112,11 @@ void PECurveWindow::createUi() {
 	m_smoothCheck->setToolTip("Show the PE curve as a moving-average smoothed trace\n"
 	                          "to reveal the underlying periodic trend.");
 
+	m_detrendCheck = new QCheckBox("Remove drift", central);
+	m_detrendCheck->setChecked(true);
+	m_detrendCheck->setToolTip("Subtract the linear drift trend (e.g. from polar-alignment\n"
+	                           "error) so the periodic error is not swamped by a slope.");
+
 	m_summaryLabel = new QLabel("Load a session to reconstruct the RA periodic error.", central);
 	m_summaryLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 	m_summaryLabel->setTextFormat(Qt::RichText);
@@ -135,6 +140,8 @@ void PECurveWindow::createUi() {
 	controls->addWidget(m_invertCheck);
 	controls->addSpacing(8);
 	controls->addWidget(m_smoothCheck);
+	controls->addSpacing(8);
+	controls->addWidget(m_detrendCheck);
 	controls->addStretch(1);
 	rootLayout->addLayout(controls);
 
@@ -178,6 +185,7 @@ void PECurveWindow::createUi() {
 	        this, [this](int) { recompute(); });
 	connect(m_invertCheck, &QCheckBox::toggled, this, [this](bool) { recompute(); });
 	connect(m_smoothCheck, &QCheckBox::toggled, this, [this](bool) { recompute(); });
+	connect(m_detrendCheck, &QCheckBox::toggled, this, [this](bool) { recompute(); });
 }
 
 void PECurveWindow::setSession(const QStringList &headers,
@@ -219,6 +227,7 @@ void PECurveWindow::recompute() {
 	options.ratePxPerS = m_calibrationSpin->value();
 	options.invert = m_invertCheck->isChecked();
 	options.arcsec = arcsecUnit;
+	options.removeDrift = m_detrendCheck->isChecked();
 
 	const PECurveData data = PECurve::reconstruct(m_headers, m_rows, options);
 	if (!data.valid) {

@@ -178,8 +178,41 @@ PECurveData PECurve::reconstruct(const QStringList &headers,
 		out.pe.append(rowPe[prevKept] + (rowPe[nextKept] - rowPe[prevKept]) * t);
 	}
 
+	// Optionally remove the linear drift (e.g. from polar-alignment error) so the
+	// periodic error is not swamped by a slope. Applied to both curves so the
+	// suppression figures compare the periodic components on equal footing.
+	if (options.removeDrift) {
+		out.pe = detrend(out.x, out.pe);
+		out.residual = detrend(out.x, out.residual);
+	}
+
 	out.valid = true;
 	out.usedTime = useTime;
+	return out;
+}
+
+QVector<double> PECurve::detrend(const QVector<double> &x, const QVector<double> &y) {
+	const int n = y.size();
+	if (n < 2 || x.size() != n) {
+		return y;
+	}
+	double sx = 0.0, sy = 0.0, sxx = 0.0, sxy = 0.0;
+	for (int i = 0; i < n; ++i) {
+		sx += x[i];
+		sy += y[i];
+		sxx += x[i] * x[i];
+		sxy += x[i] * y[i];
+	}
+	const double denom = n * sxx - sx * sx;
+	if (std::fabs(denom) < 1e-12) {
+		return y; // all x equal — no line to fit
+	}
+	const double slope = (n * sxy - sx * sy) / denom;
+	const double intercept = (sy - slope * sx) / n;
+	QVector<double> out(n);
+	for (int i = 0; i < n; ++i) {
+		out[i] = y[i] - (intercept + slope * x[i]);
+	}
 	return out;
 }
 
