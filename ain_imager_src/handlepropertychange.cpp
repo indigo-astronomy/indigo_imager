@@ -2602,6 +2602,29 @@ void log_guide_header(ImagerWindow *w, char *device_name) {
 
 	get_timestamp(time_str);
 	fprintf(w->m_guide_log, "\nGuiding started at %s\n", time_str);
+
+	char camera_name[INDIGO_VALUE_SIZE] = {0};
+	char guider_name[INDIGO_VALUE_SIZE] = {0};
+	indigo_property *dev_p = properties.get(device_name, FILTER_CCD_LIST_PROPERTY_NAME);
+	if (dev_p) {
+		for (int i = 0; i < dev_p->count; i++) {
+			if (dev_p->items[i].sw.value && strcmp(dev_p->items[i].name, "NONE")) {
+				strncpy(camera_name, dev_p->items[i].label, INDIGO_VALUE_SIZE - 1);
+				break;
+			}
+		}
+	}
+	dev_p = properties.get(device_name, FILTER_GUIDER_LIST_PROPERTY_NAME);
+	if (dev_p) {
+		for (int i = 0; i < dev_p->count; i++) {
+			if (dev_p->items[i].sw.value && strcmp(dev_p->items[i].name, "NONE")) {
+				strncpy(guider_name, dev_p->items[i].label, INDIGO_VALUE_SIZE - 1);
+				break;
+			}
+		}
+	}
+	fprintf(w->m_guide_log, "Camera: '%s', Guider: '%s'\n", camera_name, guider_name);
+
 	indigo_property *p = properties.get(device_name, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME);
 	if (p) {
 		char method[INDIGO_VALUE_SIZE] = {0};
