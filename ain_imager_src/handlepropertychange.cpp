@@ -2650,8 +2650,17 @@ void log_guide_header(ImagerWindow *w, char *device_name) {
 		double ppec_reactive_gain_ra = 0;
 		double ppec_pred_gain_ra = 0;
 		double ppec_period_ra = 0;
+		double cal_speed_ra = 0;
+		double cal_speed_dec = 0;
+		double cal_angle = 0;
 		for (int i = 0; i < p->count; i++) {
-			if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_EXPOSURE_ITEM_NAME)) {
+			if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_SPEED_RA_ITEM_NAME)) {
+				cal_speed_ra = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_SPEED_DEC_ITEM_NAME)) {
+				cal_speed_dec = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_ANGLE_ITEM_NAME)) {
+				cal_angle = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_EXPOSURE_ITEM_NAME)) {
 				exposure = p->items[i].number.value;
 			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_DELAY_ITEM_NAME)) {
 				delay = p->items[i].number.value;
@@ -2705,6 +2714,14 @@ void log_guide_header(ImagerWindow *w, char *device_name) {
 			min_err,
 			min_pulse,
 			max_pulse
+		);
+
+		fprintf(
+			w->m_guide_log,
+			"Calibration: RA = %.4f px/s, Dec = %.4f px/s, Angle = %.3f deg\n",
+			cal_speed_ra,
+			cal_speed_dec,
+			cal_angle
 		);
 
 		switch (w->m_ra_correction_mode) {
