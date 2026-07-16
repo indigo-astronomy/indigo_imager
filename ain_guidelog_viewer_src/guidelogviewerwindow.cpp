@@ -187,7 +187,7 @@ public:
 	explicit BalanceBar(QWidget *parent = nullptr) : QWidget(parent) {
 		setFixedSize(150, 20);
 		setToolTip(QStringLiteral(
-			"<b>Correction balance</b> — how well the guide loop is tuned on this axis.<br><br>"
+			"<b>Correction response</b> — how well the guide loop is tuned on this axis.<br><br>"
 			"It is the <b>lag-1 autocorrelation of the residual error</b>: how each frame's "
 			"error relates to the previous one. The marker shows where the loop sits:<br><br>"
 			"• <b>Centre (green)</b> — errors are uncorrelated (white noise); each pulse cancels "
@@ -256,7 +256,7 @@ private:
 };
 
 GuideLogViewerWindow::GuideLogViewerWindow(QWidget *parent) : QMainWindow(parent), m_selectedSessionIndex(-1) {
-	setWindowTitle(tr("Ain Guide Log Viewer"));
+	setWindowTitle(tr("Ain INDIGO Guide Log Viewer"));
 	resize(1400, 840);
 	setWindowIcon(QIcon(":/resource/ain_guidelog_viewer.png"));
 
@@ -296,7 +296,7 @@ void GuideLogViewerWindow::createUi() {
 	m_sessionCombo->addItem("No guiding sessions");
 	m_sessionCombo->setEnabled(false);
 	m_fileLabel = new QLabel("No file loaded");
-	m_statusLabel = new QLabel("Load an Ain guiding log to begin.");
+	m_statusLabel = new QLabel("Load an Ain/INDIGO guiding log to begin.");
 	m_statusLabel->setMinimumWidth(420);
 	toolbarLayout->addWidget(new QLabel("Session:"));
 	toolbarLayout->addWidget(m_sessionCombo);
@@ -337,7 +337,7 @@ void GuideLogViewerWindow::createUi() {
 	m_statsTable->setFixedHeight(topRowHeight);
 
 	// Stats table and the exclude-dithering toggle share one framed box.
-	m_excludeDitherCheck = new QCheckBox("Exclude dithering frames", central);
+	m_excludeDitherCheck = new QCheckBox("Exclude dithering frames from stats", central);
 	m_excludeDitherCheck->setChecked(true);
 
 	QFrame *statsFrame = new QFrame(central);
@@ -382,13 +382,13 @@ void GuideLogViewerWindow::createUi() {
 	QHBoxLayout *balanceLayout = new QHBoxLayout(balanceFrame);
 	balanceLayout->setContentsMargins(8, 4, 8, 4);
 	balanceLayout->setSpacing(6);
-	QLabel *balanceTitle = new QLabel("Correction balance", central);
+	QLabel *balanceTitle = new QLabel("Correction response", central);
 	{
 		QFont f = balanceTitle->font();
 		f.setBold(true);
 		balanceTitle->setFont(f);
 	}
-	QLabel *balanceHint = new QLabel("(left = over, right = under)", central);
+	QLabel *balanceHint = new QLabel("(left = over corrected, right = under corrected)", central);
 	balanceHint->setStyleSheet("color: #999;");
 	QLabel *raName = new QLabel("RA", central);
 	raName->setStyleSheet("color: #ff5050; font-weight: bold;");
@@ -453,7 +453,7 @@ void GuideLogViewerWindow::createUi() {
 	xAxisLayout->addWidget(m_xRangeSpin);
 	xAxisLayout->addSpacing(12);
 	xAxisLayout->addWidget(m_statsSummaryLabel, 1);
-	m_peButton = new QPushButton("PE Curve…", central);
+	m_peButton = new QPushButton("PE Reconstruction", central);
 	m_peButton->setToolTip("Reconstruct the RA periodic error from the corrections and residual\n"
 	                       "of the samples currently shown on the graph.");
 	m_peButton->setEnabled(false);
@@ -517,7 +517,7 @@ void GuideLogViewerWindow::connectSignals() {
 void GuideLogViewerWindow::openLogFileDialog() {
 	QString filePath = QFileDialog::getOpenFileName(
 		this,
-		"Open Ain Guiding Log",
+		"Open Ain/INDIGO Guiding Log",
 		QString(),
 		"Log files (*.log *.txt *.csv);;All files (*)"
 	);

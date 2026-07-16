@@ -62,7 +62,7 @@ private:
 
 PECurveWindow::PECurveWindow(QWidget *parent)
     : QMainWindow(parent, Qt::Window) {
-	setWindowTitle(tr("RA Periodic Error"));
+	setWindowTitle(tr("Reconstructed RA Periodic Error"));
 	resize(1000, 620);
 	setWindowIcon(QIcon(":/resource/ain_guidelog_viewer.png"));
 
@@ -122,7 +122,7 @@ void PECurveWindow::createUi() {
 	m_smoothResidualCheck->setToolTip("Show the residual-error curve as a moving-average\n"
 	                                  "smoothed trace.");
 
-	m_detrendCheck = new QCheckBox("Remove drift", central);
+	m_detrendCheck = new QCheckBox("PE deterend", central);
 	m_detrendCheck->setChecked(true);
 	m_detrendCheck->setToolTip("Subtract the linear drift trend (e.g. from polar-alignment\n"
 	                           "error) so the periodic error is not swamped by a slope.");
