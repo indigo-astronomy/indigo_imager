@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Encoding=UTF-8
+Name=Ain Guide Log Viewer
+Comment=Ain INDIGO Guide Log Viewer
+Exec=ain_guidelog_viewer
+Icon=ain-guidelog-viewer.png
+Terminal=false
+Type=Application
+StartupWMClass=ain_guidelog_viewer
+Categories=Astronomy;Education;Science
+Keywords=astronomy
