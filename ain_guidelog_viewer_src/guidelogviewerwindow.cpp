@@ -349,7 +349,11 @@ void GuideLogViewerWindow::createUi() {
 	const int topRowHeight = statsRowHeight * (StatsRowCount + 1) + 8;
 	m_statsTable->setFixedHeight(topRowHeight);
 
-	// Stats table and the exclude-dithering toggle share one framed box.
+	// Stats table and the exclude-dithering toggle share one framed box. The
+	// table itself is borderless (the theme's stylesheet border is overridden
+	// here) so only the outer box draws a frame.
+	m_statsTable->setFrameShape(QFrame::NoFrame);
+	m_statsTable->setStyleSheet("QTableView { border: none; }");
 	m_excludeDitherCheck = new QCheckBox("Exclude dithering frames from stats", central);
 	m_excludeDitherCheck->setChecked(true);
 
@@ -361,7 +365,7 @@ void GuideLogViewerWindow::createUi() {
 	statsFrameLayout->addWidget(m_statsTable);
 	statsFrameLayout->addWidget(m_excludeDitherCheck);
 
-	const int frameHeight = topRowHeight + m_excludeDitherCheck->sizeHint().height() + 4 + 12;
+	const int frameHeight = topRowHeight + m_excludeDitherCheck->sizeHint().height() + 4 + 8;
 	statsFrame->setFixedHeight(frameHeight);
 
 	// --- Top row: guiding session header lines (left) + stats frame (right) ---
