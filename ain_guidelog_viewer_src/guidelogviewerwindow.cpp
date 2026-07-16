@@ -41,11 +41,13 @@
 #include <QVBoxLayout>
 #include <QSet>
 #include <QRegularExpression>
+#include <QPixmap>
 
 #include <cmath>
 #include <algorithm>
 
 #include <simpleplot.h>
+#include "version.h"
 
 namespace {
 
@@ -281,9 +283,15 @@ void GuideLogViewerWindow::createUi() {
 	QAction *openAction = fileMenu->addAction("&Open Guiding Log...");
 	openAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_O));
 	connect(openAction, &QAction::triggered, this, [this]() { openLogFileDialog(); });
+	QAction *closeAction = fileMenu->addAction("&Close Guiding Log");
+	connect(closeAction, &QAction::triggered, this, [this]() { closeLogFile(); });
 	fileMenu->addSeparator();
 	QAction *exitAction = fileMenu->addAction("E&xit");
 	connect(exitAction, &QAction::triggered, this, &QMainWindow::close);
+
+	QMenu *helpMenu = menuBar()->addMenu("&Help");
+	QAction *aboutAction = helpMenu->addAction("&About");
+	connect(aboutAction, &QAction::triggered, this, [this]() { showAboutDialog(); });
 
 	QWidget *central = new QWidget(this);
 	setCentralWidget(central);
@@ -555,12 +563,54 @@ bool GuideLogViewerWindow::loadLogFile(const QString &filePath) {
 	return true;
 }
 
+void GuideLogViewerWindow::closeLogFile() {
+	m_sessions.clear();
+	m_loadedPath.clear();
+	m_pePushedSession = -1;
+	if (m_peWindow) {
+		m_peWindow->close();
+	}
+
+	rebuildSessionSelector();
+	applySelectedSession();
+
+	m_fileLabel->setText("No file loaded");
+	m_statusLabel->setText("Load an Ain/INDIGO guiding log to begin.");
+}
+
+void GuideLogViewerWindow::showAboutDialog() {
+	QMessageBox msgBox(this);
+	int platform_bits = sizeof(void*) * 8;
+	QPixmap pixmap(":/resource/indigo_logo.png");
+	msgBox.setWindowTitle("About Ain INDIGO Guide Log Viewer");
+	msgBox.setTextFormat(Qt::RichText);
+	msgBox.setIconPixmap(pixmap.scaledToWidth(96, Qt::SmoothTransformation));
+	msgBox.setText(
+		"<b>Ain INDIGO Guide Log Viewer</b><br>"
+		"Version "
+		AIN_VERSION
+		" (" + QString::number(platform_bits) + "bit) <br>"
+		"<br>Qt version: " + QT_VERSION_STR + "<br>"
+		"<br>"
+		"Author:<br>"
+		"Rumen G.Bogdanovski<br>"
+		"You can use this software under the terms of <b>INDIGO Astronomy open-source license</b><br><br>"
+		"Copyright ©2020-" + YEAR_NOW + ", The INDIGO Initiative.<br>"
+		"<a href='http://www.indigo-astronomy.org'>http://www.indigo-astronomy.org</a>"
+	);
+	msgBox.exec();
+}
+
 void GuideLogViewerWindow::rebuildSessionSelector() {
 	const QSignalBlocker blocker(m_sessionCombo);
 	m_sessionCombo->clear();
 
 	for (int i = 0; i < m_sessions.size(); i++) {
 		m_sessionCombo->addItem(m_sessions[i].title, i);
+	}
+
+	if (m_sessions.isEmpty()) {
+		m_sessionCombo->addItem("No guiding sessions");
 	}
 
 	m_sessionCombo->setEnabled(!m_sessions.isEmpty());
@@ -574,6 +624,10 @@ void GuideLogViewerWindow::applySelectedSession() {
 	if (m_xAxisCombo->currentData().toInt() >= 0 && m_xAxisCombo->currentIndex() >= 0) {
 		previousXAxisHeader = m_xAxisCombo->currentText();
 	}
+
+	// Whether there was a previous set of Y-column checkboxes at all (i.e. this is
+	// a session switch rather than the very first load of a file).
+	const bool hadPreviousYColumns = !m_yColumnChecks.isEmpty();
 
 	QSet<QString> previousCheckedYHeaders;
 	for (QCheckBox *checkBox : m_yColumnChecks) {
@@ -628,9 +682,14 @@ void GuideLogViewerWindow::applySelectedSession() {
 	if (!m_yColumnChecks.isEmpty()) {
 		bool restoredAny = false;
 		if (previousCheckedYHeaders.isEmpty()) {
-			for (QCheckBox *checkBox : m_yColumnChecks) {
-				const QSignalBlocker blocker(checkBox);
-				checkBox->setChecked(false);
+			// Only clear the defaults picked by rebuildColumnSelectors() when the user
+			// had explicitly unchecked everything on a previous session; on the very
+			// first load (no previous checkboxes existed) keep the defaults.
+			if (hadPreviousYColumns) {
+				for (QCheckBox *checkBox : m_yColumnChecks) {
+					const QSignalBlocker blocker(checkBox);
+					checkBox->setChecked(false);
+				}
 			}
 		} else {
 			for (QCheckBox *checkBox : m_yColumnChecks) {
@@ -821,12 +880,26 @@ void GuideLogViewerWindow::rebuildColumnSelectors() {
 
 	m_yColumnsLayout->addStretch();
 
+	// Prefer the arc-second RA/Dec Dif columns when present, falling back to the
+	// plain pixel-based ones, and only as a last resort to the first two columns.
 	bool anyChecked = false;
 	for (QCheckBox *checkBox : m_yColumnChecks) {
-		QString name = checkBox->text();
-		if (name.startsWith("RA Dif") || name.startsWith("Dec Dif")) {
+		const QString name = checkBox->text().trimmed();
+		if (name.compare("RA Dif(\")", Qt::CaseInsensitive) == 0 ||
+		    name.compare("Dec Dif(\")", Qt::CaseInsensitive) == 0) {
 			checkBox->setChecked(true);
 			anyChecked = true;
+		}
+	}
+
+	if (!anyChecked) {
+		for (QCheckBox *checkBox : m_yColumnChecks) {
+			const QString name = checkBox->text().trimmed();
+			if (name.compare("RA Dif", Qt::CaseInsensitive) == 0 ||
+			    name.compare("Dec Dif", Qt::CaseInsensitive) == 0) {
+				checkBox->setChecked(true);
+				anyChecked = true;
+			}
 		}
 	}
 

@@ -41,6 +41,8 @@ private:
 	void connectSignals();
 	void openLogFileDialog();
 	bool loadLogFile(const QString &filePath);
+	void closeLogFile();
+	void showAboutDialog();
 	void rebuildSessionSelector();
 	void applySelectedSession();
 	void rebuildTable();

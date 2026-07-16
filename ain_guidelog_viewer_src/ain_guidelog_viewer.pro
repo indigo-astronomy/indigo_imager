@@ -39,7 +39,8 @@ RESOURCES += \
 	$$PWD/../qdarkstyle/style.qrc
 
 INCLUDEPATH += \
-	"$$PWD/../external/simpleplot"
+	"$$PWD/../external/simpleplot" \
+	"$$PWD/../common_src"
 
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /usr/bin

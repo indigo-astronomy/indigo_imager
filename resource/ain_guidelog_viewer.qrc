@@ -2,5 +2,6 @@
 	<qresource prefix="/resource">
 		<file>ain_guidelog_viewer.png</file>
 		<file>control_panel.qss</file>
+		<file>indigo_logo.png</file>
 	</qresource>
 </RCC>
