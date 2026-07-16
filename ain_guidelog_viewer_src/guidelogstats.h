@@ -52,10 +52,22 @@ struct GuideRowSelection {
 	int ditherRowsExcluded = 0;
 };
 
+// Over-/under-correction diagnostic per axis. It is the lag-1 autocorrelation of
+// the residual error: ~0 means the loop is well tuned (white residual), > 0 means
+// the error persists frame-to-frame (under-correcting, aggressiveness too low),
+// and < 0 means it flips sign frame-to-frame (over-correcting, the loop rings).
+struct CorrectionBalance {
+	bool raValid = false;
+	bool decValid = false;
+	double raLag1 = 0.0;
+	double decLag1 = 0.0;
+};
+
 // Aggregated statistics produced from a set of visible rows.
 struct GuideStatsResult {
 	GuideAxisStats pixels;
 	GuideAxisStats arcsec;
+	CorrectionBalance balance;
 	int rowsShown = 0;
 	int totalRows = 0;
 	int ditherRowsExcluded = 0;

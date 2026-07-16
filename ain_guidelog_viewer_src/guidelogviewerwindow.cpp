@@ -24,6 +24,8 @@
 #include <QMouseEvent>
 #include <QMessageBox>
 #include <QItemSelectionModel>
+#include <QPainter>
+#include <QPaintEvent>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QSignalBlocker>
@@ -78,6 +80,40 @@ enum StatsColumn {
 // is absent (e.g. "1.20\"" or "2.60 px").
 QString formatValue(bool valid, double value, const QString &unit) {
 	return valid ? (QString::number(value, 'f', 2) + unit) : QString("n/a");
+}
+
+// --- Over-/under-correction balance indicator -----------------------------
+// The metric is the lag-1 autocorrelation of the residual (see CorrectionBalance):
+// |v| <= 0.15 is well tuned, up to 0.4 slightly off, beyond that clearly off.
+const double kBalanceOkThreshold = 0.15;
+const double kBalanceWarnThreshold = 0.4;
+const double kBalanceScale = 0.9; // bar spans [-0.9, +0.9]; larger values clamp
+
+QColor balanceStatusColor(double v) {
+	const double a = std::fabs(v);
+	if (a <= kBalanceOkThreshold) return QColor(90, 200, 110);   // green
+	if (a <= kBalanceWarnThreshold) return QColor(230, 180, 60); // amber
+	return QColor(225, 90, 80);                                  // red
+}
+
+// Verdict such as "Balanced (ρ₁ +0.04)" / "Over-correcting (ρ₁ −0.42)".
+QString balanceVerdictText(double v, bool valid) {
+	if (!valid) {
+		return QStringLiteral("n/a");
+	}
+	const double a = std::fabs(v);
+	QString word;
+	if (a <= kBalanceOkThreshold) {
+		word = QStringLiteral("Balanced");
+	} else if (v > 0.0) {
+		word = (a <= kBalanceWarnThreshold) ? QStringLiteral("Slightly under")
+		                                    : QStringLiteral("Under-correcting");
+	} else {
+		word = (a <= kBalanceWarnThreshold) ? QStringLiteral("Slightly over")
+		                                    : QStringLiteral("Over-correcting");
+	}
+	const QString sign = (v >= 0.0) ? QStringLiteral("+") : QStringLiteral("−");
+	return QString("%1 (ρ₁ %2%3)").arg(word, sign, QString::number(a, 'f', 2));
 }
 
 QColor colorForGuideColumn(const QString &header, int column) {
@@ -141,6 +177,83 @@ QString timeOnlyLabel(const QString &timestamp) {
 }
 
 } // namespace
+
+// A compact horizontal gauge: a track with a central "balanced" band and a marker
+// whose position and colour encode the lag-1 autocorrelation. Left = under, right
+// = over. Defined at file scope (matching the header's forward declaration); it has
+// no signals/slots, so no Q_OBJECT / moc is needed.
+class BalanceBar : public QWidget {
+public:
+	explicit BalanceBar(QWidget *parent = nullptr) : QWidget(parent) {
+		setFixedSize(150, 20);
+		setToolTip(QStringLiteral(
+			"<b>Correction balance</b> — how well the guide loop is tuned on this axis.<br><br>"
+			"It is the <b>lag-1 autocorrelation of the residual error</b>: how each frame's "
+			"error relates to the previous one. The marker shows where the loop sits:<br><br>"
+			"• <b>Centre (green)</b> — errors are uncorrelated (white noise); each pulse cancels "
+			"the error. Well tuned.<br>"
+			"• <b>Left — over-correcting</b> — errors flip sign every frame; the loop overshoots "
+			"and rings, often chasing seeing. Try lowering aggressiveness or raising the min-move.<br>"
+			"• <b>Right — under-correcting</b> — errors persist in the same direction frame after "
+			"frame. Aggressiveness too low (or max pulse too small); drift and periodic error "
+			"leak into the residual. Try raising aggressiveness.<br><br>"
+			"Colour: green = well tuned, amber = slightly off, red = clearly off. "
+			"A little right/under bias is normal with short exposures (there is always some "
+			"tracking lag) — judge by the colour and the marker's distance from centre."));
+	}
+
+	void setValue(double value, bool valid) {
+		m_value = value;
+		m_valid = valid;
+		update();
+	}
+
+protected:
+	void paintEvent(QPaintEvent *) override {
+		QPainter p(this);
+		p.setRenderHint(QPainter::Antialiasing, true);
+
+		const QRectF area = rect().adjusted(1, 1, -1, -1);
+		const QRectF track(area.left(), area.center().y() - 4.0, area.width(), 8.0);
+		const double clamp = kBalanceScale;
+		auto toX = [&](double v) {
+			const double c = std::max(-clamp, std::min(clamp, v));
+			return track.left() + (0.5 + c / (2.0 * clamp)) * track.width();
+		};
+
+		p.setPen(Qt::NoPen);
+		p.setBrush(QColor(70, 70, 74));
+		p.drawRoundedRect(track, 4.0, 4.0);
+
+		// Central "balanced" band.
+		QRectF band(toX(-kBalanceOkThreshold), track.top(),
+		            toX(kBalanceOkThreshold) - toX(-kBalanceOkThreshold), track.height());
+		p.setBrush(QColor(55, 95, 60));
+		p.drawRoundedRect(band, 4.0, 4.0);
+
+		// Centre tick.
+		p.setPen(QPen(QColor(140, 140, 145), 1.0));
+		const double cx = toX(0.0);
+		p.drawLine(QPointF(cx, track.top() - 1.0), QPointF(cx, track.bottom() + 1.0));
+
+		if (!m_valid) {
+			p.setPen(QColor(150, 150, 150));
+			p.drawText(rect(), Qt::AlignCenter, QStringLiteral("n/a"));
+			return;
+		}
+
+		// Negative lag-1 (over-correcting) sits on the LEFT, positive (under-
+		// correcting) on the right — matching the "left = over, right = under" hint.
+		const double x = toX(m_value);
+		p.setBrush(balanceStatusColor(m_value));
+		p.setPen(QPen(QColor(20, 20, 20), 1.0));
+		p.drawEllipse(QPointF(x, track.center().y()), 6.0, 6.0);
+	}
+
+private:
+	double m_value = 0.0;
+	bool m_valid = false;
+};
 
 GuideLogViewerWindow::GuideLogViewerWindow(QWidget *parent) : QMainWindow(parent), m_selectedSessionIndex(-1) {
 	setWindowTitle(tr("Ain Guide Log Viewer"));
@@ -255,6 +368,44 @@ void GuideLogViewerWindow::createUi() {
 	topInfoLayout->addWidget(metadataScroll, 1);
 	topInfoLayout->addWidget(statsFrame);
 	rootLayout->addLayout(topInfoLayout);
+
+	// --- Correction-balance row: over/under-correction gauge per axis ---
+	m_raBalanceBar = new BalanceBar(central);
+	m_decBalanceBar = new BalanceBar(central);
+	m_raBalanceLabel = new QLabel("n/a", central);
+	m_decBalanceLabel = new QLabel("n/a", central);
+	m_raBalanceLabel->setMinimumWidth(170);
+	m_decBalanceLabel->setMinimumWidth(170);
+
+	QFrame *balanceFrame = new QFrame(central);
+	balanceFrame->setFrameShape(QFrame::StyledPanel);
+	QHBoxLayout *balanceLayout = new QHBoxLayout(balanceFrame);
+	balanceLayout->setContentsMargins(8, 4, 8, 4);
+	balanceLayout->setSpacing(6);
+	QLabel *balanceTitle = new QLabel("Correction balance", central);
+	{
+		QFont f = balanceTitle->font();
+		f.setBold(true);
+		balanceTitle->setFont(f);
+	}
+	QLabel *balanceHint = new QLabel("(left = over, right = under)", central);
+	balanceHint->setStyleSheet("color: #999;");
+	QLabel *raName = new QLabel("RA", central);
+	raName->setStyleSheet("color: #ff5050; font-weight: bold;");
+	QLabel *decName = new QLabel("Dec", central);
+	decName->setStyleSheet("color: #3caaf5; font-weight: bold;");
+	balanceLayout->addWidget(balanceTitle);
+	balanceLayout->addWidget(balanceHint);
+	balanceLayout->addSpacing(14);
+	balanceLayout->addWidget(raName);
+	balanceLayout->addWidget(m_raBalanceBar);
+	balanceLayout->addWidget(m_raBalanceLabel);
+	balanceLayout->addSpacing(18);
+	balanceLayout->addWidget(decName);
+	balanceLayout->addWidget(m_decBalanceBar);
+	balanceLayout->addWidget(m_decBalanceLabel);
+	balanceLayout->addStretch(1);
+	rootLayout->addWidget(balanceFrame);
 
 	// --- Y column selector, above the graph ---
 	m_yColumnsScroll = new QScrollArea(central);
@@ -1003,11 +1154,29 @@ void GuideLogViewerWindow::showStats(const GuideStatsResult &result) {
 	m_statsModel->item(StatsRowTotal, StatsColumnPeakArc)->setText(formatValue(arcOk, arc.combinedPeak, arcUnit));
 	m_statsModel->item(StatsRowTotal, StatsColumnRmsePx)->setText(formatValue(pxOk, px.combinedRmse, pxUnit));
 	m_statsModel->item(StatsRowTotal, StatsColumnPeakPx)->setText(formatValue(pxOk, px.combinedPeak, pxUnit));
+
+	showCorrectionBalance(result.balance);
+}
+
+void GuideLogViewerWindow::showCorrectionBalance(const CorrectionBalance &balance) {
+	auto apply = [](BalanceBar *bar, QLabel *label, double value, bool valid) {
+		bar->setValue(value, valid);
+		label->setText(balanceVerdictText(value, valid));
+		const QColor c = valid ? balanceStatusColor(value) : QColor(150, 150, 150);
+		label->setStyleSheet(QString("color: %1;").arg(c.name()));
+	};
+	apply(m_raBalanceBar, m_raBalanceLabel, balance.raLag1, balance.raValid);
+	apply(m_decBalanceBar, m_decBalanceLabel, balance.decLag1, balance.decValid);
+}
+
+void GuideLogViewerWindow::clearCorrectionBalance() {
+	showCorrectionBalance(CorrectionBalance());
 }
 
 void GuideLogViewerWindow::showStatsMessage(const QString &message) {
 	m_statsSummaryLabel->setText(message);
 	clearStatsValues();
+	clearCorrectionBalance();
 }
 
 void GuideLogViewerWindow::clearStatsValues() {

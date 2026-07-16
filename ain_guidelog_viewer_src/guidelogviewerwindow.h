@@ -22,6 +22,7 @@ class QPushButton;
 class QSpinBox;
 class SimplePlot;
 class PECurveWindow;
+class BalanceBar;
 
 struct GuideAxisStats;
 struct GuideStatsResult;
@@ -55,6 +56,8 @@ private:
 	void showStats(const GuideStatsResult &result);
 	void showStatsMessage(const QString &message);
 	void clearStatsValues();
+	void showCorrectionBalance(const struct CorrectionBalance &balance);
+	void clearCorrectionBalance();
 
 	QLabel *m_fileLabel;
 	QLabel *m_statusLabel;
@@ -67,6 +70,10 @@ private:
 	QCheckBox *m_excludeDitherCheck;
 	QPushButton *m_peButton;
 	QLabel *m_statsSummaryLabel;
+	BalanceBar *m_raBalanceBar;
+	BalanceBar *m_decBalanceBar;
+	QLabel *m_raBalanceLabel;
+	QLabel *m_decBalanceLabel;
 	QTableView *m_statsTable;
 	QStandardItemModel *m_statsModel;
 	QScrollArea *m_yColumnsScroll;
