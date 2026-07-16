@@ -51,6 +51,7 @@ private:
 	QCheckBox *m_smoothCheck;
 	QCheckBox *m_smoothResidualCheck;
 	QCheckBox *m_detrendCheck;
+	QCheckBox *m_linearDetrendCheck;
 	QLabel *m_summaryLabel;
 	QLabel *m_xCaptionLabel;
 	VerticalLabel *m_yCaptionLabel;

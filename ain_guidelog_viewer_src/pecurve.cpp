@@ -39,6 +39,44 @@ double median(QVector<double> samples) {
 	return samples.at(mid);
 }
 
+// Solves the m x m linear system a*z = b in place (Gaussian elimination with
+// partial pivoting). On success b holds the solution; returns false if singular.
+bool solveLinearSystem(QVector<QVector<double>> &a, QVector<double> &b) {
+	const int m = b.size();
+	for (int col = 0; col < m; col++) {
+		int pivot = col;
+		double best = std::fabs(a[col][col]);
+		for (int r = col + 1; r < m; r++) {
+			if (std::fabs(a[r][col]) > best) {
+				best = std::fabs(a[r][col]);
+				pivot = r;
+			}
+		}
+		if (best < 1e-12) {
+			return false;
+		}
+		if (pivot != col) {
+			a[pivot].swap(a[col]);
+			std::swap(b[pivot], b[col]);
+		}
+		for (int r = col + 1; r < m; r++) {
+			const double f = a[r][col] / a[col][col];
+			for (int c = col; c < m; c++) {
+				a[r][c] -= f * a[col][c];
+			}
+			b[r] -= f * b[col];
+		}
+	}
+	for (int row = m - 1; row >= 0; row--) {
+		double s = b[row];
+		for (int c = row + 1; c < m; c++) {
+			s -= a[row][c] * b[c];
+		}
+		b[row] = s / a[row][row];
+	}
+	return true;
+}
+
 } // namespace
 
 PECurveData PECurve::reconstruct(const QStringList &headers,
@@ -186,7 +224,8 @@ PECurveData PECurve::reconstruct(const QStringList &headers,
 	// that drift (it accumulates in the corrections); the residual is left as
 	// measured so its RMS still matches the guided error shown elsewhere.
 	if (options.removeDrift) {
-		out.pe = detrend(out.x, out.pe);
+		out.pe = options.linearDetrend ? detrendLinear(out.x, out.pe)
+		                               : detrend(out.x, out.pe);
 	}
 
 	out.valid = true;
@@ -195,6 +234,94 @@ PECurveData PECurve::reconstruct(const QStringList &headers,
 }
 
 QVector<double> PECurve::detrend(const QVector<double> &x, const QVector<double> &y) {
+	const int n = y.size();
+	if (n < 2 || x.size() != n) {
+		return y;
+	}
+
+	const double span = x.last() - x.first();
+	if (std::fabs(span) < 1e-12) {
+		return y; // all x equal — no line to fit
+	}
+
+	// Fit in normalised time u = (x - mean) / span, so u is centred on 0 and
+	// spans about [-0.5, 0.5]. This keeps the normal equations well conditioned
+	// and, because mean(u) = 0, simplifies the plain-line fit.
+	double xMean = 0.0;
+	for (int i = 0; i < n; ++i) {
+		xMean += x[i];
+	}
+	xMean /= n;
+	QVector<double> u(n);
+	for (int i = 0; i < n; ++i) {
+		u[i] = (x[i] - xMean) / span;
+	}
+
+	// Baseline: an ordinary least-squares straight line c0 + c1*u.
+	double suy = 0.0, suu = 0.0, sy = 0.0;
+	for (int i = 0; i < n; ++i) {
+		sy += y[i];
+		suy += u[i] * y[i];
+		suu += u[i] * u[i];
+	}
+	double bestC0 = sy / n;
+	double bestC1 = (suu > 1e-12) ? (suy / suu) : 0.0;
+
+	// A straight-line fit to a signal dominated by the periodic error is biased
+	// by the sinusoid itself unless the window spans a whole number of worm
+	// periods — which tilts a symmetric PE. To avoid that, jointly fit a line
+	// plus one sinusoid at the best-fit fundamental, then subtract only the
+	// line. The fundamental is found by scanning candidate periods (expressed as
+	// k = cycles across the window) and keeping the one with the smallest fit
+	// residual.
+	if (n >= 8) {
+		const double twoPi = 6.283185307179586;
+		// Highest frequency worth trying: keep at least ~5 samples per cycle, and
+		// cap at 40 cycles so a slow worm's drift search stays cheap.
+		const double kMax = std::min(40.0, static_cast<double>(n - 1) / 5.0);
+		double bestRss = -1.0;
+		for (double k = 1.0; k <= kMax + 1e-9; k += 0.1) {
+			const double w = twoPi * k;
+			// Normal equations for the basis {1, u, sin(w*u), cos(w*u)}.
+			QVector<QVector<double>> a(4, QVector<double>(4, 0.0));
+			QVector<double> b(4, 0.0);
+			for (int i = 0; i < n; ++i) {
+				const double phi[4] = {1.0, u[i], std::sin(w * u[i]), std::cos(w * u[i])};
+				for (int r = 0; r < 4; ++r) {
+					for (int c = 0; c < 4; ++c) {
+						a[r][c] += phi[r] * phi[c];
+					}
+					b[r] += phi[r] * y[i];
+				}
+			}
+			QVector<QVector<double>> aSolve = a;
+			QVector<double> coeff = b;
+			if (!solveLinearSystem(aSolve, coeff)) {
+				continue;
+			}
+			double rss = 0.0;
+			for (int i = 0; i < n; ++i) {
+				const double model = coeff[0] + coeff[1] * u[i] +
+				                     coeff[2] * std::sin(w * u[i]) + coeff[3] * std::cos(w * u[i]);
+				const double e = y[i] - model;
+				rss += e * e;
+			}
+			if (bestRss < 0.0 || rss < bestRss) {
+				bestRss = rss;
+				bestC0 = coeff[0];
+				bestC1 = coeff[1];
+			}
+		}
+	}
+
+	QVector<double> out(n);
+	for (int i = 0; i < n; ++i) {
+		out[i] = y[i] - (bestC0 + bestC1 * u[i]);
+	}
+	return out;
+}
+
+QVector<double> PECurve::detrendLinear(const QVector<double> &x, const QVector<double> &y) {
 	const int n = y.size();
 	if (n < 2 || x.size() != n) {
 		return y;

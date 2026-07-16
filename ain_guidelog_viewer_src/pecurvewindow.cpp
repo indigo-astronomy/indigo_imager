@@ -127,6 +127,13 @@ void PECurveWindow::createUi() {
 	m_detrendCheck->setToolTip("Subtract the linear drift trend (e.g. from polar-alignment\n"
 	                           "error) so the periodic error is not swamped by a slope.");
 
+	m_linearDetrendCheck = new QCheckBox("Linear detrend", central);
+	m_linearDetrendCheck->setToolTip("Remove the drift with a plain straight-line fit instead of the\n"
+	                                 "periodic-error-aware fit. A plain line can tilt a symmetric PE\n"
+	                                 "when the window is not a whole number of worm periods; use this\n"
+	                                 "only as a cross-check.");
+	m_linearDetrendCheck->setEnabled(m_detrendCheck->isChecked());
+
 	m_summaryLabel = new QLabel("Load a session to reconstruct the RA periodic error.", central);
 	m_summaryLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 	m_summaryLabel->setTextFormat(Qt::RichText);
@@ -151,6 +158,8 @@ void PECurveWindow::createUi() {
 	controls->addWidget(m_unitCombo);
 	controls->addSpacing(8);
 	controls->addWidget(m_detrendCheck);
+	controls->addSpacing(8);
+	controls->addWidget(m_linearDetrendCheck);
 	controls->addSpacing(8);
 	controls->addWidget(m_smoothCheck);
 	controls->addSpacing(8);
@@ -200,7 +209,11 @@ void PECurveWindow::createUi() {
 	        this, [this](int) { recompute(); });
 	connect(m_smoothCheck, &QCheckBox::toggled, this, [this](bool) { recompute(); });
 	connect(m_smoothResidualCheck, &QCheckBox::toggled, this, [this](bool) { recompute(); });
-	connect(m_detrendCheck, &QCheckBox::toggled, this, [this](bool) { recompute(); });
+	connect(m_detrendCheck, &QCheckBox::toggled, this, [this](bool checked) {
+		m_linearDetrendCheck->setEnabled(checked); // linear detrend only applies when removing drift
+		recompute();
+	});
+	connect(m_linearDetrendCheck, &QCheckBox::toggled, this, [this](bool) { recompute(); });
 }
 
 void PECurveWindow::setSession(const QStringList &headers,
@@ -243,6 +256,7 @@ void PECurveWindow::recompute() {
 	options.decDeg = m_decSpin->value();
 	options.arcsec = arcsecUnit;
 	options.removeDrift = m_detrendCheck->isChecked();
+	options.linearDetrend = m_linearDetrendCheck->isChecked();
 
 	const PECurveData data = PECurve::reconstruct(m_headers, m_rows, options);
 	if (!data.valid) {

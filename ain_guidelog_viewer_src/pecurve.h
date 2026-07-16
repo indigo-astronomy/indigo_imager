@@ -15,6 +15,7 @@ struct PECurveOptions {
 	bool arcsec = true;        // output unit: arcsec (true) or pixels (false)
 	bool excludeDither = true; // drop dithering rows and interpolate the gaps
 	bool removeDrift = false;  // subtract the linear drift trend (isolate the PE)
+	bool linearDetrend = false; // use a plain straight-line fit for the drift
 };
 
 // Result of a reconstruction. Series are in the requested unit; x is elapsed
@@ -51,10 +52,20 @@ public:
 	// A sensible odd smoothing window (~2% of the samples each side, min 3).
 	static int autoSmoothWindow(int sampleCount);
 
-	// Subtracts the least-squares straight-line fit of y over x (removes the
-	// linear drift trend and DC offset). Returns the input unchanged if it can't
-	// fit (fewer than two points, mismatched sizes, or all x equal).
+	// Removes the linear drift trend (and DC offset) from y over x. For a signal
+	// dominated by the periodic error, a plain line fit is biased by the sinusoid
+	// (it tilts a symmetric PE when the window is not a whole number of worm
+	// periods), so this jointly fits a line plus one sinusoid at the best-fit
+	// fundamental and subtracts only the line. Falls back to a plain line for
+	// short series. Returns the input unchanged if it can't fit (fewer than two
+	// points, mismatched sizes, or all x equal).
 	static QVector<double> detrend(const QVector<double> &x, const QVector<double> &y);
+
+	// Subtracts a plain least-squares straight-line fit of y over x (the classic
+	// linear detrend). Unlike detrend() it does not model the periodic error, so
+	// it can tilt a symmetric PE; kept as an explicit user-selectable option and
+	// as a cross-check. Same "can't fit" fallbacks as detrend().
+	static QVector<double> detrendLinear(const QVector<double> &x, const QVector<double> &y);
 
 	// Peak-to-peak (max-min) and RMS of a series; 0 for empty input.
 	static double peakToPeak(const QVector<double> &data);
