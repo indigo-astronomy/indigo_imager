@@ -7,6 +7,10 @@
 #include "pecurvewindow.h"
 
 #include <QAbstractItemView>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QMimeData>
+#include <QUrl>
 #include <QBrush>
 #include <QCheckBox>
 #include <QEvent>
@@ -259,6 +263,7 @@ GuideLogViewerWindow::GuideLogViewerWindow(QWidget *parent) : QMainWindow(parent
 	setWindowTitle(tr("Ain INDIGO Guide Log Viewer"));
 	resize(1400, 840);
 	setWindowIcon(QIcon(":/resource/ain_guidelog_viewer.png"));
+	setAcceptDrops(true);
 
 	QFile f(":/resource/control_panel.qss");
 	if (f.open(QFile::ReadOnly | QFile::Text)) {
@@ -727,6 +732,23 @@ void GuideLogViewerWindow::fitDataColumns() {
 		}
 	}
 	m_fittingColumns = false;
+}
+
+void GuideLogViewerWindow::dragEnterEvent(QDragEnterEvent *event) {
+	if (event->mimeData()->hasUrls()) {
+		const QList<QUrl> urls = event->mimeData()->urls();
+		if (!urls.isEmpty() && urls.first().isLocalFile())
+			event->acceptProposedAction();
+	}
+}
+
+void GuideLogViewerWindow::dropEvent(QDropEvent *event) {
+	const QList<QUrl> urls = event->mimeData()->urls();
+	if (!urls.isEmpty()) {
+		const QString filePath = urls.first().toLocalFile();
+		if (!filePath.isEmpty())
+			loadLogFile(filePath);
+	}
 }
 
 bool GuideLogViewerWindow::eventFilter(QObject *watched, QEvent *event) {

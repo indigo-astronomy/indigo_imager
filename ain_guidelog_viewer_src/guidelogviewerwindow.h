@@ -33,6 +33,8 @@ public:
 
 protected:
 	bool eventFilter(QObject *watched, QEvent *event) override;
+	void dragEnterEvent(QDragEnterEvent *event) override;
+	void dropEvent(QDropEvent *event) override;
 
 private:
 	void createUi();
