@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <vector>
 
 namespace {
 
@@ -66,8 +67,32 @@ void finalizeStats(GuideAxisStats &stats) {
 // Minimum residual samples before the lag-1 estimate is trustworthy.
 const int kMinBalanceSamples = 12;
 
-// Lag-1 autocorrelation of a residual series (biased estimator). Returns 0 for a
-// flat or too-short series; ok reports whether the estimate is meaningful.
+// Winsorising threshold for the balance estimate: deviations beyond this many
+// robust sigmas (MAD-based) are clamped so a single spike can't dominate the
+// correlation sums and flip the sign of ρ₁. Tunable; ~4 clips only genuine
+// outliers while leaving normal loop dynamics untouched.
+const double kBalanceOutlierSigma = 4.0;
+
+// Median of v via nth_element (O(n)); reorders v in place.
+double medianInPlace(std::vector<double> &v) {
+	const int n = static_cast<int>(v.size());
+	const int mid = n / 2;
+	std::nth_element(v.begin(), v.begin() + mid, v.end());
+	const double hi = v[mid];
+	if (n & 1) {
+		return hi;
+	}
+	// Even count: average the two central order statistics. Everything left of
+	// mid is already <= hi after nth_element, so the lower median is their max.
+	const double lo = *std::max_element(v.begin(), v.begin() + mid);
+	return 0.5 * (lo + hi);
+}
+
+// Lag-1 autocorrelation of a residual series, made robust against spikes:
+// median-centred (resists a shifted baseline) with each deviation winsorised to
+// ±kBalanceOutlierSigma robust sigmas so a lone outlier cannot flip the result.
+// Returns 0 for a flat or too-short series; ok reports whether the estimate is
+// meaningful. O(n): median + MAD via nth_element, then one correlation pass.
 double lag1Autocorrelation(const QVector<double> &series, bool *ok) {
 	const int n = series.size();
 	if (n < kMinBalanceSamples) {
@@ -76,19 +101,41 @@ double lag1Autocorrelation(const QVector<double> &series, bool *ok) {
 		}
 		return 0.0;
 	}
-	double mean = 0.0;
-	for (double v : series) {
-		mean += v;
+
+	// Robust centre: the median resists spikes and baseline offset far better
+	// than the mean. Work on a scratch copy so nth_element can reorder freely.
+	std::vector<double> scratch(series.cbegin(), series.cend());
+	const double centre = medianInPlace(scratch);
+
+	// Robust scale: MAD (median absolute deviation) scaled to a sigma-equivalent.
+	// Reuse the scratch buffer to hold |x - centre|.
+	for (int i = 0; i < n; ++i) {
+		scratch[i] = std::fabs(series.at(i) - centre);
 	}
-	mean /= n;
+	const double scale = 1.4826 * medianInPlace(scratch); // ~std dev for normal data
+
+	// Winsorise deviations to ±cap. When MAD ~ 0 (constant/quantised series) skip
+	// capping so we don't clamp every deviation to zero.
+	const bool capEnabled = scale > 1e-12;
+	const double cap = kBalanceOutlierSigma * scale;
+	auto centred = [&](int i) {
+		const double d = series.at(i) - centre;
+		if (!capEnabled) {
+			return d;
+		}
+		return d > cap ? cap : (d < -cap ? -cap : d);
+	};
+
+	// Single O(n) pass over the winsorised, median-centred deviations.
 	double numerator = 0.0;
 	double denominator = 0.0;
-	for (int i = 0; i < n; ++i) {
-		const double d = series.at(i) - mean;
+	double prev = centred(0);
+	denominator += prev * prev;
+	for (int i = 1; i < n; ++i) {
+		const double d = centred(i);
 		denominator += d * d;
-		if (i > 0) {
-			numerator += d * (series.at(i - 1) - mean);
-		}
+		numerator += d * prev;
+		prev = d;
 	}
 	if (denominator < 1e-12) {
 		if (ok) {
