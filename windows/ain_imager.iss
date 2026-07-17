@@ -15,6 +15,8 @@
 #define MyAppExeName "ain_imager.exe"
 #define MyViewerExeName "ain_viewer.exe"
 #define MyViewerName "Ain INDIGO Viewer"
+#define MyGuideLogViewerExeName "ain_guidelog_viewer.exe"
+#define MyGuideLogViewerName "Ain INDIGO Guide Log Viewer"
 #define MySourcePrefix "ain_imager_" + Arch + "\ain_imager"
 
 [Setup]
@@ -49,8 +51,10 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 Source: "{#MySourcePrefix}\ain_imager.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MySourcePrefix}\ain_viewer.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#MySourcePrefix}\ain_guidelog_viewer.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "appicon.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "ain_viewer.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "ain_guidelog_viewer.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MySourcePrefix}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
@@ -59,6 +63,8 @@ Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFile
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\appicon.ico"; Tasks: desktopicon
 Name: "{autoprograms}\{#MyViewerName}"; Filename: "{app}\{#MyViewerExeName}"; IconFilename: "{app}\ain_viewer.ico"
 Name: "{autodesktop}\{#MyViewerName}"; Filename: "{app}\{#MyViewerExeName}"; IconFilename: "{app}\ain_viewer.ico"; Tasks: desktopicon
+Name: "{autoprograms}\{#MyGuideLogViewerName}"; Filename: "{app}\{#MyGuideLogViewerExeName}"; IconFilename: "{app}\ain_guidelog_viewer.ico"
+Name: "{autodesktop}\{#MyGuideLogViewerName}"; Filename: "{app}\{#MyGuideLogViewerExeName}"; IconFilename: "{app}\ain_guidelog_viewer.ico"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
