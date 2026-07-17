@@ -34,6 +34,10 @@
 #include <QDateTime>
 #include <QGraphicsView>
 #include <QTimer>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QMimeData>
+#include <QUrl>
 
 
 void write_conf();
@@ -45,6 +49,8 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	} else {
 		resize(conf.window_width, conf.window_height);
 	}
+
+	setAcceptDrops(true);
 
 	m_image_data = nullptr;
 	m_image_size = 0;
@@ -497,6 +503,25 @@ void ViewerWindow::on_image_info_act() {
 			m_image_info_dlg->scrollTop();
 		} else {
 			show_message("Error!", "Not FITS, XISF or camera raw file!");
+		}
+	}
+}
+
+void ViewerWindow::dragEnterEvent(QDragEnterEvent *event) {
+	if (event->mimeData()->hasUrls()) {
+		const QList<QUrl> urls = event->mimeData()->urls();
+		if (!urls.isEmpty() && urls.first().isLocalFile()) {
+			event->acceptProposedAction();
+		}
+	}
+}
+
+void ViewerWindow::dropEvent(QDropEvent *event) {
+	const QList<QUrl> urls = event->mimeData()->urls();
+	if (!urls.isEmpty()) {
+		const QString file_name = urls.first().toLocalFile();
+		if (!file_name.isEmpty()) {
+			open_image(file_name);
 		}
 	}
 }
