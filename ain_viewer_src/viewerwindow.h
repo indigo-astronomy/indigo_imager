@@ -61,6 +61,10 @@ public:
 		}
 	}
 
+protected:
+	void dragEnterEvent(QDragEnterEvent *event) override;
+	void dropEvent(QDropEvent *event) override;
+
 public slots:
 	void on_reopen_file_changed(bool status);
 	void on_restore_window_size_changed(bool status);
