@@ -105,8 +105,8 @@ QString formatValue(bool valid, double value, const QString &unit) {
 
 // --- Over-/under-correction balance indicator -----------------------------
 // The metric is the lag-1 autocorrelation of the residual (see CorrectionBalance):
-// |v| <= 0.15 is well tuned, up to 0.4 slightly off, beyond that clearly off.
-const double kBalanceOkThreshold = 0.15;
+// |v| <= 0.20 is well tuned, up to 0.4 slightly off, beyond that clearly off.
+const double kBalanceOkThreshold = 0.2;
 const double kBalanceWarnThreshold = 0.4;
 const double kBalanceScale = 0.9; // bar spans [-0.9, +0.9]; larger values clamp
 
