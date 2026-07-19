@@ -46,10 +46,13 @@ public:
 
 	// Feeds a new session into the window and pre-fills the calibration from the
 	// log (calibrationPxPerS <= 0 means the log carried none; the user can enter
-	// one by hand). Use this on open / session change.
+	// one by hand). mountDecDeg pre-fills the Dec spin box from the log's Mount
+	// Coordinates line (0.0 means the log carried none, same as "no scaling").
+	// Use this on open / session change.
 	void setSession(const QStringList &headers,
 	                const QVector<QStringList> &rows,
-	                double calibrationPxPerS);
+	                double calibrationPxPerS,
+	                double mountDecDeg = 0.0);
 
 	// Replaces only the plotted rows (e.g. the graph's visible window changed),
 	// leaving the user's calibration entry untouched.

@@ -1035,6 +1035,36 @@ double GuideLogViewerWindow::currentSessionCalibration() const {
 	return 0.0;
 }
 
+double GuideLogViewerWindow::currentSessionMountDec() const {
+	if (m_selectedSessionIndex < 0 || m_selectedSessionIndex >= m_sessions.size()) {
+		return 0.0;
+	}
+	// Look for a "Mount Coordinates: RA = <h>:<m>:<s>, Dec = <sign><d>:<m>:<s>"
+	// line in the session metadata and convert the sexagesimal Dec to decimal
+	// degrees. The sign is captured separately since a value like "-0:30:00.0"
+	// would otherwise lose its sign once the degrees part is parsed as 0. 0.0 is
+	// returned both when the log carried no Mount Coordinates line and when the
+	// mount was actually on the celestial equator; either way it means "no
+	// scaling", matching the Dec spin box's own default/special value.
+	static const QRegularExpression re(
+		"mount coordinates.*\\bDec\\s*=\\s*([+-]?)([0-9]+):([0-9]+):([0-9]*\\.?[0-9]+)",
+		QRegularExpression::CaseInsensitiveOption);
+	for (const QString &line : m_sessions.at(m_selectedSessionIndex).metadata) {
+		const QRegularExpressionMatch match = re.match(line);
+		if (match.hasMatch()) {
+			bool ok1 = false, ok2 = false, ok3 = false;
+			const double d = match.captured(2).toDouble(&ok1);
+			const double m = match.captured(3).toDouble(&ok2);
+			const double s = match.captured(4).toDouble(&ok3);
+			if (ok1 && ok2 && ok3) {
+				const double sign = (match.captured(1) == "-") ? -1.0 : 1.0;
+				return sign * (d + m / 60.0 + s / 3600.0);
+			}
+		}
+	}
+	return 0.0;
+}
+
 void GuideLogViewerWindow::openPeCurveWindow() {
 	if (!m_peWindow) {
 		m_peWindow = new PECurveWindow(this);
@@ -1064,8 +1094,8 @@ void GuideLogViewerWindow::syncPeWindow(const QVector<int> &visibleRows) {
 	}
 
 	if (m_pePushedSession != m_selectedSessionIndex) {
-		// New session: reset the window and pre-fill the calibration from the log.
-		m_peWindow->setSession(m_headers, subset, currentSessionCalibration());
+		// New session: reset the window and pre-fill the calibration/Dec from the log.
+		m_peWindow->setSession(m_headers, subset, currentSessionCalibration(), currentSessionMountDec());
 		m_pePushedSession = m_selectedSessionIndex;
 	} else {
 		// Same session, the graph window just changed: keep the user's calibration.
