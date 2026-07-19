@@ -69,6 +69,7 @@ private:
 	// reconstruction always matches what is displayed.
 	void syncPeWindow(const QVector<int> &visibleRows);
 	double currentSessionCalibration() const;
+	double currentSessionMountDec() const;
 
 	QList<int> selectedTableRows() const;
 	bool renderPlot(const QVector<int> &visibleRows, const QList<int> &selectedRows, bool verticalMarkerMode);

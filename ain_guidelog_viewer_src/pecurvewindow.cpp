@@ -121,8 +121,9 @@ void PECurveWindow::createUi() {
 	m_decSpin->setSuffix("°");
 	m_decSpin->setFixedWidth(80);
 	m_decSpin->setToolTip("Target declination. The guider scales RA pulses by cos(dec),\n"
-	                      "so this rescales the reconstruction to match. Not stored in\n"
-	                      "the log — enter it by hand (0 = no scaling).");
+	                      "so this rescales the reconstruction to match. Pre-filled from\n"
+	                      "the log's Mount Coordinates line when present; otherwise enter\n"
+	                      "it by hand (0 = no scaling).");
 
 	m_unitCombo = new QComboBox(central);
 	m_unitCombo->addItem("arcsec", QStringLiteral("arcsec"));
@@ -233,7 +234,8 @@ void PECurveWindow::createUi() {
 
 void PECurveWindow::setSession(const QStringList &headers,
                                const QVector<QStringList> &rows,
-                               double calibrationPxPerS) {
+                               double calibrationPxPerS,
+                               double mountDecDeg) {
 	m_headers = headers;
 	m_rows = rows;
 	m_logCalibration = calibrationPxPerS;
@@ -243,6 +245,13 @@ void PECurveWindow::setSession(const QStringList &headers,
 	if (calibrationPxPerS > 0.0) {
 		const QSignalBlocker blocker(m_calibrationSpin);
 		m_calibrationSpin->setValue(calibrationPxPerS);
+	}
+
+	// Same for the Dec spin box: pre-fill it from the log's Mount Coordinates
+	// line when present, but leave the user's hand-entered value alone otherwise.
+	if (mountDecDeg != 0.0) {
+		const QSignalBlocker blocker(m_decSpin);
+		m_decSpin->setValue(mountDecDeg);
 	}
 
 	recompute();
