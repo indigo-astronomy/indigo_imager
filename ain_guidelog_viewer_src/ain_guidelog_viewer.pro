@@ -23,6 +23,7 @@ SOURCES += \
 	$$PWD/pecurve.cpp \
 	$$PWD/guidelogparser.cpp \
 	$$PWD/guidelogstats.cpp \
+	$$PWD/../common_src/balancebar.cpp \
 	$$PWD/../external/simpleplot/simpleplot.cpp
 
 HEADERS += \
@@ -31,6 +32,7 @@ HEADERS += \
 	$$PWD/pecurve.h \
 	$$PWD/guidelogparser.h \
 	$$PWD/guidelogstats.h \
+	$$PWD/../common_src/balancebar.h \
 	$$PWD/../external/simpleplot/simpleplot.h
 
 RESOURCES += \
