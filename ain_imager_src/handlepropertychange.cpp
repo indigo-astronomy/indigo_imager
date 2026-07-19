@@ -2625,6 +2625,30 @@ void log_guide_header(ImagerWindow *w, char *device_name) {
 	}
 	fprintf(w->m_guide_log, "Camera: '%s', Guider: '%s'\n", camera_name, guider_name);
 
+	double mount_ra = 0;
+	double mount_dec = 0;
+	bool mount_coordinates_valid = false;
+	indigo_property *mount_p = properties.get(device_name, AGENT_GUIDER_MOUNT_COORDINATES_PROPERTY_NAME);
+	if (mount_p) {
+		for (int i = 0; i < mount_p->count; i++) {
+			if (client_match_item(&mount_p->items[i], AGENT_GUIDER_MOUNT_COORDINATES_RA_ITEM_NAME)) {
+				mount_ra = mount_p->items[i].number.value;
+				mount_coordinates_valid = true;
+			} else if (client_match_item(&mount_p->items[i], AGENT_GUIDER_MOUNT_COORDINATES_DEC_ITEM_NAME)) {
+				mount_dec = mount_p->items[i].number.value;
+				mount_coordinates_valid = true;
+			}
+		}
+	}
+	if (mount_coordinates_valid) {
+		fprintf(
+			w->m_guide_log,
+			"Mount Coordinates: RA = %s, Dec = %s\n",
+			indigo_dtos(mount_ra, "%d:%02d:%04.1f"),
+			indigo_dtos(mount_dec, "%d:%02d:%04.1f")
+		);
+	}
+
 	indigo_property *p = properties.get(device_name, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME);
 	if (p) {
 		char method[INDIGO_VALUE_SIZE] = {0};
