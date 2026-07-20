@@ -33,7 +33,7 @@ struct GuideSession {
 	QVector<QStringList> rows;
 };
 
-// UI-independent parser for Ain guiding logs. Turns a log file into a list of
+// Parser for Ain / IDIGO guiding logs. Turns a log file into a list of
 // guiding sessions; all dialogs / status reporting stay in the window.
 class GuideLogParser {
 public:
