@@ -22,6 +22,7 @@
 #include "propertycache.h"
 #include "conf.h"
 #include "widget_state.h"
+#include <balancebar.h>
 #include <QStringList>
 #include <SequenceItemModel.h>
 
@@ -2333,6 +2334,33 @@ void handle_scripting_on_load_script(ImagerWindow *w, indigo_property *property)
 	});
 }
 
+static QString corr_response_verdict_html(const BalanceBar *bar, double v, bool valid) {
+	if (!valid) {
+		return QStringLiteral("n/a");
+	}
+	const QString sign = (v >= 0.0) ? QStringLiteral("+") : QStringLiteral("\u2212");
+	const QString text = QString("%1%2").arg(sign, QString::number(fabs(v), 'f', 2));
+	return QString("<span style='color:%1;'>%2</span>").arg(bar->statusColor(v).name(), text);
+}
+
+static QString corr_response_description(const BalanceBar *bar, double v, bool valid) {
+	if (!valid) {
+		return QStringLiteral("Not enough data: needs more guiding to estimate correction response.");
+	}
+	const double a = fabs(v);
+	if (a <= bar->okThreshold()) {
+		return QStringLiteral("<b>Balanced:</b> This axis is well tuned.");
+	} else if (v > 0.0) {
+		return (a <= bar->warnThreshold())
+			? QStringLiteral("<b>Slightly under-correcting:</b> the error lingers a bit too long in the same direction.")
+			: QStringLiteral("<b>Under-correcting:</b> the error persists in the same direction frame after frame. Try a stronger/faster response on this axis.");
+	} else {
+		return (a <= bar->warnThreshold())
+			? QStringLiteral("<b>Slightly over-correcting:</b> the error alternates sign a bit too often.")
+			: QStringLiteral("<b>Over-correcting:</b> the error alternates sign frame after frame (oscillation). Try a gentler/slower response on this axis.");
+	}
+}
+
 void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	double ref_x = 0, ref_y = 0;
 	double d_ra = 0, d_dec = 0;
@@ -2347,6 +2375,8 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 #ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
 	double ppec_learning = 0;
 #endif
+	double corr_response_ra = 0, corr_response_dec = 0;
+	bool has_corr_response_ra = false, has_corr_response_dec = false;
 
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_FRAME_ITEM_NAME)) {
@@ -2383,6 +2413,12 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 			cor_dec = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_DITHERING_ITEM_NAME)) {
 			dither_rmse = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_CORR_RESPONSE_RA_ITEM_NAME)) {
+			corr_response_ra = property->items[i].number.value;
+			has_corr_response_ra = true;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_CORR_RESPONSE_DEC_ITEM_NAME)) {
+			corr_response_dec = property->items[i].number.value;
+			has_corr_response_dec = true;
 #ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_PPEC_LEARNING_ITEM_NAME)) {
 			ppec_learning = property->items[i].number.value;
@@ -2496,6 +2532,22 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	snprintf(label_str, 50, "Model %.0f%% complete", ppec_learning);
 	w->set_text(w->m_guider_ppec_learning_label, label_str);
 #endif
+
+	bool corr_response_supported = has_corr_response_ra && has_corr_response_dec;
+	bool corr_response_ready = corr_response_supported && frame_count >= 100;
+	w->m_guider_corr_response_ra_bar->setValue(corr_response_ra, corr_response_ready);
+	w->m_guider_corr_response_dec_bar->setValue(corr_response_dec, corr_response_ready);
+	if (corr_response_supported) {
+		w->set_text(w->m_guider_corr_response_ra_label, corr_response_verdict_html(w->m_guider_corr_response_ra_bar, corr_response_ra, corr_response_ready));
+		w->set_text(w->m_guider_corr_response_dec_label, corr_response_verdict_html(w->m_guider_corr_response_dec_bar, corr_response_dec, corr_response_ready));
+		w->m_guider_corr_response_ra_label->setToolTip(corr_response_description(w->m_guider_corr_response_ra_bar, corr_response_ra, corr_response_ready));
+		w->m_guider_corr_response_dec_label->setToolTip(corr_response_description(w->m_guider_corr_response_dec_bar, corr_response_dec, corr_response_ready));
+	} else {
+		w->set_text(w->m_guider_corr_response_ra_label, "<span style='color:#999;'>not reported</span>");
+		w->set_text(w->m_guider_corr_response_dec_label, "<span style='color:#999;'>not reported</span>");
+		w->m_guider_corr_response_ra_label->setToolTip("The guider agent does not report the correction response metric.");
+		w->m_guider_corr_response_dec_label->setToolTip("The guider agent does not report the correction response metric.");
+	}
 }
 
 void update_guider_settings(ImagerWindow *w, indigo_property *property) {

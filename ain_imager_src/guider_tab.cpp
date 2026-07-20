@@ -19,6 +19,7 @@
 #include "imagerwindow.h"
 #include "propertycache.h"
 #include "conf.h"
+#include <balancebar.h>
 #include <QShortcut>
 
 #include <image_preview_lut.h>
@@ -191,6 +192,51 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_guider_rmse_label = new QLabel();
 	m_guider_rmse_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	stats_frame_layout->addWidget(m_guider_rmse_label, stats_row, 1);
+
+	stats_row++;
+	label = new QLabel("Response RA:");
+	stats_frame_layout->addWidget(label, stats_row, 0);
+
+	QWidget *corr_response_ra_container = new QWidget();
+	QHBoxLayout *corr_response_ra_layout = new QHBoxLayout(corr_response_ra_container);
+	corr_response_ra_layout->setContentsMargins(0, 0, 0, 0);
+	corr_response_ra_layout->setSpacing(6);
+	m_guider_corr_response_ra_label = new QLabel();
+	m_guider_corr_response_ra_label->setFixedWidth(50);
+	m_guider_corr_response_ra_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	m_guider_corr_response_ra_bar = new BalanceBar(BalanceBar::Style::GradientSoft);
+	m_guider_corr_response_ra_bar->setFixedWidth(140);
+	m_guider_corr_response_ra_bar->setFixedHeight(16);
+	corr_response_ra_layout->addWidget(m_guider_corr_response_ra_label);
+	corr_response_ra_layout->addWidget(m_guider_corr_response_ra_bar);
+	corr_response_ra_layout->addStretch(1);
+	stats_frame_layout->addWidget(corr_response_ra_container, stats_row, 1);
+
+	stats_row++;
+	label = new QLabel("Response Dec:");
+	stats_frame_layout->addWidget(label, stats_row, 0);
+
+	QWidget *corr_response_dec_container = new QWidget();
+	QHBoxLayout *corr_response_dec_layout = new QHBoxLayout(corr_response_dec_container);
+	corr_response_dec_layout->setContentsMargins(0, 0, 0, 0);
+	corr_response_dec_layout->setSpacing(6);
+	m_guider_corr_response_dec_label = new QLabel();
+	m_guider_corr_response_dec_label->setFixedWidth(50);
+	m_guider_corr_response_dec_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	m_guider_corr_response_dec_bar = new BalanceBar(BalanceBar::Style::GradientSoft);
+	m_guider_corr_response_dec_bar->setFixedWidth(140);
+	m_guider_corr_response_dec_bar->setFixedHeight(16);
+	corr_response_dec_layout->addWidget(m_guider_corr_response_dec_label);
+	corr_response_dec_layout->addWidget(m_guider_corr_response_dec_bar);
+	corr_response_dec_layout->addStretch(1);
+	stats_frame_layout->addWidget(corr_response_dec_container, stats_row, 1);
+
+	m_guider_corr_response_ra_bar->setValue(0, false);
+	m_guider_corr_response_dec_bar->setValue(0, false);
+	m_guider_corr_response_ra_label->setText("n/a");
+	m_guider_corr_response_dec_label->setText("n/a");
+	m_guider_corr_response_ra_label->setToolTip("Not enough data: needs more guiding to estimate correction response.");
+	m_guider_corr_response_dec_label->setToolTip("Not enough data: needs more guiding to estimate correction response.");
 
 	QFrame *settings_frame = new QFrame;
 	guider_tabbar->addTab(settings_frame, "Settings");

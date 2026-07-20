@@ -1,3 +1,24 @@
+// Copyright (c) 2026 Rumen G. Bogdanovski
+// All rights reserved.
+//
+// You can use this software under the terms of 'INDIGO Astronomy
+// open-source license' (see LICENSE.md).
+//
+// THIS SOFTWARE IS PROVIDED BY THE AUTHORS 'AS IS' AND ANY EXPRESS
+// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+// GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+// version history
+// 2.0 by Rumen Bogdanovski <rumenastro@gmail.com>
+
 #include "balancebar.h"
 
 #include <QPainter>
@@ -10,8 +31,6 @@
 
 namespace {
 
-// Same hues as the original green/amber/red status colours: less desaturated
-// than a fully "dull" muted look, but a bit darker/deeper overall.
 const QColor kGreen(87, 164, 101);
 const QColor kAmber(190, 155, 70);
 const QColor kRed(182, 87, 80);
@@ -31,19 +50,18 @@ double BalanceBar::toX(const QRectF &track, double value) const {
 BalanceBar::BalanceBar(Style style, QWidget *parent) : QWidget(parent), m_style(style) {
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 	setToolTip(QStringLiteral(
-		"<b>Correction response</b> — how well the guide loop is tuned on this axis.<br><br>"
-		"It is the <b>lag-1 autocorrelation of the residual error</b>: how each frame's "
-		"error relates to the previous one. The marker shows where the loop sits:<br><br>"
-		"• <b>Centre (green)</b> — errors are uncorrelated (white noise); each pulse cancels "
-		"the error. Well tuned.<br>"
-		"• <b>Left — over-correcting</b> — errors flip sign every frame; the loop overshoots "
-		"and rings, often chasing seeing. Try lowering aggressiveness or raising the min-move.<br>"
-		"• <b>Right — under-correcting</b> — errors persist in the same direction frame after "
-		"frame. Aggressiveness too low (or max pulse too small); drift and periodic error "
-		"leak into the residual. Try raising aggressiveness.<br><br>"
-		"Colour: green = well tuned, amber = slightly off, red = clearly off. "
-		"A little right/under bias is normal with short exposures (there is always some "
-		"tracking lag) — judge by the colour and the marker's distance from centre."));
+		"<b>Correction response</b> — how well the guiding is tuned on this axis.<br><br>"
+		"It compares each frame's leftover error with the previous one, and the marker "
+		"shows where the guiding currently sits:<br><br>"
+		"• <b>Centre (green)</b> — well tuned. The leftover error is just random noise; "
+		"there is nothing more the guider can usefully correct.<br>"
+		"• <b>Left (over-correcting)</b> — the guider is overshooting and oscillating. "
+		"Try lowering aggressiveness or raising the min-move.<br>"
+		"• <b>Right (under-correcting)</b> — the error keeps drifting the same way "
+		"between frames. Try raising aggressiveness.<br><br>"
+		"A slight bias to the right is usually preferable, so judge by the "
+		"colour and how far the marker sits from centre. Please note it needs a couple of minutes "
+		"of steady guiding after start or parameter change before it becomes meaningful."));
 }
 
 void BalanceBar::setStyle(Style style) {
@@ -170,8 +188,7 @@ void BalanceBar::paintGradient(QPainter &p, const QRectF &area, bool hardEdges) 
 		return;
 	}
 	const double x = toX(track, m_value);
-	// Needle points UP into the track: tip touches the track's underside, wide
-	// base sits further away.
+
 	QPainterPath tri;
 	tri.moveTo(x, track.bottom() + 1.0);
 	tri.lineTo(x - needle * 0.55, track.bottom() + needle);
