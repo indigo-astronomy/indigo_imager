@@ -16,6 +16,11 @@ const QColor kGreen(87, 164, 101);
 const QColor kAmber(190, 155, 70);
 const QColor kRed(182, 87, 80);
 
+// std::clamp is C++17; this project targets C++11.
+double clamp(double value, double lo, double hi) {
+	return std::max(lo, std::min(hi, value));
+}
+
 } // namespace
 
 double BalanceBar::toX(const QRectF &track, double value) const {
@@ -96,7 +101,7 @@ void BalanceBar::paintEvent(QPaintEvent *) {
 // Flat track with a central "balanced" band and a round marker whose position
 // and colour encode the value. Left = under, right = over.
 void BalanceBar::paintDot(QPainter &p, const QRectF &area) {
-	const double th = std::clamp(area.height() * 0.42, 4.0, 12.0);
+	const double th = clamp(area.height() * 0.42, 4.0, 12.0);
 	const QRectF track(area.left(), area.center().y() - th / 2.0, area.width(), th);
 
 	p.setPen(Qt::NoPen);
@@ -118,7 +123,7 @@ void BalanceBar::paintDot(QPainter &p, const QRectF &area) {
 		return;
 	}
 	const double x = toX(track, m_value);
-	const double r = std::clamp(area.height() * 0.34, 5.0, 10.0);
+	const double r = clamp(area.height() * 0.34, 5.0, 10.0);
 	p.setBrush(statusColor(m_value));
 	p.setPen(QPen(QColor(20, 20, 20), 1.0));
 	p.drawEllipse(QPointF(x, track.center().y()), r, r);
@@ -128,8 +133,8 @@ void BalanceBar::paintDot(QPainter &p, const QRectF &area) {
 // pointing up into the track. With hardEdges the colour bands snap exactly at
 // the thresholds; otherwise they blend softly across a small "fuzz" width.
 void BalanceBar::paintGradient(QPainter &p, const QRectF &area, bool hardEdges) {
-	const double th = std::clamp(area.height() * 0.34, 3.0, 8.0);
-	const double needle = std::clamp(area.height() * 0.5, 5.0, 11.0);
+	const double th = clamp(area.height() * 0.34, 3.0, 8.0);
+	const double needle = clamp(area.height() * 0.5, 5.0, 11.0);
 	const QRectF track(area.left(), area.top(), area.width(), th);
 
 	const double fWarnNeg = 0.5 - m_warnThreshold / (2 * m_scale);
