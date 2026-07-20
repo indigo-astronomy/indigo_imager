@@ -2538,15 +2538,23 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	w->m_guider_corr_response_ra_bar->setValue(corr_response_ra, corr_response_ready);
 	w->m_guider_corr_response_dec_bar->setValue(corr_response_dec, corr_response_ready);
 	if (corr_response_supported) {
-		w->set_text(w->m_guider_corr_response_ra_label, corr_response_verdict_html(w->m_guider_corr_response_ra_bar, corr_response_ra, corr_response_ready));
-		w->set_text(w->m_guider_corr_response_dec_label, corr_response_verdict_html(w->m_guider_corr_response_dec_bar, corr_response_dec, corr_response_ready));
-		w->m_guider_corr_response_ra_label->setToolTip(corr_response_description(w->m_guider_corr_response_ra_bar, corr_response_ra, corr_response_ready));
-		w->m_guider_corr_response_dec_label->setToolTip(corr_response_description(w->m_guider_corr_response_dec_bar, corr_response_dec, corr_response_ready));
+		w->configure_corr_response(
+			w->m_guider_corr_response_ra_label, w->m_guider_corr_response_ra_bar, true,
+			corr_response_verdict_html(w->m_guider_corr_response_ra_bar, corr_response_ra, corr_response_ready),
+			corr_response_description(w->m_guider_corr_response_ra_bar, corr_response_ra, corr_response_ready));
+		w->configure_corr_response(
+			w->m_guider_corr_response_dec_label, w->m_guider_corr_response_dec_bar, true,
+			corr_response_verdict_html(w->m_guider_corr_response_dec_bar, corr_response_dec, corr_response_ready),
+			corr_response_description(w->m_guider_corr_response_dec_bar, corr_response_dec, corr_response_ready));
 	} else {
-		w->set_text(w->m_guider_corr_response_ra_label, "<span style='color:#999;'>not reported</span>");
-		w->set_text(w->m_guider_corr_response_dec_label, "<span style='color:#999;'>not reported</span>");
-		w->m_guider_corr_response_ra_label->setToolTip("The guider agent does not report the correction response metric.");
-		w->m_guider_corr_response_dec_label->setToolTip("The guider agent does not report the correction response metric.");
+		w->configure_corr_response(
+			w->m_guider_corr_response_ra_label, w->m_guider_corr_response_ra_bar, false,
+			"<span style='color:#999;'>Not reported</span>",
+			"The guider agent does not report the correction response metric.");
+		w->configure_corr_response(
+			w->m_guider_corr_response_dec_label, w->m_guider_corr_response_dec_bar, false,
+			"<span style='color:#999;'>Not reported</span>",
+			"The guider agent does not report the correction response metric.");
 	}
 }
 

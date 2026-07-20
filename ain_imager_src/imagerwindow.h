@@ -226,6 +226,7 @@ signals:
 	void set_text(QPushButton *widget, QString text);
 	void set_text(QCheckBox *widget, QString text);
 	void show_widget(QWidget *widget, bool show);
+	void configure_corr_response(QLabel *label, QWidget *bar, bool reported, QString text, QString tooltip);
 
 	void set_lcd(QLCDNumber *widget, QString text, int state);
 
@@ -504,6 +505,20 @@ public slots:
 		} else {
 			widget->hide();
 		}
+	};
+
+	void on_configure_corr_response(QLabel *label, QWidget *bar, bool reported, QString text, QString tooltip) {
+		bar->setVisible(reported);
+		if (reported) {
+			// keep the verdict narrow so it aligns with the bar next to it
+			label->setFixedWidth(50);
+		} else {
+			// no bar to align with: let the label expand to fit the full text
+			label->setMinimumWidth(50);
+			label->setMaximumWidth(QWIDGETSIZE_MAX);
+		}
+		label->setText(text);
+		label->setToolTip(tooltip);
 	};
 
 	void on_set_text(QLabel *widget, QString text) {

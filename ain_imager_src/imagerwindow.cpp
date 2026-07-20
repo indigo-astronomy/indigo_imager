@@ -596,6 +596,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(this, QOverload<QCheckBox*, QString>::of(&ImagerWindow::set_text), this, QOverload<QCheckBox*, QString>::of(&ImagerWindow::on_set_text));
 
 	connect(this, &ImagerWindow::show_widget, this, &ImagerWindow::on_show);
+	connect(this, &ImagerWindow::configure_corr_response, this, &ImagerWindow::on_configure_corr_response);
 	connect(this, &ImagerWindow::set_checkbox_checked, this, &ImagerWindow::on_set_checkbox_checked);
 	connect(this, &ImagerWindow::set_checkbox_state, this, &ImagerWindow::on_set_checkbox_state);
 
