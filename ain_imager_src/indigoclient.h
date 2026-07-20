@@ -31,6 +31,13 @@
 #if !defined(AGENT_PLATESOLVER_PA_STATE_ACCURACY_WARNING_ITEM_NAME)
 #define AGENT_PLATESOLVER_PA_STATE_ACCURACY_WARNING_ITEM_NAME	"ACCURACY_WARNING"
 #endif
+#if !defined(AGENT_GUIDER_STATS_CORR_RESPONSE_RA_ITEM_NAME)
+#define AGENT_GUIDER_STATS_CORR_RESPONSE_RA_ITEM_NAME "CORR_RESPONSE_RA"
+#endif
+#if !defined(AGENT_GUIDER_STATS_CORR_RESPONSE_DEC_ITEM_NAME)
+#define AGENT_GUIDER_STATS_CORR_RESPONSE_DEC_ITEM_NAME "CORR_RESPONSE_DEC"
+#endif
+
 
 extern bool client_match_device_property(indigo_property *property, const char *device_name, const char *property_name);
 extern bool client_match_device_no_property(indigo_property *property, const char *device_name);

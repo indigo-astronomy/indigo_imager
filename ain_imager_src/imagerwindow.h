@@ -38,6 +38,7 @@
 
 class QServiceModel;
 class QIndigoServers;
+class BalanceBar;
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -874,6 +875,10 @@ private:
 	QLabel *m_guider_xy_drift_label;
 	QLabel *m_guider_pulse_label;
 	QLabel *m_guider_rmse_label;
+	BalanceBar *m_guider_corr_response_ra_bar;
+	BalanceBar *m_guider_corr_response_dec_bar;
+	QLabel *m_guider_corr_response_ra_label;
+	QLabel *m_guider_corr_response_dec_label;
 	QPushButton *m_guider_guide_button;
 	QPushButton *m_guider_preview_button;
 	QPushButton *m_guider_calibrate_button;
