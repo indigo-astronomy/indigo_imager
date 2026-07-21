@@ -233,10 +233,16 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 
 	m_guider_corr_response_ra_bar->setValue(0, false);
 	m_guider_corr_response_dec_bar->setValue(0, false);
-	m_guider_corr_response_ra_label->setText("n/a");
-	m_guider_corr_response_dec_label->setText("n/a");
-	m_guider_corr_response_ra_label->setToolTip("Not enough data: needs more guiding to estimate correction response.");
-	m_guider_corr_response_dec_label->setToolTip("Not enough data: needs more guiding to estimate correction response.");
+	m_guider_corr_response_ra_bar->hide();
+	m_guider_corr_response_dec_bar->hide();
+	m_guider_corr_response_ra_label->setMinimumWidth(50);
+	m_guider_corr_response_ra_label->setMaximumWidth(QWIDGETSIZE_MAX);
+	m_guider_corr_response_dec_label->setMinimumWidth(50);
+	m_guider_corr_response_dec_label->setMaximumWidth(QWIDGETSIZE_MAX);
+	m_guider_corr_response_ra_label->setText("");
+	m_guider_corr_response_dec_label->setText("");
+	m_guider_corr_response_ra_label->setToolTip("");
+	m_guider_corr_response_dec_label->setToolTip("");
 
 	QFrame *settings_frame = new QFrame;
 	guider_tabbar->addTab(settings_frame, "Settings");

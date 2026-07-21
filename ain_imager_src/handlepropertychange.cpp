@@ -4593,6 +4593,12 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_widget_state(m_guider_stop_button, INDIGO_OK_STATE);
 	}
 
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_STATS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
+		configure_corr_response(m_guider_corr_response_ra_label, m_guider_corr_response_ra_bar, false, "", "");
+		configure_corr_response(m_guider_corr_response_dec_label, m_guider_corr_response_dec_bar, false, "", "");
+	}
+
 	// Mount Agent
 	if (client_match_device_property(property, selected_mount_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
