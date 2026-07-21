@@ -334,6 +334,23 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_guide_show_xy_drift);
 	graph_group->addAction(act);
 
+	sub_menu = menu->addMenu("Displayed &RMSE");
+
+	QActionGroup *rmse_group = new QActionGroup(this);
+	rmse_group->setExclusive(true);
+
+	act = sub_menu->addAction("&Guide Session RMSE");
+	act->setCheckable(true);
+	if (conf.guider_rmse_display == SHOW_RMSE_SESSION) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_guide_rmse_session);
+	rmse_group->addAction(act);
+
+	act = sub_menu->addAction("&Short Term RMSE");
+	act->setCheckable(true);
+	if (conf.guider_rmse_display == SHOW_RMSE_SHORT_TERM) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_guide_rmse_short_term);
+	rmse_group->addAction(act);
+
 	menu->addSeparator();
 
 	act = menu->addAction(tr("&Save Guiding Log"));
@@ -2030,6 +2047,18 @@ void ImagerWindow::on_guide_show_xy_drift() {
 	conf.guider_display = SHOW_X_Y_DRIFT;
 	select_guider_data(conf.guider_display);
 	redraw_guider_data();
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_guide_rmse_session() {
+	conf.guider_rmse_display = SHOW_RMSE_SESSION;
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_guide_rmse_short_term() {
+	conf.guider_rmse_display = SHOW_RMSE_SHORT_TERM;
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }

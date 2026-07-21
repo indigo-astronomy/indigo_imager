@@ -417,6 +417,8 @@ public slots:
 	void on_guide_show_rd_s_drift();
 	void on_guide_show_rd_pulse();
 	void on_guide_show_xy_drift();
+	void on_guide_rmse_session();
+	void on_guide_rmse_short_term();
 	void on_guider_save_log(bool status);
 	void on_indigo_save_log(bool status);
 

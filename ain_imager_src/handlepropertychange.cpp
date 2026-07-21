@@ -2368,6 +2368,8 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	double cor_ra = 0, cor_dec = 0;
 	double rmse_ra = 0, rmse_dec = 0, dither_rmse = 0;
 	double rmse_ra_s = 0, rmse_dec_s = 0;
+	double rmse_ra_st = 0, rmse_dec_st = 0;
+	double rmse_ra_s_st = 0, rmse_dec_s_st = 0;
 	double d_x = 0, d_y = 0;
 	int frame_count = -1;
 	bool is_dithering = false;
@@ -2407,6 +2409,14 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 			rmse_ra_s = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_RMSE_DEC_S_ITEM_NAME)) {
 			rmse_dec_s = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_RMSE_RA_ST_ITEM_NAME)) {
+			rmse_ra_st = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_RMSE_DEC_ST_ITEM_NAME)) {
+			rmse_dec_st = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_RMSE_RA_S_ST_ITEM_NAME)) {
+			rmse_ra_s_st = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_RMSE_DEC_S_ST_ITEM_NAME)) {
+			rmse_dec_s_st = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_CORR_RA_ITEM_NAME)) {
 			cor_ra = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_CORR_DEC_ITEM_NAME)) {
@@ -2510,15 +2520,26 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	}
 
 	char label_str[50];
-	if (conf.guider_display == SHOW_RA_DEC_S_DRIFT && w->m_guider_data_1 == &w->m_drift_data_ra_s)  {
+	// Arcsec while the arcsec drift graph is shown, pixels otherwise.
+	bool arcsec = (conf.guider_display == SHOW_RA_DEC_S_DRIFT && w->m_guider_data_1 == &w->m_drift_data_ra_s);
+	// RMSE source: whole-session (long-term) or short-term (_ST items).
+	double rmse_ra_disp, rmse_dec_disp;
+	if (conf.guider_rmse_display == SHOW_RMSE_SHORT_TERM) {
+		rmse_ra_disp = arcsec ? rmse_ra_s_st : rmse_ra_st;
+		rmse_dec_disp = arcsec ? rmse_dec_s_st : rmse_dec_st;
+	} else {
+		rmse_ra_disp = arcsec ? rmse_ra_s : rmse_ra;
+		rmse_dec_disp = arcsec ? rmse_dec_s : rmse_dec;
+	}
+	if (arcsec) {
 		snprintf(label_str, 50, "%+.2f\"  %+.2f\"", d_ra_s, d_dec_s);
 		w->set_text(w->m_guider_rd_drift_label, label_str);
-		snprintf(label_str, 50, "%.2f\"  %.2f\"", rmse_ra_s, rmse_dec_s);
+		snprintf(label_str, 50, "%.2f\"  %.2f\"", rmse_ra_disp, rmse_dec_disp);
 		w->set_text(w->m_guider_rmse_label, label_str);
 	} else {
 		snprintf(label_str, 50, "%+.2f  %+.2f px", d_ra, d_dec);
 		w->set_text(w->m_guider_rd_drift_label, label_str);
-		snprintf(label_str, 50, "%.2f  %.2f px", rmse_ra, rmse_dec);
+		snprintf(label_str, 50, "%.2f  %.2f px", rmse_ra_disp, rmse_dec_disp);
 		w->set_text(w->m_guider_rmse_label, label_str);
 	}
 

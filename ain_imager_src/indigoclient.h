@@ -37,6 +37,18 @@
 #if !defined(AGENT_GUIDER_STATS_CORR_RESPONSE_DEC_ITEM_NAME)
 #define AGENT_GUIDER_STATS_CORR_RESPONSE_DEC_ITEM_NAME "CORR_RESPONSE_DEC"
 #endif
+#if !defined(AGENT_GUIDER_STATS_RMSE_RA_ST_ITEM_NAME)
+#define AGENT_GUIDER_STATS_RMSE_RA_ST_ITEM_NAME "RMSE_RA_ST"
+#endif
+#if !defined(AGENT_GUIDER_STATS_RMSE_DEC_ST_ITEM_NAME)
+#define AGENT_GUIDER_STATS_RMSE_DEC_ST_ITEM_NAME "RMSE_DEC_ST"
+#endif
+#if !defined(AGENT_GUIDER_STATS_RMSE_RA_S_ST_ITEM_NAME)
+#define AGENT_GUIDER_STATS_RMSE_RA_S_ST_ITEM_NAME "RMSE_RA_S_ST"
+#endif
+#if !defined(AGENT_GUIDER_STATS_RMSE_DEC_S_ST_ITEM_NAME)
+#define AGENT_GUIDER_STATS_RMSE_DEC_S_ST_ITEM_NAME "RMSE_DEC_S_ST"
+#endif
 
 
 extern bool client_match_device_property(indigo_property *property, const char *device_name, const char *property_name);
