@@ -189,9 +189,19 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	stats_row++;
 	label = new QLabel("RMSE RA / Dec:");
 	stats_frame_layout->addWidget(label, stats_row, 0);
+
+	QWidget *rmse_container = new QWidget();
+	QHBoxLayout *rmse_layout = new QHBoxLayout(rmse_container);
+	rmse_layout->setContentsMargins(0, 0, 0, 0);
+	rmse_layout->setSpacing(0);
 	m_guider_rmse_label = new QLabel();
 	m_guider_rmse_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	stats_frame_layout->addWidget(m_guider_rmse_label, stats_row, 1);
+	m_guider_rmse_mode_label = new QLabel();
+	rmse_layout->addWidget(m_guider_rmse_label);
+	rmse_layout->addSpacing(10);
+	rmse_layout->addWidget(m_guider_rmse_mode_label);
+	rmse_layout->addStretch(1);
+	stats_frame_layout->addWidget(rmse_container, stats_row, 1);
 
 	stats_row++;
 	label = new QLabel("Response RA:");

@@ -2370,6 +2370,8 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	double rmse_ra_s = 0, rmse_dec_s = 0;
 	double rmse_ra_st = 0, rmse_dec_st = 0;
 	double rmse_ra_s_st = 0, rmse_dec_s_st = 0;
+	bool has_rmse_ra_st = false, has_rmse_dec_st = false;
+	bool has_rmse_ra_s_st = false, has_rmse_dec_s_st = false;
 	double d_x = 0, d_y = 0;
 	int frame_count = -1;
 	bool is_dithering = false;
@@ -2411,12 +2413,16 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 			rmse_dec_s = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_RMSE_RA_ST_ITEM_NAME)) {
 			rmse_ra_st = property->items[i].number.value;
+			has_rmse_ra_st = true;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_RMSE_DEC_ST_ITEM_NAME)) {
 			rmse_dec_st = property->items[i].number.value;
+			has_rmse_dec_st = true;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_RMSE_RA_S_ST_ITEM_NAME)) {
 			rmse_ra_s_st = property->items[i].number.value;
+			has_rmse_ra_s_st = true;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_RMSE_DEC_S_ST_ITEM_NAME)) {
 			rmse_dec_s_st = property->items[i].number.value;
+			has_rmse_dec_s_st = true;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_CORR_RA_ITEM_NAME)) {
 			cor_ra = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_CORR_DEC_ITEM_NAME)) {
@@ -2522,9 +2528,13 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	char label_str[50];
 	// Arcsec while the arcsec drift graph is shown, pixels otherwise.
 	bool arcsec = (conf.guider_display == SHOW_RA_DEC_S_DRIFT && w->m_guider_data_1 == &w->m_drift_data_ra_s);
-	// RMSE source: whole-session (long-term) or short-term (_ST items).
+	// RMSE source: use short-term (_ST items) only if selected AND actually
+	// reported by the guider agent; otherwise fall back to whole-session RMSE.
+	bool st_available = arcsec ? (has_rmse_ra_s_st && has_rmse_dec_s_st)
+	                           : (has_rmse_ra_st && has_rmse_dec_st);
+	bool use_short_term = (conf.guider_rmse_display == SHOW_RMSE_SHORT_TERM) && st_available;
 	double rmse_ra_disp, rmse_dec_disp;
-	if (conf.guider_rmse_display == SHOW_RMSE_SHORT_TERM) {
+	if (use_short_term) {
 		rmse_ra_disp = arcsec ? rmse_ra_s_st : rmse_ra_st;
 		rmse_dec_disp = arcsec ? rmse_dec_s_st : rmse_dec_st;
 	} else {
@@ -2542,6 +2552,18 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 		snprintf(label_str, 50, "%.2f  %.2f px", rmse_ra_disp, rmse_dec_disp);
 		w->set_text(w->m_guider_rmse_label, label_str);
 	}
+
+	w->set_text(w->m_guider_rmse_mode_label, use_short_term ? "(short-term)" : "(session)");
+	QString rmse_tooltip;
+	if (use_short_term) {
+		rmse_tooltip = "Short-term RMSE over the most recent frames.";
+	} else if (conf.guider_rmse_display == SHOW_RMSE_SHORT_TERM) {
+		rmse_tooltip = "Short-term RMSE is not reported by the guider agent; showing whole-session RMSE.";
+	} else {
+		rmse_tooltip = "RMSE over the whole guide session.";
+	}
+	w->set_tooltip(w->m_guider_rmse_label, rmse_tooltip);
+	w->set_tooltip(w->m_guider_rmse_mode_label, rmse_tooltip);
 
 	snprintf(label_str, 50, "%+.2f  %+.2f px", d_x, d_y);
 	w->set_text(w->m_guider_xy_drift_label, label_str);

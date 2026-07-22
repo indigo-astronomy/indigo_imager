@@ -334,18 +334,18 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_guide_show_xy_drift);
 	graph_group->addAction(act);
 
-	sub_menu = menu->addMenu("Displayed &RMSE");
+	sub_menu = menu->addMenu("Guider &RMSE Averaging");
 
 	QActionGroup *rmse_group = new QActionGroup(this);
 	rmse_group->setExclusive(true);
 
-	act = sub_menu->addAction("&Guide Session RMSE");
+	act = sub_menu->addAction("&Since Guiding Started");
 	act->setCheckable(true);
 	if (conf.guider_rmse_display == SHOW_RMSE_SESSION) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_guide_rmse_session);
 	rmse_group->addAction(act);
 
-	act = sub_menu->addAction("&Short Term RMSE");
+	act = sub_menu->addAction("&Short Term, Recent Frames Only");
 	act->setCheckable(true);
 	if (conf.guider_rmse_display == SHOW_RMSE_SHORT_TERM) act->setChecked(true);
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_guide_rmse_short_term);
@@ -613,6 +613,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(this, QOverload<QCheckBox*, QString>::of(&ImagerWindow::set_text), this, QOverload<QCheckBox*, QString>::of(&ImagerWindow::on_set_text));
 
 	connect(this, &ImagerWindow::show_widget, this, &ImagerWindow::on_show);
+	connect(this, &ImagerWindow::set_tooltip, this, &ImagerWindow::on_set_tooltip);
 	connect(this, &ImagerWindow::configure_corr_response, this, &ImagerWindow::on_configure_corr_response);
 	connect(this, &ImagerWindow::set_checkbox_checked, this, &ImagerWindow::on_set_checkbox_checked);
 	connect(this, &ImagerWindow::set_checkbox_state, this, &ImagerWindow::on_set_checkbox_state);
