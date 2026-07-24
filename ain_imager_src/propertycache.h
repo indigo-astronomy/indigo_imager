@@ -53,6 +53,11 @@ public:
 	indigo_property* get(const char *device_name, const char *property_name);
 	indigo_item* get_item(const char *device_name, const char *property_name, const char *item_name);
 	indigo_item* get_item(indigo_property *property, const char *item_name);
+	// Returns true if the cached property has an item whose label matches.
+	// The item scan is performed while holding property_mutex and never
+	// exposes the indigo_property* to the caller, so it is safe to call
+	// repeatedly (e.g. in a poll loop) without retaining a stale pointer.
+	bool has_item_label(const char *device_name, const char *property_name, const char *item_label);
 	bool remove(indigo_property *property);
 };
 

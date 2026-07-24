@@ -129,7 +129,7 @@ public:
 		ParamWidget paramWidget;
 		QStringList comboOptions;
 		QPair<double, double> numericRange;
-		double numericDefaultValue;
+		double numericDefaultValue = 0.0;
 		double numericIncrement;
 
 		ParameterInfo(const QString& l = "", ParamWidget w = LineEdit) : label(l), paramWidget(w), numericRange(0.0, 100.0), numericIncrement(1.0) {}

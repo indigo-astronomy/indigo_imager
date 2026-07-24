@@ -1253,11 +1253,6 @@ void ImagerWindow::change_solver_agent_pa_settings(const char *agent) const {
 #define MAX_ITEMS 256
 
 void ImagerWindow::change_scripting_agent_sequence(const char *agent, QString sequence) const {
-	static char items[MAX_ITEMS][INDIGO_NAME_SIZE] = {0};
-	static char values[MAX_ITEMS][INDIGO_VALUE_SIZE] = {0};
-	static char *items_ptr[MAX_ITEMS];
-	static char *values_ptr[MAX_ITEMS];
-
 	indigo_property *p = properties.get((char*)agent, AGENT_SCRIPTING_RUN_SCRIPT_PROPERTY_NAME);
 	if (p) {
 		// Do Not run new scripts by default
@@ -1278,20 +1273,21 @@ void ImagerWindow::change_scripting_agent_sequence(const char *agent, QString se
 		);
 	}
 
-	p = properties.get((char*)agent, AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME);
-	if (p) {
-		for (int i = 0; i < p->count; i++) {
-			if (!strncmp(p->items[i].label, AIN_SEQUENCE_NAME, INDIGO_NAME_SIZE)) {
-				// Delete Ain Sequence
-				indigo_change_text_property_1(
-					nullptr,
-					agent,
-					AGENT_SCRIPTING_DELETE_SCRIPT_PROPERTY_NAME,
-					AGENT_SCRIPTING_DELETE_SCRIPT_NAME_ITEM_NAME,
-					AIN_SEQUENCE_NAME
-				);
-				break;
-			}
+	if (properties.get((char*)agent, AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME)) {
+		// Do NOT retain the indigo_property* here: the scripting agent redefines
+		// ON_LOAD_SCRIPT in response to the changes we send below, and the INDIGO
+		// thread may free/realloc that property at any time. has_item_label()
+		// re-fetches and scans the items under the cache mutex on each call, so
+		// we never dereference a pointer that another thread has freed.
+		if (properties.has_item_label(agent, AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME, AIN_SEQUENCE_NAME)) {
+			// Delete existing Ain Sequence
+			indigo_change_text_property_1(
+				nullptr,
+				agent,
+				AGENT_SCRIPTING_DELETE_SCRIPT_PROPERTY_NAME,
+				AGENT_SCRIPTING_DELETE_SCRIPT_NAME_ITEM_NAME,
+				AIN_SEQUENCE_NAME
+			);
 		}
 		static const char *items[] = {
 			AGENT_SCRIPTING_ADD_SCRIPT_NAME_ITEM_NAME,
@@ -1312,18 +1308,13 @@ void ImagerWindow::change_scripting_agent_sequence(const char *agent, QString se
 		const int SLEEP_TIME = 100000;  // 0.1 sec
 		int retrys = 0;
 		do {
-			for (int i = 0; i < p->count; i++) {
-				if (!strncmp(p->items[i].label, AIN_SEQUENCE_NAME, INDIGO_NAME_SIZE)) {
-					found = true;
-					break;
-				}
-			}
+			found = properties.has_item_label(agent, AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME, AIN_SEQUENCE_NAME);
 			if (!found) {
 				indigo_debug("Waiting for %s to appear #%d", AIN_SEQUENCE_NAME, retrys);
 				indigo_usleep(SLEEP_TIME);
 			}
 			retrys++;
-		} while (!found || retrys > MAX_RETRYS);
+		} while (!found && retrys < MAX_RETRYS);
 	}
 }
 

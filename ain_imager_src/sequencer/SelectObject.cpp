@@ -53,6 +53,11 @@ SelectObjectWidget::SelectObjectWidget(QWidget *parent) : QFrame(parent) {
 	m_customObjectModel->loadObjects();
 }
 
+SelectObjectWidget::~SelectObjectWidget() {
+	// CustomObjectModel is not a QObject, so it has no parent to free it.
+	delete m_customObjectModel;
+}
+
 void SelectObjectWidget::onSearchTextChanged(const QString &text) {
 	updateObjectList(text);
 }
@@ -74,6 +79,7 @@ void SelectObjectWidget::onObjectSelected() {
 }
 
 void SelectObjectWidget::onObjectClicked(QListWidgetItem *item) {
+	if (!item) return;
 	auto object = item->data(Qt::UserRole).value<CustomObject*>();
 	if (object) {
 		emit objectSelected(object->m_name, object->m_ra, object->m_dec);

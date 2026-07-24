@@ -34,6 +34,7 @@
 QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
 	const char lpMarker[] = "&<L*";
 	const char rpMarker[] = "&>R*";
+	const char commaMarker[] = "&C*";
 
 
 	QString processedCode = "";
@@ -46,7 +47,9 @@ QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
 		processedCode += line + "\n";
 	}
 
-	// replace parentheses in strings with markers as they confuse parser
+	// replace parentheses and commas in strings with markers as they confuse
+	// the parser (commas would otherwise split a single quoted argument into
+	// multiple parameters, e.g. set_fits_header("OBJECT", "M31, Andromeda"))
 	QRegularExpression stringRe(R"(\"[^\"]*\"|\'[^\']*\')");
 	QRegularExpressionMatchIterator stringIt = stringRe.globalMatch(processedCode);
 
@@ -54,13 +57,16 @@ QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
 		QRegularExpressionMatch stringMatch = stringIt.next();
 		QString originalStr = stringMatch.captured(0);
 		QString replacedStr = originalStr;
-		replacedStr.replace("(", lpMarker).replace(")", rpMarker);
+		replacedStr.replace("(", lpMarker).replace(")", rpMarker).replace(",", commaMarker);
 		processedCode.replace(originalStr, replacedStr);
 	}
 
 	QVector<FunctionCall> calls;
 	// Updated regex pattern to capture optional "//*" at the beginning
-	QRegularExpression re(R"((?:\/\/\*)?\s*((?:\w+)\.(?:\w+)\((?:[^)]*)\);|(?:\w+)\.repeat\((?:\d+),\s*function\s*\(\)\s*\{(?:[^}]*)\}\);|var\s+(?:\w+)\s*=\s*new\s+Sequence\((?:\"[^\"]*\")?\);))");
+	// The repeat body is matched with a recursive balanced-brace subpattern
+	// ((?&brace), defined at the end) so that repeat blocks nested inside other
+	// repeat blocks are captured whole instead of terminating at the first '}'.
+	QRegularExpression re(R"((?:\/\/\*)?\s*((?:\w+)\.(?:\w+)\((?:[^)]*)\);|(?:\w+)\.repeat\((?:\d+),\s*function\s*\(\)\s*(?&brace)\);|var\s+(?:\w+)\s*=\s*new\s+Sequence\((?:\"[^\"]*\")?\);)(?(DEFINE)(?<brace>\{(?:[^{}]|(?&brace))*\})))");
 	QRegularExpressionMatchIterator it = re.globalMatch(processedCode);
 
 	while (it.hasNext()) {
@@ -71,7 +77,7 @@ QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
 		bool isOmitted = fullCall.trimmed().startsWith("//*");
 
 		// Now parse the call body using the original regex
-		QRegularExpression callRe(R"((\w+)\.(\w+)\(([^)]*)\);|(\w+)\.repeat\((\d+),\s*function\s*\(\)\s*\{([^}]*)\}\);|var\s+(\w+)\s*=\s*new\s+Sequence\((\"[^\"]*\")?\);)");
+		QRegularExpression callRe(R"((\w+)\.(\w+)\(([^)]*)\);|(\w+)\.repeat\((\d+),\s*function\s*\(\)\s*\{((?:[^{}]|(?&brace))*)\}\);|var\s+(\w+)\s*=\s*new\s+Sequence\((\"[^\"]*\")?\);(?(DEFINE)(?<brace>\{(?:[^{}]|(?&brace))*\})))");
 		QRegularExpressionMatch callMatch = callRe.match(callBody);
 
 		FunctionCall call;
@@ -98,7 +104,10 @@ QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
 			call.objectName = callMatch.captured(7);
 			call.functionName = "Sequence";
 			if (!callMatch.captured(8).isEmpty()) {
-				call.parameters.append(callMatch.captured(8));
+				QString name = callMatch.captured(8);
+				// restore markers so parentheses/commas in the name round-trip
+				name.replace(lpMarker, "(").replace(rpMarker, ")").replace(commaMarker, ",");
+				call.parameters.append(name);
 			}
 		} else {
 			// Regular function call
@@ -108,8 +117,8 @@ QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
 			call.parameters = params.split(',', QT_SKIP_EMPTY_PARTS);
 			for (QString& param : call.parameters) {
 				param = param.trimmed();
-				// restore parentheses in parameters
-				param.replace(lpMarker, "(").replace(rpMarker, ")");
+				// restore parentheses and commas in parameters
+				param.replace(lpMarker, "(").replace(rpMarker, ")").replace(commaMarker, ",");
 			}
 		}
 

@@ -61,7 +61,7 @@ double SexagesimalConverter::stringToDouble(const QString& str, bool* ok) {
 		}
 
 		// Preserve sign for zero degree values
-		bool isNegative = str.startsWith('-');
+		bool isNegative = trimmed.startsWith('-');
 		double value = std::abs(deg) + min/60.0 + sec/3600.0;
 		return isNegative ? -value : value;
 	}
@@ -80,7 +80,7 @@ double SexagesimalConverter::stringToDouble(const QString& str, bool* ok) {
 		}
 
 		// Preserve sign for zero degree values
-		bool isNegative = str.startsWith('-');
+		bool isNegative = trimmed.startsWith('-');
 		double value = std::abs(deg) + min/60.0 + sec/3600.0;
 		return isNegative ? -value : value;
 	}
@@ -117,7 +117,7 @@ double SexagesimalConverter::stringToDouble(const QString& str, bool* ok) {
 		}
 
 		// Preserve sign for zero degree values
-		bool isNegative = str.startsWith('-');
+		bool isNegative = trimmed.startsWith('-');
 		double value = std::abs(deg) + min/60.0;
 		return isNegative ? -value : value;
 	}

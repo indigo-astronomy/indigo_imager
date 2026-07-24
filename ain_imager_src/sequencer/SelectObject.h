@@ -38,6 +38,7 @@ class SelectObjectWidget : public QFrame {
 
 public:
 	explicit SelectObjectWidget(QWidget *parent = nullptr);
+	~SelectObjectWidget() override;
 
 signals:
 	void objectSelected(const QString &name, double ra, double dec);

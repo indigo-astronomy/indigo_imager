@@ -272,7 +272,10 @@ void IndigoSequenceItem::addInputWidget(const QString &paramName, const ParamWid
 				if (!isEnabledState) return;
 
 				QMenu *menu = new QMenu(this);
-				SelectObjectWidget *selectObjectWidget = new SelectObjectWidget(this);
+				// No QObject parent: QWidgetAction::setDefaultWidget takes
+				// ownership, so the widget is freed together with the action
+				// (a child of menu) when the menu is deleted below.
+				SelectObjectWidget *selectObjectWidget = new SelectObjectWidget();
 				QWidgetAction *widgetAction = new QWidgetAction(menu);
 				widgetAction->setDefaultWidget(selectObjectWidget);
 				menu->addAction(widgetAction);
@@ -289,6 +292,10 @@ void IndigoSequenceItem::addInputWidget(const QString &paramName, const ParamWid
 				});
 
 				menu->exec(selectObjectButton->mapToGlobal(QPoint(0, selectObjectButton->height())));
+				// exec() is synchronous; the menu is closed once it returns, so
+				// delete it now (frees the QWidgetAction and, with it, the
+				// SelectObjectWidget) instead of leaking one menu per click.
+				delete menu;
 			});
 			mainLayout->addWidget(selectObjectButton);
 		}
@@ -378,7 +385,10 @@ QVariant IndigoSequenceItem::getParameter(const int paramID) const {
 void IndigoSequenceItem::removeWidget() {
 	if(!isEnabledState) return;
 	resetParentSequence();
-	delete this;
+	// Hide now so it disappears immediately, and defer destruction
+	// to the event loop to avoid a use-after-free.
+	hide();
+	deleteLater();
 }
 
 void IndigoSequenceItem::mousePressEvent(QMouseEvent *event) {

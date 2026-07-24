@@ -139,6 +139,22 @@ indigo_item* property_cache::get_item(indigo_property *property, const char *ite
 }
 
 
+bool property_cache::has_item_label(const char *device_name, const char *property_name, const char *item_label) {
+	pthread_mutex_lock(&property_mutex);
+	QString key = create_key(device_name, property_name);
+	if (contains(key)) {
+		indigo_property *p = value(key);
+		for (int i = 0; i < p->count; i++) {
+			if (!strncmp(p->items[i].label, item_label, INDIGO_NAME_SIZE)) {
+				pthread_mutex_unlock(&property_mutex);
+				return true;
+			}
+		}
+	}
+	pthread_mutex_unlock(&property_mutex);
+	return false;
+}
+
 bool property_cache::remove(indigo_property *property) {
 	pthread_mutex_lock(&property_mutex);
 	bool success = _remove(property);
