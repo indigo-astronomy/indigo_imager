@@ -5,6 +5,58 @@
 #include <algorithm>
 #include <future>
 #include <cstdlib>
+#include <cstdint>
+
+namespace {
+
+// Fast single-channel pixel accessor. Resolves the pixel format once at
+// construction instead of branching (and bounds/nullptr checking) on every
+// read the way preview_image::pixel_value() does. Detection always runs on
+// single-channel images because color inputs are converted to F32 grayscale
+// upstream (see ImagePreprocessor::toGrayscale), so only the Y8/Y16/Y32/F32
+// paths matter; anything else falls back to pixel_value(). Callers must pass
+// in-bounds coordinates (the detection loops already clamp their ranges).
+struct GrayReader {
+	const preview_image& img;
+	const void* data;
+	int width;
+	int format;
+
+	explicit GrayReader(const preview_image& im)
+		: img(im), data(im.m_raw_data), width(im.width()), format(im.m_pix_format) {}
+
+	inline double at(int x, int y) const {
+		const size_t i = static_cast<size_t>(y) * static_cast<size_t>(width) + static_cast<size_t>(x);
+		switch (format) {
+			case PIX_FMT_Y8:  return static_cast<const uint8_t*>(data)[i];
+			case PIX_FMT_Y16: return static_cast<const uint16_t*>(data)[i];
+			case PIX_FMT_Y32: return static_cast<const uint32_t*>(data)[i];
+			case PIX_FMT_F32: return static_cast<const float*>(data)[i];
+			default: {
+				double r = 0, g = 0, b = 0;
+				img.pixel_value(x, y, r, g, b);
+				return r;
+			}
+		}
+	}
+};
+
+// Median of a vector, computed in O(n) via nth_element (which reorders the
+// input). Only the median is needed here, so a full sort would be wasteful.
+double medianInPlace(std::vector<double>& d) {
+	size_t m = d.size();
+	if (m == 0) return 0.0;
+	size_t mid = m / 2;
+	std::nth_element(d.begin(), d.begin() + mid, d.end());
+	double hi = d[mid];
+	if (m % 2 == 1) return hi;
+	// nth_element partitions [0, mid) to all be <= d[mid], so the lower
+	// middle element is the max of that left partition.
+	double lo = *std::max_element(d.begin(), d.begin() + mid);
+	return 0.5 * (lo + hi);
+}
+
+} // anonymous namespace
 
 // =============================================================================
 // ImagePreprocessor Implementation
@@ -84,11 +136,10 @@ BackgroundEstimator::Result BackgroundEstimator::computeMedianMAD(const preview_
 	std::vector<double> vals;
 	vals.reserve((x1 - x0 + 1) * (y1 - y0 + 1));
 
+	GrayReader reader(img);
 	for (int y = y0; y <= y1; ++y) {
 		for (int x = x0; x <= x1; ++x) {
-			double v = 0, g = 0, b = 0;
-			img.pixel_value(x, y, v, g, b);
-			vals.push_back(v);
+			vals.push_back(reader.at(x, y));
 		}
 	}
 
@@ -96,13 +147,10 @@ BackgroundEstimator::Result BackgroundEstimator::computeMedianMAD(const preview_
 		return result;
 	}
 
-	std::sort(vals.begin(), vals.end());
 	size_t n = vals.size();
 
 	// Compute median
-	result.median = (n % 2 == 1)
-		? vals[n / 2]
-		: 0.5 * (vals[n / 2 - 1] + vals[n / 2]);
+	result.median = medianInPlace(vals);
 
 	// Compute MAD (Median Absolute Deviation)
 	std::vector<double> devs;
@@ -110,11 +158,8 @@ BackgroundEstimator::Result BackgroundEstimator::computeMedianMAD(const preview_
 	for (double v : vals) {
 		devs.push_back(std::fabs(v - result.median));
 	}
-	std::sort(devs.begin(), devs.end());
 
-	double mad = (n % 2 == 1)
-		? devs[n / 2]
-		: 0.5 * (devs[n / 2 - 1] + devs[n / 2]);
+	double mad = medianInPlace(devs);
 
 	// Convert MAD to approximate standard deviation (for normal distribution)
 	result.sigma = mad * 1.4826;
@@ -135,8 +180,8 @@ bool StarDetector::isLocalMaximum(
 	int x, int y,
 	double threshold
 ) const {
-	double center_val = 0, gv = 0, bv = 0;
-	img.pixel_value(x, y, center_val, gv, bv);
+	GrayReader reader(img);
+	double center_val = reader.at(x, y);
 
 	if (center_val <= threshold) {
 		return false;
@@ -150,10 +195,19 @@ bool StarDetector::isLocalMaximum(
 			if (nx == x && ny == y) continue;
 			if (nx < 0 || nx >= img_w || ny < 0 || ny >= img_h) continue;
 
-			double nval = 0, ng = 0, nb = 0;
-			img.pixel_value(nx, ny, nval, ng, nb);
-
+			double nval = reader.at(nx, ny);
 			if (nval > center_val) {
+				return false;
+			}
+
+			// Plateau tie-break: on a flat peak (e.g. a saturated core)
+			// several adjacent pixels share the max value, and a strict '>'
+			// test would accept every one of them, producing a cluster of
+			// duplicate candidates that each incur an expensive measureStar().
+			// Accept only the raster-first pixel of the plateau: defer to any
+			// equal-valued neighbor that was already scanned (above, or left on
+			// the same row). This yields exactly one candidate per flat top.
+			if (nval == center_val && (ny < y || (ny == y && nx < x))) {
 				return false;
 			}
 		}

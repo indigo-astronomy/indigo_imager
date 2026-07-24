@@ -407,6 +407,7 @@ HFRInfo calculateIterativeHFR(
 	double hfr = 0;
 	double total_flux = 0;
 	double prev_hfr = 0;
+	int last_aperture = -1;
 
 	for (int iteration = 0; iteration < HFD_MAX_ITERATIONS; iteration++) {
 		std::vector<std::pair<double, double>> pixel_data;
@@ -424,7 +425,6 @@ HFRInfo calculateIterativeHFR(
 				aperture_radius = HFD_INITIAL_RADIUS;
 			}
 
-			static int last_aperture = 0;
 			if (iteration > 1 && aperture_radius == last_aperture) {
 				indigo_debug("SNR: Converged at iteration %d (aperture stable)", iteration);
 				break;
