@@ -22,6 +22,7 @@
 #include "propertycache.h"
 #include "conf.h"
 #include "widget_state.h"
+#include <balancebar.h>
 #include <QStringList>
 #include <SequenceItemModel.h>
 
@@ -2323,6 +2324,33 @@ void handle_scripting_on_load_script(ImagerWindow *w, indigo_property *property)
 	});
 }
 
+static QString corr_response_verdict_html(const BalanceBar *bar, double v, bool valid) {
+	if (!valid) {
+		return QStringLiteral("n/a");
+	}
+	const QString sign = (v >= 0.0) ? QStringLiteral("+") : QStringLiteral("\u2212");
+	const QString text = QString("%1%2").arg(sign, QString::number(fabs(v), 'f', 2));
+	return QString("<span style='color:%1;'>%2</span>").arg(bar->statusColor(v).name(), text);
+}
+
+static QString corr_response_description(const BalanceBar *bar, double v, bool valid) {
+	if (!valid) {
+		return QStringLiteral("Not enough data: needs more guiding to estimate correction response.");
+	}
+	const double a = fabs(v);
+	if (a <= bar->okThreshold()) {
+		return QStringLiteral("<b>Balanced:</b> This axis is well tuned.");
+	} else if (v > 0.0) {
+		return (a <= bar->warnThreshold())
+			? QStringLiteral("<b>Slightly under-correcting:</b> the error lingers a bit too long in the same direction.")
+			: QStringLiteral("<b>Under-correcting:</b> the error persists in the same direction frame after frame. Try a stronger/faster response on this axis.");
+	} else {
+		return (a <= bar->warnThreshold())
+			? QStringLiteral("<b>Slightly over-correcting:</b> the error alternates sign a bit too often.")
+			: QStringLiteral("<b>Over-correcting:</b> the error alternates sign frame after frame (oscillation). Try a gentler/slower response on this axis.");
+	}
+}
+
 void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	double ref_x = 0, ref_y = 0;
 	double d_ra = 0, d_dec = 0;
@@ -2330,14 +2358,25 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	double cor_ra = 0, cor_dec = 0;
 	double rmse_ra = 0, rmse_dec = 0, dither_rmse = 0;
 	double rmse_ra_s = 0, rmse_dec_s = 0;
+	double rmse_ra_st = 0, rmse_dec_st = 0;
+	double rmse_ra_s_st = 0, rmse_dec_s_st = 0;
+	bool has_rmse_ra_st = false, has_rmse_dec_st = false;
+	bool has_rmse_ra_s_st = false, has_rmse_dec_s_st = false;
 	double d_x = 0, d_y = 0;
 	int frame_count = -1;
 	bool is_dithering = false;
+	int guider_phase = 0;
+#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
 	double ppec_learning = 0;
+#endif
+	double corr_response_ra = 0, corr_response_dec = 0;
+	bool has_corr_response_ra = false, has_corr_response_dec = false;
 
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_FRAME_ITEM_NAME)) {
 			frame_count = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_PHASE_ITEM_NAME)) {
+			guider_phase = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_REFERENCE_X_ITEM_NAME)) {
 			ref_x = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_REFERENCE_Y_ITEM_NAME)) {
@@ -2362,12 +2401,31 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 			rmse_ra_s = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_RMSE_DEC_S_ITEM_NAME)) {
 			rmse_dec_s = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_RMSE_RA_ST_ITEM_NAME)) {
+			rmse_ra_st = property->items[i].number.value;
+			has_rmse_ra_st = true;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_RMSE_DEC_ST_ITEM_NAME)) {
+			rmse_dec_st = property->items[i].number.value;
+			has_rmse_dec_st = true;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_RMSE_RA_S_ST_ITEM_NAME)) {
+			rmse_ra_s_st = property->items[i].number.value;
+			has_rmse_ra_s_st = true;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_RMSE_DEC_S_ST_ITEM_NAME)) {
+			rmse_dec_s_st = property->items[i].number.value;
+			has_rmse_dec_s_st = true;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_CORR_RA_ITEM_NAME)) {
 			cor_ra = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_CORR_DEC_ITEM_NAME)) {
 			cor_dec = property->items[i].number.value;
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_DITHERING_ITEM_NAME)) {
 			dither_rmse = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_CORR_RESPONSE_RA_ITEM_NAME)) {
+			corr_response_ra = property->items[i].number.value;
+			has_corr_response_ra = true;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_CORR_RESPONSE_DEC_ITEM_NAME)) {
+			corr_response_dec = property->items[i].number.value;
+			has_corr_response_dec = true;
+#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_PPEC_LEARNING_ITEM_NAME)) {
 			ppec_learning = property->items[i].number.value;
 		}
@@ -2416,7 +2474,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 					w->m_drift_data_x.append(d_x);
 					w->m_drift_data_y.append(d_y);
 
-					if (w->m_drift_data_dec.size() > 120) {
+					if (w->m_drift_data_dec.size() > GUIDER_MAX_DATA_POINTS) {
 						w->m_drift_data_dec.removeFirst();
 						w->m_drift_data_ra.removeFirst();
 						w->m_drift_data_dec_s.removeFirst();
@@ -2434,7 +2492,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 		}
 		if (p->state == INDIGO_BUSY_STATE) {
 			w->move_guider_reference(ref_x, ref_y);
-			if (w->m_guider_process && w->m_guide_log && conf.guider_save_log && frame_count > 1) {
+			if (w->m_guider_process && w->m_guide_log && conf.guider_save_log && frame_count > 1 && guider_phase != INDIGO_GUIDER_PHASE_DONE) {
 				char time_str[255];
 				get_timestamp(time_str);
 				fprintf(
@@ -2457,17 +2515,44 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	}
 
 	char label_str[50];
-	if (conf.guider_display == SHOW_RA_DEC_S_DRIFT && w->m_guider_data_1 == &w->m_drift_data_ra_s)  {
+	// Arcsec while the arcsec drift graph is shown, pixels otherwise.
+	bool arcsec = (conf.guider_display == SHOW_RA_DEC_S_DRIFT && w->m_guider_data_1 == &w->m_drift_data_ra_s);
+	// RMSE source: use short-term (_ST items) only if selected AND actually
+	// reported by the guider agent; otherwise fall back to whole-session RMSE.
+	bool st_available = arcsec ? (has_rmse_ra_s_st && has_rmse_dec_s_st)
+	                           : (has_rmse_ra_st && has_rmse_dec_st);
+	bool use_short_term = (conf.guider_rmse_display == SHOW_RMSE_SHORT_TERM) && st_available;
+	double rmse_ra_disp, rmse_dec_disp;
+	if (use_short_term) {
+		rmse_ra_disp = arcsec ? rmse_ra_s_st : rmse_ra_st;
+		rmse_dec_disp = arcsec ? rmse_dec_s_st : rmse_dec_st;
+	} else {
+		rmse_ra_disp = arcsec ? rmse_ra_s : rmse_ra;
+		rmse_dec_disp = arcsec ? rmse_dec_s : rmse_dec;
+	}
+	if (arcsec) {
 		snprintf(label_str, 50, "%+.2f\"  %+.2f\"", d_ra_s, d_dec_s);
 		w->set_text(w->m_guider_rd_drift_label, label_str);
-		snprintf(label_str, 50, "%.2f\"  %.2f\"", rmse_ra_s, rmse_dec_s);
+		snprintf(label_str, 50, "%.2f\"  %.2f\"", rmse_ra_disp, rmse_dec_disp);
 		w->set_text(w->m_guider_rmse_label, label_str);
 	} else {
 		snprintf(label_str, 50, "%+.2f  %+.2f px", d_ra, d_dec);
 		w->set_text(w->m_guider_rd_drift_label, label_str);
-		snprintf(label_str, 50, "%.2f  %.2f px", rmse_ra, rmse_dec);
+		snprintf(label_str, 50, "%.2f  %.2f px", rmse_ra_disp, rmse_dec_disp);
 		w->set_text(w->m_guider_rmse_label, label_str);
 	}
+
+	w->set_text(w->m_guider_rmse_mode_label, use_short_term ? "(short-term)" : "(session)");
+	QString rmse_tooltip;
+	if (use_short_term) {
+		rmse_tooltip = "Short-term RMSE over the most recent frames.";
+	} else if (conf.guider_rmse_display == SHOW_RMSE_SHORT_TERM) {
+		rmse_tooltip = "Short-term RMSE is not reported by the guider agent; showing whole-session RMSE.";
+	} else {
+		rmse_tooltip = "RMSE over the whole guide session.";
+	}
+	w->set_tooltip(w->m_guider_rmse_label, rmse_tooltip);
+	w->set_tooltip(w->m_guider_rmse_mode_label, rmse_tooltip);
 
 	snprintf(label_str, 50, "%+.2f  %+.2f px", d_x, d_y);
 	w->set_text(w->m_guider_xy_drift_label, label_str);
@@ -2477,6 +2562,31 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 
 	snprintf(label_str, 50, "Model %.0f%% complete", ppec_learning);
 	w->set_text(w->m_guider_ppec_learning_label, label_str);
+#endif
+
+	bool corr_response_supported = has_corr_response_ra && has_corr_response_dec;
+	bool corr_response_ready = corr_response_supported && frame_count >= 100;
+	w->m_guider_corr_response_ra_bar->setValue(corr_response_ra, corr_response_ready);
+	w->m_guider_corr_response_dec_bar->setValue(corr_response_dec, corr_response_ready);
+	if (corr_response_supported) {
+		w->configure_corr_response(
+			w->m_guider_corr_response_ra_label, w->m_guider_corr_response_ra_bar, true,
+			corr_response_verdict_html(w->m_guider_corr_response_ra_bar, corr_response_ra, corr_response_ready),
+			corr_response_description(w->m_guider_corr_response_ra_bar, corr_response_ra, corr_response_ready));
+		w->configure_corr_response(
+			w->m_guider_corr_response_dec_label, w->m_guider_corr_response_dec_bar, true,
+			corr_response_verdict_html(w->m_guider_corr_response_dec_bar, corr_response_dec, corr_response_ready),
+			corr_response_description(w->m_guider_corr_response_dec_bar, corr_response_dec, corr_response_ready));
+	} else {
+		w->configure_corr_response(
+			w->m_guider_corr_response_ra_label, w->m_guider_corr_response_ra_bar, false,
+			"<span style='color:#999;'>Not reported</span>",
+			"The guider agent does not report the correction response metric.");
+		w->configure_corr_response(
+			w->m_guider_corr_response_dec_label, w->m_guider_corr_response_dec_bar, false,
+			"<span style='color:#999;'>Not reported</span>",
+			"The guider agent does not report the correction response metric.");
+	}
 }
 
 void update_guider_settings(ImagerWindow *w, indigo_property *property) {
@@ -2581,6 +2691,53 @@ void log_guide_header(ImagerWindow *w, char *device_name) {
 
 	get_timestamp(time_str);
 	fprintf(w->m_guide_log, "\nGuiding started at %s\n", time_str);
+
+	char camera_name[INDIGO_VALUE_SIZE] = {0};
+	char guider_name[INDIGO_VALUE_SIZE] = {0};
+	indigo_property *dev_p = properties.get(device_name, FILTER_CCD_LIST_PROPERTY_NAME);
+	if (dev_p) {
+		for (int i = 0; i < dev_p->count; i++) {
+			if (dev_p->items[i].sw.value && strcmp(dev_p->items[i].name, "NONE")) {
+				strncpy(camera_name, dev_p->items[i].label, INDIGO_VALUE_SIZE - 1);
+				break;
+			}
+		}
+	}
+	dev_p = properties.get(device_name, FILTER_GUIDER_LIST_PROPERTY_NAME);
+	if (dev_p) {
+		for (int i = 0; i < dev_p->count; i++) {
+			if (dev_p->items[i].sw.value && strcmp(dev_p->items[i].name, "NONE")) {
+				strncpy(guider_name, dev_p->items[i].label, INDIGO_VALUE_SIZE - 1);
+				break;
+			}
+		}
+	}
+	fprintf(w->m_guide_log, "Camera: '%s', Guider: '%s'\n", camera_name, guider_name);
+
+	double mount_ra = 0;
+	double mount_dec = 0;
+	bool mount_coordinates_valid = false;
+	indigo_property *mount_p = properties.get(device_name, AGENT_GUIDER_MOUNT_COORDINATES_PROPERTY_NAME);
+	if (mount_p) {
+		for (int i = 0; i < mount_p->count; i++) {
+			if (client_match_item(&mount_p->items[i], AGENT_GUIDER_MOUNT_COORDINATES_RA_ITEM_NAME)) {
+				mount_ra = mount_p->items[i].number.value;
+				mount_coordinates_valid = true;
+			} else if (client_match_item(&mount_p->items[i], AGENT_GUIDER_MOUNT_COORDINATES_DEC_ITEM_NAME)) {
+				mount_dec = mount_p->items[i].number.value;
+				mount_coordinates_valid = true;
+			}
+		}
+	}
+	if (mount_coordinates_valid) {
+		fprintf(
+			w->m_guide_log,
+			"Mount Coordinates: RA = %s, Dec = %s\n",
+			indigo_dtos(mount_ra, "%d:%02d:%04.1f"),
+			indigo_dtos(mount_dec, "%d:%02d:%04.1f")
+		);
+	}
+
 	indigo_property *p = properties.get(device_name, AGENT_GUIDER_DETECTION_MODE_PROPERTY_NAME);
 	if (p) {
 		char method[INDIGO_VALUE_SIZE] = {0};
@@ -2629,8 +2786,17 @@ void log_guide_header(ImagerWindow *w, char *device_name) {
 		double ppec_reactive_gain_ra = 0;
 		double ppec_pred_gain_ra = 0;
 		double ppec_period_ra = 0;
+		double cal_speed_ra = 0;
+		double cal_speed_dec = 0;
+		double cal_angle = 0;
 		for (int i = 0; i < p->count; i++) {
-			if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_EXPOSURE_ITEM_NAME)) {
+			if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_SPEED_RA_ITEM_NAME)) {
+				cal_speed_ra = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_SPEED_DEC_ITEM_NAME)) {
+				cal_speed_dec = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_ANGLE_ITEM_NAME)) {
+				cal_angle = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_EXPOSURE_ITEM_NAME)) {
 				exposure = p->items[i].number.value;
 			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_DELAY_ITEM_NAME)) {
 				delay = p->items[i].number.value;
@@ -2682,6 +2848,14 @@ void log_guide_header(ImagerWindow *w, char *device_name) {
 			min_err,
 			min_pulse,
 			max_pulse
+		);
+
+		fprintf(
+			w->m_guide_log,
+			"Calibration: RA = %.4f px/s, Dec = %.4f px/s, Angle = %.3f deg\n",
+			cal_speed_ra,
+			cal_speed_dec,
+			cal_angle
 		);
 
 		switch (w->m_ra_correction_mode) {
@@ -4444,6 +4618,12 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_guider_agent, AGENT_ABORT_PROCESS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_guider_agent)) {
 		set_widget_state(m_guider_stop_button, INDIGO_OK_STATE);
+	}
+
+	if (client_match_device_property(property, selected_guider_agent, AGENT_GUIDER_STATS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_guider_agent)) {
+		configure_corr_response(m_guider_corr_response_ra_label, m_guider_corr_response_ra_bar, false, "", "");
+		configure_corr_response(m_guider_corr_response_dec_label, m_guider_corr_response_dec_bar, false, "", "");
 	}
 
 	// Mount Agent

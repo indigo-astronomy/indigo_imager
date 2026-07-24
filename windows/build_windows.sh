@@ -2,6 +2,7 @@
 
 APP=ain_imager
 VIEWER=ain_viewer
+GUIDELOG_VIEWER=ain_guidelog_viewer
 QT_VER=5.15.2
 MINGW_VER=81
 
@@ -30,6 +31,15 @@ cd ${VIEWER}_64
 qmake ../../${VIEWER}_src/${VIEWER}.pro
 mingw32-make -f Makefile.release
 cp release/${VIEWER}.exe ../${APP}_64/${APP}
+popd
+
+pushd .
+export PATH=/c/Qt/${QT_VER}/mingw${MINGW_VER}_64/bin:/c/Qt/Tools/mingw${MINGW_VER}0_64/bin/:$SAVE_PATH
+[ ! -d "${GUIDELOG_VIEWER}_64" ] && mkdir ${GUIDELOG_VIEWER}_64
+cd ${GUIDELOG_VIEWER}_64
+qmake ../../${GUIDELOG_VIEWER}_src/${GUIDELOG_VIEWER}.pro
+mingw32-make -f Makefile.release
+cp release/${GUIDELOG_VIEWER}.exe ../${APP}_64/${APP}
 popd
 
 APP_VERSION=`grep AIN_VERSION ../common_src/version.h | sed 's/"//g' |awk '{ print $3 }'`

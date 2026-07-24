@@ -19,6 +19,7 @@
 #include "imagerwindow.h"
 #include "propertycache.h"
 #include "conf.h"
+#include <balancebar.h>
 #include <QShortcut>
 
 #include <image_preview_lut.h>
@@ -188,9 +189,70 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	stats_row++;
 	label = new QLabel("RMSE RA / Dec:");
 	stats_frame_layout->addWidget(label, stats_row, 0);
+
+	QWidget *rmse_container = new QWidget();
+	QHBoxLayout *rmse_layout = new QHBoxLayout(rmse_container);
+	rmse_layout->setContentsMargins(0, 0, 0, 0);
+	rmse_layout->setSpacing(0);
 	m_guider_rmse_label = new QLabel();
 	m_guider_rmse_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	stats_frame_layout->addWidget(m_guider_rmse_label, stats_row, 1);
+	m_guider_rmse_mode_label = new QLabel();
+	rmse_layout->addWidget(m_guider_rmse_label);
+	rmse_layout->addSpacing(10);
+	rmse_layout->addWidget(m_guider_rmse_mode_label);
+	rmse_layout->addStretch(1);
+	stats_frame_layout->addWidget(rmse_container, stats_row, 1);
+
+	stats_row++;
+	label = new QLabel("Response RA:");
+	stats_frame_layout->addWidget(label, stats_row, 0);
+
+	QWidget *corr_response_ra_container = new QWidget();
+	QHBoxLayout *corr_response_ra_layout = new QHBoxLayout(corr_response_ra_container);
+	corr_response_ra_layout->setContentsMargins(0, 0, 0, 0);
+	corr_response_ra_layout->setSpacing(6);
+	m_guider_corr_response_ra_label = new QLabel();
+	m_guider_corr_response_ra_label->setFixedWidth(50);
+	m_guider_corr_response_ra_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	m_guider_corr_response_ra_bar = new BalanceBar(BalanceBar::Style::GradientSoft);
+	m_guider_corr_response_ra_bar->setFixedWidth(140);
+	m_guider_corr_response_ra_bar->setFixedHeight(16);
+	corr_response_ra_layout->addWidget(m_guider_corr_response_ra_label);
+	corr_response_ra_layout->addWidget(m_guider_corr_response_ra_bar);
+	corr_response_ra_layout->addStretch(1);
+	stats_frame_layout->addWidget(corr_response_ra_container, stats_row, 1);
+
+	stats_row++;
+	label = new QLabel("Response Dec:");
+	stats_frame_layout->addWidget(label, stats_row, 0);
+
+	QWidget *corr_response_dec_container = new QWidget();
+	QHBoxLayout *corr_response_dec_layout = new QHBoxLayout(corr_response_dec_container);
+	corr_response_dec_layout->setContentsMargins(0, 0, 0, 0);
+	corr_response_dec_layout->setSpacing(6);
+	m_guider_corr_response_dec_label = new QLabel();
+	m_guider_corr_response_dec_label->setFixedWidth(50);
+	m_guider_corr_response_dec_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	m_guider_corr_response_dec_bar = new BalanceBar(BalanceBar::Style::GradientSoft);
+	m_guider_corr_response_dec_bar->setFixedWidth(140);
+	m_guider_corr_response_dec_bar->setFixedHeight(16);
+	corr_response_dec_layout->addWidget(m_guider_corr_response_dec_label);
+	corr_response_dec_layout->addWidget(m_guider_corr_response_dec_bar);
+	corr_response_dec_layout->addStretch(1);
+	stats_frame_layout->addWidget(corr_response_dec_container, stats_row, 1);
+
+	m_guider_corr_response_ra_bar->setValue(0, false);
+	m_guider_corr_response_dec_bar->setValue(0, false);
+	m_guider_corr_response_ra_bar->hide();
+	m_guider_corr_response_dec_bar->hide();
+	m_guider_corr_response_ra_label->setMinimumWidth(50);
+	m_guider_corr_response_ra_label->setMaximumWidth(QWIDGETSIZE_MAX);
+	m_guider_corr_response_dec_label->setMinimumWidth(50);
+	m_guider_corr_response_dec_label->setMaximumWidth(QWIDGETSIZE_MAX);
+	m_guider_corr_response_ra_label->setText("");
+	m_guider_corr_response_dec_label->setText("");
+	m_guider_corr_response_ra_label->setToolTip("");
+	m_guider_corr_response_dec_label->setToolTip("");
 
 	QFrame *settings_frame = new QFrame;
 	guider_tabbar->addTab(settings_frame, "Settings");
@@ -1362,10 +1424,10 @@ void ImagerWindow::redraw_guider_data() {
 		m_guider_target->target()->setData(*m_guider_data_1, *m_guider_data_2);
 	}
 	if (mode == 0 || mode == 2) {  // Graph or Both
-		if (mode == 2) {
-			// In Both mode the graph is narrower: show only the most recent 45%
-			// of the collected points.
-			const int from = m_guider_data_1->size() * 0.55;
+		const int max_points = (mode == 2) ? GUIDER_GRAPH_BOTH_POINTS : GUIDER_MAX_DATA_POINTS;
+		const int size = m_guider_data_1->size();
+		if (size > max_points) {
+			const int from = size - max_points;
 			m_guider_graph->redraw_data2(m_guider_data_1->mid(from), m_guider_data_2->mid(from));
 		} else {
 			m_guider_graph->redraw_data2(*m_guider_data_1, *m_guider_data_2);

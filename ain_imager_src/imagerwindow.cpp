@@ -334,6 +334,23 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_guide_show_xy_drift);
 	graph_group->addAction(act);
 
+	sub_menu = menu->addMenu("Guider &RMSE Averaging");
+
+	QActionGroup *rmse_group = new QActionGroup(this);
+	rmse_group->setExclusive(true);
+
+	act = sub_menu->addAction("&Since Guiding Started");
+	act->setCheckable(true);
+	if (conf.guider_rmse_display == SHOW_RMSE_SESSION) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_guide_rmse_session);
+	rmse_group->addAction(act);
+
+	act = sub_menu->addAction("&Short Term, Recent Frames Only");
+	act->setCheckable(true);
+	if (conf.guider_rmse_display == SHOW_RMSE_SHORT_TERM) act->setChecked(true);
+	connect(act, &QAction::triggered, this, &ImagerWindow::on_guide_rmse_short_term);
+	rmse_group->addAction(act);
+
 	menu->addSeparator();
 
 	act = menu->addAction(tr("&Save Guiding Log"));
@@ -596,6 +613,8 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(this, QOverload<QCheckBox*, QString>::of(&ImagerWindow::set_text), this, QOverload<QCheckBox*, QString>::of(&ImagerWindow::on_set_text));
 
 	connect(this, &ImagerWindow::show_widget, this, &ImagerWindow::on_show);
+	connect(this, &ImagerWindow::set_tooltip, this, &ImagerWindow::on_set_tooltip);
+	connect(this, &ImagerWindow::configure_corr_response, this, &ImagerWindow::on_configure_corr_response);
 	connect(this, &ImagerWindow::set_checkbox_checked, this, &ImagerWindow::on_set_checkbox_checked);
 	connect(this, &ImagerWindow::set_checkbox_state, this, &ImagerWindow::on_set_checkbox_state);
 
@@ -2029,6 +2048,18 @@ void ImagerWindow::on_guide_show_xy_drift() {
 	conf.guider_display = SHOW_X_Y_DRIFT;
 	select_guider_data(conf.guider_display);
 	redraw_guider_data();
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_guide_rmse_session() {
+	conf.guider_rmse_display = SHOW_RMSE_SESSION;
+	write_conf();
+	indigo_debug("%s\n", __FUNCTION__);
+}
+
+void ImagerWindow::on_guide_rmse_short_term() {
+	conf.guider_rmse_display = SHOW_RMSE_SHORT_TERM;
 	write_conf();
 	indigo_debug("%s\n", __FUNCTION__);
 }

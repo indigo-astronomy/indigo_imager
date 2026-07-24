@@ -3,3 +3,5 @@ debian/ain-imager.png usr/share/icons/hicolor/48x48/apps
 debian/ain-viewer.desktop usr/share/applications
 debian/ain-viewer-mimetypes.xml usr/share/mime/packages
 debian/ain-viewer.png usr/share/icons/hicolor/48x48/apps
+debian/ain-guidelog-viewer.desktop usr/share/applications
+debian/ain-guidelog-viewer.png usr/share/icons/hicolor/48x48/apps

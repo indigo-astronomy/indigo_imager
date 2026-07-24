@@ -74,6 +74,11 @@ typedef enum {
 } guider_display_data;
 
 typedef enum {
+	SHOW_RMSE_SESSION = 0,     // long-term RMSE over the whole guide session
+	SHOW_RMSE_SHORT_TERM = 1,  // short-term RMSE (RMSE_*_ST items)
+} guider_rmse_display_data;
+
+typedef enum {
 	AIN_ALERT_STATE = INDIGO_ALERT_STATE,
 	AIN_WARNING_STATE = INDIGO_BUSY_STATE,
 	AIN_OK_STATE = 100
@@ -137,7 +142,8 @@ typedef struct {
 	bool live_stacking_enabled;
 	char filename_template[INDIGO_VALUE_SIZE];
 	int guider_plot_mode;   // 0 = Graph, 1 = Target, 2 = Both
-	char unused[95];
+	guider_rmse_display_data guider_rmse_display;
+	char unused[91];
 } conf_t;
 
 extern conf_t conf;

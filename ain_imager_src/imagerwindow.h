@@ -20,6 +20,10 @@
 #ifndef IMAGERWINDOW_H
 #define IMAGERWINDOW_H
 
+// Maximum number of guider samples kept and plotted
+#define GUIDER_MAX_DATA_POINTS 120
+#define GUIDER_GRAPH_BOTH_POINTS 54
+
 #include <stdio.h>
 #include <QApplication>
 #include <QMainWindow>
@@ -34,6 +38,7 @@
 
 class QServiceModel;
 class QIndigoServers;
+class BalanceBar;
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -221,6 +226,8 @@ signals:
 	void set_text(QPushButton *widget, QString text);
 	void set_text(QCheckBox *widget, QString text);
 	void show_widget(QWidget *widget, bool show);
+	void set_tooltip(QWidget *widget, QString tooltip);
+	void configure_corr_response(QLabel *label, QWidget *bar, bool reported, QString text, QString tooltip);
 
 	void set_lcd(QLCDNumber *widget, QString text, int state);
 
@@ -407,6 +414,8 @@ public slots:
 	void on_guide_show_rd_s_drift();
 	void on_guide_show_rd_pulse();
 	void on_guide_show_xy_drift();
+	void on_guide_rmse_session();
+	void on_guide_rmse_short_term();
 	void on_guider_save_log(bool status);
 	void on_indigo_save_log(bool status);
 
@@ -497,8 +506,26 @@ public slots:
 		}
 	};
 
+	void on_configure_corr_response(QLabel *label, QWidget *bar, bool reported, QString text, QString tooltip) {
+		bar->setVisible(reported);
+		if (reported) {
+			// keep the verdict narrow so it aligns with the bar next to it
+			label->setFixedWidth(50);
+		} else {
+			// no bar to align with: let the label expand to fit the full text
+			label->setMinimumWidth(50);
+			label->setMaximumWidth(QWIDGETSIZE_MAX);
+		}
+		label->setText(text);
+		label->setToolTip(tooltip);
+	};
+
 	void on_set_text(QLabel *widget, QString text) {
 		widget->setText(text);
+	};
+
+	void on_set_tooltip(QWidget *widget, QString tooltip) {
+		widget->setToolTip(tooltip);
 	};
 
 	void on_set_text(QLineEdit *widget, QString text) {
@@ -864,6 +891,11 @@ private:
 	QLabel *m_guider_xy_drift_label;
 	QLabel *m_guider_pulse_label;
 	QLabel *m_guider_rmse_label;
+	QLabel *m_guider_rmse_mode_label;
+	BalanceBar *m_guider_corr_response_ra_bar;
+	BalanceBar *m_guider_corr_response_dec_bar;
+	QLabel *m_guider_corr_response_ra_label;
+	QLabel *m_guider_corr_response_dec_label;
 	QPushButton *m_guider_guide_button;
 	QPushButton *m_guider_preview_button;
 	QPushButton *m_guider_calibrate_button;
