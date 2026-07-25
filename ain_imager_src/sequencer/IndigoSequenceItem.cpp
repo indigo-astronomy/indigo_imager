@@ -33,6 +33,7 @@
 #include <QPainter>
 #include <QWidgetAction>
 #include <QDateTimeEdit>
+#include <QTimeZone>
 #include "SelectObject.h"
 
 IndigoSequenceItem::IndigoSequenceItem(const QString &type, QWidget *parent)
@@ -351,7 +352,10 @@ void IndigoSequenceItem::setParameter(int paramName, const QVariant &value) {
 		if (ok) {
 			dateTimeEdit->setDateTime(QDateTime::fromSecsSinceEpoch(timestamp, Qt::UTC));
 		} else {
-			dateTimeEdit->setDateTime(value.toDateTime());
+			QDateTime dt = QDateTime::fromString(value.toString(), DATE_TIME_FORMAT);
+			if (dt.isValid()) {
+				dateTimeEdit->setDateTime(QDateTime(dt.date(), dt.time(), QTimeZone::UTC));
+			}
 		}
 	}
 }
