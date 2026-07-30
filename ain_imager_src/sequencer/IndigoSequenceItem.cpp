@@ -354,7 +354,11 @@ void IndigoSequenceItem::setParameter(int paramName, const QVariant &value) {
 		} else {
 			QDateTime dt = QDateTime::fromString(value.toString(), DATE_TIME_FORMAT);
 			if (dt.isValid()) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
 				dateTimeEdit->setDateTime(QDateTime(dt.date(), dt.time(), QTimeZone::UTC));
+#else
+				dateTimeEdit->setDateTime(QDateTime(dt.date(), dt.time(), Qt::UTC));
+#endif
 			}
 		}
 	}
