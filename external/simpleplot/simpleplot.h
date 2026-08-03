@@ -15,6 +15,7 @@
 #include <QPen>
 #include <QBrush>
 #include <QColor>
+#include <QPointF>
 #include <QRect>
 #include <QStringList>
 
@@ -236,6 +237,14 @@ public:
 	int marginRight() const { return mMarginRight; }
 	int marginBottom() const { return mMarginBottom; }
 
+	// The rectangle the curves are drawn into (the widget minus its margins),
+	// and the data -> widget-pixel mapping used to paint them. Exposed so
+	// callers can place their own overlay widgets (peak labels, annotations)
+	// in register with the plotted data instead of re-deriving the mapping.
+	// Graph only; on a Target plot mapToPixel() returns the area's centre.
+	QRect plotArea() const;
+	QPointF mapToPixel(double x, double y) const;
+
 	// Graph chart members (nullptr on a Target plot)
 	SimpleAxis *xAxis = nullptr;    // bottom (primary key axis)
 	SimpleAxis *yAxis = nullptr;    // left   (primary value axis)
@@ -254,7 +263,6 @@ protected:
 	void paintEvent(QPaintEvent *) override;
 
 private:
-	QRect plotArea() const;
 	void paintGraph(QPainter &p);
 	void paintTarget(QPainter &p);
 

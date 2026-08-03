@@ -19,54 +19,39 @@
 #ifndef PEFFTWINDOW_H
 #define PEFFTWINDOW_H
 
-#include <QMainWindow>
-#include <QStringList>
+#include <QString>
 #include <QVector>
 
 #include "pecurve.h"
+#include "pewindowbase.h"
 
 class QEvent;
 class QLabel;
-class SimplePlot;
-class VerticalLabel;
 
 // Shows the amplitude spectrum (FFT) of the reconstructed RA periodic-error
 // curve (same reconstruction as PECurveWindow, always with the drift trend
 // removed), and labels the fundamental period together with any harmonics
 // whose amplitude is at least 40% of the fundamental's.
-class PEFFTWindow : public QMainWindow {
+//
+// The calibration and declination come from the log and are used as-is; there
+// is no manual override in this window (see PECurveWindow for that).
+class PEFFTWindow : public PEWindowBase {
+	Q_OBJECT
+
 public:
 	explicit PEFFTWindow(QWidget *parent = nullptr);
 
-	// Feeds a new session into the window. calibrationPxPerS/mountDecDeg come
-	// from the log (Calibration / Mount Coordinates lines) and are used as-is;
-	// there is no manual override in this window (see PECurveWindow for that).
-	// Use this on open / session change.
-	void setSession(const QStringList &headers,
-	                const QVector<QStringList> &rows,
-	                double calibrationPxPerS,
-	                double mountDecDeg = 0.0);
-
-	// Replaces only the plotted rows (e.g. the graph's visible window changed).
-	void updateRows(const QStringList &headers,
-	                const QVector<QStringList> &rows);
-
-private:
-	void createUi();
-	void recompute();
-	// Positions one floating label per peak next to its marker on the plot,
-	// and redraws them on resize (the plotting widget itself has no
-	// annotation API, only axis-tick text).
-	void layoutPeakLabels();
+protected:
+	void recompute() override;
+	void applyLogDefaults(double calibrationPxPerS, double mountDecDeg) override;
 	bool eventFilter(QObject *obj, QEvent *event) override;
 
-	QLabel *m_summaryLabel;
-	QLabel *m_xCaptionLabel;
-	VerticalLabel *m_yCaptionLabel;
-	SimplePlot *m_plot;
+private:
+	// Positions one floating label per peak next to its marker on the plot, and
+	// redraws them on resize (SimplePlot has no annotation API of its own, only
+	// axis-tick text). Labels are reused across calls rather than recreated.
+	void layoutPeakLabels();
 
-	QStringList m_headers;
-	QVector<QStringList> m_rows;
 	double m_calibrationPxPerS = 0.0;
 	double m_mountDecDeg = 0.0;
 

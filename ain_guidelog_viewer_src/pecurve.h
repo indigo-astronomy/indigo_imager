@@ -31,6 +31,41 @@ struct PECurveOptions {
 	bool excludeDither = true; // drop dithering rows and interpolate the gaps
 	bool removeDrift = false;  // subtract the linear drift trend (isolate the PE)
 	bool linearDetrend = false; // use a plain straight-line fit for the drift
+
+	// Two option sets that compare equal produce the same reconstruction, which
+	// is what lets PEAnalysis reuse a cached result across windows.
+	bool operator==(const PECurveOptions &o) const {
+		return ratePxPerS == o.ratePxPerS && decDeg == o.decDeg && arcsec == o.arcsec &&
+		       excludeDither == o.excludeDither && removeDrift == o.removeDrift &&
+		       linearDetrend == o.linearDetrend;
+	}
+	bool operator!=(const PECurveOptions &o) const { return !(*this == o); }
+};
+
+// Numeric view of one session's rows: exactly the columns the periodic-error
+// reconstruction reads, decoded out of the log's text rows once.
+//
+// The windows re-run reconstruct() whenever a unit, calibration or detrend
+// setting changes, and the main window re-pushes the rows on every pan/zoom of
+// the graph. Parsing the strings on each of those passes dominated the cost of
+// the whole tool (timestamps especially), so it happens once per row set here
+// and the reconstruction then works on plain doubles.
+struct PESamples {
+	QString message;             // human-readable reason when !isValid()
+	bool usedTime = false;       // x is elapsed seconds rather than a sample index
+	bool hasArcsecScale = false; // the log paired an arcsec column with the pixel one
+	double arcsecPerPx = 1.0;    // median arcsec/px over the paired columns
+	QVector<double> x;           // elapsed seconds, or the sample index
+	QVector<double> raPx;        // RA residual, px; NaN when the field did not parse
+	QVector<double> raCorr;      // RA correction, seconds; NaN when it did not parse
+	QVector<bool> dither;        // true on a dithering row (empty if the log has no such column)
+
+	bool isValid() const { return !x.isEmpty(); }
+	int count() const { return x.size(); }
+
+	// Decodes rows against headers. On a log missing the RA residual or RA
+	// correction column the result is empty and message says which.
+	static PESamples fromRows(const QStringList &headers, const QVector<QStringList> &rows);
 };
 
 // Result of a reconstruction. Series are in the requested unit; x is elapsed
@@ -78,6 +113,13 @@ struct PEFFTPeak {
 //     PE(n) = residual(n) - sum_{k<=n} ( correction_seconds(k) * rate )
 class PECurve {
 public:
+	// Reconstructs from already-decoded samples. Prefer this when the same rows
+	// are reconstructed more than once (different units / detrend settings), so
+	// the log's text is parsed only on the way into PESamples.
+	static PECurveData reconstruct(const PESamples &samples, const PECurveOptions &options);
+
+	// Convenience overload that decodes the rows first. Equivalent to
+	// reconstruct(PESamples::fromRows(headers, rows), options).
 	static PECurveData reconstruct(const QStringList &headers,
 	                               const QVector<QStringList> &rows,
 	                               const PECurveOptions &options);

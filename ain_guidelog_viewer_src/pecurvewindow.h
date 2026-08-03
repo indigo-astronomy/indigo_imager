@@ -19,17 +19,15 @@
 #ifndef PECURVEWINDOW_H
 #define PECURVEWINDOW_H
 
-#include <QMainWindow>
-#include <QStringList>
+#include <QString>
 #include <QVector>
 
-class QLabel;
+#include "pewindowbase.h"
+
 class QComboBox;
 class QCheckBox;
 class QDoubleSpinBox;
 class QPushButton;
-class SimplePlot;
-class VerticalLabel;
 
 // Reconstructs and plots the RA periodic error (PE) curve of a guiding session.
 //
@@ -41,46 +39,30 @@ class VerticalLabel;
 //
 // where rate is the RA guide rate in px/s (from the log's Calibration line or
 // entered by hand). The result is shown in arcsec or pixels.
-class PECurveWindow : public QMainWindow {
+class PECurveWindow : public PEWindowBase {
+	Q_OBJECT
+
 public:
 	explicit PECurveWindow(QWidget *parent = nullptr);
 
-	// Feeds a new session into the window and pre-fills the calibration from the
-	// log (calibrationPxPerS <= 0 means the log carried none; the user can enter
-	// one by hand). mountDecDeg pre-fills the Dec spin box from the log's Mount
-	// Coordinates line (0.0 means the log carried none, same as "no scaling").
-	// Use this on open / session change.
-	void setSession(const QStringList &headers,
-	                const QVector<QStringList> &rows,
-	                double calibrationPxPerS,
-	                double mountDecDeg = 0.0);
-
-	// Replaces only the plotted rows (e.g. the graph's visible window changed),
-	// leaving the user's calibration entry untouched.
-	void updateRows(const QStringList &headers,
-	                const QVector<QStringList> &rows);
+protected:
+	void recompute() override;
+	// Pre-fills the calibration and Dec entries from the log, leaving a value
+	// the user typed in by hand alone.
+	void applyLogDefaults(double calibrationPxPerS, double mountDecDeg) override;
 
 private:
-	void createUi();
-	void recompute();
+	void createControls();
 	void exportCsv();
 
-	QDoubleSpinBox *m_calibrationSpin;
-	QDoubleSpinBox *m_decSpin;
-	QComboBox *m_unitCombo;
-	QCheckBox *m_smoothCheck;
-	QCheckBox *m_smoothResidualCheck;
-	QCheckBox *m_detrendCheck;
-	QCheckBox *m_linearDetrendCheck;
-	QPushButton *m_exportButton;
-	QLabel *m_summaryLabel;
-	QLabel *m_xCaptionLabel;
-	VerticalLabel *m_yCaptionLabel;
-	SimplePlot *m_plot;
-
-	QStringList m_headers;
-	QVector<QStringList> m_rows;
-	double m_logCalibration = 0.0;
+	QDoubleSpinBox *m_calibrationSpin = nullptr;
+	QDoubleSpinBox *m_decSpin = nullptr;
+	QComboBox *m_unitCombo = nullptr;
+	QCheckBox *m_smoothCheck = nullptr;
+	QCheckBox *m_smoothResidualCheck = nullptr;
+	QCheckBox *m_detrendCheck = nullptr;
+	QCheckBox *m_linearDetrendCheck = nullptr;
+	QPushButton *m_exportButton = nullptr;
 
 	// Snapshot of the last plotted curve, kept for CSV export.
 	bool m_lastValid = false;

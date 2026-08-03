@@ -265,6 +265,7 @@ SimpleGraph *SimplePlot::graph(int index) const {
 void SimplePlot::clearGraphs() {
 	qDeleteAll(mGraphs);
 	mGraphs.clear();
+	update();
 }
 
 QRect SimplePlot::plotArea() const {
@@ -273,6 +274,18 @@ QRect SimplePlot::plotArea() const {
 	if (r.width() < 10) r.setWidth(10);
 	if (r.height() < 10) r.setHeight(10);
 	return r;
+}
+
+QPointF SimplePlot::mapToPixel(double x, double y) const {
+	const QRect area = plotArea();
+	if (mType != Graph || !xAxis || !yAxis) return QPointF(area.center());
+	const SimpleRange xr = xAxis->range();
+	const SimpleRange yr = yAxis->range();
+	const double xspan = (xr.size() != 0.0) ? xr.size() : 1.0;
+	const double yspan = (yr.size() != 0.0) ? yr.size() : 1.0;
+	// Must stay identical to the mapping paintGraph() draws with.
+	return QPointF(area.left() + (x - xr.lower) / xspan * area.width(),
+	               area.bottom() - (y - yr.lower) / yspan * area.height());
 }
 
 void SimplePlot::paintEvent(QPaintEvent *) {

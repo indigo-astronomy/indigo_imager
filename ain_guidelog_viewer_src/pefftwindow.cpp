@@ -19,125 +19,56 @@
 #include "pefftwindow.h"
 
 #include <QEvent>
-#include <QFile>
 #include <QFont>
-#include <QHBoxLayout>
-#include <QIcon>
 #include <QLabel>
-#include <QTextStream>
-#include <QVBoxLayout>
-#include <QWidget>
+#include <QPointF>
+#include <QRect>
 
+#include "peanalysis.h"
 #include "pecurve.h"
 #include "verticallabel.h"
 
 #include <simpleplot.h>
 
 #include <algorithm>
+#include <cmath>
 
 namespace {
-constexpr double kMaxPeriodS = 1600.0; // hard cap for the period axis, regardless of the data
-}
+constexpr double kMaxPeriodS = 1600.0;        // hard cap for the period axis, regardless of the data
+constexpr double kMinRelativeAmplitude = 0.4; // harmonics quieter than this are not labelled
+} // namespace
 
 PEFFTWindow::PEFFTWindow(QWidget *parent)
-    : QMainWindow(parent, Qt::Window) {
-	setWindowTitle(tr("RA Periodic Error Spectrum"));
-	resize(1000, 620);
-	setWindowIcon(QIcon(":/resource/ain_guidelog_viewer.png"));
+    : PEWindowBase(tr("RA Periodic Error Spectrum"), parent) {
+	addSummaryRow();
+	addPlotRow();
 
-	QFile f(":/resource/control_panel.qss");
-	if (f.open(QFile::ReadOnly | QFile::Text)) {
-		QTextStream ts(&f);
-		setStyleSheet(ts.readAll());
-		f.close();
-	}
-
-	createUi();
-	recompute();
-}
-
-void PEFFTWindow::createUi() {
-	QWidget *central = new QWidget(this);
-	setCentralWidget(central);
-
-	QVBoxLayout *rootLayout = new QVBoxLayout(central);
-	rootLayout->setContentsMargins(6, 6, 6, 6);
-	rootLayout->setSpacing(6);
-
-	m_summaryLabel = new QLabel("Load a session to compute the RA periodic error spectrum.", central);
-	m_summaryLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-	m_summaryLabel->setTextFormat(Qt::RichText);
-	m_summaryLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
-	{
-		QFont summaryFont = m_summaryLabel->font();
-		if (summaryFont.pointSizeF() > 0.0) {
-			summaryFont.setPointSizeF(summaryFont.pointSizeF() + 2.0);
-		} else {
-			summaryFont.setPixelSize(summaryFont.pixelSize() + 2);
-		}
-		m_summaryLabel->setFont(summaryFont);
-	}
-	rootLayout->addWidget(m_summaryLabel);
-
-	// --- Plot ---
-	m_plot = new SimplePlot(SimplePlot::Graph, central);
-	m_plot->setPlotMargins(56, 12, 16, 28);
 	m_plot->xAxis->setLabel("Period (s)");
 	m_plot->yAxis->setLabel("Relative amplitude");
-	m_plot->xAxis2->setVisible(true);
-	m_plot->yAxis2->setVisible(true);
-	m_plot->xAxis2->setTickLabels(false);
-	m_plot->yAxis2->setTickLabels(false);
 	m_plot->installEventFilter(this); // reposition the floating peak labels on resize
 
-	// SimplePlot's Graph mode does not paint axis captions, so draw them as
-	// separate widgets: a rotated label to the left of the plot for Y, and a
-	// centered label beneath it for X.
-	m_yCaptionLabel = new VerticalLabel(central);
 	m_yCaptionLabel->setText("Relative amplitude");
+	m_xCaptionLabel->setText("Period (s)");
 
-	QHBoxLayout *plotRow = new QHBoxLayout();
-	plotRow->setContentsMargins(0, 0, 0, 0);
-	plotRow->setSpacing(2);
-	plotRow->addWidget(m_yCaptionLabel);
-	plotRow->addWidget(m_plot, 1);
-	rootLayout->addLayout(plotRow, 1);
-
-	m_xCaptionLabel = new QLabel("Period (s)", central);
-	m_xCaptionLabel->setAlignment(Qt::AlignHCenter);
-	rootLayout->addWidget(m_xCaptionLabel);
-
-	// Keep both captions visually identical (the rotated one otherwise inherits
-	// a different effective font than the styled QLabel).
-	m_yCaptionLabel->setFont(m_xCaptionLabel->font());
+	m_summaryLabel->setText("Load a session to compute the RA periodic error spectrum.");
 }
 
-void PEFFTWindow::setSession(const QStringList &headers,
-                             const QVector<QStringList> &rows,
-                             double calibrationPxPerS,
-                             double mountDecDeg) {
-	m_headers = headers;
-	m_rows = rows;
+void PEFFTWindow::applyLogDefaults(double calibrationPxPerS, double mountDecDeg) {
 	m_calibrationPxPerS = calibrationPxPerS;
 	m_mountDecDeg = mountDecDeg;
-	recompute();
-}
-
-void PEFFTWindow::updateRows(const QStringList &headers,
-                             const QVector<QStringList> &rows) {
-	m_headers = headers;
-	m_rows = rows;
-	recompute();
 }
 
 void PEFFTWindow::recompute() {
 	if (!m_plot) {
 		return;
 	}
-	m_plot->clearGraphs();
-	m_plot->clearCustomXAxisTicks();
 	m_peaks.clear();
 	layoutPeakLabels(); // drop any labels left over from a previous session
+
+	if (!hasAnalysis()) {
+		showPlaceholder("Load a session to compute the RA periodic error spectrum.");
+		return;
+	}
 
 	PECurveOptions options;
 	options.ratePxPerS = m_calibrationPxPerS;
@@ -146,29 +77,21 @@ void PEFFTWindow::recompute() {
 	options.removeDrift = true;    // always detrend so the PE isn't swamped by drift
 	options.linearDetrend = false; // use the periodic-error-aware fit
 
-	const PECurveData data = PECurve::reconstruct(m_headers, m_rows, options);
+	const std::shared_ptr<const PEResult> result = analysis()->reconstructWithSpectrum(options);
+	const PECurveData &data = result->curve;
 	if (!data.valid) {
-		m_summaryLabel->setText(data.message);
-		m_plot->xAxis->setRange(0, 1);
-		m_plot->yAxis->setRange(-1, 1);
-		m_plot->replot();
+		showPlaceholder(data.message);
 		return;
 	}
 	if (!data.hasRate) {
-		m_summaryLabel->setText("This session's log has no RA calibration, so the periodic error "
-		                        "can't be reconstructed for its spectrum.");
-		m_plot->xAxis->setRange(0, 1);
-		m_plot->yAxis->setRange(-1, 1);
-		m_plot->replot();
+		showPlaceholder("This session's log has no RA calibration, so the periodic error "
+		                "can't be reconstructed for its spectrum.");
 		return;
 	}
 
-	const PEFFTData fft = PECurve::computeFFT(data.x, data.pe);
+	const PEFFTData &fft = result->spectrum;
 	if (!fft.valid) {
-		m_summaryLabel->setText(fft.message);
-		m_plot->xAxis->setRange(0, 1);
-		m_plot->yAxis->setRange(-1, 1);
-		m_plot->replot();
+		showPlaceholder(fft.message);
 		return;
 	}
 
@@ -176,31 +99,71 @@ void PEFFTWindow::recompute() {
 	// still runs (over the sample index), but "Hz"/"s" would be meaningless.
 	const QString freqUnit = data.usedTime ? QStringLiteral("Hz") : QStringLiteral("cycles/sample");
 	const QString periodUnit = data.usedTime ? QStringLiteral("s") : QStringLiteral("samples");
-	const QString periodAxisLabel = data.usedTime ? QStringLiteral("Period (s)")
-	                                              : QStringLiteral("Period (samples)");
-	m_xCaptionLabel->setText(periodAxisLabel);
+	m_xCaptionLabel->setText(data.usedTime ? QStringLiteral("Period (s)")
+	                                       : QStringLiteral("Period (samples)"));
 
-	const QVector<PEFFTPeak> peaks = PECurve::findHarmonics(fft, 0.4, kMaxPeriodS);
+	const QVector<PEFFTPeak> peaks = PECurve::findHarmonics(fft, kMinRelativeAmplitude, kMaxPeriodS);
 	if (peaks.isEmpty()) {
-		m_summaryLabel->setText("No dominant periodic component found in this session.");
-		m_plot->xAxis->setRange(0, 1);
-		m_plot->yAxis->setRange(0, 1);
-		m_plot->replot();
+		showPlaceholder("No dominant periodic component found in this session.");
 		return;
 	}
 
-	auto num = [](double v, int prec) { return QString::number(v, 'f', prec); };
+	m_plot->clearGraphs();
+	m_plot->clearCustomXAxisTicks();
 
-	// Plot period (seconds) instead of frequency, normalized so the
-	// fundamental's amplitude is 1.0: DC (infinite period) is skipped, and bins
-	// are walked from the Nyquist end down so period increases left to right.
+	// Zoom to the interesting period region (from a bit past the highest
+	// harmonic's period down to a bit past the longest detected peak's period),
+	// rather than the huge, near-empty tail near DC. Cap the upper end so a
+	// single very long period can't stretch the axis out to where the rest of
+	// the spectrum is squeezed into a sliver.
+	double maxHarmonicFreq = 0.0;
+	double maxPeakPeriod = 0.0;
+	for (const PEFFTPeak &p : peaks) {
+		if (p.periodS < kMaxPeriodS) {
+			maxHarmonicFreq = std::max(maxHarmonicFreq, p.frequencyHz);
+		}
+		maxPeakPeriod = std::max(maxPeakPeriod, p.periodS);
+	}
+	if (maxHarmonicFreq <= 0.0) {
+		// findHarmonics() keeps the fundamental within kMaxPeriodS, so this only
+		// happens if a peak lands exactly on the cap; fall back to that peak.
+		maxHarmonicFreq = peaks.first().frequencyHz;
+	}
+	const double xLower = (maxHarmonicFreq > 0.0) ? 1.0 / (maxHarmonicFreq * 1.4) : 1.0;
+	const double xUpper = std::max(xLower * 1.1, std::min(maxPeakPeriod * 1.3, kMaxPeriodS));
+	m_plot->xAxis->setRange(xLower, xUpper);
+	m_plot->yAxis->setRange(0.0, 1.15);
+
+	// Plot period (seconds) instead of frequency, normalized so the fundamental's
+	// amplitude is 1.0. Bins are walked from the Nyquist end down so period
+	// increases left to right, and only the bins that land inside the visible
+	// period window (plus one either side, so the trace reaches both edges) are
+	// handed over: the spectrum is zero-padded to several times the sample count,
+	// and at these zoom levels well over 90% of its bins sit off-screen. Since
+	// SimplePlot maps every point it is given, clipping here is what keeps a
+	// repaint cheap.
 	const double normBy = peaks.first().amplitude;
+	const double df = (fft.freq.size() > 1) ? fft.freq.at(1) : 0.0;
+	const int lastBin = fft.freq.size() - 1;
+	int binLow = 1;
+	int binHigh = lastBin;
+	if (df > 0.0 && normBy > 0.0) {
+		binLow = static_cast<int>(std::floor((1.0 / xUpper) / df)) - 1;
+		binHigh = static_cast<int>(std::ceil((1.0 / xLower) / df)) + 1;
+		binLow = std::max(1, std::min(binLow, lastBin));
+		binHigh = std::max(binLow, std::min(binHigh, lastBin));
+	}
+
 	QVector<double> periodX;
 	QVector<double> ampY;
-	periodX.reserve(fft.freq.size() - 1);
-	ampY.reserve(fft.freq.size() - 1);
-	for (int k = fft.freq.size() - 1; k >= 1; k--) {
-		periodX.append(1.0 / fft.freq.at(k));
+	periodX.reserve(binHigh - binLow + 1);
+	ampY.reserve(binHigh - binLow + 1);
+	for (int k = binHigh; k >= binLow; k--) {
+		const double f = fft.freq.at(k);
+		if (f <= 0.0) {
+			continue;
+		}
+		periodX.append(1.0 / f);
 		ampY.append(fft.amplitude.at(k) / normBy);
 	}
 
@@ -238,102 +201,90 @@ void PEFFTWindow::recompute() {
 		gPeaks->setName("Fundamental / harmonics");
 	}
 
-	// Zoom to the interesting period region (from a bit past the highest
-	// harmonic's period down to a bit past the longest detected peak's
-	// period), rather than the huge, near-empty tail near DC. Cap the upper
-	// end so a single very long period can't stretch the axis out to where
-	// the rest of the spectrum is squeezed into a sliver.
-	double maxHarmonicFreq = 0.0;
-	double maxPeakPeriod = 0.0;
-	for (const PEFFTPeak &p : peaks) {
-		if (p.periodS < kMaxPeriodS) {
-			maxHarmonicFreq = std::max(maxHarmonicFreq, p.frequencyHz);
-		}
-		maxPeakPeriod = std::max(maxPeakPeriod, p.periodS);
-	}
-	const double xLower = 1.0 / (maxHarmonicFreq * 1.4);
-	const double xUpper = std::min(maxPeakPeriod * 1.3, kMaxPeriodS);
-	m_plot->xAxis->setRange(xLower, xUpper);
-	m_plot->yAxis->setRange(0.0, 1.15);
-
 	// Use the plot's regular evenly-spaced numeric ticks (rather than custom
 	// labels only at the peaks) so every tick on the axis carries a number;
 	// the fundamental/harmonics are labelled next to their points instead.
-	m_plot->clearCustomXAxisTicks();
 	m_plot->replot();
 
 	m_peaks = peaks;
 	m_peakPeriodUnit = periodUnit;
 	layoutPeakLabels();
 
-	const QString sep = QStringLiteral(" &nbsp;&nbsp;&middot;&nbsp;&nbsp; ");
-	auto twoLines = [](const QString &a, const QString &b) {
-		return QStringLiteral("<div style='margin:0'>") + a +
-		       QStringLiteral("</div><div style='margin-top:7px'>") + b +
-		       QStringLiteral("</div>");
-	};
-
 	const PEFFTPeak &fundamental = peaks.first();
-	const QString line1 = "<b>Fundamental:</b>&nbsp;&nbsp; Period <b>" + num(fundamental.periodS, 1) + "</b> " + periodUnit +
-	                      sep + "Frequency " + num(fundamental.frequencyHz, 5) + " " + freqUnit;
+	const QString line1 = "<b>Fundamental:</b>&nbsp;&nbsp; Period <b>" + number(fundamental.periodS, 1) +
+	                      "</b> " + periodUnit + separator() + "Frequency " +
+	                      number(fundamental.frequencyHz, 5) + " " + freqUnit;
 
 	QStringList harmonicParts;
 	for (int i = 1; i < peaks.size(); i++) {
 		const PEFFTPeak &p = peaks.at(i);
-		harmonicParts << QString("<b>%1&times;f\u2080</b> (%2 %3, %4% amplitude)")
+		harmonicParts << QString("<b>%1&times;f₀</b> (%2 %3, %4% amplitude)")
 		                     .arg(p.harmonic)
-		                     .arg(num(p.periodS, 1))
+		                     .arg(number(p.periodS, 1))
 		                     .arg(periodUnit)
-		                     .arg(num(p.relativeAmplitude * 100.0, 0));
+		                     .arg(number(p.relativeAmplitude * 100.0, 0));
 	}
 	const QString line2 = harmonicParts.isEmpty()
-	                           ? "<b>Harmonics:</b>&nbsp;&nbsp; none reach 40% of the fundamental's amplitude."
-	                           : "<b>Harmonics &ge;40% amplitude:</b>&nbsp;&nbsp; " + harmonicParts.join(sep);
+	                          ? "<b>Harmonics:</b>&nbsp;&nbsp; none reach 40% of the fundamental's amplitude."
+	                          : "<b>Harmonics &ge;40% amplitude:</b>&nbsp;&nbsp; " +
+	                                harmonicParts.join(separator());
 	m_summaryLabel->setText(twoLines(line1, line2));
 }
 
 void PEFFTWindow::layoutPeakLabels() {
-	qDeleteAll(m_peakLabels);
-	m_peakLabels.clear();
-	if (!m_plot || m_peaks.isEmpty()) {
+	if (!m_plot) {
 		return;
 	}
 
-	// SimplePlot has no text-annotation API of its own (only axis-tick text),
-	// so the labels are plain QLabel children positioned in plot-pixel space
-	// using the same left/top-anchored mapping the widget paints with.
-	const QRect area = m_plot->rect().adjusted(m_plot->marginLeft(), m_plot->marginTop(),
-	                                           -m_plot->marginRight(), -m_plot->marginBottom());
+	// Labels are kept and re-used rather than deleted and rebuilt: this runs on
+	// every resize event, and re-creating widgets (each with its own stylesheet
+	// to parse) mid-drag is needless churn.
+	const QRect area = m_plot->plotArea();
 	const SimpleRange xr = m_plot->xAxis->range();
 	const SimpleRange yr = m_plot->yAxis->range();
-	if (xr.size() <= 0.0 || yr.size() <= 0.0 || area.width() <= 0 || area.height() <= 0) {
-		return;
-	}
+	const bool plottable = xr.size() > 0.0 && yr.size() > 0.0 && area.width() > 0 && area.height() > 0;
 
-	for (const PEFFTPeak &p : m_peaks) {
-		if (p.periodS < xr.lower || p.periodS > xr.upper) {
-			continue; // outside the (3600s-capped) visible range
+	int used = 0;
+	if (plottable) {
+		for (const PEFFTPeak &p : m_peaks) {
+			if (p.periodS < xr.lower || p.periodS > xr.upper) {
+				continue; // outside the visible (kMaxPeriodS-capped) range
+			}
+			const QPointF pos = m_plot->mapToPixel(p.periodS, p.relativeAmplitude);
+
+			const QString designation =
+				p.harmonic == 1 ? QStringLiteral("f₀") : QString("%1f₀").arg(p.harmonic);
+			const QString text = designation + " " + QString::number(p.periodS, 'f', 0) +
+			                     (m_peakPeriodUnit == QStringLiteral("s") ? QString() : QStringLiteral(" ")) +
+			                     m_peakPeriodUnit;
+
+			QLabel *label = nullptr;
+			if (used < m_peakLabels.size()) {
+				label = m_peakLabels.at(used);
+			} else {
+				label = new QLabel(m_plot);
+				label->setStyleSheet("color: rgb(255, 210, 90); background: transparent;");
+				QFont f = label->font();
+				f.setPointSizeF(qMax(7.0, f.pointSizeF() - 1.0));
+				label->setFont(f);
+				m_peakLabels.append(label);
+			}
+			if (label->text() != text) {
+				label->setText(text);
+			}
+			label->adjustSize();
+
+			int lx = static_cast<int>(pos.x()) + 6;
+			int ly = static_cast<int>(pos.y()) - label->height() - 2;
+			lx = qBound(area.left(), lx, qMax(area.left(), area.right() - label->width()));
+			ly = qBound(area.top(), ly, qMax(area.top(), area.bottom() - label->height()));
+			label->move(lx, ly);
+			label->show();
+			used++;
 		}
-		const double px = area.left() + (p.periodS - xr.lower) / xr.size() * area.width();
-		const double py = area.bottom() - (p.relativeAmplitude - yr.lower) / yr.size() * area.height();
-
-		const QString designation = p.harmonic == 1 ? QStringLiteral("f\u2080") : QString("%1f\u2080").arg(p.harmonic);
-		const QString text = designation + " " + QString::number(p.periodS, 'f', 0) + m_peakPeriodUnit;
-
-		QLabel *label = new QLabel(text, m_plot);
-		label->setStyleSheet("color: rgb(255, 210, 90); background: transparent;");
-		QFont f = label->font();
-		f.setPointSizeF(qMax(7.0, f.pointSizeF() - 1.0));
-		label->setFont(f);
-		label->adjustSize();
-
-		int lx = static_cast<int>(px) + 6;
-		int ly = static_cast<int>(py) - label->height() - 2;
-		lx = qBound(area.left(), lx, qMax(area.left(), area.right() - label->width()));
-		ly = qBound(area.top(), ly, qMax(area.top(), area.bottom() - label->height()));
-		label->move(lx, ly);
-		label->show();
-		m_peakLabels.append(label);
+	}
+	for (int i = used; i < m_peakLabels.size(); i++) {
+		m_peakLabels.at(i)->hide();
 	}
 }
 
@@ -341,5 +292,5 @@ bool PEFFTWindow::eventFilter(QObject *obj, QEvent *event) {
 	if (obj == m_plot && (event->type() == QEvent::Resize || event->type() == QEvent::Show)) {
 		layoutPeakLabels();
 	}
-	return QMainWindow::eventFilter(obj, event);
+	return PEWindowBase::eventFilter(obj, event);
 }

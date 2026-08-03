@@ -22,21 +22,9 @@
 #include <QFile>
 #include <QTextStream>
 
-namespace {
+#include "guidelogtime.h"
 
-// Parses a log timestamp ("yyyy-MM-dd HH:mm:ss.zzz", optionally quoted). Returns
-// an invalid QDateTime on failure.
-QDateTime parseLogTimestamp(QString value) {
-	value = value.trimmed();
-	if (value.size() >= 2 && value.startsWith('"') && value.endsWith('"')) {
-		value = value.mid(1, value.size() - 2);
-	}
-	QDateTime dt = QDateTime::fromString(value, "yyyy-MM-dd HH:mm:ss.zzz");
-	if (!dt.isValid()) {
-		dt = QDateTime::fromString(value, "yyyy-MM-dd HH:mm:ss");
-	}
-	return dt;
-}
+namespace {
 
 // Formats a duration in seconds as "1h 05m", "12m 34s" or "45s".
 QString formatDuration(qint64 seconds) {
@@ -140,8 +128,8 @@ QString GuideLogParser::makeSessionTitle(int index, const GuideSession &session)
 	const int rowCount = session.rows.size();
 	int timestampColumn = session.headers.indexOf("Timestamp");
 	if (timestampColumn >= 0) {
-		const QDateTime start = parseLogTimestamp(session.rows.first().at(timestampColumn));
-		const QDateTime end = parseLogTimestamp(session.rows.last().at(timestampColumn));
+		const QDateTime start = GuideLogTime::parse(session.rows.first().at(timestampColumn));
+		const QDateTime end = GuideLogTime::parse(session.rows.last().at(timestampColumn));
 		if (start.isValid() && end.isValid()) {
 			const QString startStr = start.toString("yyyy-MM-dd HH:mm:ss");
 			const QString durationStr = formatDuration(start.secsTo(end));

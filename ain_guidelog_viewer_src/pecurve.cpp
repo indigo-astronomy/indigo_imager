@@ -18,45 +18,38 @@
 
 #include "pecurve.h"
 
-#include <QDateTime>
 #include <QFile>
 #include <QTextStream>
 
 #include <algorithm>
 #include <cmath>
 #include <complex>
+#include <limits>
 
 #include "guidelogstats.h"
+#include "guidelogtime.h"
 
 namespace {
 
 constexpr double kTwoPi = 6.283185307179586476925286766559;
+constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
 
-// Parses "yyyy-MM-dd HH:mm:ss.zzz" (optionally quoted/space-padded). Returns an
-// invalid QDateTime on failure.
-QDateTime parseTimestamp(QString value) {
-	value = value.trimmed();
-	if (value.startsWith('"') && value.endsWith('"') && value.size() >= 2) {
-		value = value.mid(1, value.size() - 2);
-	}
-	QDateTime dt = QDateTime::fromString(value, "yyyy-MM-dd HH:mm:ss.zzz");
-	if (!dt.isValid()) {
-		dt = QDateTime::fromString(value, "yyyy-MM-dd HH:mm:ss");
-	}
-	return dt;
-}
-
-// Median of a copy of the samples (returns 0 when empty).
+// Median of a copy of the samples (returns 0 when empty). Uses nth_element
+// rather than a full sort: only the middle order statistic is wanted.
 double median(QVector<double> samples) {
 	if (samples.isEmpty()) {
 		return 0.0;
 	}
-	std::sort(samples.begin(), samples.end());
 	const int mid = samples.size() / 2;
-	if (samples.size() % 2 == 0) {
-		return 0.5 * (samples.at(mid - 1) + samples.at(mid));
+	std::nth_element(samples.begin(), samples.begin() + mid, samples.end());
+	const double hi = samples.at(mid);
+	if (samples.size() % 2 != 0) {
+		return hi;
 	}
-	return samples.at(mid);
+	// Even count: the other middle element is the largest of the lower half,
+	// which nth_element has already partitioned to the left.
+	const double lo = *std::max_element(samples.begin(), samples.begin() + mid);
+	return 0.5 * (lo + hi);
 }
 
 // Refines a spectral peak at bin k using quadratic (parabolic) interpolation
@@ -89,14 +82,15 @@ ParabolicPeak parabolicInterpolate(const QVector<double> &amplitude, int k) {
 	return result;
 }
 
-// Solves the m x m linear system a*z = b in place (Gaussian elimination with
-// partial pivoting). On success b holds the solution; returns false if singular.
-bool solveLinearSystem(QVector<QVector<double>> &a, QVector<double> &b) {
-	const int m = b.size();
-	for (int col = 0; col < m; col++) {
+// Solves the 4x4 system a*z = b in place (Gaussian elimination with partial
+// pivoting). On success b holds the solution; returns false if singular. Fixed
+// at 4x4 and taken by plain arrays so the detrend search below can keep it on
+// the stack — it is called a few hundred times per detrend.
+bool solve4(double a[4][4], double b[4]) {
+	for (int col = 0; col < 4; col++) {
 		int pivot = col;
 		double best = std::fabs(a[col][col]);
-		for (int r = col + 1; r < m; r++) {
+		for (int r = col + 1; r < 4; r++) {
 			if (std::fabs(a[r][col]) > best) {
 				best = std::fabs(a[r][col]);
 				pivot = r;
@@ -106,20 +100,22 @@ bool solveLinearSystem(QVector<QVector<double>> &a, QVector<double> &b) {
 			return false;
 		}
 		if (pivot != col) {
-			a[pivot].swap(a[col]);
+			for (int c = 0; c < 4; c++) {
+				std::swap(a[pivot][c], a[col][c]);
+			}
 			std::swap(b[pivot], b[col]);
 		}
-		for (int r = col + 1; r < m; r++) {
+		for (int r = col + 1; r < 4; r++) {
 			const double f = a[r][col] / a[col][col];
-			for (int c = col; c < m; c++) {
+			for (int c = col; c < 4; c++) {
 				a[r][c] -= f * a[col][c];
 			}
 			b[r] -= f * b[col];
 		}
 	}
-	for (int row = m - 1; row >= 0; row--) {
+	for (int row = 3; row >= 0; row--) {
 		double s = b[row];
-		for (int c = row + 1; c < m; c++) {
+		for (int c = row + 1; c < 4; c++) {
 			s -= a[row][c] * b[c];
 		}
 		b[row] = s / a[row][row];
@@ -171,10 +167,8 @@ void fftRadix2(QVector<std::complex<double>> &a) {
 
 } // namespace
 
-PECurveData PECurve::reconstruct(const QStringList &headers,
-                                 const QVector<QStringList> &rows,
-                                 const PECurveOptions &options) {
-	PECurveData out;
+PESamples PESamples::fromRows(const QStringList &headers, const QVector<QStringList> &rows) {
+	PESamples out;
 
 	const GuideColumns columns(headers);
 	if (rows.isEmpty() || columns.raPixel < 0) {
@@ -186,77 +180,117 @@ PECurveData PECurve::reconstruct(const QStringList &headers,
 		return out;
 	}
 
+	const int n = rows.size();
+
+	// X is elapsed seconds when the log's first row carries a usable timestamp,
+	// otherwise the plain sample index.
+	qint64 firstMs = 0;
+	const bool useTime = columns.timestamp >= 0 &&
+	                     GuideLogTime::parseMSecs(rows.first().at(columns.timestamp), &firstMs);
+	out.usedTime = useTime;
+
+	out.x.resize(n);
+	out.raPx.resize(n);
+	out.raCorr.resize(n);
+	if (columns.dither >= 0) {
+		out.dither.resize(n);
+	}
+
+	QVector<double> ratios;
+	const bool wantArcsec = columns.raArc >= 0;
+	if (wantArcsec) {
+		ratios.reserve(n);
+	}
+
+	for (int i = 0; i < n; ++i) {
+		const QStringList &row = rows.at(i);
+
+		double x = static_cast<double>(i);
+		if (useTime) {
+			qint64 ms = 0;
+			if (GuideLogTime::parseMSecs(row.at(columns.timestamp), &ms)) {
+				x = (ms - firstMs) / 1000.0;
+			}
+		}
+		out.x[i] = x;
+
+		bool pxOk = false;
+		const double px = row.at(columns.raPixel).toDouble(&pxOk);
+		out.raPx[i] = pxOk ? px : kNaN;
+
+		bool corrOk = false;
+		const double corr = row.at(columns.raCorr).toDouble(&corrOk);
+		out.raCorr[i] = corrOk ? corr : kNaN;
+
+		if (columns.dither >= 0) {
+			bool dOk = false;
+			const double dv = row.at(columns.dither).toDouble(&dOk);
+			out.dither[i] = (dOk && dv != 0.0);
+		}
+
+		if (wantArcsec && pxOk && std::abs(px) > 0.05) {
+			bool arcOk = false;
+			const double arc = row.at(columns.raArc).toDouble(&arcOk);
+			if (arcOk) {
+				ratios.append(arc / px);
+			}
+		}
+	}
+
+	if (wantArcsec) {
+		const double m = median(ratios);
+		if (m > 0.0) {
+			out.arcsecPerPx = m;
+			out.hasArcsecScale = true;
+		}
+	}
+	return out;
+}
+
+PECurveData PECurve::reconstruct(const QStringList &headers,
+                                 const QVector<QStringList> &rows,
+                                 const PECurveOptions &options) {
+	return reconstruct(PESamples::fromRows(headers, rows), options);
+}
+
+PECurveData PECurve::reconstruct(const PESamples &samples, const PECurveOptions &options) {
+	PECurveData out;
+
+	if (!samples.isValid()) {
+		out.message = samples.message.isEmpty()
+		                  ? QStringLiteral("No usable RA samples in this session.")
+		                  : samples.message;
+		return out;
+	}
+
 	const double rate = options.ratePxPerS; // px/s
 	out.hasRate = (rate > 0.0);
 	// The driver applies pulses of correction/(SPEED_RA*cos_dec), so the star
 	// actually moves correction*SPEED_RA*cos_dec. Undo that same cos(dec) scale.
 	const double cosDec = std::cos(options.decDeg * 0.017453292519943295); // deg->rad
-
-	// arcsec-per-pixel scale, derived from the log's paired px / arcsec columns.
-	double arcsecPerPx = 1.0;
-	if (options.arcsec && columns.raArc >= 0) {
-		QVector<double> ratios;
-		ratios.reserve(rows.size());
-		for (const QStringList &row : rows) {
-			bool pxOk = false;
-			bool arcOk = false;
-			const double px = row.at(columns.raPixel).toDouble(&pxOk);
-			const double arc = row.at(columns.raArc).toDouble(&arcOk);
-			if (pxOk && arcOk && std::abs(px) > 0.05) {
-				ratios.append(arc / px);
-			}
-		}
-		const double m = median(ratios);
-		if (m > 0.0) {
-			arcsecPerPx = m;
-		}
-	}
-	const double unitScale = options.arcsec ? arcsecPerPx : 1.0;
-
-	QDateTime firstTs;
-	if (columns.timestamp >= 0) {
-		firstTs = parseTimestamp(rows.first().at(columns.timestamp));
-	}
-	const bool useTime = firstTs.isValid();
+	const double unitScale = options.arcsec ? samples.arcsecPerPx : 1.0;
+	const bool useTime = samples.usedTime;
 
 	// First pass: compute the reconstruction per row. Dithering rows (and any
 	// unparseable rows) are marked as gaps: they neither advance the cumulative
 	// correction nor emit a value, so the deliberate dither moves stay out of
 	// the periodic error. X is elapsed seconds when timestamps are available.
-	const int n = rows.size();
-	QVector<double> rowX(n, 0.0);
+	const int n = samples.count();
+	const bool haveDither = options.excludeDither && samples.dither.size() == n;
+	const QVector<double> &rowX = samples.x;
 	QVector<double> rowRes(n, 0.0);
 	QVector<double> rowPe(n, 0.0);
 	QVector<bool> kept(n, false);
 
 	double cumCorrPx = 0.0;
 	for (int i = 0; i < n; ++i) {
-		const QStringList &row = rows.at(i);
-
-		double x = static_cast<double>(i);
-		if (useTime) {
-			const QDateTime ts = parseTimestamp(row.at(columns.timestamp));
-			if (ts.isValid()) {
-				x = firstTs.msecsTo(ts) / 1000.0;
-			}
-		}
-		rowX[i] = x;
-
-		bool isDither = false;
-		if (options.excludeDither && columns.dither >= 0) {
-			bool dOk = false;
-			const double dv = row.at(columns.dither).toDouble(&dOk);
-			isDither = (dOk && dv != 0.0);
-		}
-		bool resOk = false;
-		const double resPx = row.at(columns.raPixel).toDouble(&resOk);
-		if (isDither || !resOk) {
+		const double resPx = samples.raPx.at(i);
+		if ((haveDither && samples.dither.at(i)) || std::isnan(resPx)) {
 			continue; // gap: do not advance the cumulative correction
 		}
 
-		bool corrOk = false;
-		const double corrSec = row.at(columns.raCorr).toDouble(&corrOk);
-		if (corrOk) {
+		const double corrSec = samples.raCorr.at(i);
+		if (!std::isnan(corrSec)) {
 			// Corrections oppose the drift, so undo them by subtracting.
 			cumCorrPx -= corrSec * rate * cosDec;
 		}
@@ -350,11 +384,12 @@ QVector<double> PECurve::detrend(const QVector<double> &x, const QVector<double>
 	}
 
 	// Baseline: an ordinary least-squares straight line c0 + c1*u.
-	double suy = 0.0, suu = 0.0, sy = 0.0;
+	double suy = 0.0, suu = 0.0, sy = 0.0, syy = 0.0;
 	for (int i = 0; i < n; ++i) {
 		sy += y[i];
 		suy += u[i] * y[i];
 		suu += u[i] * u[i];
+		syy += y[i] * y[i];
 	}
 	double bestC0 = sy / n;
 	double bestC1 = (suu > 1e-12) ? (suy / suu) : 0.0;
@@ -366,42 +401,91 @@ QVector<double> PECurve::detrend(const QVector<double> &x, const QVector<double>
 	// line. The fundamental is found by scanning candidate periods (expressed as
 	// k = cycles across the window) and keeping the one with the smallest fit
 	// residual.
+	//
+	// The scan is the most expensive thing the PE tools do, so three things keep
+	// it cheap without changing what it computes:
+	//
+	//  - sin/cos are not re-evaluated per candidate. Stepping k by kStep rotates
+	//    the phasor (sin(w*u), cos(w*u)) by a fixed per-sample angle, so each
+	//    step is one complex multiply per sample. The phasor is re-seeded from
+	//    sin/cos every kReseed steps to keep rounding from accumulating.
+	//  - Only the sin/cos rows of the normal equations vary with k; the {1, u}
+	//    block and the right-hand side entries above it are loop invariants.
+	//  - The residual sum of squares comes from the normal equations themselves
+	//    (RSS = y'y - c'X'y holds at the least-squares solution), so there is no
+	//    second pass over the samples to evaluate the model.
 	if (n >= 8) {
-		const double twoPi = 6.283185307179586;
+		constexpr double kStep = 0.1;
+		constexpr int kReseed = 32;
 		// Highest frequency worth trying: keep at least ~5 samples per cycle, and
 		// cap at 40 cycles so a slow worm's drift search stays cheap.
 		const double kMax = std::min(40.0, static_cast<double>(n - 1) / 5.0);
+		const int steps = static_cast<int>((kMax - 1.0) / kStep + 1e-9) + 1;
+
+		QVector<double> sinCur(n), cosCur(n), sinStep(n), cosStep(n);
+		for (int i = 0; i < n; ++i) {
+			const double delta = kTwoPi * kStep * u[i];
+			sinStep[i] = std::sin(delta);
+			cosStep[i] = std::cos(delta);
+		}
+
 		double bestRss = -1.0;
-		for (double k = 1.0; k <= kMax + 1e-9; k += 0.1) {
-			const double w = twoPi * k;
-			// Normal equations for the basis {1, u, sin(w*u), cos(w*u)}.
-			QVector<QVector<double>> a(4, QVector<double>(4, 0.0));
-			QVector<double> b(4, 0.0);
-			for (int i = 0; i < n; ++i) {
-				const double phi[4] = {1.0, u[i], std::sin(w * u[i]), std::cos(w * u[i])};
-				for (int r = 0; r < 4; ++r) {
-					for (int c = 0; c < 4; ++c) {
-						a[r][c] += phi[r] * phi[c];
-					}
-					b[r] += phi[r] * y[i];
+		for (int step = 0; step < steps; ++step) {
+			if (step % kReseed == 0) {
+				const double w = kTwoPi * (1.0 + step * kStep);
+				for (int i = 0; i < n; ++i) {
+					sinCur[i] = std::sin(w * u[i]);
+					cosCur[i] = std::cos(w * u[i]);
 				}
 			}
-			QVector<QVector<double>> aSolve = a;
-			QVector<double> coeff = b;
-			if (!solveLinearSystem(aSolve, coeff)) {
-				continue;
-			}
-			double rss = 0.0;
+
+			// Normal equations for the basis {1, u, sin(w*u), cos(w*u)}. Note
+			// mean(u) == 0 by construction, so the 1-vs-u entries vanish.
+			double a02 = 0.0, a03 = 0.0, a12 = 0.0, a13 = 0.0;
+			double a22 = 0.0, a23 = 0.0, a33 = 0.0, b2 = 0.0, b3 = 0.0;
 			for (int i = 0; i < n; ++i) {
-				const double model = coeff[0] + coeff[1] * u[i] +
-				                     coeff[2] * std::sin(w * u[i]) + coeff[3] * std::cos(w * u[i]);
-				const double e = y[i] - model;
-				rss += e * e;
+				const double s = sinCur[i];
+				const double c = cosCur[i];
+				const double ui = u[i];
+				const double yi = y[i];
+				a02 += s;
+				a03 += c;
+				a12 += ui * s;
+				a13 += ui * c;
+				a22 += s * s;
+				a23 += s * c;
+				a33 += c * c;
+				b2 += s * yi;
+				b3 += c * yi;
 			}
-			if (bestRss < 0.0 || rss < bestRss) {
-				bestRss = rss;
-				bestC0 = coeff[0];
-				bestC1 = coeff[1];
+
+			double a[4][4] = {
+				{static_cast<double>(n), 0.0, a02, a03},
+				{0.0, suu, a12, a13},
+				{a02, a12, a22, a23},
+				{a03, a13, a23, a33},
+			};
+			const double rhs[4] = {sy, suy, b2, b3};
+			double coeff[4] = {rhs[0], rhs[1], rhs[2], rhs[3]};
+			if (solve4(a, coeff)) {
+				const double rss = syy - (coeff[0] * rhs[0] + coeff[1] * rhs[1] +
+				                          coeff[2] * rhs[2] + coeff[3] * rhs[3]);
+				if (bestRss < 0.0 || rss < bestRss) {
+					bestRss = rss;
+					bestC0 = coeff[0];
+					bestC1 = coeff[1];
+				}
+			}
+
+			// Advance the phasor to the next candidate, unless the next step
+			// re-seeds it from scratch anyway.
+			if (step + 1 < steps && (step + 1) % kReseed != 0) {
+				for (int i = 0; i < n; ++i) {
+					const double s = sinCur[i];
+					const double c = cosCur[i];
+					sinCur[i] = s * cosStep[i] + c * sinStep[i];
+					cosCur[i] = c * cosStep[i] - s * sinStep[i];
+				}
 			}
 		}
 	}
@@ -553,8 +637,12 @@ PEFFTData PECurve::computeFFT(const QVector<double> &x, const QVector<double> &y
 
 	// Zero-pad well beyond n0 (capped) so the peaks below can be located more
 	// precisely than the curve's natural (un-padded) frequency resolution.
+	// Padding only interpolates the spectrum, it adds no real resolution — see
+	// PEFFTData::naturalResolutionHz for what the session can actually resolve.
+	constexpr int kPadFactor = 4;
+	constexpr int kMaxFFTSize = 1 << 17;
 	int nfft = nextPow2(n0);
-	while (nfft < n0 * 4 && nfft < (1 << 17)) {
+	while (nfft < n0 * kPadFactor && nfft < kMaxFFTSize) {
 		nfft <<= 1;
 	}
 

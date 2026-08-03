@@ -19,6 +19,7 @@
 #include "guidelogviewerwindow.h"
 
 #include "guidelogstats.h"
+#include "peanalysis.h"
 #include "pecurvewindow.h"
 #include "pefftwindow.h"
 #include "balancebar.h"
@@ -55,6 +56,7 @@
 #include <QStandardItemModel>
 #include <QTableView>
 #include <QTextStream>
+#include <QTimer>
 #include <QVBoxLayout>
 #include <QSet>
 #include <QRegularExpression>
@@ -511,8 +513,12 @@ void GuideLogViewerWindow::closeLogFile() {
 	m_sessions.clear();
 	m_loadedPath.clear();
 	m_pePushedSession = -1;
+	m_peFftPushedSession = -1;
 	if (m_peWindow) {
 		m_peWindow->close();
+	}
+	if (m_peFftWindow) {
+		m_peFftWindow->close();
 	}
 
 	rebuildSessionSelector();
@@ -864,8 +870,7 @@ void GuideLogViewerWindow::updatePlot() {
 	if (m_rows.isEmpty()) {
 		showStatsMessage("No data loaded.");
 		m_plot->replot();
-		syncPeWindow({});
-		syncPeFftWindow({});
+		schedulePeWindowSync({});
 		return;
 	}
 
@@ -938,9 +943,8 @@ void GuideLogViewerWindow::updatePlot() {
 		showStatsMessage("No plotted points after applying the current filters.");
 	}
 
-	// Keep the PE window in step with the rows currently on the graph.
-	syncPeWindow(selection.visibleRows);
-	syncPeFftWindow(selection.visibleRows);
+	// Keep the PE windows in step with the rows currently on the graph.
+	schedulePeWindowSync(selection.visibleRows);
 }
 
 double GuideLogViewerWindow::currentSessionCalibration() const {
@@ -998,38 +1002,15 @@ void GuideLogViewerWindow::openPeCurveWindow() {
 	if (!m_peWindow) {
 		m_peWindow = new PECurveWindow(this);
 		// Force a full session push (with calibration pre-fill) into the fresh
-		// window. Once open it stays in sync via updatePlot()/syncPeWindow(), so
-		// re-clicking the button just re-shows it without clobbering a
-		// hand-entered calibration.
+		// window. Once open it stays in sync via updatePlot(), so re-clicking the
+		// button just re-shows it without clobbering a hand-entered calibration.
 		m_pePushedSession = -1;
 		updatePlot();
+		flushPeWindowSync(); // do not make the new window wait out the debounce
 	}
 	m_peWindow->show();
 	m_peWindow->raise();
 	m_peWindow->activateWindow();
-}
-
-void GuideLogViewerWindow::syncPeWindow(const QVector<int> &visibleRows) {
-	if (!m_peWindow) {
-		return;
-	}
-
-	QVector<QStringList> subset;
-	subset.reserve(visibleRows.size());
-	for (int row : visibleRows) {
-		if (row >= 0 && row < m_rows.size()) {
-			subset.append(m_rows.at(row));
-		}
-	}
-
-	if (m_pePushedSession != m_selectedSessionIndex) {
-		// New session: reset the window and pre-fill the calibration/Dec from the log.
-		m_peWindow->setSession(m_headers, subset, currentSessionCalibration(), currentSessionMountDec());
-		m_pePushedSession = m_selectedSessionIndex;
-	} else {
-		// Same session, the graph window just changed: keep the user's calibration.
-		m_peWindow->updateRows(m_headers, subset);
-	}
 }
 
 void GuideLogViewerWindow::openPeFftWindow() {
@@ -1039,14 +1020,38 @@ void GuideLogViewerWindow::openPeFftWindow() {
 		// window; see openPeCurveWindow() for why.
 		m_peFftPushedSession = -1;
 		updatePlot();
+		flushPeWindowSync();
 	}
 	m_peFftWindow->show();
 	m_peFftWindow->raise();
 	m_peFftWindow->activateWindow();
 }
 
-void GuideLogViewerWindow::syncPeFftWindow(const QVector<int> &visibleRows) {
-	if (!m_peFftWindow) {
+void GuideLogViewerWindow::schedulePeWindowSync(const QVector<int> &visibleRows) {
+	if (!m_peWindow && !m_peFftWindow) {
+		return; // nothing to feed; do not even build the row subset
+	}
+	m_pendingPeRows = visibleRows;
+	if (!m_peSyncTimer) {
+		m_peSyncTimer = new QTimer(this);
+		m_peSyncTimer->setSingleShot(true);
+		m_peSyncTimer->setInterval(120);
+		connect(m_peSyncTimer, &QTimer::timeout, this, [this]() {
+			syncPeWindows(m_pendingPeRows);
+		});
+	}
+	m_peSyncTimer->start(); // restarts the countdown, coalescing a burst
+}
+
+void GuideLogViewerWindow::flushPeWindowSync() {
+	if (m_peSyncTimer && m_peSyncTimer->isActive()) {
+		m_peSyncTimer->stop();
+		syncPeWindows(m_pendingPeRows);
+	}
+}
+
+void GuideLogViewerWindow::syncPeWindows(const QVector<int> &visibleRows) {
+	if (!m_peWindow && !m_peFftWindow) {
 		return;
 	}
 
@@ -1058,11 +1063,40 @@ void GuideLogViewerWindow::syncPeFftWindow(const QVector<int> &visibleRows) {
 		}
 	}
 
-	if (m_peFftPushedSession != m_selectedSessionIndex) {
-		m_peFftWindow->setSession(m_headers, subset, currentSessionCalibration(), currentSessionMountDec());
-		m_peFftPushedSession = m_selectedSessionIndex;
-	} else {
-		m_peFftWindow->updateRows(m_headers, subset);
+	if (!m_peAnalysis) {
+		m_peAnalysis = std::make_shared<PEAnalysis>();
+	}
+	m_peAnalysis->setRows(m_headers, subset);
+
+	// A window that has not yet seen this session gets a full push, which also
+	// pre-fills the calibration/Dec from the log; one that has just keeps the
+	// user's entries and redraws from the shared analysis. Reading the
+	// calibration means scanning the session metadata, so it is only done when
+	// a push actually needs it.
+	const bool pushPe = m_peWindow && m_pePushedSession != m_selectedSessionIndex;
+	const bool pushFft = m_peFftWindow && m_peFftPushedSession != m_selectedSessionIndex;
+	double calibration = 0.0;
+	double dec = 0.0;
+	if (pushPe || pushFft) {
+		calibration = currentSessionCalibration();
+		dec = currentSessionMountDec();
+	}
+
+	if (m_peWindow) {
+		if (pushPe) {
+			m_peWindow->setSession(m_peAnalysis, calibration, dec);
+			m_pePushedSession = m_selectedSessionIndex;
+		} else {
+			m_peWindow->refresh();
+		}
+	}
+	if (m_peFftWindow) {
+		if (pushFft) {
+			m_peFftWindow->setSession(m_peAnalysis, calibration, dec);
+			m_peFftPushedSession = m_selectedSessionIndex;
+		} else {
+			m_peFftWindow->refresh();
+		}
 	}
 }
 

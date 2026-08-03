@@ -22,18 +22,16 @@
 #include <QComboBox>
 #include <QDir>
 #include <QDoubleSpinBox>
-#include <QFile>
 #include <QFileDialog>
 #include <QHBoxLayout>
-#include <QIcon>
 #include <QLabel>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSignalBlocker>
-#include <QTextStream>
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "peanalysis.h"
 #include "pecurve.h"
 #include "verticallabel.h"
 
@@ -42,32 +40,36 @@
 #include <algorithm>
 
 PECurveWindow::PECurveWindow(QWidget *parent)
-    : QMainWindow(parent, Qt::Window) {
-	setWindowTitle(tr("Reconstructed RA Periodic Error"));
-	resize(1000, 620);
-	setWindowIcon(QIcon(":/resource/ain_guidelog_viewer.png"));
+    : PEWindowBase(tr("Reconstructed RA Periodic Error"), parent) {
+	createControls();
+	addSummaryRow(m_exportButton);
+	addPlotRow();
 
-	QFile f(":/resource/control_panel.qss");
-	if (f.open(QFile::ReadOnly | QFile::Text)) {
-		QTextStream ts(&f);
-		setStyleSheet(ts.readAll());
-		f.close();
-	}
+	m_plot->xAxis->setLabel("Elapsed time (s)");
+	m_plot->yAxis->setLabel("RA (arcsec)");
+	m_yCaptionLabel->setText("RA (arcsec)");
+	m_xCaptionLabel->setText("Elapsed time (s)");
 
-	createUi();
-	recompute();
+	m_summaryLabel->setText("Load a session to reconstruct the RA periodic error.");
+
+	connect(m_calibrationSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+	        this, [this](double) { recompute(); });
+	connect(m_decSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+	        this, [this](double) { recompute(); });
+	connect(m_unitCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+	        this, [this](int) { recompute(); });
+	connect(m_smoothCheck, &QCheckBox::toggled, this, [this](bool) { recompute(); });
+	connect(m_smoothResidualCheck, &QCheckBox::toggled, this, [this](bool) { recompute(); });
+	connect(m_detrendCheck, &QCheckBox::toggled, this, [this](bool checked) {
+		m_linearDetrendCheck->setEnabled(checked); // linear detrend only applies when removing drift
+		recompute();
+	});
+	connect(m_linearDetrendCheck, &QCheckBox::toggled, this, [this](bool) { recompute(); });
+	connect(m_exportButton, &QPushButton::clicked, this, [this]() { exportCsv(); });
 }
 
-void PECurveWindow::createUi() {
-	QWidget *central = new QWidget(this);
-	setCentralWidget(central);
-
-	QVBoxLayout *rootLayout = new QVBoxLayout(central);
-	rootLayout->setContentsMargins(6, 6, 6, 6);
-	rootLayout->setSpacing(6);
-
-	// --- Controls row ---
-	QHBoxLayout *controls = new QHBoxLayout();
+void PECurveWindow::createControls() {
+	QWidget *central = centralPanel();
 
 	m_calibrationSpin = new QDoubleSpinBox(central);
 	m_calibrationSpin->setDecimals(4);
@@ -119,27 +121,14 @@ void PECurveWindow::createUi() {
 	m_exportButton = new QPushButton("Export CSV...", central);
 	m_exportButton->setToolTip("Save the currently plotted periodic-error and residual curves to a CSV file.");
 
-	m_summaryLabel = new QLabel("Load a session to reconstruct the RA periodic error.", central);
-	m_summaryLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-	m_summaryLabel->setTextFormat(Qt::RichText);
-	m_summaryLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
-	{
-		QFont summaryFont = m_summaryLabel->font();
-		if (summaryFont.pointSizeF() > 0.0) {
-			summaryFont.setPointSizeF(summaryFont.pointSizeF() + 2.0);
-		} else {
-			summaryFont.setPixelSize(summaryFont.pixelSize() + 2);
-		}
-		m_summaryLabel->setFont(summaryFont);
-	}
-
-	controls->addWidget(new QLabel("Calibration (px/s):"));
+	QHBoxLayout *controls = new QHBoxLayout();
+	controls->addWidget(new QLabel("Calibration (px/s):", central));
 	controls->addWidget(m_calibrationSpin);
 	controls->addSpacing(8);
-	controls->addWidget(new QLabel("Dec:"));
+	controls->addWidget(new QLabel("Dec:", central));
 	controls->addWidget(m_decSpin);
 	controls->addSpacing(8);
-	controls->addWidget(new QLabel("Units:"));
+	controls->addWidget(new QLabel("Units:", central));
 	controls->addWidget(m_unitCombo);
 	controls->addSpacing(8);
 	controls->addWidget(m_detrendCheck);
@@ -150,70 +139,10 @@ void PECurveWindow::createUi() {
 	controls->addSpacing(8);
 	controls->addWidget(m_smoothResidualCheck);
 	controls->addStretch(1);
-	rootLayout->addLayout(controls);
-
-	// Stats on their own line beneath the controls, with the export button
-	// aligned to the right of it.
-	QHBoxLayout *summaryRow = new QHBoxLayout();
-	summaryRow->addWidget(m_summaryLabel, 1);
-	summaryRow->addWidget(m_exportButton, 0, Qt::AlignRight);
-	rootLayout->addLayout(summaryRow);
-
-	// --- Plot ---
-	m_plot = new SimplePlot(SimplePlot::Graph, central);
-	m_plot->setPlotMargins(56, 12, 16, 28);
-	m_plot->xAxis->setLabel("Elapsed time (s)");
-	m_plot->yAxis->setLabel("RA (arcsec)");
-	m_plot->xAxis2->setVisible(true);
-	m_plot->yAxis2->setVisible(true);
-	m_plot->xAxis2->setTickLabels(false);
-	m_plot->yAxis2->setTickLabels(false);
-
-	// SimplePlot's Graph mode does not paint axis captions, so draw them as
-	// separate widgets: a rotated label to the left of the plot for Y, and a
-	// centered label beneath it for X.
-	m_yCaptionLabel = new VerticalLabel(central);
-	m_yCaptionLabel->setText("RA (arcsec)");
-
-	QHBoxLayout *plotRow = new QHBoxLayout();
-	plotRow->setContentsMargins(0, 0, 0, 0);
-	plotRow->setSpacing(2);
-	plotRow->addWidget(m_yCaptionLabel);
-	plotRow->addWidget(m_plot, 1);
-	rootLayout->addLayout(plotRow, 1);
-
-	m_xCaptionLabel = new QLabel("Elapsed time (s)", central);
-	m_xCaptionLabel->setAlignment(Qt::AlignHCenter);
-	rootLayout->addWidget(m_xCaptionLabel);
-
-	// Keep both captions visually identical (the rotated one otherwise inherits
-	// a different effective font than the styled QLabel).
-	m_yCaptionLabel->setFont(m_xCaptionLabel->font());
-
-	connect(m_calibrationSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-	        this, [this](double) { recompute(); });
-	connect(m_decSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-	        this, [this](double) { recompute(); });
-	connect(m_unitCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-	        this, [this](int) { recompute(); });
-	connect(m_smoothCheck, &QCheckBox::toggled, this, [this](bool) { recompute(); });
-	connect(m_smoothResidualCheck, &QCheckBox::toggled, this, [this](bool) { recompute(); });
-	connect(m_detrendCheck, &QCheckBox::toggled, this, [this](bool checked) {
-		m_linearDetrendCheck->setEnabled(checked); // linear detrend only applies when removing drift
-		recompute();
-	});
-	connect(m_linearDetrendCheck, &QCheckBox::toggled, this, [this](bool) { recompute(); });
-	connect(m_exportButton, &QPushButton::clicked, this, [this]() { exportCsv(); });
+	rootLayout()->addLayout(controls);
 }
 
-void PECurveWindow::setSession(const QStringList &headers,
-                               const QVector<QStringList> &rows,
-                               double calibrationPxPerS,
-                               double mountDecDeg) {
-	m_headers = headers;
-	m_rows = rows;
-	m_logCalibration = calibrationPxPerS;
-
+void PECurveWindow::applyLogDefaults(double calibrationPxPerS, double mountDecDeg) {
 	// Pre-fill the calibration from the log when it carried one. The user can
 	// still override it by hand afterwards.
 	if (calibrationPxPerS > 0.0) {
@@ -227,27 +156,22 @@ void PECurveWindow::setSession(const QStringList &headers,
 		const QSignalBlocker blocker(m_decSpin);
 		m_decSpin->setValue(mountDecDeg);
 	}
-
-	recompute();
-}
-
-void PECurveWindow::updateRows(const QStringList &headers,
-                               const QVector<QStringList> &rows) {
-	m_headers = headers;
-	m_rows = rows;
-	recompute();
 }
 
 void PECurveWindow::recompute() {
 	if (!m_plot) {
 		return;
 	}
-	m_plot->clearGraphs();
-	m_plot->clearCustomXAxisTicks();
 
 	const bool arcsecUnit = (m_unitCombo->currentData().toString() == "arcsec");
 	const QString unitLabel = arcsecUnit ? QStringLiteral("arcsec") : QStringLiteral("px");
 	m_yCaptionLabel->setText(QString("RA (%1)").arg(unitLabel));
+
+	if (!hasAnalysis()) {
+		m_lastValid = false;
+		showPlaceholder("Load a session to reconstruct the RA periodic error.");
+		return;
+	}
 
 	PECurveOptions options;
 	options.ratePxPerS = m_calibrationSpin->value();
@@ -256,15 +180,16 @@ void PECurveWindow::recompute() {
 	options.removeDrift = m_detrendCheck->isChecked();
 	options.linearDetrend = m_linearDetrendCheck->isChecked();
 
-	const PECurveData data = PECurve::reconstruct(m_headers, m_rows, options);
+	const std::shared_ptr<const PEResult> result = analysis()->reconstruct(options);
+	const PECurveData &data = result->curve;
 	if (!data.valid) {
-		m_summaryLabel->setText(data.message);
-		m_plot->xAxis->setRange(0, 1);
-		m_plot->yAxis->setRange(-1, 1);
-		m_plot->replot();
 		m_lastValid = false;
+		showPlaceholder(data.message);
 		return;
 	}
+
+	m_plot->clearGraphs();
+	m_plot->clearCustomXAxisTicks();
 
 	// The smoothing toggles only change what is drawn (moving-average traces);
 	// the reported numbers below are unaffected.
@@ -322,20 +247,12 @@ void PECurveWindow::recompute() {
 	const double peP2P = PECurve::peakToPeak(peSeries);
 	const double peRms = PECurve::rms(data.pe);
 
-	auto num = [](double v, int prec) { return QString::number(v, 'f', prec); };
 	const QString &u = unitLabel;
-	const QString sep = QStringLiteral(" &nbsp;&nbsp;&middot;&nbsp;&nbsp; ");
-	// Render the two stat lines as separate blocks so we control the gap between
-	// them (a plain <br> is too tight).
-	auto twoLines = [](const QString &a, const QString &b) {
-		return QStringLiteral("<div style='margin:0'>") + a +
-		       QStringLiteral("</div><div style='margin-top:7px'>") + b +
-		       QStringLiteral("</div>");
-	};
+	const QString sep = separator();
 
 	if (!data.hasRate) {
-		const QString line1 = "<b>Residual</b>&nbsp;&nbsp; peak-to-peak <b>" + num(peP2P, 3) + "</b> " + u +
-		                      sep + "RMS <b>" + num(peRms, 3) + "</b> " + u;
+		const QString line1 = "<b>Residual</b>&nbsp;&nbsp; peak-to-peak <b>" + number(peP2P, 3) + "</b> " + u +
+		                      sep + "RMS <b>" + number(peRms, 3) + "</b> " + u;
 		const QString line2 = "Enter the RA calibration (px/s) to reconstruct the periodic error "
 		                      "and its suppression.";
 		m_summaryLabel->setText(twoLines(line1, line2));
@@ -358,18 +275,18 @@ void PECurveWindow::recompute() {
 	const double periodicSuppr = (peRmsSm > 0.0) ? (1.0 - resRmsSm / peRmsSm) * 100.0 : 0.0;
 
 	// Suppression factor: how many times smaller the residual is than the PE.
-	auto factorStr = [](double peRms, double resRms) -> QString {
-		if (peRms <= 0.0) return QStringLiteral("0");
-		if (resRms <= 0.0) return QStringLiteral("&infin;");
-		return QString::number(peRms / resRms, 'f', 1);
+	auto factorStr = [](double pe, double res) -> QString {
+		if (pe <= 0.0) return QStringLiteral("0");
+		if (res <= 0.0) return QStringLiteral("&infin;");
+		return QString::number(pe / res, 'f', 1);
 	};
 
-	const QString line1 = "<b>Periodic error:</b>&nbsp;&nbsp; Peak-to-Peak <b>" + num(peP2P, 3) + "</b> " + u +
-	                      sep + "RMS <b>" + num(peRms, 3) + "</b> " + u +
-	                      sep + "Residual RMS <b>" + num(resRmsRaw, 3) + "</b> " + u;
-	const QString line2 = "<b>Suppression:</b>&nbsp;&nbsp; Periodic error <b>" + num(periodicSuppr, 1) + "%</b> (" +
+	const QString line1 = "<b>Periodic error:</b>&nbsp;&nbsp; Peak-to-Peak <b>" + number(peP2P, 3) + "</b> " + u +
+	                      sep + "RMS <b>" + number(peRms, 3) + "</b> " + u +
+	                      sep + "Residual RMS <b>" + number(resRmsRaw, 3) + "</b> " + u;
+	const QString line2 = "<b>Suppression:</b>&nbsp;&nbsp; Periodic error <b>" + number(periodicSuppr, 1) + "%</b> (" +
 	                      factorStr(peRmsSm, resRmsSm) + "&times;)" +
-	                      sep + "Overall <b>" + num(totalSuppr, 1) + "%</b> (" +
+	                      sep + "Overall <b>" + number(totalSuppr, 1) + "%</b> (" +
 	                      factorStr(peRmsRaw, resRmsRaw) + "&times;)";
 	m_summaryLabel->setText(twoLines(line1, line2));
 }

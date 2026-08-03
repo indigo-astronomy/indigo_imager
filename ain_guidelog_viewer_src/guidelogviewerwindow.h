@@ -24,6 +24,8 @@
 #include <QStringList>
 #include <QList>
 
+#include <memory>
+
 #include "guidelogparser.h"
 
 class QLabel;
@@ -35,7 +37,9 @@ class QTableView;
 class QStandardItemModel;
 class QPushButton;
 class QSpinBox;
+class QTimer;
 class SimplePlot;
+class PEAnalysis;
 class PECurveWindow;
 class PEFFTWindow;
 class BalanceBar;
@@ -67,11 +71,16 @@ private:
 	void updatePlot();
 	void openPeCurveWindow();
 	void openPeFftWindow();
-	// Pushes the rows currently visible on the graph into the PE window so its
-	// reconstruction always matches what is displayed.
-	void syncPeWindow(const QVector<int> &visibleRows);
-	// Same, for the PE spectrum window.
-	void syncPeFftWindow(const QVector<int> &visibleRows);
+	// Queues the rows currently visible on the graph for the open PE windows, so
+	// their reconstruction always matches what is displayed. Debounced: dragging
+	// a range spin box or a table selection fires this many times in a row, and
+	// the reconstruction behind it is far too expensive to run per tick.
+	void schedulePeWindowSync(const QVector<int> &visibleRows);
+	// Runs a queued sync straight away (used when a window is first opened, so
+	// it does not come up blank for the length of the debounce).
+	void flushPeWindowSync();
+	// Pushes the queued rows into whichever PE windows exist.
+	void syncPeWindows(const QVector<int> &visibleRows);
 	double currentSessionCalibration() const;
 	double currentSessionMountDec() const;
 
@@ -116,6 +125,11 @@ private:
 	QStringList m_headers;
 	QVector<QStringList> m_rows;
 	QVector<int> m_numericColumns;
+	// Decoded rows + cached reconstructions, shared by both PE windows so the
+	// same session is not parsed and reconstructed once per window.
+	std::shared_ptr<PEAnalysis> m_peAnalysis;
+	QTimer *m_peSyncTimer = nullptr;
+	QVector<int> m_pendingPeRows;
 	PECurveWindow *m_peWindow = nullptr;
 	int m_pePushedSession = -1;
 	PEFFTWindow *m_peFftWindow = nullptr;

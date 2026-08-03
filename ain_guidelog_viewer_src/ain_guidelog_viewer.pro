@@ -19,22 +19,28 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
 	$$PWD/main.cpp \
 	$$PWD/guidelogviewerwindow.cpp \
+	$$PWD/pewindowbase.cpp \
 	$$PWD/pecurvewindow.cpp \
 	$$PWD/pecurve.cpp \
+	$$PWD/peanalysis.cpp \
 	$$PWD/pefftwindow.cpp \
 	$$PWD/guidelogparser.cpp \
 	$$PWD/guidelogstats.cpp \
+	$$PWD/guidelogtime.cpp \
 	$$PWD/../common_src/balancebar.cpp \
 	$$PWD/../external/simpleplot/simpleplot.cpp
 
 HEADERS += \
 	$$PWD/guidelogviewerwindow.h \
+	$$PWD/pewindowbase.h \
 	$$PWD/pecurvewindow.h \
 	$$PWD/pecurve.h \
+	$$PWD/peanalysis.h \
 	$$PWD/pefftwindow.h \
 	$$PWD/verticallabel.h \
 	$$PWD/guidelogparser.h \
 	$$PWD/guidelogstats.h \
+	$$PWD/guidelogtime.h \
 	$$PWD/../common_src/balancebar.h \
 	$$PWD/../external/simpleplot/simpleplot.h
 
