@@ -37,6 +37,7 @@ class QPushButton;
 class QSpinBox;
 class SimplePlot;
 class PECurveWindow;
+class PEFFTWindow;
 class BalanceBar;
 
 struct GuideAxisStats;
@@ -65,9 +66,12 @@ private:
 	void fitDataColumns();
 	void updatePlot();
 	void openPeCurveWindow();
+	void openPeFftWindow();
 	// Pushes the rows currently visible on the graph into the PE window so its
 	// reconstruction always matches what is displayed.
 	void syncPeWindow(const QVector<int> &visibleRows);
+	// Same, for the PE spectrum window.
+	void syncPeFftWindow(const QVector<int> &visibleRows);
 	double currentSessionCalibration() const;
 	double currentSessionMountDec() const;
 
@@ -89,6 +93,7 @@ private:
 	QSpinBox *m_xRangeSpin;
 	QCheckBox *m_excludeDitherCheck;
 	QPushButton *m_peButton;
+	QPushButton *m_peFftButton;
 	QLabel *m_statsSummaryLabel;
 	BalanceBar *m_raBalanceBar;
 	BalanceBar *m_decBalanceBar;
@@ -113,6 +118,8 @@ private:
 	QVector<int> m_numericColumns;
 	PECurveWindow *m_peWindow = nullptr;
 	int m_pePushedSession = -1;
+	PEFFTWindow *m_peFftWindow = nullptr;
+	int m_peFftPushedSession = -1;
 };
 
 #endif // GUIDELOGVIEWERWINDOW_H

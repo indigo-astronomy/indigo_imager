@@ -24,10 +24,13 @@
 
 #include <algorithm>
 #include <cmath>
+#include <complex>
 
 #include "guidelogstats.h"
 
 namespace {
+
+constexpr double kTwoPi = 6.283185307179586476925286766559;
 
 // Parses "yyyy-MM-dd HH:mm:ss.zzz" (optionally quoted/space-padded). Returns an
 // invalid QDateTime on failure.
@@ -54,6 +57,36 @@ double median(QVector<double> samples) {
 		return 0.5 * (samples.at(mid - 1) + samples.at(mid));
 	}
 	return samples.at(mid);
+}
+
+// Refines a spectral peak at bin k using quadratic (parabolic) interpolation
+// of the amplitude in the surrounding bins, since the true peak generally
+// falls between two FFT bins. Returns the fractional bin offset (-0.5..0.5)
+// and the interpolated peak amplitude; falls back to no offset at the array
+// edges or a degenerate (flat) neighbourhood.
+struct ParabolicPeak {
+	double binOffset = 0.0;
+	double amplitude = 0.0;
+};
+
+ParabolicPeak parabolicInterpolate(const QVector<double> &amplitude, int k) {
+	ParabolicPeak result;
+	if (k <= 0 || k >= amplitude.size() - 1) {
+		result.amplitude = amplitude.at(k);
+		return result;
+	}
+	const double alpha = amplitude.at(k - 1);
+	const double beta = amplitude.at(k);
+	const double gamma = amplitude.at(k + 1);
+	const double denom = alpha - 2.0 * beta + gamma;
+	if (std::fabs(denom) < 1e-15) {
+		result.amplitude = beta;
+		return result;
+	}
+	const double p = std::max(-1.0, std::min(1.0, 0.5 * (alpha - gamma) / denom));
+	result.binOffset = p;
+	result.amplitude = beta - 0.25 * (alpha - gamma) * p;
+	return result;
 }
 
 // Solves the m x m linear system a*z = b in place (Gaussian elimination with
@@ -92,6 +125,48 @@ bool solveLinearSystem(QVector<QVector<double>> &a, QVector<double> &b) {
 		b[row] = s / a[row][row];
 	}
 	return true;
+}
+
+// Smallest power of two >= n (n >= 1).
+int nextPow2(int n) {
+	int p = 1;
+	while (p < n) {
+		p <<= 1;
+	}
+	return p;
+}
+
+// In-place iterative radix-2 Cooley-Tukey FFT (decimation in time). a.size()
+// must be a power of two.
+void fftRadix2(QVector<std::complex<double>> &a) {
+	const int n = a.size();
+	if (n <= 1) {
+		return;
+	}
+	for (int i = 1, j = 0; i < n; i++) {
+		int bit = n >> 1;
+		for (; j & bit; bit >>= 1) {
+			j ^= bit;
+		}
+		j ^= bit;
+		if (i < j) {
+			std::swap(a[i], a[j]);
+		}
+	}
+	for (int len = 2; len <= n; len <<= 1) {
+		const double ang = -kTwoPi / len;
+		const std::complex<double> wlen(std::cos(ang), std::sin(ang));
+		for (int i = 0; i < n; i += len) {
+			std::complex<double> w(1.0, 0.0);
+			for (int k = 0; k < len / 2; k++) {
+				const std::complex<double> u = a[i + k];
+				const std::complex<double> v = a[i + k + len / 2] * w;
+				a[i + k] = u + v;
+				a[i + k + len / 2] = u - v;
+				w *= wlen;
+			}
+		}
+	}
 }
 
 } // namespace
@@ -408,6 +483,183 @@ double PECurve::rms(const QVector<double> &data) {
 		sumSq += v * v;
 	}
 	return std::sqrt(sumSq / data.size());
+}
+
+PEFFTData PECurve::computeFFT(const QVector<double> &x, const QVector<double> &y) {
+	PEFFTData out;
+	const int n = y.size();
+	if (n < 8 || x.size() != n) {
+		out.message = "Not enough samples for an FFT.";
+		return out;
+	}
+
+	// The FFT assumes evenly spaced samples; guiding logs have small timing
+	// jitter, so resample onto a uniform grid at the median sample interval.
+	QVector<double> dts;
+	dts.reserve(n - 1);
+	for (int i = 1; i < n; i++) {
+		const double d = x.at(i) - x.at(i - 1);
+		if (d > 0.0) {
+			dts.append(d);
+		}
+	}
+	if (dts.isEmpty()) {
+		out.message = "Samples do not advance in time.";
+		return out;
+	}
+	const double dt = median(dts);
+	const double duration = x.last() - x.first();
+	const int n0 = static_cast<int>(duration / dt) + 1;
+	if (n0 < 8) {
+		out.message = "Session is too short for an FFT.";
+		return out;
+	}
+
+	QVector<double> resampled(n0);
+	int srcIdx = 0;
+	for (int k = 0; k < n0; k++) {
+		const double t = x.first() + k * dt;
+		while (srcIdx + 1 < n - 1 && x.at(srcIdx + 1) < t) {
+			srcIdx++;
+		}
+		const int i0 = srcIdx;
+		const int i1 = std::min(i0 + 1, n - 1);
+		const double x0 = x.at(i0);
+		const double x1 = x.at(i1);
+		const double frac = (x1 > x0) ? (t - x0) / (x1 - x0) : 0.0;
+		resampled[k] = y.at(i0) + (y.at(i1) - y.at(i0)) * frac;
+	}
+
+	// Remove the DC mean, then apply a Hamming window (reduces spectral leakage
+	// from the curve's non-periodic edges at the cost of some frequency
+	// resolution, an acceptable trade-off for picking out the worm harmonics).
+	double mean = 0.0;
+	for (double v : resampled) {
+		mean += v;
+	}
+	mean /= n0;
+
+	QVector<double> windowed(n0);
+	double sumWindow = 0.0;
+	for (int k = 0; k < n0; k++) {
+		const double w = (n0 > 1) ? (0.54 - 0.46 * std::cos(kTwoPi * k / (n0 - 1))) : 1.0;
+		windowed[k] = (resampled.at(k) - mean) * w;
+		sumWindow += w;
+	}
+	if (sumWindow <= 0.0) {
+		out.message = "Session is too short for an FFT.";
+		return out;
+	}
+
+	// Zero-pad well beyond n0 (capped) so the peaks below can be located more
+	// precisely than the curve's natural (un-padded) frequency resolution.
+	int nfft = nextPow2(n0);
+	while (nfft < n0 * 4 && nfft < (1 << 17)) {
+		nfft <<= 1;
+	}
+
+	QVector<std::complex<double>> spectrum(nfft, std::complex<double>(0.0, 0.0));
+	for (int k = 0; k < n0; k++) {
+		spectrum[k] = std::complex<double>(windowed.at(k), 0.0);
+	}
+	fftRadix2(spectrum);
+
+	const double sampleRate = 1.0 / dt;
+	const int bins = nfft / 2 + 1;
+	out.freq.resize(bins);
+	out.amplitude.resize(bins);
+	for (int k = 0; k < bins; k++) {
+		const double mag = std::abs(spectrum.at(k));
+		out.amplitude[k] = (k == 0) ? (mag / sumWindow) : (2.0 * mag / sumWindow);
+		out.freq[k] = k * sampleRate / nfft;
+	}
+	out.sampleRateHz = sampleRate;
+	out.naturalResolutionHz = 1.0 / duration;
+	out.valid = true;
+	return out;
+}
+
+QVector<PEFFTPeak> PECurve::findHarmonics(const PEFFTData &fft, double minRelativeAmplitude, double maxPeriodS) {
+	QVector<PEFFTPeak> peaks;
+	if (!fft.valid || fft.amplitude.size() < 3) {
+		return peaks;
+	}
+	const double df = fft.freq.at(1) - fft.freq.at(0);
+	if (df <= 0.0) {
+		return peaks;
+	}
+	const double minFrequencyHz = (maxPeriodS > 0.0) ? (1.0 / maxPeriodS) : 0.0;
+
+	// Only genuine local maxima count as peaks (excludes DC and the Nyquist
+	// bin, which have no lower/upper neighbour to compare against), each
+	// refined to sub-bin precision with a quadratic fit.
+	struct RawPeak {
+		double frequencyHz;
+		double amplitude;
+	};
+	QVector<RawPeak> rawPeaks;
+	for (int k = 1; k < fft.amplitude.size() - 1; k++) {
+		const double v = fft.amplitude.at(k);
+		if (v > fft.amplitude.at(k - 1) && v > fft.amplitude.at(k + 1)) {
+			const ParabolicPeak refined = parabolicInterpolate(fft.amplitude, k);
+			rawPeaks.append({(k + refined.binOffset) * df, refined.amplitude});
+		}
+	}
+	if (rawPeaks.isEmpty()) {
+		return peaks;
+	}
+
+	// The fundamental is the strongest peak at or above minFrequencyHz (i.e.
+	// within maxPeriodS), so long-period drift leakage near DC can't hijack it
+	// and turn the real periodic error into some huge-numbered "harmonic".
+	int fundIdx = -1;
+	for (int i = 0; i < rawPeaks.size(); i++) {
+		if (rawPeaks.at(i).frequencyHz < minFrequencyHz) {
+			continue;
+		}
+		if (fundIdx < 0 || rawPeaks.at(i).amplitude > rawPeaks.at(fundIdx).amplitude) {
+			fundIdx = i;
+		}
+	}
+	if (fundIdx < 0) {
+		return peaks;
+	}
+	const RawPeak fund = rawPeaks.at(fundIdx);
+	if (fund.amplitude <= 0.0 || fund.frequencyHz <= 0.0) {
+		return peaks;
+	}
+
+	PEFFTPeak fundamental;
+	fundamental.harmonic = 1;
+	fundamental.frequencyHz = fund.frequencyHz;
+	fundamental.periodS = 1.0 / fund.frequencyHz;
+	fundamental.amplitude = fund.amplitude;
+	fundamental.relativeAmplitude = 1.0;
+	peaks.append(fundamental);
+
+	std::sort(rawPeaks.begin(), rawPeaks.end(), [](const RawPeak &a, const RawPeak &b) {
+		return a.frequencyHz < b.frequencyHz;
+	});
+	for (const RawPeak &rp : rawPeaks) {
+		if (rp.frequencyHz < fund.frequencyHz - df * 0.5) {
+			continue; // lower frequency than F0: not a harmonic, not labelled
+		}
+		if (std::fabs(rp.frequencyHz - fund.frequencyHz) < df * 0.5) {
+			continue; // the fundamental itself
+		}
+		const double relAmp = rp.amplitude / fund.amplitude;
+		if (relAmp < minRelativeAmplitude) {
+			continue;
+		}
+		PEFFTPeak p;
+		p.harmonic = std::max(2, static_cast<int>(std::lround(rp.frequencyHz / fund.frequencyHz)));
+		p.frequencyHz = rp.frequencyHz;
+		p.periodS = 1.0 / rp.frequencyHz;
+		p.amplitude = rp.amplitude;
+		p.relativeAmplitude = relAmp;
+		peaks.append(p);
+	}
+	return peaks;
 }
 
 bool PECurve::saveCsv(const QString &fileName,

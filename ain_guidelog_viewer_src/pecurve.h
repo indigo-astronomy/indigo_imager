@@ -45,6 +45,28 @@ struct PECurveData {
 	QVector<double> pe;
 };
 
+// Amplitude spectrum of a reconstructed PE curve. freq/amplitude run from DC
+// (index 0) to the Nyquist frequency; amplitude is in the same unit as the
+// series the FFT was computed from.
+struct PEFFTData {
+	bool valid = false;
+	QString message; // human-readable reason when !valid
+	QVector<double> freq;
+	QVector<double> amplitude;
+	double sampleRateHz = 0.0;
+	double naturalResolutionHz = 0.0; // 1/duration, the un-padded bin width
+};
+
+// One detected spectral peak: the fundamental (harmonic == 1) or one of its
+// integer multiples.
+struct PEFFTPeak {
+	int harmonic = 1;
+	double frequencyHz = 0.0;
+	double periodS = 0.0;
+	double amplitude = 0.0;
+	double relativeAmplitude = 0.0; // fraction of the fundamental's amplitude (0..1)
+};
+
 // UI-independent RA periodic-error math. Keeps all reconstruction / smoothing
 // out of the window code (cf. GuideLogStats).
 //
@@ -85,6 +107,28 @@ public:
 	// Peak-to-peak (max-min) and RMS of a series; 0 for empty input.
 	static double peakToPeak(const QVector<double> &data);
 	static double rms(const QVector<double> &data);
+
+	// Amplitude spectrum of an (approximately) uniformly time-sampled series (x
+	// in elapsed seconds). Resamples onto a uniform grid at the median sample
+	// interval, removes the DC mean, applies a Hamming window to reduce
+	// spectral leakage, and zero-pads before an FFT so the peaks in
+	// findHarmonics() can be located more precisely. Invalid (with a message)
+	// for fewer than 8 samples or non-advancing timestamps.
+	static PEFFTData computeFFT(const QVector<double> &x, const QVector<double> &y);
+
+	// Finds the fundamental (the strongest local-maximum peak in the amplitude
+	// spectrum, restricted to a period of at most maxPeriodS when maxPeriodS >
+	// 0 so long-period drift leakage near DC can't hijack it) and every other
+	// local-maximum peak at or above the fundamental's frequency whose
+	// amplitude is at least minRelativeAmplitude of the fundamental's (default
+	// 0.4 = 40%); non-peak bins (not a strict local maximum) are never
+	// returned. Each peak's frequency/amplitude is refined to sub-bin
+	// precision by a quadratic fit through its neighbouring bins. harmonic is
+	// the peak's frequency rounded to the nearest multiple of the
+	// fundamental's, for display only. Returns an empty list when fft is
+	// invalid.
+	static QVector<PEFFTPeak> findHarmonics(const PEFFTData &fft, double minRelativeAmplitude = 0.4,
+	                                        double maxPeriodS = 0.0);
 
 	// Writes x/residual/pe to fileName as CSV (one header row, then one row per
 	// sample). xLabel and unitLabel are used for the header only. Returns true

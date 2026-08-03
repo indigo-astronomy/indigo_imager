@@ -21,6 +21,7 @@ SOURCES += \
 	$$PWD/guidelogviewerwindow.cpp \
 	$$PWD/pecurvewindow.cpp \
 	$$PWD/pecurve.cpp \
+	$$PWD/pefftwindow.cpp \
 	$$PWD/guidelogparser.cpp \
 	$$PWD/guidelogstats.cpp \
 	$$PWD/../common_src/balancebar.cpp \
@@ -30,6 +31,8 @@ HEADERS += \
 	$$PWD/guidelogviewerwindow.h \
 	$$PWD/pecurvewindow.h \
 	$$PWD/pecurve.h \
+	$$PWD/pefftwindow.h \
+	$$PWD/verticallabel.h \
 	$$PWD/guidelogparser.h \
 	$$PWD/guidelogstats.h \
 	$$PWD/../common_src/balancebar.h \

@@ -24,13 +24,10 @@
 #include <QDoubleSpinBox>
 #include <QFile>
 #include <QFileDialog>
-#include <QFontMetrics>
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QLabel>
 #include <QMessageBox>
-#include <QPainter>
-#include <QPaintEvent>
 #include <QPushButton>
 #include <QSignalBlocker>
 #include <QTextStream>
@@ -38,46 +35,11 @@
 #include <QWidget>
 
 #include "pecurve.h"
+#include "verticallabel.h"
 
 #include <simpleplot.h>
 
 #include <algorithm>
-
-// A thin widget that draws a single line of text rotated 90° (reading
-// bottom-to-top), used for the vertical Y-axis caption. No signals/slots, so no
-// Q_OBJECT / moc needed.
-class VerticalLabel : public QWidget {
-public:
-	explicit VerticalLabel(QWidget *parent = nullptr) : QWidget(parent) {}
-
-	void setText(const QString &text) {
-		m_text = text;
-		updateGeometry();
-		update();
-	}
-
-	QSize sizeHint() const override {
-		const QFontMetrics fm(font());
-		return QSize(fm.height() + 4, fm.horizontalAdvance(m_text) + 12);
-	}
-	QSize minimumSizeHint() const override {
-		return QSize(sizeHint().width(), 0);
-	}
-
-protected:
-	void paintEvent(QPaintEvent *) override {
-		QPainter p(this);
-		p.setRenderHint(QPainter::TextAntialiasing, true);
-		p.setPen(QColor(0xef, 0xf0, 0xf1)); // match the qdarkstyle caption text
-		p.setFont(font());
-		p.translate(0, height());
-		p.rotate(-90.0);
-		p.drawText(QRect(0, 0, height(), width()), Qt::AlignCenter, m_text);
-	}
-
-private:
-	QString m_text;
-};
 
 PECurveWindow::PECurveWindow(QWidget *parent)
     : QMainWindow(parent, Qt::Window) {

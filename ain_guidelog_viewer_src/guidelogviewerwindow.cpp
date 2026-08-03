@@ -20,6 +20,7 @@
 
 #include "guidelogstats.h"
 #include "pecurvewindow.h"
+#include "pefftwindow.h"
 #include "balancebar.h"
 
 #include <QAbstractItemView>
@@ -406,6 +407,11 @@ void GuideLogViewerWindow::createUi() {
 	                       "of the samples currently shown on the graph.");
 	m_peButton->setEnabled(false);
 	xAxisLayout->addWidget(m_peButton);
+	m_peFftButton = new QPushButton("PE Spectrum", central);
+	m_peFftButton->setToolTip("Show the FFT amplitude spectrum of the reconstructed RA periodic error,\n"
+	                          "with the fundamental frequency and its dominant harmonics labeled.");
+	m_peFftButton->setEnabled(false);
+	xAxisLayout->addWidget(m_peFftButton);
 	rootLayout->addLayout(xAxisLayout);
 
 	// --- Graph (grows vertically) ---
@@ -459,6 +465,9 @@ void GuideLogViewerWindow::connectSignals() {
 	});
 	connect(m_peButton, &QPushButton::clicked, this, [this]() {
 		openPeCurveWindow();
+	});
+	connect(m_peFftButton, &QPushButton::clicked, this, [this]() {
+		openPeFftWindow();
 	});
 }
 
@@ -585,6 +594,7 @@ void GuideLogViewerWindow::applySelectedSession() {
 		m_rows.clear();
 		m_metadataLabel->setText("Session metadata will appear here.");
 		m_peButton->setEnabled(false);
+		m_peFftButton->setEnabled(false);
 		rebuildTable();
 		rebuildColumnSelectors();
 		updatePlot();
@@ -593,6 +603,7 @@ void GuideLogViewerWindow::applySelectedSession() {
 
 	m_selectedSessionIndex = sessionIndex;
 	m_peButton->setEnabled(true);
+	m_peFftButton->setEnabled(true);
 	const GuideSession &session = m_sessions.at(sessionIndex);
 	m_headers = session.headers;
 	m_rows = session.rows;
@@ -854,6 +865,7 @@ void GuideLogViewerWindow::updatePlot() {
 		showStatsMessage("No data loaded.");
 		m_plot->replot();
 		syncPeWindow({});
+		syncPeFftWindow({});
 		return;
 	}
 
@@ -928,6 +940,7 @@ void GuideLogViewerWindow::updatePlot() {
 
 	// Keep the PE window in step with the rows currently on the graph.
 	syncPeWindow(selection.visibleRows);
+	syncPeFftWindow(selection.visibleRows);
 }
 
 double GuideLogViewerWindow::currentSessionCalibration() const {
@@ -1016,6 +1029,40 @@ void GuideLogViewerWindow::syncPeWindow(const QVector<int> &visibleRows) {
 	} else {
 		// Same session, the graph window just changed: keep the user's calibration.
 		m_peWindow->updateRows(m_headers, subset);
+	}
+}
+
+void GuideLogViewerWindow::openPeFftWindow() {
+	if (!m_peFftWindow) {
+		m_peFftWindow = new PEFFTWindow(this);
+		// Force a full session push (with calibration pre-fill) into the fresh
+		// window; see openPeCurveWindow() for why.
+		m_peFftPushedSession = -1;
+		updatePlot();
+	}
+	m_peFftWindow->show();
+	m_peFftWindow->raise();
+	m_peFftWindow->activateWindow();
+}
+
+void GuideLogViewerWindow::syncPeFftWindow(const QVector<int> &visibleRows) {
+	if (!m_peFftWindow) {
+		return;
+	}
+
+	QVector<QStringList> subset;
+	subset.reserve(visibleRows.size());
+	for (int row : visibleRows) {
+		if (row >= 0 && row < m_rows.size()) {
+			subset.append(m_rows.at(row));
+		}
+	}
+
+	if (m_peFftPushedSession != m_selectedSessionIndex) {
+		m_peFftWindow->setSession(m_headers, subset, currentSessionCalibration(), currentSessionMountDec());
+		m_peFftPushedSession = m_selectedSessionIndex;
+	} else {
+		m_peFftWindow->updateRows(m_headers, subset);
 	}
 }
 
