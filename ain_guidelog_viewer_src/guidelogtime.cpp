@@ -21,7 +21,6 @@
 #include <QDateTime>
 #include <QString>
 #include <QStringView>
-#include <QTimeZone>
 
 namespace {
 
@@ -73,7 +72,7 @@ QDateTime parseFallback(QStringView v) {
 	if (!dt.isValid()) {
 		return QDateTime();
 	}
-	return QDateTime(dt.date(), dt.time(), QTimeZone(QTimeZone::UTC));
+	return QDateTime(dt.date(), dt.time(), Qt::UTC);
 }
 
 } // namespace
@@ -124,5 +123,5 @@ QDateTime GuideLogTime::parse(const QString &value) {
 	if (!parseMSecs(value, &msecs)) {
 		return QDateTime();
 	}
-	return QDateTime::fromMSecsSinceEpoch(msecs, QTimeZone(QTimeZone::UTC));
+	return QDateTime::fromMSecsSinceEpoch(msecs, Qt::UTC);
 }
