@@ -85,6 +85,19 @@ public:
 	// Peak-to-peak (max-min) and RMS of a series; 0 for empty input.
 	static double peakToPeak(const QVector<double> &data);
 	static double rms(const QVector<double> &data);
+
+	// Writes x/residual/pe to fileName as CSV (one header row, then one row per
+	// sample). xLabel and unitLabel are used for the header only. Returns true
+	// on success; on failure returns false and, if errorMessage is non-null,
+	// fills it with a human-readable reason.
+	static bool saveCsv(const QString &fileName,
+	                    const QVector<double> &x,
+	                    const QVector<double> &residual,
+	                    const QVector<double> &pe,
+	                    bool usedTime,
+	                    const QString &xLabel,
+	                    const QString &unitLabel,
+	                    QString *errorMessage = nullptr);
 };
 
 #endif // PECURVE_H

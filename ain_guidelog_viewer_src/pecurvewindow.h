@@ -27,6 +27,7 @@ class QLabel;
 class QComboBox;
 class QCheckBox;
 class QDoubleSpinBox;
+class QPushButton;
 class SimplePlot;
 class VerticalLabel;
 
@@ -62,6 +63,7 @@ public:
 private:
 	void createUi();
 	void recompute();
+	void exportCsv();
 
 	QDoubleSpinBox *m_calibrationSpin;
 	QDoubleSpinBox *m_decSpin;
@@ -70,6 +72,7 @@ private:
 	QCheckBox *m_smoothResidualCheck;
 	QCheckBox *m_detrendCheck;
 	QCheckBox *m_linearDetrendCheck;
+	QPushButton *m_exportButton;
 	QLabel *m_summaryLabel;
 	QLabel *m_xCaptionLabel;
 	VerticalLabel *m_yCaptionLabel;
@@ -78,6 +81,15 @@ private:
 	QStringList m_headers;
 	QVector<QStringList> m_rows;
 	double m_logCalibration = 0.0;
+
+	// Snapshot of the last plotted curve, kept for CSV export.
+	bool m_lastValid = false;
+	bool m_lastUsedTime = false;
+	QString m_lastXLabel;
+	QString m_lastUnitLabel;
+	QVector<double> m_lastX;
+	QVector<double> m_lastPeSeries;
+	QVector<double> m_lastResSeries;
 };
 
 #endif // PECURVEWINDOW_H

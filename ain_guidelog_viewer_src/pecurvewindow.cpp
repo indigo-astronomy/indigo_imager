@@ -20,14 +20,18 @@
 
 #include <QCheckBox>
 #include <QComboBox>
+#include <QDir>
 #include <QDoubleSpinBox>
 #include <QFile>
+#include <QFileDialog>
 #include <QFontMetrics>
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QLabel>
+#include <QMessageBox>
 #include <QPainter>
 #include <QPaintEvent>
+#include <QPushButton>
 #include <QSignalBlocker>
 #include <QTextStream>
 #include <QVBoxLayout>
@@ -150,6 +154,9 @@ void PECurveWindow::createUi() {
 	                                 "only as a cross-check.");
 	m_linearDetrendCheck->setEnabled(m_detrendCheck->isChecked());
 
+	m_exportButton = new QPushButton("Export CSV...", central);
+	m_exportButton->setToolTip("Save the currently plotted periodic-error and residual curves to a CSV file.");
+
 	m_summaryLabel = new QLabel("Load a session to reconstruct the RA periodic error.", central);
 	m_summaryLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 	m_summaryLabel->setTextFormat(Qt::RichText);
@@ -183,8 +190,12 @@ void PECurveWindow::createUi() {
 	controls->addStretch(1);
 	rootLayout->addLayout(controls);
 
-	// Stats on their own line beneath the controls.
-	rootLayout->addWidget(m_summaryLabel);
+	// Stats on their own line beneath the controls, with the export button
+	// aligned to the right of it.
+	QHBoxLayout *summaryRow = new QHBoxLayout();
+	summaryRow->addWidget(m_summaryLabel, 1);
+	summaryRow->addWidget(m_exportButton, 0, Qt::AlignRight);
+	rootLayout->addLayout(summaryRow);
 
 	// --- Plot ---
 	m_plot = new SimplePlot(SimplePlot::Graph, central);
@@ -230,6 +241,7 @@ void PECurveWindow::createUi() {
 		recompute();
 	});
 	connect(m_linearDetrendCheck, &QCheckBox::toggled, this, [this](bool) { recompute(); });
+	connect(m_exportButton, &QPushButton::clicked, this, [this]() { exportCsv(); });
 }
 
 void PECurveWindow::setSession(const QStringList &headers,
@@ -288,6 +300,7 @@ void PECurveWindow::recompute() {
 		m_plot->xAxis->setRange(0, 1);
 		m_plot->yAxis->setRange(-1, 1);
 		m_plot->replot();
+		m_lastValid = false;
 		return;
 	}
 
@@ -301,6 +314,15 @@ void PECurveWindow::recompute() {
 		smoothRes ? PECurve::smooth(data.residual, PECurve::autoSmoothWindow(data.residual.size())) : data.residual;
 
 	m_xCaptionLabel->setText(data.usedTime ? "Elapsed time (s)" : "Sample index");
+
+	// Snapshot of what's actually plotted, for CSV export.
+	m_lastValid = true;
+	m_lastUsedTime = data.usedTime;
+	m_lastXLabel = data.usedTime ? QStringLiteral("Elapsed time (s)") : QStringLiteral("Sample index");
+	m_lastUnitLabel = unitLabel;
+	m_lastX = data.x;
+	m_lastPeSeries = peSeries;
+	m_lastResSeries = resSeries;
 
 	SimpleGraph *gResidual = m_plot->addGraph();
 	gResidual->setPen(QPen(QColor(120, 120, 120)));
@@ -388,4 +410,27 @@ void PECurveWindow::recompute() {
 	                      sep + "Overall <b>" + num(totalSuppr, 1) + "%</b> (" +
 	                      factorStr(peRmsRaw, resRmsRaw) + "&times;)";
 	m_summaryLabel->setText(twoLines(line1, line2));
+}
+
+void PECurveWindow::exportCsv() {
+	if (!m_lastValid || m_lastX.isEmpty()) {
+		QMessageBox::warning(this, tr("Export CSV"), tr("There is no reconstructed PE curve to export yet."));
+		return;
+	}
+
+	const QString qlocation = QDir::toNativeSeparators(QDir::homePath());
+	QString fileName = QFileDialog::getSaveFileName(this, tr("Export PE curve as CSV"), qlocation,
+	                                                 tr("CSV files (*.csv);;All files (*)"));
+	if (fileName.isEmpty()) {
+		return;
+	}
+	if (!fileName.endsWith(".csv", Qt::CaseInsensitive)) {
+		fileName += ".csv";
+	}
+
+	QString errorMessage;
+	if (!PECurve::saveCsv(fileName, m_lastX, m_lastResSeries, m_lastPeSeries,
+	                      m_lastUsedTime, m_lastXLabel, m_lastUnitLabel, &errorMessage)) {
+		QMessageBox::warning(this, tr("Export CSV"), errorMessage);
+	}
 }

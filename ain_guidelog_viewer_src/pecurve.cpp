@@ -19,6 +19,8 @@
 #include "pecurve.h"
 
 #include <QDateTime>
+#include <QFile>
+#include <QTextStream>
 
 #include <algorithm>
 #include <cmath>
@@ -406,4 +408,33 @@ double PECurve::rms(const QVector<double> &data) {
 		sumSq += v * v;
 	}
 	return std::sqrt(sumSq / data.size());
+}
+
+bool PECurve::saveCsv(const QString &fileName,
+                      const QVector<double> &x,
+                      const QVector<double> &residual,
+                      const QVector<double> &pe,
+                      bool usedTime,
+                      const QString &xLabel,
+                      const QString &unitLabel,
+                      QString *errorMessage) {
+	QFile file(fileName);
+	if (!file.open(QFile::WriteOnly | QFile::Truncate | QFile::Text)) {
+		if (errorMessage) {
+			*errorMessage = QObject::tr("Can not open file '%1' for writing.").arg(fileName);
+		}
+		return false;
+	}
+
+	QTextStream ts(&file);
+	ts << xLabel << "," << "Residual (" << unitLabel << ")," << "PE (" << unitLabel << ")\n";
+	for (int i = 0; i < x.size(); ++i) {
+		const double res = (i < residual.size()) ? residual.at(i) : 0.0;
+		const double val = (i < pe.size()) ? pe.at(i) : 0.0;
+		ts << QString::number(x.at(i), 'f', usedTime ? 3 : 0)
+		   << "," << QString::number(res, 'f', 6)
+		   << "," << QString::number(val, 'f', 6) << "\n";
+	}
+	file.close();
+	return true;
 }
