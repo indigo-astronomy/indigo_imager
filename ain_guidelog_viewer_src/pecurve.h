@@ -184,6 +184,23 @@ public:
 	                    const QString &xLabel,
 	                    const QString &unitLabel,
 	                    QString *errorMessage = nullptr);
+
+	// Writes an amplitude spectrum to fileName as CSV: one header row, then one
+	// row per bin ordered by increasing period, matching the spectrum window's
+	// axis. The DC bin is skipped (its period is infinite). The whole spectrum
+	// is written, not just the region the window happens to be zoomed to.
+	//
+	// normalizeBy is the amplitude the relative-amplitude column is measured
+	// against (the fundamental's); pass 0 or less to leave that column out.
+	// usedTime picks the period/frequency units (seconds and Hz, or samples and
+	// cycles per sample), and amplitudeUnit labels the amplitude column. Same
+	// success/failure contract as saveCsv().
+	static bool saveSpectrumCsv(const QString &fileName,
+	                            const PEFFTData &fft,
+	                            double normalizeBy,
+	                            bool usedTime,
+	                            const QString &amplitudeUnit,
+	                            QString *errorMessage = nullptr);
 };
 
 #endif // PECURVE_H

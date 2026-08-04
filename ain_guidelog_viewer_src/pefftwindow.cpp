@@ -21,7 +21,9 @@
 #include <QEvent>
 #include <QFont>
 #include <QLabel>
+#include <QMessageBox>
 #include <QPointF>
+#include <QPushButton>
 #include <QRect>
 
 #include "peanalysis.h"
@@ -40,7 +42,11 @@ constexpr double kMinRelativeAmplitude = 0.4; // harmonics quieter than this are
 
 PEFFTWindow::PEFFTWindow(QWidget *parent)
     : PEWindowBase(tr("RA Periodic Error Spectrum"), parent) {
-	addSummaryRow();
+	m_exportButton = new QPushButton("Export CSV...", centralPanel());
+	m_exportButton->setToolTip("Save the full amplitude spectrum to a CSV file.");
+	connect(m_exportButton, &QPushButton::clicked, this, [this]() { exportCsv(); });
+
+	addSummaryRow(m_exportButton);
 	addPlotRow();
 
 	m_plot->xAxis->setLabel("Period (s)");
@@ -64,6 +70,7 @@ void PEFFTWindow::recompute() {
 	}
 	m_peaks.clear();
 	layoutPeakLabels(); // drop any labels left over from a previous session
+	m_lastResult.reset(); // nothing exportable until a spectrum is actually drawn
 
 	if (!hasAnalysis()) {
 		showPlaceholder("Load a session to compute the RA periodic error spectrum.");
@@ -210,6 +217,15 @@ void PEFFTWindow::recompute() {
 	m_peakPeriodUnit = periodUnit;
 	layoutPeakLabels();
 
+	// Snapshot for CSV export. The reconstruction is always run in arcsec, but
+	// that only holds when the log paired an arcsec column with the pixel one;
+	// without it the scale stays 1 and the amplitudes are really in pixels.
+	m_lastResult = result;
+	m_lastNormalizeBy = normBy;
+	m_lastUsedTime = data.usedTime;
+	m_lastAmplitudeUnit = analysis()->samples().hasArcsecScale ? QStringLiteral("arcsec")
+	                                                           : QStringLiteral("px");
+
 	const PEFFTPeak &fundamental = peaks.first();
 	const QString line1 = "<b>Fundamental:</b>&nbsp;&nbsp; Period <b>" + number(fundamental.periodS, 1) +
 	                      "</b> " + periodUnit + separator() + "Frequency " +
@@ -285,6 +301,25 @@ void PEFFTWindow::layoutPeakLabels() {
 	}
 	for (int i = used; i < m_peakLabels.size(); i++) {
 		m_peakLabels.at(i)->hide();
+	}
+}
+
+void PEFFTWindow::exportCsv() {
+	if (!m_lastResult || !m_lastResult->spectrum.valid) {
+		QMessageBox::warning(this, tr("Export CSV"),
+		                     tr("There is no periodic-error spectrum to export yet."));
+		return;
+	}
+
+	const QString fileName = askForCsvPath(tr("Export PE spectrum as CSV"));
+	if (fileName.isEmpty()) {
+		return;
+	}
+
+	QString errorMessage;
+	if (!PECurve::saveSpectrumCsv(fileName, m_lastResult->spectrum, m_lastNormalizeBy,
+	                              m_lastUsedTime, m_lastAmplitudeUnit, &errorMessage)) {
+		QMessageBox::warning(this, tr("Export CSV"), errorMessage);
 	}
 }
 

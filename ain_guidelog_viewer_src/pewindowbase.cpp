@@ -18,7 +18,9 @@
 
 #include "pewindowbase.h"
 
+#include <QDir>
 #include <QFile>
+#include <QFileDialog>
 #include <QFont>
 #include <QHBoxLayout>
 #include <QIcon>
@@ -128,6 +130,19 @@ void PEWindowBase::showPlaceholder(const QString &message) {
 		m_plot->yAxis->setRange(-1, 1);
 		m_plot->replot();
 	}
+}
+
+QString PEWindowBase::askForCsvPath(const QString &dialogTitle) {
+	const QString location = QDir::toNativeSeparators(QDir::homePath());
+	QString fileName = QFileDialog::getSaveFileName(this, dialogTitle, location,
+	                                                tr("CSV files (*.csv);;All files (*)"));
+	if (fileName.isEmpty()) {
+		return QString();
+	}
+	if (!fileName.endsWith(".csv", Qt::CaseInsensitive)) {
+		fileName += ".csv";
+	}
+	return fileName;
 }
 
 QString PEWindowBase::number(double value, int precision) {

@@ -778,3 +778,56 @@ bool PECurve::saveCsv(const QString &fileName,
 	file.close();
 	return true;
 }
+
+bool PECurve::saveSpectrumCsv(const QString &fileName,
+                              const PEFFTData &fft,
+                              double normalizeBy,
+                              bool usedTime,
+                              const QString &amplitudeUnit,
+                              QString *errorMessage) {
+	if (!fft.valid || fft.freq.size() < 2) {
+		if (errorMessage) {
+			*errorMessage = QObject::tr("There is no spectrum to export yet.");
+		}
+		return false;
+	}
+
+	QFile file(fileName);
+	if (!file.open(QFile::WriteOnly | QFile::Truncate | QFile::Text)) {
+		if (errorMessage) {
+			*errorMessage = QObject::tr("Can not open file '%1' for writing.").arg(fileName);
+		}
+		return false;
+	}
+
+	const QString periodUnit = usedTime ? QStringLiteral("s") : QStringLiteral("samples");
+	const QString freqUnit = usedTime ? QStringLiteral("Hz") : QStringLiteral("cycles/sample");
+	const bool relative = normalizeBy > 0.0;
+
+	QTextStream ts(&file);
+	ts << "Period (" << periodUnit << ")," << "Frequency (" << freqUnit << "),"
+	   << "Amplitude (" << amplitudeUnit << ")";
+	if (relative) {
+		ts << ",Relative amplitude";
+	}
+	ts << "\n";
+
+	// Walked from the Nyquist end down so period increases, as on the plot. Bin
+	// 0 is DC and has no finite period, so it is left out.
+	for (int k = fft.freq.size() - 1; k >= 1; --k) {
+		const double f = fft.freq.at(k);
+		if (f <= 0.0) {
+			continue;
+		}
+		const double amplitude = fft.amplitude.at(k);
+		ts << QString::number(1.0 / f, 'f', 6)
+		   << "," << QString::number(f, 'g', 10)
+		   << "," << QString::number(amplitude, 'f', 6);
+		if (relative) {
+			ts << "," << QString::number(amplitude / normalizeBy, 'f', 6);
+		}
+		ts << "\n";
+	}
+	file.close();
+	return true;
+}

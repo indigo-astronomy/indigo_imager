@@ -22,11 +22,13 @@
 #include <QString>
 #include <QVector>
 
+#include "peanalysis.h"
 #include "pecurve.h"
 #include "pewindowbase.h"
 
 class QEvent;
 class QLabel;
+class QPushButton;
 
 // Shows the amplitude spectrum (FFT) of the reconstructed RA periodic-error
 // curve (same reconstruction as PECurveWindow, always with the drift trend
@@ -51,13 +53,23 @@ private:
 	// redraws them on resize (SimplePlot has no annotation API of its own, only
 	// axis-tick text). Labels are reused across calls rather than recreated.
 	void layoutPeakLabels();
+	void exportCsv();
 
 	double m_calibrationPxPerS = 0.0;
 	double m_mountDecDeg = 0.0;
 
+	QPushButton *m_exportButton = nullptr;
+
 	QVector<PEFFTPeak> m_peaks;
 	QString m_peakPeriodUnit;
 	QVector<QLabel *> m_peakLabels;
+
+	// Snapshot of the last computed spectrum, kept for CSV export. The result is
+	// shared with PEAnalysis's cache, so holding it costs a reference count.
+	std::shared_ptr<const PEResult> m_lastResult;
+	double m_lastNormalizeBy = 0.0;
+	bool m_lastUsedTime = false;
+	QString m_lastAmplitudeUnit;
 };
 
 #endif // PEFFTWINDOW_H

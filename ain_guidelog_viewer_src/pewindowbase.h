@@ -75,6 +75,10 @@ protected:
 	// every "nothing to show" path so they all leave the window in one state.
 	void showPlaceholder(const QString &message);
 
+	// Asks the user where to save a CSV, appending the extension if they left it
+	// off. Returns an empty string when the dialog was cancelled.
+	QString askForCsvPath(const QString &dialogTitle);
+
 	// Rich-text helpers shared by both summary lines.
 	static QString number(double value, int precision);
 	static QString separator();

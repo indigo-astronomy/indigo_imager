@@ -20,9 +20,7 @@
 
 #include <QCheckBox>
 #include <QComboBox>
-#include <QDir>
 #include <QDoubleSpinBox>
-#include <QFileDialog>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMessageBox>
@@ -297,14 +295,9 @@ void PECurveWindow::exportCsv() {
 		return;
 	}
 
-	const QString qlocation = QDir::toNativeSeparators(QDir::homePath());
-	QString fileName = QFileDialog::getSaveFileName(this, tr("Export PE curve as CSV"), qlocation,
-	                                                 tr("CSV files (*.csv);;All files (*)"));
+	const QString fileName = askForCsvPath(tr("Export PE curve as CSV"));
 	if (fileName.isEmpty()) {
 		return;
-	}
-	if (!fileName.endsWith(".csv", Qt::CaseInsensitive)) {
-		fileName += ".csv";
 	}
 
 	QString errorMessage;
