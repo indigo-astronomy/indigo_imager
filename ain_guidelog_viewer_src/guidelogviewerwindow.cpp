@@ -614,12 +614,14 @@ void GuideLogViewerWindow::applySelectedSession() {
 	m_headers = session.headers;
 	m_rows = session.rows;
 
-	// Update the X range spin box to match the new session's row count, but don't
+	// Every session starts fully shown: cap the X range spin at the new row count
+	// and open it all the way up, so the plot -- and the PE reconstruction and its
+	// spectrum, which work on the samples currently plotted -- see the whole
+	// session rather than a window carried over from the previously viewed one.
+	// The signal is blocked because updatePlot() runs at the end of this function.
 	const QSignalBlocker blocker(m_xRangeSpin);
 	m_xRangeSpin->setMaximum(m_rows.size());
-	if (m_xRangeSpin->value() > m_rows.size()) {
-		m_xRangeSpin->setValue(m_rows.size());
-	}
+	m_xRangeSpin->setValue(m_rows.size());
 
 	if (session.metadata.isEmpty()) {
 		m_metadataLabel->setText("No metadata found for this guiding session.");

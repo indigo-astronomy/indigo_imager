@@ -146,9 +146,16 @@ void PEFFTWindow::recompute() {
 		maxHarmonicFreq = peaks.first().frequencyHz;
 	}
 	const double xLower = (maxHarmonicFreq > 0.0) ? 1.0 / (maxHarmonicFreq * 1.4) : 1.0;
-	const double xUpper = std::max(xLower * 1.1, std::min(maxPeakPeriod * 1.3, maxPeriodS));
+	// The fundamental is the longest-period peak, so it sets the upper end; leave
+	// the same relative headroom past it as below the highest harmonic, otherwise
+	// f0 (and its label) sits on the right edge whenever maxPeriodS happens to land
+	// close to its period. The headroom is limited only by the longest period the
+	// spectrum actually resolves, not by maxPeriodS: that cap bounds where a peak
+	// may be *found*, and showing a little beyond it costs nothing.
+	const double longestBinPeriod = (fft.freq.size() > 1 && fft.freq.at(1) > 0.0) ? 1.0 / fft.freq.at(1) : maxPeakPeriod * 1.35;
+	const double xUpper = std::max(xLower * 1.1, std::min(maxPeakPeriod * 1.35, longestBinPeriod));
 	m_plot->xAxis->setRange(xLower, xUpper);
-	m_plot->yAxis->setRange(0.0, 1.15);
+	m_plot->yAxis->setRange(0.0, 1.1);
 
 	// Plot period (seconds) instead of frequency, normalized so the strongest
 	// peak's amplitude is 1.0. Bins are walked from the Nyquist end down so period
