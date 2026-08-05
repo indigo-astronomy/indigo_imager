@@ -61,6 +61,9 @@ public:
 	bool tickLabels() const { return mTickLabels; }
 	void setShowEndLabel(bool on);
 	bool showEndLabel() const { return mShowEndLabel; }
+	// Axis caption, painted in the margin outside the plot area: horizontally
+	// for the bottom/top axes, rotated for the left/right ones. Empty by
+	// default, and only painted while the axis itself is visible.
 	void setLabel(const QString &label);
 	QString label() const { return mLabel; }
 
@@ -229,8 +232,15 @@ public:
 	void setCustomXAxisTicks(const QVector<double> &positions, const QStringList &labels);
 	void clearCustomXAxisTicks();
 
-	// Plot-area margins in px, to leave room for the axis captions/tick labels
-	// where needed (Graph only).
+	// Axis captions, in one call and with the same signature for both chart
+	// types: on a Graph they are the bottom and left axis labels (equivalent to
+	// xAxis->setLabel() / yAxis->setLabel()), on a Target the two crosshair
+	// captions.
+	void setAxisLabels(const QString &horizontal, const QString &vertical);
+
+	// Plot-area margins in px, to leave room for the tick labels (Graph only).
+	// Captions do not need to be accounted for here: a caption reserves its own
+	// strip at the widget edge and the plot area shrinks by that much.
 	void setPlotMargins(int left, int top, int right, int bottom);
 	int marginLeft() const { return mMarginLeft; }
 	int marginTop() const { return mMarginTop; }
@@ -265,6 +275,9 @@ protected:
 private:
 	void paintGraph(QPainter &p);
 	void paintTarget(QPainter &p);
+	// Width (left/right axis) or height (bottom/top axis) in px that this axis'
+	// caption takes out of the widget, 0 when it has none to paint.
+	int captionExtent(const SimpleAxis *axis) const;
 
 	ChartType mType;
 	QBrush mBackground{QColor(0, 0, 0, 0)};

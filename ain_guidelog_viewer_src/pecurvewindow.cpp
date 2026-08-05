@@ -31,7 +31,6 @@
 
 #include "peanalysis.h"
 #include "pecurve.h"
-#include "verticallabel.h"
 
 #include <simpleplot.h>
 
@@ -43,10 +42,7 @@ PECurveWindow::PECurveWindow(QWidget *parent)
 	addSummaryRow(m_exportButton);
 	addPlotRow();
 
-	m_plot->xAxis->setLabel("Elapsed time (s)");
-	m_plot->yAxis->setLabel("RA (arcsec)");
-	m_yCaptionLabel->setText("RA (arcsec)");
-	m_xCaptionLabel->setText("Elapsed time (s)");
+	m_plot->setAxisLabels("Elapsed time (s)", "RA (arcsec)");
 
 	m_summaryLabel->setText("Load a session to reconstruct the RA periodic error.");
 
@@ -163,7 +159,7 @@ void PECurveWindow::recompute() {
 
 	const bool arcsecUnit = (m_unitCombo->currentData().toString() == "arcsec");
 	const QString unitLabel = arcsecUnit ? QStringLiteral("arcsec") : QStringLiteral("px");
-	m_yCaptionLabel->setText(QString("RA (%1)").arg(unitLabel));
+	m_plot->yAxis->setLabel(QString("RA (%1)").arg(unitLabel));
 
 	if (!hasAnalysis()) {
 		m_lastValid = false;
@@ -198,7 +194,7 @@ void PECurveWindow::recompute() {
 	const QVector<double> resSeries =
 		smoothRes ? PECurve::smooth(data.residual, PECurve::autoSmoothWindow(data.residual.size())) : data.residual;
 
-	m_xCaptionLabel->setText(data.usedTime ? "Elapsed time (s)" : "Sample index");
+	m_plot->xAxis->setLabel(data.usedTime ? "Elapsed time (s)" : "Sample index");
 
 	// Snapshot of what's actually plotted, for CSV export.
 	m_lastValid = true;

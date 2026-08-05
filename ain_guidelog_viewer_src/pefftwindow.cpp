@@ -28,7 +28,6 @@
 
 #include "peanalysis.h"
 #include "pecurve.h"
-#include "verticallabel.h"
 
 #include <simpleplot.h>
 
@@ -49,12 +48,8 @@ PEFFTWindow::PEFFTWindow(QWidget *parent)
 	addSummaryRow(m_exportButton);
 	addPlotRow();
 
-	m_plot->xAxis->setLabel("Period (s)");
-	m_plot->yAxis->setLabel("Relative amplitude");
+	m_plot->setAxisLabels("Period (s)", "Relative amplitude");
 	m_plot->installEventFilter(this); // reposition the floating peak labels on resize
-
-	m_yCaptionLabel->setText("Relative amplitude");
-	m_xCaptionLabel->setText("Period (s)");
 
 	m_summaryLabel->setText("Load a session to compute the RA periodic error spectrum.");
 }
@@ -106,8 +101,8 @@ void PEFFTWindow::recompute() {
 	// still runs (over the sample index), but "Hz"/"s" would be meaningless.
 	const QString freqUnit = data.usedTime ? QStringLiteral("Hz") : QStringLiteral("cycles/sample");
 	const QString periodUnit = data.usedTime ? QStringLiteral("s") : QStringLiteral("samples");
-	m_xCaptionLabel->setText(data.usedTime ? QStringLiteral("Period (s)")
-	                                       : QStringLiteral("Period (samples)"));
+	m_plot->xAxis->setLabel(data.usedTime ? QStringLiteral("Period (s)")
+	                                      : QStringLiteral("Period (samples)"));
 
 	// Adjust max period based on actual data duration: no point showing periods
 	// longer than about 1/3 of the available data (need multiple cycles to detect a period).

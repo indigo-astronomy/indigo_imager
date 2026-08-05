@@ -66,7 +66,8 @@ explicit SimplePlot(ChartType type = Graph, QWidget *parent = nullptr);
 | `void setBackground(const QBrush &brush)` | Fill colour/brush of the whole widget. Default is transparent (`QColor(0,0,0,0)`), letting the parent background show through. |
 | `QBrush background() const` | Current background brush. |
 | `void replot()` | Schedule a repaint (alias of `update()`, named for QCustomPlot source compatibility). |
-| `void setPlotMargins(int left, int top, int right, int bottom)` | Plot-area margins in px, leaving room for the axis tick labels/captions. Defaults `42 / 8 / 8 / 22`. Graph charts only. |
+| `void setAxisLabels(const QString &horizontal, const QString &vertical)` | Both axis captions in one call, with the same signature for either chart type. On a `Graph` it sets the bottom and left axis labels (same as `xAxis->setLabel()` / `yAxis->setLabel()`); on a `Target` it sets the two crosshair captions. |
+| `void setPlotMargins(int left, int top, int right, int bottom)` | Plot-area margins in px, leaving room for the axis tick labels. Defaults `42 / 8 / 8 / 22`. Graph charts only. Axis captions need no allowance here — each takes its own strip at the widget edge and shrinks the plot area by that much. |
 | `int marginLeft() const` / `marginTop()` / `marginRight()` / `marginBottom()` | Current margins. |
 
 ### Graph chart members
@@ -130,7 +131,7 @@ enum AxisType { Left, Right, Top, Bottom };
 | `bool tickLabels() const` | Whether numbers are shown. |
 | `void setShowEndLabel(bool on)` | Also label the exact upper bound of the range. The "nice number" ticks rarely land on the range end (e.g. a range of `0..59.2`), so the last value is otherwise unlabelled. A matching tick is drawn and the label is auto-skipped if it would collide with the last regular tick. Default `false`. |
 | `bool showEndLabel() const` | End-label state. |
-| `void setLabel(const QString &label)` | Set an axis caption string (stored; reserved for captions). |
+| `void setLabel(const QString &label)` | Axis caption, painted in the margin outside the plot area: centred over the plot area's width for the bottom/top axes, rotated for the left/right ones (reading bottom-to-top on the left, top-to-bottom on the right). Empty by default; painted only while the axis is visible. It reserves its own strip at the widget edge, so `setPlotMargins()` only has to cover the tick labels. Drawn in the widget font, in the axis' `tickLabelColor()`. |
 | `QString label() const` | Current axis caption. |
 
 ### Ticks
@@ -291,6 +292,7 @@ plot->xAxis->setAutoTickCount(4);
 plot->yAxis->setAutoTickCount(5);
 plot->yAxis->setRange(-6, 6);
 plot->xAxis->setShowEndLabel(true);                    // label the last x value
+plot->setAxisLabels("Frame", "Drift (\")");            // bottom + rotated left caption
 
 // feed data
 QVector<double> x, ra, dec;          // fill these ...

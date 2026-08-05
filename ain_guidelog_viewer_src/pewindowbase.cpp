@@ -30,7 +30,6 @@
 #include <QWidget>
 
 #include "peanalysis.h"
-#include "verticallabel.h"
 
 #include <simpleplot.h>
 
@@ -87,25 +86,10 @@ void PEWindowBase::addPlotRow() {
 	m_plot->xAxis2->setTickLabels(false);
 	m_plot->yAxis2->setTickLabels(false);
 
-	// SimplePlot's Graph mode does not paint axis captions, so draw them as
-	// separate widgets: a rotated label to the left of the plot for Y, and a
-	// centered label beneath it for X.
-	m_yCaptionLabel = new VerticalLabel(m_central);
-
-	QHBoxLayout *plotRow = new QHBoxLayout();
-	plotRow->setContentsMargins(0, 0, 0, 0);
-	plotRow->setSpacing(2);
-	plotRow->addWidget(m_yCaptionLabel);
-	plotRow->addWidget(m_plot, 1);
-	m_rootLayout->addLayout(plotRow, 1);
-
-	m_xCaptionLabel = new QLabel(m_central);
-	m_xCaptionLabel->setAlignment(Qt::AlignHCenter);
-	m_rootLayout->addWidget(m_xCaptionLabel);
-
-	// Keep both captions visually identical (the rotated one otherwise inherits
-	// a different effective font than the styled QLabel).
-	m_yCaptionLabel->setFont(m_xCaptionLabel->font());
+	// The axis captions are painted by the plot itself (SimpleAxis::setLabel(),
+	// which reserves its own strip inside the widget), so the row is just the
+	// plot; subclasses set the caption text along with the rest of the axes.
+	m_rootLayout->addWidget(m_plot, 1);
 }
 
 void PEWindowBase::setSession(const std::shared_ptr<PEAnalysis> &analysis,

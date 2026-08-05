@@ -28,12 +28,11 @@ class QLabel;
 class QVBoxLayout;
 class QWidget;
 class SimplePlot;
-class VerticalLabel;
 class PEAnalysis;
 
 // Common chrome for the two periodic-error windows: the dark stylesheet, the
-// rich-text summary line above the plot, the plot itself with its rotated Y
-// caption and centred X caption, and the shared PEAnalysis they both read.
+// rich-text summary line above the plot, the plot itself, and the shared
+// PEAnalysis they both read.
 //
 // Subclasses build their layout in their constructor by calling, in order, any
 // controls they need on rootLayout(), then addSummaryRow() and addPlotRow().
@@ -62,7 +61,8 @@ protected:
 	// Adds the summary line; trailing, when given, is placed right-aligned on
 	// the same row (the PE curve window puts its export button there).
 	void addSummaryRow(QWidget *trailing = nullptr);
-	// Adds the Y caption + plot + X caption block, taking the remaining height.
+	// Adds the plot, taking the remaining height. Its axis captions come from
+	// SimpleAxis::setLabel(), so the subclass sets them with the rest of the axes.
 	void addPlotRow();
 
 	// Redraws everything from the current analysis and control values.
@@ -88,8 +88,6 @@ protected:
 	bool hasAnalysis() const { return static_cast<bool>(m_analysis); }
 
 	QLabel *m_summaryLabel = nullptr;
-	QLabel *m_xCaptionLabel = nullptr;
-	VerticalLabel *m_yCaptionLabel = nullptr;
 	SimplePlot *m_plot = nullptr;
 
 private:

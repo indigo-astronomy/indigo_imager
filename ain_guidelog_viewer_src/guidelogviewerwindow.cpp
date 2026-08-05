@@ -419,8 +419,9 @@ void GuideLogViewerWindow::createUi() {
 	// --- Graph (grows vertically) ---
 	m_plot = new SimplePlot(SimplePlot::Graph, central);
 	m_plot->setPlotMargins(48, 12, 16, 28);
-	m_plot->xAxis->setLabel("Sample index");
-	m_plot->yAxis->setLabel("Value");
+	// No axis captions here: the X axis combo and the Y column checkboxes above
+	// the graph already name what is plotted, and the space is better spent on
+	// the curves.
 	m_plot->xAxis2->setVisible(true);
 	m_plot->yAxis2->setVisible(true);
 	m_plot->xAxis2->setTickLabels(true);
@@ -1132,7 +1133,6 @@ bool GuideLogViewerWindow::renderPlot(const QVector<int> &visibleRows, const QLi
 	double yMin = 0;
 	double yMax = 0;
 	bool hasAnyPoint = false;
-	QStringList activeYLabels;
 
 	for (QCheckBox *checkBox : m_yColumnChecks) {
 		if (!checkBox->isChecked()) {
@@ -1140,7 +1140,6 @@ bool GuideLogViewerWindow::renderPlot(const QVector<int> &visibleRows, const QLi
 		}
 
 		int yColumn = checkBox->property("column").toInt();
-		activeYLabels.append(checkBox->text());
 
 		QVector<double> keys;
 		QVector<double> values;
@@ -1265,15 +1264,6 @@ bool GuideLogViewerWindow::renderPlot(const QVector<int> &visibleRows, const QLi
 		marker->setData(QVector<double>{markerX, markerX}, QVector<double>{yAxisLower, yAxisUpper});
 		marker->setName("Selection");
 	}
-
-	QString xLabel;
-	if (useTimestampXAxis) {
-		xLabel = "Timestamp";
-	} else {
-		xLabel = (xColumn >= 0) ? m_headers.at(xColumn) : QString("Sample index");
-	}
-	m_plot->xAxis->setLabel(xLabel);
-	m_plot->yAxis->setLabel(activeYLabels.isEmpty() ? QString("Value") : activeYLabels.join(" | "));
 
 	m_plot->replot();
 	return true;

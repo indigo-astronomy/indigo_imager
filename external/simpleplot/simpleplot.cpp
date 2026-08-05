@@ -238,6 +238,15 @@ void SimplePlot::clearCustomXAxisTicks() {
 	update();
 }
 
+void SimplePlot::setAxisLabels(const QString &horizontal, const QString &vertical) {
+	if (mType == Graph) {
+		if (xAxis) xAxis->setLabel(horizontal);
+		if (yAxis) yAxis->setLabel(vertical);
+	} else if (mTarget) {
+		mTarget->setAxisLabels(horizontal, vertical);
+	}
+}
+
 void SimplePlot::setPlotMargins(int left, int top, int right, int bottom) {
 	mMarginLeft = left;
 	mMarginTop = top;
@@ -268,9 +277,23 @@ void SimplePlot::clearGraphs() {
 	update();
 }
 
+// Gap in px between an axis caption and the tick labels next to it.
+static const int kCaptionGap = 3;
+
+int SimplePlot::captionExtent(const SimpleAxis *axis) const {
+	if (mType != Graph || !axis || !axis->visible() || axis->label().isEmpty()) return 0;
+	return fontMetrics().height() + kCaptionGap;
+}
+
 QRect SimplePlot::plotArea() const {
-	// Margins leave room for tick labels / axis captions.
-	QRect r = rect().adjusted(mMarginLeft, mMarginTop, -mMarginRight, -mMarginBottom);
+	// Margins leave room for the tick labels; each caption then takes its own
+	// strip at the widget edge, outside them. Reserving it here rather than
+	// asking the caller to fold it into the margins keeps a caption from ever
+	// landing on top of the numbers, whatever font the widget ends up with.
+	QRect r = rect().adjusted(mMarginLeft + captionExtent(yAxis),
+	                          mMarginTop + captionExtent(xAxis2),
+	                          -(mMarginRight + captionExtent(yAxis2)),
+	                          -(mMarginBottom + captionExtent(xAxis)));
 	if (r.width() < 10) r.setWidth(10);
 	if (r.height() < 10) r.setHeight(10);
 	return r;
@@ -350,10 +373,17 @@ void SimplePlot::paintGraph(QPainter &p) {
 	QPen zeroPen(QColor(255, 255, 255, 120));
 	zeroPen.setWidth(0);
 
-	QFont f = p.font();
+	// Tick numbers are drawn one point smaller than the widget font; the
+	// captions painted at the end keep the widget font itself.
+	const QFont baseFont = p.font();
+	QFont f = baseFont;
 	f.setPointSizeF(qMax(7.0, f.pointSizeF() - 1.0));
 	p.setFont(f);
 	QFontMetrics fm(f);
+
+	// Left edge of the band the y tick labels are laid out in: past the y
+	// caption's strip, so a wide number cannot run underneath it.
+	const int yTickLabelLeft = captionExtent(yAxis);
 
 	// Grid, frame and tick marks are all horizontal/vertical lines: draw them
 	// with antialiasing OFF so they stay crisp 1px and never bleed a faint halo
@@ -418,7 +448,7 @@ void SimplePlot::paintGraph(QPainter &p) {
 		if (yAxis->visible() && yAxis->tickLabels()) {
 			p.setPen(yAxis->tickLabelColor());
 			const QString s = fmtTick(y, ystep);
-			p.drawText(QRectF(0, py - 8, area.left() - 4, 16),
+			p.drawText(QRectF(yTickLabelLeft, py - 8, area.left() - 4 - yTickLabelLeft, 16),
 			           Qt::AlignRight | Qt::AlignVCenter, s);
 		}
 		yLastTick = y;
@@ -428,7 +458,7 @@ void SimplePlot::paintGraph(QPainter &p) {
 		const double py = mapY(yr.upper);
 		double ry = qBound(0.0, py - 8.0, double(height()) - 16.0);
 		p.setPen(yAxis->tickLabelColor());
-		p.drawText(QRectF(0, ry, area.left() - 4, 16),
+		p.drawText(QRectF(yTickLabelLeft, ry, area.left() - 4 - yTickLabelLeft, 16),
 		           Qt::AlignRight | Qt::AlignVCenter, fmtTick(yr.upper, ystep));
 	}
 
@@ -572,6 +602,56 @@ void SimplePlot::paintGraph(QPainter &p) {
 		}
 	}
 	p.setClipping(false);
+
+	// --- axis captions ----------------------------------------------------
+	// Drawn last, unclipped, in the strips plotArea() reserved for them at the
+	// widget edges: the bottom/top ones centred over the plot area's width, the
+	// left/right ones rotated to run along its height -- reading bottom-to-top
+	// on the left and top-to-bottom on the right, as axis captions conventionally
+	// do. Each is centred on the plot area rather than on the widget, so it lines
+	// up with the frame and not with the tick-label margin beside it.
+	// Each caption is centred in the whole strip plotArea() gave it, rather than
+	// pinned to the widget edge in a rect of exactly the font height: the extra
+	// room either side lets the baseline land where the glyphs rasterize fullest,
+	// which is what keeps a rotated caption from coming out a pixel lighter than
+	// the horizontal one beside it.
+	p.setFont(baseFont);
+	const int capH = QFontMetrics(baseFont).height() + kCaptionGap; // the strip plotArea() reserved
+	auto drawCaption = [&](const SimpleAxis *ax) {
+		if (!ax || !ax->visible() || ax->label().isEmpty()) return;
+		p.setPen(ax->tickLabelColor());
+		switch (ax->axisType()) {
+		case SimpleAxis::Bottom:
+			p.drawText(QRect(area.left(), height() - capH, area.width(), capH),
+			           Qt::AlignCenter, ax->label());
+			break;
+		case SimpleAxis::Top:
+			p.drawText(QRect(area.left(), 0, area.width(), capH),
+			           Qt::AlignCenter, ax->label());
+			break;
+		case SimpleAxis::Left:
+			// After the rotation the local x axis runs up the widget and the
+			// local y axis runs right, so a rect as long as the plot area is
+			// tall lands exactly on the strip at the left edge.
+			p.save();
+			p.translate(0, area.bottom());
+			p.rotate(-90.0);
+			p.drawText(QRect(0, 0, area.height(), capH), Qt::AlignCenter, ax->label());
+			p.restore();
+			break;
+		case SimpleAxis::Right:
+			p.save();
+			p.translate(width(), area.top());
+			p.rotate(90.0);
+			p.drawText(QRect(0, 0, area.height(), capH), Qt::AlignCenter, ax->label());
+			p.restore();
+			break;
+		}
+	};
+	drawCaption(xAxis);
+	drawCaption(yAxis);
+	drawCaption(xAxis2);
+	drawCaption(yAxis2);
 }
 
 void SimplePlot::paintTarget(QPainter &p) {
