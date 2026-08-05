@@ -18,6 +18,7 @@
 #include <QPointF>
 #include <QRect>
 #include <QStringList>
+#include <QPair>
 
 class QPainter;
 class QPaintEvent;
@@ -232,6 +233,15 @@ public:
 	void setCustomXAxisTicks(const QVector<double> &positions, const QStringList &labels);
 	void clearCustomXAxisTicks();
 
+	// Highlights x-intervals where a per-point flag is non-zero with a
+	// translucent background band (e.g. to mark dithering frames). flags.size()
+	// must equal keys.size(); each maximal run of consecutive non-zero flags
+	// becomes one band, extended to the midpoint between it and its
+	// neighbouring points so adjacent samples leave no gap. Independent of the
+	// graphs themselves: clearGraphs() does not clear the bands. Graph only.
+	void setBackgroundBands(const QVector<double> &keys, const QVector<double> &flags, const QColor &color = QColor(255, 255, 255, 15));
+	void clearBackgroundBands();
+
 	// Axis captions, in one call and with the same signature for both chart
 	// types: on a Graph they are the bottom and left axis labels (equivalent to
 	// xAxis->setLabel() / yAxis->setLabel()), on a Target the two crosshair
@@ -283,6 +293,8 @@ private:
 	QBrush mBackground{QColor(0, 0, 0, 0)};
 	QVector<double> mCustomXAxisTickPositions;
 	QStringList mCustomXAxisTickLabels;
+	QVector<QPair<double, double>> mBackgroundBands;
+	QColor mBackgroundBandColor;
 	int mMarginLeft = 42;
 	int mMarginTop = 8;
 	int mMarginRight = 8;

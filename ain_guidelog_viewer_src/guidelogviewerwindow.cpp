@@ -615,11 +615,6 @@ void GuideLogViewerWindow::applySelectedSession() {
 	m_headers = session.headers;
 	m_rows = session.rows;
 
-	// Every session starts fully shown: cap the X range spin at the new row count
-	// and open it all the way up, so the plot -- and the PE reconstruction and its
-	// spectrum, which work on the samples currently plotted -- see the whole
-	// session rather than a window carried over from the previously viewed one.
-	// The signal is blocked because updatePlot() runs at the end of this function.
 	const QSignalBlocker blocker(m_xRangeSpin);
 	m_xRangeSpin->setMaximum(m_rows.size());
 	m_xRangeSpin->setValue(m_rows.size());
@@ -1133,6 +1128,10 @@ bool GuideLogViewerWindow::renderPlot(const QVector<int> &visibleRows, const QLi
 	double yMin = 0;
 	double yMax = 0;
 	bool hasAnyPoint = false;
+	bool hasAnyYPoint = false; // dither's 0/1 values must not seed the y-range
+
+	QVector<double> ditherKeys;
+	QVector<double> ditherFlags;
 
 	for (QCheckBox *checkBox : m_yColumnChecks) {
 		if (!checkBox->isChecked()) {
@@ -1140,6 +1139,8 @@ bool GuideLogViewerWindow::renderPlot(const QVector<int> &visibleRows, const QLi
 		}
 
 		int yColumn = checkBox->property("column").toInt();
+		const bool isDitherColumn = m_headers.at(yColumn).trimmed().compare(
+			"Dithering", Qt::CaseInsensitive) == 0;
 
 		QVector<double> keys;
 		QVector<double> values;
@@ -1162,13 +1163,30 @@ bool GuideLogViewerWindow::renderPlot(const QVector<int> &visibleRows, const QLi
 				}
 			}
 
+			if (isDitherColumn) {
+				// Shown as background shading (below), not as a plotted series;
+				// its 0/1 values must not skew the y-axis range.
+				ditherKeys.append(x);
+				ditherFlags.append(y);
+				if (!hasAnyPoint) {
+					xMin = xMax = x;
+					hasAnyPoint = true;
+				} else {
+					xMin = qMin(xMin, x);
+					xMax = qMax(xMax, x);
+				}
+				continue;
+			}
+
 			keys.append(x);
 			values.append(y);
 
-			if (!hasAnyPoint) {
-				xMin = xMax = x;
+			if (!hasAnyYPoint) {
+				xMin = hasAnyPoint ? qMin(xMin, x) : x;
+				xMax = hasAnyPoint ? qMax(xMax, x) : x;
 				yMin = yMax = y;
 				hasAnyPoint = true;
+				hasAnyYPoint = true;
 			} else {
 				xMin = qMin(xMin, x);
 				xMax = qMax(xMax, x);
@@ -1177,7 +1195,7 @@ bool GuideLogViewerWindow::renderPlot(const QVector<int> &visibleRows, const QLi
 			}
 		}
 
-		if (keys.isEmpty()) {
+		if (isDitherColumn || keys.isEmpty()) {
 			continue;
 		}
 
@@ -1187,6 +1205,12 @@ bool GuideLogViewerWindow::renderPlot(const QVector<int> &visibleRows, const QLi
 		graph->setPen(pen);
 		graph->setData(keys, values);
 		graph->setName(checkBox->text());
+	}
+
+	if (!ditherKeys.isEmpty()) {
+		m_plot->setBackgroundBands(ditherKeys, ditherFlags);
+	} else {
+		m_plot->clearBackgroundBands();
 	}
 
 	if (!hasAnyPoint) {

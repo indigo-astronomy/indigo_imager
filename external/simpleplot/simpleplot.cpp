@@ -238,6 +238,37 @@ void SimplePlot::clearCustomXAxisTicks() {
 	update();
 }
 
+void SimplePlot::setBackgroundBands(const QVector<double> &keys, const QVector<double> &flags, const QColor &color) {
+	mBackgroundBands.clear();
+	mBackgroundBandColor = color;
+	const int n = qMin(keys.size(), flags.size());
+	int i = 0;
+	while (i < n) {
+		if (flags.at(i) == 0.0) {
+			i++;
+			continue;
+		}
+		int j = i;
+		while (j + 1 < n && flags.at(j + 1) != 0.0) j++;
+		// Extend the run to the midpoint with its neighbours on each side (or
+		// mirror the nearest gap when the run touches an end) so consecutive
+		// runs / samples leave no visible seam between their bands.
+		const double startX = (i > 0) ? (keys.at(i - 1) + keys.at(i)) / 2.0
+		                              : keys.at(i) - ((n > 1) ? (keys.at(1) - keys.at(0)) / 2.0 : 0.5);
+		const double endX = (j + 1 < n) ? (keys.at(j) + keys.at(j + 1)) / 2.0
+		                                : keys.at(j) + ((n > 1) ? (keys.at(n - 1) - keys.at(n - 2)) / 2.0 : 0.5);
+		mBackgroundBands.append(qMakePair(startX, endX));
+		i = j + 1;
+	}
+	update();
+}
+
+void SimplePlot::clearBackgroundBands() {
+	if (mBackgroundBands.isEmpty()) return;
+	mBackgroundBands.clear();
+	update();
+}
+
 void SimplePlot::setAxisLabels(const QString &horizontal, const QString &vertical) {
 	if (mType == Graph) {
 		if (xAxis) xAxis->setLabel(horizontal);
@@ -363,6 +394,22 @@ void SimplePlot::paintGraph(QPainter &p) {
 	auto mapY = [&](double y) {
 		return area.bottom() - (y - yr.lower) / yspan * area.height();
 	};
+
+	// --- background bands ---------------------------------------------------
+	// Painted before the grid/data so both remain visible over them.
+	if (!mBackgroundBands.isEmpty()) {
+		p.save();
+		p.setClipRect(area);
+		p.setPen(Qt::NoPen);
+		p.setBrush(mBackgroundBandColor);
+		for (const auto &band : mBackgroundBands) {
+			if (band.second < xr.lower || band.first > xr.upper) continue;
+			const double x0 = mapX(qMax(band.first, xr.lower));
+			const double x1 = mapX(qMin(band.second, xr.upper));
+			p.drawRect(QRectF(x0, area.top(), x1 - x0, area.height()));
+		}
+		p.restore();
+	}
 
 	// --- grid + ticks -----------------------------------------------------
 	const double xstep = niceTickStep(xspan, xAxis->autoTickCount());
