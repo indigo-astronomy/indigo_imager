@@ -109,7 +109,17 @@ void PEFFTWindow::recompute() {
 	m_xCaptionLabel->setText(data.usedTime ? QStringLiteral("Period (s)")
 	                                       : QStringLiteral("Period (samples)"));
 
-	const QVector<PEFFTPeak> peaks = PECurve::findHarmonics(fft, kMinRelativeAmplitude, kMaxPeriodS);
+	// Adjust max period based on actual data duration: no point showing periods
+	// longer than about 1/3 of the available data (need multiple cycles to detect a period).
+	double maxPeriodS = kMaxPeriodS;
+	if (!data.x.isEmpty() && data.x.size() > 1) {
+		const double dataDuration = data.x.last() - data.x.first();
+		if (dataDuration > 0.0) {
+			maxPeriodS = std::min(kMaxPeriodS, dataDuration / 3.0);
+		}
+	}
+
+	const QVector<PEFFTPeak> peaks = PECurve::findHarmonics(fft, kMinRelativeAmplitude, maxPeriodS);
 	if (peaks.isEmpty()) {
 		showPlaceholder("No dominant periodic component found in this session.");
 		return;
@@ -120,36 +130,39 @@ void PEFFTWindow::recompute() {
 
 	// Zoom to the interesting period region (from a bit past the highest
 	// harmonic's period down to a bit past the longest detected peak's period),
-	// rather than the huge, near-empty tail near DC. Cap the upper end so a
-	// single very long period can't stretch the axis out to where the rest of
-	// the spectrum is squeezed into a sliver.
+	// rather than the huge, near-empty tail near DC. Cap the upper end based on
+	// available data so a single long period can't stretch the axis.
 	double maxHarmonicFreq = 0.0;
 	double maxPeakPeriod = 0.0;
 	for (const PEFFTPeak &p : peaks) {
-		if (p.periodS < kMaxPeriodS) {
+		if (p.periodS < maxPeriodS) {
 			maxHarmonicFreq = std::max(maxHarmonicFreq, p.frequencyHz);
 		}
 		maxPeakPeriod = std::max(maxPeakPeriod, p.periodS);
 	}
 	if (maxHarmonicFreq <= 0.0) {
-		// findHarmonics() keeps the fundamental within kMaxPeriodS, so this only
+		// findHarmonics() keeps the fundamental within maxPeriodS, so this only
 		// happens if a peak lands exactly on the cap; fall back to that peak.
 		maxHarmonicFreq = peaks.first().frequencyHz;
 	}
 	const double xLower = (maxHarmonicFreq > 0.0) ? 1.0 / (maxHarmonicFreq * 1.4) : 1.0;
-	const double xUpper = std::max(xLower * 1.1, std::min(maxPeakPeriod * 1.3, kMaxPeriodS));
+	const double xUpper = std::max(xLower * 1.1, std::min(maxPeakPeriod * 1.3, maxPeriodS));
 	m_plot->xAxis->setRange(xLower, xUpper);
 	m_plot->yAxis->setRange(0.0, 1.15);
 
-	// Plot period (seconds) instead of frequency, normalized so the fundamental's
-	// amplitude is 1.0. Bins are walked from the Nyquist end down so period
+	// Plot period (seconds) instead of frequency, normalized so the strongest
+	// peak's amplitude is 1.0. Bins are walked from the Nyquist end down so period
 	// increases left to right, and only the bins that land inside the visible
 	// period window (plus one either side, so the trace reaches both edges) are
 	// handed over: the spectrum is zero-padded to several times the sample count,
 	// and at these zoom levels well over 90% of its bins sit off-screen. Since
 	// SimplePlot maps every point it is given, clipping here is what keeps a
 	// repaint cheap.
-	const double normBy = peaks.first().amplitude;
+	double maxAmplitude = 0.0;
+	for (const PEFFTPeak &p : peaks) {
+		maxAmplitude = std::max(maxAmplitude, p.amplitude);
+	}
+	const double normBy = (maxAmplitude > 0.0) ? maxAmplitude : peaks.first().amplitude;
 	const double df = (fft.freq.size() > 1) ? fft.freq.at(1) : 0.0;
 	const int lastBin = fft.freq.size() - 1;
 	int binLow = 1;
@@ -189,7 +202,8 @@ void PEFFTWindow::recompute() {
 		linePen.setStyle(Qt::DashLine);
 		linePen.setWidth(1);
 		gLine->setPen(linePen);
-		gLine->setData(QVector<double>{p.periodS, p.periodS}, QVector<double>{0.0, p.relativeAmplitude});
+		const double normalizedAmp = p.amplitude / normBy;
+		gLine->setData(QVector<double>{p.periodS, p.periodS}, QVector<double>{0.0, normalizedAmp});
 	}
 	{
 		QVector<double> peakPeriod;
@@ -198,7 +212,7 @@ void PEFFTWindow::recompute() {
 		peakAmp.reserve(peaks.size());
 		for (const PEFFTPeak &p : peaks) {
 			peakPeriod.append(p.periodS);
-			peakAmp.append(p.relativeAmplitude);
+			peakAmp.append(p.amplitude / normBy);
 		}
 		SimpleGraph *gPeaks = m_plot->addGraph();
 		gPeaks->setLineStyle(SimpleGraph::None);
@@ -231,19 +245,19 @@ void PEFFTWindow::recompute() {
 	                      "</b> " + periodUnit + separator() + "Frequency " +
 	                      number(fundamental.frequencyHz, 5) + " " + freqUnit;
 
-	QStringList harmonicParts;
+	QStringList frequencyParts;
 	for (int i = 1; i < peaks.size(); i++) {
 		const PEFFTPeak &p = peaks.at(i);
-		harmonicParts << QString("<b>%1&times;f₀</b> (%2 %3, %4% amplitude)")
-		                     .arg(p.harmonic)
+		const double ampPercent = (p.amplitude / normBy) * 100.0;
+		frequencyParts << QString("<b>%1 %2</b> (%3% amplitude)")
 		                     .arg(number(p.periodS, 1))
 		                     .arg(periodUnit)
-		                     .arg(number(p.relativeAmplitude * 100.0, 0));
+		                     .arg(number(ampPercent, 0));
 	}
-	const QString line2 = harmonicParts.isEmpty()
-	                          ? "<b>Harmonics:</b>&nbsp;&nbsp; none reach 40% of the fundamental's amplitude."
-	                          : "<b>Harmonics &ge;40% amplitude:</b>&nbsp;&nbsp; " +
-	                                harmonicParts.join(separator());
+	const QString line2 = frequencyParts.isEmpty()
+	                          ? "<b>Frequencies:</b>&nbsp;&nbsp; none reach 40% of the strongest peak's amplitude."
+	                          : "<b>Frequencies &ge;40% amplitude:</b>&nbsp;&nbsp; " +
+	                                frequencyParts.join(separator());
 	m_summaryLabel->setText(twoLines(line1, line2));
 }
 
@@ -269,8 +283,8 @@ void PEFFTWindow::layoutPeakLabels() {
 			const QPointF pos = m_plot->mapToPixel(p.periodS, p.relativeAmplitude);
 
 			const QString designation =
-				p.harmonic == 1 ? QStringLiteral("f₀") : QString("%1f₀").arg(p.harmonic);
-			const QString text = designation + " " + QString::number(p.periodS, 'f', 0) +
+				p.harmonic == 1 ? QStringLiteral("f₀ ") : QString();
+			const QString text = designation + QString::number(p.periodS, 'f', 0) +
 			                     (m_peakPeriodUnit == QStringLiteral("s") ? QString() : QStringLiteral(" ")) +
 			                     m_peakPeriodUnit;
 

@@ -697,16 +697,35 @@ QVector<PEFFTPeak> PECurve::findHarmonics(const PEFFTData &fft, double minRelati
 		return peaks;
 	}
 
-	// The fundamental is the strongest peak at or above minFrequencyHz (i.e.
-	// within maxPeriodS), so long-period drift leakage near DC can't hijack it
-	// and turn the real periodic error into some huge-numbered "harmonic".
-	int fundIdx = -1;
+	// Find the most pronounced (strongest) peak at or above minFrequencyHz,
+	// so long-period drift leakage near DC can't influence the amplitude threshold.
+	int mostPronounedIdx = -1;
 	for (int i = 0; i < rawPeaks.size(); i++) {
 		if (rawPeaks.at(i).frequencyHz < minFrequencyHz) {
 			continue;
 		}
-		if (fundIdx < 0 || rawPeaks.at(i).amplitude > rawPeaks.at(fundIdx).amplitude) {
-			fundIdx = i;
+		if (mostPronounedIdx < 0 || rawPeaks.at(i).amplitude > rawPeaks.at(mostPronounedIdx).amplitude) {
+			mostPronounedIdx = i;
+		}
+	}
+	if (mostPronounedIdx < 0) {
+		return peaks;
+	}
+	const double mostPronouncedAmplitude = rawPeaks.at(mostPronounedIdx).amplitude;
+
+	// The fundamental is the lowest frequency peak at or above minFrequencyHz
+	// that is at least minRelativeAmplitude of the most pronounced peak.
+	int fundIdx = -1;
+	double minFoundFrequency = std::numeric_limits<double>::max();
+	for (int i = 0; i < rawPeaks.size(); i++) {
+		if (rawPeaks.at(i).frequencyHz < minFrequencyHz) {
+			continue;
+		}
+		if (rawPeaks.at(i).amplitude >= minRelativeAmplitude * mostPronouncedAmplitude) {
+			if (rawPeaks.at(i).frequencyHz < minFoundFrequency) {
+				fundIdx = i;
+				minFoundFrequency = rawPeaks.at(i).frequencyHz;
+			}
 		}
 	}
 	if (fundIdx < 0) {
@@ -722,7 +741,7 @@ QVector<PEFFTPeak> PECurve::findHarmonics(const PEFFTData &fft, double minRelati
 	fundamental.frequencyHz = fund.frequencyHz;
 	fundamental.periodS = 1.0 / fund.frequencyHz;
 	fundamental.amplitude = fund.amplitude;
-	fundamental.relativeAmplitude = 1.0;
+	fundamental.relativeAmplitude = fund.amplitude / mostPronouncedAmplitude;
 	peaks.append(fundamental);
 
 	std::sort(rawPeaks.begin(), rawPeaks.end(), [](const RawPeak &a, const RawPeak &b) {
@@ -735,16 +754,15 @@ QVector<PEFFTPeak> PECurve::findHarmonics(const PEFFTData &fft, double minRelati
 		if (std::fabs(rp.frequencyHz - fund.frequencyHz) < df * 0.5) {
 			continue; // the fundamental itself
 		}
-		const double relAmp = rp.amplitude / fund.amplitude;
-		if (relAmp < minRelativeAmplitude) {
-			continue;
+		if (rp.amplitude < minRelativeAmplitude * mostPronouncedAmplitude) {
+			continue; // below the 40% of strongest peak threshold
 		}
 		PEFFTPeak p;
 		p.harmonic = std::max(2, static_cast<int>(std::lround(rp.frequencyHz / fund.frequencyHz)));
 		p.frequencyHz = rp.frequencyHz;
 		p.periodS = 1.0 / rp.frequencyHz;
 		p.amplitude = rp.amplitude;
-		p.relativeAmplitude = relAmp;
+		p.relativeAmplitude = rp.amplitude / mostPronouncedAmplitude;
 		peaks.append(p);
 	}
 	return peaks;
