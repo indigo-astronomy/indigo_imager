@@ -128,8 +128,29 @@ public:
 	// point stays defined. Returns the input unchanged for tiny sets / window<3.
 	static QVector<double> smooth(const QVector<double> &data, int window);
 
-	// A sensible odd smoothing window (~2% of the samples each side, min 3).
-	static int autoSmoothWindow(int sampleCount);
+	// An odd smoothing window (in samples) for smooth(), sized to strip the
+	// per-frame seeing / centroid noise without eating into the periodic error
+	// itself. A centred boxcar of duration D scales a sinusoid of period P by
+	// sinc(D/P), which is exactly zero at D == P, so the window is capped at a
+	// twentieth of fundamentalPeriod -- 99.6% of the fundamental survives, 94%
+	// of its fourth harmonic. Pass 0 for fundamentalPeriod when none was
+	// detected and the cap falls back to a fixed span of x instead. x is the
+	// series' own axis (elapsed seconds, or the sample index on a log without
+	// timestamps) and fundamentalPeriod is in those same units. Never returns
+	// less than 3 or more than about a quarter of the series.
+	static int autoSmoothWindow(const QVector<double> &x, double fundamentalPeriod);
+
+	// The longest period worth searching for in a series spanning spanX: a
+	// period needs several cycles before it can be told apart from drift, and no
+	// worm period comes near the absolute cap anyway. Pass 0 or less for spanX
+	// to get that cap. Feed the result to findHarmonics()' maxPeriodS.
+	static double maxSearchPeriod(double spanX);
+
+	// The fundamental's period, in the spectrum's own x units, from an already
+	// computed spectrum of a series spanning spanX; 0 when no peak was found.
+	// Convenience wrapper over findHarmonics() for callers that only want the
+	// fundamental (cf. the smoothing window above).
+	static double fundamentalPeriod(const PEFFTData &fft, double spanX);
 
 	// Removes the linear drift trend (and DC offset) from y over x. For a signal
 	// dominated by the periodic error, a plain line fit is biased by the sinusoid

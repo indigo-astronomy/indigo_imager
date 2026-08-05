@@ -34,6 +34,20 @@ namespace {
 constexpr double kTwoPi = 6.283185307179586476925286766559;
 constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
 
+// Longest period the fundamental search will ever consider, in seconds. No
+// mount's worm period comes close; past this a "peak" is drift leaking towards
+// DC rather than periodic error.
+constexpr double kMaxSearchPeriodS = 1600.0;
+// A period has to repeat a few times over the loaded window before it can be
+// told apart from that drift.
+constexpr double kMinCyclesToDetect = 3.0;
+// The smoothing window is held to this fraction of the fundamental's period.
+constexpr double kSmoothPeriodDivisor = 20.0;
+// Smoothing window when no fundamental was detected: seconds of data, which is
+// already far longer than seeing and centroid noise stay correlated for. On a
+// log without timestamps x counts samples, so it reads as a sample count.
+constexpr double kSmoothFallbackSpan = 10.0;
+
 // Median of a copy of the samples (returns 0 when empty). Uses nth_element
 // rather than a full sort: only the middle order statistic is wanted.
 double median(QVector<double> samples) {
@@ -541,8 +555,52 @@ QVector<double> PECurve::smooth(const QVector<double> &data, int window) {
 	return out;
 }
 
-int PECurve::autoSmoothWindow(int sampleCount) {
-	return std::max(3, 2 * (sampleCount / 50) + 1);
+double PECurve::maxSearchPeriod(double spanX) {
+	if (spanX <= 0.0) {
+		return kMaxSearchPeriodS;
+	}
+	return std::min(kMaxSearchPeriodS, spanX / kMinCyclesToDetect);
+}
+
+double PECurve::fundamentalPeriod(const PEFFTData &fft, double spanX) {
+	const QVector<PEFFTPeak> peaks = findHarmonics(fft, 0.4, maxSearchPeriod(spanX));
+	return peaks.isEmpty() ? 0.0 : peaks.first().periodS;
+}
+
+int PECurve::autoSmoothWindow(const QVector<double> &x, double fundamentalPeriod) {
+	const int n = x.size();
+	if (n < 5) {
+		return 3;
+	}
+
+	// Median step rather than the average, so a dither gap (or a stretch of
+	// dropped frames) does not inflate it and shrink the window.
+	QVector<double> steps;
+	steps.reserve(n - 1);
+	for (int i = 1; i < n; ++i) {
+		const double dx = x.at(i) - x.at(i - 1);
+		if (dx > 0.0) {
+			steps.append(dx);
+		}
+	}
+	const double step = steps.isEmpty() ? 1.0 : median(steps);
+	if (!(step > 0.0)) {
+		return 3;
+	}
+
+	// The span to average over is set by the periodic error itself, never by how
+	// much of the log happens to be loaded: a window that grew with the sample
+	// count would attenuate -- and past D == P outright invert -- the very
+	// periodic error the curve is meant to show.
+	const double span = (fundamentalPeriod > 0.0) ? fundamentalPeriod / kSmoothPeriodDivisor
+	                                              : kSmoothFallbackSpan;
+
+	int window = static_cast<int>(std::lround(span / step));
+	if (window % 2 == 0) {
+		window++; // odd, so the moving average stays centred on its sample
+	}
+	window = std::min(window, (n / 4) | 1); // never average away a quarter of the series
+	return std::max(3, window);
 }
 
 double PECurve::peakToPeak(const QVector<double> &data) {

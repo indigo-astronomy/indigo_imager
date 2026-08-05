@@ -174,7 +174,9 @@ void PECurveWindow::recompute() {
 	options.removeDrift = m_detrendCheck->isChecked();
 	options.linearDetrend = m_linearDetrendCheck->isChecked();
 
-	const std::shared_ptr<const PEResult> result = analysis()->reconstruct(options);
+	// The spectrum comes along for the smoothing window below; it is computed
+	// once per option set and cached with the reconstruction.
+	const std::shared_ptr<const PEResult> result = analysis()->reconstructWithSpectrum(options);
 	const PECurveData &data = result->curve;
 	if (!data.valid) {
 		m_lastValid = false;
@@ -185,14 +187,20 @@ void PECurveWindow::recompute() {
 	m_plot->clearGraphs();
 	m_plot->clearCustomXAxisTicks();
 
+	// One smoothing window for the drawn traces and for the suppression figures
+	// further down, sized against the detected worm period rather than the
+	// sample count, so loading more of the session no longer flattens the very
+	// periodic error being measured.
+	const double spanX = (data.x.size() > 1) ? data.x.last() - data.x.first() : 0.0;
+	const double fundamental = result->spectrum.valid ? PECurve::fundamentalPeriod(result->spectrum, spanX) : 0.0;
+	const int smoothWindow = PECurve::autoSmoothWindow(data.x, fundamental);
+
 	// The smoothing toggles only change what is drawn (moving-average traces);
 	// the reported numbers below are unaffected.
 	const bool smoothPe = m_smoothCheck->isChecked();
 	const bool smoothRes = m_smoothResidualCheck->isChecked();
-	const QVector<double> peSeries =
-		smoothPe ? PECurve::smooth(data.pe, PECurve::autoSmoothWindow(data.pe.size())) : data.pe;
-	const QVector<double> resSeries =
-		smoothRes ? PECurve::smooth(data.residual, PECurve::autoSmoothWindow(data.residual.size())) : data.residual;
+	const QVector<double> peSeries = smoothPe ? PECurve::smooth(data.pe, smoothWindow) : data.pe;
+	const QVector<double> resSeries = smoothRes ? PECurve::smooth(data.residual, smoothWindow) : data.residual;
 
 	m_plot->xAxis->setLabel(data.usedTime ? "Elapsed time (s)" : "Sample index");
 
@@ -258,9 +266,8 @@ void PECurveWindow::recompute() {
 	// atmospheric seeing / centroid noise the loop cannot remove. "Periodic
 	// error suppression" uses the smoothed curves, removing that high-frequency
 	// content to isolate how well the slow periodic error itself was corrected.
-	const int window = PECurve::autoSmoothWindow(data.pe.size());
-	const QVector<double> peSmooth = PECurve::smooth(data.pe, window);
-	const QVector<double> resSmooth = PECurve::smooth(data.residual, window);
+	const QVector<double> peSmooth = PECurve::smooth(data.pe, smoothWindow);
+	const QVector<double> resSmooth = PECurve::smooth(data.residual, smoothWindow);
 	const double peRmsRaw = PECurve::rms(data.pe);
 	const double resRmsRaw = PECurve::rms(data.residual);
 	const double peRmsSm = PECurve::rms(peSmooth);
