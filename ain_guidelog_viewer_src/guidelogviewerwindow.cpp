@@ -614,6 +614,13 @@ void GuideLogViewerWindow::applySelectedSession() {
 	m_headers = session.headers;
 	m_rows = session.rows;
 
+	// Update the X range spin box to match the new session's row count, but don't
+	const QSignalBlocker blocker(m_xRangeSpin);
+	m_xRangeSpin->setMaximum(m_rows.size());
+	if (m_xRangeSpin->value() > m_rows.size()) {
+		m_xRangeSpin->setValue(m_rows.size());
+	}
+
 	if (session.metadata.isEmpty()) {
 		m_metadataLabel->setText("No metadata found for this guiding session.");
 	} else {
