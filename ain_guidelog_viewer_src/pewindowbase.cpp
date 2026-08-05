@@ -78,7 +78,7 @@ void PEWindowBase::addSummaryRow(QWidget *trailing) {
 	}
 }
 
-void PEWindowBase::addPlotRow() {
+void PEWindowBase::addPlotRow(QWidget *side) {
 	m_plot = new SimplePlot(SimplePlot::Graph, m_central);
 	m_plot->setPlotMargins(56, 12, 16, 28);
 	m_plot->xAxis2->setVisible(true);
@@ -87,9 +87,18 @@ void PEWindowBase::addPlotRow() {
 	m_plot->yAxis2->setTickLabels(false);
 
 	// The axis captions are painted by the plot itself (SimpleAxis::setLabel(),
-	// which reserves its own strip inside the widget), so the row is just the
-	// plot; subclasses set the caption text along with the rest of the axes.
-	m_rootLayout->addWidget(m_plot, 1);
+	// which reserves its own strip inside the widget), so the row carries no
+	// caption widgets; subclasses set the caption text with the rest of the axes.
+	if (side) {
+		QHBoxLayout *plotRow = new QHBoxLayout();
+		plotRow->setContentsMargins(0, 0, 0, 0);
+		plotRow->setSpacing(6);
+		plotRow->addWidget(m_plot, 1);   // the plot takes every spare pixel
+		plotRow->addWidget(side, 0);     // the side panel keeps its own width
+		m_rootLayout->addLayout(plotRow, 1);
+	} else {
+		m_rootLayout->addWidget(m_plot, 1);
+	}
 }
 
 void PEWindowBase::setSession(const std::shared_ptr<PEAnalysis> &analysis,

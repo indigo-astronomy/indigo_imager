@@ -29,11 +29,13 @@
 class QEvent;
 class QLabel;
 class QPushButton;
+class QStandardItemModel;
+class QTableView;
 
 // Shows the amplitude spectrum (FFT) of the reconstructed RA periodic-error
 // curve (same reconstruction as PECurveWindow, always with the drift trend
-// removed), and labels the fundamental period together with any harmonics
-// whose amplitude is at least 40% of the fundamental's.
+// removed). The fundamental is labelled on the plot; it and every harmonic
+// above the amplitude threshold are listed in the table beside it.
 //
 // The calibration and declination come from the log and are used as-is; there
 // is no manual override in this window (see PECurveWindow for that).
@@ -49,6 +51,12 @@ protected:
 	bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
+	// Builds the harmonics table shown to the right of the plot.
+	void createPeakTable();
+	// Fills that table from m_peaks, with amplitudes as a percentage of
+	// normalizeBy (the strongest peak, so the numbers match the plot's y axis).
+	// Clears it when there are no peaks.
+	void fillPeakTable(double normalizeBy);
 	// Positions one floating label per peak next to its marker on the plot, and
 	// redraws them on resize (SimplePlot has no annotation API of its own, only
 	// axis-tick text). Labels are reused across calls rather than recreated.
@@ -59,6 +67,8 @@ private:
 	double m_mountDecDeg = 0.0;
 
 	QPushButton *m_exportButton = nullptr;
+	QTableView *m_peakTable = nullptr;
+	QStandardItemModel *m_peakModel = nullptr;
 
 	QVector<PEFFTPeak> m_peaks;
 	QString m_peakPeriodUnit;

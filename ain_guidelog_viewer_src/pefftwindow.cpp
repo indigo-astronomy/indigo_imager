@@ -20,11 +20,14 @@
 
 #include <QEvent>
 #include <QFont>
+#include <QHeaderView>
 #include <QLabel>
 #include <QMessageBox>
 #include <QPointF>
 #include <QPushButton>
 #include <QRect>
+#include <QStandardItemModel>
+#include <QTableView>
 
 #include "peanalysis.h"
 #include "pecurve.h"
@@ -36,7 +39,7 @@
 
 namespace {
 constexpr double kMaxPeriodS = 1600.0;        // hard cap for the period axis, regardless of the data
-constexpr double kMinRelativeAmplitude = 0.4; // harmonics quieter than this are not labelled
+constexpr double kMinRelativeAmplitude = 0.3; // harmonics quieter than this are not labelled
 } // namespace
 
 PEFFTWindow::PEFFTWindow(QWidget *parent)
@@ -46,12 +49,57 @@ PEFFTWindow::PEFFTWindow(QWidget *parent)
 	connect(m_exportButton, &QPushButton::clicked, this, [this]() { exportCsv(); });
 
 	addSummaryRow(m_exportButton);
-	addPlotRow();
+	createPeakTable();
+	addPlotRow(m_peakTable);
 
 	m_plot->setAxisLabels("Period (s)", "Relative amplitude");
 	m_plot->installEventFilter(this); // reposition the floating peak labels on resize
 
 	m_summaryLabel->setText("Load a session to compute the RA periodic error spectrum.");
+}
+
+void PEFFTWindow::createPeakTable() {
+	m_peakModel = new QStandardItemModel(this);
+	m_peakModel->setColumnCount(2);
+	m_peakModel->setHorizontalHeaderLabels(QStringList{"Period (s)", "Amplitude"});
+
+	m_peakTable = new QTableView(centralPanel());
+	m_peakTable->setModel(m_peakModel);
+	m_peakTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+	m_peakTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+	m_peakTable->setSelectionMode(QAbstractItemView::SingleSelection);
+	m_peakTable->verticalHeader()->setVisible(false);
+	m_peakTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+	m_peakTable->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	m_peakTable->setFixedWidth(190);
+	m_peakTable->setToolTip("Every peak the spectrum search found: the fundamental first,\n"
+	                        "then its harmonics, by increasing frequency. Amplitude is a\n"
+	                        "percentage of the strongest peak's, as plotted.");
+}
+
+void PEFFTWindow::fillPeakTable(double normalizeBy) {
+	m_peakModel->setRowCount(m_peaks.size());
+	const QString unit = m_peakPeriodUnit.isEmpty() ? QStringLiteral("s") : m_peakPeriodUnit;
+	m_peakModel->setHorizontalHeaderLabels(
+		QStringList{QString("Period (%1)").arg(unit), QStringLiteral("Amplitude")});
+
+	const double norm = (normalizeBy > 0.0) ? normalizeBy : 1.0;
+	for (int row = 0; row < m_peaks.size(); row++) {
+		const PEFFTPeak &p = m_peaks.at(row);
+		QStandardItem *period = new QStandardItem(number(p.periodS, 1));
+		QStandardItem *amplitude = new QStandardItem(number((p.amplitude / norm) * 100.0, 0) + "%");
+		period->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+		amplitude->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+		if (row == 0) {
+			// The fundamental, which is also the one labelled on the plot.
+			QFont bold = period->font();
+			bold.setBold(true);
+			period->setFont(bold);
+			amplitude->setFont(bold);
+		}
+		m_peakModel->setItem(row, 0, period);
+		m_peakModel->setItem(row, 1, amplitude);
+	}
 }
 
 void PEFFTWindow::applyLogDefaults(double calibrationPxPerS, double mountDecDeg) {
@@ -64,7 +112,8 @@ void PEFFTWindow::recompute() {
 		return;
 	}
 	m_peaks.clear();
-	layoutPeakLabels(); // drop any labels left over from a previous session
+	layoutPeakLabels();   // drop any label left over from a previous session
+	fillPeakTable(1.0);   // and empty the harmonics table with it
 	m_lastResult.reset(); // nothing exportable until a spectrum is actually drawn
 
 	if (!hasAnalysis()) {
@@ -232,6 +281,7 @@ void PEFFTWindow::recompute() {
 	m_peaks = peaks;
 	m_peakPeriodUnit = periodUnit;
 	layoutPeakLabels();
+	fillPeakTable(normBy);
 
 	// Snapshot for CSV export. The reconstruction is always run in arcsec, but
 	// that only holds when the log paired an arcsec column with the pixel one;
@@ -242,25 +292,11 @@ void PEFFTWindow::recompute() {
 	m_lastAmplitudeUnit = analysis()->samples().hasArcsecScale ? QStringLiteral("arcsec")
 	                                                           : QStringLiteral("px");
 
+	// Just the fundamental here; the harmonics are the table's job.
 	const PEFFTPeak &fundamental = peaks.first();
-	const QString line1 = "<b>Fundamental:</b>&nbsp;&nbsp; Period <b>" + number(fundamental.periodS, 1) +
-	                      "</b> " + periodUnit + separator() + "Frequency " +
-	                      number(fundamental.frequencyHz, 5) + " " + freqUnit;
-
-	QStringList frequencyParts;
-	for (int i = 1; i < peaks.size(); i++) {
-		const PEFFTPeak &p = peaks.at(i);
-		const double ampPercent = (p.amplitude / normBy) * 100.0;
-		frequencyParts << QString("<b>%1 %2</b> (%3% amplitude)")
-		                     .arg(number(p.periodS, 1))
-		                     .arg(periodUnit)
-		                     .arg(number(ampPercent, 0));
-	}
-	const QString line2 = frequencyParts.isEmpty()
-	                          ? "<b>Frequencies:</b>&nbsp;&nbsp; none reach 40% of the strongest peak's amplitude."
-	                          : "<b>Frequencies &ge;40% amplitude:</b>&nbsp;&nbsp; " +
-	                                frequencyParts.join(separator());
-	m_summaryLabel->setText(twoLines(line1, line2));
+	m_summaryLabel->setText("<b>Fundamental:</b>&nbsp;&nbsp; Period <b>" +
+	                        number(fundamental.periodS, 1) + "</b> " + periodUnit + separator() +
+	                        "Frequency " + number(fundamental.frequencyHz, 5) + " " + freqUnit);
 }
 
 void PEFFTWindow::layoutPeakLabels() {

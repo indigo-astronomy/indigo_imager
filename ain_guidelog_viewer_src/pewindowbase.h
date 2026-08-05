@@ -63,7 +63,9 @@ protected:
 	void addSummaryRow(QWidget *trailing = nullptr);
 	// Adds the plot, taking the remaining height. Its axis captions come from
 	// SimpleAxis::setLabel(), so the subclass sets them with the rest of the axes.
-	void addPlotRow();
+	// side, when given, is placed to the right of the plot at its own width (the
+	// spectrum window's harmonics table).
+	void addPlotRow(QWidget *side = nullptr);
 
 	// Redraws everything from the current analysis and control values.
 	virtual void recompute() = 0;
