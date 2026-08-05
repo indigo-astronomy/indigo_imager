@@ -37,7 +37,6 @@ HEADERS += \
 	$$PWD/pecurve.h \
 	$$PWD/peanalysis.h \
 	$$PWD/pefftwindow.h \
-	$$PWD/verticallabel.h \
 	$$PWD/guidelogparser.h \
 	$$PWD/guidelogstats.h \
 	$$PWD/guidelogtime.h \
