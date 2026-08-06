@@ -15,7 +15,7 @@ signals:
 public slots:
 	 void set_yaxis_range(double min, double max);
 	 void redraw_data(QVector<double> data);
-	 void redraw_data2(QVector<double> data1, QVector<double> data2);
+	 void redraw_data2(QVector<double> data1, QVector<double> data2, QVector<double> flags = QVector<double>());
 };
 
 #endif // FOCUSGRAPH_H

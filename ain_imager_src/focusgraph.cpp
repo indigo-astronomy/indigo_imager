@@ -60,7 +60,7 @@ void FocusGraph::redraw_data(QVector<double> data) {
     replot();
 }
 
-void FocusGraph::redraw_data2(QVector<double> data1, QVector<double> data2) {
+void FocusGraph::redraw_data2(QVector<double> data1, QVector<double> data2, QVector<double> flags) {
 	if (data1.size() != data2.size()) return;
 	QVector<double> x(data1.size());
 	for (int i=0; i< x.size(); ++i)
@@ -71,6 +71,12 @@ void FocusGraph::redraw_data2(QVector<double> data1, QVector<double> data2) {
 	graph(0)->rescaleKeyAxis();
 	graph(1)->setData(x, data2);
 	graph(1)->rescaleKeyAxis();
+
+	if (!flags.isEmpty() && flags.size() == data1.size()) {
+		setBackgroundBands(x, flags);
+	} else {
+		clearBackgroundBands();
+	}
 
 	// set the range to ensure the last point is visible
 	if (!data1.isEmpty()) {

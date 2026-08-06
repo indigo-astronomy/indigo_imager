@@ -1414,6 +1414,7 @@ void ImagerWindow::reset_guider_data() {
 	m_pulse_data_dec.clear();
 	m_drift_data_x.clear();
 	m_drift_data_y.clear();
+	m_dither_data.clear();
 	redraw_guider_data();
 }
 
@@ -1428,9 +1429,9 @@ void ImagerWindow::redraw_guider_data() {
 		const int size = m_guider_data_1->size();
 		if (size > max_points) {
 			const int from = size - max_points;
-			m_guider_graph->redraw_data2(m_guider_data_1->mid(from), m_guider_data_2->mid(from));
+			m_guider_graph->redraw_data2(m_guider_data_1->mid(from), m_guider_data_2->mid(from), m_dither_data.mid(from));
 		} else {
-			m_guider_graph->redraw_data2(*m_guider_data_1, *m_guider_data_2);
+			m_guider_graph->redraw_data2(*m_guider_data_1, *m_guider_data_2, m_dither_data);
 		}
 	}
 }

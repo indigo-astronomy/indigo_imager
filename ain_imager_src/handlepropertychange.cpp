@@ -2473,6 +2473,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 					w->m_pulse_data_dec.append(cor_dec);
 					w->m_drift_data_x.append(d_x);
 					w->m_drift_data_y.append(d_y);
+					w->m_dither_data.append(is_dithering ? 1.0 : 0.0);
 
 					if (w->m_drift_data_dec.size() > GUIDER_MAX_DATA_POINTS) {
 						w->m_drift_data_dec.removeFirst();
@@ -2483,6 +2484,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 						w->m_pulse_data_dec.removeFirst();
 						w->m_drift_data_x.removeFirst();
 						w->m_drift_data_y.removeFirst();
+						w->m_dither_data.removeFirst();
 					}
 					w->redraw_guider_data();
 				}

@@ -883,6 +883,7 @@ private:
 	QVector<double> m_pulse_data_dec;
 	QVector<double> m_drift_data_x;
 	QVector<double> m_drift_data_y;
+	QVector<double> m_dither_data;
 	QVector<double> *m_guider_data_1;
 	QVector<double> *m_guider_data_2;
 	int m_guider_frame_count;
