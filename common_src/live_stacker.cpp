@@ -22,7 +22,6 @@
 #include <algorithm>
 #include <numeric>
 #include <limits>
-#include <type_traits>
 #include <thread>
 #include <future>
 #include <utils.h>
@@ -58,6 +57,17 @@ static const int STAR_WIN_HALF = 4;
 
 // Maximum number of the brightest stars to retain per frame.
 static const int STAR_MAX_COUNT = 100;
+
+// Minimum separation between two retained stars, in ORIGINAL pixel coordinates.
+//
+// The centroid refinement window spans STAR_WIN_HALF cells either side of the
+// peak, while non-maximum suppression only enforces STAR_NMS_RADIUS.  Two peaks
+// can therefore sit close enough that their refinement windows overlap heavily,
+// in which case both centroids are computed from largely the same flux and the
+// two entries are not independent measurements — they would enter the alignment
+// fit as correlated pairs and double-weight that part of the field.  Keeping
+// only the brighter of any such pair costs nothing and removes that coupling.
+static const float STAR_MIN_SEPARATION = static_cast<float>(STAR_WIN_HALF * DS_STAR);
 
 // A reference star and a current-frame star are considered matched when
 // their distance in ORIGINAL pixel coordinates is below this value.
@@ -490,11 +500,12 @@ static void accumulateBicubicT(const T *src, double *acc, int W, int H, const Al
 		const double ry = y - cy;
 		double *out = acc + static_cast<size_t>(y) * W * CH;
 
-		// Resample one pixel.  FastTag is std::true_type only where the whole
-		// footprint is known to be in bounds, so the tag (not a runtime flag)
-		// selects the unchecked path at compile time.
-		auto pixel = [&](int x, auto fast_tag) {
-			constexpr bool fast = decltype(fast_tag)::value;
+		// Resample one pixel.  @p fast is a literal at each of the three call
+		// sites below, so the compiler specialises both variants and neither
+		// loop ends up carrying a bounds test.  A compile-time tag would state
+		// that intent more clearly, but that needs C++14 generic lambdas and
+		// this project builds as C++11 (CONFIG += c++11).
+		auto pixel = [&](int x, bool fast) {
 			const double rx = x - cx;
 			const double sx_d = rx * t_a + ry * t_b + cx + t_tx;
 			const double sy_d = rx * t_c + ry * t_d + cy + t_ty;
@@ -550,9 +561,9 @@ static void accumulateBicubicT(const T *src, double *acc, int W, int H, const Al
 		int xb = std::min(bx, by) - 1;
 		if (xb < xa) { xa = 0; xb = 0; }
 
-		for (int x = 0;  x < xa; ++x) pixel(x, std::false_type{});
-		for (int x = xa; x < xb; ++x) pixel(x, std::true_type{});
-		for (int x = xb; x < W;  ++x) pixel(x, std::false_type{});
+		for (int x = 0;  x < xa; ++x) pixel(x, false);
+		for (int x = xa; x < xb; ++x) pixel(x, true);
+		for (int x = xb; x < W;  ++x) pixel(x, false);
 	});
 }
 
@@ -652,15 +663,25 @@ std::vector<StarCentroid> LiveStacker::detectStars(preview_image *image) const {
 
 	const int nr = STAR_NMS_RADIUS;
 	const int wh = STAR_WIN_HALF;
-	// Parallel scan for local maxima with overlap to handle NMS window at chunk boundaries.
+	// Parallel scan for local maxima over DISJOINT row ranges.
+	//
+	// No overlap is needed between chunks: the luminance map is fully built
+	// before the scan starts, so a thread may freely read the nr rows above and
+	// below its own range, and the refinement window is clamped to the whole
+	// map rather than to the chunk.  The scan bounds already keep every access
+	// in range for y in [nr, dH-nr) and x in [nr, dW-nr).
+	//
+	// Overlapping the chunks made each boundary band get scanned twice, which
+	// both duplicated work and pushed two identical entries for every peak
+	// falling in it.
 	std::vector<std::future<std::vector<StarCentroid>>> futures;
 	const int y_min = nr;
 	const int y_max = dH - nr; // exclusive upper bound
 
 	for (int rank = 0; rank < num_threads; rank++) {
 		const int chunk = static_cast<int>(std::ceil((double)(y_max - y_min) / (double)num_threads));
-		const int start = std::max(y_min, y_min + rank * chunk - nr);
-		const int end = std::min(y_max, y_min + (rank + 1) * chunk + nr);
+		const int start = y_min + rank * chunk;
+		const int end = std::min(y_max, start + chunk);
 		if (start >= end) continue;
 		futures.push_back(std::async(std::launch::async, [=]() -> std::vector<StarCentroid> {
 			std::vector<StarCentroid> local;
@@ -721,11 +742,35 @@ std::vector<StarCentroid> LiveStacker::detectStars(preview_image *image) const {
 	}
 
 	std::sort(candidates.begin(), candidates.end(), [](const StarCentroid &a, const StarCentroid &b){ return a.flux > b.flux; });
-	if (static_cast<int>(candidates.size()) > STAR_MAX_COUNT) {
-		candidates.resize(STAR_MAX_COUNT);
+
+	// Greedy minimum-separation filter, brightest first: a candidate is kept
+	// only if it is at least STAR_MIN_SEPARATION away from every star already
+	// kept.  Walking in flux order means the brighter — and so better measured —
+	// member of any close pair is the one that survives.
+	//
+	// This runs BEFORE the STAR_MAX_COUNT truncation so that near-coincident
+	// detections cannot consume slots that independent stars should have.
+	std::vector<StarCentroid> stars;
+	stars.reserve(std::min(candidates.size(), static_cast<size_t>(STAR_MAX_COUNT)));
+	const float min_sep2 = STAR_MIN_SEPARATION * STAR_MIN_SEPARATION;
+
+	for (size_t i = 0; i < candidates.size(); ++i) {
+		const StarCentroid &c = candidates[i];
+		bool keep = true;
+		for (size_t j = 0; j < stars.size(); ++j) {
+			const float ddx = c.x - stars[j].x;
+			const float ddy = c.y - stars[j].y;
+			if (ddx * ddx + ddy * ddy < min_sep2) {
+				keep = false;
+				break;
+			}
+		}
+		if (!keep) continue;
+		stars.push_back(c);
+		if (static_cast<int>(stars.size()) >= STAR_MAX_COUNT) break;
 	}
 
-	return candidates;
+	return stars;
 }
 
 // ---------------------------------------------------------------------------
