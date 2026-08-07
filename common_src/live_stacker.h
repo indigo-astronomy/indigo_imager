@@ -155,9 +155,6 @@ public:
 private:
 	std::vector<float> buildLuminanceMap(preview_image *image, int ds) const;
 	void accumulate(preview_image *image, const AlignTransform &transform);
-	void accumulateNearest (preview_image *image, const AlignTransform &transform);
-	void accumulateBilinear(preview_image *image, const AlignTransform &transform);
-	void accumulateBicubic (preview_image *image, const AlignTransform &transform);
 
 	// ---- centroid-based alignment helpers ---------------------------------
 	std::vector<StarCentroid> detectStars(preview_image *image) const;

@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <numeric>
 #include <limits>
+#include <type_traits>
 #include <thread>
 #include <future>
 #include <utils.h>
@@ -177,6 +178,43 @@ void LiveStacker::resetStack() {
 }
 
 // ---------------------------------------------------------------------------
+// parallelSum
+//
+// Chunked parallel reduction of f(i) over [0, total).  Each thread keeps a
+// private partial sum, so there is no sharing on the hot path and no atomics.
+//
+// The summation order differs from a serial loop, so results are not
+// bit-identical to it — for the mean and variance estimates below that is
+// irrelevant, and the partial-sum structure is if anything slightly more
+// accurate than a single long accumulation.
+// ---------------------------------------------------------------------------
+
+template <typename F>
+static double parallelSum(size_t total, int num_threads, F f) {
+	if (total == 0) return 0.0;
+
+	std::vector<double> partial(static_cast<size_t>(num_threads), 0.0);
+	std::vector<std::thread> threads;
+	const size_t chunk = static_cast<size_t>(std::ceil(total / (double)num_threads));
+	double *partialData = partial.data();
+
+	for (int rank = 0; rank < num_threads; rank++) {
+		threads.emplace_back([=]() {
+			const size_t start = chunk * static_cast<size_t>(rank);
+			const size_t end = std::min(start + chunk, total);
+			double s = 0.0;
+			for (size_t i = start; i < end; ++i) s += f(i);
+			partialData[rank] = s;
+		});
+	}
+	for (auto &t : threads) t.join();
+
+	double sum = 0.0;
+	for (double v : partial) sum += v;
+	return sum;
+}
+
+// ---------------------------------------------------------------------------
 // buildLuminanceMap
 //
 // Box-average downsampled by factor @p ds, then subtract the mean.
@@ -265,12 +303,10 @@ std::vector<float> LiveStacker::buildLuminanceMap(preview_image *image, int ds) 
 	}
 	for (auto &t : threads) t.join();
 
-	double mean = 0.0;
 	const size_t total = static_cast<size_t>(dW) * dH;
-	for (size_t i = 0; i < total; ++i) {
-		mean += lumData[i];
-	}
-	mean /= static_cast<double>(total);
+	const double mean = parallelSum(total, num_threads, [=](size_t i) {
+		return static_cast<double>(lumData[i]);
+	}) / static_cast<double>(total);
 
 	threads.clear();
 	for (int rank = 0; rank < num_threads; rank++) {
@@ -288,206 +324,289 @@ std::vector<float> LiveStacker::buildLuminanceMap(preview_image *image, int ds) 
 	return lum;
 }
 
-static inline double readSample(const char *raw, int W, int H, int pix_fmt, int sx, int sy, int ch) {
+// ---------------------------------------------------------------------------
+// Resampling kernels
+//
+// The pixel format is a COMPILE-TIME parameter of the kernels below rather than
+// a switch inside the innermost loop.  Bicubic performs 16 fetches per pixel
+// per channel — roughly 576 M fetches for a 4000x3000 RGB frame — so a runtime
+// format switch and an unconditional bounds clamp on every one of them dominate
+// the cost.  With T and CH known at compile time the channel loop unrolls, the
+// index arithmetic folds to constants, and the vectoriser can see the access
+// pattern.
+//
+// Each kernel also takes an unclamped fast path whenever the whole
+// interpolation footprint lies inside the frame, which is every pixel except a
+// 1-2 px border and the region that maps outside the source frame entirely.
+// ---------------------------------------------------------------------------
+
+template <typename T, int CH>
+static inline double fetchClamped(const T *src, int W, int H, int sx, int sy, int ch) {
 	sx = std::max(0, std::min(W - 1, sx));
 	sy = std::max(0, std::min(H - 1, sy));
-	const int idx = sy * W + sx;
-	switch (pix_fmt) {
-		case PIX_FMT_Y8:
-			return static_cast<double>(reinterpret_cast<const uint8_t*>(raw)[idx]);
-		case PIX_FMT_Y16:
-			return static_cast<double>(reinterpret_cast<const uint16_t*>(raw)[idx]);
-		case PIX_FMT_F32:
-			return static_cast<double>(reinterpret_cast<const float*>(raw)[idx]);
-		case PIX_FMT_RGB24:
-			return static_cast<double>(reinterpret_cast<const uint8_t*>(raw)[idx * 3 + ch]);
-		case PIX_FMT_RGB48:
-			return static_cast<double>(reinterpret_cast<const uint16_t*>(raw)[idx * 3 + ch]);
-		default:
-			return static_cast<double>(reinterpret_cast<const float*>(raw)[idx * 3 + ch]);
-	}
+	return static_cast<double>(src[(static_cast<size_t>(sy) * W + sx) * CH + ch]);
 }
 
-// ---------------------------------------------------------------------------
-// accumulateNearest
-// ---------------------------------------------------------------------------
-
-void LiveStacker::accumulateNearest(preview_image *image, const AlignTransform &transform) {
-	const char *raw = image->m_raw_data;
-	const int W = m_width;
-	const int H = m_height;
-	const int channels = m_channels;
-	const int pix_fmt = m_pix_format;
-	double *acc = m_acc.data();
-	const double cx = (W - 1) * 0.5;
-	const double cy = (H - 1) * 0.5;
-	const double t_a = transform.a, t_b = transform.b, t_tx = transform.tx;
-	const double t_c = transform.c, t_d = transform.d, t_ty = transform.ty;
-
-	int num_threads = get_number_of_cores();
-	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
+// Run @p body(y) for every row in [0, H), split across @p num_threads.
+template <typename F>
+static void parallelRows(int H, int num_threads, F body) {
 	std::vector<std::thread> threads;
-
+	const int chunk = static_cast<int>(std::ceil(H / (double)num_threads));
 	for (int rank = 0; rank < num_threads; rank++) {
-		const int chunk = static_cast<int>(std::ceil(H / (double)num_threads));
 		threads.emplace_back([=]() {
 			const int start_row = chunk * rank;
 			const int end_row = std::min(start_row + chunk, H);
-			for (int y = start_row; y < end_row; ++y) {
-				const double ry = y - cy;
-				for (int x = 0; x < W; ++x) {
-					const double rx = x - cx;
-					const int sx = static_cast<int>(std::round(rx * t_a + ry * t_b + cx + t_tx));
-					const int sy = static_cast<int>(std::round(rx * t_c + ry * t_d + cy + t_ty));
-
-					if (sx < 0 || sx >= W || sy < 0 || sy >= H) continue;
-
-					const int dst_idx = y * W + x;
-					for (int c = 0; c < channels; ++c) {
-						acc[dst_idx * channels + c] += readSample(raw, W, H, pix_fmt, sx, sy, c);
-					}
-				}
-			}
+			for (int y = start_row; y < end_row; ++y) body(y);
 		});
 	}
 	for (auto &t : threads) t.join();
 }
 
 // ---------------------------------------------------------------------------
-// accumulateBilinear
+// accumulateNearestT
 // ---------------------------------------------------------------------------
 
-void LiveStacker::accumulateBilinear(preview_image *image, const AlignTransform &transform) {
-	const char *raw = image->m_raw_data;
-	const int W = m_width;
-	const int H = m_height;
-	const int channels = m_channels;
-	const int pix_fmt = m_pix_format;
-	double *acc = m_acc.data();
+template <typename T, int CH>
+static void accumulateNearestT(const T *src, double *acc, int W, int H, const AlignTransform &tr, int num_threads) {
 	const double cx = (W - 1) * 0.5;
 	const double cy = (H - 1) * 0.5;
-	const double t_a = transform.a, t_b = transform.b, t_tx = transform.tx;
-	const double t_c = transform.c, t_d = transform.d, t_ty = transform.ty;
+	const double t_a = tr.a, t_b = tr.b, t_tx = tr.tx;
+	const double t_c = tr.c, t_d = tr.d, t_ty = tr.ty;
 
-	int num_threads = get_number_of_cores();
-	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
-	std::vector<std::thread> threads;
+	parallelRows(H, num_threads, [=](int y) {
+		const double ry = y - cy;
+		double *out = acc + static_cast<size_t>(y) * W * CH;
+		for (int x = 0; x < W; ++x) {
+			const double rx = x - cx;
+			const int sx = static_cast<int>(std::round(rx * t_a + ry * t_b + cx + t_tx));
+			const int sy = static_cast<int>(std::round(rx * t_c + ry * t_d + cy + t_ty));
 
-	for (int rank = 0; rank < num_threads; rank++) {
-		const int chunk = static_cast<int>(std::ceil(H / (double)num_threads));
-		threads.emplace_back([=]() {
-			const int start_row = chunk * rank;
-			const int end_row = std::min(start_row + chunk, H);
-			for (int y = start_row; y < end_row; ++y) {
-				const double ry = y - cy;
-				for (int x = 0; x < W; ++x) {
-					const double rx = x - cx;
-					const double sx_d = rx * t_a + ry * t_b + cx + t_tx;
-					const double sy_d = rx * t_c + ry * t_d + cy + t_ty;
-					const int x0 = static_cast<int>(std::floor(sx_d));
-					const int y0 = static_cast<int>(std::floor(sy_d));
-					const double fx = sx_d - x0;
-					const double fy = sy_d - y0;
-					const int x1 = x0 + 1;
-					const int y1 = y0 + 1;
-					const double w00 = (1.0 - fx) * (1.0 - fy);
-					const double w10 = fx         * (1.0 - fy);
-					const double w01 = (1.0 - fx) * fy;
-					const double w11 = fx         * fy;
-					const int dst_idx = y * W + x;
-					for (int c = 0; c < channels; ++c) {
-						const double val = w00 * readSample(raw, W, H, pix_fmt, x0, y0, c)
-						                 + w10 * readSample(raw, W, H, pix_fmt, x1, y0, c)
-						                 + w01 * readSample(raw, W, H, pix_fmt, x0, y1, c)
-						                 + w11 * readSample(raw, W, H, pix_fmt, x1, y1, c);
-						acc[dst_idx * channels + c] += val;
-					}
-				}
-			}
-		});
-	}
-	for (auto &t : threads) t.join();
+			if (sx < 0 || sx >= W || sy < 0 || sy >= H) continue;
+
+			const T *p = src + (static_cast<size_t>(sy) * W + sx) * CH;
+			double *o = out + static_cast<size_t>(x) * CH;
+			for (int c = 0; c < CH; ++c) o[c] += static_cast<double>(p[c]);
+		}
+	});
 }
 
 // ---------------------------------------------------------------------------
-// accumulateBicubic  (Catmull-Rom, Keys a=-0.5)
+// accumulateBilinearT
 // ---------------------------------------------------------------------------
 
-void LiveStacker::accumulateBicubic(preview_image *image, const AlignTransform &transform) {
-	const char *raw = image->m_raw_data;
-	const int W = m_width;
-	const int H = m_height;
-	const int channels = m_channels;
-	const int pix_fmt = m_pix_format;
-	double *acc = m_acc.data();
+template <typename T, int CH>
+static void accumulateBilinearT(const T *src, double *acc, int W, int H, const AlignTransform &tr, int num_threads) {
 	const double cx = (W - 1) * 0.5;
 	const double cy = (H - 1) * 0.5;
-	const double t_a = transform.a, t_b = transform.b, t_tx = transform.tx;
-	const double t_c = transform.c, t_d = transform.d, t_ty = transform.ty;
+	const double t_a = tr.a, t_b = tr.b, t_tx = tr.tx;
+	const double t_c = tr.c, t_d = tr.d, t_ty = tr.ty;
 
-	int num_threads = get_number_of_cores();
-	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
-	std::vector<std::thread> threads;
+	parallelRows(H, num_threads, [=](int y) {
+		const double ry = y - cy;
+		double *out = acc + static_cast<size_t>(y) * W * CH;
+		for (int x = 0; x < W; ++x) {
+			const double rx = x - cx;
+			const double sx_d = rx * t_a + ry * t_b + cx + t_tx;
+			const double sy_d = rx * t_c + ry * t_d + cy + t_ty;
+			const int x0 = static_cast<int>(std::floor(sx_d));
+			const int y0 = static_cast<int>(std::floor(sy_d));
+			const double fx = sx_d - x0;
+			const double fy = sy_d - y0;
+			const double w00 = (1.0 - fx) * (1.0 - fy);
+			const double w10 = fx         * (1.0 - fy);
+			const double w01 = (1.0 - fx) * fy;
+			const double w11 = fx         * fy;
+			double *o = out + static_cast<size_t>(x) * CH;
 
-	for (int rank = 0; rank < num_threads; rank++) {
-		const int chunk = static_cast<int>(std::ceil(H / (double)num_threads));
-		threads.emplace_back([=]() {
+			if (x0 >= 0 && x0 + 1 < W && y0 >= 0 && y0 + 1 < H) {
+				const T *p0 = src + (static_cast<size_t>(y0) * W + x0) * CH;
+				const T *p1 = p0 + static_cast<size_t>(W) * CH;
+				for (int c = 0; c < CH; ++c) {
+					o[c] += w00 * static_cast<double>(p0[c])
+					      + w10 * static_cast<double>(p0[CH + c])
+					      + w01 * static_cast<double>(p1[c])
+					      + w11 * static_cast<double>(p1[CH + c]);
+				}
+			} else {
+				for (int c = 0; c < CH; ++c) {
+					o[c] += w00 * fetchClamped<T, CH>(src, W, H, x0,     y0,     c)
+					      + w10 * fetchClamped<T, CH>(src, W, H, x0 + 1, y0,     c)
+					      + w01 * fetchClamped<T, CH>(src, W, H, x0,     y0 + 1, c)
+					      + w11 * fetchClamped<T, CH>(src, W, H, x0 + 1, y0 + 1, c);
+				}
+			}
+		}
+	});
+}
 
-			auto cubic = [](double t) -> double {
-				t = std::abs(t);
-				if (t < 1.0) return (1.5*t - 2.5)*t*t + 1.0;
-				if (t < 2.0) return ((-0.5*t + 2.5)*t - 4.0)*t + 2.0;
-				return 0.0;
-			};
+// ---------------------------------------------------------------------------
+// accumulateBicubicT  (Catmull-Rom, Keys a=-0.5)
+//
+// The kernel is separable, so the 4x4 footprint is evaluated as four weighted
+// row sums combined by the vertical weights.  That is 16 + 4 multiplies per
+// channel instead of the 32 an wx[i]*wy[j] product per sample would cost.
+//
+// There is no per-pixel bounds test.  sx_d and sy_d are affine in x, so for a
+// given row the set of x whose 4x4 footprint lies wholly inside the frame is a
+// single contiguous interval; solveRange() finds it once per row and the
+// interior then runs unchecked.  Measured on a 4000x3000 frame this is what
+// makes the mono path break even instead of regressing — for 1-channel data the
+// index arithmetic is cheap enough that a per-pixel branch costs more than the
+// clamping it avoids.
+// ---------------------------------------------------------------------------
 
-			const int start_row = chunk * rank;
-			const int end_row   = std::min(start_row + chunk, H);
-			for (int y = start_row; y < end_row; ++y) {
-				const double ry = y - cy;
-				for (int x = 0; x < W; ++x) {
-					const double rx = x - cx;
-					const double sx_d = rx * t_a + ry * t_b + cx + t_tx;
-					const double sy_d = rx * t_c + ry * t_d + cy + t_ty;
-					const int xi = static_cast<int>(std::floor(sx_d));
-					const int yi = static_cast<int>(std::floor(sy_d));
-					const double fx = sx_d - xi;
-					const double fy = sy_d - yi;
-					double wx[4], wy[4];
-					for (int k = 0; k < 4; ++k) {
-						wx[k] = cubic(fx - (k - 1));
-						wy[k] = cubic(fy - (k - 1));
+// Solve  lo <= m*x + k < hi  for integer x, intersected with [0, W).
+// Returns the half-open range [x0, x1).
+static inline void solveRange(double m, double k, double lo, double hi, int W, int &x0, int &x1) {
+	if (std::abs(m) < 1e-12) {
+		// Degenerate: the value does not depend on x, so it is all or nothing.
+		if (k >= lo && k < hi) { x0 = 0; x1 = W; } else { x0 = 0; x1 = 0; }
+		return;
+	}
+	double a = (lo - k) / m;
+	double b = (hi - k) / m;
+	if (m < 0) std::swap(a, b);
+	x0 = std::max(0, static_cast<int>(std::ceil(a)));
+	x1 = std::min(W, static_cast<int>(std::floor(b)) + 1);
+	if (x1 < x0) x1 = x0;
+}
+
+template <typename T, int CH>
+static void accumulateBicubicT(const T *src, double *acc, int W, int H, const AlignTransform &tr, int num_threads) {
+	const double cx = (W - 1) * 0.5;
+	const double cy = (H - 1) * 0.5;
+	const double t_a = tr.a, t_b = tr.b, t_tx = tr.tx;
+	const double t_c = tr.c, t_d = tr.d, t_ty = tr.ty;
+
+	parallelRows(H, num_threads, [=](int y) {
+
+		auto cubic = [](double v) -> double {
+			v = std::abs(v);
+			if (v < 1.0) return (1.5*v - 2.5)*v*v + 1.0;
+			if (v < 2.0) return ((-0.5*v + 2.5)*v - 4.0)*v + 2.0;
+			return 0.0;
+		};
+
+		const double ry = y - cy;
+		double *out = acc + static_cast<size_t>(y) * W * CH;
+
+		// Resample one pixel.  FastTag is std::true_type only where the whole
+		// footprint is known to be in bounds, so the tag (not a runtime flag)
+		// selects the unchecked path at compile time.
+		auto pixel = [&](int x, auto fast_tag) {
+			constexpr bool fast = decltype(fast_tag)::value;
+			const double rx = x - cx;
+			const double sx_d = rx * t_a + ry * t_b + cx + t_tx;
+			const double sy_d = rx * t_c + ry * t_d + cy + t_ty;
+			const int xi = static_cast<int>(std::floor(sx_d));
+			const int yi = static_cast<int>(std::floor(sy_d));
+			const double fx = sx_d - xi;
+			const double fy = sy_d - yi;
+			double wx[4], wy[4];
+			for (int k = 0; k < 4; ++k) {
+				wx[k] = cubic(fx - (k - 1));
+				wy[k] = cubic(fy - (k - 1));
+			}
+			double *o = out + static_cast<size_t>(x) * CH;
+
+			if (fast) {
+				const size_t stride = static_cast<size_t>(W) * CH;
+				const T *base = src + (static_cast<size_t>(yi - 1) * W + (xi - 1)) * CH;
+				for (int c = 0; c < CH; ++c) {
+					const T *row = base + c;
+					double val = 0.0;
+					for (int j = 0; j < 4; ++j) {
+						val += wy[j] * ( wx[0] * static_cast<double>(row[0])
+						               + wx[1] * static_cast<double>(row[CH])
+						               + wx[2] * static_cast<double>(row[2 * CH])
+						               + wx[3] * static_cast<double>(row[3 * CH]) );
+						row += stride;
 					}
-					const int dst_idx = y * W + x;
-					for (int c = 0; c < channels; ++c) {
-						double val = 0.0;
-						for (int j = 0; j < 4; ++j) {
-							for (int i = 0; i < 4; ++i) {
-								val += wx[i] * wy[j] * readSample(raw, W, H, pix_fmt, xi + i - 1, yi + j - 1, c);
-							}
+					o[c] += val;
+				}
+			} else {
+				for (int c = 0; c < CH; ++c) {
+					double val = 0.0;
+					for (int j = 0; j < 4; ++j) {
+						double row_sum = 0.0;
+						for (int i = 0; i < 4; ++i) {
+							row_sum += wx[i] * fetchClamped<T, CH>(src, W, H, xi + i - 1, yi + j - 1, c);
 						}
-						acc[dst_idx * channels + c] += val;
+						val += wy[j] * row_sum;
 					}
+					o[c] += val;
 				}
 			}
-		});
-	}
-	for (auto &t : threads) t.join();
+		};
+
+		// The footprint needs floor(sx_d) in [1, W-3] and floor(sy_d) in [1, H-3],
+		// i.e. sx_d in [1, W-2) and sy_d in [1, H-2).
+		int ax, bx, ay, by;
+		solveRange(t_a, -cx*t_a + ry*t_b + cx + t_tx, 1.0, W - 2.0, W, ax, bx);
+		solveRange(t_c, -cx*t_c + ry*t_d + cy + t_ty, 1.0, H - 2.0, W, ay, by);
+		// Shrink by one pixel at each end so floating-point rounding in the
+		// range solve can never let an out-of-bounds pixel reach the fast path.
+		int xa = std::max(ax, ay) + 1;
+		int xb = std::min(bx, by) - 1;
+		if (xb < xa) { xa = 0; xb = 0; }
+
+		for (int x = 0;  x < xa; ++x) pixel(x, std::false_type{});
+		for (int x = xa; x < xb; ++x) pixel(x, std::true_type{});
+		for (int x = xb; x < W;  ++x) pixel(x, std::false_type{});
+	});
 }
 
 // ---------------------------------------------------------------------------
 // accumulate — dispatcher
+//
+// Two nested switches, both OUTSIDE the pixel loops: one binds the pixel format
+// to a (type, channel-count) pair, the other selects the interpolation kernel.
 // ---------------------------------------------------------------------------
 
+template <typename T, int CH>
+static void accumulateTyped(const char *raw, double *acc, int W, int H, const AlignTransform &tr, int interp, int num_threads) {
+	const T *src = reinterpret_cast<const T *>(raw);
+	switch (interp) {
+		case LiveStacker::INTERP_NEAREST:
+			accumulateNearestT<T, CH>(src, acc, W, H, tr, num_threads);
+			break;
+		case LiveStacker::INTERP_BILINEAR:
+			accumulateBilinearT<T, CH>(src, acc, W, H, tr, num_threads);
+			break;
+		default:
+			accumulateBicubicT<T, CH>(src, acc, W, H, tr, num_threads);
+			break;
+	}
+}
+
 void LiveStacker::accumulate(preview_image *image, const AlignTransform &transform) {
-	switch (m_interp_method) {
-		case INTERP_NEAREST:
-			accumulateNearest(image, transform);
+	int num_threads = get_number_of_cores();
+	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
+
+	const char *raw = image->m_raw_data;
+	double *acc = m_acc.data();
+	const int W = m_width;
+	const int H = m_height;
+	const int interp = m_interp_method;
+
+	switch (m_pix_format) {
+		case PIX_FMT_Y8:
+			accumulateTyped<uint8_t,  1>(raw, acc, W, H, transform, interp, num_threads);
 			break;
-		case INTERP_BILINEAR:
-			accumulateBilinear(image, transform);
+		case PIX_FMT_Y16:
+			accumulateTyped<uint16_t, 1>(raw, acc, W, H, transform, interp, num_threads);
 			break;
-		case INTERP_BICUBIC:
-			accumulateBicubic(image, transform);
+		case PIX_FMT_F32:
+			accumulateTyped<float,    1>(raw, acc, W, H, transform, interp, num_threads);
+			break;
+		case PIX_FMT_RGB24:
+			accumulateTyped<uint8_t,  3>(raw, acc, W, H, transform, interp, num_threads);
+			break;
+		case PIX_FMT_RGB48:
+			accumulateTyped<uint16_t, 3>(raw, acc, W, H, transform, interp, num_threads);
+			break;
+		default:
+			accumulateTyped<float,    3>(raw, acc, W, H, transform, interp, num_threads);
 			break;
 	}
 }
@@ -519,10 +638,14 @@ std::vector<StarCentroid> LiveStacker::detectStars(preview_image *image) const {
 	// Mean-subtracted luminance: background ≈ 0, stars > 0.
 	std::vector<float> lum = buildLuminanceMap(image, ds);
 
+	int num_threads = get_number_of_cores();
+	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
+	const float *lumData = lum.data();
+
 	// Noise sigma: RMS of all pixels (mean is already 0 after buildLuminanceMap).
-	double var = 0.0;
-	for (float v : lum) var += static_cast<double>(v) * v;
-	var /= static_cast<double>(lum.size());
+	const double var = parallelSum(lum.size(), num_threads, [=](size_t i) {
+		return static_cast<double>(lumData[i]) * lumData[i];
+	}) / static_cast<double>(lum.size());
 	const double sigma = std::sqrt(var);
 	const float threshold = static_cast<float>(STAR_SIGMA * sigma);
 	if (threshold <= 0.0f) return {};
@@ -530,10 +653,7 @@ std::vector<StarCentroid> LiveStacker::detectStars(preview_image *image) const {
 	const int nr = STAR_NMS_RADIUS;
 	const int wh = STAR_WIN_HALF;
 	// Parallel scan for local maxima with overlap to handle NMS window at chunk boundaries.
-	int num_threads = get_number_of_cores();
-	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
 	std::vector<std::future<std::vector<StarCentroid>>> futures;
-	const float *lumData = lum.data();
 	const int y_min = nr;
 	const int y_max = dH - nr; // exclusive upper bound
 
