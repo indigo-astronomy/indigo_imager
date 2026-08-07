@@ -32,13 +32,41 @@ struct StarCentroid {
 };
 
 /**
+ * @brief 6-parameter affine transform mapping REFERENCE-frame pixel
+ *        coordinates to CURRENT-frame pixel coordinates.
+ *
+ * Coordinates are taken relative to the image centre
+ * (cx, cy) = ((W-1)/2, (H-1)/2):
+ *
+ *   cur_x = a*(x - cx) + b*(y - cy) + cx + tx
+ *   cur_y = c*(x - cx) + d*(y - cy) + cy + ty
+ *
+ * The default value is the identity transform.
+ *
+ * A pure rotation by θ plus translation is the special case
+ * a = d = cos θ, b = -sin θ, c = sin θ.  The extra freedom in the linear part
+ * carries the per-axis scale and shear needed to model differential
+ * atmospheric refraction (which compresses the field along the altitude axis
+ * only), focal-length drift and mechanical flexure — none of which a rigid
+ * transform can represent, and all of which leave a registration error that
+ * grows linearly with distance from the image centre.
+ */
+struct AlignTransform {
+	double a  = 1.0, b  = 0.0, tx = 0.0;
+	double c  = 0.0, d  = 1.0, ty = 0.0;
+};
+
+/**
  * @brief LiveStacker accumulates frames in a double-precision float buffer,
  *        aligning each new frame to the reference (first) frame.
  *
- * Two alignment methods are available (see AlignmentMethod).  Optional
- * rotation correction (field rotation, meridian flip) is estimated from the
- * same star matches and applied together with sub-pixel translation using
- * bicubic (Catmull-Rom) interpolation.
+ * Two alignment methods are available (see AlignmentMethod).  The default
+ * method estimates a full 6-parameter affine transform (see AlignTransform)
+ * from the star matches — rotation, per-axis scale and shear as well as
+ * sub-pixel translation — and applies it with the selected interpolation
+ * kernel.  The affine terms are what keep stars round near the frame edges on
+ * long stacks; a rigid (rotation + translation) fit leaves a residual that
+ * grows linearly with distance from the image centre.
  * The output stack is a newly allocated @c preview_image using PIX_FMT_F32
  * (mono) or PIX_FMT_RGBF (colour) whose raw data contains the per-pixel
  * mean value across all accumulated frames.
@@ -61,7 +89,7 @@ public:
 		ALIGN_CENTROIDS,         ///< Multi-star centroid matching (nearest-neighbour + median, brute-force O(N×M)).
 		ALIGN_HOUGH,             ///< Hough-style translation-histogram voting over all star pairs.
 		ALIGN_KD_TREE,           ///< k-d tree NN matching: O(N log M), no radius constraint, robust median shift.
-		ALIGN_KD_TREE_ROTATION   ///< k-d tree + full rigid-body (rotation + translation) via Kabsch/RANSAC — default.
+		ALIGN_KD_TREE_ROTATION   ///< k-d tree + rigid Kabsch/RANSAC bootstrap refined to a full affine fit — default.
 	};
 
 	/// Interpolation method used when resampling frames during accumulation.
@@ -126,18 +154,18 @@ public:
 
 private:
 	std::vector<float> buildLuminanceMap(preview_image *image, int ds) const;
-	void accumulate(preview_image *image, double dx, double dy, double theta = 0.0);
-	void accumulateNearest (preview_image *image, double dx, double dy, double theta);
-	void accumulateBilinear(preview_image *image, double dx, double dy, double theta);
-	void accumulateBicubic (preview_image *image, double dx, double dy, double theta);
+	void accumulate(preview_image *image, const AlignTransform &transform);
+	void accumulateNearest (preview_image *image, const AlignTransform &transform);
+	void accumulateBilinear(preview_image *image, const AlignTransform &transform);
+	void accumulateBicubic (preview_image *image, const AlignTransform &transform);
 
 	// ---- centroid-based alignment helpers ---------------------------------
 	std::vector<StarCentroid> detectStars(preview_image *image) const;
 	bool findShiftByCentroids(double &shift_x, double &shift_y, const std::vector<StarCentroid> &cur_stars) const;
 	bool findShiftByKdTree(double &shift_x, double &shift_y, const std::vector<StarCentroid> &cur_stars) const;
 	bool findShiftByHough(double &shift_x, double &shift_y, const std::vector<StarCentroid> &cur_stars) const;
-	bool findRotationAndShift(double &shift_x, double &shift_y, double &theta, const std::vector<StarCentroid> &cur_stars) const;
-	int tryAlign(const std::vector<StarCentroid> &stars, double &out_theta, double &out_sx, double &out_sy) const;
+	bool findTransform(AlignTransform &transform, const std::vector<StarCentroid> &cur_stars) const;
+	int tryAlign(const std::vector<StarCentroid> &stars, AlignTransform &out) const;
 
 	/// Matched star pair used internally by tryAlign and findRotationAndShift.
 	struct AlignPair {

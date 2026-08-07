@@ -75,6 +75,52 @@ static const int STAR_MIN_MATCHES = 3;
 static const int HOUGH_BIN_PX = 4;
 
 // ---------------------------------------------------------------------------
+// Alignment parameters — affine refinement
+//
+// The rigid (rotation + translation) fit cannot represent a change of plate
+// scale.  Differential atmospheric refraction compresses the field along the
+// altitude axis as the target's altitude changes, focal length drifts with
+// temperature, and a focuser move changes magnification — each leaves a
+// registration error proportional to the distance from the image centre, so
+// stars stay sharp in the middle and smear radially towards the edges over a
+// long stack.  A 6-parameter affine fit models all of them exactly.
+//
+// Affine least squares has no outlier resistance, so it only ever runs on the
+// inliers surviving the rigid Kabsch/RANSAC bootstrap, and only when the gates
+// below are satisfied.  Otherwise the rigid solution is kept.
+// ---------------------------------------------------------------------------
+
+// Minimum number of inliers before the affine refinement is attempted.
+// Six free parameters need a comfortable margin over the 3 pairs that suffice
+// for the rigid fit.
+static const int AFFINE_MIN_INLIERS = 15;
+
+// The inlier bounding box must span at least this fraction of the frame in
+// BOTH axes.  The affine terms are amplified by distance from the centre, so a
+// fit derived from centre-clustered stars extrapolates wildly at the corners —
+// exactly where the correction is supposed to help.
+static const double AFFINE_MIN_SPAN_FRAC = 0.4;
+
+// Relative conditioning floor for the 3x3 normal matrix.  det(M) divided by the
+// product of its diagonal entries lies in (0, 1] for a positive-definite M;
+// anything below this means the star geometry cannot constrain the fit.
+static const double AFFINE_MIN_CONDITION = 1e-6;
+
+// |det(A) - 1| must stay below this.  A frame-to-frame transform is very nearly
+// area preserving; a larger deviation is a bad fit, not real optics.
+static const double AFFINE_MAX_DET_DEV = 0.02;
+
+// The affine solution may not move any image corner further than this away from
+// the rigid solution.  Catches blow-ups that slip past the other gates.
+static const double AFFINE_MAX_CORNER_DEV_PX = 20.0;
+
+// Residual tolerance for the second inlier pass and for scoring.  Once the
+// affine model has absorbed the field-dependent error, true inliers land well
+// inside a few pixels — unlike the rigid bootstrap, whose tolerance has to stay
+// loose enough to retain the very edge stars that carry the affine signal.
+static const double AFFINE_TIGHT_TOL_PX = 3.0;
+
+// ---------------------------------------------------------------------------
 // Format helpers
 // ---------------------------------------------------------------------------
 
@@ -266,7 +312,7 @@ static inline double readSample(const char *raw, int W, int H, int pix_fmt, int 
 // accumulateNearest
 // ---------------------------------------------------------------------------
 
-void LiveStacker::accumulateNearest(preview_image *image, double dx, double dy, double theta) {
+void LiveStacker::accumulateNearest(preview_image *image, const AlignTransform &transform) {
 	const char *raw = image->m_raw_data;
 	const int W = m_width;
 	const int H = m_height;
@@ -275,8 +321,8 @@ void LiveStacker::accumulateNearest(preview_image *image, double dx, double dy, 
 	double *acc = m_acc.data();
 	const double cx = (W - 1) * 0.5;
 	const double cy = (H - 1) * 0.5;
-	const double cos_t = std::cos(theta);
-	const double sin_t = std::sin(theta);
+	const double t_a = transform.a, t_b = transform.b, t_tx = transform.tx;
+	const double t_c = transform.c, t_d = transform.d, t_ty = transform.ty;
 
 	int num_threads = get_number_of_cores();
 	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
@@ -291,8 +337,8 @@ void LiveStacker::accumulateNearest(preview_image *image, double dx, double dy, 
 				const double ry = y - cy;
 				for (int x = 0; x < W; ++x) {
 					const double rx = x - cx;
-					const int sx = static_cast<int>(std::round(rx * cos_t - ry * sin_t + cx + dx));
-					const int sy = static_cast<int>(std::round(rx * sin_t + ry * cos_t + cy + dy));
+					const int sx = static_cast<int>(std::round(rx * t_a + ry * t_b + cx + t_tx));
+					const int sy = static_cast<int>(std::round(rx * t_c + ry * t_d + cy + t_ty));
 
 					if (sx < 0 || sx >= W || sy < 0 || sy >= H) continue;
 
@@ -311,7 +357,7 @@ void LiveStacker::accumulateNearest(preview_image *image, double dx, double dy, 
 // accumulateBilinear
 // ---------------------------------------------------------------------------
 
-void LiveStacker::accumulateBilinear(preview_image *image, double dx, double dy, double theta) {
+void LiveStacker::accumulateBilinear(preview_image *image, const AlignTransform &transform) {
 	const char *raw = image->m_raw_data;
 	const int W = m_width;
 	const int H = m_height;
@@ -320,8 +366,8 @@ void LiveStacker::accumulateBilinear(preview_image *image, double dx, double dy,
 	double *acc = m_acc.data();
 	const double cx = (W - 1) * 0.5;
 	const double cy = (H - 1) * 0.5;
-	const double cos_t = std::cos(theta);
-	const double sin_t = std::sin(theta);
+	const double t_a = transform.a, t_b = transform.b, t_tx = transform.tx;
+	const double t_c = transform.c, t_d = transform.d, t_ty = transform.ty;
 
 	int num_threads = get_number_of_cores();
 	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
@@ -336,8 +382,8 @@ void LiveStacker::accumulateBilinear(preview_image *image, double dx, double dy,
 				const double ry = y - cy;
 				for (int x = 0; x < W; ++x) {
 					const double rx = x - cx;
-					const double sx_d = rx * cos_t - ry * sin_t + cx + dx;
-					const double sy_d = rx * sin_t + ry * cos_t + cy + dy;
+					const double sx_d = rx * t_a + ry * t_b + cx + t_tx;
+					const double sy_d = rx * t_c + ry * t_d + cy + t_ty;
 					const int x0 = static_cast<int>(std::floor(sx_d));
 					const int y0 = static_cast<int>(std::floor(sy_d));
 					const double fx = sx_d - x0;
@@ -367,7 +413,7 @@ void LiveStacker::accumulateBilinear(preview_image *image, double dx, double dy,
 // accumulateBicubic  (Catmull-Rom, Keys a=-0.5)
 // ---------------------------------------------------------------------------
 
-void LiveStacker::accumulateBicubic(preview_image *image, double dx, double dy, double theta) {
+void LiveStacker::accumulateBicubic(preview_image *image, const AlignTransform &transform) {
 	const char *raw = image->m_raw_data;
 	const int W = m_width;
 	const int H = m_height;
@@ -376,8 +422,8 @@ void LiveStacker::accumulateBicubic(preview_image *image, double dx, double dy, 
 	double *acc = m_acc.data();
 	const double cx = (W - 1) * 0.5;
 	const double cy = (H - 1) * 0.5;
-	const double cos_t = std::cos(theta);
-	const double sin_t = std::sin(theta);
+	const double t_a = transform.a, t_b = transform.b, t_tx = transform.tx;
+	const double t_c = transform.c, t_d = transform.d, t_ty = transform.ty;
 
 	int num_threads = get_number_of_cores();
 	num_threads = (num_threads > 0) ? num_threads : AIN_DEFAULT_THREADS;
@@ -400,8 +446,8 @@ void LiveStacker::accumulateBicubic(preview_image *image, double dx, double dy, 
 				const double ry = y - cy;
 				for (int x = 0; x < W; ++x) {
 					const double rx = x - cx;
-					const double sx_d = rx * cos_t - ry * sin_t + cx + dx;
-					const double sy_d = rx * sin_t + ry * cos_t + cy + dy;
+					const double sx_d = rx * t_a + ry * t_b + cx + t_tx;
+					const double sy_d = rx * t_c + ry * t_d + cy + t_ty;
 					const int xi = static_cast<int>(std::floor(sx_d));
 					const int yi = static_cast<int>(std::floor(sy_d));
 					const double fx = sx_d - xi;
@@ -432,16 +478,16 @@ void LiveStacker::accumulateBicubic(preview_image *image, double dx, double dy, 
 // accumulate — dispatcher
 // ---------------------------------------------------------------------------
 
-void LiveStacker::accumulate(preview_image *image, double dx, double dy, double theta) {
+void LiveStacker::accumulate(preview_image *image, const AlignTransform &transform) {
 	switch (m_interp_method) {
 		case INTERP_NEAREST:
-			accumulateNearest(image, dx, dy, theta);
+			accumulateNearest(image, transform);
 			break;
 		case INTERP_BILINEAR:
-			accumulateBilinear(image, dx, dy, theta);
+			accumulateBilinear(image, transform);
 			break;
 		case INTERP_BICUBIC:
-			accumulateBicubic(image, dx, dy, theta);
+			accumulateBicubic(image, transform);
 			break;
 	}
 }
@@ -723,12 +769,24 @@ bool LiveStacker::findShiftByCentroids(double &shift_x, double &shift_y, const s
 // Step 3 — RANSAC cleanup: keeps only inliers within HOUGH_BIN_PX*5 of the
 //   initial estimate and reruns Kabsch on them for a cleaner final estimate.
 //
-// Returns the final inlier count (0 when fewer than STAR_MIN_MATCHES pairs
-// could be matched).
+// Step 4 — affine refinement: a 6-parameter least-squares fit over the rigid
+//   inliers.  This is what removes the radial smear at the frame edges on long
+//   stacks (see the AFFINE_* parameters above).  Least squares has no outlier
+//   resistance, which is exactly why it runs last, on an already-cleaned pair
+//   set, behind the conditioning and sanity gates; the rigid result is kept
+//   whenever any gate fails or the affine fit does not score better.
+//
+//   Note that the Step 3 tolerance deliberately stays loose: the deformation
+//   being corrected is largest at the frame edges, so a tight rigid cleanup
+//   would discard the very stars that carry the affine signal.  The tightening
+//   happens in Step 4 instead, once the model can actually fit them.
+//
+// Returns the number of pairs consistent with the final transform (0 when
+// fewer than STAR_MIN_MATCHES pairs could be matched).
 // ---------------------------------------------------------------------------
 
-int LiveStacker::tryAlign(const std::vector<StarCentroid> &stars, double &out_theta, double &out_sx, double &out_sy) const {
-	out_theta = out_sx = out_sy = 0.0;
+int LiveStacker::tryAlign(const std::vector<StarCentroid> &stars, AlignTransform &out) const {
+	out = AlignTransform();
 
 	const double cx  = (m_width  - 1) * 0.5;
 	const double cy  = (m_height - 1) * 0.5;
@@ -748,9 +806,10 @@ int LiveStacker::tryAlign(const std::vector<StarCentroid> &stars, double &out_th
 	if (static_cast<int>(pairs.size()) < STAR_MIN_MATCHES) return 0;
 
 	// Kabsch 2-D: given a subset of (ref, cur) pairs compute the optimal
-	// rotation angle and median translation, returning the inlier count.
-	auto kabsch = [&](const std::vector<AlignPair> &pts, double threshold, double &theta_out, double &sx_out, double &sy_out) -> int {
-		if (static_cast<int>(pts.size()) < STAR_MIN_MATCHES) return 0;
+	// rotation angle and the median translation.  Scoring is left to score_of()
+	// below, which applies the same rule to the rigid and the affine solution.
+	auto kabsch = [&](const std::vector<AlignPair> &pts, double &theta_out, double &sx_out, double &sy_out) {
+		if (static_cast<int>(pts.size()) < STAR_MIN_MATCHES) return;
 
 		// Centroids.
 		double rx_mean = 0, ry_mean = 0, cx_mean = 0, cy_mean = 0;
@@ -776,7 +835,7 @@ int LiveStacker::tryAlign(const std::vector<StarCentroid> &stars, double &out_th
 			H11 += ry_ * cy_;
 		}
 
-		// Optimal rotation: θ = atan2(H01−H10, H00+H11).
+		// Optimal rotation: theta = atan2(H01-H10, H00+H11).
 		theta_out = std::atan2(H01 - H10, H00 + H11);
 
 		// Translation: median residual after applying rotation around image centre.
@@ -796,110 +855,212 @@ int LiveStacker::tryAlign(const std::vector<StarCentroid> &stars, double &out_th
 		std::nth_element(dyv.begin(), dyv.begin() + m, dyv.end());
 		sx_out = dxv[m];
 		sy_out = dyv[m];
-
-		int agree = 0;
-		for (const AlignPair &p : pts) {
-			const double rot_x = (p.rx - cx) * ct - (p.ry - cy) * st + cx + sx_out;
-			const double rot_y = (p.rx - cx) * st + (p.ry - cy) * ct + cy + sy_out;
-			if (std::abs(p.cx_s - rot_x) <= threshold && std::abs(p.cy_s - rot_y) <= threshold) {
-				++agree;
-			}
-		}
-		return agree;
 	};
 
-	// --- Step 2: initial Kabsch estimate on ALL pairs (tolerant threshold) ---
-	const double loose_tol = tol * 2.0;
-	int score = kabsch(pairs, loose_tol, out_theta, out_sx, out_sy);
+	// --- Step 2: initial Kabsch estimate on ALL pairs ---
+	double theta = 0.0, shift_x = 0.0, shift_y = 0.0;
+	kabsch(pairs, theta, shift_x, shift_y);
 
 	// --- Step 3: one RANSAC-style cleanup pass ---
 	// Keep only pairs whose residual is below HOUGH_BIN_PX*5.  Then
 	// recompute Kabsch on inliers for a cleaner final estimate.
-	const double ct = std::cos(out_theta);
-	const double st = std::sin(out_theta);
+	const double ct = std::cos(theta);
+	const double st = std::sin(theta);
 	const double cleanup_tol = static_cast<double>(HOUGH_BIN_PX) * 5.0;
 	std::vector<AlignPair> inliers;
 	inliers.reserve(pairs.size());
 	for (const AlignPair &p : pairs) {
-		const double rot_x = (p.rx - cx) * ct - (p.ry - cy) * st + cx + out_sx;
-		const double rot_y = (p.rx - cx) * st + (p.ry - cy) * ct + cy + out_sy;
+		const double rot_x = (p.rx - cx) * ct - (p.ry - cy) * st + cx + shift_x;
+		const double rot_y = (p.rx - cx) * st + (p.ry - cy) * ct + cy + shift_y;
 		if (std::abs(p.cx_s - rot_x) <= cleanup_tol && std::abs(p.cy_s - rot_y) <= cleanup_tol) {
 			inliers.push_back(p);
 		}
 	}
 	if (static_cast<int>(inliers.size()) >= STAR_MIN_MATCHES) {
-		score = kabsch(inliers, tol, out_theta, out_sx, out_sy);
+		kabsch(inliers, theta, shift_x, shift_y);
 	}
 
-	return score;
+	// The rigid result — kept as the fallback and as the reference against
+	// which the affine solution is sanity-checked.
+	AlignTransform rigid;
+	rigid.a =  std::cos(theta);  rigid.b = -std::sin(theta);  rigid.tx = shift_x;
+	rigid.c =  std::sin(theta);  rigid.d =  std::cos(theta);  rigid.ty = shift_y;
+	out = rigid;
+
+	// Count how many of @p pairs a transform explains within @p threshold.
+	auto score_of = [&](const AlignTransform &T, double threshold) -> int {
+		int agree = 0;
+		for (const AlignPair &p : pairs) {
+			const double X = p.rx - cx;
+			const double Y = p.ry - cy;
+			const double mx = T.a * X + T.b * Y + cx + T.tx;
+			const double my = T.c * X + T.d * Y + cy + T.ty;
+			if (std::abs(p.cx_s - mx) <= threshold && std::abs(p.cy_s - my) <= threshold) ++agree;
+		}
+		return agree;
+	};
+
+	// --- Step 4: affine refinement -----------------------------------------
+
+	// Least-squares 6-parameter fit.  Each pair contributes a design row
+	// [X Y 1] against targets U and V, so both the x- and the y-row of the
+	// transform are solved from the SAME 3x3 normal matrix
+	//     M = [ Sxx Sxy Sx ]
+	//         [ Sxy Syy Sy ]
+	//         [ Sx  Sy  N  ]
+	// with two right-hand sides.  M is symmetric positive semi-definite, so a
+	// closed-form cofactor inverse is both adequate and fast.
+	auto fit_affine = [&](const std::vector<AlignPair> &pts, AlignTransform &T) -> bool {
+		if (static_cast<int>(pts.size()) < AFFINE_MIN_INLIERS) return false;
+
+		double Sxx = 0, Sxy = 0, Sx = 0, Syy = 0, Sy = 0, N = 0;
+		double bx0 = 0, bx1 = 0, bx2 = 0;
+		double by0 = 0, by1 = 0, by2 = 0;
+		double min_x = std::numeric_limits<double>::max(), max_x = -min_x;
+		double min_y = min_x, max_y = -min_x;
+
+		for (const AlignPair &p : pts) {
+			const double X = p.rx - cx;
+			const double Y = p.ry - cy;
+			const double U = p.cx_s - cx;
+			const double V = p.cy_s - cy;
+			min_x = std::min(min_x, X);  max_x = std::max(max_x, X);
+			min_y = std::min(min_y, Y);  max_y = std::max(max_y, Y);
+			Sxx += X * X;  Sxy += X * Y;  Sx += X;
+			Syy += Y * Y;  Sy  += Y;      N  += 1.0;
+			bx0 += X * U;  bx1 += Y * U;  bx2 += U;
+			by0 += X * V;  by1 += Y * V;  by2 += V;
+		}
+
+		// Spatial-spread gate.  The linear terms are multiplied by the distance
+		// from the centre, so a fit from centre-clustered stars extrapolates
+		// wildly at the corners — precisely where it must be trusted.
+		if ((max_x - min_x) < AFFINE_MIN_SPAN_FRAC * m_width)  return false;
+		if ((max_y - min_y) < AFFINE_MIN_SPAN_FRAC * m_height) return false;
+
+		// Adjugate of the symmetric M.
+		const double A00 = Syy * N   - Sy  * Sy;
+		const double A01 = Sx  * Sy  - Sxy * N;
+		const double A02 = Sxy * Sy  - Syy * Sx;
+		const double A11 = Sxx * N   - Sx  * Sx;
+		const double A12 = Sx  * Sxy - Sxx * Sy;
+		const double A22 = Sxx * Syy - Sxy * Sxy;
+		const double det = Sxx * A00 + Sxy * A01 + Sx * A02;
+
+		// Conditioning gate: for a positive-definite M, Hadamard's inequality
+		// puts det(M) / (Sxx*Syy*N) in (0, 1].
+		const double diag_product = Sxx * Syy * N;
+		if (!(diag_product > 0.0) || !(det > AFFINE_MIN_CONDITION * diag_product)) return false;
+
+		const double inv_det = 1.0 / det;
+		const double i00 = A00 * inv_det, i01 = A01 * inv_det, i02 = A02 * inv_det;
+		const double i11 = A11 * inv_det, i12 = A12 * inv_det, i22 = A22 * inv_det;
+
+		T.a  = i00 * bx0 + i01 * bx1 + i02 * bx2;
+		T.b  = i01 * bx0 + i11 * bx1 + i12 * bx2;
+		T.tx = i02 * bx0 + i12 * bx1 + i22 * bx2;
+		T.c  = i00 * by0 + i01 * by1 + i02 * by2;
+		T.d  = i01 * by0 + i11 * by1 + i12 * by2;
+		T.ty = i02 * by0 + i12 * by1 + i22 * by2;
+		return true;
+	};
+
+	// Reject solutions that are not a plausible small perturbation of the rigid
+	// one: a frame-to-frame transform is very nearly area preserving, and it may
+	// not displace any image corner by more than AFFINE_MAX_CORNER_DEV_PX.
+	auto affine_is_sane = [&](const AlignTransform &T) -> bool {
+		const double det = T.a * T.d - T.b * T.c;
+		if (std::abs(det - 1.0) > AFFINE_MAX_DET_DEV) return false;
+		const double corner_x[4] = {-cx,  cx, -cx, cx};
+		const double corner_y[4] = {-cy, -cy,  cy, cy};
+		for (int i = 0; i < 4; ++i) {
+			const double X = corner_x[i];
+			const double Y = corner_y[i];
+			const double ax = T.a     * X + T.b     * Y + T.tx;
+			const double ay = T.c     * X + T.d     * Y + T.ty;
+			const double rx = rigid.a * X + rigid.b * Y + rigid.tx;
+			const double ry = rigid.c * X + rigid.d * Y + rigid.ty;
+			if (std::hypot(ax - rx, ay - ry) > AFFINE_MAX_CORNER_DEV_PX) return false;
+		}
+		return true;
+	};
+
+	AlignTransform affine;
+	if (fit_affine(inliers, affine) && affine_is_sane(affine)) {
+		// Second inlier pass at the tight tolerance, now that the model can
+		// actually represent the field-dependent error, then refit.
+		std::vector<AlignPair> tight;
+		tight.reserve(inliers.size());
+		for (const AlignPair &p : inliers) {
+			const double X = p.rx - cx;
+			const double Y = p.ry - cy;
+			const double mx = affine.a * X + affine.b * Y + cx + affine.tx;
+			const double my = affine.c * X + affine.d * Y + cy + affine.ty;
+			if (std::abs(p.cx_s - mx) <= AFFINE_TIGHT_TOL_PX && std::abs(p.cy_s - my) <= AFFINE_TIGHT_TOL_PX) {
+				tight.push_back(p);
+			}
+		}
+		AlignTransform refined;
+		if (fit_affine(tight, refined) && affine_is_sane(refined)) {
+			affine = refined;
+		}
+
+		// Accept only if it explains at least as many pairs as the rigid fit at
+		// the tight tolerance — the tolerance at which the two actually differ.
+		if (score_of(affine, AFFINE_TIGHT_TOL_PX) >= score_of(rigid, AFFINE_TIGHT_TOL_PX)) {
+			out = affine;
+		}
+	}
+
+	return score_of(out, tol);
 }
 
 // ---------------------------------------------------------------------------
-// findRotationAndShift
+// findTransform
 //
-// Estimates a rigid-body transform (rotation θ around image centre +
-// residual translation) from matched star pairs by running tryAlign twice:
-//   Pass A — current stars as-is (handles 0° … ±~150° rotations).
-//   Pass B — current stars pre-rotated 180° around image centre (handles
-//             meridian flips and any rotation near ±180°).  The recovered
-//             theta is adjusted by +π to give the true angle.
-// The pass with more inliers wins.
+// Estimates the affine transform mapping reference-frame coordinates to
+// current-frame coordinates from matched star pairs, by running tryAlign twice:
+//   Pass A — current stars as-is (handles 0 ... +-~150 degree rotations).
+//   Pass B — current stars pre-rotated 180 degrees around the image centre
+//             (handles meridian flips and any rotation near +-180 degrees).
+// The pass explaining more pairs wins.
 // ---------------------------------------------------------------------------
 
-bool LiveStacker::findRotationAndShift(double &shift_x, double &shift_y, double &theta, const std::vector<StarCentroid> &cur_stars) const {
-	shift_x = shift_y = theta = 0.0;
+bool LiveStacker::findTransform(AlignTransform &transform, const std::vector<StarCentroid> &cur_stars) const {
+	transform = AlignTransform();
 
 	if (m_ref_stars.empty() || cur_stars.empty()) return false;
 
 	const double cx = (m_width - 1) * 0.5;
 	const double cy = (m_height - 1) * 0.5;
 
-	// -----------------------------------------------------------------------
-	// Run alignment twice:
-	//   Pass A — current stars as-is (handles 0° … ±~150° rotations).
-	//   Pass B — current stars pre-rotated 180° around image centre (handles
-	//             meridian flips and any rotation near ±180°).  The recovered
-	//             theta is then adjusted by +π to give the true angle in the
-	//             original coordinate frame.
-	//
-	// The pass with more inliers wins.  If both passes have fewer than
-	// STAR_MIN_MATCHES inliers the function returns false.
-	// -----------------------------------------------------------------------
-	double tA, sxA, syA;
-	int scoreA = tryAlign(cur_stars, tA, sxA, syA);
+	AlignTransform TA;
+	const int scoreA = tryAlign(cur_stars, TA);
 
-	// Build 180°-flipped copy of cur_stars.
+	// Build 180-degree-flipped copy of cur_stars.
 	std::vector<StarCentroid> flipped = cur_stars;
 	for (StarCentroid &s : flipped) {
 		s.x = static_cast<float>(2.0 * cx - s.x);
 		s.y = static_cast<float>(2.0 * cy - s.y);
 	}
-	double tB, sxB, syB;
-	int scoreB = tryAlign(flipped, tB, sxB, syB);
-	// Adjust theta back to the original frame by adding π.
-	tB += M_PI;
-	while (tB >  M_PI) tB -= 2.0 * M_PI;
-	while (tB < -M_PI) tB += 2.0 * M_PI;
-	// The shift was computed against flipped (= 2*c - orig) stars, so the
-	// model in the flipped frame is:  flipped_star ≈ R(tB_raw)·ref + sxB
-	// i.e.  2*cx - orig_star ≈ R(tB_raw)·ref + sxB
-	// =>     orig_star       ≈ R(tB_raw + π)·ref - sxB
-	// Therefore the shift in the original coordinate frame is -sxB / -syB.
-	sxB = -sxB;
-	syB = -syB;
+	AlignTransform TB;
+	const int scoreB = tryAlign(flipped, TB);
+
+	// Pass B fitted against flipped stars.  In centre-relative coordinates the
+	// flip is simply a negation, so the model
+	//     -orig' = A*ref' + t
+	// becomes, in the original frame,
+	//      orig' = (-A)*ref' + (-t)
+	// i.e. every one of the six coefficients changes sign.  For a rigid fit
+	// this reduces to the familiar theta += pi, shift = -shift.
+	TB.a = -TB.a;  TB.b = -TB.b;  TB.tx = -TB.tx;
+	TB.c = -TB.c;  TB.d = -TB.d;  TB.ty = -TB.ty;
 
 	if (scoreA <= 0 && scoreB <= 0) return false;
 
-	if (scoreA >= scoreB) {
-		theta = tA; shift_x = sxA; shift_y = syA;
-	} else {
-		theta = tB; shift_x = sxB; shift_y = syB;
-	}
+	if (std::max(scoreA, scoreB) < STAR_MIN_MATCHES) return false;
 
-	if (std::max(scoreA, scoreB) < STAR_MIN_MATCHES) {
-		shift_x = shift_y = theta = 0.0;
-		return false;
-	}
+	transform = (scoreA >= scoreB) ? TA : TB;
 	return true;
 }
 
@@ -1105,33 +1266,52 @@ bool LiveStacker::addImage(preview_image *image, bool align) {
 			m_ref_stars.clear();
 		}
 
-		accumulate(image, 0, 0);
+		accumulate(image, AlignTransform());
 	} else {
 		if (W != m_width || H != m_height || fmt != m_pix_format)
 			return false;
 
-		double dx = 0.0, dy = 0.0, theta = 0.0;
+		AlignTransform transform;   // identity until alignment succeeds
+		double dx = 0.0, dy = 0.0;
 
 		bool aligned = false;
 		if (align && !m_ref_stars.empty()) {
 			std::vector<StarCentroid> cur_stars = detectStars(image);
 			if (m_alignment_method == ALIGN_KD_TREE_ROTATION) {
-				aligned = findRotationAndShift(dx, dy, theta, cur_stars);
+				aligned = findTransform(transform, cur_stars);
 				if (aligned) {
-					indigo_debug("LiveStacker::addImage: rotation %.4f deg, shift (%.2f, %.2f)\n", theta * 180.0 / M_PI, dx, dy);
+					// Decompose for the log: the column norms of the linear part
+					// are the per-axis scales, and a difference between them is
+					// the anisotropic term (differential refraction) that a rigid
+					// fit cannot represent.
+					const double rotation = std::atan2(transform.c, transform.a) * 180.0 / M_PI;
+					const double scale_x  = std::hypot(transform.a, transform.c);
+					const double scale_y  = std::hypot(transform.b, transform.d);
+					indigo_debug(
+						"LiveStacker::addImage: rotation %.4f deg, scale (%.6f, %.6f), shift (%.2f, %.2f)\n",
+						rotation, scale_x, scale_y, transform.tx, transform.ty
+					);
 				} else {
-					// Rotation estimate failed — fall back to KD_TREE translation-only.
+					// Affine estimate failed — fall back to KD_TREE translation-only.
 					aligned = findShiftByKdTree(dx, dy, cur_stars);
 					if (aligned) {
-						indigo_error("LiveStacker::addImage: rotation failed, translation-only shift (%.2f, %.2f)\n", dx, dy);
+						transform.tx = dx;
+						transform.ty = dy;
+						indigo_error("LiveStacker::addImage: affine fit failed, translation-only shift (%.2f, %.2f)\n", dx, dy);
 					}
 				}
-			} else if (m_alignment_method == ALIGN_HOUGH) {
-				aligned = findShiftByHough(dx, dy, cur_stars);
-			} else if (m_alignment_method == ALIGN_KD_TREE) {
-				aligned = findShiftByKdTree(dx, dy, cur_stars);
 			} else {
-				aligned = findShiftByCentroids(dx, dy, cur_stars);
+				if (m_alignment_method == ALIGN_HOUGH) {
+					aligned = findShiftByHough(dx, dy, cur_stars);
+				} else if (m_alignment_method == ALIGN_KD_TREE) {
+					aligned = findShiftByKdTree(dx, dy, cur_stars);
+				} else {
+					aligned = findShiftByCentroids(dx, dy, cur_stars);
+				}
+				if (aligned) {
+					transform.tx = dx;
+					transform.ty = dy;
+				}
 			}
 		}
 
@@ -1139,7 +1319,7 @@ bool LiveStacker::addImage(preview_image *image, bool align) {
 			indigo_error("LiveStacker::addImage: alignment failed, stacking without shift\n");
 		}
 
-		accumulate(image, dx, dy, theta);
+		accumulate(image, transform);
 	}
 
 	++m_frame_count;
