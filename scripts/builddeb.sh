@@ -3,8 +3,13 @@
 VERSION=${1}
 FLAVOR=${2:-indigo}
 
-DEBFULLNAME="Rumen Bogdanovski"
-EMAIL="rumenastro@gmail.com"
+export DEBFULLNAME="Rumen Bogdanovski"
+export DEBEMAIL="rumenastro@gmail.com"
+
+if [ -z "${VERSION}" ]; then
+    echo "Usage: $0 VERSION [indigo|indigo3]"
+    exit 1
+fi
 
 __check_file_exits() {
     [ ! -f ${1} ] && { echo "file '${1}' not found"; exit 1; }
@@ -50,10 +55,10 @@ fi
 export AIN_INDIGO_FLAVOR=${FLAVOR}
 
 # Create entry in debian/changelog.
-dch --create --package "${PACKAGE}" --newversion ${VERSION} --distribution unstable --nomultimaint -t "Build from official upstream."
+dch --create --package "${PACKAGE}" --newversion "${VERSION}" --distribution unstable --nomultimaint -t "Build from official upstream."
 
 # Update version.h.
-sed -i "s/\(AIN_VERSION \).*/\1\"${VERSION}\"/g" version.h
+sed -i "s/\(AIN_VERSION \).*/\1\"${VERSION}\"/g" common_src/version.h
 
 # Finally build the package.
 dpkg-buildpackage \-us \-uc \-I.git \-I\*.out[0-9]\* \-I\*.swp
