@@ -151,6 +151,7 @@ private:
 	friend void update_rotator_poition(ImagerWindow *w, indigo_property *property, bool uppdate_input);
 	friend void update_rotator_reverse(ImagerWindow *w, indigo_property *property);
 	friend void update_rotator_derotation(ImagerWindow *w, indigo_property *property);
+	friend void update_rotator_derotation_status(ImagerWindow *w, indigo_property *property);
 	friend void update_imager_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_gain_offset_property(ImagerWindow *w, indigo_property *property);
@@ -197,8 +198,6 @@ private:
 	friend int update_solver_agent_pa_error(ImagerWindow *w, indigo_property *property);
 	friend void update_solver_agent_pa_settings(ImagerWindow *w, indigo_property *property);
 	friend void change_server_disk_usage(ImagerWindow *w, indigo_property *property);
-
-	bool m_is_sequence;
 
 	public:
 	void updatePolarAlignmentOverlay(double azError, double altError);
@@ -335,7 +334,6 @@ public slots:
 	void on_agent_imager_gain_changed(int value);
 	void on_agent_imager_offset_changed(int value);
 	void on_object_name_changed(const QString &object_name);
-	void on_sequence_name_changed(const QString &object_name);
 	void on_save_image_on_server(int state);
 	void on_keep_image_on_server(int state);
 	void on_sync_remote_files(bool clicked);

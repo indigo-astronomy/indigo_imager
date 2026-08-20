@@ -63,6 +63,36 @@
 #define AGENT_GUIDER_RESET_PPEC_ITEM_NAME "RESET"
 #endif
 
+/*
+ INDIGO 3.x controls field derotation with the ENABLE_FIELD_DEROTATION item of the mount
+ agent AGENT_PROCESS_FEATURES property and has dropped the standalone
+ AGENT_FIELD_DEROTATION property used by 2.x. Either set of names can be missing
+ depending on the SDK we are built against, so define whatever the headers lack.
+*/
+#if !defined(AGENT_MOUNT_ENABLE_FIELD_DEROTATION_ITEM_NAME)
+#define AGENT_MOUNT_ENABLE_FIELD_DEROTATION_ITEM_NAME "ENABLE_FIELD_DEROTATION"
+#endif
+#if !defined(AGENT_FIELD_DEROTATION_PROPERTY_NAME)
+#define AGENT_FIELD_DEROTATION_PROPERTY_NAME "AGENT_FIELD_DEROTATION"
+#endif
+#if !defined(AGENT_FIELD_DEROTATION_ENABLED_ITEM_NAME)
+#define AGENT_FIELD_DEROTATION_ENABLED_ITEM_NAME "ENABLED"
+#endif
+#if !defined(AGENT_FIELD_DEROTATION_DISABLED_ITEM_NAME)
+#define AGENT_FIELD_DEROTATION_DISABLED_ITEM_NAME "DISABLED"
+#endif
+/* The FIELD_DEROTATION light of AGENT_MOUNT_STATE reports the derotation status. */
+#if !defined(AGENT_MOUNT_STATE_PROPERTY_NAME)
+#define AGENT_MOUNT_STATE_PROPERTY_NAME "AGENT_MOUNT_STATE"
+#endif
+#if !defined(AGENT_MOUNT_STATE_FIELD_DEROTATION_ITEM_NAME)
+#define AGENT_MOUNT_STATE_FIELD_DEROTATION_ITEM_NAME "FIELD_DEROTATION"
+#endif
+
+// Returns the AGENT_PROCESS_FEATURES ENABLE_FIELD_DEROTATION item of the mount agent,
+// or nullptr if the agent does not provide it (INDIGO 2.x).
+extern indigo_item *get_derotation_feature_item(const char *mount_agent);
+
 extern bool client_match_device_property(indigo_property *property, const char *device_name, const char *property_name);
 extern bool client_match_device_no_property(indigo_property *property, const char *device_name);
 extern bool client_match_property(indigo_property *property, const char *property_name);

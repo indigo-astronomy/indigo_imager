@@ -88,7 +88,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_sound_alert->setSource(QUrl("qrc:/resource/error.wav"));
 	m_sound_alert->setVolume(0.5);
 
-	m_is_sequence = false;
 	m_indigo_item = nullptr;
 	m_guide_log = nullptr;
 	m_guider_process = 0;
@@ -683,7 +682,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	//connect(m_sequence_editor, &SequenceEditor::sequence_updated, this, &ImagerWindow::on_sequence_updated);
 	connect(m_sequence_editor2, &IndigoSequence::requestSequence, this, &ImagerWindow::on_request_sequence);
-	//connect(m_sequence_editor, &SequenceEditor::sequence_name_set, this, &ImagerWindow::on_sequence_name_changed);
 
 	connect(m_add_object_dialog, &QAddCustomObject::requestPopulate, this, &ImagerWindow::on_custom_object_populate);
 

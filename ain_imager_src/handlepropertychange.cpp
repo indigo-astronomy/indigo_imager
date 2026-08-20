@@ -1209,24 +1209,70 @@ void update_rotator_reverse(ImagerWindow *w, indigo_property *property) {
 	}
 }
 
+/*
+ Derotation is controlled by the ENABLE_FIELD_DEROTATION item of AGENT_PROCESS_FEATURES
+ if the mount agent provides it (INDIGO 3.x), otherwise by the standalone
+ AGENT_FIELD_DEROTATION property (INDIGO 2.x). Returns nullptr if the agent
+ does not have the feature item.
+*/
+indigo_item *get_derotation_feature_item(const char *mount_agent) {
+	return properties.get_item(
+		mount_agent,
+		AGENT_PROCESS_FEATURES_PROPERTY_NAME,
+		AGENT_MOUNT_ENABLE_FIELD_DEROTATION_ITEM_NAME
+	);
+}
+
+/*
+ The derotation switch is the ENABLE_FIELD_DEROTATION item of AGENT_PROCESS_FEATURES on
+ INDIGO 3.x and the legacy AGENT_FIELD_DEROTATION property on 2.x. On 3.x the status
+ label is driven by the AGENT_MOUNT_STATE light in update_rotator_derotation_status(),
+ so only the checkbox is updated here.
+*/
 void update_rotator_derotation(ImagerWindow *w, indigo_property *property) {
+	const bool is_feature = client_match_property(property, AGENT_PROCESS_FEATURES_PROPERTY_NAME);
+
+	indigo_item *item = properties.get_item(
+		property,
+		is_feature ? AGENT_MOUNT_ENABLE_FIELD_DEROTATION_ITEM_NAME : AGENT_FIELD_DEROTATION_ENABLED_ITEM_NAME
+	);
+	if (item == nullptr) return;
+
 	w->set_enabled(w->m_rotator_derotate_cbox, true);
-	bool enabled = false;
-	for (int i = 0; i < property->count; i++) {
-		if (client_match_item(&property->items[i], AGENT_FIELD_DEROTATION_ENABLED_ITEM_NAME)) {
-			enabled = property->items[i].sw.value;
-			break;
-		}
-	}
-	w->set_checkbox_checked(w->m_rotator_derotate_cbox, enabled);
-	if(property->state == INDIGO_ALERT_STATE) {
+	w->set_checkbox_checked(w->m_rotator_derotate_cbox, item->sw.value);
+
+	if (is_feature) return;
+
+	if (property->state == INDIGO_ALERT_STATE) {
 		w->set_text(w->m_derotation_status_label, "<img src=\":resource/led-red.png\"> Failed");
+	} else if (item->sw.value) {
+		w->set_text(w->m_derotation_status_label, "<img src=\":resource/led-green.png\"> Derotating");
 	} else {
-		if (enabled) {
+		w->set_text(w->m_derotation_status_label, "<img src=\":resource/led-grey.png\"> Stopped");
+	}
+}
+
+/*
+ The FIELD_DEROTATION light of AGENT_MOUNT_STATE reports the derotation status:
+ OK while the field is being derotated, BUSY while the rotator is being moved
+ to the computed position, ALERT on failure and IDLE when derotation is off.
+*/
+void update_rotator_derotation_status(ImagerWindow *w, indigo_property *property) {
+	indigo_item *item = properties.get_item(property, AGENT_MOUNT_STATE_FIELD_DEROTATION_ITEM_NAME);
+	if (item == nullptr) return;
+	switch (item->light.value) {
+		case INDIGO_OK_STATE:
 			w->set_text(w->m_derotation_status_label, "<img src=\":resource/led-green.png\"> Derotating");
-		} else {
+			break;
+		case INDIGO_BUSY_STATE:
+			w->set_text(w->m_derotation_status_label, "<img src=\":resource/led-orange.png\"> Rotating");
+			break;
+		case INDIGO_ALERT_STATE:
+			w->set_text(w->m_derotation_status_label, "<img src=\":resource/led-red.png\"> Failed");
+			break;
+		default:
 			w->set_text(w->m_derotation_status_label, "<img src=\":resource/led-grey.png\"> Stopped");
-		}
+			break;
 	}
 }
 
@@ -1793,13 +1839,6 @@ void update_agent_imager_stats_property(ImagerWindow *w, indigo_property *proper
 
 	if (start_p && start_p->state == INDIGO_BUSY_STATE ) {
 		bool sequence_item = false;
-		for (int i = 0; i < start_p->count; i++) {
-			if (!strcmp(start_p->items[i].name, AGENT_IMAGER_START_SEQUENCE_ITEM_NAME)) {
-				sequence_item = start_p->items[i].sw.value;
-				w->m_is_sequence = sequence_item;
-				break;
-			}
-		}
 		for (int i = 0; i < start_p->count; i++) {
 			if (!strcmp(start_p->items[i].name, AGENT_IMAGER_START_EXPOSURE_ITEM_NAME)) {
 				bool pause_sw = false;
@@ -3135,13 +3174,16 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			on_tab_changed(m_tools_tabbar->currentIndex());
 			indigo_item *item = indigo_get_item(property, SERVER_INFO_VERSION_ITEM_NAME);
 			if (item) {
-				int version_major;
-				int version_minor;
-				int build;
-				char message[255];
-				sscanf(item->text.value, "%d.%d-%d", &version_major, &version_minor, &build);
+				int version_major = 0;
+				int version_minor = 0;
+				int build = 0;
+				char message[INDIGO_VALUE_SIZE];
+				/* a version we can not parse is treated as too old so that the warning is shown */
+				if (sscanf(item->text.value, "%d.%d-%d", &version_major, &version_minor, &build) != 3) {
+					version_major = version_minor = build = 0;
+				}
 				if ((version_major < 2 || (version_major == 2 && version_minor == 0 && build < 336)) && !properties.get(property->device, SERVER_INFO_PROPERTY_NAME)) { /* show warning only once per connection */
-					sprintf(message, "WARNING: Some features will not work on '%s' running Indigo %s as Ain requires 2.0-336 or newer!", property->device, item->text.value);
+					snprintf(message, sizeof(message), "WARNING: Some features will not work on '%s' running Indigo %s as Ain requires 2.0-336 or newer!", property->device, item->text.value);
 					window_log(message, INDIGO_BUSY_STATE);
 				}
 			}
@@ -3613,8 +3655,12 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, ROTATOR_DIRECTION_PROPERTY_NAME)) {
 		update_rotator_reverse(this, property);
 	}
-	if (client_match_device_property(property, selected_mount_agent, AGENT_FIELD_DEROTATION_PROPERTY_NAME)) {
+	if (client_match_device_property(property, selected_mount_agent, AGENT_FIELD_DEROTATION_PROPERTY_NAME) ||
+	    client_match_device_property(property, selected_mount_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {
 		update_rotator_derotation(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, AGENT_MOUNT_STATE_PROPERTY_NAME)) {
+		update_rotator_derotation_status(this, property);
 	}
 
 	// Astrometry Agent
@@ -4032,8 +4078,12 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_mount_agent, ROTATOR_DIRECTION_PROPERTY_NAME)) {
 		update_rotator_reverse(this, property);
 	}
-	if (client_match_device_property(property, selected_mount_agent, AGENT_FIELD_DEROTATION_PROPERTY_NAME)) {
+	if (client_match_device_property(property, selected_mount_agent, AGENT_FIELD_DEROTATION_PROPERTY_NAME) ||
+	    client_match_device_property(property, selected_mount_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {
 		update_rotator_derotation(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, AGENT_MOUNT_STATE_PROPERTY_NAME)) {
+		update_rotator_derotation_status(this, property);
 	}
 
 	// Solver Agent
@@ -4800,10 +4850,17 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_enabled(m_rotator_reverse_cbox, false);
 	}
 	if (client_match_device_property(property, selected_mount_agent, AGENT_FIELD_DEROTATION_PROPERTY_NAME) ||
+	    client_match_device_property(property, selected_mount_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		set_checkbox_state(m_rotator_derotate_cbox, false);
 		set_enabled(m_rotator_derotate_cbox, false);
+		set_text(m_derotation_status_label, "<img src=\":resource/led-grey.png\"> Idle");
+	}
+	// the status light going away only invalidates the label, not the checkbox
+	if (client_match_device_property(property, selected_mount_agent, AGENT_MOUNT_STATE_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s.%s\n", property->device, property->name);
 		set_text(m_derotation_status_label, "<img src=\":resource/led-grey.png\"> Idle");
 	}
 

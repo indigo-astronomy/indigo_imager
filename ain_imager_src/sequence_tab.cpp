@@ -165,19 +165,6 @@ void ImagerWindow::on_recalculate_exposure() {
 	m_seq_esimated_duration->setText(QString("Total exposure: ") + QString(indigo_dtos(totalExposure / 3600, "%02d:%02d:%02.0f")));
 }
 
-void ImagerWindow::on_sequence_name_changed(const QString &object_name) {
-	if (!m_is_sequence) {
-		return;
-	}
-	QtConcurrent::run([=]() {
-		indigo_debug("CALLED: %s\n", __FUNCTION__);
-		static char selected_agent[INDIGO_NAME_SIZE];
-		get_selected_imager_agent(selected_agent);
-
-		change_ccd_localmode_property(selected_agent, object_name);
-	});
-}
-
 void ImagerWindow::on_request_sequence() {
 	indigo_debug("Sequence requested");
 

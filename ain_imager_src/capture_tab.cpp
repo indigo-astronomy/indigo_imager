@@ -877,10 +877,6 @@ static void sanitize(char *buffer) {
 }
 
 void ImagerWindow::on_object_name_changed(const QString &object_name) {
-	if (m_is_sequence) {
-		return;
-	}
-
 	QByteArray ba = object_name.toUtf8();
 	char sanitized_buffer[INDIGO_VALUE_SIZE];
 	strncpy(sanitized_buffer, ba.constData(), INDIGO_VALUE_SIZE - 1);

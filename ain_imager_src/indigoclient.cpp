@@ -123,9 +123,7 @@ void IndigoClient::update_save_blob(indigo_property *property)	 {
 			bool sequence_running = false;
 			bool batch_running = false;
 			for (int i = 0; i < property->count; i++) {
-				if (client_match_item(&property->items[i], AGENT_IMAGER_START_SEQUENCE_ITEM_NAME)) {
-					sequence_running = property->items[i].sw.value;
-				} else if(client_match_item(&property->items[i], AGENT_IMAGER_START_EXPOSURE_ITEM_NAME)) {
+				if(client_match_item(&property->items[i], AGENT_IMAGER_START_EXPOSURE_ITEM_NAME)) {
 					batch_running = property->items[i].sw.value;
 				}
 			}

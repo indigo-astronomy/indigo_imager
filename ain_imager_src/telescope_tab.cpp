@@ -1429,7 +1429,10 @@ void ImagerWindow::on_rotator_derotate(bool clicked) {
 		get_selected_mount_agent(selected_agent);
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-		if (clicked) {
+		if (get_derotation_feature_item(selected_agent) != nullptr) {
+			// INDIGO 3.x - derotation is a feature switch of AGENT_PROCESS_FEATURES
+			indigo_change_switch_property_1(nullptr, selected_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME, AGENT_MOUNT_ENABLE_FIELD_DEROTATION_ITEM_NAME, clicked);
+		} else if (clicked) {
 			indigo_change_switch_property_1(nullptr, selected_agent, AGENT_FIELD_DEROTATION_PROPERTY_NAME , AGENT_FIELD_DEROTATION_ENABLED_ITEM_NAME, true);
 		} else {
 			indigo_change_switch_property_1(nullptr, selected_agent, AGENT_FIELD_DEROTATION_PROPERTY_NAME , AGENT_FIELD_DEROTATION_DISABLED_ITEM_NAME, true);
