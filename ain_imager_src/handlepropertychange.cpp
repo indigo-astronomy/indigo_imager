@@ -1240,10 +1240,24 @@ void update_dome_dimensions(ImagerWindow *w, indigo_property *property) {
 	w->set_dome_dimensions(radius, shutter_width, offset_ns, offset_ew, offset_vertical, ota_offset);
 }
 
-void update_dome_azimuth(ImagerWindow *w, indigo_property *property) {
+void update_dome_azimuth(ImagerWindow *w, indigo_property *property, bool update_input = false) {
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], DOME_HORIZONTAL_COORDINATES_AZ_ITEM_NAME)) {
 			w->set_dome_azimuth(property->items[i].number.value, property->state == INDIGO_BUSY_STATE);
+
+			char azimuth[INDIGO_VALUE_SIZE];
+			snprintf(azimuth, INDIGO_VALUE_SIZE, "%.2f°", property->items[i].number.value);
+			w->set_text(w->m_dome_az_label, azimuth);
+			w->set_widget_state(w->m_dome_az_label, property->state);
+
+			w->set_enabled(w->m_dome_az, true);
+			/* Leave the entry alone while the dome is moving, it is what the
+			   user typed to send it there. */
+			if (update_input && property->state != INDIGO_BUSY_STATE) {
+				configure_spinbox(w, &property->items[i], property->perm, w->m_dome_az);
+			}
+			w->set_widget_state(w->m_dome_az, property->state);
+			w->set_widget_state(w->m_dome_az_goto_button, property->state);
 			break;
 		}
 	}
@@ -1252,11 +1266,112 @@ void update_dome_azimuth(ImagerWindow *w, indigo_property *property) {
 /* DOME_SHUTTER only says opened or closed, so the leaves are drawn at one end
    of their travel or the other. */
 void update_dome_shutter(ImagerWindow *w, indigo_property *property) {
+	bool opened = false;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], DOME_SHUTTER_OPENED_ITEM_NAME)) {
-			w->set_dome_shutter(property->items[i].sw.value ? 1.0 : 0.0, property->state == INDIGO_BUSY_STATE);
+			opened = property->items[i].sw.value;
 			break;
 		}
+	}
+	w->set_dome_shutter(opened ? 1.0 : 0.0, property->state == INDIGO_BUSY_STATE);
+
+	w->set_enabled(w->m_dome_shutter_cbox, true);
+	w->set_widget_state(w->m_dome_shutter_cbox, property->state);
+	/* While it moves the switch already holds what was asked for. */
+	if (property->state == INDIGO_BUSY_STATE) {
+		w->set_text(w->m_dome_shutter_cbox, opened ? "Opening..." : "Closing...");
+		w->set_checkbox_state(w->m_dome_shutter_cbox, Qt::PartiallyChecked);
+	} else if (opened) {
+		w->set_text(w->m_dome_shutter_cbox, "Shutter open");
+		w->set_checkbox_state(w->m_dome_shutter_cbox, Qt::Checked);
+	} else {
+		w->set_text(w->m_dome_shutter_cbox, "Shutter closed");
+		w->set_checkbox_state(w->m_dome_shutter_cbox, Qt::Unchecked);
+	}
+}
+
+void update_dome_park(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	bool parked = false;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], DOME_PARK_PARKED_ITEM_NAME)) {
+			parked = property->items[i].sw.value;
+			break;
+		}
+	}
+
+	w->set_enabled(w->m_dome_park_cbox, true);
+	w->set_widget_state(w->m_dome_park_cbox, property->state);
+	if (property->state == INDIGO_BUSY_STATE) {
+		w->set_text(w->m_dome_park_cbox, parked ? "Parking..." : "Unparking...");
+		w->set_checkbox_state(w->m_dome_park_cbox, Qt::PartiallyChecked);
+	} else if (parked) {
+		w->set_text(w->m_dome_park_cbox, "Parked");
+		w->set_checkbox_state(w->m_dome_park_cbox, Qt::Checked);
+	} else {
+		w->set_text(w->m_dome_park_cbox, "Unparked");
+		w->set_checkbox_state(w->m_dome_park_cbox, Qt::Unchecked);
+	}
+}
+
+/*
+ Slaving is the ENABLE_DOME_SLAVING item of AGENT_PROCESS_FEATURES if the mount
+ agent provides it (INDIGO 3.x), otherwise the DOME_SLAVING property of the dome
+ (INDIGO 2.x). Returns nullptr if the agent does not have the feature item.
+*/
+indigo_item *get_dome_slaving_feature_item(const char *mount_agent) {
+	return properties.get_item(
+		mount_agent,
+		AGENT_PROCESS_FEATURES_PROPERTY_NAME,
+		AGENT_MOUNT_ENABLE_DOME_SLAVING_ITEM_NAME
+	);
+}
+
+void update_dome_slaving(ImagerWindow *w, indigo_property *property) {
+	const bool is_feature = client_match_property(property, AGENT_PROCESS_FEATURES_PROPERTY_NAME);
+
+	indigo_item *item = properties.get_item(
+		property,
+		is_feature ? AGENT_MOUNT_ENABLE_DOME_SLAVING_ITEM_NAME : DOME_SLAVING_ENABLE_ITEM_NAME
+	);
+	if (item == nullptr) return;
+
+	w->set_enabled(w->m_dome_slaving_cbox, true);
+	w->set_checkbox_checked(w->m_dome_slaving_cbox, item->sw.value);
+
+	/* On 3.x the light of AGENT_MOUNT_STATE drives the status. */
+	if (is_feature) return;
+
+	if (property->state == INDIGO_ALERT_STATE) {
+		w->set_text(w->m_dome_slaving_status_label, "<img src=\":resource/led-red.png\"> Failed");
+	} else if (item->sw.value) {
+		w->set_text(w->m_dome_slaving_status_label, "<img src=\":resource/led-green.png\"> Slaved");
+	} else {
+		w->set_text(w->m_dome_slaving_status_label, "<img src=\":resource/led-grey.png\"> Not slaved");
+	}
+}
+
+/*
+ The DOME_SLAVING light of AGENT_MOUNT_STATE reports the slaving status: OK
+ while the slit is kept on the telescope, BUSY while the dome is catching up,
+ ALERT on failure and IDLE when slaving is off.
+*/
+void update_dome_slaving_status(ImagerWindow *w, indigo_property *property) {
+	indigo_item *item = properties.get_item(property, AGENT_MOUNT_STATE_DOME_SLAVING_ITEM_NAME);
+	if (item == nullptr) return;
+	switch (item->light.value) {
+		case INDIGO_OK_STATE:
+			w->set_text(w->m_dome_slaving_status_label, "<img src=\":resource/led-green.png\"> Slaved");
+			break;
+		case INDIGO_BUSY_STATE:
+			w->set_text(w->m_dome_slaving_status_label, "<img src=\":resource/led-orange.png\"> Slewing");
+			break;
+		case INDIGO_ALERT_STATE:
+			w->set_text(w->m_dome_slaving_status_label, "<img src=\":resource/led-red.png\"> Failed");
+			break;
+		default:
+			w->set_text(w->m_dome_slaving_status_label, "<img src=\":resource/led-grey.png\"> Not slaved");
+			break;
 	}
 }
 
@@ -3745,10 +3860,17 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_dome_dimensions(this, property);
 	}
 	if (client_match_device_property(property, selected_mount_agent, DOME_HORIZONTAL_COORDINATES_PROPERTY_NAME)) {
-		update_dome_azimuth(this, property);
+		update_dome_azimuth(this, property, true);
 	}
 	if (client_match_device_property(property, selected_mount_agent, DOME_SHUTTER_PROPERTY_NAME)) {
 		update_dome_shutter(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_PARK_PROPERTY_NAME)) {
+		update_dome_park(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_SLAVING_PROPERTY_NAME) ||
+	    client_match_device_property(property, selected_mount_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {
+		update_dome_slaving(this, property);
 	}
 	if (client_match_device_property(property, selected_mount_agent, ROTATOR_POSITION_PROPERTY_NAME)) {
 		update_rotator_poition(this, property, true);
@@ -3765,6 +3887,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_mount_agent, AGENT_MOUNT_STATE_PROPERTY_NAME)) {
 		update_rotator_derotation_status(this, property);
+		update_dome_slaving_status(this, property);
 	}
 
 	// Astrometry Agent
@@ -4191,6 +4314,13 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_mount_agent, DOME_SHUTTER_PROPERTY_NAME)) {
 		update_dome_shutter(this, property);
 	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_PARK_PROPERTY_NAME)) {
+		update_dome_park(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_SLAVING_PROPERTY_NAME) ||
+	    client_match_device_property(property, selected_mount_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {
+		update_dome_slaving(this, property);
+	}
 	if (client_match_device_property(property, selected_mount_agent, ROTATOR_POSITION_PROPERTY_NAME)) {
 		update_rotator_poition(this, property);
 	}
@@ -4206,6 +4336,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, AGENT_MOUNT_STATE_PROPERTY_NAME)) {
 		update_rotator_derotation_status(this, property);
+		update_dome_slaving_status(this, property);
 	}
 
 	// Solver Agent
@@ -4966,11 +5097,37 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("REMOVE %s", property->name);
 		set_dome_azimuth(0, false);
+		set_text(m_dome_az_label, "0.00°");
+		set_widget_state(m_dome_az_label, INDIGO_OK_STATE);
+		set_spinbox_value(m_dome_az, 0);
+		set_enabled(m_dome_az, false);
+		set_widget_state(m_dome_az, INDIGO_OK_STATE);
+		set_widget_state(m_dome_az_goto_button, INDIGO_OK_STATE);
 	}
 	if (client_match_device_property(property, selected_mount_agent, DOME_SHUTTER_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("REMOVE %s", property->name);
 		set_dome_shutter(0, false);
+		set_text(m_dome_shutter_cbox, "Shutter closed");
+		set_checkbox_state(m_dome_shutter_cbox, Qt::Unchecked);
+		set_widget_state(m_dome_shutter_cbox, INDIGO_OK_STATE);
+		set_enabled(m_dome_shutter_cbox, false);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_PARK_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("REMOVE %s", property->name);
+		set_text(m_dome_park_cbox, "Unparked");
+		set_checkbox_state(m_dome_park_cbox, Qt::Unchecked);
+		set_widget_state(m_dome_park_cbox, INDIGO_OK_STATE);
+		set_enabled(m_dome_park_cbox, false);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_SLAVING_PROPERTY_NAME) ||
+	    client_match_device_property(property, selected_mount_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("REMOVE %s", property->name);
+		set_checkbox_checked(m_dome_slaving_cbox, false);
+		set_enabled(m_dome_slaving_cbox, false);
+		set_text(m_dome_slaving_status_label, "<img src=\":resource/led-grey.png\"> Not slaved");
 	}
 	if (client_match_device_property(property, selected_mount_agent, ROTATOR_POSITION_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {

@@ -154,7 +154,10 @@ private:
 	friend void update_rotator_derotation(ImagerWindow *w, indigo_property *property);
 	friend void update_rotator_derotation_status(ImagerWindow *w, indigo_property *property);
 	friend void update_dome_dimensions(ImagerWindow *w, indigo_property *property);
-	friend void update_dome_azimuth(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_park(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_slaving(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_slaving_status(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_azimuth(ImagerWindow *w, indigo_property *property, bool update_input);
 	friend void update_dome_shutter(ImagerWindow *w, indigo_property *property);
 	friend void update_dome_view_telescope(ImagerWindow *w, indigo_property *property);
 	friend void update_dome_view_latitude(ImagerWindow *w, indigo_property *property);
@@ -472,6 +475,11 @@ public slots:
 
 	void on_rotator_selected(int index);
 	void on_dome_selected(int index);
+	void on_dome_park(bool clicked);
+	void on_dome_shutter(bool clicked);
+	void on_dome_az_goto();
+	void on_dome_az_sync();
+	void on_dome_slaving(bool clicked);
 	void on_rotator_reverse_changed(bool clicked);
 	void on_rotator_derotate(bool clicked);
 	void on_rotator_position_changed();
@@ -1050,6 +1058,14 @@ private:
 
 	QComboBox *m_dome_select;
 	DomeView *m_dome_view;
+	QCheckBox *m_dome_park_cbox;
+	QCheckBox *m_dome_shutter_cbox;
+	QLabel *m_dome_az_label;
+	QDoubleSpinBox *m_dome_az;
+	QToolButton *m_dome_az_goto_button;
+	QToolButton *m_dome_az_sync_button;
+	QCheckBox *m_dome_slaving_cbox;
+	QLabel *m_dome_slaving_status_label;
 
 	//QCheckBox *m_mount_use_solver_cbox;
 	QComboBox *m_solver_source_select2;
@@ -1248,6 +1264,8 @@ private:
 
 	void change_rotator_position_property(const char *agent) const;
 	void change_rotator_sync_property(const char *agent) const;
+	void change_dome_azimuth_property(const char *agent) const;
+	void change_dome_azimuth_sync_property(const char *agent) const;
 
 	void change_solver_agent_hints_property(const char *agent) const;
 	void clear_solver_agent_releated_agents(const char *agent) const;

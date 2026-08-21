@@ -562,19 +562,108 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	dome_frame->setFrameShape(QFrame::StyledPanel);
 	dome_frame->setContentsMargins(0, 0, 0, 0);
 
+	/* The view is square and sits on the left, its controls to the right. */
+	dome_frame_layout->setColumnStretch(0, 3);
+	dome_frame_layout->setColumnStretch(1, 2);
+
 	int dome_row = 0;
+	QWidget *dome_select_row = new QWidget();
+	QHBoxLayout *dome_select_layout = new QHBoxLayout(dome_select_row);
+	dome_select_layout->setContentsMargins(0, 0, 0, 0);
 	label = new QLabel("Dome:");
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	dome_frame_layout->addWidget(label, dome_row, 0);
+	dome_select_layout->addWidget(label);
 	m_dome_select = new QComboBox();
-	dome_frame_layout->addWidget(m_dome_select, dome_row, 1, 1, 5);
+	dome_select_layout->addWidget(m_dome_select, 1);
 	connect(m_dome_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_dome_selected);
+	dome_frame_layout->addWidget(dome_select_row, dome_row, 0, 1, 2);
 
 	dome_row++;
 	m_dome_view = new DomeView();
 	m_dome_view->setTitle("");
 	m_dome_view->setToolTip("Dome and telescope seen from above");
-	dome_frame_layout->addWidget(m_dome_view, dome_row, 0, 1, 6);
+	dome_frame_layout->addWidget(m_dome_view, dome_row, 0);
+
+	/* Stacked to the right of the view, top aligned so they do not drift
+	   apart as the view grows. */
+	QWidget *dome_controls = new QWidget();
+	QVBoxLayout *dome_controls_layout = new QVBoxLayout(dome_controls);
+	dome_controls_layout->setAlignment(Qt::AlignTop);
+	dome_controls_layout->setContentsMargins(0, 0, 0, 0);
+	dome_frame_layout->addWidget(dome_controls, dome_row, 1);
+
+	m_dome_park_cbox = new QCheckBox("Unparked");
+	m_dome_park_cbox->setToolTip("Park or unpark the dome");
+	m_dome_park_cbox->setEnabled(false);
+	set_ok(m_dome_park_cbox);
+	dome_controls_layout->addWidget(m_dome_park_cbox);
+	connect(m_dome_park_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_dome_park);
+
+	m_dome_shutter_cbox = new QCheckBox("Shutter closed");
+	m_dome_shutter_cbox->setToolTip("Open or close the shutter");
+	m_dome_shutter_cbox->setEnabled(false);
+	set_ok(m_dome_shutter_cbox);
+	dome_controls_layout->addWidget(m_dome_shutter_cbox);
+	connect(m_dome_shutter_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_dome_shutter);
+
+	/* First line reads the dome back, second line drives it. */
+	QWidget *dome_az_readout_row = new QWidget();
+	QHBoxLayout *dome_az_readout_layout = new QHBoxLayout(dome_az_readout_row);
+	dome_az_readout_layout->setContentsMargins(0, 0, 0, 0);
+	label = new QLabel("Azimuth:");
+	dome_az_readout_layout->addWidget(label);
+
+	m_dome_az_label = new QLabel("0.00°");
+	font = m_dome_az_label->font();
+	font.setPointSize(font.pointSize() + 2);
+	m_dome_az_label->setFont(font);
+	m_dome_az_label->setToolTip("Current dome azimuth");
+	set_ok(m_dome_az_label);
+	m_dome_az_label->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
+	m_dome_az_label->setMinimumWidth(50);
+	dome_az_readout_layout->addWidget(m_dome_az_label, 1);
+	dome_controls_layout->addWidget(dome_az_readout_row);
+
+	QWidget *dome_az_row = new QWidget();
+	QHBoxLayout *dome_az_layout = new QHBoxLayout(dome_az_row);
+	dome_az_layout->setContentsMargins(0, 0, 0, 0);
+
+	m_dome_az = new QDoubleSpinBox();
+	m_dome_az->setMaximum(360);
+	m_dome_az->setMinimum(0);
+	m_dome_az->setDecimals(2);
+	m_dome_az->setWrapping(true);
+	m_dome_az->setValue(0);
+	m_dome_az->setEnabled(false);
+	m_dome_az->setToolTip("Dome azimuth (0 to 360°)");
+	dome_az_layout->addWidget(m_dome_az, 1);
+
+	m_dome_az_goto_button = new QToolButton(this);
+	m_dome_az_goto_button->setToolTip(tr("Go to azimuth / Abort move"));
+	m_dome_az_goto_button->setIcon(QIcon(":resource/play.png"));
+	dome_az_layout->addWidget(m_dome_az_goto_button);
+	connect(m_dome_az_goto_button, &QToolButton::clicked, this, &ImagerWindow::on_dome_az_goto);
+
+	m_dome_az_sync_button = new QToolButton(this);
+	m_dome_az_sync_button->setToolTip(tr("Sync dome azimuth"));
+	m_dome_az_sync_button->setIcon(QIcon(":resource/calibrate.png"));
+	dome_az_layout->addWidget(m_dome_az_sync_button);
+	connect(m_dome_az_sync_button, &QToolButton::clicked, this, &ImagerWindow::on_dome_az_sync);
+
+	dome_controls_layout->addWidget(dome_az_row);
+
+	dome_controls_layout->addSpacing(10);
+
+	m_dome_slaving_status_label = new QLabel("");
+	m_dome_slaving_status_label->setTextFormat(Qt::RichText);
+	m_dome_slaving_status_label->setText("<img src=\":resource/led-grey.png\"> Not slaved");
+	dome_controls_layout->addWidget(m_dome_slaving_status_label);
+
+	m_dome_slaving_cbox = new QCheckBox("Slave to mount");
+	m_dome_slaving_cbox->setToolTip("Keep the dome slit on the telescope");
+	m_dome_slaving_cbox->setEnabled(false);
+	dome_controls_layout->addWidget(m_dome_slaving_cbox);
+	connect(m_dome_slaving_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_dome_slaving);
 
 	// SITE TAB
 	QFrame *site_frame = new QFrame();
@@ -1450,6 +1539,96 @@ void ImagerWindow::on_dome_selected(int index) {
 
 		static bool values[] = { true };
 		indigo_change_switch_property(nullptr, selected_agent, FILTER_DOME_LIST_PROPERTY_NAME, 1, items, values);
+	});
+}
+
+void ImagerWindow::on_dome_park(bool clicked) {
+	Q_UNUSED(clicked);
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+		bool checked = m_dome_park_cbox->checkState();
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		if (checked) {
+			indigo_change_switch_property_1(nullptr, selected_agent, DOME_PARK_PROPERTY_NAME, DOME_PARK_PARKED_ITEM_NAME, true);
+		} else {
+			indigo_change_switch_property_1(nullptr, selected_agent, DOME_PARK_PROPERTY_NAME, DOME_PARK_UNPARKED_ITEM_NAME, true);
+		}
+	});
+}
+
+void ImagerWindow::on_dome_shutter(bool clicked) {
+	Q_UNUSED(clicked);
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+		bool checked = m_dome_shutter_cbox->checkState();
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		if (checked) {
+			indigo_change_switch_property_1(nullptr, selected_agent, DOME_SHUTTER_PROPERTY_NAME, DOME_SHUTTER_OPENED_ITEM_NAME, true);
+		} else {
+			indigo_change_switch_property_1(nullptr, selected_agent, DOME_SHUTTER_PROPERTY_NAME, DOME_SHUTTER_CLOSED_ITEM_NAME, true);
+		}
+	});
+}
+
+void ImagerWindow::on_dome_az_goto() {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+
+		indigo_property *dome_coordinates = properties.get(selected_agent, DOME_HORIZONTAL_COORDINATES_PROPERTY_NAME);
+		if (!dome_coordinates) {
+			return;
+		}
+		if (dome_coordinates->state != INDIGO_BUSY_STATE) {
+			change_dome_azimuth_property(selected_agent);
+		} else {
+			indigo_change_switch_property_1(nullptr, selected_agent, DOME_ABORT_MOTION_PROPERTY_NAME, DOME_ABORT_MOTION_ITEM_NAME, true);
+		}
+	});
+}
+
+void ImagerWindow::on_dome_az_sync() {
+	if (conf.require_confirmation) {
+		QMessageBox msgBox(this);
+		msgBox.setWindowTitle("Synchronize dome");
+		msgBox.setText(QString("Set the entered azimuth as current?"));
+		msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+		msgBox.setDefaultButton(QMessageBox::Yes);
+		if (msgBox.exec() == QMessageBox::No) {
+			return;
+		}
+	}
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_dome_azimuth_sync_property(selected_agent);
+	});
+}
+
+/*
+ Slaving is a feature switch of AGENT_PROCESS_FEATURES if the mount agent
+ provides it (INDIGO 3.x), otherwise it is the DOME_SLAVING property of the
+ dome itself.
+*/
+void ImagerWindow::on_dome_slaving(bool clicked) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		if (get_dome_slaving_feature_item(selected_agent) != nullptr) {
+			indigo_change_switch_property_1(nullptr, selected_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME, AGENT_MOUNT_ENABLE_DOME_SLAVING_ITEM_NAME, clicked);
+		} else if (clicked) {
+			indigo_change_switch_property_1(nullptr, selected_agent, DOME_SLAVING_PROPERTY_NAME, DOME_SLAVING_ENABLE_ITEM_NAME, true);
+		} else {
+			indigo_change_switch_property_1(nullptr, selected_agent, DOME_SLAVING_PROPERTY_NAME, DOME_SLAVING_DISABLE_ITEM_NAME, true);
+		}
 	});
 }
 

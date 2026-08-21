@@ -93,6 +93,10 @@
 // or nullptr if the agent does not provide it (INDIGO 2.x).
 extern indigo_item *get_derotation_feature_item(const char *mount_agent);
 
+// Returns the AGENT_PROCESS_FEATURES ENABLE_DOME_SLAVING item of the mount agent,
+// or nullptr if the agent does not provide it (INDIGO 2.x).
+extern indigo_item *get_dome_slaving_feature_item(const char *mount_agent);
+
 extern bool client_match_device_property(indigo_property *property, const char *device_name, const char *property_name);
 extern bool client_match_device_no_property(indigo_property *property, const char *device_name);
 extern bool client_match_property(indigo_property *property, const char *property_name);
