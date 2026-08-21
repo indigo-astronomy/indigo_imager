@@ -652,6 +652,36 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 
 	dome_controls_layout->addWidget(dome_az_row);
 
+	/* Relative move, the same way the rotator does it. */
+	QWidget *dome_relative_row = new QWidget();
+	QHBoxLayout *dome_relative_layout = new QHBoxLayout(dome_relative_row);
+	dome_relative_layout->setContentsMargins(0, 0, 0, 0);
+
+	m_dome_relative = new QDoubleSpinBox();
+	m_dome_relative->setMaximum(180);
+	m_dome_relative->setMinimum(0);
+	m_dome_relative->setValue(0);
+	m_dome_relative->setDecimals(2);
+	m_dome_relative->setEnabled(false);
+	m_dome_relative->setToolTip("Relative move (°)");
+	dome_relative_layout->addWidget(m_dome_relative, 1);
+
+	m_dome_ccw_button = new QToolButton(this);
+	m_dome_ccw_button->setStyleSheet("min-width: 15px");
+	m_dome_ccw_button->setIcon(QIcon(":resource/zoom-out.png"));
+	m_dome_ccw_button->setToolTip("Relative move counter clockwise (-)");
+	dome_relative_layout->addWidget(m_dome_ccw_button);
+	connect(m_dome_ccw_button, &QToolButton::clicked, this, &ImagerWindow::on_dome_ccw_move);
+
+	m_dome_cw_button = new QToolButton(this);
+	m_dome_cw_button->setStyleSheet("min-width: 15px");
+	m_dome_cw_button->setIcon(QIcon(":resource/zoom-in.png"));
+	m_dome_cw_button->setToolTip("Relative move clockwise (+)");
+	dome_relative_layout->addWidget(m_dome_cw_button);
+	connect(m_dome_cw_button, &QToolButton::clicked, this, &ImagerWindow::on_dome_cw_move);
+
+	dome_controls_layout->addWidget(dome_relative_row);
+
 	dome_controls_layout->addSpacing(10);
 
 	m_dome_slaving_status_label = new QLabel("");
@@ -1608,6 +1638,34 @@ void ImagerWindow::on_dome_az_sync() {
 		get_selected_mount_agent(selected_agent);
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_dome_azimuth_sync_property(selected_agent);
+	});
+}
+
+/* A relative move is a direction plus a number of degrees to turn. */
+static void dome_relative_move(const char *agent, const char *direction, double degrees) {
+	indigo_change_switch_property_1(nullptr, agent, DOME_DIRECTION_PROPERTY_NAME, direction, true);
+	indigo_change_number_property_1(nullptr, agent, DOME_STEPS_PROPERTY_NAME, DOME_STEPS_ITEM_NAME, degrees);
+}
+
+void ImagerWindow::on_dome_cw_move() {
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+		static double move;
+		move = (double)m_dome_relative->value();
+		dome_relative_move(selected_agent, DOME_DIRECTION_MOVE_CLOCKWISE_ITEM_NAME, move);
+	});
+}
+
+void ImagerWindow::on_dome_ccw_move() {
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+		static double move;
+		move = (double)m_dome_relative->value();
+		dome_relative_move(selected_agent, DOME_DIRECTION_MOVE_COUNTERCLOCKWISE_ITEM_NAME, move);
 	});
 }
 

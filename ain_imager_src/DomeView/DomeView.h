@@ -189,8 +189,17 @@ public:
 	void setDomeOpacity(qreal opacity);
 	qreal domeOpacity() const { return m_domeOpacity; }
 
+	/** The title in the top left corner. */
 	void setShowLabels(bool show);
+	bool showLabels() const { return m_showLabels; }
+
+	/** The line in the bottom left corner saying whether the telescope can
+	 *  see out through the slit. */
+	void setShowStatus(bool show);
+	bool showStatus() const { return m_showStatus; }
+
 	void setShowCompass(bool show);
+	bool showCompass() const { return m_showCompass; }
 
 	/* Square - the view is a circle, so it asks for as much height as it is
 	   given width. The hint follows the width we were given and a resize asks
@@ -253,6 +262,7 @@ private:
 	QColor m_busyColor = QColor(226, 186, 108);
 	qreal m_domeOpacity = 0.35;
 	bool m_showLabels = true;
+	bool m_showStatus = true;
 	bool m_showCompass = true;
 
 	// cached scene mapping, recomputed on every paint

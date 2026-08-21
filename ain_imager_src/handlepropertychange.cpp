@@ -1290,6 +1290,19 @@ void update_dome_shutter(ImagerWindow *w, indigo_property *property) {
 	}
 }
 
+/* DOME_STEPS is the relative move, in degrees. */
+void update_dome_steps(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], DOME_STEPS_ITEM_NAME)) {
+			w->set_enabled(w->m_dome_relative, true);
+			w->set_widget_state(w->m_dome_relative, property->state);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_dome_relative);
+			break;
+		}
+	}
+}
+
 void update_dome_park(ImagerWindow *w, indigo_property *property) {
 	indigo_debug("change %s", property->name);
 	bool parked = false;
@@ -3868,6 +3881,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, DOME_PARK_PROPERTY_NAME)) {
 		update_dome_park(this, property);
 	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_STEPS_PROPERTY_NAME)) {
+		update_dome_steps(this, property);
+	}
 	if (client_match_device_property(property, selected_mount_agent, DOME_SLAVING_PROPERTY_NAME) ||
 	    client_match_device_property(property, selected_mount_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {
 		update_dome_slaving(this, property);
@@ -4316,6 +4332,9 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, DOME_PARK_PROPERTY_NAME)) {
 		update_dome_park(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_STEPS_PROPERTY_NAME)) {
+		update_dome_steps(this, property);
 	}
 	if (client_match_device_property(property, selected_mount_agent, DOME_SLAVING_PROPERTY_NAME) ||
 	    client_match_device_property(property, selected_mount_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {
@@ -5112,6 +5131,13 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_checkbox_state(m_dome_shutter_cbox, Qt::Unchecked);
 		set_widget_state(m_dome_shutter_cbox, INDIGO_OK_STATE);
 		set_enabled(m_dome_shutter_cbox, false);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_STEPS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("REMOVE %s", property->name);
+		set_spinbox_value(m_dome_relative, 0);
+		set_widget_state(m_dome_relative, INDIGO_OK_STATE);
+		set_enabled(m_dome_relative, false);
 	}
 	if (client_match_device_property(property, selected_mount_agent, DOME_PARK_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {

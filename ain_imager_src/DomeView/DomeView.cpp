@@ -252,6 +252,11 @@ void DomeView::setShowLabels(bool show) {
 	update();
 }
 
+void DomeView::setShowStatus(bool show) {
+	m_showStatus = show;
+	update();
+}
+
 void DomeView::setShowCompass(bool show) {
 	m_showCompass = show;
 	update();
@@ -514,9 +519,8 @@ void DomeView::paintEvent(QPaintEvent *) {
 	if (m_showTelescope) {
 		drawExitMarkers(painter);
 	}
-	if (m_showLabels) {
-		drawLabels(painter);
-	}
+	/* Title and status are gated separately, inside. */
+	drawLabels(painter);
 }
 
 void DomeView::drawCompass(QPainter &painter) {
@@ -960,6 +964,9 @@ void DomeView::drawExitMarkers(QPainter &painter) {
 	painter.restore();
 }
 
+/* Only the title and the line saying whether the telescope can see out - the
+   numbers behind them are the caller's to show, and it has the property values
+   already. */
 void DomeView::drawLabels(QPainter &painter) {
 	painter.save();
 
@@ -967,42 +974,21 @@ void DomeView::drawLabels(QPainter &painter) {
 	font.setPointSizeF(qMax(7.5, font.pointSizeF() - 1.0));
 	painter.setFont(font);
 	QFontMetricsF fm(font);
-	double lineHeight = fm.height();
 	const double pad = 6.0;
 
-	QFont titleFont = font;
-	titleFont.setBold(true);
-
-	if (!m_title.isEmpty()) {
+	if (m_showLabels && !m_title.isEmpty()) {
+		QFont titleFont = font;
+		titleFont.setBold(true);
 		painter.setFont(titleFont);
 		painter.setPen(m_labelColor);
 		painter.drawText(QPointF(pad, pad + fm.ascent()), m_title);
 		painter.setFont(font);
 	}
 
-	QColor dim = m_labelColor;
-	dim.setAlphaF(0.8);
-	painter.setPen(dim);
-
-	QString domeText = QString("Dome %1°").arg(m_domeAz, 0, 'f', 1);
-	QString shutterText;
-	if (m_shutterPosition <= 0) {
-		shutterText = tr("Shutter closed");
-	} else if (m_shutterPosition >= 1) {
-		shutterText = tr("Shutter open");
-	} else {
-		shutterText = tr("Shutter %1%").arg(m_shutterPosition * 100.0, 0, 'f', 0);
-	}
-	painter.drawText(QPointF(width() - pad - fm.horizontalAdvance(domeText), pad + fm.ascent()), domeText);
-	painter.drawText(QPointF(width() - pad - fm.horizontalAdvance(shutterText), pad + fm.ascent() + lineHeight), shutterText);
-
-	if (m_showTelescope) {
-		QString scopeText = QString("Scope %1° / %2°").arg(m_scopeAz, 0, 'f', 1).arg(m_scopeAlt, 0, 'f', 1);
-		painter.drawText(QPointF(pad, height() - pad - lineHeight), scopeText);
-
+	if (m_showStatus && m_showTelescope) {
 		Vec3 exit;
 		QString status;
-		QColor statusColor = dim;
+		QColor statusColor;
 		if (!lineOfSightExit(&exit)) {
 			status = tr("Mount outside the dome");
 			statusColor = m_blockedColor;

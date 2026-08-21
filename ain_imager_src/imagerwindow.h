@@ -155,6 +155,7 @@ private:
 	friend void update_rotator_derotation_status(ImagerWindow *w, indigo_property *property);
 	friend void update_dome_dimensions(ImagerWindow *w, indigo_property *property);
 	friend void update_dome_park(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_steps(ImagerWindow *w, indigo_property *property);
 	friend void update_dome_slaving(ImagerWindow *w, indigo_property *property);
 	friend void update_dome_slaving_status(ImagerWindow *w, indigo_property *property);
 	friend void update_dome_azimuth(ImagerWindow *w, indigo_property *property, bool update_input);
@@ -479,6 +480,8 @@ public slots:
 	void on_dome_shutter(bool clicked);
 	void on_dome_az_goto();
 	void on_dome_az_sync();
+	void on_dome_ccw_move();
+	void on_dome_cw_move();
 	void on_dome_slaving(bool clicked);
 	void on_rotator_reverse_changed(bool clicked);
 	void on_rotator_derotate(bool clicked);
@@ -1064,6 +1067,9 @@ private:
 	QDoubleSpinBox *m_dome_az;
 	QToolButton *m_dome_az_goto_button;
 	QToolButton *m_dome_az_sync_button;
+	QDoubleSpinBox *m_dome_relative;
+	QToolButton *m_dome_ccw_button;
+	QToolButton *m_dome_cw_button;
 	QCheckBox *m_dome_slaving_cbox;
 	QLabel *m_dome_slaving_status_label;
 
