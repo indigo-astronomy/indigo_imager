@@ -611,6 +611,14 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(this, QOverload<QPushButton*, QString>::of(&ImagerWindow::set_text), this, QOverload<QPushButton*, QString>::of(&ImagerWindow::on_set_text));
 	connect(this, QOverload<QCheckBox*, QString>::of(&ImagerWindow::set_text), this, QOverload<QCheckBox*, QString>::of(&ImagerWindow::on_set_text));
 
+	connect(this, &ImagerWindow::set_dome_dimensions, this, &ImagerWindow::on_set_dome_dimensions);
+	connect(this, &ImagerWindow::set_dome_azimuth, this, &ImagerWindow::on_set_dome_azimuth);
+	connect(this, &ImagerWindow::set_dome_shutter, this, &ImagerWindow::on_set_dome_shutter);
+	connect(this, &ImagerWindow::set_dome_telescope, this, &ImagerWindow::on_set_dome_telescope);
+	connect(this, &ImagerWindow::set_dome_side_of_pier, this, &ImagerWindow::on_set_dome_side_of_pier);
+	connect(this, &ImagerWindow::set_dome_latitude, this, &ImagerWindow::on_set_dome_latitude);
+	connect(this, &ImagerWindow::set_dome_optics, this, &ImagerWindow::on_set_dome_optics);
+
 	connect(this, &ImagerWindow::show_widget, this, &ImagerWindow::on_show);
 	connect(this, &ImagerWindow::set_tooltip, this, &ImagerWindow::on_set_tooltip);
 	connect(this, &ImagerWindow::configure_corr_response, this, &ImagerWindow::on_configure_corr_response);

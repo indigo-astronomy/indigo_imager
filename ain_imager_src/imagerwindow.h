@@ -35,6 +35,7 @@
 #include <widget_state.h>
 #include <conf.h>
 #include <PolarAlignmentWidget/PolarAlignmentWidget.h>
+#include <DomeView/DomeView.h>
 
 class QServiceModel;
 class QIndigoServers;
@@ -152,6 +153,12 @@ private:
 	friend void update_rotator_reverse(ImagerWindow *w, indigo_property *property);
 	friend void update_rotator_derotation(ImagerWindow *w, indigo_property *property);
 	friend void update_rotator_derotation_status(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_dimensions(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_azimuth(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_shutter(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_view_telescope(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_view_latitude(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_view_optics(ImagerWindow *w, indigo_property *property);
 	friend void update_imager_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_gain_offset_property(ImagerWindow *w, indigo_property *property);
@@ -229,6 +236,16 @@ signals:
 	void configure_corr_response(QLabel *label, QWidget *bar, bool reported, QString text, QString tooltip);
 
 	void set_lcd(QLCDNumber *widget, QString text, int state);
+
+	/* DomeView updates - emitted from the INDIGO thread, applied in the GUI
+	   thread by the matching slots below. */
+	void set_dome_dimensions(double radius, double shutter_width, double offset_ns, double offset_ew, double offset_vertical, double ota_offset);
+	void set_dome_azimuth(double azimuth, bool busy);
+	void set_dome_shutter(double position, bool busy);
+	void set_dome_telescope(double azimuth, double altitude);
+	void set_dome_side_of_pier(int side);
+	void set_dome_latitude(double latitude);
+	void set_dome_optics(double aperture, double tube_length);
 
 	void set_combobox_current_text(QComboBox *combobox, const QString &item);
 	void set_combobox_current_index(QComboBox *combobox, int index);
@@ -454,6 +471,7 @@ public slots:
 	void on_image_source3_selected(int index);
 
 	void on_rotator_selected(int index);
+	void on_dome_selected(int index);
 	void on_rotator_reverse_changed(bool clicked);
 	void on_rotator_derotate(bool clicked);
 	void on_rotator_position_changed();
@@ -555,6 +573,45 @@ public slots:
 		widget->setValue(value);
 		widget->blockSignals(false);
 	};
+
+	void on_set_dome_dimensions(double radius, double shutter_width, double offset_ns, double offset_ew, double offset_vertical, double ota_offset) {
+		m_dome_view->setDomeDimensions(radius, shutter_width, offset_ns, offset_ew, offset_vertical, ota_offset);
+	}
+
+	void on_set_dome_azimuth(double azimuth, bool busy) {
+		m_dome_view->setDomeAzimuth(azimuth);
+		if (busy) {
+			m_dome_view->setDomeBusy();
+		} else {
+			m_dome_view->setDomeOK();
+		}
+	}
+
+	void on_set_dome_shutter(double position, bool busy) {
+		m_dome_view->setShutterPosition(position);
+		if (busy) {
+			m_dome_view->setShutterBusy();
+		} else {
+			m_dome_view->setShutterOK();
+		}
+	}
+
+	void on_set_dome_telescope(double azimuth, double altitude) {
+		m_dome_view->setTelescopeCoordinates(azimuth, altitude);
+	}
+
+	void on_set_dome_side_of_pier(int side) {
+		m_dome_view->setSideOfPier((DomeView::SideOfPier)side);
+	}
+
+	void on_set_dome_latitude(double latitude) {
+		m_dome_view->setLatitude(latitude);
+	}
+
+	void on_set_dome_optics(double aperture, double tube_length) {
+		m_dome_view->setApertureDiameter(aperture);
+		m_dome_view->setTubeLength(tube_length);
+	}
 
 	void on_set_checkbox_checked(QCheckBox *widget, bool checked) {
 		widget->blockSignals(true);
@@ -990,6 +1047,9 @@ private:
 	QLabel *m_rotator_pa_label;
 	QLabel *m_rotator_ror_label;
 	QCheckBox *m_rotator_derotate_cbox;
+
+	QComboBox *m_dome_select;
+	DomeView *m_dome_view;
 
 	//QCheckBox *m_mount_use_solver_cbox;
 	QComboBox *m_solver_source_select2;

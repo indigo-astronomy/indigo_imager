@@ -552,6 +552,30 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	set_ok(m_rotator_ror_label);
 	rotator_frame_layout->addWidget(m_rotator_ror_label, rotator_row, 1, 1, 2);
 
+	// DOME TAB
+	QFrame *dome_frame = new QFrame();
+	telescope_tabbar->addTab(dome_frame, "Dome");
+
+	QGridLayout *dome_frame_layout = new QGridLayout();
+	dome_frame_layout->setAlignment(Qt::AlignTop);
+	dome_frame->setLayout(dome_frame_layout);
+	dome_frame->setFrameShape(QFrame::StyledPanel);
+	dome_frame->setContentsMargins(0, 0, 0, 0);
+
+	int dome_row = 0;
+	label = new QLabel("Dome:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	dome_frame_layout->addWidget(label, dome_row, 0);
+	m_dome_select = new QComboBox();
+	dome_frame_layout->addWidget(m_dome_select, dome_row, 1, 1, 5);
+	connect(m_dome_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_dome_selected);
+
+	dome_row++;
+	m_dome_view = new DomeView();
+	m_dome_view->setTitle("");
+	m_dome_view->setToolTip("Dome and telescope seen from above");
+	dome_frame_layout->addWidget(m_dome_view, dome_row, 0, 1, 6);
+
 	// SITE TAB
 	QFrame *site_frame = new QFrame();
 	telescope_tabbar->addTab(site_frame, "Site");
@@ -1406,6 +1430,26 @@ void ImagerWindow::on_rotator_selected(int index) {
 
 		static bool values[] = { true };
 		indigo_change_switch_property(nullptr, selected_agent, FILTER_ROTATOR_LIST_PROPERTY_NAME, 1, items, values);
+	});
+}
+
+void ImagerWindow::on_dome_selected(int index) {
+	Q_UNUSED(index);
+	QtConcurrent::run([=]() {
+		static char selected_dome[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
+		QString q_dome_str = m_dome_select->currentText();
+		if (q_dome_str.compare("No dome") == 0) {
+			strcpy(selected_dome, "NONE");
+		} else {
+			strncpy(selected_dome, q_dome_str.toUtf8().constData(), INDIGO_NAME_SIZE);
+		}
+		get_selected_mount_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_dome);
+		static const char * items[] = { selected_dome };
+
+		static bool values[] = { true };
+		indigo_change_switch_property(nullptr, selected_agent, FILTER_DOME_LIST_PROPERTY_NAME, 1, items, values);
 	});
 }
 

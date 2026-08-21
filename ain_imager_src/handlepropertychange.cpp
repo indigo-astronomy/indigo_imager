@@ -390,6 +390,16 @@ void update_mount_side_of_pier(ImagerWindow *w, indigo_property *property) {
 		w->set_text(w->m_mount_side_of_pier_label, "Side of pier: Unknown");
 		w->set_widget_state(w->m_mount_side_of_pier_label, INDIGO_ALERT_STATE);
 	}
+
+	/* The dome view puts the tube on that side of the pier. Unknown leaves it
+	   to work the side out from the pointing, counterweight down. */
+	if (east) {
+		w->set_dome_side_of_pier(DomeView::SideOfPierEast);
+	} else if (west) {
+		w->set_dome_side_of_pier(DomeView::SideOfPierWest);
+	} else {
+		w->set_dome_side_of_pier(DomeView::SideOfPierAuto);
+	}
 }
 
 void update_mount_park(ImagerWindow *w, indigo_property *property) {
@@ -1207,6 +1217,82 @@ void update_rotator_reverse(ImagerWindow *w, indigo_property *property) {
 			break;
 		}
 	}
+}
+
+/* DOME_DIMENSION is in meters, which is what DomeView takes. */
+void update_dome_dimensions(ImagerWindow *w, indigo_property *property) {
+	double radius = 0, shutter_width = 0, offset_ns = 0, offset_ew = 0, offset_vertical = 0, ota_offset = 0;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], DOME_RADIUS_ITEM_NAME)) {
+			radius = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], DOME_SHUTTER_WIDTH_ITEM_NAME)) {
+			shutter_width = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], DOME_MOUNT_PIVOT_OFFSET_NS_ITEM_NAME)) {
+			offset_ns = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], DOME_MOUNT_PIVOT_OFFSET_EW_ITEM_NAME)) {
+			offset_ew = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], DOME_MOUNT_PIVOT_VERTICAL_OFFSET_ITEM_NAME)) {
+			offset_vertical = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], DOME_MOUNT_PIVOT_OTA_OFFSET_ITEM_NAME)) {
+			ota_offset = property->items[i].number.value;
+		}
+	}
+	w->set_dome_dimensions(radius, shutter_width, offset_ns, offset_ew, offset_vertical, ota_offset);
+}
+
+void update_dome_azimuth(ImagerWindow *w, indigo_property *property) {
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], DOME_HORIZONTAL_COORDINATES_AZ_ITEM_NAME)) {
+			w->set_dome_azimuth(property->items[i].number.value, property->state == INDIGO_BUSY_STATE);
+			break;
+		}
+	}
+}
+
+/* DOME_SHUTTER only says opened or closed, so the leaves are drawn at one end
+   of their travel or the other. */
+void update_dome_shutter(ImagerWindow *w, indigo_property *property) {
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], DOME_SHUTTER_OPENED_ITEM_NAME)) {
+			w->set_dome_shutter(property->items[i].sw.value ? 1.0 : 0.0, property->state == INDIGO_BUSY_STATE);
+			break;
+		}
+	}
+}
+
+void update_dome_view_telescope(ImagerWindow *w, indigo_property *property) {
+	double az = 0, alt = 0;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], MOUNT_HORIZONTAL_COORDINATES_AZ_ITEM_NAME)) {
+			az = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], MOUNT_HORIZONTAL_COORDINATES_ALT_ITEM_NAME)) {
+			alt = property->items[i].number.value;
+		}
+	}
+	w->set_dome_telescope(az, alt);
+}
+
+void update_dome_view_latitude(ImagerWindow *w, indigo_property *property) {
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], GEOGRAPHIC_COORDINATES_LATITUDE_ITEM_NAME)) {
+			w->set_dome_latitude(property->items[i].number.value);
+			break;
+		}
+	}
+}
+
+/* CCD_LENS is in centimeters. The tube is drawn as long as the focal length,
+   which is close enough for anything but a folded optical path. */
+void update_dome_view_optics(ImagerWindow *w, indigo_property *property) {
+	double aperture = 0, focal_length = 0;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], CCD_LENS_APERTURE_ITEM_NAME)) {
+			aperture = property->items[i].number.value / 100;
+		} else if (client_match_item(&property->items[i], CCD_LENS_FOCAL_LENGTH_ITEM_NAME)) {
+			focal_length = property->items[i].number.value / 100;
+		}
+	}
+	w->set_dome_optics(aperture, focal_length);
 }
 
 /*
@@ -3495,6 +3581,10 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_guider_agent, CCD_LENS_PROPERTY_NAME)) {
 		update_agent_guider_focal_length_property(this, property);
 	}
+	/* The imager camera optics are what the dome view draws on the mount. */
+	if (client_match_device_property(property, selected_agent, CCD_LENS_PROPERTY_NAME)) {
+		update_dome_view_optics(this, property);
+	}
 	if (client_match_device_property(property, selected_guider_agent, CCD_JPEG_SETTINGS_PROPERTY_NAME)) {
 		// Nothing to do here for now
 	}
@@ -3582,6 +3672,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_HORIZONTAL_COORDINATES_PROPERTY_NAME)) {
 		update_mount_az_alt(this, property);
+		update_dome_view_telescope(this, property);
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_LST_TIME_PROPERTY_NAME)) {
 		update_mount_lst(this, property);
@@ -3634,6 +3725,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_mount_agent, GEOGRAPHIC_COORDINATES_PROPERTY_NAME)) {
 		update_mount_lon_lat(this, property);
+		update_dome_view_latitude(this, property);
 	}
 	utc_time_property = QString("MOUNT_") + QString(UTC_TIME_PROPERTY_NAME);
 	if (client_match_device_property(property, selected_mount_agent, utc_time_property.toUtf8().constData())) {
@@ -3645,6 +3737,18 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, FILTER_ROTATOR_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_rotator_select);
 		add_items_to_sequence_model(property, SC_SELECT_ROTATOR, 0);
+	}
+	if (client_match_device_property(property, selected_mount_agent, FILTER_DOME_LIST_PROPERTY_NAME)) {
+		add_items_to_combobox(this, property, m_dome_select);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_DIMENSION_PROPERTY_NAME)) {
+		update_dome_dimensions(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_HORIZONTAL_COORDINATES_PROPERTY_NAME)) {
+		update_dome_azimuth(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_SHUTTER_PROPERTY_NAME)) {
+		update_dome_shutter(this, property);
 	}
 	if (client_match_device_property(property, selected_mount_agent, ROTATOR_POSITION_PROPERTY_NAME)) {
 		update_rotator_poition(this, property, true);
@@ -3938,6 +4042,10 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_guider_agent, CCD_LENS_PROPERTY_NAME)) {
 		update_agent_guider_focal_length_property(this, property);
 	}
+	/* The imager camera optics are what the dome view draws on the mount. */
+	if (client_match_device_property(property, selected_agent, CCD_LENS_PROPERTY_NAME)) {
+		update_dome_view_optics(this, property);
+	}
 	if (client_match_device_property(property, selected_guider_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_guider_camera_select);
 	}
@@ -4007,6 +4115,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_HORIZONTAL_COORDINATES_PROPERTY_NAME)) {
 		update_mount_az_alt(this, property);
+		update_dome_view_telescope(this, property);
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_LST_TIME_PROPERTY_NAME)) {
 		update_mount_lst(this, property);
@@ -4058,6 +4167,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, GEOGRAPHIC_COORDINATES_PROPERTY_NAME)) {
 		update_mount_lon_lat(this, property);
+		update_dome_view_latitude(this, property);
 	}
 	utc_time_property = QString("MOUNT_") + QString(UTC_TIME_PROPERTY_NAME);
 	if (client_match_device_property(property, selected_mount_agent, utc_time_property.toUtf8().constData())) {
@@ -4068,6 +4178,18 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_ROTATOR_LIST_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_rotator_select);
+	}
+	if (client_match_device_property(property, selected_mount_agent, FILTER_DOME_LIST_PROPERTY_NAME)) {
+		change_combobox_selection(this, property, m_dome_select);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_DIMENSION_PROPERTY_NAME)) {
+		update_dome_dimensions(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_HORIZONTAL_COORDINATES_PROPERTY_NAME)) {
+		update_dome_azimuth(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_SHUTTER_PROPERTY_NAME)) {
+		update_dome_shutter(this, property);
 	}
 	if (client_match_device_property(property, selected_mount_agent, ROTATOR_POSITION_PROPERTY_NAME)) {
 		update_rotator_poition(this, property);
@@ -4757,6 +4879,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		set_text(m_mount_side_of_pier_label, "Side of pier: Unknown");
 		set_widget_state(m_mount_side_of_pier_label, INDIGO_IDLE_STATE);
+		set_dome_side_of_pier(DomeView::SideOfPierAuto);
 	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_GPS_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
@@ -4827,6 +4950,27 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		clear_combobox(m_rotator_select);
 
 		SequenceItemModel::instance().clearComboOptions(SC_SELECT_ROTATOR, 0);
+	}
+	if (client_match_device_property(property, selected_mount_agent, FILTER_DOME_LIST_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		clear_combobox(m_dome_select);
+	}
+	/* No dome any more - zero the radius, which the view draws as no dome. */
+	if (client_match_device_property(property, selected_mount_agent, DOME_DIMENSION_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("REMOVE %s", property->name);
+		set_dome_dimensions(0, 0, 0, 0, 0, 0);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_HORIZONTAL_COORDINATES_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("REMOVE %s", property->name);
+		set_dome_azimuth(0, false);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_SHUTTER_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("REMOVE %s", property->name);
+		set_dome_shutter(0, false);
 	}
 	if (client_match_device_property(property, selected_mount_agent, ROTATOR_POSITION_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
