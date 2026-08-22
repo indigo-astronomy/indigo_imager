@@ -50,6 +50,13 @@ class DomeView : public QWidget {
 	Q_OBJECT
 
 public:
+	/** How the dome opens. */
+	enum DomeType {
+		DomeTypeClassic = 0,  /**< round dome, a slit that turns to the azimuth */
+		DomeTypeHalfDome,     /**< round dome, the shell retracts until half of it is open */
+		DomeTypeClamshell     /**< round dome, both shells fold away and open it whole */
+	};
+
 	/** Which side of the pier the optical tube sits on - the values of
 	 *  MOUNT_SIDE_OF_PIER, plus letting the widget work it out itself. */
 	enum SideOfPier {
@@ -63,6 +70,13 @@ public:
 	// ------------------------------------------------------------------
 	// Dome dimensions - DOME_DIMENSION property items, all in meters
 	// ------------------------------------------------------------------
+
+	/** How the dome opens. All three are round and of the same radius, they
+	 *  differ in what the roof does: a classic dome turns a narrow slit to the
+	 *  azimuth, a half dome retracts its shell until half the sky is open, and
+	 *  a clamshell folds both of its shells away and opens whole. */
+	void setDomeType(DomeType type);
+	DomeType domeType() const { return m_domeType; }
 
 	/** Set all DOME_DIMENSION items at once. */
 	void setDomeDimensions(
@@ -175,7 +189,10 @@ public:
 	void setTitle(const QString &title);
 	QString title() const { return m_title; }
 
+	/** Widget background. Fully transparent by default, so the view shows
+	 *  whatever is behind it. Any colour with alpha 0 leaves it unpainted. */
 	void setBackgroundColor(const QColor &color);
+	QColor backgroundColor() const { return m_backgroundColor; }
 	void setDomeColor(const QColor &color);
 	void setOpeningColor(const QColor &color);
 	void setTelescopeColor(const QColor &color);
@@ -226,6 +243,7 @@ private:
 	};
 
 	// geometry
+	DomeType m_domeType = DomeTypeClassic;
 	double m_radius = 2.5;
 	double m_shutterWidth = 1.0;
 	double m_pivotNS = 0.0;
@@ -250,7 +268,8 @@ private:
 
 	// appearance
 	QString m_title = "Dome";
-	QColor m_backgroundColor = QColor(28, 30, 34);
+	/* Transparent - the view takes the colour of whatever it sits on. */
+	QColor m_backgroundColor = QColor(0, 0, 0, 0);
 	QColor m_domeColor = QColor(190, 200, 214);
 	QColor m_openingColor = QColor(24, 44, 68);
 	QColor m_telescopeColor = QColor(188, 191, 198);
@@ -284,7 +303,7 @@ private:
 	/** Intersection of the line of sight with the dome shell. Returns false
 	 *  if the optical axis reference point lies outside the dome. */
 	bool lineOfSightExit(Vec3 *exit) const;
-	bool exitPointInSlit(const Vec3 &exit) const;
+	bool exitIsClear(const Vec3 &exit) const;
 
 	double wallWidth() const;
 	/** Widget coordinates from dome coordinates - the dome turns with it. */
@@ -295,6 +314,11 @@ private:
 	QPainterPath slitPath() const;
 	/** The part of the slit the leaves have uncovered, in dome and in widget
 	 *  coordinates. Empty while the shutter is closed. */
+	/** Half a disc in dome coordinates - the two shells of a half dome. */
+	QPainterPath localHalfShell(double radius, double startAngle) const;
+	/** What the roof has uncovered at a given travel, in dome coordinates.
+	 *  Asking at 1 gives what it will uncover when it is done. */
+	QPainterPath localOpeningPathAt(double position) const;
 	QPainterPath localOpeningPath() const;
 	QPainterPath openingPath() const;
 	/** How far the closed shutter reaches sideways past the slit, in pixels.

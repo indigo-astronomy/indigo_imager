@@ -60,6 +60,11 @@ void DomeView::setDomeDimensions(
 	update();
 }
 
+void DomeView::setDomeType(DomeType type) {
+	m_domeType = type;
+	update();
+}
+
 void DomeView::setDomeRadius(double radius) {
 	m_radius = radius;
 	update();
@@ -402,19 +407,31 @@ bool DomeView::lineOfSightExit(Vec3 *exit) const {
 	return true;
 }
 
-/* The slit is a band of constant width running from the rim at the dome
-   azimuth over the zenith, so seen from above it is a stadium shape - a strip
-   of the shutter width, closed by a half circle at the zenith. Only the gap
-   the leaves have opened up counts, which is the middle of that band. */
-bool DomeView::exitPointInSlit(const Vec3 &exit) const {
+/* Whether the line of sight leaves through the opening. The classic slit is a
+   band of the shutter width running from the rim over the zenith - a stadium
+   seen from above - and only the part the leaves have uncovered counts. The
+   half dome opens a sector about its azimuth, the clamshell a band about its
+   own middle. */
+bool DomeView::exitIsClear(const Vec3 &exit) const {
 	if (m_shutterPosition <= 0) {
 		return false;
 	}
 	double az = m_domeAz * DEG2RAD;
 	double along = exit.x * sin(az) + exit.y * cos(az);
 	double lateral = exit.x * cos(az) - exit.y * sin(az);
-	double halfWidth = slitHalfWidth();
 
+	if (m_domeType == DomeTypeHalfDome) {
+		/* Where the exit sits relative to the dome azimuth, -180 to 180. The
+		   open sector runs from 90 to the west of it as the shell turns. */
+		double relative = atan2(lateral, along) * RAD2DEG;
+		return relative <= -90.0 + 180.0 * m_shutterPosition && relative >= -90.0;
+	}
+
+	if (m_domeType == DomeTypeClamshell) {
+		return fabs(lateral) <= m_radius * m_shutterPosition;
+	}
+
+	double halfWidth = slitHalfWidth();
 	if (fabs(lateral) > halfWidth * m_shutterPosition) {
 		return false;
 	}
@@ -429,6 +446,8 @@ double DomeView::requiredDomeAzimuth() const {
 	if (!lineOfSightExit(&exit)) {
 		return m_scopeAz;
 	}
+	/* Where the line of sight leaves the dome, whatever the roof is doing -
+	   the mark stays put while the shells move. */
 	return normalizeAzimuth(atan2(exit.x, exit.y) * RAD2DEG);
 }
 
@@ -437,7 +456,7 @@ bool DomeView::isTelescopeBlocked() const {
 	if (!lineOfSightExit(&exit)) {
 		return false;
 	}
-	return !exitPointInSlit(exit);
+	return !exitIsClear(exit);
 }
 
 void DomeView::updateTransform() {
@@ -492,7 +511,9 @@ void DomeView::paintEvent(QPaintEvent *) {
 	QPainterPath background;
 	background.addRoundedRect(QRectF(rect()), 6, 6);
 	painter.setClipPath(background);
-	painter.fillPath(background, m_backgroundColor);
+	if (m_backgroundColor.alpha() > 0) {
+		painter.fillPath(background, m_backgroundColor);
+	}
 
 	updateTransform();
 
@@ -566,6 +587,35 @@ double DomeView::wallWidth() const {
 	return qBound(2.5, m_radius * m_scale * 0.05, 9.0);
 }
 
+/* A boolean path is only implicitly closed: it fills right, but stroking it
+   leaves out the segment back to the start. Rebuild it with every subpath
+   closed so the outline is drawn all the way round. */
+static QPainterPath strokeable(const QPainterPath &path) {
+	QPainterPath closed;
+	for (int i = 0; i < path.elementCount(); i++) {
+		QPainterPath::Element element = path.elementAt(i);
+		if (element.isMoveTo()) {
+			if (!closed.isEmpty()) {
+				closed.closeSubpath();
+			}
+			closed.moveTo(element.x, element.y);
+		} else if (element.isLineTo()) {
+			closed.lineTo(element.x, element.y);
+		} else if (element.isCurveTo() && i + 2 < path.elementCount()) {
+			closed.cubicTo(
+				element.x, element.y,
+				path.elementAt(i + 1).x, path.elementAt(i + 1).y,
+				path.elementAt(i + 2).x, path.elementAt(i + 2).y
+			);
+			i += 2;
+		}
+	}
+	if (!closed.isEmpty()) {
+		closed.closeSubpath();
+	}
+	return closed;
+}
+
 QTransform DomeView::domeTransform() const {
 	QTransform transform;
 	transform.translate(m_center.x(), m_center.y());
@@ -596,20 +646,69 @@ QPainterPath DomeView::slitPath() const {
 	return domeTransform().map(localSlitPath());
 }
 
-/* The leaves part from the middle of the slit outwards, so what is open is the
-   middle band of it, as wide as the travel so far. */
-QPainterPath DomeView::localOpeningPath() const {
-	if (m_shutterPosition <= 0) {
+/* What the roof has uncovered, in dome coordinates. A classic dome parts its
+   leaves from the middle of the slit outwards, a half dome retracts its shell
+   into a widening sector, a clamshell folds both shells away from the middle
+   and ends up open from rim to rim. */
+/* How much smaller the moving half of a half dome is, so it can pass under the
+   fixed one. */
+#define HALF_DOME_INNER_SCALE 0.965
+
+/* How much of each clamshell shell is left showing when it is fully open. */
+#define CLAMSHELL_PARKED_SLIVER 0.07
+
+/* Half a disc, from startAngle counter clockwise, in dome coordinates. */
+QPainterPath DomeView::localHalfShell(double radius, double startAngle) const {
+	QPainterPath half;
+	half.moveTo(0, 0);
+	half.arcTo(QRectF(-radius, -radius, 2.0 * radius, 2.0 * radius), startAngle, 180.0);
+	half.closeSubpath();
+	return half;
+}
+
+QPainterPath DomeView::localOpeningPathAt(double position) const {
+	if (position <= 0) {
 		return QPainterPath();
 	}
 	double radius = m_radius * m_scale;
-	double halfWidth = slitHalfWidth() * m_scale;
-	double gap = halfWidth * m_shutterPosition;
-	double reach = radius + wallWidth() + 2.0 * halfWidth;
+	QPainterPath disc;
+	disc.addEllipse(QPointF(0, 0), radius, radius);
 
+	if (m_domeType == DomeTypeHalfDome) {
+		/* The moving shell turns away from under the fixed one, so the sky
+		   comes out from one edge and reaches half the dome. Qt angles run
+		   counter clockwise from 3 o'clock and the azimuth is up, so the
+		   opening runs from 180 back towards the fixed half. */
+		QPainterPath sector;
+		sector.moveTo(0, 0);
+		sector.arcTo(
+			QRectF(-radius, -radius, 2.0 * radius, 2.0 * radius),
+			180.0 - 180.0 * position, 180.0 * position
+		);
+		sector.closeSubpath();
+		return sector.intersected(disc);
+	}
+
+	if (m_domeType == DomeTypeClamshell) {
+		/* A band across the whole dome. It stops just short of the rim so a
+		   sliver of each shell stays in view and shows where they are parked -
+		   a cue only, the geometry counts a fully open dome as fully open. */
+		double gap = radius * (1.0 - CLAMSHELL_PARKED_SLIVER) * position;
+		QPainterPath band;
+		band.addRect(QRectF(-gap, -radius - 1.0, 2.0 * gap, 2.0 * radius + 2.0));
+		return band.intersected(disc);
+	}
+
+	double halfWidth = slitHalfWidth() * m_scale;
+	double gap = halfWidth * position;
+	double reach = radius + wallWidth() + 2.0 * halfWidth;
 	QPainterPath band;
 	band.addRect(QRectF(-gap, -reach, 2.0 * gap, 2.0 * reach));
 	return localSlitPath().intersected(band);
+}
+
+QPainterPath DomeView::localOpeningPath() const {
+	return localOpeningPathAt(m_shutterPosition);
 }
 
 QPainterPath DomeView::openingPath() const {
@@ -704,7 +803,28 @@ void DomeView::drawDome(QPainter &painter) {
 	shell.setColorAt(1.0, outer);
 	painter.setPen(Qt::NoPen);
 	painter.setBrush(shell);
-	painter.drawEllipse(m_center, radius, radius);
+
+	if (m_domeType == DomeTypeHalfDome) {
+		/* Two halves: a fixed one and a slightly smaller one that runs round
+		   on its own track. The smaller is drawn first so that it disappears
+		   under the fixed half as it turns. */
+		QColor edge = m_domeColor.darker(200);
+		edge.setAlphaF(qMin(1.0, m_domeOpacity + 0.35));
+
+		QPainterPath moving = domeTransform().map(
+			localHalfShell(radius * HALF_DOME_INNER_SCALE, -180.0 * m_shutterPosition)
+		);
+		painter.setPen(QPen(edge, 1.2));
+		painter.setBrush(shell);
+		painter.drawPath(moving);
+
+		QPainterPath fixed = domeTransform().map(localHalfShell(radius, -180.0));
+		painter.setPen(QPen(edge, 1.4));
+		painter.setBrush(shell);
+		painter.drawPath(fixed);
+	} else {
+		painter.drawEllipse(m_center, radius, radius);
+	}
 
 	painter.restore();
 }
@@ -721,38 +841,35 @@ void DomeView::drawShutter(QPainter &painter) {
 	   arc skips the gap, so the dome really has a hole in it. */
 	QColor wallColor = m_domeColor;
 	wallColor.setAlphaF(qMin(1.0, m_domeOpacity + 0.45));
-	if (m_domeBusy && m_blinkOn) {
+	/* The rotation blinks the wall. So does a moving clamshell shutter once it
+	   is fully open, because by then it has no shell left showing to blink. */
+	bool wallBlinks = m_domeBusy ||
+		(m_shutterBusy && m_domeType == DomeTypeClamshell && m_shutterPosition >= 0.995);
+	if (wallBlinks && m_blinkOn) {
 		wallColor = m_busyColor;
 		wallColor.setAlphaF(qMax(0.8, qMin(1.0, m_domeOpacity + 0.45)));
 	}
 
 	painter.save();
+	/* A classic dome really has a gap in its wall at the slit, so the rim is
+	   clipped against the opening there. A half dome and a clamshell move only
+	   their roof, above a wall that stays whole all the way round. */
+	if (m_domeType == DomeTypeClassic) {
+		QPainterPath opening = openingPath();
+		if (!opening.isEmpty()) {
+			QPainterPath everything;
+			everything.addRect(QRectF(rect()));
+			painter.setClipPath(everything.subtracted(opening));
+		}
+	}
 	painter.setBrush(Qt::NoBrush);
 	painter.setPen(QPen(wallColor, wall, Qt::SolidLine, Qt::FlatCap));
-	QRectF rimRect(m_center.x() - radius, m_center.y() - radius, 2.0 * radius, 2.0 * radius);
-	if (gap > 0.5) {
-		double halfAngle = asin(qBound(0.0, gap / radius, 1.0)) * RAD2DEG;
-		/* Qt angles are counter clockwise from 3 o'clock, azimuth is
-		   clockwise from 12 o'clock. */
-		int start = qRound((90.0 - (m_domeAz + halfAngle)) * 16.0);
-		int span = qRound(-(360.0 - 2.0 * halfAngle) * 16.0);
-		painter.drawArc(rimRect, start, span);
-	} else {
-		painter.drawEllipse(rimRect);
-	}
+	painter.drawEllipse(QRectF(m_center.x() - radius, m_center.y() - radius, 2.0 * radius, 2.0 * radius));
 	painter.restore();
 
-	/* The two leaves last of all - they ride on the outside of the dome, so
+	/* The moving parts last of all - they ride on the outside of the dome, so
 	   from straight above they lie over everything, wall included. Kept
-	   translucent so the slit and the telescope stay readable under them.
-	   Their inner edges sit at the gap, so they slide apart from meeting in
-	   the middle of the slit to parked either side of it. */
-	double leafWidth = shutterLeafWidth();
-	QPainterPath leaves[2] = {
-		domeTransform().map(localShutterLeaf(-(gap + leafWidth))),
-		domeTransform().map(localShutterLeaf(gap))
-	};
-
+	   translucent so the opening and the telescope stay readable under them. */
 	QColor panel = m_domeColor;
 	panel.setAlphaF(qBound(0.2, m_domeOpacity * 0.5 + 0.2, 0.75));
 	QColor rib = m_domeColor.darker(165);
@@ -760,7 +877,7 @@ void DomeView::drawShutter(QPainter &painter) {
 	QColor leafEdge = m_domeColor.darker(230);
 	leafEdge.setAlphaF(0.9);
 
-	/* Busy - the leaves take the warm tint on every other blink. */
+	/* Busy - they take the warm tint on every other blink. */
 	if (m_shutterBusy && m_blinkOn) {
 		panel = m_busyColor;
 		panel.setAlphaF(qMax(0.5, qBound(0.2, m_domeOpacity * 0.5 + 0.2, 0.75)));
@@ -770,53 +887,104 @@ void DomeView::drawShutter(QPainter &painter) {
 		leafEdge.setAlphaF(0.95);
 	}
 
-	painter.save();
-	for (int i = 0; i < 2; i++) {
-		painter.setPen(Qt::NoPen);
-		painter.setBrush(panel);
-		painter.drawPath(leaves[i]);
+	if (m_domeType == DomeTypeClassic) {
+		/* Two leaves, their inner edges at the gap, so they slide apart from
+		   meeting in the middle of the slit to parked either side of it. */
+		double leafWidth = shutterLeafWidth();
+		QPainterPath leaves[2] = {
+			domeTransform().map(localShutterLeaf(-(gap + leafWidth))),
+			domeTransform().map(localShutterLeaf(gap))
+		};
 
-		if (leafWidth > 7.0) {
-			painter.save();
-			/* Clip first, while the path and the painter share coordinates,
-			   then turn with the dome to lay the ribs across the leaf. */
-			painter.setClipPath(leaves[i]);
-			painter.translate(m_center);
-			painter.rotate(m_domeAz);
-			painter.setPen(QPen(rib, 1.0));
-			double reach = halfWidth + leafWidth + 2.0;
-			for (double y = -radius - wall; y < halfWidth * 1.5; y += qMax(7.0, radius * 0.1)) {
-				painter.drawLine(QPointF(-reach, y), QPointF(reach, y));
+		painter.save();
+		for (int i = 0; i < 2; i++) {
+			painter.setPen(Qt::NoPen);
+			painter.setBrush(panel);
+			painter.drawPath(leaves[i]);
+
+			if (leafWidth > 7.0) {
+				painter.save();
+				/* Clip first, while the path and the painter share
+				   coordinates, then turn with the dome to lay the ribs
+				   across the leaf. */
+				painter.setClipPath(leaves[i]);
+				painter.translate(m_center);
+				painter.rotate(m_domeAz);
+				painter.setPen(QPen(rib, 1.0));
+				double reach = halfWidth + leafWidth + 2.0;
+				for (double y = -radius - wall; y < halfWidth * 1.5; y += qMax(7.0, radius * 0.1)) {
+					painter.drawLine(QPointF(-reach, y), QPointF(reach, y));
+				}
+				painter.restore();
 			}
-			painter.restore();
+
+			painter.setBrush(Qt::NoBrush);
+			painter.setPen(QPen(leafEdge, 1.5));
+			painter.drawPath(leaves[i]);
 		}
 
-		painter.setBrush(Qt::NoBrush);
-		painter.setPen(QPen(leafEdge, 1.5));
-		painter.drawPath(leaves[i]);
+		/* Where the two leaves butt together, along the middle of the slit.
+		   Only while they still touch. */
+		if (gap <= 0.5) {
+			painter.translate(m_center);
+			painter.rotate(m_domeAz);
+			painter.setPen(QPen(leafEdge, 2.0));
+			painter.drawLine(
+				QPointF(0, -(radius + halfWidth * 0.1)),
+				QPointF(0, halfWidth * 1.2)
+			);
+		}
+		painter.restore();
+	} else {
+		/* A half dome and a clamshell have no separate leaves - the shell
+		   itself is the roof and the shading already draws it. Mark where the
+		   shells meet when they are shut, and tint the shell while busy. */
+		painter.save();
+		if (m_shutterBusy && m_blinkOn) {
+			/* Only what actually moves takes the tint, but all of it - on a
+			   half dome the whole inner shell, wherever it has got to, and on
+			   a clamshell both shells. */
+			QPainterPath moving;
+			if (m_domeType == DomeTypeHalfDome) {
+				moving = domeTransform().map(
+					localHalfShell(radius * HALF_DOME_INNER_SCALE, -180.0 * m_shutterPosition)
+				);
+			} else {
+				moving.addEllipse(m_center, radius, radius);
+				QPainterPath opening = openingPath();
+				if (!opening.isEmpty()) {
+					moving = moving.subtracted(opening);
+				}
+			}
+			QColor tint = m_busyColor;
+			tint.setAlphaF(0.35);
+			painter.setPen(Qt::NoPen);
+			painter.setBrush(tint);
+			painter.drawPath(moving);
+		}
+		if (m_domeType == DomeTypeClamshell && m_shutterPosition <= 0.005) {
+			/* Where the two shells meet - a full diameter. The half dome does
+			   not need one, its two halves are drawn with their own edges. */
+			painter.translate(m_center);
+			painter.rotate(m_domeAz);
+			painter.setPen(QPen(leafEdge, 2.0));
+			painter.drawLine(QPointF(0, radius), QPointF(0, -radius));
+		}
+		painter.restore();
 	}
 
-	/* Where the two leaves butt together, along the middle of the slit. Only
-	   while they still touch. */
-	if (gap <= 0.5) {
-		painter.translate(m_center);
-		painter.rotate(m_domeAz);
-		painter.setPen(QPen(leafEdge, 2.0));
-		painter.drawLine(
-			QPointF(0, -(radius + halfWidth * 0.1)),
-			QPointF(0, halfWidth * 1.2)
-		);
-	}
-	painter.restore();
-
-	/* The edge of the slit, over the leaves whatever their position - with the
-	   shutter closed it still shows where the opening is underneath. */
+	/* The edge of the opening, over everything else. A classic dome shows the
+	   whole slit even while it is shut, so it is clear where it will open; the
+	   others have no slit to show and just outline what is open. */
 	QColor edge = m_openingColor.lighter(320);
 	edge.setAlphaF(0.8 + 0.15 * m_shutterPosition);
 	painter.save();
 	painter.setBrush(Qt::NoBrush);
 	painter.setPen(QPen(edge, 2.0));
-	painter.drawPath(slitPath());
+	/* Whatever will be uncovered once the roof has finished, not how far it
+	   has got so far: the slit of a classic dome, the half a half dome opens,
+	   and for a clamshell everything but where its shells come to rest. */
+	painter.drawPath(strokeable(domeTransform().map(localOpeningPathAt(1.0))));
 	painter.restore();
 }
 
@@ -917,7 +1085,7 @@ void DomeView::drawLineOfSight(QPainter &painter) {
 	if (!lineOfSightExit(&exit)) {
 		return;
 	}
-	bool clear = exitPointInSlit(exit);
+	bool clear = exitIsClear(exit);
 	QColor color = clear ? m_okColor : m_blockedColor;
 
 	/* Start at the aperture rather than at the middle of the tube. */
@@ -942,7 +1110,7 @@ void DomeView::drawExitMarkers(QPainter &painter) {
 	if (!lineOfSightExit(&exit)) {
 		return;
 	}
-	bool clear = exitPointInSlit(exit);
+	bool clear = exitIsClear(exit);
 	QColor color = clear ? m_okColor : m_blockedColor;
 
 	painter.save();
@@ -993,11 +1161,15 @@ void DomeView::drawLabels(QPainter &painter) {
 			status = tr("Mount outside the dome");
 			statusColor = m_blockedColor;
 		} else if (m_shutterPosition <= 0) {
-			status = tr("Shutter closed");
+			status = (m_domeType == DomeTypeClassic) ? tr("Shutter closed") : tr("Dome closed");
 			statusColor = m_blockedColor;
-		} else if (exitPointInSlit(exit)) {
-			status = tr("Slit aligned");
+		} else if (exitIsClear(exit)) {
+			status = (m_domeType == DomeTypeClassic) ? tr("Slit aligned") : tr("View is clear");
 			statusColor = m_okColor;
+		} else if (m_domeType == DomeTypeClamshell) {
+			/* Turning it would not help, the shells part where they part. */
+			status = tr("Shells block the view");
+			statusColor = m_blockedColor;
 		} else {
 			status = tr("Dome blocks the view, needs %1°").arg(requiredDomeAzimuth(), 0, 'f', 1);
 			statusColor = m_blockedColor;
