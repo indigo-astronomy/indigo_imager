@@ -207,7 +207,7 @@ int main(int argc, char *argv[]) {
 	} else {
 		indigo_error("Failed to load embedded DejaVu Sans font, using system default.");
 #ifdef Q_OS_MACOS
-		QFont font("SansSerif", 13, QFont::Light);
+		QFont font("SansSerif", 12, QFont::Light);
 #else
 		QFont font("SansSerif", 10, QFont::Medium);
 #endif
