@@ -96,6 +96,21 @@
 #if !defined(AGENT_MOUNT_ENABLE_DOME_SLAVING_ITEM_NAME)
 #define AGENT_MOUNT_ENABLE_DOME_SLAVING_ITEM_NAME "ENABLE_DOME_SLAVING"
 #endif
+/*
+ The DOME_SLAVING property of the dome itself is what 2.x used and is the
+ fallback for an agent without the feature switch. INDIGO 3 keeps it only among
+ its obsolete names, the same as AGENT_FIELD_DEROTATION above, so define it
+ here for whenever it goes.
+*/
+#if !defined(DOME_SLAVING_PROPERTY_NAME)
+#define DOME_SLAVING_PROPERTY_NAME "DOME_SLAVING"
+#endif
+#if !defined(DOME_SLAVING_ENABLE_ITEM_NAME)
+#define DOME_SLAVING_ENABLE_ITEM_NAME "ENABLED"
+#endif
+#if !defined(DOME_SLAVING_DISABLE_ITEM_NAME)
+#define DOME_SLAVING_DISABLE_ITEM_NAME "DISABLED"
+#endif
 /* The DOME_SLAVING light of AGENT_MOUNT_STATE reports the slaving status. */
 #if !defined(AGENT_MOUNT_STATE_DOME_SLAVING_ITEM_NAME)
 #define AGENT_MOUNT_STATE_DOME_SLAVING_ITEM_NAME "DOME_SLAVING"
