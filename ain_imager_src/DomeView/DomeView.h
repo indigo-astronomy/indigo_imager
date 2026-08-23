@@ -237,6 +237,9 @@ protected:
 private:
 	/** A vector in dome coordinates: x = East, y = North, z = up, in meters. */
 	struct Vec3 {
+		Vec3() = default;
+		Vec3(double xValue, double yValue, double zValue)
+			: x(xValue), y(yValue), z(zValue) {}
 		double x = 0;
 		double y = 0;
 		double z = 0;
