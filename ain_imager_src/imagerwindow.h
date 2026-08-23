@@ -238,6 +238,7 @@ signals:
 	void set_text(QCheckBox *widget, QString text);
 	void show_widget(QWidget *widget, bool show);
 	void set_tooltip(QWidget *widget, QString tooltip);
+	void set_button_icon(QToolButton *widget, QString resource);
 	void configure_corr_response(QLabel *label, QWidget *bar, bool reported, QString text, QString tooltip);
 
 	void set_lcd(QLCDNumber *widget, QString text, int state);
@@ -555,6 +556,10 @@ public slots:
 
 	void on_set_tooltip(QWidget *widget, QString tooltip) {
 		widget->setToolTip(tooltip);
+	};
+
+	void on_set_button_icon(QToolButton *widget, QString resource) {
+		widget->setIcon(QIcon(resource));
 	};
 
 	void on_set_text(QLineEdit *widget, QString text) {

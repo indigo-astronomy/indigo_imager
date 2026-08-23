@@ -1202,10 +1202,11 @@ void update_rotator_poition(ImagerWindow *w, indigo_property *property, bool upd
 			w->set_dial_value(w->m_rotator_position_dial, property->items[i].number.value + 180);
 		}
 	}
+	/* While it moves the button aborts the move, so it shows a stop sign. */
 	if (property->state == INDIGO_BUSY_STATE) {
-		w->m_rotator_position_button->setIcon(QIcon(":resource/stop.png"));
+		w->set_button_icon(w->m_rotator_position_button, ":resource/stop.png");
 	} else {
-		w->m_rotator_position_button->setIcon(QIcon(":resource/play.png"));
+		w->set_button_icon(w->m_rotator_position_button, ":resource/play.png");
 	}
 }
 
@@ -1291,6 +1292,12 @@ void update_dome_azimuth(ImagerWindow *w, indigo_property *property, bool update
 			}
 			w->set_widget_state(w->m_dome_az, property->state);
 			w->set_widget_state(w->m_dome_az_goto_button, property->state);
+			/* While it slews the button aborts the move, so it shows a stop sign. */
+			if (property->state == INDIGO_BUSY_STATE) {
+				w->set_button_icon(w->m_dome_az_goto_button, ":resource/stop.png");
+			} else {
+				w->set_button_icon(w->m_dome_az_goto_button, ":resource/play.png");
+			}
 			break;
 		}
 	}
@@ -5164,6 +5171,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_enabled(m_dome_az, false);
 		set_widget_state(m_dome_az, INDIGO_OK_STATE);
 		set_widget_state(m_dome_az_goto_button, INDIGO_OK_STATE);
+		set_button_icon(m_dome_az_goto_button, ":resource/play.png");
 	}
 	if (client_match_device_property(property, selected_mount_agent, DOME_SHUTTER_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
@@ -5203,6 +5211,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_text(m_rotator_position_label, "0.000°");
 		set_widget_state(m_rotator_position_label, INDIGO_OK_STATE);
 		set_widget_state(m_rotator_position_dial, INDIGO_OK_STATE);
+		set_button_icon(m_rotator_position_button, ":resource/play.png");
 		SequenceItemModel::instance().setNumericRange(SC_SET_ROTATOR_ANGLE, 0, -180, 360);
 		SequenceItemModel::instance().setNumericIncrement(SC_SET_ROTATOR_ANGLE, 0, 10);
 	}
