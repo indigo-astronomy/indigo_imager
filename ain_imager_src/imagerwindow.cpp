@@ -611,6 +611,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(this, QOverload<QPushButton*, QString>::of(&ImagerWindow::set_text), this, QOverload<QPushButton*, QString>::of(&ImagerWindow::on_set_text));
 	connect(this, QOverload<QCheckBox*, QString>::of(&ImagerWindow::set_text), this, QOverload<QCheckBox*, QString>::of(&ImagerWindow::on_set_text));
 
+	connect(this, &ImagerWindow::set_dome_type, this, &ImagerWindow::on_set_dome_type);
 	connect(this, &ImagerWindow::set_dome_dimensions, this, &ImagerWindow::on_set_dome_dimensions);
 	connect(this, &ImagerWindow::set_dome_azimuth, this, &ImagerWindow::on_set_dome_azimuth);
 	connect(this, &ImagerWindow::set_dome_shutter, this, &ImagerWindow::on_set_dome_shutter);

@@ -471,10 +471,14 @@ void DomeView::updateTransform() {
 	double extent = qMax(m_radius, 0.1);
 	extent = qMax(extent, hypot(m_pivotEW, m_pivotNS) + qMax(0.0, m_otaOffset) + effectiveTubeLength() / 2.0);
 
-	/* A parked leaf reaches furthest at its outer corner, and that corner
-	   swings around as the dome turns - room for exactly that, no more. The
-	   wall is a few percent of the radius, near enough here. */
-	extent = qMax(extent, hypot(m_radius + slitHalfWidth() * 0.1, slitHalfWidth() * 2.4));
+	/* Only a classic dome parks anything outside itself. A parked leaf reaches
+	   furthest at its outer corner, and that corner swings around as the dome
+	   turns - room for exactly that, no more. The wall is a few percent of the
+	   radius, near enough here. A half dome and a clamshell keep their shells
+	   within the dome, so they get the whole space. */
+	if (m_domeType == DomeTypeClassic) {
+		extent = qMax(extent, hypot(m_radius + slitHalfWidth() * 0.1, slitHalfWidth() * 2.4));
+	}
 
 	/* Two limits at once: everything measured in meters has to fit inside the
 	   widget, and the compass labels sit a fixed few pixels outside the rim.

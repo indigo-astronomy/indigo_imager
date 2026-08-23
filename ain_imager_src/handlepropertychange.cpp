@@ -1219,6 +1219,36 @@ void update_rotator_reverse(ImagerWindow *w, indigo_property *property) {
 	}
 }
 
+/* Radius drawn when there is no dome at all, in meters - just a ring to frame
+   the telescope. */
+#define NO_DOME_RADIUS 1.5
+
+/*
+ Ain does not ask what kind of dome it is, the properties say enough, and the
+ flags for them are set as they are defined. A dome that reports no azimuth
+ cannot turn, so it is drawn as a clamshell. One that turns and has a slit as
+ wide as itself opens half the sky, so it is a half dome. One that turns and
+ has a narrower slit is a classic dome.
+*/
+void update_dome_view_type(ImagerWindow *w) {
+	if (!w->m_have_dome) {
+		/* Nothing over the telescope - an open clamshell, so the view still
+		   shows where the telescope points. */
+		w->set_dome_type(DomeView::DomeTypeClamshell);
+		w->set_dome_dimensions(NO_DOME_RADIUS, NO_DOME_RADIUS, 0, 0, 0, 0);
+		w->set_dome_azimuth(0, false);
+		w->set_dome_shutter(1.0, false);
+	} else if (!w->m_have_azimuth) {
+		/* It does not turn. Its shutter still follows DOME_SHUTTER. */
+		w->set_dome_type(DomeView::DomeTypeClamshell);
+		w->set_dome_azimuth(0, false);
+	} else if (w->m_wide_slit) {
+		w->set_dome_type(DomeView::DomeTypeHalfDome);
+	} else {
+		w->set_dome_type(DomeView::DomeTypeClassic);
+	}
+}
+
 /* DOME_DIMENSION is in meters, which is what DomeView takes. */
 void update_dome_dimensions(ImagerWindow *w, indigo_property *property) {
 	double radius = 0, shutter_width = 0, offset_ns = 0, offset_ew = 0, offset_vertical = 0, ota_offset = 0;
@@ -1237,10 +1267,13 @@ void update_dome_dimensions(ImagerWindow *w, indigo_property *property) {
 			ota_offset = property->items[i].number.value;
 		}
 	}
+	w->m_have_dome = true;
+	w->m_wide_slit = (radius > 0 && shutter_width >= 2 * radius);
 	w->set_dome_dimensions(radius, shutter_width, offset_ns, offset_ew, offset_vertical, ota_offset);
 }
 
 void update_dome_azimuth(ImagerWindow *w, indigo_property *property, bool update_input = false) {
+	w->m_have_azimuth = true;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], DOME_HORIZONTAL_COORDINATES_AZ_ITEM_NAME)) {
 			w->set_dome_azimuth(property->items[i].number.value, property->state == INDIGO_BUSY_STATE);
@@ -1409,18 +1442,21 @@ void update_dome_view_latitude(ImagerWindow *w, indigo_property *property) {
 	}
 }
 
-/* CCD_LENS is in centimeters. The tube is drawn as long as the focal length,
-   which is close enough for anything but a folded optical path. */
+/* CCD_LENS is in centimeters. The tube is drawn as long as the camera says it
+   physically is; a folded design is far shorter than its focal length, so the
+   focal length is only the fallback for a camera that does not report one. */
 void update_dome_view_optics(ImagerWindow *w, indigo_property *property) {
-	double aperture = 0, focal_length = 0;
+	double aperture = 0, focal_length = 0, physical_length = 0;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], CCD_LENS_APERTURE_ITEM_NAME)) {
 			aperture = property->items[i].number.value / 100;
 		} else if (client_match_item(&property->items[i], CCD_LENS_FOCAL_LENGTH_ITEM_NAME)) {
 			focal_length = property->items[i].number.value / 100;
+		} else if (client_match_item(&property->items[i], CCD_LENS_PHYSICAL_LENGTH_ITEM_NAME)) {
+			physical_length = property->items[i].number.value / 100;
 		}
 	}
-	w->set_dome_optics(aperture, focal_length);
+	w->set_dome_optics(aperture, (physical_length > 0) ? physical_length : focal_length);
 }
 
 /*
@@ -3871,9 +3907,11 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_mount_agent, DOME_DIMENSION_PROPERTY_NAME)) {
 		update_dome_dimensions(this, property);
+		update_dome_view_type(this);
 	}
 	if (client_match_device_property(property, selected_mount_agent, DOME_HORIZONTAL_COORDINATES_PROPERTY_NAME)) {
 		update_dome_azimuth(this, property, true);
+		update_dome_view_type(this);
 	}
 	if (client_match_device_property(property, selected_mount_agent, DOME_SHUTTER_PROPERTY_NAME)) {
 		update_dome_shutter(this, property);
@@ -4323,6 +4361,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, DOME_DIMENSION_PROPERTY_NAME)) {
 		update_dome_dimensions(this, property);
+		update_dome_view_type(this);
 	}
 	if (client_match_device_property(property, selected_mount_agent, DOME_HORIZONTAL_COORDINATES_PROPERTY_NAME)) {
 		update_dome_azimuth(this, property);
@@ -5110,12 +5149,15 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, DOME_DIMENSION_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("REMOVE %s", property->name);
-		set_dome_dimensions(0, 0, 0, 0, 0, 0);
+		m_have_dome = false;
+		m_wide_slit = false;
+		update_dome_view_type(this);
 	}
 	if (client_match_device_property(property, selected_mount_agent, DOME_HORIZONTAL_COORDINATES_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("REMOVE %s", property->name);
-		set_dome_azimuth(0, false);
+		m_have_azimuth = false;
+		update_dome_view_type(this);
 		set_text(m_dome_az_label, "0.00°");
 		set_widget_state(m_dome_az_label, INDIGO_OK_STATE);
 		set_spinbox_value(m_dome_az, 0);

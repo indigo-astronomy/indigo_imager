@@ -154,6 +154,7 @@ private:
 	friend void update_rotator_derotation(ImagerWindow *w, indigo_property *property);
 	friend void update_rotator_derotation_status(ImagerWindow *w, indigo_property *property);
 	friend void update_dome_dimensions(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_view_type(ImagerWindow *w);
 	friend void update_dome_park(ImagerWindow *w, indigo_property *property);
 	friend void update_dome_steps(ImagerWindow *w, indigo_property *property);
 	friend void update_dome_slaving(ImagerWindow *w, indigo_property *property);
@@ -243,6 +244,7 @@ signals:
 
 	/* DomeView updates - emitted from the INDIGO thread, applied in the GUI
 	   thread by the matching slots below. */
+	void set_dome_type(int type);
 	void set_dome_dimensions(double radius, double shutter_width, double offset_ns, double offset_ew, double offset_vertical, double ota_offset);
 	void set_dome_azimuth(double azimuth, bool busy);
 	void set_dome_shutter(double position, bool busy);
@@ -584,6 +586,10 @@ public slots:
 		widget->setValue(value);
 		widget->blockSignals(false);
 	};
+
+	void on_set_dome_type(int type) {
+		m_dome_view->setDomeType((DomeView::DomeType)type);
+	}
 
 	void on_set_dome_dimensions(double radius, double shutter_width, double offset_ns, double offset_ew, double offset_vertical, double ota_offset) {
 		m_dome_view->setDomeDimensions(radius, shutter_width, offset_ns, offset_ew, offset_vertical, ota_offset);
@@ -1058,6 +1064,12 @@ private:
 	QLabel *m_rotator_pa_label;
 	QLabel *m_rotator_ror_label;
 	QCheckBox *m_rotator_derotate_cbox;
+
+	/* What the dome reports, set as its properties are defined - they decide
+	   which dome the view draws. */
+	bool m_have_dome = false;
+	bool m_have_azimuth = false;
+	bool m_wide_slit = false;
 
 	QComboBox *m_dome_select;
 	DomeView *m_dome_view;
