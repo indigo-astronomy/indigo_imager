@@ -89,6 +89,38 @@
 #define AGENT_MOUNT_STATE_FIELD_DEROTATION_ITEM_NAME "FIELD_DEROTATION"
 #endif
 
+/*
+ Dome names added to INDIGO after 3.0-4, used by the dome tab. Defined here so
+ that Ain still builds against an older client.
+*/
+#if !defined(AGENT_MOUNT_ENABLE_DOME_SLAVING_ITEM_NAME)
+#define AGENT_MOUNT_ENABLE_DOME_SLAVING_ITEM_NAME "ENABLE_DOME_SLAVING"
+#endif
+/* The DOME_SLAVING light of AGENT_MOUNT_STATE reports the slaving status. */
+#if !defined(AGENT_MOUNT_STATE_DOME_SLAVING_ITEM_NAME)
+#define AGENT_MOUNT_STATE_DOME_SLAVING_ITEM_NAME "DOME_SLAVING"
+#endif
+/*
+ DOME_ON_COORDINATES_SET was called DOME_ON_HORIZONTAL_COORDINATES_SET before
+ INDIGO 3, so an older client has the property under the other name. These
+ definitions only keep the build going - talking to a pre 3.x dome would need
+ the old name sent as well.
+*/
+#if !defined(DOME_ON_COORDINATES_SET_PROPERTY_NAME)
+#define DOME_ON_COORDINATES_SET_PROPERTY_NAME "DOME_ON_COORDINATES_SET"
+#endif
+#if !defined(DOME_ON_COORDINATES_SET_GOTO_ITEM_NAME)
+#define DOME_ON_COORDINATES_SET_GOTO_ITEM_NAME "GOTO"
+#endif
+#if !defined(DOME_ON_COORDINATES_SET_SYNC_ITEM_NAME)
+#define DOME_ON_COORDINATES_SET_SYNC_ITEM_NAME "SYNC"
+#endif
+
+/* The physical length of the tube, added to CCD_LENS after 3.0-4. */
+#if !defined(CCD_LENS_PHYSICAL_LENGTH_ITEM_NAME)
+#define CCD_LENS_PHYSICAL_LENGTH_ITEM_NAME "PHYSICAL_LENGTH"
+#endif
+
 // Returns the AGENT_PROCESS_FEATURES ENABLE_FIELD_DEROTATION item of the mount agent,
 // or nullptr if the agent does not provide it (INDIGO 2.x).
 extern indigo_item *get_derotation_feature_item(const char *mount_agent);
