@@ -63,7 +63,10 @@ void get_timestamp(char *timestamp_str) {
 #else
 	strftime(timestamp_str, 255, "%Y-%m-%d %H:%M:%S", localtime((const time_t *) &tmnow.tv_sec));
 #endif
-	snprintf(timestamp_str + strlen(timestamp_str), 255, ".%03ld", tmnow.tv_usec/1000);
+	size_t length = strlen(timestamp_str);
+	if (length < 255) {
+		snprintf(timestamp_str + length, 255 - length, ".%03ld", tmnow.tv_usec/1000);
+	}
 }
 
 void get_date(char *date_str) {
@@ -153,7 +156,10 @@ void get_time(char *time_str) {
 #else
 	strftime(time_str, 255, "%H:%M:%S", localtime((const time_t *) &tmnow.tv_sec));
 #endif
-	snprintf(time_str + strlen(time_str), 255, ".%03ld", tmnow.tv_usec/1000);
+	size_t length = strlen(time_str);
+	if (length < 255) {
+		snprintf(time_str + length, 255 - length, ".%03ld", tmnow.tv_usec/1000);
+	}
 }
 
 void get_current_output_dir(char *output_dir, char *prefix) {
