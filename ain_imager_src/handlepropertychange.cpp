@@ -1289,6 +1289,12 @@ void update_dome_azimuth(ImagerWindow *w, indigo_property *property, bool update
 			   user typed to send it there. */
 			if (update_input && property->state != INDIGO_BUSY_STATE) {
 				configure_spinbox(w, &property->items[i], property->perm, w->m_dome_az);
+				/* The sequencer item takes the same range as the dome. Its step is
+				   0 for most domes, so the increment is left at its default. */
+				SequenceItemModel::instance().setNumericRange(SC_DOME_SLEW, 0, property->items[i].number.min, property->items[i].number.max);
+				if (property->items[i].number.step > 0) {
+					SequenceItemModel::instance().setNumericIncrement(SC_DOME_SLEW, 0, property->items[i].number.step);
+				}
 			}
 			w->set_widget_state(w->m_dome_az, property->state);
 			w->set_widget_state(w->m_dome_az_goto_button, property->state);
@@ -3911,6 +3917,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_DOME_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_dome_select);
+		add_items_to_sequence_model(property, SC_SELECT_DOME, 0);
 	}
 	if (client_match_device_property(property, selected_mount_agent, DOME_DIMENSION_PROPERTY_NAME)) {
 		update_dome_dimensions(this, property);
@@ -5151,6 +5158,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		clear_combobox(m_dome_select);
+
+		SequenceItemModel::instance().clearComboOptions(SC_SELECT_DOME, 0);
 	}
 	/* No dome any more - zero the radius, which the view draws as no dome. */
 	if (client_match_device_property(property, selected_mount_agent, DOME_DIMENSION_PROPERTY_NAME) ||
@@ -5172,6 +5181,8 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_widget_state(m_dome_az, INDIGO_OK_STATE);
 		set_widget_state(m_dome_az_goto_button, INDIGO_OK_STATE);
 		set_button_icon(m_dome_az_goto_button, ":resource/play.png");
+		SequenceItemModel::instance().setNumericRange(SC_DOME_SLEW, 0, 0, 360);
+		SequenceItemModel::instance().setNumericIncrement(SC_DOME_SLEW, 0, 1);
 	}
 	if (client_match_device_property(property, selected_mount_agent, DOME_SHUTTER_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
