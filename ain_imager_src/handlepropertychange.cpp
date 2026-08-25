@@ -2468,7 +2468,7 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 
 		// Only alter the editor when the local step count matches the server's.
 		indigo_property *step_state_p = properties.get(property->device, "SEQUENCE_STEP_STATE");
-		bool steps_match = (step_state_p == nullptr || step_state_p->count == w->m_sequence_editor2->itemCount());
+		bool steps_match = (step_state_p == nullptr || step_state_p->count == w->m_sequence_editor2->executedItemCount());
 
 		int complete = (progress_total != 0) ? (int)((double)progress / progress_total * 100 + 0.5) : 0;
 		w->m_seq_sequence_progress->setRange(0, 100);
@@ -2547,7 +2547,8 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 	} else if (!strcmp(property->name, "SEQUENCE_STEP_STATE")) {
 		// If the server reports a different number of steps than the local editor holds,
 		// the sequences are out of sync — leave the editor enabled and untouched.
-		if (property->count != w->m_sequence_editor2->itemCount()) {
+		// Disabled items are comments in the script, so only the executed ones count.
+		if (property->count != w->m_sequence_editor2->executedItemCount()) {
 			w->m_sequence_editor2->enable(true);
 			return;
 		}

@@ -38,6 +38,7 @@ public:
 	void removeItem(IndigoSequenceItem* item);
 
 	int itemCount() const;
+	int executedItemCount() const;
 	QList<IndigoSequenceItem *> getItems() const;
 	IndigoSequenceItem* getItemAt(int index) const;
 	int getItemIndexByExecutedStep(int executedIndex) const;
