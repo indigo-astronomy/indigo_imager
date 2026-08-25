@@ -1274,6 +1274,7 @@ void update_dome_dimensions(ImagerWindow *w, indigo_property *property) {
 }
 
 void update_dome_azimuth(ImagerWindow *w, indigo_property *property, bool update_input = false) {
+	w->m_have_dome = true;
 	w->m_have_azimuth = true;
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], DOME_HORIZONTAL_COORDINATES_AZ_ITEM_NAME)) {
@@ -4380,6 +4381,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, DOME_HORIZONTAL_COORDINATES_PROPERTY_NAME)) {
 		update_dome_azimuth(this, property);
+		update_dome_view_type(this);
 	}
 	if (client_match_device_property(property, selected_mount_agent, DOME_SHUTTER_PROPERTY_NAME)) {
 		update_dome_shutter(this, property);
