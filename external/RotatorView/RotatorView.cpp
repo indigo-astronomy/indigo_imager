@@ -229,7 +229,11 @@ void RotatorView::pickAt(const QPointF &point) {
 
 void RotatorView::mousePressEvent(QMouseEvent *event) {
 	if (event->button() == Qt::LeftButton) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 		pickAt(event->position());
+#else
+		pickAt(event->localPos());
+#endif
 		event->accept();
 		return;
 	}
@@ -238,7 +242,11 @@ void RotatorView::mousePressEvent(QMouseEvent *event) {
 
 void RotatorView::mouseMoveEvent(QMouseEvent *event) {
 	if (event->buttons() & Qt::LeftButton) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 		pickAt(event->position());
+#else
+		pickAt(event->localPos());
+#endif
 		event->accept();
 		return;
 	}
