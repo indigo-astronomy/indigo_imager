@@ -36,6 +36,7 @@
 #include <conf.h>
 #include <PolarAlignmentWidget/PolarAlignmentWidget.h>
 #include <DomeView/DomeView.h>
+#include <RotatorView/RotatorView.h>
 
 class QServiceModel;
 class QIndigoServers;
@@ -63,7 +64,6 @@ class BalanceBar;
 #include <QCheckBox>
 #include <QStandardPaths>
 #include <QDir>
-#include <QDial>
 #include <QDateTime>
 #include <QFileDialog>
 #include <QSoundEffect>
@@ -227,7 +227,6 @@ signals:
 	void set_guider_label(int state, const char *text);
 	void set_spinbox_value(QSpinBox *widget, double value);
 	void set_spinbox_value(QDoubleSpinBox *widget, double value);
-	void set_dial_value(QDial *widget, double value);
 	void configure_spinbox(QSpinBox *widget, indigo_item *item, int perm);
 	void configure_spinbox(QDoubleSpinBox *widget, indigo_item *item, int perm);
 	void set_checkbox_checked(QCheckBox *widget, bool checked);
@@ -242,6 +241,14 @@ signals:
 	void configure_corr_response(QLabel *label, QWidget *bar, bool reported, QString text, QString tooltip);
 
 	void set_lcd(QLCDNumber *widget, QString text, int state);
+
+	/* RotatorView updates - emitted from the INDIGO thread, applied in the
+	   GUI thread by the matching slots below. */
+	void set_rotator_position(double angle, bool busy);
+	void set_rotator_target(double angle);
+	void set_rotator_target_visible(bool visible);
+	void set_rotator_limits(double minimum, double maximum);
+	void set_rotator_reversed(bool reversed);
 
 	/* DomeView updates - emitted from the INDIGO thread, applied in the GUI
 	   thread by the matching slots below. */
@@ -490,7 +497,7 @@ public slots:
 	void on_rotator_derotate(bool clicked);
 	void on_rotator_position_changed();
 	void on_rotator_sync();
-	void on_rotator_position_dial_changed(int value);
+	void on_rotator_position_picked(double angle);
 	void on_rotator_plus_move();
 	void on_rotator_minus_move();
 
@@ -586,11 +593,30 @@ public slots:
 		widget->blockSignals(false);
 	};
 
-	void on_set_dial_value(QDial *widget, double value) {
-		widget->blockSignals(true);
-		widget->setValue(value);
-		widget->blockSignals(false);
-	};
+	void on_set_rotator_position(double angle, bool busy) {
+		m_rotator_view->setPosition(angle);
+		if (busy) {
+			m_rotator_view->setBusy();
+		} else {
+			m_rotator_view->setOK();
+		}
+	}
+
+	void on_set_rotator_target(double angle) {
+		m_rotator_view->setTarget(angle);
+	}
+
+	void on_set_rotator_target_visible(bool visible) {
+		m_rotator_view->setTargetVisible(visible);
+	}
+
+	void on_set_rotator_limits(double minimum, double maximum) {
+		m_rotator_view->setLimits(minimum, maximum);
+	}
+
+	void on_set_rotator_reversed(bool reversed) {
+		m_rotator_view->setReversed(reversed);
+	}
 
 	void on_set_dome_type(int type) {
 		m_dome_view->setDomeType((DomeView::DomeType)type);
@@ -1055,7 +1081,7 @@ private:
 	QPushButton *m_mount_solve_and_sync_button;
 
 	QComboBox *m_rotator_select;
-	QDial *m_rotator_position_dial;
+	RotatorView *m_rotator_view;
 	QCheckBox *m_rotator_reverse_cbox;
 	QLabel *m_rotator_position_label;
 	QDoubleSpinBox *m_rotator_position;

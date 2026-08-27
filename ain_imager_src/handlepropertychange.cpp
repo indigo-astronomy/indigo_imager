@@ -1195,11 +1195,15 @@ void update_rotator_poition(ImagerWindow *w, indigo_property *property, bool upd
 		}
 		if (client_match_item(&property->items[i], ROTATOR_POSITION_ITEM_NAME)) {
 			w->set_widget_state(w->m_rotator_position_label, property->state);
-			w->set_widget_state(w->m_rotator_position_dial, property->state);
 			char position[INDIGO_VALUE_SIZE];
 			snprintf(position, INDIGO_VALUE_SIZE, "%.3f°", property->items[i].number.value);
 			w->set_text(w->m_rotator_position_label, position);
-			w->set_dial_value(w->m_rotator_position_dial, property->items[i].number.value + 180);
+			w->set_rotator_limits(property->items[i].number.min, property->items[i].number.max);
+			w->set_rotator_target(property->items[i].number.target);
+			w->set_rotator_position(
+				property->items[i].number.value,
+				property->state == INDIGO_BUSY_STATE
+			);
 		}
 	}
 	/* While it moves the button aborts the move, so it shows a stop sign. */
@@ -1215,6 +1219,9 @@ void update_rotator_reverse(ImagerWindow *w, indigo_property *property) {
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], ROTATOR_DIRECTION_REVERSED_ITEM_NAME)) {
 			w->set_checkbox_checked(w->m_rotator_reverse_cbox, property->items[i].sw.value);
+			/* A reversed rotator counts its angles the other way, the view
+			   turns with it. */
+			w->set_rotator_reversed(property->items[i].sw.value);
 			break;
 		}
 	}
@@ -5224,7 +5231,9 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("REMOVE %s", property->name);
 		set_text(m_rotator_position_label, "0.000°");
 		set_widget_state(m_rotator_position_label, INDIGO_OK_STATE);
-		set_widget_state(m_rotator_position_dial, INDIGO_OK_STATE);
+		set_rotator_position(0, false);
+		set_rotator_limits(0, 360);
+		set_rotator_target_visible(false);
 		set_button_icon(m_rotator_position_button, ":resource/play.png");
 		SequenceItemModel::instance().setNumericRange(SC_SET_ROTATOR_ANGLE, 0, -180, 360);
 		SequenceItemModel::instance().setNumericIncrement(SC_SET_ROTATOR_ANGLE, 0, 10);
