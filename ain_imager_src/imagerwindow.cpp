@@ -603,13 +603,18 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(this, &ImagerWindow::set_lineedit_text, this, &ImagerWindow::on_set_lineedit_text);
 	connect(this, QOverload<QDoubleSpinBox*, double>::of(&ImagerWindow::set_spinbox_value), this, QOverload<QDoubleSpinBox*, double>::of(&ImagerWindow::on_set_spinbox_value));
 	connect(this, QOverload<QSpinBox*, double>::of(&ImagerWindow::set_spinbox_value), this, QOverload<QSpinBox*, double>::of(&ImagerWindow::on_set_spinbox_value));
-	connect(this, QOverload<QDial*, double>::of(&ImagerWindow::set_dial_value), this, QOverload<QDial*, double>::of(&ImagerWindow::on_set_dial_value));
 	connect(this, QOverload<QDoubleSpinBox*, indigo_item*, int>::of(&ImagerWindow::configure_spinbox), this, QOverload<QDoubleSpinBox*, indigo_item*, int>::of(&ImagerWindow::on_configure_spinbox));
 	connect(this, QOverload<QSpinBox*, indigo_item*, int>::of(&ImagerWindow::configure_spinbox), this, QOverload<QSpinBox*, indigo_item*, int>::of(&ImagerWindow::on_configure_spinbox));
 	connect(this, QOverload<QLabel*, QString>::of(&ImagerWindow::set_text), this, QOverload<QLabel*, QString>::of(&ImagerWindow::on_set_text));
 	connect(this, QOverload<QLineEdit*, QString>::of(&ImagerWindow::set_text), this, QOverload<QLineEdit*, QString>::of(&ImagerWindow::on_set_text));
 	connect(this, QOverload<QPushButton*, QString>::of(&ImagerWindow::set_text), this, QOverload<QPushButton*, QString>::of(&ImagerWindow::on_set_text));
 	connect(this, QOverload<QCheckBox*, QString>::of(&ImagerWindow::set_text), this, QOverload<QCheckBox*, QString>::of(&ImagerWindow::on_set_text));
+
+	connect(this, &ImagerWindow::set_rotator_position, this, &ImagerWindow::on_set_rotator_position);
+	connect(this, &ImagerWindow::set_rotator_target, this, &ImagerWindow::on_set_rotator_target);
+	connect(this, &ImagerWindow::set_rotator_target_visible, this, &ImagerWindow::on_set_rotator_target_visible);
+	connect(this, &ImagerWindow::set_rotator_limits, this, &ImagerWindow::on_set_rotator_limits);
+	connect(this, &ImagerWindow::set_rotator_reversed, this, &ImagerWindow::on_set_rotator_reversed);
 
 	connect(this, &ImagerWindow::set_dome_type, this, &ImagerWindow::on_set_dome_type);
 	connect(this, &ImagerWindow::set_dome_dimensions, this, &ImagerWindow::on_set_dome_dimensions);

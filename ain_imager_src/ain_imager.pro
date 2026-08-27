@@ -56,6 +56,7 @@ SOURCES += \
 	$$PWD/sequencer/QLineEditSG.cpp \
 	$$PWD/PolarAlignmentWidget/PolarAlignmentWidget.cpp \
 	$$PWD/../external/DomeView/DomeView.cpp \
+	$$PWD/../external/RotatorView/RotatorView.cpp \
 	$$PWD/../common_src/coordconv.c \
 	$$PWD/../object_data/indigo_cat_data.c \
 	$$PWD/../common_src/utils.cpp \
@@ -119,6 +120,7 @@ HEADERS += \
 	$$PWD/sequencer/QLineEditSG.h \
 	$$PWD/PolarAlignmentWidget/PolarAlignmentWidget.h \
 	$$PWD/../external/DomeView/DomeView.h \
+	$$PWD/../external/RotatorView/RotatorView.h \
 	$$PWD/../common_src/version.h \
 	$$PWD/../object_data/indigo_cat_data.h \
 	$$PWD/../common_src/utils.h \

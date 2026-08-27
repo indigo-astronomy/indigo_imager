@@ -429,22 +429,16 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	connect(m_rotator_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_rotator_selected);
 
 	rotator_row++;
-	m_rotator_position_dial = new QDial(this);
-	m_rotator_position_dial->setRange(0, 360);
-	m_rotator_position_dial->setWrapping(true);
-	m_rotator_position_dial->setNotchesVisible(true);
-	m_rotator_position_dial->setValue(180);
-	m_rotator_position_dial->setToolTip("Rotator position");
-	set_ok(m_rotator_position_dial);
-	m_rotator_position_dial->setNotchTarget(6);
-	//m_mount_rotator_position_dial->setReadOnly(true);
-	rotator_frame_layout->addWidget(m_rotator_position_dial, rotator_row, 0, 4, 1);
-	connect(m_rotator_position_dial, &QDial::valueChanged, this, &ImagerWindow::on_rotator_position_dial_changed);
+	m_rotator_view = new RotatorView(this);
+	m_rotator_view->setToolTip("Rotator position, drag to pick an angle");
+	/* The view is square and would otherwise grow with the tab. */
+	m_rotator_view->setMaximumWidth(200);
+	/* Pinned to the top of the rows it spans, level with the controls. */
+	rotator_frame_layout->addWidget(m_rotator_view, rotator_row, 0, 6, 1, Qt::AlignTop);
+	connect(m_rotator_view, &RotatorView::targetPicked, this, &ImagerWindow::on_rotator_position_picked);
 
-	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
-	rotator_frame_layout->addItem(spacer, rotator_row, 0, 1, 4);
-
-	rotator_row++;
+	/* The controls start level with the top of the view - the slack the view
+	   leaves is taken below them, so the gap falls before the derotation. */
 	label = new QLabel("Position:");
 	rotator_frame_layout->addWidget(label, rotator_row, 1, 1, 1);
 
@@ -511,46 +505,68 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	rotator_frame_layout->addWidget(m_rotator_plus_button, rotator_row, 5);
 	connect(m_rotator_plus_button, &QToolButton::clicked, this, &ImagerWindow::on_rotator_plus_move);
 
+	/* The gap between the controls and the derotation section, both of which
+	   sit beside the view. */
 	rotator_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
-	rotator_frame_layout->addItem(spacer, rotator_row, 0, 1, 4);
+	rotator_frame_layout->addItem(spacer, rotator_row, 1, 1, 5);
 
+	/* The derotation section is a block of its own, so its labels pack as
+	   tightly as they can instead of being pulled apart by the columns the
+	   position controls above need. */
 	rotator_row++;
-	label = new QLabel("Field derotation:");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	rotator_frame_layout->addWidget(label, rotator_row, 0, 1, 3);
+	QWidget *derotation_box = new QWidget();
+	QGridLayout *derotation_layout = new QGridLayout(derotation_box);
+	derotation_layout->setContentsMargins(0, 0, 0, 0);
+	derotation_layout->setHorizontalSpacing(8);
+	derotation_layout->setVerticalSpacing(2);
 
-	m_derotation_status_label = new QLabel("");
-	m_derotation_status_label->setTextFormat(Qt::RichText);
-	m_derotation_status_label->setText("<img src=\":resource/led-grey.png\"> Idle");
-	rotator_frame_layout->addWidget(m_derotation_status_label, rotator_row, 3, 1, 3);
-
-	rotator_row++;
-	label = new QLabel("Parall. angle:");
+	int derotation_row = 0;
+	label = new QLabel("Parallactic angle:");
 	label->setToolTip("Parallactic angle of the object");
-	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	rotator_frame_layout->addWidget(label, rotator_row, 0, 1, 1);
+	derotation_layout->addWidget(label, derotation_row, 0);
 
 	m_rotator_pa_label = new QLabel("0° 00' 00.0\"");
 	m_rotator_pa_label->setAlignment(Qt::AlignCenter);
 	set_ok(m_rotator_pa_label);
-	rotator_frame_layout->addWidget(m_rotator_pa_label, rotator_row, 1, 1, 2);
+	derotation_layout->addWidget(m_rotator_pa_label, derotation_row, 1);
 
-	m_rotator_derotate_cbox = new QCheckBox("Start derotation");
-	m_rotator_derotate_cbox->setEnabled(false);
-	rotator_frame_layout->addWidget(m_rotator_derotate_cbox, rotator_row, 3, 1, 3);
-	connect(m_rotator_derotate_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_rotator_derotate);
-
-	rotator_row++;
-	label = new QLabel("Rot. Rate:");
+	derotation_row++;
+	label = new QLabel("Derotation rate:");
 	label->setToolTip("Derotation rate for Alt/Az mounts");
-	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	rotator_frame_layout->addWidget(label, rotator_row, 0, 1, 1);
+	derotation_layout->addWidget(label, derotation_row, 0);
 
 	m_rotator_ror_label = new QLabel("00.000 \"/s");
 	m_rotator_ror_label->setAlignment(Qt::AlignCenter);
 	set_ok(m_rotator_ror_label);
-	rotator_frame_layout->addWidget(m_rotator_ror_label, rotator_row, 1, 1, 2);
+	derotation_layout->addWidget(m_rotator_ror_label, derotation_row, 1);
+
+	/* The state it is in and the switch that drives it, each across the
+	   whole block, set apart from the numbers above. */
+	derotation_row++;
+	derotation_layout->addItem(new QSpacerItem(1, 10, QSizePolicy::Minimum, QSizePolicy::Fixed), derotation_row, 0, 1, 2);
+
+	derotation_row++;
+	m_derotation_status_label = new QLabel("");
+	m_derotation_status_label->setTextFormat(Qt::RichText);
+	m_derotation_status_label->setText("<img src=\":resource/led-grey.png\"> Idle");
+	derotation_layout->addWidget(m_derotation_status_label, derotation_row, 0, 1, 2);
+
+	derotation_row++;
+	m_rotator_derotate_cbox = new QCheckBox("Start derotation");
+	m_rotator_derotate_cbox->setEnabled(false);
+	derotation_layout->addWidget(m_rotator_derotate_cbox, derotation_row, 0, 1, 2);
+	connect(m_rotator_derotate_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_rotator_derotate);
+
+	/* Anything left over goes to the right of the block, not into it. */
+	derotation_layout->setColumnStretch(2, 1);
+	rotator_frame_layout->addWidget(derotation_box, rotator_row, 1, 1, 5, Qt::AlignTop);
+
+	/* The last row the view spans - whatever height the view has over the
+	   rows beside it is taken here, at the bottom. */
+	rotator_row++;
+	spacer = new QSpacerItem(1, 1, QSizePolicy::Expanding, QSizePolicy::Expanding);
+	rotator_frame_layout->addItem(spacer, rotator_row, 1, 1, 5);
 
 	// DOME TAB
 	QFrame *dome_frame = new QFrame();
@@ -1768,10 +1784,11 @@ void ImagerWindow::on_rotator_sync() {
 	});
 }
 
-void ImagerWindow::on_rotator_position_dial_changed(int value) {
-	value = fmod(value + (3600000) - 180, 360);
-	indigo_debug("%s -> %d\n", __FUNCTION__, value);
-	set_spinbox_value(m_rotator_position, value);
+/* The view hands over the angle it was dragged to - it only fills in the
+   target, the rotator is moved by the goto button as before. */
+void ImagerWindow::on_rotator_position_picked(double angle) {
+	indigo_debug("%s -> %f\n", __FUNCTION__, angle);
+	set_spinbox_value(m_rotator_position, angle);
 }
 
 void ImagerWindow::on_rotator_plus_move() {
