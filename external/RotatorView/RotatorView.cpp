@@ -385,7 +385,7 @@ void RotatorView::paintEvent(QPaintEvent *event) {
 	QRectF rim(middle.x() - radius, middle.y() - radius, 2 * radius, 2 * radius);
 
 	bool blinking = m_busy && m_blinkOn;
-	QColor rimColor = blinking ? m_busyColor : m_rimColor;
+	QColor rimColor = m_rimColor;
 	QColor markerColor = blinking ? m_busyColor : m_markerColor;
 
 	/* The scale. What the rotator cannot reach is left as a gap in the rim. */
