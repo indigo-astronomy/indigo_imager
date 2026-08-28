@@ -431,6 +431,8 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	rotator_row++;
 	m_rotator_view = new RotatorView(this);
 	m_rotator_view->setToolTip("Rotator position, drag to pick an angle");
+	/* No rotator selected yet - enabled once ROTATOR_POSITION is defined. */
+	m_rotator_view->setPickEnabled(false);
 	/* The view is square and would otherwise grow with the tab. */
 	m_rotator_view->setMaximumWidth(200);
 	/* Pinned to the top of the rows it spans, level with the controls. */

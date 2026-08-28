@@ -247,6 +247,7 @@ signals:
 	void set_rotator_position(double angle, bool busy);
 	void set_rotator_target(double angle);
 	void set_rotator_target_visible(bool visible);
+	void set_rotator_pick_enabled(bool enabled);
 	void set_rotator_limits(double minimum, double maximum);
 	void set_rotator_reversed(bool reversed);
 
@@ -608,6 +609,10 @@ public slots:
 
 	void on_set_rotator_target_visible(bool visible) {
 		m_rotator_view->setTargetVisible(visible);
+	}
+
+	void on_set_rotator_pick_enabled(bool enabled) {
+		m_rotator_view->setPickEnabled(enabled);
 	}
 
 	void on_set_rotator_limits(double minimum, double maximum) {

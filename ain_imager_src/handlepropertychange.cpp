@@ -1179,6 +1179,7 @@ void update_focuser_poition(ImagerWindow *w, indigo_property *property, bool upd
 
 void update_rotator_poition(ImagerWindow *w, indigo_property *property, bool update_input = false) {
 	indigo_debug("change %s", property->name);
+	w->set_rotator_pick_enabled(true);
 	for (int i = 0; i < property->count; i++) {
 		if (update_input && client_match_item(&property->items[i], ROTATOR_POSITION_ITEM_NAME)) {
 			indigo_debug("change target %s = %f", property->items[i].name, property->items[i].number.target);
@@ -5234,6 +5235,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_rotator_position(0, false);
 		set_rotator_limits(0, 360);
 		set_rotator_target_visible(false);
+		set_rotator_pick_enabled(false);
 		set_button_icon(m_rotator_position_button, ":resource/play.png");
 		SequenceItemModel::instance().setNumericRange(SC_SET_ROTATOR_ANGLE, 0, -180, 360);
 		SequenceItemModel::instance().setNumericIncrement(SC_SET_ROTATOR_ANGLE, 0, 10);

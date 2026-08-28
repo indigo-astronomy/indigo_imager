@@ -613,6 +613,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(this, &ImagerWindow::set_rotator_position, this, &ImagerWindow::on_set_rotator_position);
 	connect(this, &ImagerWindow::set_rotator_target, this, &ImagerWindow::on_set_rotator_target);
 	connect(this, &ImagerWindow::set_rotator_target_visible, this, &ImagerWindow::on_set_rotator_target_visible);
+	connect(this, &ImagerWindow::set_rotator_pick_enabled, this, &ImagerWindow::on_set_rotator_pick_enabled);
 	connect(this, &ImagerWindow::set_rotator_limits, this, &ImagerWindow::on_set_rotator_limits);
 	connect(this, &ImagerWindow::set_rotator_reversed, this, &ImagerWindow::on_set_rotator_reversed);
 
