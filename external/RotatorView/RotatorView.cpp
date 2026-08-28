@@ -411,8 +411,7 @@ void RotatorView::paintEvent(QPaintEvent *event) {
 
 	if (m_showLabels) {
 		QFont labelFont = font();
-		labelFont.setPointSizeF(qMax(7.0, radius * 0.13));
-		labelFont.setBold(true);
+		labelFont.setPointSizeF(qMax(6.0, radius * 0.11));
 		painter.setFont(labelFont);
 		painter.setPen(m_labelColor);
 		QFontMetricsF metrics(labelFont);
@@ -450,8 +449,7 @@ void RotatorView::paintEvent(QPaintEvent *event) {
 	/* The angle, upright in the middle of the frame. */
 	if (m_showReadout) {
 		QFont readoutFont = font();
-		readoutFont.setPointSizeF(qMax(8.0, radius * 0.165));
-		readoutFont.setBold(true);
+		readoutFont.setPointSizeF(qMax(7.0, radius * 0.14));
 		painter.setFont(readoutFont);
 		painter.setPen(m_labelColor);
 		QFontMetricsF metrics(readoutFont);
