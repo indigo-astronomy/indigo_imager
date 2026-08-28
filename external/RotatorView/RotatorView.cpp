@@ -229,6 +229,7 @@ void RotatorView::pickAt(const QPointF &point) {
 
 void RotatorView::mousePressEvent(QMouseEvent *event) {
 	if (event->button() == Qt::LeftButton) {
+		m_dragging = true;
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 		pickAt(event->position());
 #else
@@ -251,6 +252,16 @@ void RotatorView::mouseMoveEvent(QMouseEvent *event) {
 		return;
 	}
 	QWidget::mouseMoveEvent(event);
+}
+
+void RotatorView::mouseReleaseEvent(QMouseEvent *event) {
+	if (event->button() == Qt::LeftButton && m_dragging) {
+		m_dragging = false;
+		update();
+		event->accept();
+		return;
+	}
+	QWidget::mouseReleaseEvent(event);
 }
 
 // ----------------------------------------------------------------------
@@ -435,7 +446,7 @@ void RotatorView::paintEvent(QPaintEvent *event) {
 	drawFrame(painter, middle, radius, m_position, markerColor, false);
 
 	bool targetApart = fabs(normalize(m_target) - normalize(m_position)) > 0.05;
-	if (m_showTarget && targetApart) {
+	if (m_showTarget && targetApart && (m_busy || m_dragging)) {
 		drawFrame(painter, middle, radius, m_target, m_targetColor, true);
 	}
 

@@ -468,6 +468,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_rotator_position->setDecimals(3);
 	m_rotator_position->setWrapping(true);
 	m_rotator_position->setValue(0);
+	connect(m_rotator_position, &QDoubleSpinBox::editingFinished, this, &ImagerWindow::on_rotator_position_edited);
 	//m_focus_position->setEnabled(false);
 
 	rotator_frame_layout->addWidget(m_rotator_position, rotator_row, 3, 1, 1);
@@ -1791,6 +1792,12 @@ void ImagerWindow::on_rotator_sync() {
 void ImagerWindow::on_rotator_position_picked(double angle) {
 	indigo_debug("%s -> %f\n", __FUNCTION__, angle);
 	set_spinbox_value(m_rotator_position, angle);
+}
+
+/* The reverse of on_rotator_position_picked() - typing a target in the box
+   moves the gauge's target marker to match. */
+void ImagerWindow::on_rotator_position_edited() {
+	m_rotator_view->setTarget(m_rotator_position->value());
 }
 
 void ImagerWindow::on_rotator_plus_move() {

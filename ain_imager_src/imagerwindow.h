@@ -499,6 +499,7 @@ public slots:
 	void on_rotator_position_changed();
 	void on_rotator_sync();
 	void on_rotator_position_picked(double angle);
+	void on_rotator_position_edited();
 	void on_rotator_plus_move();
 	void on_rotator_minus_move();
 

@@ -130,6 +130,7 @@ protected:
 	void paintEvent(QPaintEvent *event) override;
 	void mousePressEvent(QMouseEvent *event) override;
 	void mouseMoveEvent(QMouseEvent *event) override;
+	void mouseReleaseEvent(QMouseEvent *event) override;
 
 private:
 	/** Angle of a point about the middle of the view, in rotator degrees. */
@@ -157,6 +158,9 @@ private:
 	double m_position = 0.0;
 	double m_target = 0.0;
 	bool m_showTarget = false;
+	/* Dragging counts as "selecting" - the target frame/marker shows for it,
+	   same as while the rotator slews to get there. */
+	bool m_dragging = false;
 	double m_minimum = 0.0;
 	double m_maximum = 360.0;
 	bool m_busy = false;
