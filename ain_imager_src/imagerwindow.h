@@ -35,6 +35,8 @@
 #include <widget_state.h>
 #include <conf.h>
 #include <PolarAlignmentWidget/PolarAlignmentWidget.h>
+#include <DomeView/DomeView.h>
+#include <RotatorView/RotatorView.h>
 
 class QServiceModel;
 class QIndigoServers;
@@ -62,7 +64,6 @@ class BalanceBar;
 #include <QCheckBox>
 #include <QStandardPaths>
 #include <QDir>
-#include <QDial>
 #include <QDateTime>
 #include <QFileDialog>
 #include <QSoundEffect>
@@ -152,6 +153,17 @@ private:
 	friend void update_rotator_reverse(ImagerWindow *w, indigo_property *property);
 	friend void update_rotator_derotation(ImagerWindow *w, indigo_property *property);
 	friend void update_rotator_derotation_status(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_dimensions(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_view_type(ImagerWindow *w);
+	friend void update_dome_park(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_steps(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_slaving(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_slaving_status(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_azimuth(ImagerWindow *w, indigo_property *property, bool update_input);
+	friend void update_dome_shutter(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_view_telescope(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_view_latitude(ImagerWindow *w, indigo_property *property);
+	friend void update_dome_view_optics(ImagerWindow *w, indigo_property *property);
 	friend void update_imager_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_selection_property(ImagerWindow *w, indigo_property *property);
 	friend void update_agent_imager_gain_offset_property(ImagerWindow *w, indigo_property *property);
@@ -215,7 +227,6 @@ signals:
 	void set_guider_label(int state, const char *text);
 	void set_spinbox_value(QSpinBox *widget, double value);
 	void set_spinbox_value(QDoubleSpinBox *widget, double value);
-	void set_dial_value(QDial *widget, double value);
 	void configure_spinbox(QSpinBox *widget, indigo_item *item, int perm);
 	void configure_spinbox(QDoubleSpinBox *widget, indigo_item *item, int perm);
 	void set_checkbox_checked(QCheckBox *widget, bool checked);
@@ -226,9 +237,30 @@ signals:
 	void set_text(QCheckBox *widget, QString text);
 	void show_widget(QWidget *widget, bool show);
 	void set_tooltip(QWidget *widget, QString tooltip);
+	void set_button_icon(QToolButton *widget, QString resource);
 	void configure_corr_response(QLabel *label, QWidget *bar, bool reported, QString text, QString tooltip);
 
 	void set_lcd(QLCDNumber *widget, QString text, int state);
+
+	/* RotatorView updates - emitted from the INDIGO thread, applied in the
+	   GUI thread by the matching slots below. */
+	void set_rotator_position(double angle, bool busy);
+	void set_rotator_target(double angle);
+	void set_rotator_target_visible(bool visible);
+	void set_rotator_pick_enabled(bool enabled);
+	void set_rotator_limits(double minimum, double maximum);
+	void set_rotator_reversed(bool reversed);
+
+	/* DomeView updates - emitted from the INDIGO thread, applied in the GUI
+	   thread by the matching slots below. */
+	void set_dome_type(int type);
+	void set_dome_dimensions(double radius, double shutter_width, double offset_ns, double offset_ew, double offset_vertical, double ota_offset);
+	void set_dome_azimuth(double azimuth, bool busy);
+	void set_dome_shutter(double position, bool busy);
+	void set_dome_telescope(double azimuth, double altitude);
+	void set_dome_side_of_pier(int side);
+	void set_dome_latitude(double latitude);
+	void set_dome_optics(double aperture, double tube_length);
 
 	void set_combobox_current_text(QComboBox *combobox, const QString &item);
 	void set_combobox_current_index(QComboBox *combobox, int index);
@@ -454,11 +486,20 @@ public slots:
 	void on_image_source3_selected(int index);
 
 	void on_rotator_selected(int index);
+	void on_dome_selected(int index);
+	void on_dome_park(bool clicked);
+	void on_dome_shutter(bool clicked);
+	void on_dome_az_goto();
+	void on_dome_az_sync();
+	void on_dome_ccw_move();
+	void on_dome_cw_move();
+	void on_dome_slaving(bool clicked);
 	void on_rotator_reverse_changed(bool clicked);
 	void on_rotator_derotate(bool clicked);
 	void on_rotator_position_changed();
 	void on_rotator_sync();
-	void on_rotator_position_dial_changed(int value);
+	void on_rotator_position_picked(double angle);
+	void on_rotator_position_edited();
 	void on_rotator_plus_move();
 	void on_rotator_minus_move();
 
@@ -526,6 +567,10 @@ public slots:
 		widget->setToolTip(tooltip);
 	};
 
+	void on_set_button_icon(QToolButton *widget, QString resource) {
+		widget->setIcon(QIcon(resource));
+	};
+
 	void on_set_text(QLineEdit *widget, QString text) {
 		widget->setText(text);
 	};
@@ -550,11 +595,77 @@ public slots:
 		widget->blockSignals(false);
 	};
 
-	void on_set_dial_value(QDial *widget, double value) {
-		widget->blockSignals(true);
-		widget->setValue(value);
-		widget->blockSignals(false);
-	};
+	void on_set_rotator_position(double angle, bool busy) {
+		m_rotator_view->setPosition(angle);
+		if (busy) {
+			m_rotator_view->setBusy();
+		} else {
+			m_rotator_view->setOK();
+		}
+	}
+
+	void on_set_rotator_target(double angle) {
+		m_rotator_view->setTarget(angle);
+	}
+
+	void on_set_rotator_target_visible(bool visible) {
+		m_rotator_view->setTargetVisible(visible);
+	}
+
+	void on_set_rotator_pick_enabled(bool enabled) {
+		m_rotator_view->setPickEnabled(enabled);
+	}
+
+	void on_set_rotator_limits(double minimum, double maximum) {
+		m_rotator_view->setLimits(minimum, maximum);
+	}
+
+	void on_set_rotator_reversed(bool reversed) {
+		m_rotator_view->setReversed(reversed);
+	}
+
+	void on_set_dome_type(int type) {
+		m_dome_view->setDomeType((DomeView::DomeType)type);
+	}
+
+	void on_set_dome_dimensions(double radius, double shutter_width, double offset_ns, double offset_ew, double offset_vertical, double ota_offset) {
+		m_dome_view->setDomeDimensions(radius, shutter_width, offset_ns, offset_ew, offset_vertical, ota_offset);
+	}
+
+	void on_set_dome_azimuth(double azimuth, bool busy) {
+		m_dome_view->setDomeAzimuth(azimuth);
+		if (busy) {
+			m_dome_view->setDomeBusy();
+		} else {
+			m_dome_view->setDomeOK();
+		}
+	}
+
+	void on_set_dome_shutter(double position, bool busy) {
+		m_dome_view->setShutterPosition(position);
+		if (busy) {
+			m_dome_view->setShutterBusy();
+		} else {
+			m_dome_view->setShutterOK();
+		}
+	}
+
+	void on_set_dome_telescope(double azimuth, double altitude) {
+		m_dome_view->setTelescopeCoordinates(azimuth, altitude);
+	}
+
+	void on_set_dome_side_of_pier(int side) {
+		m_dome_view->setSideOfPier((DomeView::SideOfPier)side);
+	}
+
+	void on_set_dome_latitude(double latitude) {
+		m_dome_view->setLatitude(latitude);
+	}
+
+	void on_set_dome_optics(double aperture, double tube_length) {
+		m_dome_view->setApertureDiameter(aperture);
+		m_dome_view->setTubeLength(tube_length);
+	}
 
 	void on_set_checkbox_checked(QCheckBox *widget, bool checked) {
 		widget->blockSignals(true);
@@ -976,7 +1087,7 @@ private:
 	QPushButton *m_mount_solve_and_sync_button;
 
 	QComboBox *m_rotator_select;
-	QDial *m_rotator_position_dial;
+	RotatorView *m_rotator_view;
 	QCheckBox *m_rotator_reverse_cbox;
 	QLabel *m_rotator_position_label;
 	QDoubleSpinBox *m_rotator_position;
@@ -990,6 +1101,26 @@ private:
 	QLabel *m_rotator_pa_label;
 	QLabel *m_rotator_ror_label;
 	QCheckBox *m_rotator_derotate_cbox;
+
+	/* What the dome reports, set as its properties are defined - they decide
+	   which dome the view draws. */
+	bool m_have_dome = false;
+	bool m_have_azimuth = false;
+	bool m_wide_slit = false;
+
+	QComboBox *m_dome_select;
+	DomeView *m_dome_view;
+	QCheckBox *m_dome_park_cbox;
+	QCheckBox *m_dome_shutter_cbox;
+	QLabel *m_dome_az_label;
+	QDoubleSpinBox *m_dome_az;
+	QToolButton *m_dome_az_goto_button;
+	QToolButton *m_dome_az_sync_button;
+	QDoubleSpinBox *m_dome_relative;
+	QToolButton *m_dome_ccw_button;
+	QToolButton *m_dome_cw_button;
+	QCheckBox *m_dome_slaving_cbox;
+	QLabel *m_dome_slaving_status_label;
 
 	//QCheckBox *m_mount_use_solver_cbox;
 	QComboBox *m_solver_source_select2;
@@ -1188,6 +1319,8 @@ private:
 
 	void change_rotator_position_property(const char *agent) const;
 	void change_rotator_sync_property(const char *agent) const;
+	void change_dome_azimuth_property(const char *agent) const;
+	void change_dome_azimuth_sync_property(const char *agent) const;
 
 	void change_solver_agent_hints_property(const char *agent) const;
 	void clear_solver_agent_releated_agents(const char *agent) const;

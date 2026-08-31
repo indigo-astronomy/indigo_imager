@@ -603,7 +603,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(this, &ImagerWindow::set_lineedit_text, this, &ImagerWindow::on_set_lineedit_text);
 	connect(this, QOverload<QDoubleSpinBox*, double>::of(&ImagerWindow::set_spinbox_value), this, QOverload<QDoubleSpinBox*, double>::of(&ImagerWindow::on_set_spinbox_value));
 	connect(this, QOverload<QSpinBox*, double>::of(&ImagerWindow::set_spinbox_value), this, QOverload<QSpinBox*, double>::of(&ImagerWindow::on_set_spinbox_value));
-	connect(this, QOverload<QDial*, double>::of(&ImagerWindow::set_dial_value), this, QOverload<QDial*, double>::of(&ImagerWindow::on_set_dial_value));
 	connect(this, QOverload<QDoubleSpinBox*, indigo_item*, int>::of(&ImagerWindow::configure_spinbox), this, QOverload<QDoubleSpinBox*, indigo_item*, int>::of(&ImagerWindow::on_configure_spinbox));
 	connect(this, QOverload<QSpinBox*, indigo_item*, int>::of(&ImagerWindow::configure_spinbox), this, QOverload<QSpinBox*, indigo_item*, int>::of(&ImagerWindow::on_configure_spinbox));
 	connect(this, QOverload<QLabel*, QString>::of(&ImagerWindow::set_text), this, QOverload<QLabel*, QString>::of(&ImagerWindow::on_set_text));
@@ -611,8 +610,25 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(this, QOverload<QPushButton*, QString>::of(&ImagerWindow::set_text), this, QOverload<QPushButton*, QString>::of(&ImagerWindow::on_set_text));
 	connect(this, QOverload<QCheckBox*, QString>::of(&ImagerWindow::set_text), this, QOverload<QCheckBox*, QString>::of(&ImagerWindow::on_set_text));
 
+	connect(this, &ImagerWindow::set_rotator_position, this, &ImagerWindow::on_set_rotator_position);
+	connect(this, &ImagerWindow::set_rotator_target, this, &ImagerWindow::on_set_rotator_target);
+	connect(this, &ImagerWindow::set_rotator_target_visible, this, &ImagerWindow::on_set_rotator_target_visible);
+	connect(this, &ImagerWindow::set_rotator_pick_enabled, this, &ImagerWindow::on_set_rotator_pick_enabled);
+	connect(this, &ImagerWindow::set_rotator_limits, this, &ImagerWindow::on_set_rotator_limits);
+	connect(this, &ImagerWindow::set_rotator_reversed, this, &ImagerWindow::on_set_rotator_reversed);
+
+	connect(this, &ImagerWindow::set_dome_type, this, &ImagerWindow::on_set_dome_type);
+	connect(this, &ImagerWindow::set_dome_dimensions, this, &ImagerWindow::on_set_dome_dimensions);
+	connect(this, &ImagerWindow::set_dome_azimuth, this, &ImagerWindow::on_set_dome_azimuth);
+	connect(this, &ImagerWindow::set_dome_shutter, this, &ImagerWindow::on_set_dome_shutter);
+	connect(this, &ImagerWindow::set_dome_telescope, this, &ImagerWindow::on_set_dome_telescope);
+	connect(this, &ImagerWindow::set_dome_side_of_pier, this, &ImagerWindow::on_set_dome_side_of_pier);
+	connect(this, &ImagerWindow::set_dome_latitude, this, &ImagerWindow::on_set_dome_latitude);
+	connect(this, &ImagerWindow::set_dome_optics, this, &ImagerWindow::on_set_dome_optics);
+
 	connect(this, &ImagerWindow::show_widget, this, &ImagerWindow::on_show);
 	connect(this, &ImagerWindow::set_tooltip, this, &ImagerWindow::on_set_tooltip);
+	connect(this, &ImagerWindow::set_button_icon, this, &ImagerWindow::on_set_button_icon);
 	connect(this, &ImagerWindow::configure_corr_response, this, &ImagerWindow::on_configure_corr_response);
 	connect(this, &ImagerWindow::set_checkbox_checked, this, &ImagerWindow::on_set_checkbox_checked);
 	connect(this, &ImagerWindow::set_checkbox_state, this, &ImagerWindow::on_set_checkbox_state);

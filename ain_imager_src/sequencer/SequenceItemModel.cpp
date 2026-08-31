@@ -43,6 +43,7 @@ void SequenceItemModel::initializeModel() {
 		{SC_SELECT_FOCUSER, {"Select Focuser", {{0, {"Focuser", ComboBox}}}}},
 		{SC_SELECT_ROTATOR, {"Select Rotator", {{0, {"Rotator", ComboBox}}}}},
 		{SC_SELECT_MOUNT, {"Select Mount", {{0, {"Mount", ComboBox}}}}},
+		{SC_SELECT_DOME, {"Select Dome", {{0, {"Dome", ComboBox}}}}},
 		{SC_SELECT_GPS, {"Select GPS", {{0, {"GPS", ComboBox}}}}},
 		{SC_SELECT_GUIDER_CAMERA, {"Select Guider Camera", {{0, {"Camera", ComboBox}}}}},
 		{SC_SELECT_GUIDER, {"Select Guider", {{0, {"Guider", ComboBox}}}}},
@@ -82,6 +83,13 @@ void SequenceItemModel::initializeModel() {
 		{SC_ENABLE_TRACKING, {"Enable Tracking", {}}},
 		{SC_DISABLE_TRACKING, {"Disable Tracking", {}}},
 		{SC_SLEW, {"Slew", {{0, {"RA", LineEditSG_RA}}, {1, {"Dec", LineEditSG_DEC}}}}},
+		{SC_DOME_SLEW, {"Slew Dome to Azimuth", {{0, {"Azimuth (°)", DoubleSpinBox}}}}},
+		{SC_DOME_PARK, {"Park Dome", {}}},
+		{SC_DOME_UNPARK, {"Unpark Dome", {}}},
+		{SC_DOME_OPEN, {"Open Dome Shutter", {}}},
+		{SC_DOME_CLOSE, {"Close Dome Shutter", {}}},
+		{SC_ENABLE_DOME_SLAVING, {"Enable Dome Slaving", {}}},
+		{SC_DISABLE_DOME_SLAVING, {"Disable Dome Slaving", {}}},
 		{SC_WAIT_FOR_GPS, {"Wait for GPS", {}}},
 		{SC_CALIBRATE_GUIDING, {"Calibrate Guiding", {{0, {"Exposure (s)", DoubleSpinBox}}}}},
 		{SC_START_GUIDING, {"Start Guiding", {{0, {"Exposure (s)", DoubleSpinBox}}}}},
@@ -107,7 +115,6 @@ void SequenceItemModel::initializeModel() {
 	//{"select_imager_agent", {"Select Imager Agent", {{0, {"Agent", "QComboBox"}}}}},
 	//{"select_mount_agent", {"Select Mount Agent", {{0, {"Agent", "QComboBox"}}}}},
 	//{"select_guider_agent", {"Select Guider Agent", {{0, {"Agent", "QComboBox"}}}}},
-	//{"select_dome", {"Select Dome", {{0, {"Dome", "QComboBox"}}}}},
 	//{"set_gamma", {"Set Gamma", {{0, {"Value", "QSpinBox"}}}}},
 	//{"select_program", {"Select Program", {{0, {"Name", "QComboBox"}}}}},
 	//{"select_aperture", {"Select Aperture", {{0, {"Name", "QComboBox"}}}}},
@@ -173,6 +180,18 @@ void SequenceItemModel::initializeModel() {
 			SC_ENABLE_TRACKING,
 			SC_DISABLE_TRACKING
 		}},
+		{CC_DOME, {
+			SC_DOME_SLEW,
+			__SEPARATOR__,
+			SC_DOME_OPEN,
+			SC_DOME_CLOSE,
+			__SEPARATOR__,
+			SC_DOME_PARK,
+			SC_DOME_UNPARK,
+			__SEPARATOR__,
+			SC_ENABLE_DOME_SLAVING,
+			SC_DISABLE_DOME_SLAVING
+		}},
 		{CC_ROTATOR, {
 			SC_SET_ROTATOR_ANGLE
 		}},
@@ -198,6 +217,7 @@ void SequenceItemModel::initializeModel() {
 			SC_SELECT_GUIDER_CAMERA,
 			SC_SELECT_GUIDER,
 			SC_SELECT_MOUNT,
+			SC_SELECT_DOME,
 			SC_SELECT_GPS,
 			SC_SELECT_ROTATOR
 		}},
@@ -226,6 +246,7 @@ void SequenceItemModel::initializeModel() {
 		{CC_FILTER_WHEEL, QIcon(":resource/wheel-grey.png")},
 		{CC_FLOW_CONTROL, QIcon(":resource/menu-loop-grey.png")},
 		{CC_MOUNT, QIcon(":resource/mount-grey.png")},
+		{CC_DOME, QIcon(":resource/dome-grey.png")},
 		{CC_GUIDER, QIcon(":resource/guider-grey.png")},
 		{CC_FOCUSER, QIcon(":resource/focuser-grey.png")},
 		{CC_ROTATOR, QIcon(":resource/rotator-grey.png")},
@@ -322,6 +343,11 @@ void SequenceItemModel::initializeModel() {
 	setNumericRange(SC_SET_ROTATOR_ANGLE, 0, -180, 360.0);
 	setNumericIncrement(SC_SET_ROTATOR_ANGLE, 0, 1.0);
 	setNumericDefaultValue(SC_SET_ROTATOR_ANGLE, 0, 0.0);
+
+	// Dome azimuth
+	setNumericRange(SC_DOME_SLEW, 0, 0, 360.0);
+	setNumericIncrement(SC_DOME_SLEW, 0, 1.0);
+	setNumericDefaultValue(SC_DOME_SLEW, 0, 0.0);
 
 	// Frame ROI settings
 	setNumericRange(SC_SET_FRAME, 0, 0, 50000);  // Left

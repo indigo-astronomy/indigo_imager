@@ -30,7 +30,9 @@
 #endif
 
 #define IMAGE_AREA_MIN_WIDTH 500
-#define TOOLBAR_MIN_WIDTH 420
+/* Wide enough for the telescope sub tabs to fit on one row, Dome included,
+   and for the square dome view to have some size to it. */
+#define TOOLBAR_MIN_WIDTH 500
 
 #define CONFIG_FILENAME "indigo_imager.conf"
 #define SERVICE_FILENAME "indigo_imager.services"

@@ -751,6 +751,7 @@ void IndigoSequenceItem::contextMenuEvent(QContextMenuEvent *event) {
 			QFont boldFontMenu = menuAction->font();
 			boldFontMenu.setBold(true);
 			menuAction->setFont(boldFontMenu);
+			menuAction->setIconVisibleInMenu(true);
 			//submenus[category.first]->setFont(boldFontMenu);
 			int itemWidth = fm.horizontalAdvance(category.first);
 			maxWidth = qMax(maxWidth, itemWidth);

@@ -429,22 +429,18 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	connect(m_rotator_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_rotator_selected);
 
 	rotator_row++;
-	m_rotator_position_dial = new QDial(this);
-	m_rotator_position_dial->setRange(0, 360);
-	m_rotator_position_dial->setWrapping(true);
-	m_rotator_position_dial->setNotchesVisible(true);
-	m_rotator_position_dial->setValue(180);
-	m_rotator_position_dial->setToolTip("Rotator position");
-	set_ok(m_rotator_position_dial);
-	m_rotator_position_dial->setNotchTarget(6);
-	//m_mount_rotator_position_dial->setReadOnly(true);
-	rotator_frame_layout->addWidget(m_rotator_position_dial, rotator_row, 0, 4, 1);
-	connect(m_rotator_position_dial, &QDial::valueChanged, this, &ImagerWindow::on_rotator_position_dial_changed);
+	m_rotator_view = new RotatorView(this);
+	m_rotator_view->setToolTip("Rotator position, drag to pick an angle");
+	/* No rotator selected yet - enabled once ROTATOR_POSITION is defined. */
+	m_rotator_view->setPickEnabled(false);
+	/* The view is square and would otherwise grow with the tab. */
+	m_rotator_view->setMaximumWidth(200);
+	/* Pinned to the top of the rows it spans, level with the controls. */
+	rotator_frame_layout->addWidget(m_rotator_view, rotator_row, 0, 6, 1, Qt::AlignTop);
+	connect(m_rotator_view, &RotatorView::targetPicked, this, &ImagerWindow::on_rotator_position_picked);
 
-	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
-	rotator_frame_layout->addItem(spacer, rotator_row, 0, 1, 4);
-
-	rotator_row++;
+	/* The controls start level with the top of the view - the slack the view
+	   leaves is taken below them, so the gap falls before the derotation. */
 	label = new QLabel("Position:");
 	rotator_frame_layout->addWidget(label, rotator_row, 1, 1, 1);
 
@@ -472,6 +468,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_rotator_position->setDecimals(3);
 	m_rotator_position->setWrapping(true);
 	m_rotator_position->setValue(0);
+	connect(m_rotator_position, &QDoubleSpinBox::editingFinished, this, &ImagerWindow::on_rotator_position_edited);
 	//m_focus_position->setEnabled(false);
 
 	rotator_frame_layout->addWidget(m_rotator_position, rotator_row, 3, 1, 1);
@@ -511,46 +508,211 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	rotator_frame_layout->addWidget(m_rotator_plus_button, rotator_row, 5);
 	connect(m_rotator_plus_button, &QToolButton::clicked, this, &ImagerWindow::on_rotator_plus_move);
 
+	/* The gap between the controls and the derotation section, both of which
+	   sit beside the view. */
 	rotator_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
-	rotator_frame_layout->addItem(spacer, rotator_row, 0, 1, 4);
+	rotator_frame_layout->addItem(spacer, rotator_row, 1, 1, 5);
 
+	/* The derotation section is a block of its own, so its labels pack as
+	   tightly as they can instead of being pulled apart by the columns the
+	   position controls above need. */
 	rotator_row++;
-	label = new QLabel("Field derotation:");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	rotator_frame_layout->addWidget(label, rotator_row, 0, 1, 3);
+	QWidget *derotation_box = new QWidget();
+	QGridLayout *derotation_layout = new QGridLayout(derotation_box);
+	derotation_layout->setContentsMargins(0, 0, 0, 0);
+	derotation_layout->setHorizontalSpacing(8);
+	derotation_layout->setVerticalSpacing(2);
 
-	m_derotation_status_label = new QLabel("");
-	m_derotation_status_label->setTextFormat(Qt::RichText);
-	m_derotation_status_label->setText("<img src=\":resource/led-grey.png\"> Idle");
-	rotator_frame_layout->addWidget(m_derotation_status_label, rotator_row, 3, 1, 3);
-
-	rotator_row++;
-	label = new QLabel("Parall. angle:");
+	int derotation_row = 0;
+	label = new QLabel("Parallactic angle:");
 	label->setToolTip("Parallactic angle of the object");
-	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	rotator_frame_layout->addWidget(label, rotator_row, 0, 1, 1);
+	derotation_layout->addWidget(label, derotation_row, 0);
 
 	m_rotator_pa_label = new QLabel("0° 00' 00.0\"");
 	m_rotator_pa_label->setAlignment(Qt::AlignCenter);
 	set_ok(m_rotator_pa_label);
-	rotator_frame_layout->addWidget(m_rotator_pa_label, rotator_row, 1, 1, 2);
+	derotation_layout->addWidget(m_rotator_pa_label, derotation_row, 1);
 
-	m_rotator_derotate_cbox = new QCheckBox("Start derotation");
-	m_rotator_derotate_cbox->setEnabled(false);
-	rotator_frame_layout->addWidget(m_rotator_derotate_cbox, rotator_row, 3, 1, 3);
-	connect(m_rotator_derotate_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_rotator_derotate);
-
-	rotator_row++;
-	label = new QLabel("Rot. Rate:");
+	derotation_row++;
+	label = new QLabel("Derotation rate:");
 	label->setToolTip("Derotation rate for Alt/Az mounts");
-	//label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	rotator_frame_layout->addWidget(label, rotator_row, 0, 1, 1);
+	derotation_layout->addWidget(label, derotation_row, 0);
 
 	m_rotator_ror_label = new QLabel("00.000 \"/s");
 	m_rotator_ror_label->setAlignment(Qt::AlignCenter);
 	set_ok(m_rotator_ror_label);
-	rotator_frame_layout->addWidget(m_rotator_ror_label, rotator_row, 1, 1, 2);
+	derotation_layout->addWidget(m_rotator_ror_label, derotation_row, 1);
+
+	/* The state it is in and the switch that drives it, each across the
+	   whole block, set apart from the numbers above. */
+	derotation_row++;
+	derotation_layout->addItem(new QSpacerItem(1, 10, QSizePolicy::Minimum, QSizePolicy::Fixed), derotation_row, 0, 1, 2);
+
+	derotation_row++;
+	m_derotation_status_label = new QLabel("");
+	m_derotation_status_label->setTextFormat(Qt::RichText);
+	m_derotation_status_label->setText("<img src=\":resource/led-grey.png\"> Idle");
+	derotation_layout->addWidget(m_derotation_status_label, derotation_row, 0, 1, 2);
+
+	derotation_row++;
+	m_rotator_derotate_cbox = new QCheckBox("Start derotation");
+	m_rotator_derotate_cbox->setEnabled(false);
+	derotation_layout->addWidget(m_rotator_derotate_cbox, derotation_row, 0, 1, 2);
+	connect(m_rotator_derotate_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_rotator_derotate);
+
+	/* Anything left over goes to the right of the block, not into it. */
+	derotation_layout->setColumnStretch(2, 1);
+	rotator_frame_layout->addWidget(derotation_box, rotator_row, 1, 1, 5, Qt::AlignTop);
+
+	/* The last row the view spans - whatever height the view has over the
+	   rows beside it is taken here, at the bottom. */
+	rotator_row++;
+	spacer = new QSpacerItem(1, 1, QSizePolicy::Expanding, QSizePolicy::Expanding);
+	rotator_frame_layout->addItem(spacer, rotator_row, 1, 1, 5);
+
+	// DOME TAB
+	QFrame *dome_frame = new QFrame();
+	telescope_tabbar->addTab(dome_frame, "Dome");
+
+	QGridLayout *dome_frame_layout = new QGridLayout();
+	dome_frame_layout->setAlignment(Qt::AlignTop);
+	dome_frame->setLayout(dome_frame_layout);
+	dome_frame->setFrameShape(QFrame::StyledPanel);
+	dome_frame->setContentsMargins(0, 0, 0, 0);
+
+	/* The view is square and sits on the left, its controls to the right. */
+	dome_frame_layout->setColumnStretch(0, 3);
+	dome_frame_layout->setColumnStretch(1, 2);
+
+	int dome_row = 0;
+	QWidget *dome_select_row = new QWidget();
+	QHBoxLayout *dome_select_layout = new QHBoxLayout(dome_select_row);
+	dome_select_layout->setContentsMargins(0, 0, 0, 0);
+	label = new QLabel("Dome:");
+	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	dome_select_layout->addWidget(label);
+	m_dome_select = new QComboBox();
+	dome_select_layout->addWidget(m_dome_select, 1);
+	connect(m_dome_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_dome_selected);
+	dome_frame_layout->addWidget(dome_select_row, dome_row, 0, 1, 2);
+
+	dome_row++;
+	m_dome_view = new DomeView();
+	m_dome_view->setTitle("");
+	m_dome_view->setToolTip("Dome and telescope seen from above");
+	dome_frame_layout->addWidget(m_dome_view, dome_row, 0);
+
+	/* Stacked to the right of the view, top aligned so they do not drift
+	   apart as the view grows. */
+	QWidget *dome_controls = new QWidget();
+	QVBoxLayout *dome_controls_layout = new QVBoxLayout(dome_controls);
+	dome_controls_layout->setAlignment(Qt::AlignTop);
+	dome_controls_layout->setContentsMargins(0, 0, 0, 0);
+	dome_frame_layout->addWidget(dome_controls, dome_row, 1);
+
+	m_dome_park_cbox = new QCheckBox("Unparked");
+	m_dome_park_cbox->setToolTip("Park or unpark the dome");
+	m_dome_park_cbox->setEnabled(false);
+	set_ok(m_dome_park_cbox);
+	dome_controls_layout->addWidget(m_dome_park_cbox);
+	connect(m_dome_park_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_dome_park);
+
+	m_dome_shutter_cbox = new QCheckBox("Shutter closed");
+	m_dome_shutter_cbox->setToolTip("Open or close the shutter");
+	m_dome_shutter_cbox->setEnabled(false);
+	set_ok(m_dome_shutter_cbox);
+	dome_controls_layout->addWidget(m_dome_shutter_cbox);
+	connect(m_dome_shutter_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_dome_shutter);
+
+	/* First line reads the dome back, second line drives it. */
+	QWidget *dome_az_readout_row = new QWidget();
+	QHBoxLayout *dome_az_readout_layout = new QHBoxLayout(dome_az_readout_row);
+	dome_az_readout_layout->setContentsMargins(0, 0, 0, 0);
+	label = new QLabel("Azimuth:");
+	dome_az_readout_layout->addWidget(label);
+
+	m_dome_az_label = new QLabel("0.00°");
+	font = m_dome_az_label->font();
+	font.setPointSize(font.pointSize() + 2);
+	m_dome_az_label->setFont(font);
+	m_dome_az_label->setToolTip("Current dome azimuth");
+	set_ok(m_dome_az_label);
+	m_dome_az_label->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
+	m_dome_az_label->setMinimumWidth(50);
+	dome_az_readout_layout->addWidget(m_dome_az_label, 1);
+	dome_controls_layout->addWidget(dome_az_readout_row);
+
+	QWidget *dome_az_row = new QWidget();
+	QHBoxLayout *dome_az_layout = new QHBoxLayout(dome_az_row);
+	dome_az_layout->setContentsMargins(0, 0, 0, 0);
+
+	m_dome_az = new QDoubleSpinBox();
+	m_dome_az->setMaximum(360);
+	m_dome_az->setMinimum(0);
+	m_dome_az->setDecimals(2);
+	m_dome_az->setWrapping(true);
+	m_dome_az->setValue(0);
+	m_dome_az->setEnabled(false);
+	m_dome_az->setToolTip("Dome azimuth (0 to 360°)");
+	dome_az_layout->addWidget(m_dome_az, 1);
+
+	m_dome_az_goto_button = new QToolButton(this);
+	m_dome_az_goto_button->setToolTip(tr("Go to azimuth / Abort move"));
+	m_dome_az_goto_button->setIcon(QIcon(":resource/play.png"));
+	dome_az_layout->addWidget(m_dome_az_goto_button);
+	connect(m_dome_az_goto_button, &QToolButton::clicked, this, &ImagerWindow::on_dome_az_goto);
+
+	m_dome_az_sync_button = new QToolButton(this);
+	m_dome_az_sync_button->setToolTip(tr("Sync dome azimuth"));
+	m_dome_az_sync_button->setIcon(QIcon(":resource/calibrate.png"));
+	dome_az_layout->addWidget(m_dome_az_sync_button);
+	connect(m_dome_az_sync_button, &QToolButton::clicked, this, &ImagerWindow::on_dome_az_sync);
+
+	dome_controls_layout->addWidget(dome_az_row);
+
+	/* Relative move, the same way the rotator does it. */
+	QWidget *dome_relative_row = new QWidget();
+	QHBoxLayout *dome_relative_layout = new QHBoxLayout(dome_relative_row);
+	dome_relative_layout->setContentsMargins(0, 0, 0, 0);
+
+	m_dome_relative = new QDoubleSpinBox();
+	m_dome_relative->setMaximum(180);
+	m_dome_relative->setMinimum(0);
+	m_dome_relative->setValue(0);
+	m_dome_relative->setDecimals(2);
+	m_dome_relative->setEnabled(false);
+	m_dome_relative->setToolTip("Relative move (°)");
+	dome_relative_layout->addWidget(m_dome_relative, 1);
+
+	m_dome_ccw_button = new QToolButton(this);
+	m_dome_ccw_button->setStyleSheet("min-width: 15px");
+	m_dome_ccw_button->setIcon(QIcon(":resource/zoom-out.png"));
+	m_dome_ccw_button->setToolTip("Relative move counter clockwise (-)");
+	dome_relative_layout->addWidget(m_dome_ccw_button);
+	connect(m_dome_ccw_button, &QToolButton::clicked, this, &ImagerWindow::on_dome_ccw_move);
+
+	m_dome_cw_button = new QToolButton(this);
+	m_dome_cw_button->setStyleSheet("min-width: 15px");
+	m_dome_cw_button->setIcon(QIcon(":resource/zoom-in.png"));
+	m_dome_cw_button->setToolTip("Relative move clockwise (+)");
+	dome_relative_layout->addWidget(m_dome_cw_button);
+	connect(m_dome_cw_button, &QToolButton::clicked, this, &ImagerWindow::on_dome_cw_move);
+
+	dome_controls_layout->addWidget(dome_relative_row);
+
+	dome_controls_layout->addSpacing(10);
+
+	m_dome_slaving_status_label = new QLabel("");
+	m_dome_slaving_status_label->setTextFormat(Qt::RichText);
+	m_dome_slaving_status_label->setText("<img src=\":resource/led-grey.png\"> Not slaved");
+	dome_controls_layout->addWidget(m_dome_slaving_status_label);
+
+	m_dome_slaving_cbox = new QCheckBox("Slave to mount");
+	m_dome_slaving_cbox->setToolTip("Keep the dome slit on the telescope");
+	m_dome_slaving_cbox->setEnabled(false);
+	dome_controls_layout->addWidget(m_dome_slaving_cbox);
+	connect(m_dome_slaving_cbox, &QCheckBox::clicked, this, &ImagerWindow::on_dome_slaving);
 
 	// SITE TAB
 	QFrame *site_frame = new QFrame();
@@ -1409,6 +1571,144 @@ void ImagerWindow::on_rotator_selected(int index) {
 	});
 }
 
+void ImagerWindow::on_dome_selected(int index) {
+	Q_UNUSED(index);
+	QtConcurrent::run([=]() {
+		static char selected_dome[INDIGO_NAME_SIZE], selected_agent[INDIGO_NAME_SIZE];
+		QString q_dome_str = m_dome_select->currentText();
+		if (q_dome_str.compare("No dome") == 0) {
+			strcpy(selected_dome, "NONE");
+		} else {
+			strncpy(selected_dome, q_dome_str.toUtf8().constData(), INDIGO_NAME_SIZE);
+		}
+		get_selected_mount_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s' '%s'\n", __FUNCTION__, selected_agent, selected_dome);
+		static const char * items[] = { selected_dome };
+
+		static bool values[] = { true };
+		indigo_change_switch_property(nullptr, selected_agent, FILTER_DOME_LIST_PROPERTY_NAME, 1, items, values);
+	});
+}
+
+void ImagerWindow::on_dome_park(bool clicked) {
+	Q_UNUSED(clicked);
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+		bool checked = m_dome_park_cbox->checkState();
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		if (checked) {
+			indigo_change_switch_property_1(nullptr, selected_agent, DOME_PARK_PROPERTY_NAME, DOME_PARK_PARKED_ITEM_NAME, true);
+		} else {
+			indigo_change_switch_property_1(nullptr, selected_agent, DOME_PARK_PROPERTY_NAME, DOME_PARK_UNPARKED_ITEM_NAME, true);
+		}
+	});
+}
+
+void ImagerWindow::on_dome_shutter(bool clicked) {
+	Q_UNUSED(clicked);
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+		bool checked = m_dome_shutter_cbox->checkState();
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		if (checked) {
+			indigo_change_switch_property_1(nullptr, selected_agent, DOME_SHUTTER_PROPERTY_NAME, DOME_SHUTTER_OPENED_ITEM_NAME, true);
+		} else {
+			indigo_change_switch_property_1(nullptr, selected_agent, DOME_SHUTTER_PROPERTY_NAME, DOME_SHUTTER_CLOSED_ITEM_NAME, true);
+		}
+	});
+}
+
+void ImagerWindow::on_dome_az_goto() {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+
+		indigo_property *dome_coordinates = properties.get(selected_agent, DOME_HORIZONTAL_COORDINATES_PROPERTY_NAME);
+		if (!dome_coordinates) {
+			return;
+		}
+		if (dome_coordinates->state != INDIGO_BUSY_STATE) {
+			change_dome_azimuth_property(selected_agent);
+		} else {
+			indigo_change_switch_property_1(nullptr, selected_agent, DOME_ABORT_MOTION_PROPERTY_NAME, DOME_ABORT_MOTION_ITEM_NAME, true);
+		}
+	});
+}
+
+void ImagerWindow::on_dome_az_sync() {
+	if (conf.require_confirmation) {
+		QMessageBox msgBox(this);
+		msgBox.setWindowTitle("Synchronize dome");
+		msgBox.setText(QString("Set the entered azimuth as current?"));
+		msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+		msgBox.setDefaultButton(QMessageBox::Yes);
+		if (msgBox.exec() == QMessageBox::No) {
+			return;
+		}
+	}
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_dome_azimuth_sync_property(selected_agent);
+	});
+}
+
+/* A relative move is a direction plus a number of degrees to turn. */
+static void dome_relative_move(const char *agent, const char *direction, double degrees) {
+	indigo_change_switch_property_1(nullptr, agent, DOME_DIRECTION_PROPERTY_NAME, direction, true);
+	indigo_change_number_property_1(nullptr, agent, DOME_STEPS_PROPERTY_NAME, DOME_STEPS_ITEM_NAME, degrees);
+}
+
+void ImagerWindow::on_dome_cw_move() {
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+		static double move;
+		move = (double)m_dome_relative->value();
+		dome_relative_move(selected_agent, DOME_DIRECTION_MOVE_CLOCKWISE_ITEM_NAME, move);
+	});
+}
+
+void ImagerWindow::on_dome_ccw_move() {
+	QtConcurrent::run([=]() {
+		indigo_debug("CALLED: %s\n", __FUNCTION__);
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+		static double move;
+		move = (double)m_dome_relative->value();
+		dome_relative_move(selected_agent, DOME_DIRECTION_MOVE_COUNTERCLOCKWISE_ITEM_NAME, move);
+	});
+}
+
+/*
+ Slaving is a feature switch of AGENT_PROCESS_FEATURES if the mount agent
+ provides it (INDIGO 3.x), otherwise it is the DOME_SLAVING property of the
+ dome itself.
+*/
+void ImagerWindow::on_dome_slaving(bool clicked) {
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+		get_selected_mount_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		if (get_dome_slaving_feature_item(selected_agent) != nullptr) {
+			indigo_change_switch_property_1(nullptr, selected_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME, AGENT_MOUNT_ENABLE_DOME_SLAVING_ITEM_NAME, clicked);
+		} else if (clicked) {
+			indigo_change_switch_property_1(nullptr, selected_agent, DOME_SLAVING_PROPERTY_NAME, DOME_SLAVING_ENABLE_ITEM_NAME, true);
+		} else {
+			indigo_change_switch_property_1(nullptr, selected_agent, DOME_SLAVING_PROPERTY_NAME, DOME_SLAVING_DISABLE_ITEM_NAME, true);
+		}
+	});
+}
+
 void ImagerWindow::on_rotator_reverse_changed(bool clicked) {
 	QtConcurrent::run([=]() {
 		static char selected_agent[INDIGO_NAME_SIZE];
@@ -1487,10 +1787,17 @@ void ImagerWindow::on_rotator_sync() {
 	});
 }
 
-void ImagerWindow::on_rotator_position_dial_changed(int value) {
-	value = fmod(value + (3600000) - 180, 360);
-	indigo_debug("%s -> %d\n", __FUNCTION__, value);
-	set_spinbox_value(m_rotator_position, value);
+/* The view hands over the angle it was dragged to - it only fills in the
+   target, the rotator is moved by the goto button as before. */
+void ImagerWindow::on_rotator_position_picked(double angle) {
+	indigo_debug("%s -> %f\n", __FUNCTION__, angle);
+	set_spinbox_value(m_rotator_position, angle);
+}
+
+/* The reverse of on_rotator_position_picked() - typing a target in the box
+   moves the gauge's target marker to match. */
+void ImagerWindow::on_rotator_position_edited() {
+	m_rotator_view->setTarget(m_rotator_position->value());
 }
 
 void ImagerWindow::on_rotator_plus_move() {

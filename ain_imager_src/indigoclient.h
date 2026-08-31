@@ -89,9 +89,60 @@
 #define AGENT_MOUNT_STATE_FIELD_DEROTATION_ITEM_NAME "FIELD_DEROTATION"
 #endif
 
+/*
+ Dome names added to INDIGO after 3.0-4, used by the dome tab. Defined here so
+ that Ain still builds against an older client.
+*/
+#if !defined(AGENT_MOUNT_ENABLE_DOME_SLAVING_ITEM_NAME)
+#define AGENT_MOUNT_ENABLE_DOME_SLAVING_ITEM_NAME "ENABLE_DOME_SLAVING"
+#endif
+/*
+ The DOME_SLAVING property of the dome itself is what 2.x used and is the
+ fallback for an agent without the feature switch. INDIGO 3 keeps it only among
+ its obsolete names, the same as AGENT_FIELD_DEROTATION above, so define it
+ here for whenever it goes.
+*/
+#if !defined(DOME_SLAVING_PROPERTY_NAME)
+#define DOME_SLAVING_PROPERTY_NAME "DOME_SLAVING"
+#endif
+#if !defined(DOME_SLAVING_ENABLE_ITEM_NAME)
+#define DOME_SLAVING_ENABLE_ITEM_NAME "ENABLED"
+#endif
+#if !defined(DOME_SLAVING_DISABLE_ITEM_NAME)
+#define DOME_SLAVING_DISABLE_ITEM_NAME "DISABLED"
+#endif
+/* The DOME_SLAVING light of AGENT_MOUNT_STATE reports the slaving status. */
+#if !defined(AGENT_MOUNT_STATE_DOME_SLAVING_ITEM_NAME)
+#define AGENT_MOUNT_STATE_DOME_SLAVING_ITEM_NAME "DOME_SLAVING"
+#endif
+/*
+ DOME_ON_COORDINATES_SET was called DOME_ON_HORIZONTAL_COORDINATES_SET before
+ INDIGO 3, so an older client has the property under the other name. These
+ definitions only keep the build going - talking to a pre 3.x dome would need
+ the old name sent as well.
+*/
+#if !defined(DOME_ON_COORDINATES_SET_PROPERTY_NAME)
+#define DOME_ON_COORDINATES_SET_PROPERTY_NAME "DOME_ON_COORDINATES_SET"
+#endif
+#if !defined(DOME_ON_COORDINATES_SET_GOTO_ITEM_NAME)
+#define DOME_ON_COORDINATES_SET_GOTO_ITEM_NAME "GOTO"
+#endif
+#if !defined(DOME_ON_COORDINATES_SET_SYNC_ITEM_NAME)
+#define DOME_ON_COORDINATES_SET_SYNC_ITEM_NAME "SYNC"
+#endif
+
+/* The physical length of the tube, added to CCD_LENS after 3.0-4. */
+#if !defined(CCD_LENS_PHYSICAL_LENGTH_ITEM_NAME)
+#define CCD_LENS_PHYSICAL_LENGTH_ITEM_NAME "PHYSICAL_LENGTH"
+#endif
+
 // Returns the AGENT_PROCESS_FEATURES ENABLE_FIELD_DEROTATION item of the mount agent,
 // or nullptr if the agent does not provide it (INDIGO 2.x).
 extern indigo_item *get_derotation_feature_item(const char *mount_agent);
+
+// Returns the AGENT_PROCESS_FEATURES ENABLE_DOME_SLAVING item of the mount agent,
+// or nullptr if the agent does not provide it (INDIGO 2.x).
+extern indigo_item *get_dome_slaving_feature_item(const char *mount_agent);
 
 extern bool client_match_device_property(indigo_property *property, const char *device_name, const char *property_name);
 extern bool client_match_device_no_property(indigo_property *property, const char *device_name);

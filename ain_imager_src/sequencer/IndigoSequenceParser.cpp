@@ -31,6 +31,16 @@
 #endif
 
 
+/* The Sequencer library never had clear_focus_selection(), the call is
+   clear_focuser_selection(). Sequences saved with the old name are still loaded
+   under the corrected one. */
+static QString resolve_legacy_name(const QString &name) {
+	if (name == SC_CLEAR_FOCUS_SELECTION_LEGACY) {
+		return SC_CLEAR_FOCUS_SELECTION;
+	}
+	return name;
+}
+
 QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
 	const char lpMarker[] = "&<L*";
 	const char rpMarker[] = "&>R*";
@@ -112,7 +122,7 @@ QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
 		} else {
 			// Regular function call
 			call.objectName = callMatch.captured(1);
-			call.functionName = callMatch.captured(2);
+			call.functionName = resolve_legacy_name(callMatch.captured(2));
 			QString params = callMatch.captured(3);
 			call.parameters = params.split(',', QT_SKIP_EMPTY_PARTS);
 			for (QString& param : call.parameters) {

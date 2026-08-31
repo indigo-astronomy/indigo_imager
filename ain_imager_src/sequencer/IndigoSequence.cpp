@@ -137,6 +137,31 @@ int IndigoSequence::itemCount() const {
 	return totalCount;
 }
 
+int IndigoSequence::executedItemCount() const {
+	int executedCount = 0;
+
+	for (int i = 0; i < containerLayout->count(); ++i) {
+		IndigoSequenceItem* item = qobject_cast<IndigoSequenceItem*>(containerLayout->itemAt(i)->widget());
+		if (!item) continue;
+
+		if (!item->isOmitted()) {
+			executedCount++;
+		}
+
+		if (item->getType() == "repeat") {
+			QVBoxLayout* repeatLayout = item->getRepeatLayout();
+			for (int j = 0; j < repeatLayout->count(); ++j) {
+				IndigoSequenceItem* nestedItem = qobject_cast<IndigoSequenceItem*>(repeatLayout->itemAt(j)->widget());
+				if (nestedItem && !nestedItem->isOmitted()) {
+					executedCount++;
+				}
+			}
+		}
+	}
+
+	return executedCount;
+}
+
 void IndigoSequence::addItem(IndigoSequenceItem *item) {
 	containerLayout->addWidget(item);
 }
@@ -245,6 +270,7 @@ void IndigoSequence::contextMenuEvent(QContextMenuEvent *event) {
 			QFont boldFontMenu = menuAction->font();
 			boldFontMenu.setBold(true);
 			menuAction->setFont(boldFontMenu);
+			menuAction->setIconVisibleInMenu(true);
 
 			int itemWidth = fm.horizontalAdvance(category.first);
 			maxWidth = qMax(maxWidth, itemWidth);

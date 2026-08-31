@@ -390,6 +390,16 @@ void update_mount_side_of_pier(ImagerWindow *w, indigo_property *property) {
 		w->set_text(w->m_mount_side_of_pier_label, "Side of pier: Unknown");
 		w->set_widget_state(w->m_mount_side_of_pier_label, INDIGO_ALERT_STATE);
 	}
+
+	/* The dome view puts the tube on that side of the pier. Unknown leaves it
+	   to work the side out from the pointing, counterweight down. */
+	if (east) {
+		w->set_dome_side_of_pier(DomeView::SideOfPierEast);
+	} else if (west) {
+		w->set_dome_side_of_pier(DomeView::SideOfPierWest);
+	} else {
+		w->set_dome_side_of_pier(DomeView::SideOfPierAuto);
+	}
 }
 
 void update_mount_park(ImagerWindow *w, indigo_property *property) {
@@ -1169,6 +1179,7 @@ void update_focuser_poition(ImagerWindow *w, indigo_property *property, bool upd
 
 void update_rotator_poition(ImagerWindow *w, indigo_property *property, bool update_input = false) {
 	indigo_debug("change %s", property->name);
+	w->set_rotator_pick_enabled(true);
 	for (int i = 0; i < property->count; i++) {
 		if (update_input && client_match_item(&property->items[i], ROTATOR_POSITION_ITEM_NAME)) {
 			indigo_debug("change target %s = %f", property->items[i].name, property->items[i].number.target);
@@ -1185,17 +1196,22 @@ void update_rotator_poition(ImagerWindow *w, indigo_property *property, bool upd
 		}
 		if (client_match_item(&property->items[i], ROTATOR_POSITION_ITEM_NAME)) {
 			w->set_widget_state(w->m_rotator_position_label, property->state);
-			w->set_widget_state(w->m_rotator_position_dial, property->state);
 			char position[INDIGO_VALUE_SIZE];
 			snprintf(position, INDIGO_VALUE_SIZE, "%.3f°", property->items[i].number.value);
 			w->set_text(w->m_rotator_position_label, position);
-			w->set_dial_value(w->m_rotator_position_dial, property->items[i].number.value + 180);
+			w->set_rotator_limits(property->items[i].number.min, property->items[i].number.max);
+			w->set_rotator_target(property->items[i].number.target);
+			w->set_rotator_position(
+				property->items[i].number.value,
+				property->state == INDIGO_BUSY_STATE
+			);
 		}
 	}
+	/* While it moves the button aborts the move, so it shows a stop sign. */
 	if (property->state == INDIGO_BUSY_STATE) {
-		w->m_rotator_position_button->setIcon(QIcon(":resource/stop.png"));
+		w->set_button_icon(w->m_rotator_position_button, ":resource/stop.png");
 	} else {
-		w->m_rotator_position_button->setIcon(QIcon(":resource/play.png"));
+		w->set_button_icon(w->m_rotator_position_button, ":resource/play.png");
 	}
 }
 
@@ -1204,9 +1220,265 @@ void update_rotator_reverse(ImagerWindow *w, indigo_property *property) {
 	for (int i = 0; i < property->count; i++) {
 		if (client_match_item(&property->items[i], ROTATOR_DIRECTION_REVERSED_ITEM_NAME)) {
 			w->set_checkbox_checked(w->m_rotator_reverse_cbox, property->items[i].sw.value);
+			/* A reversed rotator counts its angles the other way, the view
+			   turns with it. */
+			w->set_rotator_reversed(property->items[i].sw.value);
 			break;
 		}
 	}
+}
+
+/* Radius drawn when there is no dome at all, in meters - just a ring to frame
+   the telescope. */
+#define NO_DOME_RADIUS 1.5
+
+/*
+ Ain does not ask what kind of dome it is, the properties say enough, and the
+ flags for them are set as they are defined. A dome that reports no azimuth
+ cannot turn, so it is drawn as a clamshell. One that turns and has a slit as
+ wide as itself opens half the sky, so it is a half dome. One that turns and
+ has a narrower slit is a classic dome.
+*/
+void update_dome_view_type(ImagerWindow *w) {
+	if (!w->m_have_dome) {
+		/* Nothing over the telescope - an open clamshell, so the view still
+		   shows where the telescope points. */
+		w->set_dome_type(DomeView::DomeTypeClamshell);
+		w->set_dome_dimensions(NO_DOME_RADIUS, NO_DOME_RADIUS, 0, 0, 0, 0);
+		w->set_dome_azimuth(0, false);
+		w->set_dome_shutter(1.0, false);
+	} else if (!w->m_have_azimuth) {
+		/* It does not turn. Its shutter still follows DOME_SHUTTER. */
+		w->set_dome_type(DomeView::DomeTypeClamshell);
+		w->set_dome_azimuth(0, false);
+	} else if (w->m_wide_slit) {
+		w->set_dome_type(DomeView::DomeTypeHalfDome);
+	} else {
+		w->set_dome_type(DomeView::DomeTypeClassic);
+	}
+}
+
+/* DOME_DIMENSION is in meters, which is what DomeView takes. */
+void update_dome_dimensions(ImagerWindow *w, indigo_property *property) {
+	double radius = 0, shutter_width = 0, offset_ns = 0, offset_ew = 0, offset_vertical = 0, ota_offset = 0;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], DOME_RADIUS_ITEM_NAME)) {
+			radius = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], DOME_SHUTTER_WIDTH_ITEM_NAME)) {
+			shutter_width = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], DOME_MOUNT_PIVOT_OFFSET_NS_ITEM_NAME)) {
+			offset_ns = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], DOME_MOUNT_PIVOT_OFFSET_EW_ITEM_NAME)) {
+			offset_ew = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], DOME_MOUNT_PIVOT_VERTICAL_OFFSET_ITEM_NAME)) {
+			offset_vertical = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], DOME_MOUNT_PIVOT_OTA_OFFSET_ITEM_NAME)) {
+			ota_offset = property->items[i].number.value;
+		}
+	}
+	w->m_have_dome = true;
+	w->m_wide_slit = (radius > 0 && shutter_width >= 2 * radius);
+	w->set_dome_dimensions(radius, shutter_width, offset_ns, offset_ew, offset_vertical, ota_offset);
+}
+
+void update_dome_azimuth(ImagerWindow *w, indigo_property *property, bool update_input = false) {
+	w->m_have_dome = true;
+	w->m_have_azimuth = true;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], DOME_HORIZONTAL_COORDINATES_AZ_ITEM_NAME)) {
+			w->set_dome_azimuth(property->items[i].number.value, property->state == INDIGO_BUSY_STATE);
+
+			char azimuth[INDIGO_VALUE_SIZE];
+			snprintf(azimuth, INDIGO_VALUE_SIZE, "%.2f°", property->items[i].number.value);
+			w->set_text(w->m_dome_az_label, azimuth);
+			w->set_widget_state(w->m_dome_az_label, property->state);
+
+			w->set_enabled(w->m_dome_az, true);
+			/* Leave the entry alone while the dome is moving, it is what the
+			   user typed to send it there. */
+			if (update_input && property->state != INDIGO_BUSY_STATE) {
+				configure_spinbox(w, &property->items[i], property->perm, w->m_dome_az);
+				/* The sequencer item takes the same range as the dome. Its step is
+				   0 for most domes, so the increment is left at its default. */
+				SequenceItemModel::instance().setNumericRange(SC_DOME_SLEW, 0, property->items[i].number.min, property->items[i].number.max);
+				if (property->items[i].number.step > 0) {
+					SequenceItemModel::instance().setNumericIncrement(SC_DOME_SLEW, 0, property->items[i].number.step);
+				}
+			}
+			w->set_widget_state(w->m_dome_az, property->state);
+			w->set_widget_state(w->m_dome_az_goto_button, property->state);
+			/* While it slews the button aborts the move, so it shows a stop sign. */
+			if (property->state == INDIGO_BUSY_STATE) {
+				w->set_button_icon(w->m_dome_az_goto_button, ":resource/stop.png");
+			} else {
+				w->set_button_icon(w->m_dome_az_goto_button, ":resource/play.png");
+			}
+			break;
+		}
+	}
+}
+
+/* DOME_SHUTTER only says opened or closed, so the leaves are drawn at one end
+   of their travel or the other. */
+void update_dome_shutter(ImagerWindow *w, indigo_property *property) {
+	bool opened = false;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], DOME_SHUTTER_OPENED_ITEM_NAME)) {
+			opened = property->items[i].sw.value;
+			break;
+		}
+	}
+	w->set_dome_shutter(opened ? 1.0 : 0.0, property->state == INDIGO_BUSY_STATE);
+
+	w->set_enabled(w->m_dome_shutter_cbox, true);
+	w->set_widget_state(w->m_dome_shutter_cbox, property->state);
+	/* While it moves the switch already holds what was asked for. */
+	if (property->state == INDIGO_BUSY_STATE) {
+		w->set_text(w->m_dome_shutter_cbox, opened ? "Opening..." : "Closing...");
+		w->set_checkbox_state(w->m_dome_shutter_cbox, Qt::PartiallyChecked);
+	} else if (opened) {
+		w->set_text(w->m_dome_shutter_cbox, "Shutter open");
+		w->set_checkbox_state(w->m_dome_shutter_cbox, Qt::Checked);
+	} else {
+		w->set_text(w->m_dome_shutter_cbox, "Shutter closed");
+		w->set_checkbox_state(w->m_dome_shutter_cbox, Qt::Unchecked);
+	}
+}
+
+/* DOME_STEPS is the relative move, in degrees. */
+void update_dome_steps(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], DOME_STEPS_ITEM_NAME)) {
+			w->set_enabled(w->m_dome_relative, true);
+			w->set_widget_state(w->m_dome_relative, property->state);
+			configure_spinbox(w, &property->items[i], property->perm, w->m_dome_relative);
+			break;
+		}
+	}
+}
+
+void update_dome_park(ImagerWindow *w, indigo_property *property) {
+	indigo_debug("change %s", property->name);
+	bool parked = false;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], DOME_PARK_PARKED_ITEM_NAME)) {
+			parked = property->items[i].sw.value;
+			break;
+		}
+	}
+
+	w->set_enabled(w->m_dome_park_cbox, true);
+	w->set_widget_state(w->m_dome_park_cbox, property->state);
+	if (property->state == INDIGO_BUSY_STATE) {
+		w->set_text(w->m_dome_park_cbox, parked ? "Parking..." : "Unparking...");
+		w->set_checkbox_state(w->m_dome_park_cbox, Qt::PartiallyChecked);
+	} else if (parked) {
+		w->set_text(w->m_dome_park_cbox, "Parked");
+		w->set_checkbox_state(w->m_dome_park_cbox, Qt::Checked);
+	} else {
+		w->set_text(w->m_dome_park_cbox, "Unparked");
+		w->set_checkbox_state(w->m_dome_park_cbox, Qt::Unchecked);
+	}
+}
+
+/*
+ Slaving is the ENABLE_DOME_SLAVING item of AGENT_PROCESS_FEATURES if the mount
+ agent provides it (INDIGO 3.x), otherwise the DOME_SLAVING property of the dome
+ (INDIGO 2.x). Returns nullptr if the agent does not have the feature item.
+*/
+indigo_item *get_dome_slaving_feature_item(const char *mount_agent) {
+	return properties.get_item(
+		mount_agent,
+		AGENT_PROCESS_FEATURES_PROPERTY_NAME,
+		AGENT_MOUNT_ENABLE_DOME_SLAVING_ITEM_NAME
+	);
+}
+
+void update_dome_slaving(ImagerWindow *w, indigo_property *property) {
+	const bool is_feature = client_match_property(property, AGENT_PROCESS_FEATURES_PROPERTY_NAME);
+
+	indigo_item *item = properties.get_item(
+		property,
+		is_feature ? AGENT_MOUNT_ENABLE_DOME_SLAVING_ITEM_NAME : DOME_SLAVING_ENABLE_ITEM_NAME
+	);
+	if (item == nullptr) return;
+
+	w->set_enabled(w->m_dome_slaving_cbox, true);
+	w->set_checkbox_checked(w->m_dome_slaving_cbox, item->sw.value);
+
+	/* On 3.x the light of AGENT_MOUNT_STATE drives the status. */
+	if (is_feature) return;
+
+	if (property->state == INDIGO_ALERT_STATE) {
+		w->set_text(w->m_dome_slaving_status_label, "<img src=\":resource/led-red.png\"> Failed");
+	} else if (item->sw.value) {
+		w->set_text(w->m_dome_slaving_status_label, "<img src=\":resource/led-green.png\"> Slaved");
+	} else {
+		w->set_text(w->m_dome_slaving_status_label, "<img src=\":resource/led-grey.png\"> Not slaved");
+	}
+}
+
+/*
+ The DOME_SLAVING light of AGENT_MOUNT_STATE reports the slaving status: OK
+ while the slit is kept on the telescope, BUSY while the dome is catching up,
+ ALERT on failure and IDLE when slaving is off.
+*/
+void update_dome_slaving_status(ImagerWindow *w, indigo_property *property) {
+	indigo_item *item = properties.get_item(property, AGENT_MOUNT_STATE_DOME_SLAVING_ITEM_NAME);
+	if (item == nullptr) return;
+	switch (item->light.value) {
+		case INDIGO_OK_STATE:
+			w->set_text(w->m_dome_slaving_status_label, "<img src=\":resource/led-green.png\"> Slaved");
+			break;
+		case INDIGO_BUSY_STATE:
+			w->set_text(w->m_dome_slaving_status_label, "<img src=\":resource/led-orange.png\"> Slewing");
+			break;
+		case INDIGO_ALERT_STATE:
+			w->set_text(w->m_dome_slaving_status_label, "<img src=\":resource/led-red.png\"> Failed");
+			break;
+		default:
+			w->set_text(w->m_dome_slaving_status_label, "<img src=\":resource/led-grey.png\"> Not slaved");
+			break;
+	}
+}
+
+void update_dome_view_telescope(ImagerWindow *w, indigo_property *property) {
+	double az = 0, alt = 0;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], MOUNT_HORIZONTAL_COORDINATES_AZ_ITEM_NAME)) {
+			az = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], MOUNT_HORIZONTAL_COORDINATES_ALT_ITEM_NAME)) {
+			alt = property->items[i].number.value;
+		}
+	}
+	w->set_dome_telescope(az, alt);
+}
+
+void update_dome_view_latitude(ImagerWindow *w, indigo_property *property) {
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], GEOGRAPHIC_COORDINATES_LATITUDE_ITEM_NAME)) {
+			w->set_dome_latitude(property->items[i].number.value);
+			break;
+		}
+	}
+}
+
+/* CCD_LENS is in centimeters. The tube is drawn as long as the camera says it
+   physically is; a folded design is far shorter than its focal length, so the
+   focal length is only the fallback for a camera that does not report one. */
+void update_dome_view_optics(ImagerWindow *w, indigo_property *property) {
+	double aperture = 0, focal_length = 0, physical_length = 0;
+	for (int i = 0; i < property->count; i++) {
+		if (client_match_item(&property->items[i], CCD_LENS_APERTURE_ITEM_NAME)) {
+			aperture = property->items[i].number.value / 100;
+		} else if (client_match_item(&property->items[i], CCD_LENS_FOCAL_LENGTH_ITEM_NAME)) {
+			focal_length = property->items[i].number.value / 100;
+		} else if (client_match_item(&property->items[i], CCD_LENS_PHYSICAL_LENGTH_ITEM_NAME)) {
+			physical_length = property->items[i].number.value / 100;
+		}
+	}
+	w->set_dome_optics(aperture, (physical_length > 0) ? physical_length : focal_length);
 }
 
 /*
@@ -2205,7 +2477,7 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 
 		// Only alter the editor when the local step count matches the server's.
 		indigo_property *step_state_p = properties.get(property->device, "SEQUENCE_STEP_STATE");
-		bool steps_match = (step_state_p == nullptr || step_state_p->count == w->m_sequence_editor2->itemCount());
+		bool steps_match = (step_state_p == nullptr || step_state_p->count == w->m_sequence_editor2->executedItemCount());
 
 		int complete = (progress_total != 0) ? (int)((double)progress / progress_total * 100 + 0.5) : 0;
 		w->m_seq_sequence_progress->setRange(0, 100);
@@ -2284,7 +2556,8 @@ void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property)
 	} else if (!strcmp(property->name, "SEQUENCE_STEP_STATE")) {
 		// If the server reports a different number of steps than the local editor holds,
 		// the sequences are out of sync — leave the editor enabled and untouched.
-		if (property->count != w->m_sequence_editor2->itemCount()) {
+		// Disabled items are comments in the script, so only the executed ones count.
+		if (property->count != w->m_sequence_editor2->executedItemCount()) {
 			w->m_sequence_editor2->enable(true);
 			return;
 		}
@@ -3182,8 +3455,8 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 				if (sscanf(item->text.value, "%d.%d-%d", &version_major, &version_minor, &build) != 3) {
 					version_major = version_minor = build = 0;
 				}
-				if ((version_major < 2 || (version_major == 2 && version_minor == 0 && build < 336)) && !properties.get(property->device, SERVER_INFO_PROPERTY_NAME)) { /* show warning only once per connection */
-					snprintf(message, sizeof(message), "WARNING: Some features will not work on '%s' running Indigo %s as Ain requires 2.0-336 or newer!", property->device, item->text.value);
+				if ((version_major < 2 || (version_major == 3 && version_minor == 0 && build < 5)) && !properties.get(property->device, SERVER_INFO_PROPERTY_NAME)) { /* show warning only once per connection */
+					snprintf(message, sizeof(message), "WARNING: Some features will not work on '%s' running Indigo %s as Ain requires 3.0-5 or newer!", property->device, item->text.value);
 					window_log(message, INDIGO_BUSY_STATE);
 				}
 			}
@@ -3495,6 +3768,10 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_guider_agent, CCD_LENS_PROPERTY_NAME)) {
 		update_agent_guider_focal_length_property(this, property);
 	}
+	/* The imager camera optics are what the dome view draws on the mount. */
+	if (client_match_device_property(property, selected_agent, CCD_LENS_PROPERTY_NAME)) {
+		update_dome_view_optics(this, property);
+	}
 	if (client_match_device_property(property, selected_guider_agent, CCD_JPEG_SETTINGS_PROPERTY_NAME)) {
 		// Nothing to do here for now
 	}
@@ -3582,6 +3859,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_HORIZONTAL_COORDINATES_PROPERTY_NAME)) {
 		update_mount_az_alt(this, property);
+		update_dome_view_telescope(this, property);
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_LST_TIME_PROPERTY_NAME)) {
 		update_mount_lst(this, property);
@@ -3634,6 +3912,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_mount_agent, GEOGRAPHIC_COORDINATES_PROPERTY_NAME)) {
 		update_mount_lon_lat(this, property);
+		update_dome_view_latitude(this, property);
 	}
 	utc_time_property = QString("MOUNT_") + QString(UTC_TIME_PROPERTY_NAME);
 	if (client_match_device_property(property, selected_mount_agent, utc_time_property.toUtf8().constData())) {
@@ -3645,6 +3924,31 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	if (client_match_device_property(property, selected_mount_agent, FILTER_ROTATOR_LIST_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_rotator_select);
 		add_items_to_sequence_model(property, SC_SELECT_ROTATOR, 0);
+	}
+	if (client_match_device_property(property, selected_mount_agent, FILTER_DOME_LIST_PROPERTY_NAME)) {
+		add_items_to_combobox(this, property, m_dome_select);
+		add_items_to_sequence_model(property, SC_SELECT_DOME, 0);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_DIMENSION_PROPERTY_NAME)) {
+		update_dome_dimensions(this, property);
+		update_dome_view_type(this);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_HORIZONTAL_COORDINATES_PROPERTY_NAME)) {
+		update_dome_azimuth(this, property, true);
+		update_dome_view_type(this);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_SHUTTER_PROPERTY_NAME)) {
+		update_dome_shutter(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_PARK_PROPERTY_NAME)) {
+		update_dome_park(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_STEPS_PROPERTY_NAME)) {
+		update_dome_steps(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_SLAVING_PROPERTY_NAME) ||
+	    client_match_device_property(property, selected_mount_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {
+		update_dome_slaving(this, property);
 	}
 	if (client_match_device_property(property, selected_mount_agent, ROTATOR_POSITION_PROPERTY_NAME)) {
 		update_rotator_poition(this, property, true);
@@ -3661,6 +3965,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_mount_agent, AGENT_MOUNT_STATE_PROPERTY_NAME)) {
 		update_rotator_derotation_status(this, property);
+		update_dome_slaving_status(this, property);
 	}
 
 	// Astrometry Agent
@@ -3938,6 +4243,10 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_guider_agent, CCD_LENS_PROPERTY_NAME)) {
 		update_agent_guider_focal_length_property(this, property);
 	}
+	/* The imager camera optics are what the dome view draws on the mount. */
+	if (client_match_device_property(property, selected_agent, CCD_LENS_PROPERTY_NAME)) {
+		update_dome_view_optics(this, property);
+	}
 	if (client_match_device_property(property, selected_guider_agent, FILTER_CCD_LIST_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_guider_camera_select);
 	}
@@ -4007,6 +4316,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_HORIZONTAL_COORDINATES_PROPERTY_NAME)) {
 		update_mount_az_alt(this, property);
+		update_dome_view_telescope(this, property);
 	}
 	if (client_match_device_property(property, selected_mount_agent, MOUNT_LST_TIME_PROPERTY_NAME)) {
 		update_mount_lst(this, property);
@@ -4058,6 +4368,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, GEOGRAPHIC_COORDINATES_PROPERTY_NAME)) {
 		update_mount_lon_lat(this, property);
+		update_dome_view_latitude(this, property);
 	}
 	utc_time_property = QString("MOUNT_") + QString(UTC_TIME_PROPERTY_NAME);
 	if (client_match_device_property(property, selected_mount_agent, utc_time_property.toUtf8().constData())) {
@@ -4068,6 +4379,30 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_ROTATOR_LIST_PROPERTY_NAME)) {
 		change_combobox_selection(this, property, m_rotator_select);
+	}
+	if (client_match_device_property(property, selected_mount_agent, FILTER_DOME_LIST_PROPERTY_NAME)) {
+		change_combobox_selection(this, property, m_dome_select);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_DIMENSION_PROPERTY_NAME)) {
+		update_dome_dimensions(this, property);
+		update_dome_view_type(this);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_HORIZONTAL_COORDINATES_PROPERTY_NAME)) {
+		update_dome_azimuth(this, property);
+		update_dome_view_type(this);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_SHUTTER_PROPERTY_NAME)) {
+		update_dome_shutter(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_PARK_PROPERTY_NAME)) {
+		update_dome_park(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_STEPS_PROPERTY_NAME)) {
+		update_dome_steps(this, property);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_SLAVING_PROPERTY_NAME) ||
+	    client_match_device_property(property, selected_mount_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME)) {
+		update_dome_slaving(this, property);
 	}
 	if (client_match_device_property(property, selected_mount_agent, ROTATOR_POSITION_PROPERTY_NAME)) {
 		update_rotator_poition(this, property);
@@ -4084,6 +4419,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	}
 	if (client_match_device_property(property, selected_mount_agent, AGENT_MOUNT_STATE_PROPERTY_NAME)) {
 		update_rotator_derotation_status(this, property);
+		update_dome_slaving_status(this, property);
 	}
 
 	// Solver Agent
@@ -4757,6 +5093,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
 		set_text(m_mount_side_of_pier_label, "Side of pier: Unknown");
 		set_widget_state(m_mount_side_of_pier_label, INDIGO_IDLE_STATE);
+		set_dome_side_of_pier(DomeView::SideOfPierAuto);
 	}
 	if (client_match_device_property(property, selected_mount_agent, FILTER_GPS_LIST_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
@@ -4828,12 +5165,78 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 
 		SequenceItemModel::instance().clearComboOptions(SC_SELECT_ROTATOR, 0);
 	}
+	if (client_match_device_property(property, selected_mount_agent, FILTER_DOME_LIST_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("[REMOVE REMOVE] %s\n", property->device);
+		clear_combobox(m_dome_select);
+
+		SequenceItemModel::instance().clearComboOptions(SC_SELECT_DOME, 0);
+	}
+	/* No dome any more - zero the radius, which the view draws as no dome. */
+	if (client_match_device_property(property, selected_mount_agent, DOME_DIMENSION_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("REMOVE %s", property->name);
+		m_have_dome = false;
+		m_wide_slit = false;
+		update_dome_view_type(this);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_HORIZONTAL_COORDINATES_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("REMOVE %s", property->name);
+		m_have_azimuth = false;
+		update_dome_view_type(this);
+		set_text(m_dome_az_label, "0.00°");
+		set_widget_state(m_dome_az_label, INDIGO_OK_STATE);
+		set_spinbox_value(m_dome_az, 0);
+		set_enabled(m_dome_az, false);
+		set_widget_state(m_dome_az, INDIGO_OK_STATE);
+		set_widget_state(m_dome_az_goto_button, INDIGO_OK_STATE);
+		set_button_icon(m_dome_az_goto_button, ":resource/play.png");
+		SequenceItemModel::instance().setNumericRange(SC_DOME_SLEW, 0, 0, 360);
+		SequenceItemModel::instance().setNumericIncrement(SC_DOME_SLEW, 0, 1);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_SHUTTER_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("REMOVE %s", property->name);
+		set_dome_shutter(0, false);
+		set_text(m_dome_shutter_cbox, "Shutter closed");
+		set_checkbox_state(m_dome_shutter_cbox, Qt::Unchecked);
+		set_widget_state(m_dome_shutter_cbox, INDIGO_OK_STATE);
+		set_enabled(m_dome_shutter_cbox, false);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_STEPS_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("REMOVE %s", property->name);
+		set_spinbox_value(m_dome_relative, 0);
+		set_widget_state(m_dome_relative, INDIGO_OK_STATE);
+		set_enabled(m_dome_relative, false);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_PARK_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("REMOVE %s", property->name);
+		set_text(m_dome_park_cbox, "Unparked");
+		set_checkbox_state(m_dome_park_cbox, Qt::Unchecked);
+		set_widget_state(m_dome_park_cbox, INDIGO_OK_STATE);
+		set_enabled(m_dome_park_cbox, false);
+	}
+	if (client_match_device_property(property, selected_mount_agent, DOME_SLAVING_PROPERTY_NAME) ||
+	    client_match_device_property(property, selected_mount_agent, AGENT_PROCESS_FEATURES_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_mount_agent)) {
+		indigo_debug("REMOVE %s", property->name);
+		set_checkbox_checked(m_dome_slaving_cbox, false);
+		set_enabled(m_dome_slaving_cbox, false);
+		set_text(m_dome_slaving_status_label, "<img src=\":resource/led-grey.png\"> Not slaved");
+	}
 	if (client_match_device_property(property, selected_mount_agent, ROTATOR_POSITION_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_mount_agent)) {
 		indigo_debug("REMOVE %s", property->name);
 		set_text(m_rotator_position_label, "0.000°");
 		set_widget_state(m_rotator_position_label, INDIGO_OK_STATE);
-		set_widget_state(m_rotator_position_dial, INDIGO_OK_STATE);
+		set_rotator_position(0, false);
+		set_rotator_limits(0, 360);
+		set_rotator_target_visible(false);
+		set_rotator_pick_enabled(false);
+		set_button_icon(m_rotator_position_button, ":resource/play.png");
 		SequenceItemModel::instance().setNumericRange(SC_SET_ROTATOR_ANGLE, 0, -180, 360);
 		SequenceItemModel::instance().setNumericIncrement(SC_SET_ROTATOR_ANGLE, 0, 10);
 	}
