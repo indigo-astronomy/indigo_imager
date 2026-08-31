@@ -118,7 +118,9 @@ void get_time_after(char *time_str, int seconds, const char *format) {
 	if (format == NULL || format[0] == '\0') {
 		strcpy(time_format, "%Y-%m-%d %H:%M:%S");
 	} else {
-		strncpy(time_format, format, 255);
+		/* leave the last byte of the zero initialized buffer untouched,
+		   so the format string is always NULL terminated */
+		strncpy(time_format, format, sizeof(time_format) - 1);
 	}
 
 	gettimeofday(&tmnow, NULL);
