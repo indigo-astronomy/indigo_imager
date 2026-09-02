@@ -1,4 +1,4 @@
-// Copyright (c) 2016 CloudMakers, s. r. o.
+// Copyright (c) 2016-2025 CloudMakers, s. r. o.
 // All rights reserved.
 //
 // You can use this software under the terms of 'INDIGO Astronomy
@@ -26,6 +26,16 @@
 #ifndef indigo_config_h
 #define indigo_config_h
 
+#if defined(INDIGO_WINDOWS)
+#if defined(INDIGO_WINDOWS_DLL)
+#define INDIGO_EXTERN __declspec(dllexport)
+#else
+#define INDIGO_EXTERN __declspec(dllimport)
+#endif
+#else
+#define INDIGO_EXTERN extern
+#endif
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -34,12 +44,12 @@
     Used to initialise INDIGO_VERSION_CURRENT in indigo_bus.h. The top-level
     Makefile keeps this constant in sync with INDIGO_VERSION.
  */
-#define INDIGO_VERSION_MAJOR_MINOR 0x0200
+#define INDIGO_VERSION_MAJOR_MINOR 0x0300
 
 /** INDIGO Build number. The top-level Makefile keeps this constant
     in sync with INDIGO_BUILD.
  */
-#define INDIGO_BUILD "374"
+#define INDIGO_BUILD "6"
 
 /** INDIGO Build commit
  */
@@ -47,7 +57,7 @@
 #define INDIGO_BUILD_COMMIT ""
 #else
 #define INDIGO_BUILD_COMMIT indigo_build_commit
-extern char *indigo_build_commit;
+INDIGO_EXTERN char *indigo_build_commit;
 #endif
 
 /** INDIGO Build time
@@ -56,8 +66,14 @@ extern char *indigo_build_commit;
 #define INDIGO_BUILD_TIME __DATE__
 #else
 #define INDIGO_BUILD_TIME indigo_build_time
-extern char *indigo_build_time;
+INDIGO_EXTERN char *indigo_build_time;
 #endif
+
+/** Vesrtion major and minor
+ */
+#define INDIGO_VERSION_MAJOR(ver) (((ver) >> 8) & 0xFF)
+#define INDIGO_VERSION_MINOR(ver) ((ver) & 0xFF)
+
 /** Conditional compilation wrapper for TRACE log level
  */
 #define INDIGO_TRACE(c) c

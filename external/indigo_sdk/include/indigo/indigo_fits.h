@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Rumen G.Bogdanvski
+// Copyright (c) 2021-2025 Rumen G.Bogdanvski
 // All rights reserved.
 //
 // You can use this software under the terms of 'INDIGO Astronomy
@@ -17,10 +17,20 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // version history
-// 2.0 by Rumen G.Bogdanovski <rumenastro@gmail.com>
+// 2.0 by Rumen G. Bogdanovski <rumenastro@gmail.com>
 
 #ifndef indigo_fits_h
 #define indigo_fits_h
+
+#if defined(INDIGO_WINDOWS)
+#if defined(INDIGO_WINDOWS_DLL)
+#define INDIGO_EXTERN __declspec(dllexport)
+#else
+#define INDIGO_EXTERN __declspec(dllimport)
+#endif
+#else
+#define INDIGO_EXTERN extern
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,7 +57,7 @@ typedef struct {
 	const char *comment;
 } indigo_fits_keyword;
 
-extern indigo_result indigo_raw_to_fits(char *image, int in_size, char **fits, int *fits_size, indigo_fits_keyword *keywords);
+INDIGO_EXTERN indigo_result indigo_raw_to_fits(char *image, int in_size, char **fits, int *fits_size, indigo_fits_keyword *keywords);
 
 #ifdef __cplusplus
 }
