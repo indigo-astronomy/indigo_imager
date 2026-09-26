@@ -835,6 +835,25 @@ void ImagerWindow::change_guider_agent_reset_ppec(const char *agent) const {
 	indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_RESET_PPEC_PROPERTY_NAME, AGENT_GUIDER_RESET_PPEC_ITEM_NAME, true);
 }
 
+void ImagerWindow::change_guider_agent_mkgp(const char *agent) const {
+	static const char *items[] = {
+		AGENT_GUIDER_SETTINGS_MKGP_REACTIVE_GAIN_RA_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_MKGP_PRED_GAIN_RA_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_MKGP_PERIOD_RA_ITEM_NAME,
+		AGENT_GUIDER_SETTINGS_MKGP_PERIOD2_RA_ITEM_NAME,
+	};
+	static double values[4];
+	values[0] = (double)m_mkgp_guide_reactive_gain_ra->value();
+	values[1] = (double)m_mkgp_guide_pred_gain_ra->value();
+	values[2] = (double)m_mkgp_guide_period_ra->value();
+	values[3] = (double)m_mkgp_guide_period2_ra->value();
+	indigo_change_number_property(nullptr, agent, AGENT_GUIDER_SETTINGS_PROPERTY_NAME, 4, items, values);
+}
+
+void ImagerWindow::change_guider_agent_reset_mkgp(const char *agent) const {
+	indigo_change_switch_property_1(nullptr, agent, AGENT_GUIDER_RESET_MKGP_PROPERTY_NAME, AGENT_GUIDER_RESET_MKGP_ITEM_NAME, true);
+}
+
 void ImagerWindow::change_guider_agent_i(const char *agent) const {
 	static const char *items[] = {
 		AGENT_GUIDER_SETTINGS_I_GAIN_RA_ITEM_NAME,

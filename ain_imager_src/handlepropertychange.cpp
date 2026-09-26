@@ -1734,6 +1734,29 @@ void update_focus_estimator_property(ImagerWindow *w, indigo_property *property)
 	}
 }
 
+/* The learned model progress arrives with the guider statistics, and those only
+   come in while guiding. Switching the correction mode therefore has to read the
+   new model's figure out of the statistics we last saw, or the label would go on
+   showing the progress of the model that was selected before. */
+void update_gp_model_learning(ImagerWindow *w, const char *device, bool mkgp) {
+	double learning = 0;
+	indigo_property *stats = properties.get(device, AGENT_GUIDER_STATS_PROPERTY_NAME);
+	if (stats) {
+		const char *item_name = mkgp ?
+			AGENT_GUIDER_STATS_MKGP_LEARNING_ITEM_NAME :
+			AGENT_GUIDER_STATS_PPEC_LEARNING_ITEM_NAME;
+		for (int i = 0; i < stats->count; i++) {
+			if (client_match_item(&stats->items[i], item_name)) {
+				learning = stats->items[i].number.value;
+				break;
+			}
+		}
+	}
+	char label_str[50];
+	snprintf(label_str, 50, "Model %.0f%% complete", learning);
+	w->set_text(w->m_guider_ppec_learning_label, label_str);
+}
+
 void update_guider_correction_property(ImagerWindow *w, indigo_property *property) {
 	bool show_i_stack = false;
 	if (client_match_property(property, AGENT_GUIDER_CORRECTION_MODE_RA_PROPERTY_NAME)) {
@@ -1754,6 +1777,10 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 					w->show_widget(w->m_ppec_guide_reactive_gain_ra, false);
 					w->show_widget(w->m_ppec_guide_pred_gain_ra, false);
 					w->show_widget(w->m_ppec_guide_period_ra, false);
+					w->show_widget(w->m_mkgp_guide_reactive_gain_ra, false);
+					w->show_widget(w->m_mkgp_guide_pred_gain_ra, false);
+					w->show_widget(w->m_mkgp_guide_period_ra, false);
+					w->show_widget(w->m_mkgp_guide_period2_ra, false);
 					show_i_stack = true;
 				}
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_HYSTERESIS_ITEM_NAME)) {
@@ -1772,6 +1799,10 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 					w->show_widget(w->m_ppec_guide_reactive_gain_ra, false);
 					w->show_widget(w->m_ppec_guide_pred_gain_ra, false);
 					w->show_widget(w->m_ppec_guide_period_ra, false);
+					w->show_widget(w->m_mkgp_guide_reactive_gain_ra, false);
+					w->show_widget(w->m_mkgp_guide_pred_gain_ra, false);
+					w->show_widget(w->m_mkgp_guide_period_ra, false);
+					w->show_widget(w->m_mkgp_guide_period2_ra, false);
 				}
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_LINEAR_TREND_ITEM_NAME)) {
 				if (property->items[i].sw.value) {
@@ -1789,6 +1820,10 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 					w->show_widget(w->m_ppec_guide_reactive_gain_ra, false);
 					w->show_widget(w->m_ppec_guide_pred_gain_ra, false);
 					w->show_widget(w->m_ppec_guide_period_ra, false);
+					w->show_widget(w->m_mkgp_guide_reactive_gain_ra, false);
+					w->show_widget(w->m_mkgp_guide_pred_gain_ra, false);
+					w->show_widget(w->m_mkgp_guide_period_ra, false);
+					w->show_widget(w->m_mkgp_guide_period2_ra, false);
 				}
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME)) {
 				if (property->items[i].sw.value) {
@@ -1806,6 +1841,37 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 					w->show_widget(w->m_ppec_guide_reactive_gain_ra, true);
 					w->show_widget(w->m_ppec_guide_pred_gain_ra, true);
 					w->show_widget(w->m_ppec_guide_period_ra, true);
+					w->show_widget(w->m_mkgp_guide_reactive_gain_ra, false);
+					w->show_widget(w->m_mkgp_guide_pred_gain_ra, false);
+					w->show_widget(w->m_mkgp_guide_period_ra, false);
+					w->show_widget(w->m_mkgp_guide_period2_ra, false);
+					w->set_text(w->m_guider_gp_model_header_label, "Predictive PEC:");
+					w->set_tooltip(w->m_ppec_reset_button, "Reset learned Predictive PEC model");
+					update_gp_model_learning(w, property->device, false);
+				}
+			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_MKGP_ITEM_NAME)) {
+				if (property->items[i].sw.value) {
+					w->m_ra_correction_mode = ImagerWindow::GUIDER_CORRECTION_MKGP;
+					w->set_text(w->m_guide_ra_param1_label, "Reactive/Prediction gain (%):");
+					w->set_text(w->m_guide_ra_param2_label, "Worm/2nd stage period (s):");
+					w->show_widget(w->m_guide_ra_param1_label, true);
+					w->show_widget(w->m_guide_ra_param2_label, true);
+
+					w->show_widget(w->m_pi_guide_ra_aggr, false);
+					w->show_widget(w->m_pi_guide_i_gain_ra, false);
+					w->show_widget(w->m_hyst_guide_ra_aggr, false);
+					w->show_widget(w->m_hyst_guide_hysteresis_ra, false);
+					w->show_widget(w->m_lt_guide_ra_aggr, false);
+					w->show_widget(w->m_ppec_guide_reactive_gain_ra, false);
+					w->show_widget(w->m_ppec_guide_pred_gain_ra, false);
+					w->show_widget(w->m_ppec_guide_period_ra, false);
+					w->show_widget(w->m_mkgp_guide_reactive_gain_ra, true);
+					w->show_widget(w->m_mkgp_guide_pred_gain_ra, true);
+					w->show_widget(w->m_mkgp_guide_period_ra, true);
+					w->show_widget(w->m_mkgp_guide_period2_ra, true);
+					w->set_text(w->m_guider_gp_model_header_label, "Multi Kernel GP:");
+					w->set_tooltip(w->m_ppec_reset_button, "Reset learned Multi Kernel GP model");
+					update_gp_model_learning(w, property->device, true);
 				}
 			} else {
 				if (property->items[i].sw.value) {
@@ -1821,6 +1887,10 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 					w->show_widget(w->m_ppec_guide_reactive_gain_ra, false);
 					w->show_widget(w->m_ppec_guide_pred_gain_ra, false);
 					w->show_widget(w->m_ppec_guide_period_ra, false);
+					w->show_widget(w->m_mkgp_guide_reactive_gain_ra, false);
+					w->show_widget(w->m_mkgp_guide_pred_gain_ra, false);
+					w->show_widget(w->m_mkgp_guide_period_ra, false);
+					w->show_widget(w->m_mkgp_guide_period2_ra, false);
 				}
 			}
 		}
@@ -2680,6 +2750,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	int guider_phase = 0;
 #ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
 	double ppec_learning = 0;
+	double mkgp_learning = 0;
 #endif
 	double corr_response_ra = 0, corr_response_dec = 0;
 	bool has_corr_response_ra = false, has_corr_response_dec = false;
@@ -2740,6 +2811,8 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 #ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_PPEC_LEARNING_ITEM_NAME)) {
 			ppec_learning = property->items[i].number.value;
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_MKGP_LEARNING_ITEM_NAME)) {
+			mkgp_learning = property->items[i].number.value;
 		}
 	}
 
@@ -2874,7 +2947,11 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	snprintf(label_str, 50, "%+.2f  %+.2f s", cor_ra, cor_dec);
 	w->set_text(w->m_guider_pulse_label, label_str);
 
-	snprintf(label_str, 50, "Model %.0f%% complete", ppec_learning);
+	/* Both models report their own progress, show the one in use. */
+	snprintf(
+		label_str, 50, "Model %.0f%% complete",
+		w->m_ra_correction_mode == ImagerWindow::GUIDER_CORRECTION_MKGP ? mkgp_learning : ppec_learning
+	);
 	w->set_text(w->m_guider_ppec_learning_label, label_str);
 #endif
 
@@ -2963,6 +3040,14 @@ void update_guider_settings(ImagerWindow *w, indigo_property *property) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_ppec_guide_pred_gain_ra);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_PPEC_PERIOD_RA_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_ppec_guide_period_ra);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_MKGP_REACTIVE_GAIN_RA_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_mkgp_guide_reactive_gain_ra);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_MKGP_PRED_GAIN_RA_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_mkgp_guide_pred_gain_ra);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_MKGP_PERIOD_RA_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_mkgp_guide_period_ra);
+		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_MKGP_PERIOD2_RA_ITEM_NAME)) {
+			configure_spinbox(w, &property->items[i], property->perm, w->m_mkgp_guide_period2_ra);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_DITHERING_AMOUNT_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_dither_aggr);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_DITHERING_TIME_LIMIT_ITEM_NAME)) {
@@ -3100,6 +3185,10 @@ void log_guide_header(ImagerWindow *w, char *device_name) {
 		double ppec_reactive_gain_ra = 0;
 		double ppec_pred_gain_ra = 0;
 		double ppec_period_ra = 0;
+		double mkgp_reactive_gain_ra = 0;
+		double mkgp_pred_gain_ra = 0;
+		double mkgp_period_ra = 0;
+		double mkgp_period2_ra = 0;
 		double cal_speed_ra = 0;
 		double cal_speed_dec = 0;
 		double cal_angle = 0;
@@ -3152,6 +3241,14 @@ void log_guide_header(ImagerWindow *w, char *device_name) {
 				ppec_pred_gain_ra = p->items[i].number.value;
 			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_PPEC_PERIOD_RA_ITEM_NAME)) {
 				ppec_period_ra = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_MKGP_REACTIVE_GAIN_RA_ITEM_NAME)) {
+				mkgp_reactive_gain_ra = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_MKGP_PRED_GAIN_RA_ITEM_NAME)) {
+				mkgp_pred_gain_ra = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_MKGP_PERIOD_RA_ITEM_NAME)) {
+				mkgp_period_ra = p->items[i].number.value;
+			} else if (client_match_item(&p->items[i], AGENT_GUIDER_SETTINGS_MKGP_PERIOD2_RA_ITEM_NAME)) {
+				mkgp_period2_ra = p->items[i].number.value;
 			}
 		}
 		fprintf(
@@ -3184,6 +3281,9 @@ void log_guide_header(ImagerWindow *w, char *device_name) {
 				break;
 			case ImagerWindow::GUIDER_CORRECTION_PPEC:
 				fprintf(w->m_guide_log, "RA Settings [PPEC]: Reactive Gain = %.3f %%, Predictive Gain = %.3f %%, Worm Period = %.3f s\n", ppec_reactive_gain_ra, ppec_pred_gain_ra, ppec_period_ra);
+				break;
+			case ImagerWindow::GUIDER_CORRECTION_MKGP:
+				fprintf(w->m_guide_log, "RA Settings [Multi Kernel GP]: Reactive Gain = %.3f %%, Predictive Gain = %.3f %%, Worm Period = %.3f s, 2nd Stage Period = %.3f s\n", mkgp_reactive_gain_ra, mkgp_pred_gain_ra, mkgp_period_ra, mkgp_period2_ra);
 				break;
 			default:
 				fprintf(w->m_guide_log, "RA Settings [Unknown]: Correction algorithm not available\n");

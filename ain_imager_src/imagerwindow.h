@@ -186,6 +186,7 @@ private:
 	friend void update_guider_apply_dec_backlash(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_reverse_dec(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_correction_property(ImagerWindow *w, indigo_property *property);
+	friend void update_gp_model_learning(ImagerWindow *w, const char *device, bool mkgp);
 	friend void agent_guider_start_process_change(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_ra_dec(ImagerWindow *w, indigo_property *property, bool update_input);
 	friend void update_mount_az_alt(ImagerWindow *w, indigo_property *property);
@@ -433,6 +434,7 @@ public slots:
 	void on_guider_agent_rswitch_aggressivity_changed(int value);
 	void on_guider_agent_rswitch_fast_threshild_changed(double value);
 	void on_guider_agent_ppec_changed(int value);
+	void on_guider_agent_mkgp_changed(int value);
 	void on_preview_mode_off();
 	void on_preview_mode_fine_guider();
 	void on_preview_mode_normal_guider();
@@ -980,6 +982,10 @@ private:
 	QSpinBox  *m_ppec_guide_reactive_gain_ra;
 	QSpinBox  *m_ppec_guide_pred_gain_ra;
 	QSpinBox  *m_ppec_guide_period_ra;
+	QSpinBox  *m_mkgp_guide_reactive_gain_ra;
+	QSpinBox  *m_mkgp_guide_pred_gain_ra;
+	QSpinBox  *m_mkgp_guide_period_ra;
+	QSpinBox  *m_mkgp_guide_period2_ra;
 
 	FocusGraph *m_guider_graph;
 	SimplePlot *m_guider_target;
@@ -1010,6 +1016,7 @@ private:
 	QPushButton *m_guider_preview_button;
 	QPushButton *m_guider_calibrate_button;
 	QPushButton *m_guider_stop_button;
+	QLabel *m_guider_gp_model_header_label;
 	QLabel *m_guider_ppec_learning_label;
 	QToolButton *m_ppec_reset_button;
 
@@ -1025,7 +1032,8 @@ private:
 		GUIDER_CORRECTION_HYSTERESIS,
 		GUIDER_CORRECTION_LINEAR_TREND,
 		GUIDER_CORRECTION_RESIST_SWITCH,
-		GUIDER_CORRECTION_PPEC
+		GUIDER_CORRECTION_PPEC,
+		GUIDER_CORRECTION_MKGP
 	};
 	GuiderCorrectionMode m_ra_correction_mode;
 	GuiderCorrectionMode m_dec_correction_mode;
@@ -1306,6 +1314,8 @@ private:
 	void change_guider_agent_rswitch_aggressivity(const char *agent) const;
 	void change_guider_agent_rswitch_fast_threshild(const char *agent) const;
 	void change_guider_agent_ppec(const char *agent) const;
+	void change_guider_agent_mkgp(const char *agent) const;
+	void change_guider_agent_reset_mkgp(const char *agent) const;
 	void change_guider_agent_reset_ppec(const char *agent) const;
 	void change_guider_agent_i(const char *agent) const;
 	void change_guider_agent_edge_clipping(const char *agent) const;

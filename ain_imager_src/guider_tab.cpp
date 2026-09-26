@@ -513,10 +513,31 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	correction_frame_layout->addWidget(m_ppec_guide_pred_gain_ra, correction_row, 3);
 	connect(m_ppec_guide_pred_gain_ra, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_ppec_changed);
 
+	/* Multi Kernel GP takes the same pair of gains as Predictive PEC. */
+	m_mkgp_guide_reactive_gain_ra = new QSpinBox();
+	m_mkgp_guide_reactive_gain_ra->setMaximum(100);
+	m_mkgp_guide_reactive_gain_ra->setMinimum(0);
+	m_mkgp_guide_reactive_gain_ra->setValue(0);
+	m_mkgp_guide_reactive_gain_ra->setToolTip("Reactive gain (%)");
+	m_mkgp_guide_reactive_gain_ra->hide();
+	correction_frame_layout->addWidget(m_mkgp_guide_reactive_gain_ra, correction_row, 2);
+	connect(m_mkgp_guide_reactive_gain_ra, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_mkgp_changed);
+
+	m_mkgp_guide_pred_gain_ra = new QSpinBox();
+	m_mkgp_guide_pred_gain_ra->setMaximum(100);
+	m_mkgp_guide_pred_gain_ra->setMinimum(0);
+	m_mkgp_guide_pred_gain_ra->setValue(0);
+	m_mkgp_guide_pred_gain_ra->setToolTip("Prediction gain (%)");
+	m_mkgp_guide_pred_gain_ra->hide();
+	correction_frame_layout->addWidget(m_mkgp_guide_pred_gain_ra, correction_row, 3);
+	connect(m_mkgp_guide_pred_gain_ra, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_mkgp_changed);
+
 	// Parameter 2
 	correction_row++;
 	m_guide_ra_param2_label = new QLabel("Integral gain:");
-	correction_frame_layout->addWidget(m_guide_ra_param2_label, correction_row, 0, 1, 3);
+	/* Two columns only - Multi Kernel GP puts a period in each of the other
+	   two, the way the gains above sit side by side. */
+	correction_frame_layout->addWidget(m_guide_ra_param2_label, correction_row, 0, 1, 2);
 
 	m_pi_guide_i_gain_ra = new QDoubleSpinBox();
 	m_pi_guide_i_gain_ra->setMaximum(1);
@@ -541,6 +562,28 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	m_ppec_guide_period_ra->hide();
 	correction_frame_layout->addWidget(m_ppec_guide_period_ra, correction_row, 3);
 	connect(m_ppec_guide_period_ra, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_ppec_changed);
+
+	/* Multi Kernel GP models two periods, so it gets a box for each: the worm
+	   period on the left, the second stage beside it. */
+	m_mkgp_guide_period_ra = new QSpinBox();
+	m_mkgp_guide_period_ra->setMaximum(2000);
+	m_mkgp_guide_period_ra->setMinimum(0);
+	m_mkgp_guide_period_ra->setValue(0);
+	m_mkgp_guide_period_ra->setSpecialValueText("Auto");
+	m_mkgp_guide_period_ra->setToolTip("Worm period (s), 0 = auto");
+	m_mkgp_guide_period_ra->hide();
+	correction_frame_layout->addWidget(m_mkgp_guide_period_ra, correction_row, 2);
+	connect(m_mkgp_guide_period_ra, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_mkgp_changed);
+
+	m_mkgp_guide_period2_ra = new QSpinBox();
+	m_mkgp_guide_period2_ra->setMaximum(2000);
+	m_mkgp_guide_period2_ra->setMinimum(0);
+	m_mkgp_guide_period2_ra->setValue(0);
+	m_mkgp_guide_period2_ra->setSpecialValueText("Auto");
+	m_mkgp_guide_period2_ra->setToolTip("2nd stage period (s), 0 = auto");
+	m_mkgp_guide_period2_ra->hide();
+	correction_frame_layout->addWidget(m_mkgp_guide_period2_ra, correction_row, 3);
+	connect(m_mkgp_guide_period2_ra, QOverload<int>::of(&QSpinBox::valueChanged), this, &ImagerWindow::on_guider_agent_mkgp_changed);
 
 	correction_row++;
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -742,10 +785,12 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	spacer = new QSpacerItem(1, 10, QSizePolicy::Expanding, QSizePolicy::Maximum);
 	calibration_frame_layout->addItem(spacer, calibration_row, 0);
 
+	/* Both Predictive PEC and Multi Kernel GP learn a model - the header, the
+	   progress and the reset follow whichever of the two RA is set to. */
 	calibration_row++;
-	label = new QLabel("Predictive PEC:");
-	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
-	calibration_frame_layout->addWidget(label, calibration_row, 0, 1, 4);
+	m_guider_gp_model_header_label = new QLabel("Predictive PEC:");
+	m_guider_gp_model_header_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
+	calibration_frame_layout->addWidget(m_guider_gp_model_header_label, calibration_row, 0, 1, 4);
 
 	calibration_row++;
 	m_guider_ppec_learning_label = new QLabel("Model 0% complete");
@@ -1069,10 +1114,14 @@ void ImagerWindow::on_guider_reset_ppec(bool clicked) {
 	Q_UNUSED(clicked);
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
 
+	/* The button resets the model of the mode RA is guiding with. */
+	bool mkgp = (m_ra_correction_mode == GUIDER_CORRECTION_MKGP);
+	QString model = mkgp ? "Multi Kernel GP" : "Predictive PEC";
+
 	if (conf.require_confirmation) {
 		QMessageBox msgBox(this);
-		msgBox.setWindowTitle("Reset Predictive PEC");
-		msgBox.setText(QString("Discard the learned Predictive PEC model?"));
+		msgBox.setWindowTitle(QString("Reset ") + model);
+		msgBox.setText(QString("Discard the learned %1 model?").arg(model));
 		msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
 		msgBox.setDefaultButton(QMessageBox::Yes);
 		if (QMessageBox::No == msgBox.exec()) {
@@ -1085,7 +1134,11 @@ void ImagerWindow::on_guider_reset_ppec(bool clicked) {
 		get_selected_guider_agent(selected_agent);
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
-		change_guider_agent_reset_ppec(selected_agent);
+		if (mkgp) {
+			change_guider_agent_reset_mkgp(selected_agent);
+		} else {
+			change_guider_agent_reset_ppec(selected_agent);
+		}
 	});
 }
 
@@ -1293,6 +1346,18 @@ void ImagerWindow::on_guider_agent_ppec_changed(int value) {
 
 		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
 		change_guider_agent_ppec(selected_agent);
+	});
+}
+
+void ImagerWindow::on_guider_agent_mkgp_changed(int value) {
+	Q_UNUSED(value);
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_guider_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_guider_agent_mkgp(selected_agent);
 	});
 }
 
