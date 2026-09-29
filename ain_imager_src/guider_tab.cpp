@@ -793,8 +793,8 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	calibration_frame_layout->addWidget(m_guider_gp_model_header_label, calibration_row, 0, 1, 4);
 
 	calibration_row++;
-	m_guider_ppec_learning_label = new QLabel("Model 0% complete");
-	calibration_frame_layout->addWidget(m_guider_ppec_learning_label, calibration_row, 0, 1, 3);
+	m_guider_gp_learning_label = new QLabel("Model 0% complete");
+	calibration_frame_layout->addWidget(m_guider_gp_learning_label, calibration_row, 0, 1, 3);
 
 	m_ppec_reset_button = new QToolButton(this);
 	m_ppec_reset_button->setIcon(QIcon(":resource/delete.png"));

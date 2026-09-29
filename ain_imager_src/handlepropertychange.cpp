@@ -1754,7 +1754,7 @@ void update_gp_model_learning(ImagerWindow *w, const char *device, bool mkgp) {
 	}
 	char label_str[50];
 	snprintf(label_str, 50, "Model %.0f%% complete", learning);
-	w->set_text(w->m_guider_ppec_learning_label, label_str);
+	w->set_text(w->m_guider_gp_learning_label, label_str);
 }
 
 void update_guider_correction_property(ImagerWindow *w, indigo_property *property) {
@@ -2952,7 +2952,7 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 		label_str, 50, "Model %.0f%% complete",
 		w->m_ra_correction_mode == ImagerWindow::GUIDER_CORRECTION_MKGP ? mkgp_learning : ppec_learning
 	);
-	w->set_text(w->m_guider_ppec_learning_label, label_str);
+	w->set_text(w->m_guider_gp_learning_label, label_str);
 #endif
 
 	bool corr_response_supported = has_corr_response_ra && has_corr_response_dec;

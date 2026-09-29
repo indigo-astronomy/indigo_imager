@@ -1017,7 +1017,7 @@ private:
 	QPushButton *m_guider_calibrate_button;
 	QPushButton *m_guider_stop_button;
 	QLabel *m_guider_gp_model_header_label;
-	QLabel *m_guider_ppec_learning_label;
+	QLabel *m_guider_gp_learning_label;
 	QToolButton *m_ppec_reset_button;
 
 	QComboBox *m_detection_mode_select;
