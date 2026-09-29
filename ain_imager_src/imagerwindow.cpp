@@ -628,6 +628,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 
 	connect(this, &ImagerWindow::show_widget, this, &ImagerWindow::on_show);
 	connect(this, &ImagerWindow::set_tooltip, this, &ImagerWindow::on_set_tooltip);
+	connect(this, &ImagerWindow::set_special_value_text, this, &ImagerWindow::on_set_special_value_text);
 	connect(this, &ImagerWindow::set_button_icon, this, &ImagerWindow::on_set_button_icon);
 	connect(this, &ImagerWindow::configure_corr_response, this, &ImagerWindow::on_configure_corr_response);
 	connect(this, &ImagerWindow::set_checkbox_checked, this, &ImagerWindow::on_set_checkbox_checked);

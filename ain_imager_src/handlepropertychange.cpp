@@ -3020,6 +3020,7 @@ void update_guider_settings(ImagerWindow *w, indigo_property *property) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_cal_drift);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_STEP_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_cal_step);
+			w->set_special_value_text(w->m_guide_cal_step, property->items[i].number.min == 0 ? "Auto" : "");
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_BACKLASH_ITEM_NAME)) {
 			configure_spinbox(w, &property->items[i], property->perm, w->m_guide_dec_backlash);
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_SETTINGS_ANGLE_ITEM_NAME)) {
