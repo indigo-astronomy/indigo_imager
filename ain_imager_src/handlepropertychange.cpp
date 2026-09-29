@@ -1853,7 +1853,7 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 				if (property->items[i].sw.value) {
 					w->m_ra_correction_mode = ImagerWindow::GUIDER_CORRECTION_MKGP;
 					w->set_text(w->m_guide_ra_param1_label, "Reactive/Prediction gain (%):");
-					w->set_text(w->m_guide_ra_param2_label, "Worm/2nd stage period (s):");
+					w->set_text(w->m_guide_ra_param2_label, "Worm / Second stage period (s):");
 					w->show_widget(w->m_guide_ra_param1_label, true);
 					w->show_widget(w->m_guide_ra_param2_label, true);
 
