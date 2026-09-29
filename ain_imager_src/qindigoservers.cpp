@@ -95,6 +95,10 @@ void QIndigoServers::onConnectionChange(QString service_name, bool is_connected)
 		item = m_server_list->item(i);
 		QString service = getServiceName(item);
 		if (service == service_name) {
+			// Reflect the state only - do not let itemChanged() feed it back as a
+			// user request, or a dropped connection turns into a disconnect request
+			// that clears auto_connect and stops the reconnect thread.
+			const QSignalBlocker blocker(m_server_list);
 			if (is_connected)
 				item->setCheckState(Qt::Checked);
 			else
