@@ -83,7 +83,8 @@ typedef enum {
 typedef enum {
 	AIN_ALERT_STATE = INDIGO_ALERT_STATE,
 	AIN_WARNING_STATE = INDIGO_BUSY_STATE,
-	AIN_OK_STATE = 100
+	AIN_OK_STATE = 100,
+	AIN_DISABLED_STATE = 101
 } object_alt_state;
 
 typedef enum {

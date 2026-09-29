@@ -1734,27 +1734,67 @@ void update_focus_estimator_property(ImagerWindow *w, indigo_property *property)
 	}
 }
 
-/* The learned model progress arrives with the guider statistics, and those only
+/* The learned model state arrives with the guider statistics, and those only
    come in while guiding. Switching the correction mode therefore has to read the
-   new model's figure out of the statistics we last saw, or the label would go on
-   showing the progress of the model that was selected before. */
-void update_gp_model_learning(ImagerWindow *w, const char *device, bool mkgp) {
-	double learning = 0;
-	indigo_property *stats = properties.get(device, AGENT_GUIDER_STATS_PROPERTY_NAME);
+   new model's figures out of the statistics we last saw, or the labels would go
+   on showing the state of the model that was selected before.
+
+   A measured period is busy while the model is still learning and ok once it
+   has learned. The second stage of Multi Kernel GP is in addition gated by the
+   strength of its spectral line: its weight is shown next to the period, which
+   is shown disabled when the stage is switched out. The
+   gate is fed by the model's own spectrum, so it reads 0 until enough data is
+   in and is judged only once the model has learned. */
+void update_gp_model_state(ImagerWindow *w, indigo_property *stats, bool mkgp) {
+	double learning = 0, period = 0, period2 = 0, weight2 = 0;
 	if (stats) {
-		const char *item_name = mkgp ?
-			AGENT_GUIDER_STATS_MKGP_LEARNING_ITEM_NAME :
-			AGENT_GUIDER_STATS_PPEC_LEARNING_ITEM_NAME;
 		for (int i = 0; i < stats->count; i++) {
-			if (client_match_item(&stats->items[i], item_name)) {
-				learning = stats->items[i].number.value;
-				break;
+			indigo_item *item = &stats->items[i];
+			if (client_match_item(item, mkgp ? AGENT_GUIDER_STATS_MKGP_LEARNING_ITEM_NAME : AGENT_GUIDER_STATS_PPEC_LEARNING_ITEM_NAME)) {
+				learning = item->number.value;
+			} else if (client_match_item(item, mkgp ? AGENT_GUIDER_STATS_MKGP_PERIOD_ITEM_NAME : AGENT_GUIDER_STATS_PPEC_PERIOD_ITEM_NAME)) {
+				period = item->number.value;
+			} else if (mkgp && client_match_item(item, AGENT_GUIDER_STATS_MKGP_PERIOD2_ITEM_NAME)) {
+				period2 = item->number.value;
+			} else if (mkgp && client_match_item(item, AGENT_GUIDER_STATS_MKGP_STRENGTH2_ITEM_NAME)) {
+				weight2 = item->number.value;
 			}
 		}
 	}
+	/* judged as displayed, so a period never reads busy next to "100%" */
+	bool learned = learning >= 99.5;
 	char label_str[50];
 	snprintf(label_str, 50, "Model %.0f%% complete", learning);
 	w->set_text(w->m_guider_gp_learning_label, label_str);
+
+	w->set_text(w->m_guider_gp_period_caption_label, mkgp ? "Measured periods:" : "Measured period:");
+	if (period > 0) {
+		snprintf(label_str, 50, "%.1f s", period);
+		w->set_text(w->m_guider_gp_period_label, label_str);
+		w->set_widget_state(w->m_guider_gp_period_label, learned ? INDIGO_OK_STATE : INDIGO_BUSY_STATE);
+	} else {
+		w->set_text(w->m_guider_gp_period_label, "N/A");
+		w->set_widget_state(w->m_guider_gp_period_label, INDIGO_IDLE_STATE);
+	}
+
+	w->show_widget(w->m_guider_gp_period2_label, mkgp);
+	if (!mkgp) {
+		return;
+	}
+	if (period2 > 0) {
+		snprintf(label_str, 50, "%.1f s (%.0f%%)", period2, weight2);
+		w->set_text(w->m_guider_gp_period2_label, label_str);
+		if (!learned) {
+			w->set_widget_state(w->m_guider_gp_period2_label, INDIGO_BUSY_STATE);
+		} else if (weight2 < 0.5) {
+			w->set_widget_state(w->m_guider_gp_period2_label, AIN_DISABLED_STATE);
+		} else {
+			w->set_widget_state(w->m_guider_gp_period2_label, INDIGO_OK_STATE);
+		}
+	} else {
+		w->set_text(w->m_guider_gp_period2_label, "N/A");
+		w->set_widget_state(w->m_guider_gp_period2_label, INDIGO_IDLE_STATE);
+	}
 }
 
 void update_guider_correction_property(ImagerWindow *w, indigo_property *property) {
@@ -1847,7 +1887,7 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 					w->show_widget(w->m_mkgp_guide_period2_ra, false);
 					w->set_text(w->m_guider_gp_model_header_label, "Predictive PEC:");
 					w->set_tooltip(w->m_ppec_reset_button, "Reset learned Predictive PEC model");
-					update_gp_model_learning(w, property->device, false);
+					update_gp_model_state(w, properties.get(property->device, AGENT_GUIDER_STATS_PROPERTY_NAME), false);
 				}
 			} else if (client_match_item(&property->items[i], AGENT_GUIDER_CORRECTION_MODE_MKGP_ITEM_NAME)) {
 				if (property->items[i].sw.value) {
@@ -1871,7 +1911,7 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 					w->show_widget(w->m_mkgp_guide_period2_ra, true);
 					w->set_text(w->m_guider_gp_model_header_label, "Multi Kernel GP:");
 					w->set_tooltip(w->m_ppec_reset_button, "Reset learned Multi Kernel GP model");
-					update_gp_model_learning(w, property->device, true);
+					update_gp_model_state(w, properties.get(property->device, AGENT_GUIDER_STATS_PROPERTY_NAME), true);
 				}
 			} else {
 				if (property->items[i].sw.value) {
@@ -2748,10 +2788,6 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	int frame_count = -1;
 	bool is_dithering = false;
 	int guider_phase = 0;
-#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
-	double ppec_learning = 0;
-	double mkgp_learning = 0;
-#endif
 	double corr_response_ra = 0, corr_response_dec = 0;
 	bool has_corr_response_ra = false, has_corr_response_dec = false;
 
@@ -2808,11 +2844,6 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_CORR_RESPONSE_DEC_ITEM_NAME)) {
 			corr_response_dec = property->items[i].number.value;
 			has_corr_response_dec = true;
-#ifdef AGENT_GUIDER_CORRECTION_MODE_PPEC_ITEM_NAME
-		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_PPEC_LEARNING_ITEM_NAME)) {
-			ppec_learning = property->items[i].number.value;
-		} else if (client_match_item(&property->items[i], AGENT_GUIDER_STATS_MKGP_LEARNING_ITEM_NAME)) {
-			mkgp_learning = property->items[i].number.value;
 		}
 	}
 
@@ -2947,13 +2978,8 @@ void update_guider_stats(ImagerWindow *w, indigo_property *property) {
 	snprintf(label_str, 50, "%+.2f  %+.2f s", cor_ra, cor_dec);
 	w->set_text(w->m_guider_pulse_label, label_str);
 
-	/* Both models report their own progress, show the one in use. */
-	snprintf(
-		label_str, 50, "Model %.0f%% complete",
-		w->m_ra_correction_mode == ImagerWindow::GUIDER_CORRECTION_MKGP ? mkgp_learning : ppec_learning
-	);
-	w->set_text(w->m_guider_gp_learning_label, label_str);
-#endif
+	/* Both models report their own state, show the one in use. */
+	update_gp_model_state(w, property, w->m_ra_correction_mode == ImagerWindow::GUIDER_CORRECTION_MKGP);
 
 	bool corr_response_supported = has_corr_response_ra && has_corr_response_dec;
 	bool corr_response_ready = corr_response_supported && frame_count >= 100;
@@ -5112,6 +5138,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_guider_agent)) {
 		configure_corr_response(m_guider_corr_response_ra_label, m_guider_corr_response_ra_bar, false, "", "");
 		configure_corr_response(m_guider_corr_response_dec_label, m_guider_corr_response_dec_bar, false, "", "");
+		update_gp_model_state(this, nullptr, m_ra_correction_mode == GUIDER_CORRECTION_MKGP);
 	}
 
 	// Mount Agent

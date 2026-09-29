@@ -802,6 +802,26 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	calibration_frame_layout->addWidget(m_ppec_reset_button, calibration_row, 3, Qt::AlignRight);
 	connect(m_ppec_reset_button, &QToolButton::clicked, this, &ImagerWindow::on_guider_reset_ppec);
 
+	/* The periods the model has measured - the second stage is Multi Kernel GP only. */
+	calibration_row++;
+	m_guider_gp_period_caption_label = new QLabel("Measured period:");
+	calibration_frame_layout->addWidget(m_guider_gp_period_caption_label, calibration_row, 0, 1, 2);
+
+	/* The state colours are backgrounds, so both periods get the same fixed
+	   width - wide enough for the longest text - to read as matching boxes. */
+	m_guider_gp_period_label = new QLabel("N/A");
+	m_guider_gp_period_label->setToolTip("Worm period measured by the model");
+	m_guider_gp_period2_label = new QLabel("N/A");
+	m_guider_gp_period2_label->setToolTip("Second stage period measured by the model and its weight - the stage is gated out at 0%");
+	m_guider_gp_period2_label->setVisible(false);
+	for (QLabel *period_label : {m_guider_gp_period_label, m_guider_gp_period2_label}) {
+		period_label->ensurePolished();
+		period_label->setAlignment(Qt::AlignCenter);
+		period_label->setFixedWidth(period_label->fontMetrics().horizontalAdvance("0000.0 s (100%)") + 6);
+	}
+	calibration_frame_layout->addWidget(m_guider_gp_period_label, calibration_row, 2, Qt::AlignCenter);
+	calibration_frame_layout->addWidget(m_guider_gp_period2_label, calibration_row, 3, Qt::AlignCenter);
+
 	QFrame *misc_frame = new QFrame;
 	guider_tabbar->addTab(misc_frame, "Misc");
 

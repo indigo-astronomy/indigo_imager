@@ -186,7 +186,7 @@ private:
 	friend void update_guider_apply_dec_backlash(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_reverse_dec(ImagerWindow *w, indigo_property *property);
 	friend void update_guider_correction_property(ImagerWindow *w, indigo_property *property);
-	friend void update_gp_model_learning(ImagerWindow *w, const char *device, bool mkgp);
+	friend void update_gp_model_state(ImagerWindow *w, indigo_property *stats, bool mkgp);
 	friend void agent_guider_start_process_change(ImagerWindow *w, indigo_property *property);
 	friend void update_mount_ra_dec(ImagerWindow *w, indigo_property *property, bool update_input);
 	friend void update_mount_az_alt(ImagerWindow *w, indigo_property *property);
@@ -698,6 +698,9 @@ public slots:
 			case AIN_OK_STATE:
 				set_ok2(widget);
 				break;
+			case AIN_DISABLED_STATE:
+				set_disabled(widget);
+				break;
 		}
 	};
 
@@ -1018,6 +1021,9 @@ private:
 	QPushButton *m_guider_stop_button;
 	QLabel *m_guider_gp_model_header_label;
 	QLabel *m_guider_gp_learning_label;
+	QLabel *m_guider_gp_period_caption_label;
+	QLabel *m_guider_gp_period_label;
+	QLabel *m_guider_gp_period2_label;
 	QToolButton *m_ppec_reset_button;
 
 	QComboBox *m_detection_mode_select;

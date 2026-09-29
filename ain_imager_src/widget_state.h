@@ -24,6 +24,7 @@
 #define set_busy(widget) (widget->setStyleSheet("*:enabled {background-color: #343422;} *:!enabled {background-color: #323222;}"))
 #define set_ok(widget) (widget->setStyleSheet("*:enabled {background-color: #272727;} QSpinBox:!enabled {background-color: #222222;}"))
 #define set_ok2(widget) (widget->setStyleSheet("background-color: #273727;"))
+#define set_disabled(widget) (widget->setStyleSheet("background-color: #272727; color: #707070;"))
 
 
 #define SAVE_BOTH_INDICATOR            "<font color='#3b9640'><b>●</b></font>"
