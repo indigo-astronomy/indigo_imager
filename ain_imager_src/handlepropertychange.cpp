@@ -1934,6 +1934,14 @@ void update_guider_correction_property(ImagerWindow *w, indigo_property *propert
 				}
 			}
 		}
+		/* Only Predictive PEC and Multi Kernel GP learn a model, the other modes have nothing to show. */
+		bool gp_mode = w->m_ra_correction_mode == ImagerWindow::GUIDER_CORRECTION_PPEC || w->m_ra_correction_mode == ImagerWindow::GUIDER_CORRECTION_MKGP;
+		w->show_widget(w->m_guider_gp_model_header_label, gp_mode);
+		w->show_widget(w->m_guider_gp_learning_label, gp_mode);
+		w->show_widget(w->m_ppec_reset_button, gp_mode);
+		w->show_widget(w->m_guider_gp_period_caption_label, gp_mode);
+		w->show_widget(w->m_guider_gp_period_label, gp_mode);
+		w->show_widget(w->m_guider_gp_period2_label, w->m_ra_correction_mode == ImagerWindow::GUIDER_CORRECTION_MKGP);
 		// Dec correction mode is not updated so check if it is selected to decide if I stack should be shown
 		if (!strncmp(w->m_dec_correction_mode_select->currentData().toString().toUtf8().constData(), AGENT_GUIDER_CORRECTION_MODE_PI_ITEM_NAME, INDIGO_NAME_SIZE)) {
 			show_i_stack = true;

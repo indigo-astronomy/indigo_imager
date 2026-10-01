@@ -786,7 +786,8 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	calibration_frame_layout->addItem(spacer, calibration_row, 0);
 
 	/* Both Predictive PEC and Multi Kernel GP learn a model - the header, the
-	   progress and the reset follow whichever of the two RA is set to. */
+	   progress and the reset follow whichever of the two RA is set to, and are
+	   hidden for the other modes. */
 	calibration_row++;
 	m_guider_gp_model_header_label = new QLabel("Predictive PEC:");
 	m_guider_gp_model_header_label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
@@ -821,6 +822,14 @@ void ImagerWindow::create_guider_tab(QFrame *guider_frame) {
 	}
 	calibration_frame_layout->addWidget(m_guider_gp_period_label, calibration_row, 2, Qt::AlignCenter);
 	calibration_frame_layout->addWidget(m_guider_gp_period2_label, calibration_row, 3, Qt::AlignCenter);
+
+	/* Hidden until RA is set to one of the two models. */
+	for (QWidget *gp_widget : std::initializer_list<QWidget *>{
+		m_guider_gp_model_header_label, m_guider_gp_learning_label, m_ppec_reset_button,
+		m_guider_gp_period_caption_label, m_guider_gp_period_label
+	}) {
+		gp_widget->setVisible(false);
+	}
 
 	QFrame *misc_frame = new QFrame;
 	guider_tabbar->addTab(misc_frame, "Misc");
