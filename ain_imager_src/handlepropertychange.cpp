@@ -1762,7 +1762,7 @@ void update_gp_model_state(ImagerWindow *w, indigo_property *stats, bool mkgp) {
 		}
 	}
 	/* judged as displayed, so a period never reads busy next to "100%" */
-	bool learned = learning >= 99.5;
+	bool learned = learning >= 99.9;
 	char label_str[50];
 	snprintf(label_str, 50, "Model %.0f%% complete", learning);
 	w->set_text(w->m_guider_gp_learning_label, label_str);
@@ -1771,7 +1771,13 @@ void update_gp_model_state(ImagerWindow *w, indigo_property *stats, bool mkgp) {
 	if (period > 0) {
 		snprintf(label_str, 50, "%.1f s", period);
 		w->set_text(w->m_guider_gp_period_label, label_str);
-		w->set_widget_state(w->m_guider_gp_period_label, learned ? INDIGO_OK_STATE : INDIGO_BUSY_STATE);
+		if (learned) {
+			w->set_widget_state(w->m_guider_gp_period_label, INDIGO_OK_STATE);
+		} else if (learning > 0) {
+			w->set_widget_state(w->m_guider_gp_period_label, INDIGO_BUSY_STATE);
+		} else {
+			w->set_widget_state(w->m_guider_gp_period_label, INDIGO_IDLE_STATE);
+		}
 	} else {
 		w->set_text(w->m_guider_gp_period_label, "N/A");
 		w->set_widget_state(w->m_guider_gp_period_label, INDIGO_IDLE_STATE);
@@ -1784,8 +1790,10 @@ void update_gp_model_state(ImagerWindow *w, indigo_property *stats, bool mkgp) {
 	if (period2 > 0) {
 		snprintf(label_str, 50, "%.1f s (%.0f%%)", period2, weight2);
 		w->set_text(w->m_guider_gp_period2_label, label_str);
-		if (!learned) {
+		if (!learned && learning > 0) {
 			w->set_widget_state(w->m_guider_gp_period2_label, INDIGO_BUSY_STATE);
+		} else if (!learned && learning == 0) {
+			w->set_widget_state(w->m_guider_gp_period2_label, INDIGO_IDLE_STATE);
 		} else if (weight2 < 0.5) {
 			w->set_widget_state(w->m_guider_gp_period2_label, AIN_DISABLED_STATE);
 		} else {
