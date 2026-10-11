@@ -18,8 +18,8 @@ fi
 
 echo "Building version $VERSION against $FLAVOR"
 sh scripts/make_source_tarball.sh $VERSION
-sh scripts/build_in_docker.sh "i386/debian:bullseye-slim" $VERSION "i386" $FLAVOR
-sh scripts/build_in_docker.sh "amd64/debian:bullseye-slim" $VERSION "amd64" $FLAVOR
-sh scripts/build_in_docker.sh "arm32v7/debian:bullseye-slim" $VERSION "armhf" $FLAVOR
-sh scripts/build_in_docker.sh "arm64v8/debian:bullseye-slim" $VERSION "arm64" $FLAVOR
+sh scripts/build_in_docker.sh "i386/debian:bookworm-slim" $VERSION "i386" $FLAVOR
+sh scripts/build_in_docker.sh "amd64/debian:bookworm-slim" $VERSION "amd64" $FLAVOR
+sh scripts/build_in_docker.sh "arm32v7/debian:bookworm-slim" $VERSION "armhf" $FLAVOR
+sh scripts/build_in_docker.sh "arm64v8/debian:bookworm-slim" $VERSION "arm64" $FLAVOR
 rm ain-imager-$VERSION.tar.gz
