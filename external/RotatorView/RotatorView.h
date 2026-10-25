@@ -112,6 +112,11 @@ public:
 	void setShowLabels(bool show);
 	bool showLabels() const { return m_showLabels; }
 
+	/** Where the circle sits when the view is not square - any mix of a
+	 *  horizontal and a vertical Qt::Alignment flag, centered by default. */
+	void setAlignment(Qt::Alignment alignment);
+	Qt::Alignment alignment() const { return m_alignment; }
+
 	/* Takes whatever space it is given and draws in the largest square that
 	   fits - the hint is fixed, the same way DomeView does it. */
 	QSize sizeHint() const override { return minimumSize(); }
@@ -128,6 +133,10 @@ protected:
 	void mouseReleaseEvent(QMouseEvent *event) override;
 
 private:
+	/** The square the view draws in. */
+	QRectF square() const;
+	/** The middle of the circle. */
+	QPointF middle() const;
 	/** Angle of a point about the middle of the view, in rotator degrees. */
 	double angleAt(const QPointF &point) const;
 	/** Rotator degrees -> the angle the painter draws at, in degrees. */
@@ -166,6 +175,7 @@ private:
 	QString m_title;
 	bool m_showReadout = true;
 	bool m_showLabels = true;
+	Qt::Alignment m_alignment = Qt::AlignCenter;
 
 	/* The DomeView palette, so the two views read as one pair: the structure
 	   pale blue-grey, the sky behind it dark, the instrument light, green for

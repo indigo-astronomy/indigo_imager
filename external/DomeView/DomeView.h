@@ -218,6 +218,11 @@ public:
 	void setShowCompass(bool show);
 	bool showCompass() const { return m_showCompass; }
 
+	/** Where the circle sits when the view is not square - any mix of a
+	 *  horizontal and a vertical Qt::Alignment flag, centered by default. */
+	void setAlignment(Qt::Alignment alignment);
+	Qt::Alignment alignment() const { return m_alignment; }
+
 	/* The view takes whatever space it is given and draws the circle in the
 	   largest square that fits. The hint must not follow our own size - a
 	   hint that grows with the width makes the containing tab ask for more
@@ -277,6 +282,7 @@ private:
 	QColor m_busyColor = QColor(226, 186, 108);
 	qreal m_domeOpacity = 0.35;
 	bool m_showLabels = true;
+	Qt::Alignment m_alignment = Qt::AlignCenter;
 	bool m_showStatus = true;
 	bool m_showCompass = true;
 
@@ -286,6 +292,8 @@ private:
 
 	/** Runs the 1Hz blink while anything is busy, stops it when nothing is. */
 	void updateBlink();
+	/** The square the view draws in. */
+	QRectF square() const;
 	void updateTransform();
 	QPointF toScreen(double east, double north) const;
 	QPointF toScreen(const Vec3 &v) const { return toScreen(v.x, v.y); }

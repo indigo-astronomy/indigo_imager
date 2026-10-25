@@ -438,6 +438,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_rotator_view->setToolTip("Rotator position, drag to pick an angle");
 	/* No rotator selected yet - enabled once ROTATOR_POSITION is defined. */
 	m_rotator_view->setPickEnabled(false);
+	m_rotator_view->setAlignment(Qt::AlignTop | Qt::AlignHCenter);
 	/* Fills the rows it spans, the controls beside it. */
 	rotator_frame_layout->addWidget(m_rotator_view, rotator_row, 0, 6, 1);
 	connect(m_rotator_view, &RotatorView::targetPicked, this, &ImagerWindow::on_rotator_position_picked);
@@ -604,6 +605,7 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_dome_view = new DomeView();
 	m_dome_view->setTitle("");
 	m_dome_view->setToolTip("Dome and telescope seen from above");
+	m_dome_view->setAlignment(Qt::AlignTop | Qt::AlignHCenter);
 	dome_frame_layout->addWidget(m_dome_view, dome_row, 0);
 
 	/* Stacked to the right of the view, top aligned so they do not drift

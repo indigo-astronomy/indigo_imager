@@ -249,6 +249,11 @@ void DomeView::setDomeOpacity(qreal opacity) {
 	update();
 }
 
+void DomeView::setAlignment(Qt::Alignment alignment) {
+	m_alignment = alignment;
+	update();
+}
+
 void DomeView::setShowLabels(bool show) {
 	m_showLabels = show;
 	update();
@@ -456,8 +461,26 @@ bool DomeView::isTelescopeBlocked() const {
 	return !exitIsClear(exit);
 }
 
+/* The largest square that fits, placed in the widget as m_alignment asks. */
+QRectF DomeView::square() const {
+	double side = qMin(width(), height());
+	double x = (width() - side) / 2.0;
+	double y = (height() - side) / 2.0;
+	if (m_alignment & Qt::AlignLeft) {
+		x = 0;
+	} else if (m_alignment & Qt::AlignRight) {
+		x = width() - side;
+	}
+	if (m_alignment & Qt::AlignTop) {
+		y = 0;
+	} else if (m_alignment & Qt::AlignBottom) {
+		y = height() - side;
+	}
+	return QRectF(x, y, side, side);
+}
+
 void DomeView::updateTransform() {
-	m_center = QPointF(width() / 2.0, height() / 2.0);
+	m_center = square().center();
 
 	double half = qMin(width(), height()) / 2.0 - 2.0;
 	if (half < 10.0) {
@@ -1168,7 +1191,9 @@ void DomeView::drawLabels(QPainter &painter) {
 			statusColor = m_blockedColor;
 		}
 		painter.setPen(statusColor);
-		painter.drawText(QPointF(pad, height() - pad - fm.descent()), status);
+		/* In the corner of the square, not of a taller widget. */
+		QRectF box = square();
+		painter.drawText(QPointF(box.left() + pad, box.bottom() - pad - fm.descent()), status);
 	}
 	painter.restore();
 }

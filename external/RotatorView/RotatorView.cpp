@@ -166,6 +166,11 @@ void RotatorView::setShowReadout(bool show) {
 	update();
 }
 
+void RotatorView::setAlignment(Qt::Alignment alignment) {
+	m_alignment = alignment;
+	update();
+}
+
 void RotatorView::setShowLabels(bool show) {
 	m_showLabels = show;
 	update();
@@ -182,8 +187,30 @@ double RotatorView::paintAngle(double angle) const {
 	return 90.0 - drawn;
 }
 
+/* The largest square that fits, placed in the widget as m_alignment asks. */
+QRectF RotatorView::square() const {
+	double side = qMin(width(), height());
+	double x = (width() - side) / 2.0;
+	double y = (height() - side) / 2.0;
+	if (m_alignment & Qt::AlignLeft) {
+		x = 0;
+	} else if (m_alignment & Qt::AlignRight) {
+		x = width() - side;
+	}
+	if (m_alignment & Qt::AlignTop) {
+		y = 0;
+	} else if (m_alignment & Qt::AlignBottom) {
+		y = height() - side;
+	}
+	return QRectF(x, y, side, side);
+}
+
+QPointF RotatorView::middle() const {
+	return square().center();
+}
+
 double RotatorView::angleAt(const QPointF &point) const {
-	QPointF middle(width() / 2.0, height() / 2.0);
+	QPointF middle = this->middle();
 	double dx = point.x() - middle.x();
 	double dy = middle.y() - point.y();
 	double fromTwelve = normalize(90.0 - atan2(dy, dx) * RAD2DEG);
@@ -385,7 +412,7 @@ void RotatorView::paintEvent(QPaintEvent *event) {
 		painter.fillRect(rect(), m_backgroundColor);
 	}
 
-	QPointF middle(width() / 2.0, height() / 2.0);
+	QPointF middle = this->middle();
 	double side = qMin(width(), height());
 	double radius = side / 2.0 - qMax(6.0, side * 0.065);
 	if (radius <= 4) {
