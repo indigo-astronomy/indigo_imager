@@ -218,21 +218,14 @@ public:
 	void setShowCompass(bool show);
 	bool showCompass() const { return m_showCompass; }
 
-	/* Square - the view is a circle, so it asks for as much height as it is
-	   given width. The hint follows the width we were given and a resize asks
-	   the layout to look again, because heightForWidth() on its own is
-	   ignored by a layout aligned to the top: that hands out hint heights and
-	   never asks. */
-	QSize sizeHint() const override {
-		int side = qMax(minimumWidth(), width());
-		return QSize(side, side);
-	}
-	bool hasHeightForWidth() const override { return true; }
-	int heightForWidth(int width) const override { return width; }
+	/* The view takes whatever space it is given and draws the circle in the
+	   largest square that fits. The hint must not follow our own size - a
+	   hint that grows with the width makes the containing tab ask for more
+	   height whenever the page is shown and squeezes everything above it. */
+	QSize sizeHint() const override { return minimumSize(); }
 
 protected:
 	void paintEvent(QPaintEvent *event) override;
-	void resizeEvent(QResizeEvent *event) override;
 
 private:
 	/** A vector in dome coordinates: x = East, y = North, z = up, in meters. */

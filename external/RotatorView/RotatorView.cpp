@@ -38,9 +38,7 @@ static double normalize(double angle) {
 
 RotatorView::RotatorView(QWidget *parent) : QWidget(parent) {
 	setMinimumSize(140, 140);
-	QSizePolicy policy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-	policy.setHeightForWidth(true);
-	setSizePolicy(policy);
+	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	setCursor(Qt::PointingHandCursor);
 
 	/* Half a second on, half a second off - one blink a second, as in DomeView. */

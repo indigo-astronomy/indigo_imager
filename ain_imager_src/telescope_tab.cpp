@@ -433,10 +433,11 @@ void ImagerWindow::create_telescope_tab(QFrame *telescope_frame) {
 	m_rotator_view->setToolTip("Rotator position, drag to pick an angle");
 	/* No rotator selected yet - enabled once ROTATOR_POSITION is defined. */
 	m_rotator_view->setPickEnabled(false);
-	/* The view is square and would otherwise grow with the tab. */
+	/* The view draws in the largest square that fits and would otherwise
+	   grow with the tab. */
 	m_rotator_view->setMaximumWidth(200);
-	/* Pinned to the top of the rows it spans, level with the controls. */
-	rotator_frame_layout->addWidget(m_rotator_view, rotator_row, 0, 6, 1, Qt::AlignTop);
+	/* Fills the rows it spans, the controls beside it. */
+	rotator_frame_layout->addWidget(m_rotator_view, rotator_row, 0, 6, 1);
 	connect(m_rotator_view, &RotatorView::targetPicked, this, &ImagerWindow::on_rotator_position_picked);
 
 	/* The controls start level with the top of the view - the slack the view

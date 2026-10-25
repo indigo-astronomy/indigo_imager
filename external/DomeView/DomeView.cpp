@@ -20,16 +20,13 @@
 
 #include <QPainterPath>
 #include <QFontMetricsF>
-#include <QResizeEvent>
 
 #define DEG2RAD (M_PI / 180.0)
 #define RAD2DEG (180.0 / M_PI)
 
 DomeView::DomeView(QWidget *parent) : QWidget(parent) {
 	setMinimumSize(220, 220);
-	QSizePolicy policy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-	policy.setHeightForWidth(true);
-	setSizePolicy(policy);
+	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
 	/* Half a second on, half a second off - one blink a second. */
 	m_blinkTimer.setInterval(500);
@@ -495,14 +492,6 @@ QPointF DomeView::toScreen(double east, double north) const {
 // ----------------------------------------------------------------------
 // painting
 // ----------------------------------------------------------------------
-
-/* Our hint depends on our width, so a width change makes it stale. */
-void DomeView::resizeEvent(QResizeEvent *event) {
-	QWidget::resizeEvent(event);
-	if (event->oldSize().width() != width()) {
-		updateGeometry();
-	}
-}
 
 void DomeView::paintEvent(QPaintEvent *) {
 	QPainter painter(this);

@@ -112,14 +112,9 @@ public:
 	void setShowLabels(bool show);
 	bool showLabels() const { return m_showLabels; }
 
-	/* Square - the view is a circle, so it asks for as much height as it is
-	   given width, the same way DomeView does. */
-	QSize sizeHint() const override {
-		int side = qMax(minimumWidth(), width());
-		return QSize(side, side);
-	}
-	bool hasHeightForWidth() const override { return true; }
-	int heightForWidth(int width) const override { return width; }
+	/* Takes whatever space it is given and draws in the largest square that
+	   fits - the hint is fixed, the same way DomeView does it. */
+	QSize sizeHint() const override { return minimumSize(); }
 
 signals:
 	/** The angle was picked in the view, by a click or a drag. The rotator
