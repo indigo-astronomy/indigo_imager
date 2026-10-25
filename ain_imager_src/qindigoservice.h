@@ -48,6 +48,7 @@ public:
 public:
 	bool is_auto_service;
 	bool auto_connect;
+	bool prev_connected;
 #ifdef INDIGO_VERSION_3
 	bool m_connection_status;
 	indigo_uni_handle *prev_handle;

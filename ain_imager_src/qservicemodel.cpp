@@ -179,18 +179,24 @@ void QServiceModel::onTimer() {
 		if (i == nullptr) continue;
 		if ((*i)->m_server_entry == nullptr) continue;
 #ifdef INDIGO_VERSION_3
+		// The handle is assigned before the connection state is set, so compare the
+		// state too - otherwise a tick in between reports "disconnected" for good.
 		indigo_uni_handle *handle = (*i)->m_server_entry->handle;
-		if (handle != (*i)->prev_handle) {
-			indigo_debug("SERVICE Handles '%s' '%s' [%p] %p\n",(*i)->m_server_entry->name, (*i)->m_server_entry->host, handle, (*i)->prev_handle);
+		bool is_connected = (*i)->connected();
+		if (handle != (*i)->prev_handle || is_connected != (*i)->prev_connected) {
+			indigo_debug("SERVICE Handles '%s' '%s' [%p] %p connected = %d\n",(*i)->m_server_entry->name, (*i)->m_server_entry->host, handle, (*i)->prev_handle, is_connected);
 			(*i)->prev_handle = handle;
-			emit(serviceConnectionChange((*i)->name(), (*i)->connected()));
+			(*i)->prev_connected = is_connected;
+			emit(serviceConnectionChange((*i)->name(), is_connected));
 		}
 #else
 		int socket = (*i)->m_server_entry->socket;
-		if (socket != (*i)->prev_socket) {
-			indigo_debug("SERVICE Sockets '%s' '%s' [%d] %d\n",(*i)->m_server_entry->name, (*i)->m_server_entry->host, socket, (*i)->prev_socket);
+		bool is_connected = (*i)->connected();
+		if (socket != (*i)->prev_socket || is_connected != (*i)->prev_connected) {
+			indigo_debug("SERVICE Sockets '%s' '%s' [%d] %d connected = %d\n",(*i)->m_server_entry->name, (*i)->m_server_entry->host, socket, (*i)->prev_socket, is_connected);
 			(*i)->prev_socket = socket;
-			emit(serviceConnectionChange((*i)->name(), (*i)->connected()));
+			(*i)->prev_connected = is_connected;
+			emit(serviceConnectionChange((*i)->name(), is_connected));
 		}
 #endif
 	}
