@@ -737,7 +737,12 @@ var indigo_sequencer = {
 	altitude_poll: null,
 
 	update_step_state: function(step, state) {
-		this.step_states["" + step] = state;
+		var name = "" + step;
+		// steps without definition (e.g. exit_loop() of a trailing loop) would break SEQUENCE_STEP_STATE enumeration
+		if (this.step_states_defs[name] == undefined) {
+			return;
+		}
+		this.step_states[name] = state;
 		indigo_update_light_property(this.devices[SCRIPTING_AGENT], "SEQUENCE_STEP_STATE", this.step_states, "Ok");
 	},
 
@@ -1037,7 +1042,9 @@ var indigo_sequencer = {
 			} else if (next.execute == "exit_loop()") {
 				nesting--;
 			}
-			this.step_states[next.step] = "Idle";
+			if (this.step_states_defs["" + next.step] != undefined) {
+				this.step_states["" + next.step] = "Idle";
+			}
 		}
 		indigo_set_timer(indigo_sequencer_next_handler, 0);
 	},
@@ -1604,7 +1611,12 @@ var indigo_sequencer = {
 		var agent = this.devices[IMAGER_AGENT];
 		var property = indigo_devices[agent].AGENT_IMAGER_BATCH;
 		if (property != null) {
-			this.saved_batch = property.items;
+			this.saved_batch = {};
+			for (var name in property.items) {
+				if (Object.prototype.hasOwnProperty.call(property.items, name)) {
+					this.saved_batch[name] = property.items[name];
+				}
+			}
 			indigo_set_timer(indigo_sequencer_next_ok_handler, 0);
 		} else {
 			this.failure("Can't save batch");
