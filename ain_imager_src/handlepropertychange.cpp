@@ -4136,6 +4136,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_FILTER_PROPERTY_NAME)) {
 		add_items_to_combobox(this, property, m_solver_filter_select);
+		add_items_to_sequence_model(property, SC_SET_SOLVER_FILTER, 0);
 		// only "Current filter" without an Imager Agent with a wheel
 		set_enabled(m_solver_filter_select, property->count > 1);
 	}
@@ -5458,6 +5459,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 	    client_match_device_no_property(property, selected_solver_agent)) {
 		clear_combobox(m_solver_filter_select);
 		set_enabled(m_solver_filter_select, false);
+		SequenceItemModel::instance().clearComboOptions(SC_SET_SOLVER_FILTER, 0);
 	}
 	if (client_match_device_no_property(property, selected_solver_agent)) {
 		m_solver_source_pending = false;

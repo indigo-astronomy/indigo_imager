@@ -58,6 +58,7 @@ void SequenceItemModel::initializeModel() {
 		}}},
 		{SC_RESET_FRAME, {"Reset Frame to Full", {}}},
 		{SC_SELECT_FILTER, {"Select Filter", {{0, {"Filter", ComboBox}}}}},
+		{SC_SET_SOLVER_FILTER, {"Set Solver Filter", {{0, {"Filter", ComboBox}}}}},
 		{SC_ENABLE_FITER_OFFSETS, {"Enable Filter Offsets", {}}},
 		{SC_DISABLE_FITER_OFFSETS, {"Disable Filter Offsets", {}}},
 		{SC_SET_GAIN, {"Set Camera Gain", {{0, {"Value", SpinBox}}}}},
@@ -142,6 +143,7 @@ void SequenceItemModel::initializeModel() {
 		}},
 		{CC_FILTER_WHEEL, {
 			SC_SELECT_FILTER,
+			SC_SET_SOLVER_FILTER,
 			__SEPARATOR__,
 			SC_ENABLE_FITER_OFFSETS,
 			SC_DISABLE_FITER_OFFSETS,

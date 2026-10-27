@@ -51,6 +51,7 @@
 #define SC_SET_FRAME                cs("set_frame")
 #define SC_RESET_FRAME              cs("reset_frame")
 #define SC_SELECT_FILTER            cs("select_filter")
+#define SC_SET_SOLVER_FILTER        cs("set_solver_filter")
 #define SC_ENABLE_FITER_OFFSETS     cs("enable_filter_offsets")
 #define SC_DISABLE_FITER_OFFSETS    cs("disable_filter_offsets")
 #define SC_SET_GAIN                 cs("set_gain")
