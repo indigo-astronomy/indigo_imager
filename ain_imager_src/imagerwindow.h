@@ -512,6 +512,7 @@ public slots:
 	void on_solver_hints_changed(double value);
 	void on_solver_hints_changed();
 	void on_image_source1_selected(int index);
+	void on_solver_filter_selected(int index);
 	void on_object_selected();
 	void on_object_clicked(QListWidgetItem *item);
 	void on_object_search_changed(const QString &obj_name);
@@ -1150,6 +1151,7 @@ private:
 	//Solver agent
 	QComboBox *m_agent_solver_select;
 	QComboBox *m_solver_source_select1;
+	QComboBox *m_solver_filter_select;
 	QDoubleSpinBox *m_solver_exposure1;
 	QPushButton *m_solve_button;
 	QToolButton *m_load_coords_button;
@@ -1171,6 +1173,8 @@ private:
 	QSpinBox *m_solver_depth_hint;
 	QSpinBox *m_solver_tlimit_hint;
 	QString m_last_solver_source;
+	// the Solver tab source is related once the solver is idle again
+	bool m_solver_source_pending = false;
 
 	QComboBox *m_solver_source_select3;
 	QDoubleSpinBox *m_solver_exposure3;
@@ -1276,6 +1280,8 @@ private:
 
 	// related_aget should be with trimmed service
 	void set_agent_releated_agent(const char *agent, const char *related_agent, bool select) const;
+	void apply_solver_source_relation();
+	void change_solver_filter_property(const char *agent) const;
 
 	void change_agent_guider_dithering_property(const char *agent) const;
 	void change_agent_imager_dithering_property(const char *agent) const;

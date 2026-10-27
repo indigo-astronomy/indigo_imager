@@ -4134,6 +4134,11 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		set_enabled(m_solver_exposure2, true);
 		//set_enabled(m_solver_exposure3, true);
 	}
+	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_FILTER_PROPERTY_NAME)) {
+		add_items_to_combobox(this, property, m_solver_filter_select);
+		// only "Current filter" without an Imager Agent with a wheel
+		set_enabled(m_solver_filter_select, property->count > 1);
+	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME)) {
 		m_solver_source_select1->blockSignals(true);
 		add_combobox_item(m_solver_source_select1, "Upload File", AGENT_PLATESOLVER_IMAGE_PROPERTY_NAME);
@@ -4184,6 +4189,17 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
 	property_define(property, message);
 	properties.create(property);
+
+	// the agent should offer the filters of the restored Solver tab source - after the cache has the list
+	char selected_solver_agent[INDIGO_VALUE_SIZE] = {0};
+	if (get_selected_solver_agent(selected_solver_agent) &&
+	    client_match_device_property(property, selected_solver_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
+		QtConcurrent::run(QThreadPool::globalInstance(), [=]() {
+			m_property_mutex.lock();
+			apply_solver_source_relation();
+			m_property_mutex.unlock();
+		});
+	}
 }
 
 
@@ -4596,7 +4612,21 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_SETTINGS_PROPERTY_NAME)) {
 		update_solver_agent_pa_settings(this, property);
 	}
+	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_FILTER_PROPERTY_NAME)) {
+		change_combobox_selection(this, property, m_solver_filter_select);
+	}
 	properties.create(property);
+
+	// a source chosen while the solver was busy is related now - after the cache has the new state
+	if (m_solver_source_pending && property->state != INDIGO_BUSY_STATE &&
+	    (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME) ||
+	     client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_PA_STATE_PROPERTY_NAME))) {
+		QtConcurrent::run(QThreadPool::globalInstance(), [=]() {
+			m_property_mutex.lock();
+			apply_solver_source_relation();
+			m_property_mutex.unlock();
+		});
+	}
 }
 
 void ImagerWindow::property_delete(indigo_property* property, char *message) {
@@ -5423,6 +5453,14 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		set_enabled(m_solver_exposure2, false);
 		//set_enabled(m_solver_exposure3, false);
 		//set_enabled(m_mount_use_solver_cbox, false);
+	}
+	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_FILTER_PROPERTY_NAME) ||
+	    client_match_device_no_property(property, selected_solver_agent)) {
+		clear_combobox(m_solver_filter_select);
+		set_enabled(m_solver_filter_select, false);
+	}
+	if (client_match_device_no_property(property, selected_solver_agent)) {
+		m_solver_source_pending = false;
 	}
 	if (client_match_device_property(property, selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME) ||
 	    client_match_device_no_property(property, selected_solver_agent)) {

@@ -59,6 +59,15 @@ void ImagerWindow::create_solver_tab(QFrame *solver_frame) {
 	connect(m_solver_source_select1, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ImagerWindow::on_image_source1_selected);
 
 	row++;
+	label = new QLabel("Filter:");
+	solver_frame_layout->addWidget(label, row, 0, 1, 2);
+	m_solver_filter_select = new QComboBox();
+	m_solver_filter_select->setToolTip("Filter used for solving, offered when the image source is an Imager Agent with a filter wheel");
+	m_solver_filter_select->setEnabled(false);
+	solver_frame_layout->addWidget(m_solver_filter_select, row, 2, 1, 2);
+	connect(m_solver_filter_select, QOverload<int>::of(&QComboBox::activated), this, &ImagerWindow::on_solver_filter_selected);
+
+	row++;
 	// Exposure time
 	label = new QLabel("Exposure time (s):");
 	solver_frame_layout->addWidget(label, row, 0, 1, 2);
@@ -435,10 +444,33 @@ void ImagerWindow::on_solver_load_coords() {
 }
 
 void ImagerWindow::on_image_source1_selected(int index) {
-	Q_UNUSED(index);
 	QString solver_source = m_solver_source_select1->currentText();
+	// cleared because the solver agent went away - keep the choice and the relation for when it is back
+	if (index < 0) {
+		show_selected_preview_in_solver_tab(solver_source);
+		return;
+	}
 	strncpy(conf.solver_image_source1, solver_source.toUtf8().constData(), INDIGO_NAME_SIZE);
 	write_conf();
 	show_selected_preview_in_solver_tab(solver_source);
 	indigo_debug("%s -> %s\n", __FUNCTION__, conf.solver_image_source1);
+
+	// relate the source now, so that its filters can be chosen before solving
+	QtConcurrent::run([=]() {
+		m_property_mutex.lock();
+		apply_solver_source_relation();
+		m_property_mutex.unlock();
+	});
+}
+
+void ImagerWindow::on_solver_filter_selected(int index) {
+	Q_UNUSED(index);
+	QtConcurrent::run([=]() {
+		static char selected_agent[INDIGO_NAME_SIZE];
+
+		get_selected_solver_agent(selected_agent);
+
+		indigo_debug("[SELECTED] %s '%s'\n", __FUNCTION__, selected_agent);
+		change_solver_filter_property(selected_agent);
+	});
 }

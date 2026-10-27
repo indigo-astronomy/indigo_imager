@@ -1004,6 +1004,67 @@ void ImagerWindow::set_agent_releated_agent(const char *agent, const char *relat
 	}
 }
 
+/* Relates the Solver tab image source to the solver agent, so that the agent can offer the
+   filters of the Imager Agent before solving - "None" or "Upload File" leave no Imager or
+   Guider Agent related. Only the relation is set here, everything else
+   is set when solving starts. While the solver is busy the change is deferred, the agent
+   returns the filter wheel of whichever Imager Agent is related when it finishes. */
+void ImagerWindow::apply_solver_source_relation() {
+	char selected_solver_agent[INDIGO_NAME_SIZE] = {0};
+	char source[INDIGO_NAME_SIZE] = {0};
+
+	get_selected_solver_agent(selected_solver_agent);
+	strncpy(source, conf.solver_image_source1, INDIGO_NAME_SIZE - 1);
+
+	// "None" and "Upload File" are not agents - no Imager or Guider Agent is related then
+	bool is_agent = !strncmp(source, "Imager Agent", 12) || !strncmp(source, "Guider Agent", 12);
+
+	indigo_property *p = properties.get(selected_solver_agent, AGENT_PLATESOLVER_WCS_PROPERTY_NAME);
+	indigo_property *pa = properties.get(selected_solver_agent, AGENT_PLATESOLVER_PA_STATE_PROPERTY_NAME);
+	if ((p && p->state == INDIGO_BUSY_STATE) || (pa && pa->state == INDIGO_BUSY_STATE)) {
+		indigo_debug("[SOLVER SOURCE] %s '%s' deferred, solver is busy\n", __FUNCTION__, source);
+		m_solver_source_pending = true;
+		return;
+	}
+	m_solver_source_pending = false;
+
+	p = properties.get(selected_solver_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME);
+	if (p == nullptr) return;
+
+	if (!is_agent) {
+		const int max_agents = 32;
+		static char *item_names[max_agents];
+		static bool values[max_agents] = {false};
+		int item_count = 0;
+		for (int i = 0; i < p->count && item_count < max_agents; i++) {
+			if (p->items[i].sw.value && (!strncmp(p->items[i].name, "Imager Agent", 12) || !strncmp(p->items[i].name, "Guider Agent", 12))) {
+				item_names[item_count] = p->items[i].name;
+				values[item_count] = false;
+				item_count++;
+			}
+		}
+		if (item_count > 0) {
+			indigo_debug("[SOLVER SOURCE] %s '%s' -> none\n", __FUNCTION__, selected_solver_agent);
+			indigo_change_switch_property(nullptr, selected_solver_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME, item_count, (const char **)item_names, values);
+		}
+		return;
+	}
+
+	for (int i = 0; i < p->count; i++) {
+		if (p->items[i].sw.value && !strncmp(p->items[i].name, source, INDIGO_NAME_SIZE)) {
+			return;
+		}
+	}
+	indigo_debug("[SOLVER SOURCE] %s '%s' -> '%s'\n", __FUNCTION__, selected_solver_agent, source);
+	set_agent_releated_agent(selected_solver_agent, source, true);
+}
+
+void ImagerWindow::change_solver_filter_property(const char *agent) const {
+	static char selected_filter[INDIGO_NAME_SIZE];
+	strncpy(selected_filter, m_solver_filter_select->currentData().toString().toUtf8().constData(), INDIGO_NAME_SIZE);
+	indigo_change_switch_property_1(nullptr, agent, AGENT_PLATESOLVER_FILTER_PROPERTY_NAME, selected_filter, true);
+}
+
 void ImagerWindow::disable_auto_solving(const char *agent) const {
 	indigo_change_switch_property_1(nullptr, agent, AGENT_PLATESOLVER_SOLVE_IMAGES_PROPERTY_NAME, AGENT_PLATESOLVER_SOLVE_IMAGES_DISABLED_ITEM_NAME, true);
 	//indigo_change_switch_property_1(nullptr, agent, AGENT_PLATESOLVER_SYNC_PROPERTY_NAME, AGENT_PLATESOLVER_SYNC_DISABLED_ITEM_NAME, true);
