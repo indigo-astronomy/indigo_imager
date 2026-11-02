@@ -367,6 +367,158 @@ bool ImagerWindow::open_image(QString file_name, int *image_size, unsigned char 
 	return true;
 }
 
+static const char *solver_driver_name(int type) {
+	return type == AIN_SOLVER_PLATESOLVER ? "indigo_agent_platesolver" : "indigo_agent_astrometry";
+}
+
+static const char *solver_agent_name(int type) {
+	return type == AIN_SOLVER_PLATESOLVER ? "Platesolver Agent" : "Astrometry Agent";
+}
+
+static int other_solver(int type) {
+	return type == AIN_SOLVER_PLATESOLVER ? AIN_SOLVER_ASTROMETRY : AIN_SOLVER_PLATESOLVER;
+}
+
+void ImagerWindow::on_solver_agent_astrometry() {
+	switch_solver_agent(AIN_SOLVER_ASTROMETRY);
+}
+
+void ImagerWindow::on_solver_agent_platesolver() {
+	switch_solver_agent(AIN_SOLVER_PLATESOLVER);
+}
+
+void ImagerWindow::sync_solver_agent_menu() {
+	(m_solver_switch_target == AIN_SOLVER_PLATESOLVER ? m_solver_platesolver_act : m_solver_astrometry_act)->setChecked(true);
+}
+
+void ImagerWindow::switch_solver_agent(int type) {
+	if (!m_solver_switch_pending.isEmpty()) {
+		window_log("Solver agent switch is already in progress", INDIGO_ALERT_STATE);
+		sync_solver_agent_menu();
+		return;
+	}
+	if (type == m_solver_switch_target) return;
+
+	for (int i = 0; i < m_agent_solver_select->count(); i++) {
+		QByteArray agent = m_agent_solver_select->itemData(i).toString().toUtf8();
+		indigo_property *process = properties.get(agent.constData(), AGENT_START_PROCESS_PROPERTY_NAME);
+		indigo_property *wcs = properties.get(agent.constData(), AGENT_PLATESOLVER_WCS_PROPERTY_NAME);
+		if ((process && process->state == INDIGO_BUSY_STATE) || (wcs && wcs->state == INDIGO_BUSY_STATE)) {
+			QString message = QString("Can not switch the solver agent, '%1' is busy").arg(QString(agent));
+			window_log(message.toUtf8().constData(), INDIGO_ALERT_STATE);
+			sync_solver_agent_menu();
+			return;
+		}
+	}
+
+	m_solver_switch_target = type;
+	m_solver_switch_succeeded = false;
+	for (const QString &server : m_solver_servers) {
+		m_solver_switch_succeeded |= request_solver_driver(server);
+	}
+	if (m_solver_switch_pending.isEmpty()) {
+		finish_solver_switch();
+	}
+}
+
+/* The solver agents refuse to start while the other one is loaded, so the new driver is
+   requested only after the server reports the old one is gone - see update_solver_switch().
+   Returns true if the wanted driver is already loaded, it is also called when a server connects. */
+bool ImagerWindow::request_solver_driver(const QString &server) {
+	indigo_property *p = properties.get(server.toUtf8().constData(), "DRIVERS");
+	const char *wanted = solver_driver_name(m_solver_switch_target);
+	const char *other = solver_driver_name(other_solver(m_solver_switch_target));
+
+	if (p && indigo_get_switch(p, wanted)) return true;
+
+	bool unload_first = p && indigo_get_switch(p, other);
+	m_solver_switch_pending.insert(server, !unload_first);
+	change_server_driver(server, unload_first ? other : wanted, !unload_first);
+	m_solver_switch_timer->start();
+	return false;
+}
+
+void ImagerWindow::change_server_driver(const QString &server, const char *driver, bool load) const {
+	QByteArray device = server.toUtf8();
+	QByteArray driver_name(driver);
+	indigo_property *p = properties.get(device.constData(), "DRIVERS");
+	// a server started with drivers on its command line lists only those, the others can still be loaded by name
+	bool listed = p && indigo_get_item(p, driver);
+	QtConcurrent::run(QThreadPool::globalInstance(), [=]() {
+		if (listed || !load) {
+			indigo_change_switch_property_1(nullptr, device.constData(), "DRIVERS", driver_name.constData(), load);
+		} else {
+			const char *items[] = { "DRIVER" };
+			const char *values[] = { driver_name.constData() };
+			indigo_change_text_property(NULL, device.constData(), "LOAD", 1, items, values);
+		}
+	});
+}
+
+void ImagerWindow::update_solver_switch(indigo_property *property) {
+	QString server(property->device);
+	auto pending = m_solver_switch_pending.find(server);
+	if (pending == m_solver_switch_pending.end()) return;
+
+	const char *wanted = solver_driver_name(m_solver_switch_target);
+	const char *other = solver_driver_name(other_solver(m_solver_switch_target));
+
+	if (!pending.value()) {
+		if (indigo_get_switch(property, other)) return;
+		pending.value() = true;
+		change_server_driver(server, wanted, true);
+		m_solver_switch_timer->start();
+		return;
+	}
+	if (!indigo_get_switch(property, wanted)) return;
+
+	m_solver_switch_pending.erase(pending);
+	m_solver_switch_succeeded = true;
+	if (m_solver_switch_pending.isEmpty()) {
+		finish_solver_switch();
+	}
+}
+
+/* A refused unload or a failed load changes nothing the client can wait for, the server has already sent the reason. */
+void ImagerWindow::solver_switch_timeout() {
+	const char *other = solver_driver_name(other_solver(m_solver_switch_target));
+	for (auto pending = m_solver_switch_pending.constBegin(); pending != m_solver_switch_pending.constEnd(); ++pending) {
+		QString message = QString("Failed to switch to %1 on '%2'").arg(solver_agent_name(m_solver_switch_target), pending.key());
+		window_log(message.toUtf8().constData(), INDIGO_ALERT_STATE);
+		if (pending.value()) {
+			// the old driver is already gone, do not leave the server without a solver
+			change_server_driver(pending.key(), other, true);
+		}
+	}
+	m_solver_switch_pending.clear();
+	finish_solver_switch();
+}
+
+void ImagerWindow::solver_server_removed(const QString &server) {
+	m_solver_servers.remove(server);
+	if (m_solver_switch_pending.remove(server) && m_solver_switch_pending.isEmpty()) {
+		finish_solver_switch();
+	}
+}
+
+void ImagerWindow::finish_solver_switch() {
+	m_solver_switch_timer->stop();
+	if (m_solver_switch_succeeded || m_solver_servers.isEmpty()) {
+		if (conf.solver_agent_type != m_solver_switch_target) {
+			conf.solver_agent_type = m_solver_switch_target;
+			write_conf();
+			QString message = QString("Solver agent changed to %1").arg(solver_agent_name(m_solver_switch_target));
+			window_log(message.toUtf8().constData());
+			if (m_solver_switch_target == AIN_SOLVER_PLATESOLVER) {
+				window_log("Platesolver Agent needs its indexes installed and selected: Platesolver Agent > Index management in INDIGO Control Panel");
+			}
+		}
+	} else {
+		m_solver_switch_target = conf.solver_agent_type;
+	}
+	sync_solver_agent_menu();
+}
+
 void ImagerWindow::on_solver_agent_selected(int index) {
 	Q_UNUSED(index);
 	QtConcurrent::run([=]() {

@@ -60,6 +60,9 @@ class BalanceBar;
 #include <QLCDNumber>
 #include <QMessageBox>
 #include <QActionGroup>
+#include <QHash>
+#include <QSet>
+#include <QTimer>
 #include <QLineEdit>
 #include <QCheckBox>
 #include <QStandardPaths>
@@ -513,6 +516,8 @@ public slots:
 	void on_solver_hints_changed();
 	void on_image_source1_selected(int index);
 	void on_solver_filter_selected(int index);
+	void on_solver_agent_astrometry();
+	void on_solver_agent_platesolver();
 	void on_object_selected();
 	void on_object_clicked(QListWidgetItem *item);
 	void on_object_search_changed(const QString &obj_name);
@@ -1176,6 +1181,15 @@ private:
 	// the Solver tab source is related once the solver is idle again
 	bool m_solver_source_pending = false;
 
+	// solver agent switch: the servers still switching, true when the new driver is already requested
+	QSet<QString> m_solver_servers;
+	QHash<QString, bool> m_solver_switch_pending;
+	int m_solver_switch_target = AIN_SOLVER_ASTROMETRY;
+	bool m_solver_switch_succeeded = false;
+	QTimer *m_solver_switch_timer = nullptr;
+	QAction *m_solver_astrometry_act = nullptr;
+	QAction *m_solver_platesolver_act = nullptr;
+
 	QComboBox *m_solver_source_select3;
 	QDoubleSpinBox *m_solver_exposure3;
 	QDoubleSpinBox *m_pa_move_ha;
@@ -1282,6 +1296,15 @@ private:
 	void set_agent_releated_agent(const char *agent, const char *related_agent, bool select) const;
 	void apply_solver_source_relation();
 	void change_solver_filter_property(const char *agent) const;
+
+	void switch_solver_agent(int type);
+	bool request_solver_driver(const QString &server);
+	void change_server_driver(const QString &server, const char *driver, bool load) const;
+	void update_solver_switch(indigo_property *property);
+	void solver_switch_timeout();
+	void solver_server_removed(const QString &server);
+	void finish_solver_switch();
+	void sync_solver_agent_menu();
 
 	void change_agent_guider_dithering_property(const char *agent) const;
 	void change_agent_imager_dithering_property(const char *agent) const;

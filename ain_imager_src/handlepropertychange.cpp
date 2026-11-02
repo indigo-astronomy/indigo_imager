@@ -3535,7 +3535,6 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			bool imager_not_loaded = true;
 			bool guider_not_loaded = true;
 			bool mount_not_loaded = true;
-			bool solver_not_loaded = true;
 			bool config_not_loaded = true;
 			bool scripting_not_loaded = true;
 
@@ -3544,10 +3543,12 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 				imager_not_loaded = !indigo_get_switch(p, "indigo_agent_imager");
 				guider_not_loaded = !indigo_get_switch(p, "indigo_agent_guider");
 				mount_not_loaded = !indigo_get_switch(p, "indigo_agent_mount");
-				solver_not_loaded = !indigo_get_switch(p, "indigo_agent_astrometry");
 				config_not_loaded = !indigo_get_switch(p, "indigo_agent_config");
 				scripting_not_loaded = !indigo_get_switch(p, "indigo_agent_scripting");
 			}
+			m_solver_servers.insert(QString(property->device));
+			request_solver_driver(QString(property->device));
+
 			char *device_name = (char*)malloc(INDIGO_NAME_SIZE);
 			strncpy(device_name, property->device, INDIGO_NAME_SIZE);
 			QtConcurrent::run(QThreadPool::globalInstance(), [=]() {
@@ -3565,11 +3566,6 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 				if (mount_not_loaded) {
 					static const char *items[] = { "DRIVER" };
 					static const char *values[] = { "indigo_agent_mount" };
-					indigo_change_text_property(NULL, device_name, "LOAD", 1, items, values);
-				}
-				if (solver_not_loaded) {
-					static const char *items[] = { "DRIVER" };
-					static const char *values[] = { "indigo_agent_astrometry" };
 					indigo_change_text_property(NULL, device_name, "LOAD", 1, items, values);
 				}
 				if (config_not_loaded) {
@@ -3618,7 +3614,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		QString name = QString(property->device);
 		add_combobox_item(m_agent_mount_select, name, name);
 	}
-	if(!strncmp(property->device, "Astrometry Agent", 16)) {
+	if(is_solver_agent(property->device)) {
 		QString name = QString(property->device);
 		add_combobox_item(m_agent_solver_select, name, name);
 	}
@@ -3636,7 +3632,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		(!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
 		(!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12)) &&
 		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11)) &&
-		(!get_selected_solver_agent(selected_solver_agent) || strncmp(property->device, "Astrometry Agent", 16)) &&
+		(!get_selected_solver_agent(selected_solver_agent) || !is_solver_agent(property->device)) &&
 		(!get_selected_scripting_agent(selected_scripting_agent) || strncmp(property->device, "Scripting Agent", 15)) &&
 		!get_selected_config_agent(selected_config_agent) &&
 		strncmp(property->device, "Configuration agent", 19) &&
@@ -4111,7 +4107,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_dome_slaving_status(this, property);
 	}
 
-	// Astrometry Agent
+	// Solver Agent
 	if (client_match_device_property(property, selected_solver_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
 		m_solver_source_select1->blockSignals(true);
 		m_solver_source_select2->blockSignals(true);
@@ -4191,6 +4187,11 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 	property_define(property, message);
 	properties.create(property);
 
+	// LOAD of a driver DRIVERS does not list redefines DRIVERS instead of updating it
+	if (!strncmp(property->device, "Server", 6) && !strcmp(property->name, "DRIVERS")) {
+		update_solver_switch(property);
+	}
+
 	// the agent should offer the filters of the restored Solver tab source - after the cache has the list
 	char selected_solver_agent[INDIGO_VALUE_SIZE] = {0};
 	if (get_selected_solver_agent(selected_solver_agent) &&
@@ -4206,6 +4207,9 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 
 void ImagerWindow::on_property_change(indigo_property* property, char *message) {
 	Q_UNUSED(message);
+	if (!strncmp(property->device, "Server", 6) && !strcmp(property->name, "DRIVERS")) {
+		update_solver_switch(property);
+	}
 	char selected_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_guider_agent[INDIGO_VALUE_SIZE] = {0};
 	char selected_mount_agent[INDIGO_VALUE_SIZE] = {0};
@@ -4225,7 +4229,7 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 		(!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
 		(!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12)) &&
 		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11)) &&
-		(!get_selected_solver_agent(selected_solver_agent) || strncmp(property->device, "Astrometry Agent", 16)) &&
+		(!get_selected_solver_agent(selected_solver_agent) || !is_solver_agent(property->device)) &&
 		(!get_selected_scripting_agent(selected_scripting_agent) || strncmp(property->device, "Scripting Agent", 15)) &&
 		!get_selected_config_agent(selected_config_agent) &&
 		strncmp(property->device, "Configuration agent", 19) &&
@@ -4644,7 +4648,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 		(!get_selected_imager_agent(selected_agent) || strncmp(property->device, "Imager Agent", 12)) &&
 		(!get_selected_guider_agent(selected_guider_agent) || strncmp(property->device, "Guider Agent", 12)) &&
 		(!get_selected_mount_agent(selected_mount_agent) || strncmp(property->device, "Mount Agent", 11)) &&
-		(!get_selected_solver_agent(selected_solver_agent) || strncmp(property->device, "Astrometry Agent", 16)) &&
+		(!get_selected_solver_agent(selected_solver_agent) || !is_solver_agent(property->device)) &&
 		(!get_selected_scripting_agent(selected_scripting_agent) || strncmp(property->device, "Scripting Agent", 15)) &&
 		!get_selected_config_agent(selected_config_agent) &&
 		strncmp(property->device, "Configuration agent", 19) &&
@@ -5537,7 +5541,7 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 		(strncmp(property->device, "Imager Agent", 12)) &&
 		(strncmp(property->device, "Guider Agent", 12)) &&
 		(strncmp(property->device, "Mount Agent", 11)) &&
-		(strncmp(property->device, "Astrometry Agent", 16)) &&
+		(!is_solver_agent(property->device)) &&
 		(strncmp(property->device, "Configuration agent", 19)) &&
 		(strncmp(property->device, "Configuration Agent", 19)) &&
 		(strncmp(property->device, "Scripting Agent", 15)) &&
@@ -5549,6 +5553,10 @@ void ImagerWindow::on_property_delete(indigo_property* property, char *message) 
 	}
 
 	property_delete(property, message);
+
+	if (!strncmp(property->device, "Server", 6) && property->name[0] == '\0') {
+		solver_server_removed(QString(property->device));
+	}
 
 	if (client_match_device_property(property, property->device, INFO_PROPERTY_NAME) ||
 		client_match_device_no_property(property, property->device)) {

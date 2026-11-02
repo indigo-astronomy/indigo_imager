@@ -28,6 +28,10 @@
 #include <indigo/indigo_names.h>
 #include "logger.h"
 
+static inline bool is_solver_agent(const char *device) {
+	return !strncmp(device, "Astrometry Agent", 16) || !strncmp(device, "Platesolver Agent", 17);
+}
+
 #if !defined(AGENT_PLATESOLVER_PA_STATE_ACCURACY_WARNING_ITEM_NAME)
 #define AGENT_PLATESOLVER_PA_STATE_ACCURACY_WARNING_ITEM_NAME	"ACCURACY_WARNING"
 #endif

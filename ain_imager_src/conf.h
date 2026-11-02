@@ -95,6 +95,11 @@ typedef enum {
 } ain_sounds;
 
 typedef enum {
+	AIN_SOLVER_ASTROMETRY = 0,
+	AIN_SOLVER_PLATESOLVER
+} ain_solver_agent;
+
+typedef enum {
 	NO_PREVIEWS = 0,
 	GUIDER_FINE_PREVIEW = 1,
 	GUIDER_NORMAL_PREVIEW = 2,
@@ -146,7 +151,8 @@ typedef struct {
 	char filename_template[INDIGO_VALUE_SIZE];
 	int guider_plot_mode;   // 0 = Graph, 1 = Target, 2 = Both
 	guider_rmse_display_data guider_rmse_display;
-	char unused[91];
+	char solver_agent_type; /* ain_solver_agent */
+	char unused[90];
 } conf_t;
 
 extern conf_t conf;

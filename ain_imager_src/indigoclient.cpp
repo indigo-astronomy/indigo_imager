@@ -30,7 +30,7 @@ bool processed_device(char *device) {
 		strncmp(device, "Imager Agent", 12) &&
 		strncmp(device, "Guider Agent", 12) &&
 		strncmp(device, "Mount Agent", 11) &&
-		strncmp(device, "Astrometry Agent", 16) &&
+		!is_solver_agent(device) &&
 		strncmp(device, "Configuration agent", 19) &&
 		strncmp(device, "Configuration Agent", 19) &&
 		strncmp(device, "Scripting Agent", 15) &&
