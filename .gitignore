@@ -70,3 +70,6 @@ qrc_*.cpp
 #QtCreator
 build
 *pro.user
+
+tests/build/
+!tests/Makefile
