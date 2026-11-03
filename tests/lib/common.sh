@@ -22,9 +22,9 @@ ip link set lo up
 read -r CONF_OFFSET CONF_SIZE < <("$BUILD_DIR/conf_offset")
 
 cleanup() {
-	[ -n "$AIN_PID" ] && kill "$AIN_PID" 2>/dev/null
-	[ -n "$SERVER_PID" ] && kill "$SERVER_PID" 2>/dev/null
-	[ -n "$FAKE_PIDS" ] && kill $FAKE_PIDS 2>/dev/null
+	[ -n "$AIN_PID" ] && kill -9 "$AIN_PID" 2>/dev/null
+	[ -n "$SERVER_PID" ] && kill -9 "$SERVER_PID" 2>/dev/null
+	[ -n "$FAKE_PIDS" ] && kill -9 $FAKE_PIDS 2>/dev/null
 	wait 2>/dev/null
 }
 trap cleanup EXIT
@@ -105,9 +105,20 @@ start_server() {	# drivers...
 	wait_for 15 prop list Server.DRIVERS -t 1
 }
 
+# a server does not exit while one of its drivers is in use, e.g. during a batch
+stop_process() {
+	kill "$1" 2>/dev/null
+	local i
+	for i in $(seq 1 30); do
+		kill -0 "$1" 2>/dev/null || break
+		sleep 0.5
+	done
+	kill -9 "$1" 2>/dev/null
+	wait "$1" 2>/dev/null
+}
+
 stop_server() {
-	kill "$SERVER_PID" 2>/dev/null
-	wait "$SERVER_PID" 2>/dev/null
+	stop_process "$SERVER_PID"
 	SERVER_PID=
 }
 
@@ -271,6 +282,61 @@ start_rig() {	# 0 Astrometry, 1 Platesolver
 	ain_do tab Solver
 	ain_do source Imager Agent
 	sleep 2
+}
+
+# The simulator always renders the same star field, the location brings it to transit when needed.
+TARGET_RA=6.5268
+TARGET_DEC=5.0933
+
+set_location() {	# longitude
+	prop_set "Mount Agent.GEOGRAPHIC_COORDINATES.LATITUDE=42;LONGITUDE=$1"
+	prop_set "$SIM_MOUNT.GEOGRAPHIC_COORDINATES.LATITUDE=42;LONGITUDE=$1"
+	sleep 2
+}
+
+# Slews to the field well before its transit and enables the flip. TIME_TO_TRANSIT counts to the
+# nearest of both meridian crossings, so the site is found from the hour angle, which tells them
+# apart, and the exact timing is left to set_transit_in().
+point_at_target() {
+	local display="Mount Agent.AGENT_MOUNT_DISPLAY_COORDINATES_PROPERTY"
+	set_location "$(python3 -I -c "
+import sys
+ra, ha, longitude, target = map(float, sys.argv[1:5])
+print(round((longitude + ((target - 0.1 - (ra + ha) + 12) % 24 - 12) * 15 + 180) % 360 - 180, 5))" "$(item "$display" RA_JNOW)" "$(item "$display" HA)" "$(item "Mount Agent.GEOGRAPHIC_COORDINATES" LONGITUDE)" $TARGET_RA)"
+	cat > point.js <<JS
+var sequence = new Sequence("point at target");
+sequence.select_imager_camera("$SIM_CAMERA");
+sequence.select_filter_wheel("$SIM_WHEEL");
+sequence.select_mount("$SIM_MOUNT");
+sequence.unpark();
+sequence.enable_tracking();
+sequence.enable_meridian_flip(true, 0);
+sequence.slew($TARGET_RA, $TARGET_DEC);
+sequence.sync_center(1);
+sequence.start();
+JS
+	run_sequence "$CASE_DIR/point.js" 90
+	# just east of the upper meridian crossing
+	python3 -I -c "
+import sys
+sys.exit(not 23.5 < float(sys.argv[1]) < 24)" "$(item "$display" HA)"
+}
+
+seconds_to_transit() {
+	python3 -I -c "
+import sys
+print(round(((float(sys.argv[1]) + 12) % 24 - 12) * 3600))" "$(item "Mount Agent.AGENT_MOUNT_DISPLAY_COORDINATES_PROPERTY" TIME_TO_TRANSIT)"
+}
+
+set_transit_in() {	# seconds, the mount has to be on the target
+	set_location "$(python3 -I -c "
+import sys
+seconds, longitude, wanted = map(float, sys.argv[1:4])
+print(round((longitude + (seconds - wanted) / 3600 * 15 + 180) % 360 - 180, 5))" "$(seconds_to_transit)" "$(item "Mount Agent.GEOGRAPHIC_COORDINATES" LONGITUDE)" "$1")"
+	local now
+	now=$(seconds_to_transit)
+	echo "  transit in $now s"
+	[ "$now" -gt $(($1 - 20)) ] && [ "$now" -le "$1" ]
 }
 
 stop_rig() {

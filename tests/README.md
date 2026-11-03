@@ -7,7 +7,7 @@ simulators where hardware would be needed.
 ```
 make                    # build the helpers
 make test-quick         # no indexes needed, about 4 minutes
-make test               # everything, about 13 minutes
+make test               # everything, about 17 minutes
 make test CASES="menu_switch 80"
 ./run_tests.sh -l       # list the cases
 ```
@@ -35,6 +35,7 @@ run, which also happens if a real session solves at the same time.
 | `60_solver_busy` | no switch during a real solve, it works after aborting | image, 421x indexes |
 | `70_sequence_solver` | Run button: solver steps reach the loaded agent, Solver tab refills | indexes |
 | `80_meridian_flip` | flip with Use Solver during a batch on both agents | indexes |
+| `90_flip_failure` | a failed flip sets the sequence state to Alert only during a sequence | 421x indexes |
 
 A case without what it needs is skipped, not failed. `AIN_TEST_IMAGE` must be a FITS image with
 `CRVAL1`/`CRVAL2` near its centre, and for `60_solver_busy` narrower than the 421x indexes cover, so
@@ -51,8 +52,7 @@ that solve-field keeps working on it.
 ## What this does not cover
 
 Real mounts and cameras, including slow or failed flip slews, resuming guiding after a flip, and real
-servers in the two server case. The flip case depends on `JNOW_OFFSET`, the precession of the
-simulator's star field, which moves about 3 seconds a year.
+servers in the two server case.
 
 On failure the logs stay in the directory the runner prints: `result.txt`, `server.log`, `ain.out`
 and `ain_panel.txt` for each case.
