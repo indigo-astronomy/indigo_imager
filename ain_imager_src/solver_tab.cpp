@@ -509,9 +509,6 @@ void ImagerWindow::finish_solver_switch() {
 			write_conf();
 			QString message = QString("Solver agent changed to %1").arg(solver_agent_name(m_solver_switch_target));
 			window_log(message.toUtf8().constData());
-			if (m_solver_switch_target == AIN_SOLVER_PLATESOLVER) {
-				window_log("Platesolver Agent needs its indexes installed and selected: Platesolver Agent > Index management in INDIGO Control Panel");
-			}
 		}
 	} else {
 		m_solver_switch_target = conf.solver_agent_type;

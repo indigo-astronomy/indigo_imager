@@ -29,7 +29,6 @@ check "choice is saved" wait_for 5 equals_saved 1
 check "menu shows Platesolver" equals "$(menu_agent)" "Platesolver Agent"
 check "Solver tab lists Platesolver" wait_for 10 combo_has SOLVER_AGENT "Platesolver Agent @ local"
 check "change is logged" log_has "Solver agent changed to Platesolver Agent"
-check "index note is logged" log_has "Platesolver Agent needs its indexes"
 
 section "back to Astrometry"
 ain_do click Astrometry Agent
