@@ -4192,13 +4192,29 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 		update_solver_switch(property);
 	}
 
-	// the agent should offer the filters of the restored Solver tab source - after the cache has the list
+	// a loaded solver agent gets the relations back and offers the filters of the restored Solver tab source - after the cache has the list,
+	// without them a flip or a solver step of a running batch or sequence fails. The agent relates the mount back, relations are symmetric.
 	char selected_solver_agent[INDIGO_VALUE_SIZE] = {0};
 	if (get_selected_solver_agent(selected_solver_agent) &&
 	    client_match_device_property(property, selected_solver_agent, FILTER_RELATED_AGENT_LIST_PROPERTY_NAME)) {
 		QtConcurrent::run(QThreadPool::globalInstance(), [=]() {
 			m_property_mutex.lock();
-			apply_solver_source_relation();
+			char selected_mount_agent[INDIGO_NAME_SIZE] = {0};
+			char selected_imager_agent[INDIGO_NAME_SIZE] = {0};
+			char selected_scripting_agent[INDIGO_NAME_SIZE] = {0};
+			get_selected_mount_agent(selected_mount_agent);
+			get_selected_imager_agent(selected_imager_agent);
+			get_selected_scripting_agent(selected_scripting_agent);
+			if (selected_mount_agent[0] != '\0') {
+				set_related_agent(selected_solver_agent, selected_mount_agent);
+			}
+			// a running sequence solves the images of the Imager Agent, see exposure_start_stop()
+			indigo_property *sequence = properties.get(selected_scripting_agent, "SEQUENCE_STATE");
+			if (sequence && sequence->state == INDIGO_BUSY_STATE && selected_imager_agent[0] != '\0') {
+				set_related_solver_agent(selected_imager_agent);
+			} else {
+				apply_solver_source_relation();
+			}
 			m_property_mutex.unlock();
 		});
 	}

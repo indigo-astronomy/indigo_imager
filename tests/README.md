@@ -34,6 +34,7 @@ run, which also happens if a real session solves at the same time.
 | `50_solve_platesolver` | a real solve matches the WCS in the image header | image, solver indexes |
 | `60_solver_busy` | no switch during a real solve, it works after aborting | image, 421x indexes |
 | `70_sequence_solver` | Run button: solver steps reach the loaded agent, Solver tab refills | indexes |
+| `75_switch_relations` | a loaded agent is related to the mount and the source again, also during a sequence | indexes |
 | `80_meridian_flip` | flip with Use Solver during a batch on both agents | indexes |
 | `90_flip_failure` | a failed flip sets the sequence state to Alert only during a sequence | 421x indexes |
 

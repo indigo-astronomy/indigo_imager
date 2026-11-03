@@ -27,7 +27,7 @@ $(BUILD_DIR)/ain_harness.so: harness/ain_harness.cpp
 
 $(BUILD_DIR)/conf_offset: harness/conf_offset.cpp $(ROOT_DIR)/ain_imager_src/conf.h
 	@mkdir -p $(BUILD_DIR)
-	$(CXX) -fPIC -std=gnu++11 $< -o $@ $(AIN_INCLUDES) $(QT_FLAGS)
+	$(CXX) -fPIC -std=gnu++11 $< -o $@ $(AIN_INCLUDES) $(QT_FLAGS) $(QT_LIBS)
 
 test: all
 	INDIGO_ROOT="$(INDIGO_ROOT)" ./run_tests.sh $(CASES)
