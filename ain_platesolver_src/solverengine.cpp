@@ -24,22 +24,22 @@
 #include <QProcessEnvironment>
 #include <QtConcurrent/QtConcurrent>
 #include <cctype>
+#include <chrono>
 #include <climits>
 #include <cmath>
-#include <ctime>
 #include <memory>
-#include <indigo/indigo_timer.h>
 #include <indigo/indigo_uni_io.h>
 #include <indigo/indigocat/indigocat_precession.h>
 #include <conf.h>
 #include <imagepreview.h>
 #include <solverengine.h>
+#if defined(SOLVER_USE_WININET)
+#include <wininetdownload.h>
+#endif
 
-// indigo_timer.c of libindigo, only this function of it is needed
-double indigo_monotonic_time(void) {
-	struct timespec now;
-	clock_gettime(CLOCK_MONOTONIC, &now);
-	return now.tv_sec + now.tv_nsec / 1e9;
+// the solver needs only this function of indigo_timer.c, which is not in libindigo_client
+extern "C" double indigo_monotonic_time(void) {
+	return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
 }
 
 // Quad indexes built by indigo_solver_indexer are downloaded from here as index-<scale>deg-tyc2.isix (Tycho-2) and
@@ -243,7 +243,9 @@ static int depth_stages(int depth, int star_count, int *stages) {
 
 SolverEngine::SolverEngine(QObject *parent) :
 	QObject(parent),
+	m_downloading(false),
 	m_download(nullptr),
+	m_download_watcher(nullptr),
 	m_download_fov(0),
 	m_download_aborted(false),
 	m_index_failed(false),
@@ -265,6 +267,17 @@ SolverEngine::SolverEngine(QObject *parent) :
 		m_indexes.append({index_item_name(fov), index_item_label(i, false), index_item_label(i, true), fov, present, present, false});
 	}
 
+#if defined(SOLVER_USE_WININET)
+	m_download_watcher = new QFutureWatcher<QString>(this);
+	connect(m_download_watcher, &QFutureWatcher<QString>::finished, this, [this]() {
+		const QString error = m_download_watcher->result();
+		if (!error.isEmpty() && !m_download_aborted) {
+			emit message_received(error);
+		}
+		download_finished(error.isEmpty());
+	});
+#endif
+
 	m_watcher = new QFutureWatcher<SolveResult>(this);
 	connect(m_watcher, &QFutureWatcher<SolveResult>::finished, this, [this]() {
 		const SolveResult result = m_watcher->result();
@@ -277,10 +290,19 @@ SolverEngine::~SolverEngine() {
 	m_abort_requested = true;
 	m_watcher->disconnect(this);
 	m_watcher->waitForFinished();
+#if defined(SOLVER_USE_WININET)
+	m_download_aborted = true;
+	m_download_watcher->disconnect(this);
+	wininet_cancel();
+	m_download_watcher->waitForFinished();
+#else
 	if (m_download != nullptr) {
 		m_download->disconnect(this);
 		m_download->kill();
 		m_download->waitForFinished(DOWNLOAD_STOP_TIMEOUT_MS);
+	}
+#endif
+	if (m_downloading) {
 		QFile::remove(m_download_part);
 	}
 	free_catalog();
@@ -380,7 +402,7 @@ void SolverEngine::finish_index_change() {
 	emit indexes_changed();
 }
 
-// Fetches the index with curl into the partial file, as the agent does
+// Fetches the index into the partial file as the agent does: with WinInet on Windows, otherwise with curl
 void SolverEngine::start_download(SolverIndex &index) {
 	const QString path = index_path(index.fov);
 	const QString file_name = QFileInfo(path).fileName();
@@ -388,6 +410,13 @@ void SolverEngine::start_download(SolverIndex &index) {
 	m_download_url = QString("%1/%2").arg(AGENT_SOLVER_INDEX_URL, file_name);
 	m_download_fov = index.fov;
 	emit message_received(QString("Downloading %1...").arg(file_name));
+	m_downloading = true;
+#if defined(SOLVER_USE_WININET)
+	const QString url = m_download_url, part = m_download_part;
+	m_download_watcher->setFuture(QtConcurrent::run([this, url, part]() {
+		return wininet_download(url, part, &m_download_aborted);
+	}));
+#else
 	m_download = new QProcess(this);
 	connect(m_download, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, [this](int exit_code, QProcess::ExitStatus status) {
 		download_finished(status == QProcess::NormalExit && exit_code == 0);
@@ -399,13 +428,17 @@ void SolverEngine::start_download(SolverIndex &index) {
 		}
 	});
 	m_download->start("curl", QStringList() << "-L" << "-s" << "-f" << "-o" << m_download_part << m_download_url);
+#endif
 	emit indexes_changed();
 }
 
 void SolverEngine::download_finished(bool downloaded) {
-	m_download->disconnect(this);
-	m_download->deleteLater();
-	m_download = nullptr;
+	m_downloading = false;
+	if (m_download != nullptr) {
+		m_download->disconnect(this);
+		m_download->deleteLater();
+		m_download = nullptr;
+	}
 	const QString path = index_path(m_download_fov);
 	if (m_download_aborted) {
 		QFile::remove(m_download_part);
@@ -445,7 +478,7 @@ void SolverEngine::set_index_wanted(const QString &name, bool wanted) {
 	m_download_aborted = false;
 	m_index_failed = false;
 	// a running download continues, the change is picked up when it is finished
-	if (m_download == nullptr) {
+	if (!m_downloading) {
 		sync_installed_indexes();
 	}
 }
@@ -461,13 +494,17 @@ void SolverEngine::set_index_used(const QString &name, bool used) {
 void SolverEngine::abort() {
 	m_abort_requested = true;
 	m_download_aborted = true;
+#if defined(SOLVER_USE_WININET)
+	wininet_cancel();
+#else
 	if (m_download != nullptr) {
-		m_download->terminate();
+		m_download->kill();
 	}
+#endif
 }
 
 bool SolverEngine::solve(const unsigned char *data, size_t size, const QString &format, const SolverHints &hints) {
-	if (m_solving || m_download != nullptr) {
+	if (m_solving || m_downloading) {
 		return false;
 	}
 	QVector<float> selected;

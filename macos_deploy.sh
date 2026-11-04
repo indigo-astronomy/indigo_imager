@@ -4,14 +4,15 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 AIN_IMAGER_APP="$SCRIPT_DIR/ain_imager_src/ain_imager.app"
 AIN_VIEWER_APP="$SCRIPT_DIR/ain_viewer_src/ain_viewer.app"
+AIN_PLATESOLVER_APP="$SCRIPT_DIR/ain_platesolver_src/ain_platesolver.app"
 LZ4_LIB="$SCRIPT_DIR/external/lz4/liblz4.1.dylib"
 INDIGO_LIB="$SCRIPT_DIR/../indigo/build/lib"
 MACDEPLOYQT="$HOME/Qt/6.11.0/macos/bin/macdeployqt"
 BONJOUR_SERVICES=("_indigo._tcp")
-BUNDLE_IDS=("com.yourcompany.ain-imager" "com.yourcompany.ain-viewer")
+BUNDLE_IDS=("com.yourcompany.ain-imager" "com.yourcompany.ain-viewer" "com.yourcompany.ain-platesolver")
 SIGNING_IDENTITY="${SIGNING_IDENTITY:-Ain Local Sign}"
-APP_EXECUTABLES=("ain_imager" "ain_viewer")
-APP_ICONS=("appicon.icns" "ain_viewer.icns")
+APP_EXECUTABLES=("ain_imager" "ain_viewer" "ain_platesolver")
+APP_ICONS=("appicon.icns" "ain_viewer.icns" "ain_viewer.icns")
 SIGNING_MODE="adhoc"
 
 resolve_signing_mode() {
@@ -21,7 +22,7 @@ resolve_signing_mode() {
   else
     SIGNING_MODE="adhoc"
     echo "Warning: missing code signing identity: $SIGNING_IDENTITY"
-    echo "Falling back to ad-hoc signing. Both apps will be deployed, but Local Network permission may not persist across rebuilds."
+    echo "Falling back to ad-hoc signing. All apps will be deployed, but Local Network permission may not persist across rebuilds."
   fi
 }
 
@@ -134,9 +135,19 @@ bundle_lz4 "$AIN_VIEWER_APP"
 patch_info_plist "$AIN_VIEWER_APP" "${BUNDLE_IDS[1]}" "${APP_EXECUTABLES[1]}" "${APP_ICONS[1]}"
 resign_app "$AIN_VIEWER_APP"
 
+# Deploy ain_platesolver
+prepare_lz4_for_macdeployqt "$AIN_PLATESOLVER_APP"
+$MACDEPLOYQT "$AIN_PLATESOLVER_APP" -libpath="$INDIGO_LIB" -libpath="$SCRIPT_DIR/external/lz4/"
+bundle_lz4 "$AIN_PLATESOLVER_APP"
+patch_info_plist "$AIN_PLATESOLVER_APP" "${BUNDLE_IDS[2]}" "${APP_EXECUTABLES[2]}" "${APP_ICONS[2]}"
+resign_app "$AIN_PLATESOLVER_APP"
+
 # Verify deployment
 echo "Verifying ain_imager deployment"
 otool -L "$AIN_IMAGER_APP/Contents/MacOS/ain_imager"
 
 echo "Verifying ain_viewer deployment"
 otool -L "$AIN_VIEWER_APP/Contents/MacOS/ain_viewer"
+
+echo "Verifying ain_platesolver deployment"
+otool -L "$AIN_PLATESOLVER_APP/Contents/MacOS/ain_platesolver"

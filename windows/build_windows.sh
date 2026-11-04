@@ -3,6 +3,7 @@
 APP=ain_imager
 VIEWER=ain_viewer
 GUIDELOG_VIEWER=ain_guidelog_viewer
+PLATESOLVER=ain_platesolver
 QT_VER=5.15.2
 MINGW_VER=81
 
@@ -40,6 +41,16 @@ cd ${GUIDELOG_VIEWER}_64
 qmake ../../${GUIDELOG_VIEWER}_src/${GUIDELOG_VIEWER}.pro
 mingw32-make -f Makefile.release
 cp release/${GUIDELOG_VIEWER}.exe ../${APP}_64/${APP}
+popd
+
+pushd .
+export PATH=/c/Qt/${QT_VER}/mingw${MINGW_VER}_64/bin:/c/Qt/Tools/mingw${MINGW_VER}0_64/bin/:$SAVE_PATH
+[ ! -d "${PLATESOLVER}_64" ] && mkdir ${PLATESOLVER}_64
+cd ${PLATESOLVER}_64
+qmake ../../${PLATESOLVER}_src/${PLATESOLVER}.pro
+mingw32-make -f Makefile.release
+cp release/${PLATESOLVER}.exe ../${APP}_64/${APP}
+cp ../../external/indigo_sdk/lib/libindigocat.dll ../${APP}_64/${APP}
 popd
 
 APP_VERSION=`grep AIN_VERSION ../common_src/version.h | sed 's/"//g' |awk '{ print $3 }'`

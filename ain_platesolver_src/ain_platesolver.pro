@@ -31,7 +31,6 @@ SOURCES += \
 	$$PWD/../external/indigo_solver/indigo_solver.c \
 	$$PWD/../external/indigo_solver/indigo_solver_utils.c \
 	$$PWD/../external/indigo_solver/indigo_solver_healpix.c \
-	$$PWD/../external/indigo_solver/indigo_raw_utils.c \
 	$$PWD/platesolverwindow.cpp \
 	$$PWD/objectoverlay.cpp \
 	$$PWD/../ain_viewer_src/textdialog.cpp \
@@ -120,7 +119,7 @@ INCLUDEPATH += \
 	"$$PWD/../ain_platesolver_src"
 
 # Only the INDIGO client library and the star and deep sky catalogues are linked, the solver is a part of this
-# application and it needs neither libindigo nor the Platesolver Agent.
+# application and it needs neither libindigo nor the Platesolver Agent. libindigo_client has to include indigo_raw_utils.
 INDIGO_LIB_DIR = $$PWD/../indigo/build/lib
 
 LIBS += -L"$$PWD/../external/libraw/lib" -L"$$PWD/../external/lz4" -lraw -lz
@@ -134,9 +133,23 @@ unix:!mac {
 unix:mac {
 	INCLUDEPATH += "$$PWD/../external/libjpeg"
 	LIBS += -L"$$PWD/../external/libjpeg/.libs" -L"$$INDIGO_LIB_DIR"
-	LIBS += -lindigo_client -lindigocat -ljpeg -llz4
+	# by the full path, the linker would prefer the dylibs in the same folder
+	exists($$INDIGO_LIB_DIR/libindigo_client.a):exists($$INDIGO_LIB_DIR/libindigocat.a) {
+		LIBS += $$INDIGO_LIB_DIR/libindigo_client.a $$INDIGO_LIB_DIR/libindigocat.a
+	} else {
+		LIBS += -lindigo_client -lindigocat
+	}
+	LIBS += -ljpeg -llz4
 }
 
 DISTFILES += \
 	$$PWD/README.md \
 	$$PWD/LICENCE.md
+
+win32 {
+	DEFINES += INDIGO_WINDOWS SOLVER_USE_WININET
+	INCLUDEPATH += "$$PWD/../external/indigo_sdk/include"
+	SOURCES += $$PWD/wininetdownload.cpp
+	HEADERS += $$PWD/wininetdownload.h
+	LIBS += -llz4 "$$PWD/../external/indigo_sdk/lib/libindigo_client.lib" "$$PWD/../external/indigo_sdk/lib/libindigocat.lib" -lws2_32 -lwininet
+}

@@ -17,6 +17,8 @@
 #define MyViewerName "Ain INDIGO Viewer"
 #define MyGuideLogViewerExeName "ain_guidelog_viewer.exe"
 #define MyGuideLogViewerName "Ain INDIGO Guide Log Viewer"
+#define MyPlateSolverExeName "ain_platesolver.exe"
+#define MyPlateSolverName "Ain INDIGO Plate Solver"
 #define MySourcePrefix "ain_imager_" + Arch + "\ain_imager"
 
 [Setup]
@@ -52,6 +54,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "{#MySourcePrefix}\ain_imager.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MySourcePrefix}\ain_viewer.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MySourcePrefix}\ain_guidelog_viewer.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#MySourcePrefix}\ain_platesolver.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "appicon.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "ain_viewer.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "ain_guidelog_viewer.ico"; DestDir: "{app}"; Flags: ignoreversion
@@ -65,6 +68,8 @@ Name: "{autoprograms}\{#MyViewerName}"; Filename: "{app}\{#MyViewerExeName}"; Ic
 Name: "{autodesktop}\{#MyViewerName}"; Filename: "{app}\{#MyViewerExeName}"; IconFilename: "{app}\ain_viewer.ico"; Tasks: desktopicon
 Name: "{autoprograms}\{#MyGuideLogViewerName}"; Filename: "{app}\{#MyGuideLogViewerExeName}"; IconFilename: "{app}\ain_guidelog_viewer.ico"
 Name: "{autodesktop}\{#MyGuideLogViewerName}"; Filename: "{app}\{#MyGuideLogViewerExeName}"; IconFilename: "{app}\ain_guidelog_viewer.ico"; Tasks: desktopicon
+Name: "{autoprograms}\{#MyPlateSolverName}"; Filename: "{app}\{#MyPlateSolverExeName}"; IconFilename: "{app}\ain_viewer.ico"
+Name: "{autodesktop}\{#MyPlateSolverName}"; Filename: "{app}\{#MyPlateSolverExeName}"; IconFilename: "{app}\ain_viewer.ico"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent

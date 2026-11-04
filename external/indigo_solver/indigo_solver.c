@@ -33,7 +33,7 @@
 #include <math.h>
 
 
-#include <indigo/indigo_timer.h>
+extern double indigo_monotonic_time(void);
 #include <indigo/indigo_uni_io.h>
 
 #include "indigo_solver_utils.h"

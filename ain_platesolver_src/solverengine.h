@@ -79,7 +79,7 @@ public:
 
 	const QVector<SolverIndex> &indexes() const { return m_indexes; }
 	QString index_folder() const { return m_base_dir; }
-	bool index_busy() const { return m_download != nullptr; }
+	bool index_busy() const { return m_downloading; }
 	bool index_failed() const { return m_index_failed; }
 	bool solving() const { return m_solving; }
 	bool any_index_used() const;
@@ -119,7 +119,9 @@ private:
 
 	QString m_base_dir;
 	QVector<SolverIndex> m_indexes;
+	bool m_downloading;
 	QProcess *m_download;
+	QFutureWatcher<QString> *m_download_watcher;
 	QString m_download_part;
 	QString m_download_url;
 	float m_download_fov;
