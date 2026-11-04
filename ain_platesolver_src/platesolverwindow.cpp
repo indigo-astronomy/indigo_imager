@@ -94,8 +94,8 @@ PlateSolverWindow::PlateSolverWindow(QWidget *parent) :
 
 	m_tabs = new QTabWidget();
 	m_tabs->addTab(create_solve_tab(), tr("Solve"));
-	m_tabs->addTab(create_index_tab(), tr("Indexes"));
 	m_tabs->addTab(create_hints_tab(), tr("Hints"));
+	m_tabs->addTab(create_index_tab(), tr("Indexes"));
 	panel_layout->addWidget(m_tabs, 1);
 
 	m_content_layout->addWidget(panel);
@@ -141,9 +141,6 @@ QWidget *PlateSolverWindow::create_solve_tab() {
 	QWidget *content = new QWidget();
 	QVBoxLayout *layout = new QVBoxLayout(content);
 	layout->setSpacing(8);
-
-	m_image_label = new QLabel();
-	layout->addWidget(m_image_label);
 
 	QHBoxLayout *buttons = new QHBoxLayout();
 	m_solve_button = new QPushButton(tr("Solve Image"));
@@ -595,12 +592,6 @@ void PlateSolverWindow::on_image_changed() {
 	m_wcs_valid = false;
 	update_objects();
 	m_current_image = has_image ? QString(m_image_path) : QString();
-	if (has_image) {
-		set_file_label(m_image_label, tr("Image: %1"), m_current_image);
-	} else {
-		m_image_label->setText(tr("Open an image to solve it."));
-		m_image_label->setToolTip(QString());
-	}
 	if (!m_wcs_busy && !m_solve_requested) {
 		clear_solution();
 	}

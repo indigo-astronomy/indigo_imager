@@ -93,7 +93,6 @@ private:
 
 	QTabWidget *m_tabs;
 	QLabel *m_agent_status;
-	QLabel *m_image_label;
 	QPushButton *m_solve_button;
 	QPushButton *m_abort_button;
 	QCheckBox *m_show_deep_sky;
