@@ -61,8 +61,21 @@ PlateSolverWindow::PlateSolverWindow(QWidget *parent) :
 	m_agent_loaded(false),
 	m_solve_requested(false),
 	m_wcs_busy(false),
-	m_index_busy(false)
+	m_index_busy(false),
+	m_wcs_valid(false),
+	m_showing_stack(false)
 {
+	m_imager_viewer->showWCS(true);
+	// these slots run after the viewer replaced its preview, which does not carry the solution over
+	auto reapply_wcs = [this]() { apply_wcs_to_image(); };
+	connect(m_imager_viewer, &ImageViewer::stretchChanged, this, reapply_wcs);
+	connect(m_imager_viewer, &ImageViewer::BalanceChanged, this, reapply_wcs);
+	connect(m_imager_viewer, &ImageViewer::debayerChanged, this, reapply_wcs);
+	connect(m_imager_viewer, &ImageViewer::showStackChanged, this, [this](bool showing_stack) {
+		m_showing_stack = showing_stack;
+		apply_wcs_to_image();
+	});
+
 	QWidget *panel = new QWidget();
 	panel->setFixedWidth(SOLVER_PANEL_WIDTH);
 	QVBoxLayout *panel_layout = new QVBoxLayout(panel);
@@ -76,6 +89,7 @@ PlateSolverWindow::PlateSolverWindow(QWidget *parent) :
 	m_tabs = new QTabWidget();
 	m_tabs->addTab(create_solve_tab(), tr("Solve"));
 	m_tabs->addTab(create_index_tab(), tr("Indexes"));
+	m_tabs->addTab(create_hints_tab(), tr("Hints"));
 	panel_layout->addWidget(m_tabs, 3);
 
 	m_log = new QPlainTextEdit();
@@ -155,8 +169,58 @@ QWidget *PlateSolverWindow::create_solve_tab() {
 	}
 	layout->addWidget(solution);
 
-	QGroupBox *hints = new QGroupBox(tr("Hints"));
-	QFormLayout *hints_form = new QFormLayout(hints);
+	layout->addStretch(1);
+
+	return create_scroll_area(content);
+}
+
+QWidget *PlateSolverWindow::create_index_tab() {
+	QWidget *content = new QWidget();
+	QVBoxLayout *layout = new QVBoxLayout(content);
+	layout->setSpacing(8);
+
+	QLabel *info = new QLabel(tr("Checking an index downloads it, clearing it deletes the file. Use the index whose scale is nearest to 0.7 x the size of the frame."));
+	info->setWordWrap(true);
+	layout->addWidget(info);
+
+	QGroupBox *installed = new QGroupBox(tr("Installed indexes"));
+	m_index_layout = new QVBoxLayout(installed);
+	layout->addWidget(installed);
+
+	QGroupBox *use_index = new QGroupBox(tr("Use indexes"));
+	m_use_index_layout = new QVBoxLayout(use_index);
+	m_use_index_empty = new QLabel(tr("No index installed, check one above to download it."));
+	m_use_index_empty->setWordWrap(true);
+	m_use_index_layout->addWidget(m_use_index_empty);
+	layout->addWidget(use_index);
+
+	m_download_status = new QLabel();
+	m_download_status->setWordWrap(true);
+	layout->addWidget(m_download_status);
+
+	m_download_progress = new QProgressBar();
+	m_download_progress->setRange(0, 0);
+	m_download_progress->setTextVisible(false);
+	m_download_progress->setVisible(false);
+	layout->addWidget(m_download_progress);
+
+	m_download_abort = new QPushButton(tr("Abort Download"));
+	m_download_abort->setVisible(false);
+	connect(m_download_abort, &QPushButton::clicked, this, &PlateSolverWindow::on_abort_clicked);
+	layout->addWidget(m_download_abort);
+
+	QLabel *folder = new QLabel(tr("Folder: %1").arg(QDir::toNativeSeparators(index_folder())));
+	folder->setWordWrap(true);
+	folder->setTextInteractionFlags(Qt::TextSelectableByMouse);
+	layout->addWidget(folder);
+
+	layout->addStretch(1);
+	return create_scroll_area(content);
+}
+
+QWidget *PlateSolverWindow::create_hints_tab() {
+	QWidget *content = new QWidget();
+	QFormLayout *hints_form = new QFormLayout(content);
 
 	m_hint_radius = new QDoubleSpinBox();
 	m_hint_radius->setRange(0, 360);
@@ -219,53 +283,6 @@ QWidget *PlateSolverWindow::create_solve_tab() {
 	connect(m_hint_cpu_limit, &QSpinBox::editingFinished, this, &PlateSolverWindow::on_hints_edited);
 	hints_form->addRow(tr("Time limit:"), m_hint_cpu_limit);
 
-	layout->addWidget(hints);
-	layout->addStretch(1);
-
-	return create_scroll_area(content);
-}
-
-QWidget *PlateSolverWindow::create_index_tab() {
-	QWidget *content = new QWidget();
-	QVBoxLayout *layout = new QVBoxLayout(content);
-	layout->setSpacing(8);
-
-	QLabel *info = new QLabel(tr("Checking an index downloads it, clearing it deletes the file. Use the index whose scale is nearest to 0.7 x the size of the frame."));
-	info->setWordWrap(true);
-	layout->addWidget(info);
-
-	QGroupBox *installed = new QGroupBox(tr("Installed indexes"));
-	m_index_layout = new QVBoxLayout(installed);
-	layout->addWidget(installed);
-
-	QGroupBox *use_index = new QGroupBox(tr("Use indexes"));
-	m_use_index_layout = new QVBoxLayout(use_index);
-	m_use_index_empty = new QLabel(tr("No index installed, check one above to download it."));
-	m_use_index_empty->setWordWrap(true);
-	m_use_index_layout->addWidget(m_use_index_empty);
-	layout->addWidget(use_index);
-
-	m_download_status = new QLabel();
-	m_download_status->setWordWrap(true);
-	layout->addWidget(m_download_status);
-
-	m_download_progress = new QProgressBar();
-	m_download_progress->setRange(0, 0);
-	m_download_progress->setTextVisible(false);
-	m_download_progress->setVisible(false);
-	layout->addWidget(m_download_progress);
-
-	m_download_abort = new QPushButton(tr("Abort Download"));
-	m_download_abort->setVisible(false);
-	connect(m_download_abort, &QPushButton::clicked, this, &PlateSolverWindow::on_abort_clicked);
-	layout->addWidget(m_download_abort);
-
-	QLabel *folder = new QLabel(tr("Folder: %1").arg(QDir::toNativeSeparators(index_folder())));
-	folder->setWordWrap(true);
-	folder->setTextInteractionFlags(Qt::TextSelectableByMouse);
-	layout->addWidget(folder);
-
-	layout->addStretch(1);
 	return create_scroll_area(content);
 }
 
@@ -373,12 +390,37 @@ void PlateSolverWindow::update_wcs(const SolverProperty &property) {
 			m_wcs_labels[AGENT_PLATESOLVER_WCS_PARITY_ITEM_NAME]->setText(parity->number < 0 ? tr("Normal") : tr("Mirrored"));
 			m_wcs_labels[AGENT_PLATESOLVER_WCS_INDEX_ITEM_NAME]->setText(QString("%1°").arg(index->number, 0, 'g', 3));
 			set_file_label(m_solution_image, "%1", m_solving_image);
+			m_wcs_image = m_solving_image;
+			m_wcs_ra = ra->number;
+			m_wcs_dec = dec->number;
+			m_wcs_angle = angle->number;
+			m_wcs_scale = scale->number;
+			m_wcs_parity = (int)parity->number;
+			m_wcs_valid = true;
+			apply_wcs_to_image();
 		}
 	} else if (property.state == INDIGO_ALERT_STATE && was_busy) {
 		clear_solution();
 		set_file_label(m_solution_image, tr("%1: not solved"), m_solving_image);
+		if (m_wcs_valid && m_wcs_image == m_solving_image) {
+			remove_wcs_from_image();
+		}
 	}
 	update_controls();
+}
+
+// the same as a file solved in Ain Imager, the viewer shows RA and Dec under the mouse if the image has WCS data
+void PlateSolverWindow::apply_wcs_to_image() {
+	if (!m_wcs_valid || m_showing_stack || m_preview_image == nullptr || m_wcs_image != QString(m_image_path)) return;
+	m_preview_image->set_wcs_data(m_wcs_ra * 15, m_wcs_dec, m_wcs_ra * 15, m_wcs_dec, m_wcs_angle, m_wcs_parity, m_wcs_scale);
+	m_imager_viewer->setImage(*m_preview_image);
+}
+
+void PlateSolverWindow::remove_wcs_from_image() {
+	m_wcs_valid = false;
+	if (m_showing_stack || m_preview_image == nullptr || m_wcs_image != QString(m_image_path)) return;
+	m_preview_image->set_wcs_data(0, 0, 0, 0, 0, 0, 0);
+	m_imager_viewer->setImage(*m_preview_image);
 }
 
 void PlateSolverWindow::update_use_index(const SolverProperty &property) {
@@ -494,6 +536,7 @@ void PlateSolverWindow::on_download_timer() {
 
 void PlateSolverWindow::on_image_changed() {
 	bool has_image = m_preview_image != nullptr && m_image_data != nullptr && m_image_size > 0;
+	m_wcs_valid = false;
 	m_current_image = has_image ? QString(m_image_path) : QString();
 	if (has_image) {
 		set_file_label(m_image_label, tr("Image: %1"), m_current_image);

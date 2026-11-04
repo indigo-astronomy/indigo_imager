@@ -56,11 +56,14 @@ private slots:
 private:
 	QWidget *create_solve_tab();
 	QWidget *create_index_tab();
+	QWidget *create_hints_tab();
 	void update_hints(const SolverProperty &property);
 	void update_wcs(const SolverProperty &property);
 	void update_index(const SolverProperty &property);
 	void update_use_index(const SolverProperty &property);
 	void clear_solution();
+	void apply_wcs_to_image();
+	void remove_wcs_from_image();
 	void update_controls();
 	void log_message(const QString &message);
 	bool any_use_index_selected() const;
@@ -73,6 +76,14 @@ private:
 	bool m_index_busy;
 	QString m_current_image;
 	QString m_solving_image;
+	QString m_wcs_image;
+	bool m_wcs_valid;
+	bool m_showing_stack;
+	double m_wcs_ra;
+	double m_wcs_dec;
+	double m_wcs_angle;
+	double m_wcs_scale;
+	int m_wcs_parity;
 
 	QTabWidget *m_tabs;
 	QLabel *m_agent_status;

@@ -69,6 +69,7 @@ protected:
 	void dropEvent(QDropEvent *event) override;
 
 	QHBoxLayout *m_content_layout;
+	ImageViewer *m_imager_viewer;
 	preview_image *m_preview_image;
 	unsigned char *m_image_data;
 	size_t m_image_size;
@@ -103,7 +104,6 @@ private:
 
 	// Image viewer
 	TextDialog *m_image_info_dlg;
-	ImageViewer *m_imager_viewer;
 	LiveStacker *m_stacker;
 	QString m_app_name;
 	QString m_about_name;
