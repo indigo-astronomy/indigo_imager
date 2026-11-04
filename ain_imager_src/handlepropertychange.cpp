@@ -636,7 +636,7 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 	double width = 0;
 	double height = 0;
 	int parity = 0;
-	int index_used = 0;
+	double index_used = 0;
 	int wcs_state = -1;
 
 	for (int i = 0; i < property->count; i++) {
