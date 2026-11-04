@@ -20,13 +20,13 @@
 #ifndef OBJECTOVERLAY_H
 #define OBJECTOVERLAY_H
 
-#include <QGraphicsItem>
+#include <QGraphicsRectItem>
 #include <QColor>
 #include <QString>
 #include <imagepreview.h>
 
 // Deep sky objects and stars of indigocat drawn over a solved image. The items are children of the
-// image item of the viewer, so they zoom and pan with it and the viewer owns them.
+// image item of the viewer, so they zoom and pan with it and the viewer owns them. They are clipped to the image area.
 class ObjectOverlay {
 public:
 	explicit ObjectOverlay(QGraphicsItem *image_item);
@@ -40,7 +40,7 @@ private:
 	void add_ellipse(double x, double y, double major, double minor, double rotation, const QColor &color, const QString &label, const QString &tooltip);
 	void add_label(double x, double y, const QColor &color, const QString &label);
 
-	QGraphicsItem *m_root;
+	QGraphicsRectItem *m_root;
 };
 
 #endif // OBJECTOVERLAY_H

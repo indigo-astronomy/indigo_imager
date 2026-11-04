@@ -19,7 +19,6 @@
 
 #include <QBrush>
 #include <QFont>
-#include <QGraphicsEllipseItem>
 #include <QGraphicsSimpleTextItem>
 #include <QPen>
 #include <algorithm>
@@ -27,6 +26,7 @@
 #include <vector>
 #include <indigo/indigocat/indigocat_dso.h>
 #include <indigo/indigocat/indigocat_star.h>
+#include <antialiaseditems.h>
 #include <objectoverlay.h>
 
 #define MAX_STARS 100
@@ -57,6 +57,9 @@ static void make_passive(QGraphicsItem *item) {
 
 ObjectOverlay::ObjectOverlay(QGraphicsItem *image_item) {
 	m_root = new QGraphicsRectItem(0, 0, 0, 0, image_item);
+	// draws nothing, it only clips the overlay to the image area
+	m_root->setPen(Qt::NoPen);
+	m_root->setFlag(QGraphicsItem::ItemClipsChildrenToShape);
 	make_passive(m_root);
 }
 
@@ -69,6 +72,7 @@ void ObjectOverlay::add_label(double x, double y, const QColor &color, const QSt
 	QGraphicsSimpleTextItem *text = new QGraphicsSimpleTextItem(label, m_root);
 	QFont font = text->font();
 	font.setPointSize(LABEL_SIZE);
+	font.setStyleStrategy(QFont::PreferAntialias);
 	text->setFont(font);
 	text->setBrush(color);
 	text->setFlag(QGraphicsItem::ItemIgnoresTransformations);
@@ -77,7 +81,7 @@ void ObjectOverlay::add_label(double x, double y, const QColor &color, const QSt
 }
 
 void ObjectOverlay::add_marker(double x, double y, const QColor &color, const QString &label, const QString &tooltip) {
-	QGraphicsEllipseItem *marker = new QGraphicsEllipseItem(-MARKER_RADIUS, -MARKER_RADIUS, 2 * MARKER_RADIUS, 2 * MARKER_RADIUS, m_root);
+	QGraphicsEllipseItem *marker = new AntialiasedEllipseItem(-MARKER_RADIUS, -MARKER_RADIUS, 2 * MARKER_RADIUS, 2 * MARKER_RADIUS, m_root);
 	marker->setPen(cosmetic_pen(color));
 	marker->setFlag(QGraphicsItem::ItemIgnoresTransformations);
 	marker->setPos(x, y);
@@ -87,7 +91,7 @@ void ObjectOverlay::add_marker(double x, double y, const QColor &color, const QS
 }
 
 void ObjectOverlay::add_ellipse(double x, double y, double major, double minor, double rotation, const QColor &color, const QString &label, const QString &tooltip) {
-	QGraphicsEllipseItem *ellipse = new QGraphicsEllipseItem(-major / 2, -minor / 2, major, minor, m_root);
+	QGraphicsEllipseItem *ellipse = new AntialiasedEllipseItem(-major / 2, -minor / 2, major, minor, m_root);
 	ellipse->setPen(cosmetic_pen(color));
 	ellipse->setPos(x, y);
 	ellipse->setRotation(rotation);
@@ -103,6 +107,7 @@ int ObjectOverlay::show(const preview_image &image, bool jnow) {
 	if (image.wcs_data(image.width() / 2.0, image.height() / 2.0, &center_ra, &center_dec, nullptr, nullptr, &pix_scale) != 0) return 0;
 	const double width = image.width();
 	const double height = image.height();
+	m_root->setRect(0, 0, width, height);
 	const double field_radius = sqrt(width * width + height * height) / 2 * pix_scale;
 	const double center_dec_r = center_dec * DEG_TO_RAD;
 	int count = 0;
