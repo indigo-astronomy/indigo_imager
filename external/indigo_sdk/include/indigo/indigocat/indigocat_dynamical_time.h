@@ -1,0 +1,45 @@
+// Copyright (c) 2022-2025 Rumen G. Bogdanovski
+// All rights reserved.
+//
+// THIS SOFTWARE IS PROVIDED BY THE AUTHORS 'AS IS' AND ANY EXPRESS
+// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+// GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+//	Created by Rumen G. Bogdanovski, based on Liam Girdwood's code.
+
+#ifndef __DYNAMICAL_TIME_H
+#define __DYNAMICAL_TIME_H
+
+#if defined(INDIGO_WINDOWS)
+#if defined(INDIGO_WINDOWS_DLL)
+#define INDIGO_EXTERN __declspec(dllexport)
+#else
+#define INDIGO_EXTERN __declspec(dllimport)
+#endif
+#else
+#define INDIGO_EXTERN extern
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Calculate approximate dynamical time difference from julian day in seconds */
+INDIGO_EXTERN double  indigocat_get_dynamical_time_diff(double JD);
+
+/* brief Calculate julian ephemeris day (JDE) */
+INDIGO_EXTERN double  indigocat_jd_to_jde(double JD);
+
+#ifdef __cplusplus
+};
+#endif
+
+#endif
