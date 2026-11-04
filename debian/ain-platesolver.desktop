@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Encoding=UTF-8
+Name=Ain Platesolver
+Comment=Ain INDIGO Plate Solver
+Exec=ain_platesolver %u
+Icon=ain-viewer.png
+Terminal=false
+Type=Application
+StartupWMClass=ain_platesolver
+Categories=Astronomy;Education;Science
+Keywords=astronomy
+MimeType=image/x-image-raw;image/x-image-fits;image/x-fits

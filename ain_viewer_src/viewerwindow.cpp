@@ -42,8 +42,8 @@
 
 void write_conf();
 
-ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
-	setWindowTitle(tr("Ain Viewer"));
+ViewerWindow::ViewerWindow(QWidget *parent, const QString &app_name, const QString &about_name) : QMainWindow(parent), m_app_name(app_name), m_about_name(about_name) {
+	setWindowTitle(m_app_name);
 	if (!conf.restore_window_size || conf.window_width == 0 || conf.window_height == 0) {
 		resize(1024, 768);
 	} else {
@@ -214,7 +214,11 @@ ViewerWindow::ViewerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_imager_viewer->setToolBarMode(ImageViewer::ToolBarMode::Visible);
 	form_layout->addWidget((QWidget*)m_imager_viewer);
 	m_imager_viewer->setMinimumWidth(IMAGE_AREA_MIN_WIDTH);
-	rootLayout->addWidget(form_panel);
+	m_content_layout = new QHBoxLayout();
+	m_content_layout->setSpacing(0);
+	m_content_layout->setContentsMargins(0, 0, 0, 0);
+	m_content_layout->addWidget(form_panel, 1);
+	rootLayout->addLayout(m_content_layout);
 
 	m_imager_viewer->setStretch(conf.preview_stretch_level);
 	m_imager_viewer->setDebayer(conf.preview_bayer_pattern);
@@ -321,7 +325,7 @@ void ViewerWindow::open_image(QString file_name) {
 		int w = m_preview_image->width();
 		int h = m_preview_image->height();
 		snprintf(info, sizeof(info), "%s [%d x %d]", basename(m_image_path), w, h);
-		setWindowTitle(tr("Ain Viewer - ") + QString(m_image_path));
+		setWindowTitle(m_app_name + " - " + QString(m_image_path));
 		m_imager_viewer->setText(info);
 
 		if (m_image_info_dlg->isVisible()) {
@@ -336,6 +340,7 @@ void ViewerWindow::open_image(QString file_name) {
 	QDir directory(dirname(file_name.toUtf8().data()));
 	QString pattern = "*" + QString(m_image_formrat);
 	m_image_list = directory.entryList(QStringList() << pattern, QDir::Files);
+	emit image_changed();
 }
 
 void ViewerWindow::on_image_info_act() {
@@ -769,7 +774,7 @@ void ViewerWindow::on_quick_stack_act() {
 }
 
 void ViewerWindow::on_image_close_act() {
-	setWindowTitle(tr("Ain Viewer"));
+	setWindowTitle(m_app_name);
 	m_imager_viewer->setText("");
 	m_imager_viewer->setToolTip("");
 	if (m_preview_image) {
@@ -793,6 +798,7 @@ void ViewerWindow::on_image_close_act() {
 	m_image_path[0] = '\0';
 	m_stack_last_image_path[0] = '\0';
 	m_image_formrat = nullptr;
+	emit image_changed();
 }
 
 void ViewerWindow::on_image_raw_to_fits() {
@@ -1102,11 +1108,11 @@ void ViewerWindow::on_about_act() {
 	QMessageBox msgBox(this);
 	int platform_bits = sizeof(void*) * 8;
 	QPixmap pixmap(":resource/indigo_logo.png");
-	msgBox.setWindowTitle("About Ain Image Viewer");
+	msgBox.setWindowTitle("About " + m_about_name);
 	msgBox.setTextFormat(Qt::RichText);
 	msgBox.setIconPixmap(pixmap.scaledToWidth(96, Qt::SmoothTransformation));
 	msgBox.setText(
-		"<b>Ain Image Viewer</b><br>"
+		"<b>" + m_about_name + "</b><br>"
 		"Version "
 		AIN_VERSION
 		" (" + QString::number(platform_bits) + "bit) <br>"

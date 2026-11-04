@@ -46,7 +46,7 @@
 class ViewerWindow : public QMainWindow {
 	Q_OBJECT
 public:
-	explicit ViewerWindow(QWidget *parent = nullptr);
+	explicit ViewerWindow(QWidget *parent = nullptr, const QString &app_name = "Ain Viewer", const QString &about_name = "Ain Image Viewer");
 	virtual ~ViewerWindow();
 	void open_image(QString file_name);
 	void enable_image_inspector(bool enable);
@@ -61,9 +61,18 @@ public:
 		}
 	}
 
+signals:
+	void image_changed();
+
 protected:
 	void dragEnterEvent(QDragEnterEvent *event) override;
 	void dropEvent(QDropEvent *event) override;
+
+	QHBoxLayout *m_content_layout;
+	preview_image *m_preview_image;
+	unsigned char *m_image_data;
+	size_t m_image_size;
+	char m_image_path[PATH_LEN];
 
 public slots:
 	void on_reopen_file_changed(bool status);
@@ -96,11 +105,9 @@ private:
 	TextDialog *m_image_info_dlg;
 	ImageViewer *m_imager_viewer;
 	LiveStacker *m_stacker;
-	preview_image *m_preview_image;
+	QString m_app_name;
+	QString m_about_name;
 	preview_image *m_stack_last_image;
-	unsigned char *m_image_data;
-	size_t m_image_size;
-	char m_image_path[PATH_LEN];
 	char m_stack_last_image_path[PATH_LEN];
 	char *m_image_formrat;
 	QString m_selected_filter;

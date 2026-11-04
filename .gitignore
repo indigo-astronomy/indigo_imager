@@ -54,6 +54,13 @@ ain_viewer_src/qmake_qmake_immediate.qrc
 ain_viewer_src/qrc_qmake_qmake_immediate.cpp
 ain_viewer_src/qrc_style.cpp
 
+ain_platesolver_src/Makefile*
+ain_platesolver_src/ain_platesolver
+ain_platesolver_src/moc/*
+ain_platesolver_src/object/*
+ain_platesolver_src/qmake_qmake_immediate.qrc
+ain_platesolver_src/qrc_*.cpp
+
 /indigo
 /indigo/*
 
