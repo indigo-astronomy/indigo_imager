@@ -28,10 +28,10 @@ DEFINES += QT_DEPRECATED_WARNINGS QZEROCONF_STATIC
 SOURCES += \
 	$$PWD/main.cpp \
 	$$PWD/solverengine.cpp \
-	$$PWD/indigo_solver.c \
-	$$PWD/indigo_solver_utils.c \
-	$$PWD/indigo_solver_healpix.c \
-	$$PWD/indigo_raw_utils.c \
+	$$PWD/../external/indigo_solver/indigo_solver.c \
+	$$PWD/../external/indigo_solver/indigo_solver_utils.c \
+	$$PWD/../external/indigo_solver/indigo_solver_healpix.c \
+	$$PWD/../external/indigo_solver/indigo_raw_utils.c \
 	$$PWD/platesolverwindow.cpp \
 	$$PWD/objectoverlay.cpp \
 	$$PWD/../ain_viewer_src/textdialog.cpp \
@@ -74,9 +74,9 @@ else: unix:!android: target.path = /usr/bin
 
 HEADERS += \
 	$$PWD/solverengine.h \
-	$$PWD/indigo_solver.h \
-	$$PWD/indigo_solver_utils.h \
-	$$PWD/indigo_solver_healpix.h \
+	$$PWD/../external/indigo_solver/indigo_solver.h \
+	$$PWD/../external/indigo_solver/indigo_solver_utils.h \
+	$$PWD/../external/indigo_solver/indigo_solver_healpix.h \
 	$$PWD/platesolverwindow.h \
 	$$PWD/objectoverlay.h \
 	$$PWD/../ain_viewer_src/viewerwindow.h \
@@ -114,6 +114,7 @@ INCLUDEPATH += \
 	"$$PWD/../external/qtzeroconf/" \
 	"$$PWD/../external/libraw/" \
 	"$$PWD/../external/lz4/" \
+	"$$PWD/../external/indigo_solver/" \
 	"$$PWD/../common_src" \
 	"$$PWD/../ain_viewer_src" \
 	"$$PWD/../ain_platesolver_src"
