@@ -47,6 +47,15 @@ static void set_file_label(QLabel *label, const QString &format, const QString &
 	label->setToolTip(path);
 }
 
+static QWidget *create_scroll_area(QWidget *content) {
+	QScrollArea *scroll = new QScrollArea();
+	scroll->setWidgetResizable(true);
+	scroll->setFrameShape(QFrame::NoFrame);
+	scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	scroll->setWidget(content);
+	return scroll;
+}
+
 PlateSolverWindow::PlateSolverWindow(QWidget *parent) :
 	ViewerWindow(parent, "Ain Platesolver", "Ain Plate Solver"),
 	m_agent_loaded(false),
@@ -146,13 +155,6 @@ QWidget *PlateSolverWindow::create_solve_tab() {
 	}
 	layout->addWidget(solution);
 
-	QGroupBox *use_index = new QGroupBox(tr("Use indexes"));
-	m_use_index_layout = new QVBoxLayout(use_index);
-	m_use_index_empty = new QLabel(tr("No index installed, install one in the Indexes tab."));
-	m_use_index_empty->setWordWrap(true);
-	m_use_index_layout->addWidget(m_use_index_empty);
-	layout->addWidget(use_index);
-
 	QGroupBox *hints = new QGroupBox(tr("Hints"));
 	QFormLayout *hints_form = new QFormLayout(hints);
 
@@ -220,12 +222,7 @@ QWidget *PlateSolverWindow::create_solve_tab() {
 	layout->addWidget(hints);
 	layout->addStretch(1);
 
-	QScrollArea *scroll = new QScrollArea();
-	scroll->setWidgetResizable(true);
-	scroll->setFrameShape(QFrame::NoFrame);
-	scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	scroll->setWidget(content);
-	return scroll;
+	return create_scroll_area(content);
 }
 
 QWidget *PlateSolverWindow::create_index_tab() {
@@ -240,6 +237,13 @@ QWidget *PlateSolverWindow::create_index_tab() {
 	QGroupBox *installed = new QGroupBox(tr("Installed indexes"));
 	m_index_layout = new QVBoxLayout(installed);
 	layout->addWidget(installed);
+
+	QGroupBox *use_index = new QGroupBox(tr("Use indexes"));
+	m_use_index_layout = new QVBoxLayout(use_index);
+	m_use_index_empty = new QLabel(tr("No index installed, check one above to download it."));
+	m_use_index_empty->setWordWrap(true);
+	m_use_index_layout->addWidget(m_use_index_empty);
+	layout->addWidget(use_index);
 
 	m_download_status = new QLabel();
 	m_download_status->setWordWrap(true);
@@ -262,7 +266,7 @@ QWidget *PlateSolverWindow::create_index_tab() {
 	layout->addWidget(folder);
 
 	layout->addStretch(1);
-	return content;
+	return create_scroll_area(content);
 }
 
 // where the agent keeps the indexes, used only to show the folder and the size of a running download
@@ -549,7 +553,7 @@ void PlateSolverWindow::update_controls() {
 	} else if (m_index_busy) {
 		m_solve_button->setToolTip(tr("Index download in progress"));
 	} else if (!any_use_index_selected()) {
-		m_solve_button->setToolTip(tr("Select at least one index to use"));
+		m_solve_button->setToolTip(tr("Select at least one index to use in the Indexes tab"));
 	} else {
 		m_solve_button->setToolTip(QString());
 	}
