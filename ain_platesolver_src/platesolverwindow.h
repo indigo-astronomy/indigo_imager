@@ -52,7 +52,8 @@ private slots:
 	void on_index_toggled(const QString &name, bool checked);
 	void on_use_index_toggled();
 	void on_hints_edited();
-	void on_show_objects(bool show);
+	void on_show_deep_sky(bool show);
+	void on_show_stars(bool show);
 	void on_download_timer();
 
 private:
@@ -95,7 +96,8 @@ private:
 	QLabel *m_image_label;
 	QPushButton *m_solve_button;
 	QPushButton *m_abort_button;
-	QCheckBox *m_show_objects;
+	QCheckBox *m_show_deep_sky;
+	QCheckBox *m_show_stars;
 	QVBoxLayout *m_use_index_layout;
 	QLabel *m_use_index_empty;
 	QMap<QString, QCheckBox *> m_use_index_boxes;

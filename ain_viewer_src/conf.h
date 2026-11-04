@@ -77,8 +77,9 @@ typedef struct {
 	bool statistics_enabled;
 	uint32_t preview_bayer_pattern;
 	bool show_reference;
-	bool show_objects;
-	char unused[99];
+	bool show_deep_sky;
+	bool show_stars;
+	char unused[98];
 } conf_t;
 
 extern conf_t conf;

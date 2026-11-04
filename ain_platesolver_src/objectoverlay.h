@@ -34,8 +34,8 @@ class ObjectOverlay {
 public:
 	explicit ObjectOverlay(QGraphicsItem *image_item);
 
-	// Returns the number of objects in the field. RA and Dec of the image are JNow if jnow is set, otherwise J2000
-	int show(const preview_image &image, bool jnow);
+	// Draws the selected kinds of objects and returns how many of each are in the field. RA and Dec of the image are JNow if jnow is set, otherwise J2000
+	void show(const preview_image &image, bool jnow, bool show_deep_sky, bool show_stars, int *deep_sky_count, int *star_count);
 	void clear();
 
 	// Places the labels so that they do not overlap at the current zoom, call it when the zoom changes

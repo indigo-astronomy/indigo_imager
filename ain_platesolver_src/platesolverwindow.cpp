@@ -30,6 +30,7 @@
 void write_conf();
 
 #define SOLVER_PANEL_WIDTH 400
+#define LOG_HEIGHT 120
 #define LABEL_MARGIN 130
 #define SOLVE_START_TIMEOUT_MS 5000
 #define ARCSEC_PER_DEG 3600.0
@@ -95,14 +96,16 @@ PlateSolverWindow::PlateSolverWindow(QWidget *parent) :
 	m_tabs->addTab(create_solve_tab(), tr("Solve"));
 	m_tabs->addTab(create_index_tab(), tr("Indexes"));
 	m_tabs->addTab(create_hints_tab(), tr("Hints"));
-	panel_layout->addWidget(m_tabs, 3);
+	panel_layout->addWidget(m_tabs, 1);
+
+	m_content_layout->addWidget(panel);
 
 	m_log = new QPlainTextEdit();
 	m_log->setReadOnly(true);
 	m_log->setMaximumBlockCount(1000);
-	panel_layout->addWidget(m_log, 1);
-
-	m_content_layout->addWidget(panel);
+	m_log->setFixedHeight(LOG_HEIGHT);
+	m_image_layout->setStretchFactor(m_imager_viewer, 1);
+	m_image_layout->addWidget(m_log);
 
 	m_download_timer = new QTimer(this);
 	m_download_timer->setInterval(1000);
@@ -153,12 +156,20 @@ QWidget *PlateSolverWindow::create_solve_tab() {
 	buttons->addWidget(m_abort_button);
 	layout->addLayout(buttons);
 
-	m_show_objects = new QCheckBox(tr("Show objects"));
-	m_show_objects->setObjectName("show_objects");
-	m_show_objects->setToolTip(tr("Deep sky objects and the brightest stars on a solved image"));
-	m_show_objects->setChecked(conf.show_objects);
-	connect(m_show_objects, &QCheckBox::toggled, this, &PlateSolverWindow::on_show_objects);
-	layout->addWidget(m_show_objects);
+	QHBoxLayout *objects = new QHBoxLayout();
+	m_show_deep_sky = new QCheckBox(tr("Deep sky"));
+	m_show_deep_sky->setObjectName("show_deep_sky");
+	m_show_deep_sky->setToolTip(tr("Show the deep sky objects on a solved image"));
+	m_show_deep_sky->setChecked(conf.show_deep_sky);
+	connect(m_show_deep_sky, &QCheckBox::toggled, this, &PlateSolverWindow::on_show_deep_sky);
+	objects->addWidget(m_show_deep_sky);
+	m_show_stars = new QCheckBox(tr("Stars"));
+	m_show_stars->setObjectName("show_stars");
+	m_show_stars->setToolTip(tr("Show the brightest stars on a solved image"));
+	m_show_stars->setChecked(conf.show_stars);
+	connect(m_show_stars, &QCheckBox::toggled, this, &PlateSolverWindow::on_show_stars);
+	objects->addWidget(m_show_stars);
+	layout->addLayout(objects);
 
 	QGroupBox *solution = new QGroupBox(tr("Solution"));
 	QFormLayout *solution_form = new QFormLayout(solution);
@@ -442,18 +453,28 @@ void PlateSolverWindow::remove_wcs_from_image() {
 }
 
 void PlateSolverWindow::update_objects() {
-	int count = 0;
-	if (m_show_objects->isChecked() && m_wcs_valid && !m_showing_stack && m_preview_image != nullptr && m_wcs_image == QString(m_image_path)) {
-		count = m_objects->show(*m_preview_image, m_wcs_jnow);
-		m_show_objects->setText(tr("Show objects (%1)").arg(count));
+	const bool deep_sky = m_show_deep_sky->isChecked();
+	const bool stars = m_show_stars->isChecked();
+	int deep_sky_count = 0;
+	int star_count = 0;
+	bool shown = (deep_sky || stars) && m_wcs_valid && !m_showing_stack && m_preview_image != nullptr && m_wcs_image == QString(m_image_path);
+	if (shown) {
+		m_objects->show(*m_preview_image, m_wcs_jnow, deep_sky, stars, &deep_sky_count, &star_count);
 	} else {
 		m_objects->clear();
-		m_show_objects->setText(tr("Show objects"));
 	}
+	m_show_deep_sky->setText(shown && deep_sky ? tr("Deep sky (%1)").arg(deep_sky_count) : tr("Deep sky"));
+	m_show_stars->setText(shown && stars ? tr("Stars (%1)").arg(star_count) : tr("Stars"));
 }
 
-void PlateSolverWindow::on_show_objects(bool show) {
-	conf.show_objects = show;
+void PlateSolverWindow::on_show_deep_sky(bool show) {
+	conf.show_deep_sky = show;
+	write_conf();
+	update_objects();
+}
+
+void PlateSolverWindow::on_show_stars(bool show) {
+	conf.show_stars = show;
 	write_conf();
 	update_objects();
 }

@@ -69,6 +69,7 @@ protected:
 	void dropEvent(QDropEvent *event) override;
 
 	QHBoxLayout *m_content_layout;
+	QVBoxLayout *m_image_layout;
 	ImageViewer *m_imager_viewer;
 	preview_image *m_preview_image;
 	unsigned char *m_image_data;

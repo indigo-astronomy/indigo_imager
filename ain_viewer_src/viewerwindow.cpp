@@ -208,6 +208,7 @@ ViewerWindow::ViewerWindow(QWidget *parent, const QString &app_name, const QStri
 	form_layout->setSpacing(5);
 	form_layout->setContentsMargins(5, 5, 5, 5);
 	form_panel->setLayout(form_layout);
+	m_image_layout = form_layout;
 
 	// Image viewer
 	m_imager_viewer = new ImageViewer(this, true);

@@ -190,20 +190,21 @@ void ObjectOverlay::add_ellipse(double x, double y, double major, double minor, 
 	add_label(qBound(bounds.left(), x, bounds.right()), qBound(bounds.top(), y, bounds.bottom()), 0, rank, color, label);
 }
 
-int ObjectOverlay::show(const preview_image &image, bool jnow) {
+void ObjectOverlay::show(const preview_image &image, bool jnow, bool show_deep_sky, bool show_stars, int *deep_sky_count, int *star_count) {
 	clear();
+	*deep_sky_count = 0;
+	*star_count = 0;
 
 	double pix_scale = 0, center_ra = 0, center_dec = 0;
-	if (image.wcs_data(image.width() / 2.0, image.height() / 2.0, &center_ra, &center_dec, nullptr, nullptr, &pix_scale) != 0) return 0;
+	if (image.wcs_data(image.width() / 2.0, image.height() / 2.0, &center_ra, &center_dec, nullptr, nullptr, &pix_scale) != 0) return;
 	const double width = image.width();
 	const double height = image.height();
 	m_root->setRect(0, 0, width, height);
 	const double field_radius = sqrt(width * width + height * height) / 2 * pix_scale;
 	const double center_dec_r = center_dec * DEG_TO_RAD;
-	int count = 0;
 
 	indigocat_dso_entry *dso = indigocat_get_dso_data();
-	for (int i = 0; dso[i].id; i++) {
+	for (int i = 0; show_deep_sky && dso[i].id; i++) {
 		double ra = (jnow ? dso[i].ra_now : dso[i].ra) * 15;
 		double dec = jnow ? dso[i].dec_now : dso[i].dec;
 		double major_deg = dso[i].r1 / ARCMIN_PER_DEG;
@@ -243,7 +244,7 @@ int ObjectOverlay::show(const preview_image &image, bool jnow) {
 			}
 			add_ellipse(x, y, major, minor, rotation, rank, DSO_COLOR, label, tooltip);
 		}
-		count++;
+		(*deep_sky_count)++;
 	}
 
 	// only the brightest stars of a wide field, labels of all would hide the image
@@ -255,7 +256,7 @@ int ObjectOverlay::show(const preview_image &image, bool jnow) {
 	std::vector<field_star> stars;
 	const double cos_field_radius = field_radius < 90 ? cos(field_radius * DEG_TO_RAD) : -1;
 	indigocat_star_entry *star = indigocat_get_star_data();
-	for (int i = 0; star[i].hip; i++) {
+	for (int i = 0; show_stars && star[i].hip; i++) {
 		double ra = (jnow ? star[i].ra_now : star[i].ra) * 15;
 		double dec = jnow ? star[i].dec_now : star[i].dec;
 		double cos_distance = sin(dec * DEG_TO_RAD) * sin(center_dec_r) + cos(dec * DEG_TO_RAD) * cos(center_dec_r) * cos((ra - center_ra) * DEG_TO_RAD);
@@ -271,9 +272,8 @@ int ObjectOverlay::show(const preview_image &image, bool jnow) {
 		QString catalogue = star_id(s.entry->hip);
 		QString label = s.entry->name ? QString(s.entry->name) : catalogue;
 		add_marker(s.x, s.y, label_rank(s.entry->name != nullptr, s.mag), STAR_COLOR, label, QString("%1\n%2\nMag %3").arg(label, catalogue).arg(s.mag, 0, 'f', 2));
-		count++;
+		(*star_count)++;
 	}
 	std::stable_sort(m_labels.begin(), m_labels.end(), [](const object_label &a, const object_label &b) { return a.rank < b.rank; });
 	layout_labels();
-	return count;
 }
