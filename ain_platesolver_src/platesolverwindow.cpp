@@ -27,6 +27,8 @@
 #include <indigo/indigo_names.h>
 #include <platesolverwindow.h>
 
+void write_conf();
+
 #define SOLVER_PANEL_WIDTH 400
 #define LABEL_MARGIN 130
 #define SOLVE_START_TIMEOUT_MS 5000
@@ -63,9 +65,11 @@ PlateSolverWindow::PlateSolverWindow(QWidget *parent) :
 	m_wcs_busy(false),
 	m_index_busy(false),
 	m_wcs_valid(false),
-	m_showing_stack(false)
+	m_showing_stack(false),
+	m_wcs_jnow(false)
 {
 	m_imager_viewer->showWCS(true);
+	m_objects = new ObjectOverlay(m_imager_viewer->pixmapItem());
 	// these slots run after the viewer replaced its preview, which does not carry the solution over
 	auto reapply_wcs = [this]() { apply_wcs_to_image(); };
 	connect(m_imager_viewer, &ImageViewer::stretchChanged, this, reapply_wcs);
@@ -124,6 +128,7 @@ PlateSolverWindow::PlateSolverWindow(QWidget *parent) :
 
 PlateSolverWindow::~PlateSolverWindow() {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
+	delete m_objects;
 	disconnect(m_client, nullptr, this, nullptr);
 	m_client->stop();
 }
@@ -146,6 +151,13 @@ QWidget *PlateSolverWindow::create_solve_tab() {
 	connect(m_abort_button, &QPushButton::clicked, this, &PlateSolverWindow::on_abort_clicked);
 	buttons->addWidget(m_abort_button);
 	layout->addLayout(buttons);
+
+	m_show_objects = new QCheckBox(tr("Show objects"));
+	m_show_objects->setObjectName("show_objects");
+	m_show_objects->setToolTip(tr("Deep sky objects and the brightest stars on a solved image"));
+	m_show_objects->setChecked(conf.show_objects);
+	connect(m_show_objects, &QCheckBox::toggled, this, &PlateSolverWindow::on_show_objects);
+	layout->addWidget(m_show_objects);
 
 	QGroupBox *solution = new QGroupBox(tr("Solution"));
 	QFormLayout *solution_form = new QFormLayout(solution);
@@ -396,6 +408,7 @@ void PlateSolverWindow::update_wcs(const SolverProperty &property) {
 			m_wcs_angle = angle->number;
 			m_wcs_scale = scale->number;
 			m_wcs_parity = (int)parity->number;
+			m_wcs_jnow = epoch->number == 0;
 			m_wcs_valid = true;
 			apply_wcs_to_image();
 		}
@@ -411,16 +424,37 @@ void PlateSolverWindow::update_wcs(const SolverProperty &property) {
 
 // the same as a file solved in Ain Imager, the viewer shows RA and Dec under the mouse if the image has WCS data
 void PlateSolverWindow::apply_wcs_to_image() {
-	if (!m_wcs_valid || m_showing_stack || m_preview_image == nullptr || m_wcs_image != QString(m_image_path)) return;
-	m_preview_image->set_wcs_data(m_wcs_ra * 15, m_wcs_dec, m_wcs_ra * 15, m_wcs_dec, m_wcs_angle, m_wcs_parity, m_wcs_scale);
-	m_imager_viewer->setImage(*m_preview_image);
+	if (m_wcs_valid && !m_showing_stack && m_preview_image != nullptr && m_wcs_image == QString(m_image_path)) {
+		m_preview_image->set_wcs_data(m_wcs_ra * 15, m_wcs_dec, m_wcs_ra * 15, m_wcs_dec, m_wcs_angle, m_wcs_parity, m_wcs_scale);
+		m_imager_viewer->setImage(*m_preview_image);
+	}
+	update_objects();
 }
 
 void PlateSolverWindow::remove_wcs_from_image() {
 	m_wcs_valid = false;
-	if (m_showing_stack || m_preview_image == nullptr || m_wcs_image != QString(m_image_path)) return;
-	m_preview_image->set_wcs_data(0, 0, 0, 0, 0, 0, 0);
-	m_imager_viewer->setImage(*m_preview_image);
+	if (!m_showing_stack && m_preview_image != nullptr && m_wcs_image == QString(m_image_path)) {
+		m_preview_image->set_wcs_data(0, 0, 0, 0, 0, 0, 0);
+		m_imager_viewer->setImage(*m_preview_image);
+	}
+	update_objects();
+}
+
+void PlateSolverWindow::update_objects() {
+	int count = 0;
+	if (m_show_objects->isChecked() && m_wcs_valid && !m_showing_stack && m_preview_image != nullptr && m_wcs_image == QString(m_image_path)) {
+		count = m_objects->show(*m_preview_image, m_wcs_jnow);
+		m_show_objects->setText(tr("Show objects (%1)").arg(count));
+	} else {
+		m_objects->clear();
+		m_show_objects->setText(tr("Show objects"));
+	}
+}
+
+void PlateSolverWindow::on_show_objects(bool show) {
+	conf.show_objects = show;
+	write_conf();
+	update_objects();
 }
 
 void PlateSolverWindow::update_use_index(const SolverProperty &property) {
@@ -537,6 +571,7 @@ void PlateSolverWindow::on_download_timer() {
 void PlateSolverWindow::on_image_changed() {
 	bool has_image = m_preview_image != nullptr && m_image_data != nullptr && m_image_size > 0;
 	m_wcs_valid = false;
+	update_objects();
 	m_current_image = has_image ? QString(m_image_path) : QString();
 	if (has_image) {
 		set_file_label(m_image_label, tr("Image: %1"), m_current_image);

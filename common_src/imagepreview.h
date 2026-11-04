@@ -196,6 +196,32 @@ public:
 		m_pix_scale = pix_scale;
 	};
 
+	// RA and Dec in degrees to image coordinates, the inverse of wcs_data(), -1 if there is no WCS or the object is behind the field
+	int wcs_xy(double ra, double dec, double *x, double *y) const {
+		if (m_pix_scale == 0) return -1;
+		double dra = (ra - m_center_ra) * M_PI / 180;
+		double dec_r = dec * M_PI / 180;
+		double dec0_r = m_center_dec * M_PI / 180;
+		if (sin(dec_r) * sin(dec0_r) + cos(dec_r) * cos(dec0_r) * cos(dra) <= 0) return -1;
+
+		// wcs_data() takes the projection radius from the distance to the center, which is what is looked for here
+		double gn_radius = 180 / (M_PI * m_pix_scale);
+		double dx = 0, dy = 0;
+		for (int i = 0; i < 4; i++) {
+			gn_radec2xy(ra, dec, m_center_ra, m_center_dec, 0, 0, gn_radius, &dx, &dy);
+			double radius = sqrt(dx * dx + dy * dy);
+			if (radius <= 0) break;
+			gn_radius = gn_R0(radius, m_pix_scale);
+			if (gn_radius <= 0) return -1;
+		}
+
+		double dxr, dyr;
+		if (rotate_xy(dx, dy, m_rotation_angle, m_parity, &dxr, &dyr)) return -1;
+		*x = dxr + width() / 2.0;
+		*y = dyr + height() / 2.0;
+		return 0;
+	}
+
 	int wcs_data(double x, double y, double *ra, double *dec, double *telescope_ra = nullptr, double *telescope_dec = nullptr, double *pix_scale = nullptr) const {
 		if (m_pix_scale == 0) return -1;
 		double center_x = width() / 2.0;

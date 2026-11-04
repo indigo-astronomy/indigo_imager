@@ -33,6 +33,7 @@
 #include <QTimer>
 #include <viewerwindow.h>
 #include <solverclient.h>
+#include <objectoverlay.h>
 
 class PlateSolverWindow : public ViewerWindow {
 	Q_OBJECT
@@ -51,6 +52,7 @@ private slots:
 	void on_index_toggled(const QString &name, bool checked);
 	void on_use_index_toggled();
 	void on_hints_edited();
+	void on_show_objects(bool show);
 	void on_download_timer();
 
 private:
@@ -64,6 +66,7 @@ private:
 	void clear_solution();
 	void apply_wcs_to_image();
 	void remove_wcs_from_image();
+	void update_objects();
 	void update_controls();
 	void log_message(const QString &message);
 	bool any_use_index_selected() const;
@@ -84,12 +87,15 @@ private:
 	double m_wcs_angle;
 	double m_wcs_scale;
 	int m_wcs_parity;
+	bool m_wcs_jnow;
+	ObjectOverlay *m_objects;
 
 	QTabWidget *m_tabs;
 	QLabel *m_agent_status;
 	QLabel *m_image_label;
 	QPushButton *m_solve_button;
 	QPushButton *m_abort_button;
+	QCheckBox *m_show_objects;
 	QVBoxLayout *m_use_index_layout;
 	QLabel *m_use_index_empty;
 	QMap<QString, QCheckBox *> m_use_index_boxes;

@@ -31,6 +31,9 @@ extern "C" {
 /* derotate xr yr on the image rotated at angle */
 int derotate_xy(double xr, double yr, double angle, int parity, double *x, double *y);
 
+/* rotate x y to the image rotated at angle, the inverse of derotate_xy() */
+int rotate_xy(double x, double y, double angle, int parity, double *xr, double *yr);
+
 // Gnomonic procjection Radius
 double gn_R0(double xy_radius, double pix_scale);
 

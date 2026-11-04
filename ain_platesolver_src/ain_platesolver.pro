@@ -27,6 +27,7 @@ SOURCES += \
 	$$PWD/main.cpp \
 	$$PWD/solverclient.cpp \
 	$$PWD/platesolverwindow.cpp \
+	$$PWD/objectoverlay.cpp \
 	$$PWD/../ain_viewer_src/textdialog.cpp \
 	$$PWD/../ain_viewer_src/viewerwindow.cpp \
 	$$PWD/../common_src/coordconv.c \
@@ -68,6 +69,7 @@ else: unix:!android: target.path = /usr/bin
 HEADERS += \
 	$$PWD/solverclient.h \
 	$$PWD/platesolverwindow.h \
+	$$PWD/objectoverlay.h \
 	$$PWD/../ain_viewer_src/viewerwindow.h \
 	$$PWD/../ain_viewer_src/textdialog.h \
 	$$PWD/../ain_viewer_src/conf.h \
@@ -117,12 +119,12 @@ LIBS += -L"$$PWD/../external/lz4" -L"$$INDIGO_LIB_DIR" -lz
 
 unix:!mac {
 	INCLUDEPATH += "$$PWD/../external/libjpeg"
-	LIBS += -l:libindigo.so -l:liblz4.a -ldl
+	LIBS += -l:libindigo.so -l:libindigocat.so -l:liblz4.a -ldl
 }
 
 unix:mac {
 	INCLUDEPATH += "$$PWD/../external/libjpeg"
-	LIBS += -lindigo -llz4
+	LIBS += -lindigo -lindigocat -llz4
 }
 
 # A development build runs with the INDIGO it was built against, a package with the installed one

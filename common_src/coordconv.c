@@ -42,6 +42,26 @@ int derotate_xy(double xr, double yr, double angle, int parity, double *x, doubl
 	return 0;
 }
 
+/* rotate x y to the image rotated at angle, the inverse of derotate_xy() */
+int rotate_xy(double x, double y, double angle, int parity, double *xr, double *yr) {
+	double angler = angle;
+	if (parity == -1) {
+		angler += 180;
+	} else if (parity == 0) {
+		return -1;
+	}
+
+	angler *= DEG2RAD;
+	double sin_a = sin(angler);
+	double cos_a = cos(angler);
+	*xr = x * cos_a + y * sin_a;
+	*yr = -x * sin_a + y * cos_a;
+	if (parity == -1) {
+		*yr *= -1;
+	}
+	return 0;
+}
+
 // Gnomonic procjection Radius
 double gn_R0(double xy_radius, double pix_scale) {
 	if (xy_radius <= 0 || pix_scale <= 0) {
