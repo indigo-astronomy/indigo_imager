@@ -70,6 +70,7 @@ PlateSolverWindow::PlateSolverWindow(QWidget *parent) :
 {
 	m_imager_viewer->showWCS(true);
 	m_objects = new ObjectOverlay(m_imager_viewer->pixmapItem());
+	connect(m_imager_viewer, &ImageViewer::zoomChanged, this, [this]() { m_objects->layout_labels(); });
 	// these slots run after the viewer replaced its preview, which does not carry the solution over
 	auto reapply_wcs = [this]() { apply_wcs_to_image(); };
 	connect(m_imager_viewer, &ImageViewer::stretchChanged, this, reapply_wcs);

@@ -21,8 +21,11 @@
 #define OBJECTOVERLAY_H
 
 #include <QGraphicsRectItem>
+#include <QGraphicsSimpleTextItem>
 #include <QColor>
+#include <QPointF>
 #include <QString>
+#include <vector>
 #include <imagepreview.h>
 
 // Deep sky objects and stars of indigocat drawn over a solved image. The items are children of the
@@ -35,12 +38,24 @@ public:
 	int show(const preview_image &image, bool jnow);
 	void clear();
 
+	// Places the labels so that they do not overlap at the current zoom, call it when the zoom changes
+	void layout_labels();
+
 private:
-	void add_marker(double x, double y, const QColor &color, const QString &label, const QString &tooltip);
-	void add_ellipse(double x, double y, double major, double minor, double rotation, const QColor &color, const QString &label, const QString &tooltip);
-	void add_label(double x, double y, const QColor &color, const QString &label);
+	struct object_label {
+		QGraphicsSimpleTextItem *text;
+		QPointF anchor;
+		double radius;
+		double rank;
+	};
+
+	void add_marker(double x, double y, double rank, const QColor &color, const QString &label, const QString &tooltip);
+	void add_ellipse(double x, double y, double major, double minor, double rotation, double rank, const QColor &color, const QString &label, const QString &tooltip);
+	void add_label(double x, double y, double radius, double rank, const QColor &color, const QString &label);
 
 	QGraphicsRectItem *m_root;
+	std::vector<object_label> m_labels;
+	std::vector<QPointF> m_markers;
 };
 
 #endif // OBJECTOVERLAY_H
