@@ -17,10 +17,12 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+#include <QClipboard>
 #include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
 #include <QFormLayout>
+#include <QGuiApplication>
 #include <QScrollArea>
 #include <QSettings>
 #include <QSignalBlocker>
@@ -44,9 +46,9 @@ static QString format_dec(double degrees) {
 }
 
 // a long file name would widen the panel
-static void set_file_label(QLabel *label, const QString &format, const QString &path) {
+static void set_file_label(QLabel *label, const QString &path) {
 	QString name = QFileInfo(path).fileName();
-	label->setText(format.arg(label->fontMetrics().elidedText(name, Qt::ElideMiddle, SOLVER_PANEL_WIDTH - LABEL_MARGIN)));
+	label->setText(label->fontMetrics().elidedText(name, Qt::ElideMiddle, SOLVER_PANEL_WIDTH - LABEL_MARGIN));
 	label->setToolTip(path);
 }
 
@@ -162,8 +164,13 @@ QWidget *PlateSolverWindow::create_solve_tab() {
 
 	QGroupBox *solution = new QGroupBox(tr("Solution"));
 	QFormLayout *solution_form = new QFormLayout(solution);
+	QHBoxLayout *solution_status = new QHBoxLayout();
+	solution_status->setSpacing(6);
+	m_solution_led = new QLabel();
+	solution_status->addWidget(m_solution_led);
 	m_solution_image = new QLabel();
-	solution_form->addRow(m_solution_image);
+	solution_status->addWidget(m_solution_image, 1);
+	solution_form->addRow(solution_status);
 	const QVector<QPair<QString, QString>> wcs_rows = {
 		{"RA", tr("RA:")},
 		{"DEC", tr("Dec:")},
@@ -179,7 +186,21 @@ QWidget *PlateSolverWindow::create_solve_tab() {
 		value->setTextInteractionFlags(Qt::TextSelectableByMouse);
 		solution_form->addRow(row.second, value);
 		m_wcs_labels[row.first] = value;
+		m_wcs_rows.append({row.second, value});
 	}
+	QHBoxLayout *copy_buttons = new QHBoxLayout();
+	copy_buttons->setContentsMargins(0, 12, 0, 0);
+	m_copy_coordinates_button = new QPushButton(tr("Copy Coordinates"));
+	m_copy_coordinates_button->setObjectName("copy_coordinates_button");
+	m_copy_coordinates_button->setToolTip(tr("Copy RA and Dec of the image center to the clipboard"));
+	connect(m_copy_coordinates_button, &QPushButton::clicked, this, &PlateSolverWindow::on_copy_coordinates_clicked);
+	copy_buttons->addWidget(m_copy_coordinates_button);
+	m_copy_solution_button = new QPushButton(tr("Copy Solution"));
+	m_copy_solution_button->setObjectName("copy_solution_button");
+	m_copy_solution_button->setToolTip(tr("Copy the whole solution to the clipboard"));
+	connect(m_copy_solution_button, &QPushButton::clicked, this, &PlateSolverWindow::on_copy_solution_clicked);
+	copy_buttons->addWidget(m_copy_solution_button);
+	solution_form->addRow(copy_buttons);
 	layout->addWidget(solution);
 
 	layout->addStretch(1);
@@ -362,12 +383,18 @@ void PlateSolverWindow::save_used_indexes() {
 	settings.setValue("indexes/used", used);
 }
 
+void PlateSolverWindow::set_solution_led(const char *color) {
+	m_solution_led->setPixmap(QPixmap(QString(":resource/led-%1.png").arg(color)));
+}
+
 void PlateSolverWindow::clear_solution() {
 	for (QLabel *label : m_wcs_labels) {
 		label->setText("-");
 	}
-	m_solution_image->setText(tr("Not solved"));
-	m_solution_image->setToolTip(QString());
+	set_solution_led("grey");
+	set_file_label(m_solution_image, m_current_image);
+	m_copy_coordinates_button->setEnabled(false);
+	m_copy_solution_button->setEnabled(false);
 }
 
 void PlateSolverWindow::on_solve_finished(bool solved, const SolverSolution &solution, const QString &message) {
@@ -383,7 +410,8 @@ void PlateSolverWindow::on_solve_finished(bool solved, const SolverSolution &sol
 		m_wcs_labels["SCALE"]->setText(QString("%1 \"/px").arg(solution.scale * ARCSEC_PER_DEG, 0, 'f', 3));
 		m_wcs_labels["PARITY"]->setText(solution.parity < 0 ? tr("Normal") : tr("Mirrored"));
 		m_wcs_labels["INDEX"]->setText(QString("%1°").arg(solution.index, 0, 'g', 3));
-		set_file_label(m_solution_image, "%1", m_solving_image);
+		set_solution_led("green");
+		set_file_label(m_solution_image, m_solving_image);
 		m_wcs_image = m_solving_image;
 		m_wcs_ra = solution.ra;
 		m_wcs_dec = solution.dec;
@@ -392,10 +420,13 @@ void PlateSolverWindow::on_solve_finished(bool solved, const SolverSolution &sol
 		m_wcs_parity = solution.parity;
 		m_wcs_jnow = solution.epoch == 0;
 		m_wcs_valid = true;
+		m_copy_coordinates_button->setEnabled(true);
+		m_copy_solution_button->setEnabled(true);
 		apply_wcs_to_image();
 	} else {
 		clear_solution();
-		set_file_label(m_solution_image, tr("%1: not solved"), m_solving_image);
+		set_solution_led("red");
+		set_file_label(m_solution_image, m_solving_image);
 		if (m_wcs_valid && m_wcs_image == m_solving_image) {
 			remove_wcs_from_image();
 		}
@@ -554,12 +585,31 @@ void PlateSolverWindow::on_solve_clicked() {
 	const char *format = strrchr(m_image_path, '.');
 	if (!m_engine->solve(m_image_data, m_image_size, format != nullptr ? format : "", current_hints())) {
 		log_message(tr("The solver is busy"));
+	} else {
+		// the values of the previous solution do not belong to the image being solved
+		clear_solution();
+		set_solution_led("orange");
+		set_file_label(m_solution_image, m_solving_image);
 	}
 	update_controls();
 }
 
 void PlateSolverWindow::on_abort_clicked() {
 	m_engine->abort();
+}
+
+void PlateSolverWindow::on_copy_coordinates_clicked() {
+	QGuiApplication::clipboard()->setText(QString("%1 %2").arg(m_wcs_labels["RA"]->text(), m_wcs_labels["DEC"]->text()));
+	log_message(tr("Coordinates copied to the clipboard"));
+}
+
+void PlateSolverWindow::on_copy_solution_clicked() {
+	QStringList lines = {tr("Image: %1").arg(QFileInfo(m_wcs_image).fileName())};
+	for (const QPair<QString, QLabel *> &row : m_wcs_rows) {
+		lines.append(QString("%1 %2").arg(row.first, row.second->text()));
+	}
+	QGuiApplication::clipboard()->setText(lines.join("\n"));
+	log_message(tr("Solution copied to the clipboard"));
 }
 
 void PlateSolverWindow::update_controls() {

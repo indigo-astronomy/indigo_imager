@@ -48,6 +48,8 @@ private slots:
 	void on_image_changed();
 	void on_solve_clicked();
 	void on_abort_clicked();
+	void on_copy_coordinates_clicked();
+	void on_copy_solution_clicked();
 	void on_index_toggled(const QString &name, bool checked);
 	void on_use_index_toggled();
 	void on_hints_edited();
@@ -63,6 +65,7 @@ private:
 	void save_used_indexes();
 	SolverHints current_hints() const;
 	void clear_solution();
+	void set_solution_led(const char *color);
 	void apply_wcs_to_image();
 	void remove_wcs_from_image();
 	void update_objects();
@@ -101,6 +104,10 @@ private:
 	QSpinBox *m_hint_depth;
 	QSpinBox *m_hint_cpu_limit;
 	QMap<QString, QLabel *> m_wcs_labels;
+	QVector<QPair<QString, QLabel *>> m_wcs_rows;
+	QPushButton *m_copy_coordinates_button;
+	QPushButton *m_copy_solution_button;
+	QLabel *m_solution_led;
 	QLabel *m_solution_image;
 	QVBoxLayout *m_index_layout;
 	QMap<QString, QCheckBox *> m_index_boxes;
