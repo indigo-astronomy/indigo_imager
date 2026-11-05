@@ -84,12 +84,9 @@ int main(int argc, char *argv[]) {
 	qunsetenv("LC_NUMERIC");
 
 	// Parse command line arguments
-	bool enable_inspector = false;
 	int auto_save_seconds = 0;
 	for (int i = 1; i < argc; i++) {
-		if (strcmp(argv[i], "-I") == 0) {
-			enable_inspector = true;
-		} else if (strcmp(argv[i], "-f") == 0 && i + 1 < argc) {
+		if (strcmp(argv[i], "-f") == 0 && i + 1 < argc) {
 			i++;
 			strncpy(conf.file_open, argv[i], PATH_MAX);
 		} else if (strcmp(argv[i], "-s") == 0 && i + 1 < argc) {
@@ -168,11 +165,6 @@ int main(int argc, char *argv[]) {
 
 	PlateSolverWindow solver_window;
 	solver_window.show();
-
-	// Enable image analyzer if requested via command line
-	if (enable_inspector) {
-		solver_window.enable_image_inspector(true);
-	}
 
 	// Schedule auto-save if requested
 	if (auto_save_seconds > 0) {

@@ -73,6 +73,7 @@ PlateSolverWindow::PlateSolverWindow(QWidget *parent) :
 	delete m_raw_to_fits_act;
 	delete m_quick_stack_act;
 	delete m_delete_file_act;
+	delete m_image_inspector_act;
 
 	m_imager_viewer->showWCS(true);
 	m_objects = new ObjectOverlay(m_imager_viewer->pixmapItem());

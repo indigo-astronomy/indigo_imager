@@ -180,7 +180,7 @@ ViewerWindow::ViewerWindow(QWidget *parent, const QString &app_name, const QStri
 	tools_act->setChecked(conf.show_reference);
 	connect(tools_act, &QAction::toggled, this, &ViewerWindow::on_viewer_show_reference);
 
-	tools_act = tools_menu->addAction(tr("Image &Inspector"));
+	tools_act = m_image_inspector_act = tools_menu->addAction(tr("Image &Inspector"));
 	tools_act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_N));
 	tools_act->setCheckable(true);
 	connect(tools_act, &QAction::toggled, this, [this](bool checked){
