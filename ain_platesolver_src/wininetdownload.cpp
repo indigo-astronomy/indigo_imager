@@ -45,7 +45,7 @@ void wininet_cancel() {
 	close_session();
 }
 
-QString wininet_download(const QString &url, const QString &path, volatile bool *aborted) {
+QString wininet_download(const QString &url, const QString &path, volatile bool *aborted, std::atomic<qint64> *received) {
 	HINTERNET opened = InternetOpenA("Ain Platesolver", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if (opened == NULL) {
 		return QString("InternetOpen() failed (%1)").arg(GetLastError());
@@ -87,6 +87,7 @@ QString wininet_download(const QString &url, const QString &path, volatile bool 
 						error = QString("Failed to write %1 (%2)").arg(path, file.errorString());
 						break;
 					}
+					*received += bytes_read;
 					if (*aborted) {
 						error = "Aborted";
 						break;

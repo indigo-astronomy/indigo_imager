@@ -21,10 +21,12 @@
 #define WININETDOWNLOAD_H
 
 #include <QString>
+#include <atomic>
 
 // The index download of indigo_agent_platesolver on Windows, it does not depend on an external curl executable.
 // Fetches the url into the file and returns an empty string, or the reason why it failed. It blocks, one at a time.
-QString wininet_download(const QString &url, const QString &path, volatile bool *aborted);
+// The bytes written so far are stored in received.
+QString wininet_download(const QString &url, const QString &path, volatile bool *aborted, std::atomic<qint64> *received);
 // Interrupts a running download, also one waiting for the network. Set the aborted flag first.
 void wininet_cancel();
 

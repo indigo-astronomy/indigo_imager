@@ -54,8 +54,8 @@ extern "C" double indigo_monotonic_time(void) {
 #define MAX_DEPTH_STAGES 3
 #define DOWNLOAD_STOP_TIMEOUT_MS 3000
 
-// approximate sizes of the published index files, in the order of indigo_solver_index_fovs
-static const char *index_sizes[INDIGO_SOLVER_INDEX_FOV_COUNT] = { "1216 MB", "911 MB", "538 MB", "358 MB", "178 MB", "92 MB", "36 MB" };
+// approximate sizes in MB of the published index files, in the order of indigo_solver_index_fovs
+static const int index_sizes[INDIGO_SOLVER_INDEX_FOV_COUNT] = { 1216, 911, 538, 358, 178, 92, 36 };
 
 // INDEX_<scale>DEG_<CATALOG> as the file name: INDEX_00_2DEG_GAIA and INDEX_00_5DEG_GAIA for the Gaia DR3 indexes of
 // scale 0.2 and 0.5, INDEX_01DEG_TYC2 ... INDEX_20DEG_TYC2 for the Tycho-2 indexes, the scale zero padded so the names
@@ -77,7 +77,7 @@ static QString index_item_label(int index, bool with_size) {
 	QString result = QString::fromUtf8(label);
 	if (with_size && result.endsWith(')')) {
 		result.chop(1);
-		result += QString(", %1)").arg(index_sizes[index]);
+		result += QString(", %1 MB)").arg(index_sizes[index]);
 	}
 	return result;
 }
@@ -247,6 +247,8 @@ SolverEngine::SolverEngine(QObject *parent) :
 	m_download(nullptr),
 	m_download_watcher(nullptr),
 	m_download_fov(0),
+	m_download_size_mb(0),
+	m_download_received(0),
 	m_download_aborted(false),
 	m_index_failed(false),
 	m_solving(false),
@@ -409,12 +411,19 @@ void SolverEngine::start_download(SolverIndex &index) {
 	m_download_part = path + ".part";
 	m_download_url = QString("%1/%2").arg(AGENT_SOLVER_INDEX_URL, file_name);
 	m_download_fov = index.fov;
+	m_download_size_mb = 0;
+	for (int i = 0; i < INDIGO_SOLVER_INDEX_FOV_COUNT; i++) {
+		if (indigo_solver_index_fovs[i] == index.fov) {
+			m_download_size_mb = index_sizes[i];
+		}
+	}
+	m_download_received = 0;
 	emit message_received(QString("Downloading %1...").arg(file_name));
 	m_downloading = true;
 #if defined(SOLVER_USE_WININET)
 	const QString url = m_download_url, part = m_download_part;
 	m_download_watcher->setFuture(QtConcurrent::run([this, url, part]() {
-		return wininet_download(url, part, &m_download_aborted);
+		return wininet_download(url, part, &m_download_aborted, &m_download_received);
 	}));
 #else
 	m_download = new QProcess(this);
@@ -463,6 +472,19 @@ void SolverEngine::download_finished(bool downloaded) {
 	}
 	emit message_received("Done");
 	sync_installed_indexes();
+}
+
+QString SolverEngine::download_name() const {
+	return QFileInfo(m_download_part).completeBaseName();
+}
+
+int SolverEngine::download_received_mb() const {
+#if defined(SOLVER_USE_WININET)
+	// the size of a file open for writing is not up to date on Windows
+	return (int)(m_download_received / 1000000);
+#else
+	return (int)(QFileInfo(m_download_part).size() / 1000000);
+#endif
 }
 
 void SolverEngine::set_index_wanted(const QString &name, bool wanted) {

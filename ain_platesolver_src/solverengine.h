@@ -28,6 +28,7 @@
 #include <QString>
 #include <QStringList>
 #include <QVector>
+#include <atomic>
 
 extern "C" {
 #include <indigo_solver.h>
@@ -80,6 +81,10 @@ public:
 	const QVector<SolverIndex> &indexes() const { return m_indexes; }
 	QString index_folder() const { return m_base_dir; }
 	bool index_busy() const { return m_downloading; }
+	// The running download: the file name, the MB received and the approximate size of the file
+	QString download_name() const;
+	int download_received_mb() const;
+	int download_size_mb() const { return m_download_size_mb; }
 	bool index_failed() const { return m_index_failed; }
 	bool solving() const { return m_solving; }
 	bool any_index_used() const;
@@ -125,6 +130,8 @@ private:
 	QString m_download_part;
 	QString m_download_url;
 	float m_download_fov;
+	int m_download_size_mb;
+	std::atomic<qint64> m_download_received;
 	bool m_download_aborted;
 	bool m_index_failed;
 	bool m_solving;

@@ -206,8 +206,7 @@ QWidget *PlateSolverWindow::create_index_tab() {
 	layout->addWidget(m_download_status);
 
 	m_download_progress = new QProgressBar();
-	m_download_progress->setRange(0, 0);
-	m_download_progress->setTextVisible(false);
+	m_download_progress->setRange(0, 100);
 	m_download_progress->setVisible(false);
 	layout->addWidget(m_download_progress);
 
@@ -241,12 +240,15 @@ QWidget *PlateSolverWindow::create_hints_tab() {
 	m_hint_ra = new QLineEdit();
 	m_hint_ra->setPlaceholderText("hh:mm:ss");
 	connect(m_hint_ra, &QLineEdit::editingFinished, this, &PlateSolverWindow::on_hints_edited);
-	hints_form->addRow(tr("RA:"), m_hint_ra);
 
 	m_hint_dec = new QLineEdit();
 	m_hint_dec->setPlaceholderText("dd:mm:ss");
 	connect(m_hint_dec, &QLineEdit::editingFinished, this, &PlateSolverWindow::on_hints_edited);
-	hints_form->addRow(tr("Dec:"), m_hint_dec);
+
+	QHBoxLayout *coordinates = new QHBoxLayout();
+	coordinates->addWidget(m_hint_ra, 1);
+	coordinates->addWidget(m_hint_dec, 1);
+	hints_form->addRow(tr("RA / Dec:"), coordinates);
 
 	m_hint_epoch = new QComboBox();
 	m_hint_epoch->addItem(tr("J2000"), 2000.0);
@@ -520,13 +522,11 @@ void PlateSolverWindow::on_index_toggled(const QString &name, bool checked) {
 }
 
 void PlateSolverWindow::on_download_timer() {
-	QFileInfoList parts = QDir(m_engine->index_folder()).entryInfoList(QStringList() << "*.part", QDir::Files);
-	if (parts.isEmpty()) {
-		m_download_status->setText(tr("Updating indexes..."));
-	} else {
-		const QFileInfo &part = parts.first();
-		m_download_status->setText(tr("Downloading %1: %2 MB").arg(part.completeBaseName()).arg(part.size() / (1024 * 1024)));
-	}
+	const int received = m_engine->download_received_mb();
+	const int size = m_engine->download_size_mb();
+	m_download_status->setText(tr("Downloading %1: %2 of %3 MB").arg(m_engine->download_name()).arg(received).arg(size));
+	// the size is approximate, the file can be a bit larger
+	m_download_progress->setValue(size > 0 ? qMin(received * 100 / size, 100) : 0);
 }
 
 void PlateSolverWindow::on_image_changed() {
