@@ -75,6 +75,9 @@ protected:
 	unsigned char *m_image_data;
 	size_t m_image_size;
 	char m_image_path[PATH_LEN];
+	QAction *m_raw_to_fits_act;
+	QAction *m_quick_stack_act;
+	QAction *m_delete_file_act;
 
 public slots:
 	void on_reopen_file_changed(bool status);

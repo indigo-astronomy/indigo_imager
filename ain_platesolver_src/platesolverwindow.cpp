@@ -69,6 +69,11 @@ PlateSolverWindow::PlateSolverWindow(QWidget *parent) :
 	m_showing_stack(false),
 	m_wcs_jnow(false)
 {
+	// not needed for solving, the menu collapses the separators left around them
+	delete m_raw_to_fits_act;
+	delete m_quick_stack_act;
+	delete m_delete_file_act;
+
 	m_imager_viewer->showWCS(true);
 	m_objects = new ObjectOverlay(m_imager_viewer->pixmapItem());
 	connect(m_imager_viewer, &ImageViewer::zoomChanged, this, [this]() { m_objects->layout_labels(); });

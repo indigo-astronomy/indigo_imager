@@ -122,18 +122,18 @@ ViewerWindow::ViewerWindow(QWidget *parent, const QString &app_name, const QStri
 
 	menu->addSeparator();
 
-	act = menu->addAction(tr("Convert &RAW to FITS"));
+	act = m_raw_to_fits_act = menu->addAction(tr("Convert &RAW to FITS"));
 	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_R));
 	//act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_image_raw_to_fits);
 
-	act = menu->addAction(tr("&Quick Stack"));
+	act = m_quick_stack_act = menu->addAction(tr("&Quick Stack"));
 	act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_T));
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_quick_stack_act);
 
 	menu->addSeparator();
 
-	act = menu->addAction(tr("&Delete File"));
+	act = m_delete_file_act = menu->addAction(tr("&Delete File"));
 	act->setShortcut(QKeySequence(Qt::Key_Delete));
 	//act->setShortcutVisibleInContextMenu(true);
 	connect(act, &QAction::triggered, this, &ViewerWindow::on_delete_current_image_act);
