@@ -34,9 +34,9 @@
 #include <objectoverlay.h>
 
 #define MAX_STARS 100
-#define MARKER_RADIUS 6
-// a deep sky object smaller than this is drawn as a marker, in image pixels
-#define MIN_ELLIPSE_PIXELS 16
+// the radius of the markers in image pixels, they zoom with the image: a percentage of the longer image side, but at least the minimum
+#define MARKER_RADIUS_MIN 10
+#define MARKER_RADIUS_PERCENT 0.7
 #define ARCMIN_PER_DEG 60.0
 #define DEG_TO_RAD (M_PI / 180.0)
 #define LABEL_SIZE 9
@@ -83,7 +83,7 @@ static void make_passive(QGraphicsItem *item) {
 	item->setAcceptHoverEvents(false);
 }
 
-ObjectOverlay::ObjectOverlay(QGraphicsItem *image_item) {
+ObjectOverlay::ObjectOverlay(QGraphicsItem *image_item) : m_marker_radius(MARKER_RADIUS_MIN) {
 	m_root = new QGraphicsRectItem(0, 0, 0, 0, image_item);
 	// draws nothing, it only clips the overlay to the image area
 	m_root->setPen(Qt::NoPen);
@@ -120,9 +120,10 @@ void ObjectOverlay::layout_labels() {
 	const QRectF bounds(m_root->rect().topLeft() * scale, m_root->rect().bottomRight() * scale);
 	std::vector<QRectF> placed;
 	std::vector<QRectF> markers;
+	const double marker_radius = m_marker_radius * scale;
 	markers.reserve(m_markers.size());
 	for (const QPointF &marker : m_markers) {
-		markers.push_back(QRectF(marker * scale - QPointF(MARKER_RADIUS, MARKER_RADIUS), QSizeF(2 * MARKER_RADIUS, 2 * MARKER_RADIUS)));
+		markers.push_back(QRectF(marker * scale - QPointF(marker_radius, marker_radius), QSizeF(2 * marker_radius, 2 * marker_radius)));
 	}
 
 	for (const object_label &label : m_labels) {
@@ -130,7 +131,7 @@ void ObjectOverlay::layout_labels() {
 		const QSizeF size = label.text->boundingRect().size();
 		const double w = size.width();
 		const double h = size.height();
-		const double r = label.radius > 0 ? label.radius + LABEL_GAP : 0;
+		const double r = label.radius > 0 ? label.radius * scale + LABEL_GAP : 0;
 		const QPointF offsets[] = {
 			{r, -h / 2}, {-r - w, -h / 2}, {-w / 2, -r - h}, {-w / 2, r},
 			{r * M_SQRT1_2, r * M_SQRT1_2}, {r * M_SQRT1_2, -r * M_SQRT1_2 - h}, {-r * M_SQRT1_2 - w, r * M_SQRT1_2}, {-r * M_SQRT1_2 - w, -r * M_SQRT1_2 - h}
@@ -168,14 +169,13 @@ void ObjectOverlay::layout_labels() {
 }
 
 void ObjectOverlay::add_marker(double x, double y, double rank, const QColor &color, const QString &label, const QString &tooltip) {
-	QGraphicsEllipseItem *marker = new AntialiasedEllipseItem(-MARKER_RADIUS, -MARKER_RADIUS, 2 * MARKER_RADIUS, 2 * MARKER_RADIUS, m_root);
+	QGraphicsEllipseItem *marker = new AntialiasedEllipseItem(-m_marker_radius, -m_marker_radius, 2 * m_marker_radius, 2 * m_marker_radius, m_root);
 	marker->setPen(cosmetic_pen(color));
-	marker->setFlag(QGraphicsItem::ItemIgnoresTransformations);
 	marker->setPos(x, y);
 	marker->setToolTip(tooltip);
 	make_passive(marker);
 	m_markers.push_back(QPointF(x, y));
-	add_label(x, y, MARKER_RADIUS, rank, color, label);
+	add_label(x, y, m_marker_radius, rank, color, label);
 }
 
 void ObjectOverlay::add_ellipse(double x, double y, double major, double minor, double rotation, double rank, const QColor &color, const QString &label, const QString &tooltip) {
@@ -200,6 +200,7 @@ void ObjectOverlay::show(const preview_image &image, bool jnow, bool show_deep_s
 	const double width = image.width();
 	const double height = image.height();
 	m_root->setRect(0, 0, width, height);
+	m_marker_radius = qMax((double)MARKER_RADIUS_MIN, qMax(width, height) * MARKER_RADIUS_PERCENT / 100);
 	const double field_radius = sqrt(width * width + height * height) / 2 * pix_scale;
 	const double center_dec_r = center_dec * DEG_TO_RAD;
 
@@ -230,7 +231,8 @@ void ObjectOverlay::show(const preview_image &image, bool jnow, bool show_deep_s
 		if (dso[i].r1 > 0) tooltip += QString("\n%1' x %2'").arg(dso[i].r1, 0, 'f', 1).arg(dso[i].r2, 0, 'f', 1);
 
 		const double rank = label_rank(!name.isEmpty(), dso[i].mag);
-		if (major < MIN_ELLIPSE_PIXELS) {
+		// an object smaller than a marker gets a marker
+		if (major < 2 * m_marker_radius) {
 			add_marker(x, y, rank, DSO_COLOR, label, tooltip);
 		} else {
 			// the position angle in the image comes from a point towards it, this also covers the rotation and the parity of the frame

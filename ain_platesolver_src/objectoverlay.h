@@ -45,7 +45,7 @@ private:
 	struct object_label {
 		QGraphicsSimpleTextItem *text;
 		QPointF anchor;
-		double radius;
+		double radius;      // image pixels
 		double rank;
 	};
 
@@ -56,6 +56,7 @@ private:
 	QGraphicsRectItem *m_root;
 	std::vector<object_label> m_labels;
 	std::vector<QPointF> m_markers;
+	double m_marker_radius;
 };
 
 #endif // OBJECTOVERLAY_H
