@@ -37,6 +37,10 @@
 // the radius of the markers in image pixels, they zoom with the image: a percentage of the longer image side, but at least the minimum
 #define MARKER_RADIUS_MIN 10
 #define MARKER_RADIUS_PERCENT 0.7
+// the outline of a deep sky object is tested for being in the image at points about this far apart, in image pixels
+#define OUTLINE_STEP 8.0
+#define OUTLINE_MIN_POINTS 360
+#define OUTLINE_MAX_POINTS 20000
 #define ARCMIN_PER_DEG 60.0
 #define DEG_TO_RAD (M_PI / 180.0)
 #define LABEL_SIZE 9
@@ -54,6 +58,47 @@ static QPen cosmetic_pen(const QColor &color) {
 	pen.setCosmetic(true);
 	pen.setWidth(1);
 	return pen;
+}
+
+// Finds where the label of an ellipse goes, false if nothing of the ellipse is in the image: the center if it is in the
+// image, otherwise the middle of the longest part of the outline in the image. An ellipse covering the whole image has
+// no outline there, its label goes to the image point nearest to the center.
+static bool ellipse_label_anchor(const QRectF &bounds, double x, double y, double major, double minor, double rotation, QPointF *anchor) {
+	if (bounds.contains(x, y)) {
+		*anchor = QPointF(x, y);
+		return true;
+	}
+	const double cos_r = cos(rotation * DEG_TO_RAD);
+	const double sin_r = sin(rotation * DEG_TO_RAD);
+	const int points = qBound(OUTLINE_MIN_POINTS, (int)std::min(M_PI * major / OUTLINE_STEP, (double)OUTLINE_MAX_POINTS), OUTLINE_MAX_POINTS);
+	auto outline = [&](int i) {
+		const double t = 2 * M_PI * i / points;
+		const double a = major / 2 * cos(t);
+		const double b = minor / 2 * sin(t);
+		return QPointF(x + a * cos_r - b * sin_r, y + a * sin_r + b * cos_r);
+	};
+	// twice around, a part can span the first point
+	int longest = 0, longest_end = 0, length = 0;
+	for (int i = 0; i < 2 * points; i++) {
+		length = bounds.contains(outline(i % points)) ? length + 1 : 0;
+		if (length > longest) {
+			longest = length;
+			longest_end = i;
+		}
+	}
+	if (longest > 0) {
+		*anchor = outline((longest_end - longest / 2) % points);
+		return true;
+	}
+	const double dx = bounds.center().x() - x;
+	const double dy = bounds.center().y() - y;
+	const double along = (dx * cos_r + dy * sin_r) / (major / 2);
+	const double across = (dy * cos_r - dx * sin_r) / (minor / 2);
+	if (along * along + across * across > 1) {
+		return false;
+	}
+	*anchor = QPointF(qBound(bounds.left(), x, bounds.right()), qBound(bounds.top(), y, bounds.bottom()));
+	return true;
 }
 
 // the labels placed first win: named objects, then the brightest, objects of unknown magnitude last
@@ -178,16 +223,19 @@ void ObjectOverlay::add_marker(double x, double y, double rank, const QColor &co
 	add_label(x, y, m_marker_radius, rank, color, label);
 }
 
-void ObjectOverlay::add_ellipse(double x, double y, double major, double minor, double rotation, double rank, const QColor &color, const QString &label, const QString &tooltip) {
+bool ObjectOverlay::add_ellipse(double x, double y, double major, double minor, double rotation, double rank, const QColor &color, const QString &label, const QString &tooltip) {
+	QPointF anchor;
+	if (!ellipse_label_anchor(m_root->rect(), x, y, major, minor, rotation, &anchor)) {
+		return false;
+	}
 	QGraphicsEllipseItem *ellipse = new AntialiasedEllipseItem(-major / 2, -minor / 2, major, minor, m_root);
 	ellipse->setPen(cosmetic_pen(color));
 	ellipse->setPos(x, y);
 	ellipse->setRotation(rotation);
 	ellipse->setToolTip(tooltip);
 	make_passive(ellipse);
-	// the center of a large object may be outside the image
-	const QRectF bounds = m_root->rect();
-	add_label(qBound(bounds.left(), x, bounds.right()), qBound(bounds.top(), y, bounds.bottom()), 0, rank, color, label);
+	add_label(anchor.x(), anchor.y(), 0, rank, color, label);
+	return true;
 }
 
 void ObjectOverlay::show(const preview_image &image, bool jnow, bool show_deep_sky, bool show_stars, int *deep_sky_count, int *star_count) {
@@ -233,6 +281,7 @@ void ObjectOverlay::show(const preview_image &image, bool jnow, bool show_deep_s
 		const double rank = label_rank(!name.isEmpty(), dso[i].mag);
 		// an object smaller than a marker gets a marker
 		if (major < 2 * m_marker_radius) {
+			if (x < 0 || y < 0 || x >= width || y >= height) continue;
 			add_marker(x, y, rank, DSO_COLOR, label, tooltip);
 		} else {
 			// the position angle in the image comes from a point towards it, this also covers the rotation and the parity of the frame
@@ -244,7 +293,7 @@ void ObjectOverlay::show(const preview_image &image, bool jnow, bool show_deep_s
 			if (image.wcs_xy(ra + step * sin(angle_r) / cos_dec, dec + step * cos(angle_r), &x_pa, &y_pa) == 0) {
 				rotation = atan2(y_pa - y, x_pa - x) / DEG_TO_RAD;
 			}
-			add_ellipse(x, y, major, minor, rotation, rank, DSO_COLOR, label, tooltip);
+			if (!add_ellipse(x, y, major, minor, rotation, rank, DSO_COLOR, label, tooltip)) continue;
 		}
 		(*deep_sky_count)++;
 	}

@@ -50,7 +50,8 @@ private:
 	};
 
 	void add_marker(double x, double y, double rank, const QColor &color, const QString &label, const QString &tooltip);
-	void add_ellipse(double x, double y, double major, double minor, double rotation, double rank, const QColor &color, const QString &label, const QString &tooltip);
+	// false if nothing of the ellipse is in the image, then it is not added
+	bool add_ellipse(double x, double y, double major, double minor, double rotation, double rank, const QColor &color, const QString &label, const QString &tooltip);
 	void add_label(double x, double y, double radius, double rank, const QColor &color, const QString &label);
 
 	QGraphicsRectItem *m_root;
