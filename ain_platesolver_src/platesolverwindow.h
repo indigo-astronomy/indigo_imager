@@ -32,7 +32,7 @@
 #include <QTabWidget>
 #include <QTimer>
 #include <viewerwindow.h>
-#include <solverclient.h>
+#include <solverengine.h>
 #include <objectoverlay.h>
 
 class PlateSolverWindow : public ViewerWindow {
@@ -42,13 +42,14 @@ public:
 	virtual ~PlateSolverWindow();
 
 private slots:
-	void on_property_defined(const SolverProperty &property);
-	void on_property_updated(const SolverProperty &property);
-	void on_property_deleted(const QString &name);
-	void on_message(const QString &message);
+	void on_solve_finished(bool solved, const SolverSolution &solution, const QString &message);
+	void update_indexes();
+	void log_message(const QString &message);
 	void on_image_changed();
 	void on_solve_clicked();
 	void on_abort_clicked();
+	void on_copy_coordinates_clicked();
+	void on_copy_solution_clicked();
 	void on_index_toggled(const QString &name, bool checked);
 	void on_use_index_toggled();
 	void on_hints_edited();
@@ -60,24 +61,17 @@ private:
 	QWidget *create_solve_tab();
 	QWidget *create_index_tab();
 	QWidget *create_hints_tab();
-	void update_hints(const SolverProperty &property);
-	void update_wcs(const SolverProperty &property);
-	void update_index(const SolverProperty &property);
-	void update_use_index(const SolverProperty &property);
+	void load_solver_settings();
+	void save_used_indexes();
+	SolverHints current_hints() const;
 	void clear_solution();
+	void set_solution_led(const char *color);
 	void apply_wcs_to_image();
 	void remove_wcs_from_image();
 	void update_objects();
 	void update_controls();
-	void log_message(const QString &message);
-	bool any_use_index_selected() const;
-	QString index_folder() const;
 
-	SolverClient *m_client;
-	bool m_agent_loaded;
-	bool m_solve_requested;
-	bool m_wcs_busy;
-	bool m_index_busy;
+	SolverEngine *m_engine;
 	QString m_current_image;
 	QString m_solving_image;
 	QString m_wcs_image;
@@ -92,8 +86,8 @@ private:
 	ObjectOverlay *m_objects;
 
 	QTabWidget *m_tabs;
-	QLabel *m_agent_status;
 	QPushButton *m_solve_button;
+	QLabel *m_index_warning;
 	QPushButton *m_abort_button;
 	QCheckBox *m_show_deep_sky;
 	QCheckBox *m_show_stars;
@@ -110,6 +104,10 @@ private:
 	QSpinBox *m_hint_depth;
 	QSpinBox *m_hint_cpu_limit;
 	QMap<QString, QLabel *> m_wcs_labels;
+	QVector<QPair<QString, QLabel *>> m_wcs_rows;
+	QPushButton *m_copy_coordinates_button;
+	QPushButton *m_copy_solution_button;
+	QLabel *m_solution_led;
 	QLabel *m_solution_image;
 	QVBoxLayout *m_index_layout;
 	QMap<QString, QCheckBox *> m_index_boxes;

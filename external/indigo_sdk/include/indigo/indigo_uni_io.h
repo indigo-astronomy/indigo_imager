@@ -160,13 +160,29 @@ INDIGO_EXTERN indigo_uni_handle *indigo_uni_create_file(const char *path, int lo
  */
 INDIGO_EXTERN indigo_uni_handle *indigo_uni_open_serial_with_config(const char *serial, const char *baudconfig, int log_level);
 
+/** Open serial connection with configuration and report a human readable error message.
+ * error_message may be NULL; otherwise it receives NULL on success or a pointer to a static, platform specific message on failure.
+ * The message must not be freed or modified; native error details remain in the log.
+ */
+INDIGO_EXTERN indigo_uni_handle *indigo_uni_open_serial_with_config2(const char *serial, const char *baudconfig, int log_level, const char **error_message);
+
 /** Open serial connection at speed XXXX-8N1.
  */
 INDIGO_EXTERN indigo_uni_handle *indigo_uni_open_serial_with_speed(const char *serial, int speed, int log_level);
 
+/** Open serial connection at speed XXXX-8N1 and report a human readable error message.
+ * error_message follows the same contract as indigo_uni_open_serial_with_config2().
+ */
+INDIGO_EXTERN indigo_uni_handle *indigo_uni_open_serial_with_speed2(const char *serial, int speed, int log_level, const char **error_message);
+
 /** Open serial connection at speed 9600-8N1.
  */
 INDIGO_EXTERN indigo_uni_handle *indigo_uni_open_serial(const char *serial, int log_level);
+
+/** Open serial connection at speed 9600-8N1 and report a human readable error message.
+ * error_message follows the same contract as indigo_uni_open_serial_with_config2().
+ */
+INDIGO_EXTERN indigo_uni_handle *indigo_uni_open_serial2(const char *serial, int log_level, const char **error_message);
 
 
 /** sets/clears DTR on serial port
@@ -330,6 +346,12 @@ INDIGO_EXTERN bool indigo_uni_lock_file(indigo_uni_handle *handle);
  */
 INDIGO_EXTERN bool indigo_uni_is_valid(indigo_uni_handle *handle);
 
+/** Check if the connection of a serial or network handle is lost: an error left on the handle by a read or write,
+ which fails every later one, a device that is gone or a connection reset (see indigo_uni_is_valid()), or a TCP
+ connection closed by the peer. A missing or garbled reply is not a loss. Returns false for a NULL or file handle.
+ */
+INDIGO_EXTERN bool indigo_uni_is_connection_lost(indigo_uni_handle *handle);
+
 /** Kill socket connetion without closing handle.
  */
 INDIGO_EXTERN void indigo_uni_kill_socket(indigo_uni_handle *handle);
@@ -373,6 +395,15 @@ INDIGO_EXTERN bool indigo_uni_is_readable(const char *path);
  */
 INDIGO_EXTERN bool indigo_uni_is_writable(const char *path);
 
+/** Map the whole file read only into memory; returns its address and size, NULL if it can't be mapped. The pages are
+ read from the file when they are first touched and belong to the page cache of the system.
+ */
+INDIGO_EXTERN const void *indigo_uni_map_file(const char *path, size_t *size);
+
+/** Unmap a file mapped by indigo_uni_map_file().
+ */
+INDIGO_EXTERN void indigo_uni_unmap_file(const void *address, size_t size);
+
 /** Make real path.
  */
 INDIGO_EXTERN char* indigo_uni_realpath(const char* path, char* resolved_path);
@@ -391,6 +422,7 @@ INDIGO_EXTERN char *indigo_uni_getcwd();
 INDIGO_EXTERN int indigo_uni_scandir(const char* folder, char ***list, bool (*filter)(const char *));
 
 /** Compress with gzip.
+ On return out_size is the size of the complete gzip stream, or 0 when compression failed or the stream does not fit out_size bytes.
  */
 
 INDIGO_EXTERN void indigo_uni_compress(char *name, char *in_buffer, unsigned in_size, unsigned char *out_buffer, unsigned *out_size);

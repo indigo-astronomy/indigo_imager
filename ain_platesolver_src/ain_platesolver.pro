@@ -8,6 +8,8 @@ unix:mac {
 
 QMAKE_CXXFLAGS += -O3 -g
 QMAKE_CXXFLAGS_RELEASE += -O3
+# the solver is C and has to run at full speed
+QMAKE_CFLAGS += -O3 -g
 
 OBJECTS_DIR=object
 MOC_DIR=moc
@@ -25,7 +27,10 @@ DEFINES += QT_DEPRECATED_WARNINGS QZEROCONF_STATIC
 
 SOURCES += \
 	$$PWD/main.cpp \
-	$$PWD/solverclient.cpp \
+	$$PWD/solverengine.cpp \
+	$$PWD/../external/indigo_solver/indigo_solver.c \
+	$$PWD/../external/indigo_solver/indigo_solver_utils.c \
+	$$PWD/../external/indigo_solver/indigo_solver_healpix.c \
 	$$PWD/platesolverwindow.cpp \
 	$$PWD/objectoverlay.cpp \
 	$$PWD/../ain_viewer_src/textdialog.cpp \
@@ -67,7 +72,10 @@ else: unix:!android: target.path = /usr/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
-	$$PWD/solverclient.h \
+	$$PWD/solverengine.h \
+	$$PWD/../external/indigo_solver/indigo_solver.h \
+	$$PWD/../external/indigo_solver/indigo_solver_utils.h \
+	$$PWD/../external/indigo_solver/indigo_solver_healpix.h \
 	$$PWD/platesolverwindow.h \
 	$$PWD/objectoverlay.h \
 	$$PWD/../ain_viewer_src/viewerwindow.h \
@@ -105,33 +113,43 @@ INCLUDEPATH += \
 	"$$PWD/../external/qtzeroconf/" \
 	"$$PWD/../external/libraw/" \
 	"$$PWD/../external/lz4/" \
+	"$$PWD/../external/indigo_solver/" \
 	"$$PWD/../common_src" \
 	"$$PWD/../ain_viewer_src" \
 	"$$PWD/../ain_platesolver_src"
 
-# The agent is a shared library that needs libindigo, the viewer has to share the bus with it. A static
-# INDIGO client library would be a second copy of the bus, so libindigo is linked here as a shared library.
-# It also provides jpeg and libraw, a second copy of those in the executable would interpose its own.
+# Only the INDIGO client library and the star and deep sky catalogues are linked, the solver is a part of this
+# application and it needs neither libindigo nor the Platesolver Agent. libindigo_client has to include indigo_raw_utils.
 INDIGO_LIB_DIR = $$PWD/../indigo/build/lib
-INDIGO_FLAVOR = $$(AIN_INDIGO_FLAVOR)
 
-LIBS += -L"$$PWD/../external/lz4" -L"$$INDIGO_LIB_DIR" -lz
+LIBS += -L"$$PWD/../external/libraw/lib" -L"$$PWD/../external/lz4" -lraw -lz
 
 unix:!mac {
 	INCLUDEPATH += "$$PWD/../external/libjpeg"
-	LIBS += -l:libindigo.so -l:libindigocat.so -l:liblz4.a -ldl
+	LIBS += -L"$$PWD/../external/libjpeg/.libs" -L"$$INDIGO_LIB_DIR"
+	LIBS += -l:libindigo_client.a -l:libindigocat.a -lz -ljpeg -l:liblz4.a
 }
 
 unix:mac {
 	INCLUDEPATH += "$$PWD/../external/libjpeg"
-	LIBS += -lindigo -lindigocat -llz4
-}
-
-# A development build runs with the INDIGO it was built against, a package with the installed one
-isEmpty(INDIGO_FLAVOR):exists($$INDIGO_LIB_DIR/libindigo.*) {
-	QMAKE_RPATHDIR += $$clean_path($$INDIGO_LIB_DIR)
+	LIBS += -L"$$PWD/../external/libjpeg/.libs" -L"$$INDIGO_LIB_DIR"
+	# by the full path, the linker would prefer the dylibs in the same folder
+	exists($$INDIGO_LIB_DIR/libindigo_client.a):exists($$INDIGO_LIB_DIR/libindigocat.a) {
+		LIBS += $$INDIGO_LIB_DIR/libindigo_client.a $$INDIGO_LIB_DIR/libindigocat.a
+	} else {
+		LIBS += -lindigo_client -lindigocat
+	}
+	LIBS += -ljpeg -llz4
 }
 
 DISTFILES += \
 	$$PWD/README.md \
 	$$PWD/LICENCE.md
+
+win32 {
+	DEFINES += INDIGO_WINDOWS SOLVER_USE_WININET
+	INCLUDEPATH += "$$PWD/../external/indigo_sdk/include"
+	SOURCES += $$PWD/wininetdownload.cpp
+	HEADERS += $$PWD/wininetdownload.h
+	LIBS += -llz4 "$$PWD/../external/indigo_sdk/lib/libindigo_client.lib" "$$PWD/../external/indigo_sdk/lib/libindigocat.lib" -lws2_32 -lwininet
+}

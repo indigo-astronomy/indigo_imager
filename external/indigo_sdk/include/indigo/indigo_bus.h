@@ -150,7 +150,7 @@ INDIGO_EXTERN char *indigo_property_type_text[];
 /** Property state.
  */
 typedef enum {
-	INDIGO_IDLE_STATE = 0,      ///< property is passive (unused by INDIGO)
+	INDIGO_IDLE_STATE = 0,      ///< property is passive
 	INDIGO_OK_STATE,            ///< property is in correct state or if operation on property was successful
 	INDIGO_BUSY_STATE,          ///< property is transient state or if operation on property is pending
 	INDIGO_ALERT_STATE          ///< property is in incorrect state or if operation on property failed
@@ -523,6 +523,8 @@ INDIGO_EXTERN void indigo_set_log_level(indigo_log_levels level);
 INDIGO_EXTERN indigo_log_levels indigo_get_log_level(void);
 
 /** Attach device to bus.
+ The attach() callback runs with the recursive bus mutex held, blocking concurrent bus requests.
+ It must not wait for another thread to use the bus. This function releases its registration lock before automatic CONFIG.LOAD.
  Return value of attach() callback function is assigned to last_result in device structure.
  */
 INDIGO_EXTERN indigo_result indigo_attach_device(indigo_device *device);
@@ -675,13 +677,50 @@ INDIGO_EXTERN void *indigo_alloc_blob_buffer(long size);
  */
 INDIGO_EXTERN void indigo_release_property(indigo_property *property);
 
-/** Validate address of item of registered BLOB property.
+/** Legacy borrowed lookups. Callers must externally serialize property lifetime.
+ * Use the retained acquisition API for concurrent consumers.
  */
 INDIGO_EXTERN indigo_blob_entry *indigo_validate_blob(indigo_item *item);
-
-/** Find BLOB entry.
- */
 INDIGO_EXTERN indigo_blob_entry *indigo_find_blob(indigo_property *other_property, indigo_item *other_item);
+
+/** Retain a registered cache entry until indigo_release_blob(). This pins cache data,
+ * not the original item/property: never dereference entry->item or entry->property.
+ * Access content/size/format under mutext, and unlock before releasing the reference.
+ */
+INDIGO_EXTERN indigo_blob_entry *indigo_acquire_blob(indigo_item *item);
+INDIGO_EXTERN indigo_blob_entry *indigo_acquire_blob_by_name(indigo_property *property, indigo_item *item);
+INDIGO_EXTERN void indigo_release_blob(indigo_blob_entry *entry);
+
+/** Copy metadata and content under the entry lock. Caller frees copy->blob.value.
+ * A zero-sized external BLOB retains its URL for private lazy retrieval.
+ */
+INDIGO_EXTERN bool indigo_snapshot_blob(indigo_blob_entry *entry, indigo_item *copy);
+
+/** Limits for a single client protocol request; upstream image updates are separate. */
+#ifndef INDIGO_PROTOCOL_ITEM_LIMIT
+#define INDIGO_PROTOCOL_ITEM_LIMIT 4096
+#endif
+#ifndef INDIGO_PROTOCOL_REQUEST_LIMIT
+#define INDIGO_PROTOCOL_REQUEST_LIMIT (16u * 1024u * 1024u)
+#endif
+
+#ifndef INDIGO_BLOB_UPLOAD_LIMIT
+#define INDIGO_BLOB_UPLOAD_LIMIT (64u * 1024u * 1024u)
+#endif
+#ifndef INDIGO_BLOB_UPLOAD_BUDGET
+#define INDIGO_BLOB_UPLOAD_BUDGET (256u * 1024u * 1024u)
+#endif
+
+/** Recoverable bounded upload storage. The budget covers pending and published uploads.
+ * Free a failed upload with its original size. Successful publication takes ownership;
+ * failed publication leaves ownership with the caller. Zero-sized uploads are valid.
+ */
+INDIGO_EXTERN void *indigo_allocate_blob_upload(size_t size);
+INDIGO_EXTERN void indigo_free_blob_upload(void *buffer, size_t size);
+INDIGO_EXTERN bool indigo_publish_blob_upload(indigo_blob_entry *entry, void *buffer, size_t size);
+INDIGO_EXTERN bool indigo_blob_upload_allowed(indigo_blob_entry *entry);
+/** Consume writable staging once, within limit. Caller owns copy->blob.value; false leaves copy unchanged. */
+INDIGO_EXTERN bool indigo_consume_blob_upload(indigo_blob_entry *entry, indigo_item *copy, size_t limit);
 
 /** Initialize text item.
  */
@@ -865,7 +904,7 @@ INDIGO_EXTERN indigo_result indigo_device_connect(indigo_client *client, char *d
  */
 INDIGO_EXTERN indigo_result indigo_device_disconnect(indigo_client *client, char *device);
 
-/** Query slave devices of given master device.
+/** Query slave devices of given master device, store at most max of them in slaves and return their count.
  */
 INDIGO_EXTERN int indigo_query_slave_devices(indigo_device *master, indigo_device **slaves, int max);
 

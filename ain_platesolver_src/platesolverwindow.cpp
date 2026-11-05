@@ -17,14 +17,16 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+#include <QClipboard>
 #include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
 #include <QFormLayout>
-#include <QProcessEnvironment>
+#include <QGuiApplication>
 #include <QScrollArea>
+#include <QSettings>
 #include <QSignalBlocker>
-#include <indigo/indigo_names.h>
+#include <QStandardPaths>
 #include <platesolverwindow.h>
 
 void write_conf();
@@ -32,7 +34,7 @@ void write_conf();
 #define SOLVER_PANEL_WIDTH 400
 #define LOG_HEIGHT 120
 #define LABEL_MARGIN 130
-#define SOLVE_START_TIMEOUT_MS 5000
+#define SOLVER_CONFIG_FILENAME "ain_platesolver_solver.conf"
 #define ARCSEC_PER_DEG 3600.0
 
 static QString format_ra(double hours) {
@@ -44,9 +46,9 @@ static QString format_dec(double degrees) {
 }
 
 // a long file name would widen the panel
-static void set_file_label(QLabel *label, const QString &format, const QString &path) {
+static void set_file_label(QLabel *label, const QString &path) {
 	QString name = QFileInfo(path).fileName();
-	label->setText(format.arg(label->fontMetrics().elidedText(name, Qt::ElideMiddle, SOLVER_PANEL_WIDTH - LABEL_MARGIN)));
+	label->setText(label->fontMetrics().elidedText(name, Qt::ElideMiddle, SOLVER_PANEL_WIDTH - LABEL_MARGIN));
 	label->setToolTip(path);
 }
 
@@ -61,10 +63,6 @@ static QWidget *create_scroll_area(QWidget *content) {
 
 PlateSolverWindow::PlateSolverWindow(QWidget *parent) :
 	ViewerWindow(parent, "Ain Platesolver", "Ain Plate Solver"),
-	m_agent_loaded(false),
-	m_solve_requested(false),
-	m_wcs_busy(false),
-	m_index_busy(false),
 	m_wcs_valid(false),
 	m_showing_stack(false),
 	m_wcs_jnow(false)
@@ -94,9 +92,7 @@ PlateSolverWindow::PlateSolverWindow(QWidget *parent) :
 	panel_layout->setSpacing(5);
 	panel_layout->setContentsMargins(0, 5, 5, 5);
 
-	m_agent_status = new QLabel();
-	m_agent_status->setWordWrap(true);
-	panel_layout->addWidget(m_agent_status);
+	m_engine = new SolverEngine(this);
 
 	m_tabs = new QTabWidget();
 	m_tabs->addTab(create_solve_tab(), tr("Solve"));
@@ -119,19 +115,12 @@ PlateSolverWindow::PlateSolverWindow(QWidget *parent) :
 
 	connect(this, &ViewerWindow::image_changed, this, &PlateSolverWindow::on_image_changed);
 
-	m_client = new SolverClient(this);
-	connect(m_client, &SolverClient::property_defined, this, &PlateSolverWindow::on_property_defined, Qt::QueuedConnection);
-	connect(m_client, &SolverClient::property_updated, this, &PlateSolverWindow::on_property_updated, Qt::QueuedConnection);
-	connect(m_client, &SolverClient::property_deleted, this, &PlateSolverWindow::on_property_deleted, Qt::QueuedConnection);
-	connect(m_client, &SolverClient::message_received, this, &PlateSolverWindow::on_message, Qt::QueuedConnection);
+	connect(m_engine, &SolverEngine::indexes_changed, this, &PlateSolverWindow::update_indexes);
+	connect(m_engine, &SolverEngine::message_received, this, &PlateSolverWindow::log_message);
+	connect(m_engine, &SolverEngine::solve_finished, this, &PlateSolverWindow::on_solve_finished);
 
-	m_agent_loaded = m_client->load_agent();
-	if (m_agent_loaded) {
-		m_agent_status->setText(tr("%1 loaded").arg(PLATESOLVER_DEVICE_NAME));
-	} else {
-		m_agent_status->setText(tr("<b>%1 is not available.</b> Install an INDIGO version that provides %2, images can be viewed but not solved.").arg(PLATESOLVER_DEVICE_NAME, PLATESOLVER_DRIVER_NAME));
-		log_message(m_client->last_error());
-	}
+	load_solver_settings();
+	update_indexes();
 	// the constructor of the viewer may have opened an image before the connection above
 	on_image_changed();
 }
@@ -139,8 +128,7 @@ PlateSolverWindow::PlateSolverWindow(QWidget *parent) :
 PlateSolverWindow::~PlateSolverWindow() {
 	indigo_debug("CALLED: %s\n", __FUNCTION__);
 	delete m_objects;
-	disconnect(m_client, nullptr, this, nullptr);
-	m_client->stop();
+	disconnect(m_engine, nullptr, this, nullptr);
 }
 
 QWidget *PlateSolverWindow::create_solve_tab() {
@@ -159,6 +147,12 @@ QWidget *PlateSolverWindow::create_solve_tab() {
 	buttons->addWidget(m_abort_button);
 	layout->addLayout(buttons);
 
+	m_index_warning = new QLabel();
+	m_index_warning->setObjectName("index_warning");
+	m_index_warning->setWordWrap(true);
+	m_index_warning->setStyleSheet("color: #E0A000;");
+	layout->addWidget(m_index_warning);
+
 	QHBoxLayout *objects = new QHBoxLayout();
 	m_show_deep_sky = new QCheckBox(tr("Deep sky"));
 	m_show_deep_sky->setObjectName("show_deep_sky");
@@ -176,24 +170,43 @@ QWidget *PlateSolverWindow::create_solve_tab() {
 
 	QGroupBox *solution = new QGroupBox(tr("Solution"));
 	QFormLayout *solution_form = new QFormLayout(solution);
+	QHBoxLayout *solution_status = new QHBoxLayout();
+	solution_status->setSpacing(6);
+	m_solution_led = new QLabel();
+	solution_status->addWidget(m_solution_led);
 	m_solution_image = new QLabel();
-	solution_form->addRow(m_solution_image);
+	solution_status->addWidget(m_solution_image, 1);
+	solution_form->addRow(solution_status);
 	const QVector<QPair<QString, QString>> wcs_rows = {
-		{AGENT_PLATESOLVER_WCS_RA_ITEM_NAME, tr("RA:")},
-		{AGENT_PLATESOLVER_WCS_DEC_ITEM_NAME, tr("Dec:")},
-		{AGENT_PLATESOLVER_WCS_EPOCH_ITEM_NAME, tr("Epoch:")},
-		{AGENT_PLATESOLVER_WCS_ANGLE_ITEM_NAME, tr("Angle:")},
-		{AGENT_PLATESOLVER_WCS_WIDTH_ITEM_NAME, tr("Field:")},
-		{AGENT_PLATESOLVER_WCS_SCALE_ITEM_NAME, tr("Scale:")},
-		{AGENT_PLATESOLVER_WCS_PARITY_ITEM_NAME, tr("Parity:")},
-		{AGENT_PLATESOLVER_WCS_INDEX_ITEM_NAME, tr("Index:")}
+		{"RA", tr("RA:")},
+		{"DEC", tr("Dec:")},
+		{"EPOCH", tr("Epoch:")},
+		{"ANGLE", tr("Angle:")},
+		{"FIELD", tr("Field:")},
+		{"SCALE", tr("Scale:")},
+		{"PARITY", tr("Parity:")},
+		{"INDEX", tr("Index:")}
 	};
 	for (const QPair<QString, QString> &row : wcs_rows) {
 		QLabel *value = new QLabel();
 		value->setTextInteractionFlags(Qt::TextSelectableByMouse);
 		solution_form->addRow(row.second, value);
 		m_wcs_labels[row.first] = value;
+		m_wcs_rows.append({row.second, value});
 	}
+	QHBoxLayout *copy_buttons = new QHBoxLayout();
+	copy_buttons->setContentsMargins(0, 12, 0, 0);
+	m_copy_coordinates_button = new QPushButton(tr("Copy Coordinates"));
+	m_copy_coordinates_button->setObjectName("copy_coordinates_button");
+	m_copy_coordinates_button->setToolTip(tr("Copy RA and Dec of the image center to the clipboard"));
+	connect(m_copy_coordinates_button, &QPushButton::clicked, this, &PlateSolverWindow::on_copy_coordinates_clicked);
+	copy_buttons->addWidget(m_copy_coordinates_button);
+	m_copy_solution_button = new QPushButton(tr("Copy Solution"));
+	m_copy_solution_button->setObjectName("copy_solution_button");
+	m_copy_solution_button->setToolTip(tr("Copy the whole solution to the clipboard"));
+	connect(m_copy_solution_button, &QPushButton::clicked, this, &PlateSolverWindow::on_copy_solution_clicked);
+	copy_buttons->addWidget(m_copy_solution_button);
+	solution_form->addRow(copy_buttons);
 	layout->addWidget(solution);
 
 	layout->addStretch(1);
@@ -226,8 +239,7 @@ QWidget *PlateSolverWindow::create_index_tab() {
 	layout->addWidget(m_download_status);
 
 	m_download_progress = new QProgressBar();
-	m_download_progress->setRange(0, 0);
-	m_download_progress->setTextVisible(false);
+	m_download_progress->setRange(0, 100);
 	m_download_progress->setVisible(false);
 	layout->addWidget(m_download_progress);
 
@@ -236,7 +248,7 @@ QWidget *PlateSolverWindow::create_index_tab() {
 	connect(m_download_abort, &QPushButton::clicked, this, &PlateSolverWindow::on_abort_clicked);
 	layout->addWidget(m_download_abort);
 
-	QLabel *folder = new QLabel(tr("Folder: %1").arg(QDir::toNativeSeparators(index_folder())));
+	QLabel *folder = new QLabel(tr("Folder: %1").arg(QDir::toNativeSeparators(m_engine->index_folder())));
 	folder->setWordWrap(true);
 	folder->setTextInteractionFlags(Qt::TextSelectableByMouse);
 	layout->addWidget(folder);
@@ -261,12 +273,15 @@ QWidget *PlateSolverWindow::create_hints_tab() {
 	m_hint_ra = new QLineEdit();
 	m_hint_ra->setPlaceholderText("hh:mm:ss");
 	connect(m_hint_ra, &QLineEdit::editingFinished, this, &PlateSolverWindow::on_hints_edited);
-	hints_form->addRow(tr("RA:"), m_hint_ra);
 
 	m_hint_dec = new QLineEdit();
 	m_hint_dec->setPlaceholderText("dd:mm:ss");
 	connect(m_hint_dec, &QLineEdit::editingFinished, this, &PlateSolverWindow::on_hints_edited);
-	hints_form->addRow(tr("Dec:"), m_hint_dec);
+
+	QHBoxLayout *coordinates = new QHBoxLayout();
+	coordinates->addWidget(m_hint_ra, 1);
+	coordinates->addWidget(m_hint_dec, 1);
+	hints_form->addRow(tr("RA / Dec:"), coordinates);
 
 	m_hint_epoch = new QComboBox();
 	m_hint_epoch->addItem(tr("J2000"), 2000.0);
@@ -313,123 +328,111 @@ QWidget *PlateSolverWindow::create_hints_tab() {
 	return create_scroll_area(content);
 }
 
-// where the agent keeps the indexes, used only to show the folder and the size of a running download
-QString PlateSolverWindow::index_folder() const {
-	QString base = QProcessEnvironment::systemEnvironment().value("INDIGO_CACHE_BASE");
-	if (!base.isEmpty()) return base + "/solver";
-	return QDir::homePath() + "/.indigo/solver";
+static QString solver_settings_path() {
+	return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + "/" + SOLVER_CONFIG_FILENAME;
 }
 
-void PlateSolverWindow::on_property_defined(const SolverProperty &property) {
-	on_property_updated(property);
-}
-
-void PlateSolverWindow::on_property_updated(const SolverProperty &property) {
-	if (property.name == AGENT_PLATESOLVER_WCS_PROPERTY_NAME) {
-		update_wcs(property);
-	} else if (property.name == AGENT_PLATESOLVER_HINTS_PROPERTY_NAME) {
-		update_hints(property);
-	} else if (property.name == AGENT_PLATESOLVER_USE_INDEX_PROPERTY_NAME) {
-		update_use_index(property);
-	} else if (property.name == SOLVER_INDEX_PROPERTY_NAME) {
-		update_index(property);
+void PlateSolverWindow::load_solver_settings() {
+	QSettings settings(solver_settings_path(), QSettings::IniFormat);
+	const SolverHints defaults;
+	const double epoch = settings.value("hints/epoch", defaults.epoch).toDouble();
+	const int parity = settings.value("hints/parity", defaults.parity).toInt();
+	m_hint_radius->setValue(settings.value("hints/radius", defaults.radius).toDouble());
+	m_hint_ra->setText(format_ra(settings.value("hints/ra", defaults.ra).toDouble()));
+	m_hint_dec->setText(format_dec(settings.value("hints/dec", defaults.dec).toDouble()));
+	m_hint_epoch->setCurrentIndex(epoch == 0 ? 1 : 0);
+	m_hint_scale->setValue(settings.value("hints/scale", defaults.scale).toDouble() * ARCSEC_PER_DEG);
+	m_hint_parity->setCurrentIndex(parity < 0 ? 1 : parity > 0 ? 2 : 0);
+	m_hint_downsample->setValue(settings.value("hints/downsample", defaults.downsample).toInt());
+	m_hint_depth->setValue(settings.value("hints/depth", defaults.depth).toInt());
+	m_hint_cpu_limit->setValue(settings.value("hints/cpu_limit", defaults.cpu_limit).toInt());
+	const QStringList used = settings.value("indexes/used").toStringList();
+	for (const SolverIndex &index : m_engine->indexes()) {
+		m_engine->set_index_used(index.name, used.contains(index.name));
 	}
 }
 
-void PlateSolverWindow::on_property_deleted(const QString &name) {
-	if (name == AGENT_PLATESOLVER_USE_INDEX_PROPERTY_NAME) {
-		SolverProperty none;
-		none.name = name;
-		none.state = INDIGO_OK_STATE;
-		update_use_index(none);
-	}
-}
-
-void PlateSolverWindow::update_hints(const SolverProperty &property) {
-	const SolverItem *item;
-	if ((item = property.item(AGENT_PLATESOLVER_HINTS_RADIUS_ITEM_NAME))) m_hint_radius->setValue(item->number);
-	if ((item = property.item(AGENT_PLATESOLVER_HINTS_RA_ITEM_NAME))) m_hint_ra->setText(format_ra(item->number));
-	if ((item = property.item(AGENT_PLATESOLVER_HINTS_DEC_ITEM_NAME))) m_hint_dec->setText(format_dec(item->number));
-	if ((item = property.item(AGENT_PLATESOLVER_HINTS_EPOCH_ITEM_NAME))) m_hint_epoch->setCurrentIndex(item->number == 0 ? 1 : 0);
-	// a negative scale means the scale of the camera of a related agent, here there is none
-	if ((item = property.item(AGENT_PLATESOLVER_HINTS_SCALE_ITEM_NAME))) m_hint_scale->setValue(item->number > 0 ? item->number * ARCSEC_PER_DEG : 0);
-	if ((item = property.item(AGENT_PLATESOLVER_HINTS_PARITY_ITEM_NAME))) m_hint_parity->setCurrentIndex(item->number < 0 ? 1 : item->number > 0 ? 2 : 0);
-	if ((item = property.item(AGENT_PLATESOLVER_HINTS_DOWNSAMPLE_ITEM_NAME))) m_hint_downsample->setValue((int)item->number);
-	if ((item = property.item(AGENT_PLATESOLVER_HINTS_DEPTH_ITEM_NAME))) m_hint_depth->setValue((int)item->number);
-	if ((item = property.item(AGENT_PLATESOLVER_HINTS_CPU_LIMIT_ITEM_NAME))) m_hint_cpu_limit->setValue((int)item->number);
+SolverHints PlateSolverWindow::current_hints() const {
+	SolverHints hints;
+	hints.radius = m_hint_radius->value();
+	hints.ra = indigo_stod(m_hint_ra->text().toUtf8().constData());
+	hints.dec = indigo_stod(m_hint_dec->text().toUtf8().constData());
+	hints.epoch = m_hint_epoch->currentData().toDouble();
+	hints.scale = m_hint_scale->value() / ARCSEC_PER_DEG;
+	hints.parity = (int)m_hint_parity->currentData().toDouble();
+	hints.downsample = m_hint_downsample->value();
+	hints.depth = m_hint_depth->value();
+	hints.cpu_limit = m_hint_cpu_limit->value();
+	return hints;
 }
 
 void PlateSolverWindow::on_hints_edited() {
-	if (!m_agent_loaded) return;
-	const QVector<QPair<const char *, double>> values = {
-		{AGENT_PLATESOLVER_HINTS_RADIUS_ITEM_NAME, m_hint_radius->value()},
-		{AGENT_PLATESOLVER_HINTS_RA_ITEM_NAME, indigo_stod(m_hint_ra->text().toUtf8().constData())},
-		{AGENT_PLATESOLVER_HINTS_DEC_ITEM_NAME, indigo_stod(m_hint_dec->text().toUtf8().constData())},
-		{AGENT_PLATESOLVER_HINTS_EPOCH_ITEM_NAME, m_hint_epoch->currentData().toDouble()},
-		{AGENT_PLATESOLVER_HINTS_SCALE_ITEM_NAME, m_hint_scale->value() / ARCSEC_PER_DEG},
-		{AGENT_PLATESOLVER_HINTS_PARITY_ITEM_NAME, m_hint_parity->currentData().toDouble()},
-		{AGENT_PLATESOLVER_HINTS_DOWNSAMPLE_ITEM_NAME, (double)m_hint_downsample->value()},
-		{AGENT_PLATESOLVER_HINTS_DEPTH_ITEM_NAME, (double)m_hint_depth->value()},
-		{AGENT_PLATESOLVER_HINTS_CPU_LIMIT_ITEM_NAME, (double)m_hint_cpu_limit->value()}
-	};
-	QVector<SolverItem> items;
-	for (const QPair<const char *, double> &value : values) {
-		SolverItem item;
-		item.name = value.first;
-		item.number = value.second;
-		item.on = false;
-		items.append(item);
+	const SolverHints hints = current_hints();
+	QSettings settings(solver_settings_path(), QSettings::IniFormat);
+	settings.setValue("hints/radius", hints.radius);
+	settings.setValue("hints/ra", hints.ra);
+	settings.setValue("hints/dec", hints.dec);
+	settings.setValue("hints/epoch", hints.epoch);
+	settings.setValue("hints/scale", hints.scale);
+	settings.setValue("hints/parity", hints.parity);
+	settings.setValue("hints/downsample", hints.downsample);
+	settings.setValue("hints/depth", hints.depth);
+	settings.setValue("hints/cpu_limit", hints.cpu_limit);
+}
+
+void PlateSolverWindow::save_used_indexes() {
+	QStringList used;
+	for (const SolverIndex &index : m_engine->indexes()) {
+		if (index.listed && index.used) used.append(index.name);
 	}
-	m_client->set_numbers(AGENT_PLATESOLVER_HINTS_PROPERTY_NAME, items);
+	QSettings settings(solver_settings_path(), QSettings::IniFormat);
+	settings.setValue("indexes/used", used);
+}
+
+void PlateSolverWindow::set_solution_led(const char *color) {
+	m_solution_led->setPixmap(QPixmap(QString(":resource/led-%1.png").arg(color)));
 }
 
 void PlateSolverWindow::clear_solution() {
 	for (QLabel *label : m_wcs_labels) {
 		label->setText("-");
 	}
-	m_solution_image->setText(tr("Not solved"));
-	m_solution_image->setToolTip(QString());
+	set_solution_led("grey");
+	set_file_label(m_solution_image, m_current_image);
+	m_copy_coordinates_button->setEnabled(false);
+	m_copy_solution_button->setEnabled(false);
 }
 
-void PlateSolverWindow::update_wcs(const SolverProperty &property) {
-	bool was_busy = m_wcs_busy;
-	m_wcs_busy = property.state == INDIGO_BUSY_STATE;
-	if (!m_wcs_busy) {
-		m_solve_requested = false;
+void PlateSolverWindow::on_solve_finished(bool solved, const SolverSolution &solution, const QString &message) {
+	if (!message.isEmpty()) {
+		log_message(message);
 	}
-	if (property.state == INDIGO_OK_STATE && was_busy) {
-		const SolverItem *ra = property.item(AGENT_PLATESOLVER_WCS_RA_ITEM_NAME);
-		const SolverItem *dec = property.item(AGENT_PLATESOLVER_WCS_DEC_ITEM_NAME);
-		const SolverItem *epoch = property.item(AGENT_PLATESOLVER_WCS_EPOCH_ITEM_NAME);
-		const SolverItem *angle = property.item(AGENT_PLATESOLVER_WCS_ANGLE_ITEM_NAME);
-		const SolverItem *width = property.item(AGENT_PLATESOLVER_WCS_WIDTH_ITEM_NAME);
-		const SolverItem *height = property.item(AGENT_PLATESOLVER_WCS_HEIGHT_ITEM_NAME);
-		const SolverItem *scale = property.item(AGENT_PLATESOLVER_WCS_SCALE_ITEM_NAME);
-		const SolverItem *parity = property.item(AGENT_PLATESOLVER_WCS_PARITY_ITEM_NAME);
-		const SolverItem *index = property.item(AGENT_PLATESOLVER_WCS_INDEX_ITEM_NAME);
-		if (ra && dec && epoch && angle && width && height && scale && parity && index) {
-			m_wcs_labels[AGENT_PLATESOLVER_WCS_RA_ITEM_NAME]->setText(format_ra(ra->number));
-			m_wcs_labels[AGENT_PLATESOLVER_WCS_DEC_ITEM_NAME]->setText(format_dec(dec->number));
-			m_wcs_labels[AGENT_PLATESOLVER_WCS_EPOCH_ITEM_NAME]->setText(epoch->number == 0 ? tr("JNow") : tr("J2000"));
-			m_wcs_labels[AGENT_PLATESOLVER_WCS_ANGLE_ITEM_NAME]->setText(QString("%1°").arg(angle->number, 0, 'f', 2));
-			m_wcs_labels[AGENT_PLATESOLVER_WCS_WIDTH_ITEM_NAME]->setText(QString("%1° x %2°").arg(width->number, 0, 'f', 3).arg(height->number, 0, 'f', 3));
-			m_wcs_labels[AGENT_PLATESOLVER_WCS_SCALE_ITEM_NAME]->setText(QString("%1 \"/px").arg(scale->number * ARCSEC_PER_DEG, 0, 'f', 3));
-			m_wcs_labels[AGENT_PLATESOLVER_WCS_PARITY_ITEM_NAME]->setText(parity->number < 0 ? tr("Normal") : tr("Mirrored"));
-			m_wcs_labels[AGENT_PLATESOLVER_WCS_INDEX_ITEM_NAME]->setText(QString("%1°").arg(index->number, 0, 'g', 3));
-			set_file_label(m_solution_image, "%1", m_solving_image);
-			m_wcs_image = m_solving_image;
-			m_wcs_ra = ra->number;
-			m_wcs_dec = dec->number;
-			m_wcs_angle = angle->number;
-			m_wcs_scale = scale->number;
-			m_wcs_parity = (int)parity->number;
-			m_wcs_jnow = epoch->number == 0;
-			m_wcs_valid = true;
-			apply_wcs_to_image();
-		}
-	} else if (property.state == INDIGO_ALERT_STATE && was_busy) {
+	if (solved) {
+		m_wcs_labels["RA"]->setText(format_ra(solution.ra));
+		m_wcs_labels["DEC"]->setText(format_dec(solution.dec));
+		m_wcs_labels["EPOCH"]->setText(solution.epoch == 0 ? tr("JNow") : tr("J2000"));
+		m_wcs_labels["ANGLE"]->setText(QString("%1°").arg(solution.angle, 0, 'f', 2));
+		m_wcs_labels["FIELD"]->setText(QString("%1° x %2°").arg(solution.width, 0, 'f', 3).arg(solution.height, 0, 'f', 3));
+		m_wcs_labels["SCALE"]->setText(QString("%1 \"/px").arg(solution.scale * ARCSEC_PER_DEG, 0, 'f', 3));
+		m_wcs_labels["PARITY"]->setText(solution.parity < 0 ? tr("Normal") : tr("Mirrored"));
+		m_wcs_labels["INDEX"]->setText(QString("%1°").arg(solution.index, 0, 'g', 3));
+		set_solution_led("green");
+		set_file_label(m_solution_image, m_solving_image);
+		m_wcs_image = m_solving_image;
+		m_wcs_ra = solution.ra;
+		m_wcs_dec = solution.dec;
+		m_wcs_angle = solution.angle;
+		m_wcs_scale = solution.scale;
+		m_wcs_parity = solution.parity;
+		m_wcs_jnow = solution.epoch == 0;
+		m_wcs_valid = true;
+		m_copy_coordinates_button->setEnabled(true);
+		m_copy_solution_button->setEnabled(true);
+		apply_wcs_to_image();
+	} else {
 		clear_solution();
-		set_file_label(m_solution_image, tr("%1: not solved"), m_solving_image);
+		set_solution_led("red");
+		set_file_label(m_solution_image, m_solving_image);
 		if (m_wcs_valid && m_wcs_image == m_solving_image) {
 			remove_wcs_from_image();
 		}
@@ -482,77 +485,63 @@ void PlateSolverWindow::on_show_stars(bool show) {
 	update_objects();
 }
 
-void PlateSolverWindow::update_use_index(const SolverProperty &property) {
-	for (auto it = m_use_index_boxes.begin(); it != m_use_index_boxes.end();) {
-		bool present = property.item(it.key().toUtf8().constData()) != nullptr;
-		if (!present) {
-			delete it.value();
-			it = m_use_index_boxes.erase(it);
-		} else {
-			++it;
-		}
-	}
-	for (const SolverItem &item : property.items) {
-		QCheckBox *box = m_use_index_boxes.value(item.name, nullptr);
+void PlateSolverWindow::update_indexes() {
+	for (const SolverIndex &index : m_engine->indexes()) {
+		QCheckBox *box = m_index_boxes.value(index.name, nullptr);
 		if (box == nullptr) {
-			box = new QCheckBox(item.label);
-			m_use_index_layout->addWidget(box);
-			m_use_index_boxes[item.name] = box;
-			connect(box, &QCheckBox::clicked, this, &PlateSolverWindow::on_use_index_toggled);
-		}
-		QSignalBlocker blocker(box);
-		box->setChecked(item.on);
-	}
-	m_use_index_empty->setVisible(m_use_index_boxes.isEmpty());
-	update_controls();
-}
-
-void PlateSolverWindow::on_use_index_toggled() {
-	QVector<SolverItem> items;
-	for (auto it = m_use_index_boxes.constBegin(); it != m_use_index_boxes.constEnd(); ++it) {
-		SolverItem item;
-		item.name = it.key();
-		item.number = 0;
-		item.on = it.value()->isChecked();
-		items.append(item);
-	}
-	m_client->set_switches(AGENT_PLATESOLVER_USE_INDEX_PROPERTY_NAME, items);
-	update_controls();
-}
-
-bool PlateSolverWindow::any_use_index_selected() const {
-	for (QCheckBox *box : m_use_index_boxes) {
-		if (box->isChecked()) return true;
-	}
-	return false;
-}
-
-void PlateSolverWindow::update_index(const SolverProperty &property) {
-	for (const SolverItem &item : property.items) {
-		QCheckBox *box = m_index_boxes.value(item.name, nullptr);
-		if (box == nullptr) {
-			box = new QCheckBox(item.label);
-			box->setObjectName(item.name);
+			box = new QCheckBox(index.size_label);
+			box->setObjectName(index.name);
 			m_index_layout->addWidget(box);
-			m_index_boxes[item.name] = box;
-			QString name = item.name;
+			m_index_boxes[index.name] = box;
+			const QString name = index.name;
 			connect(box, &QCheckBox::clicked, this, [this, name](bool checked) {
 				on_index_toggled(name, checked);
 			});
 		}
 		QSignalBlocker blocker(box);
-		box->setChecked(item.on);
+		box->setChecked(index.wanted);
+
+		QCheckBox *use_box = m_use_index_boxes.value(index.name, nullptr);
+		if (!index.listed) {
+			delete use_box;
+			m_use_index_boxes.remove(index.name);
+			continue;
+		}
+		if (use_box == nullptr) {
+			use_box = new QCheckBox(index.label);
+			m_use_index_boxes[index.name] = use_box;
+			// the indexes stay in the order of their scale
+			int position = 0;
+			for (auto it = m_use_index_boxes.constBegin(); it != m_use_index_boxes.constEnd() && it.key() != index.name; ++it) {
+				position++;
+			}
+			m_use_index_layout->insertWidget(position + 1, use_box);
+			connect(use_box, &QCheckBox::clicked, this, &PlateSolverWindow::on_use_index_toggled);
+		}
+		QSignalBlocker use_blocker(use_box);
+		use_box->setChecked(index.used);
 	}
-	m_index_busy = property.state == INDIGO_BUSY_STATE;
-	m_download_progress->setVisible(m_index_busy);
-	m_download_abort->setVisible(m_index_busy);
-	if (m_index_busy) {
+	m_use_index_empty->setVisible(m_use_index_boxes.isEmpty());
+	save_used_indexes();
+
+	const bool busy = m_engine->index_busy();
+	m_download_progress->setVisible(busy);
+	m_download_abort->setVisible(busy);
+	if (busy) {
 		m_download_timer->start();
 		on_download_timer();
 	} else {
 		m_download_timer->stop();
-		m_download_status->setText(property.state == INDIGO_ALERT_STATE ? tr("The last index change failed, see the log.") : QString());
+		m_download_status->setText(m_engine->index_failed() ? tr("The last index change failed, see the log.") : QString());
 	}
+	update_controls();
+}
+
+void PlateSolverWindow::on_use_index_toggled() {
+	for (auto it = m_use_index_boxes.constBegin(); it != m_use_index_boxes.constEnd(); ++it) {
+		m_engine->set_index_used(it.key(), it.value()->isChecked());
+	}
+	save_used_indexes();
 	update_controls();
 }
 
@@ -572,25 +561,15 @@ void PlateSolverWindow::on_index_toggled(const QString &name, bool checked) {
 			return;
 		}
 	}
-	QVector<SolverItem> items;
-	for (auto it = m_index_boxes.constBegin(); it != m_index_boxes.constEnd(); ++it) {
-		SolverItem item;
-		item.name = it.key();
-		item.number = 0;
-		item.on = it.value()->isChecked();
-		items.append(item);
-	}
-	m_client->set_switches(SOLVER_INDEX_PROPERTY_NAME, items);
+	m_engine->set_index_wanted(name, checked);
 }
 
 void PlateSolverWindow::on_download_timer() {
-	QFileInfoList parts = QDir(index_folder()).entryInfoList(QStringList() << "*.part", QDir::Files);
-	if (parts.isEmpty()) {
-		m_download_status->setText(tr("Updating indexes..."));
-	} else {
-		const QFileInfo &part = parts.first();
-		m_download_status->setText(tr("Downloading %1: %2 MB").arg(part.completeBaseName()).arg(part.size() / (1024 * 1024)));
-	}
+	const int received = m_engine->download_received_mb();
+	const int size = m_engine->download_size_mb();
+	m_download_status->setText(tr("Downloading %1: %2 of %3 MB").arg(m_engine->download_name()).arg(received).arg(size));
+	// the size is approximate, the file can be a bit larger
+	m_download_progress->setValue(size > 0 ? qMin(received * 100 / size, 100) : 0);
 }
 
 void PlateSolverWindow::on_image_changed() {
@@ -598,66 +577,70 @@ void PlateSolverWindow::on_image_changed() {
 	m_wcs_valid = false;
 	update_objects();
 	m_current_image = has_image ? QString(m_image_path) : QString();
-	if (!m_wcs_busy && !m_solve_requested) {
+	if (!m_engine->solving()) {
 		clear_solution();
 	}
 	update_controls();
 }
 
 void PlateSolverWindow::on_solve_clicked() {
-	if (!m_agent_loaded || m_current_image.isEmpty()) return;
+	if (m_current_image.isEmpty()) return;
 	on_hints_edited();
 	m_solving_image = m_current_image;
-	m_solve_requested = true;
-	update_controls();
 	log_message(tr("Solving %1").arg(QFileInfo(m_solving_image).fileName()));
-	if (!m_client->solve_image(m_image_data, m_image_size)) {
-		m_solve_requested = false;
-		log_message(tr("Failed to send the image to %1").arg(PLATESOLVER_DEVICE_NAME));
-		update_controls();
-		return;
+	const char *format = strrchr(m_image_path, '.');
+	if (!m_engine->solve(m_image_data, m_image_size, format != nullptr ? format : "", current_hints())) {
+		log_message(tr("The solver is busy"));
+	} else {
+		// the values of the previous solution do not belong to the image being solved
+		clear_solution();
+		set_solution_led("orange");
+		set_file_label(m_solution_image, m_solving_image);
 	}
-	// the agent does not update the WCS property if it drops the image before it starts solving
-	QTimer::singleShot(SOLVE_START_TIMEOUT_MS, this, [this]() {
-		if (m_solve_requested && !m_wcs_busy) {
-			m_solve_requested = false;
-			update_controls();
-		}
-	});
+	update_controls();
 }
 
 void PlateSolverWindow::on_abort_clicked() {
-	if (!m_agent_loaded) return;
-	m_client->abort();
-	if (!m_wcs_busy) {
-		m_solve_requested = false;
-		update_controls();
+	m_engine->abort();
+}
+
+void PlateSolverWindow::on_copy_coordinates_clicked() {
+	QGuiApplication::clipboard()->setText(QString("%1 %2").arg(m_wcs_labels["RA"]->text(), m_wcs_labels["DEC"]->text()));
+	log_message(tr("Coordinates copied to the clipboard"));
+}
+
+void PlateSolverWindow::on_copy_solution_clicked() {
+	QStringList lines = {tr("Image: %1").arg(QFileInfo(m_wcs_image).fileName())};
+	for (const QPair<QString, QLabel *> &row : m_wcs_rows) {
+		lines.append(QString("%1 %2").arg(row.first, row.second->text()));
 	}
+	QGuiApplication::clipboard()->setText(lines.join("\n"));
+	log_message(tr("Solution copied to the clipboard"));
 }
 
 void PlateSolverWindow::update_controls() {
-	bool solving = m_solve_requested || m_wcs_busy;
-	bool can_solve = m_agent_loaded && !solving && !m_index_busy && !m_current_image.isEmpty() && any_use_index_selected();
-	m_solve_button->setEnabled(can_solve);
-	m_abort_button->setEnabled(m_agent_loaded && solving);
-	m_tabs->setEnabled(m_agent_loaded);
-	// the agent refuses index changes during a solve
+	const bool solving = m_engine->solving();
+	const bool index_busy = m_engine->index_busy();
+	const bool any_used = m_engine->any_index_used();
+	m_solve_button->setEnabled(!solving && !index_busy && !m_current_image.isEmpty() && any_used);
+	m_abort_button->setEnabled(solving);
+	// the indexes are in use during a solve
 	for (QCheckBox *box : m_index_boxes) {
 		box->setEnabled(!solving);
 	}
-	if (!m_agent_loaded) {
-		m_solve_button->setToolTip(QString());
-	} else if (m_index_busy) {
+	if (index_busy) {
 		m_solve_button->setToolTip(tr("Index download in progress"));
-	} else if (!any_use_index_selected()) {
+	} else if (!any_used) {
 		m_solve_button->setToolTip(tr("Select at least one index to use in the Indexes tab"));
 	} else {
 		m_solve_button->setToolTip(QString());
 	}
-}
-
-void PlateSolverWindow::on_message(const QString &message) {
-	log_message(message);
+	if (m_use_index_boxes.isEmpty()) {
+		m_index_warning->setText(tr("No indexes installed, download the ones you need in the Indexes tab."));
+	} else {
+		m_index_warning->setText(tr("No indexes selected, select the ones you need in the Indexes tab."));
+	}
+	m_index_warning->setVisible(!any_used);
 }
 
 void PlateSolverWindow::log_message(const QString &message) {
