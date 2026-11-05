@@ -228,6 +228,32 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(act, &QAction::triggered, this, &ImagerWindow::on_preview_mode_coarse_all);
 	preview_mode_group->addAction(act);
 
+	menu->addSeparator();
+
+	sub_menu = menu->addMenu("Plate &Solver");
+	sub_menu->setToolTipsVisible(true);
+
+	QActionGroup *solver_agent_group = new QActionGroup(this);
+	solver_agent_group->setExclusive(true);
+
+	m_solver_astrometry_act = sub_menu->addAction("&Astrometry Agent");
+	m_solver_astrometry_act->setCheckable(true);
+	connect(m_solver_astrometry_act, &QAction::triggered, this, &ImagerWindow::on_solver_agent_astrometry);
+	solver_agent_group->addAction(m_solver_astrometry_act);
+
+	m_solver_platesolver_act = sub_menu->addAction("&Platesolver Agent");
+	m_solver_platesolver_act->setCheckable(true);
+	m_solver_platesolver_act->setToolTip("Needs its indexes installed and selected: Platesolver Agent > Index management in INDIGO Control Panel");
+	connect(m_solver_platesolver_act, &QAction::triggered, this, &ImagerWindow::on_solver_agent_platesolver);
+	solver_agent_group->addAction(m_solver_platesolver_act);
+
+	m_solver_switch_target = conf.solver_agent_type;
+	sync_solver_agent_menu();
+	m_solver_switch_timer = new QTimer(this);
+	m_solver_switch_timer->setSingleShot(true);
+	m_solver_switch_timer->setInterval(15000);
+	connect(m_solver_switch_timer, &QTimer::timeout, this, &ImagerWindow::solver_switch_timeout);
+
 	/*
 	act = menu->addAction(tr("Enable &BLOBs"));
 	act->setCheckable(true);
@@ -303,30 +329,6 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(act, &QAction::toggled, this, &ImagerWindow::on_antialias_guide_view);
 
 	menu->addSeparator();
-
-	sub_menu = menu->addMenu("Plate &Solver");
-	sub_menu->setToolTipsVisible(true);
-
-	QActionGroup *solver_agent_group = new QActionGroup(this);
-	solver_agent_group->setExclusive(true);
-
-	m_solver_astrometry_act = sub_menu->addAction("&Astrometry Agent");
-	m_solver_astrometry_act->setCheckable(true);
-	connect(m_solver_astrometry_act, &QAction::triggered, this, &ImagerWindow::on_solver_agent_astrometry);
-	solver_agent_group->addAction(m_solver_astrometry_act);
-
-	m_solver_platesolver_act = sub_menu->addAction("&Platesolver Agent");
-	m_solver_platesolver_act->setCheckable(true);
-	m_solver_platesolver_act->setToolTip("Needs its indexes installed and selected: Platesolver Agent > Index management in INDIGO Control Panel");
-	connect(m_solver_platesolver_act, &QAction::triggered, this, &ImagerWindow::on_solver_agent_platesolver);
-	solver_agent_group->addAction(m_solver_platesolver_act);
-
-	m_solver_switch_target = conf.solver_agent_type;
-	sync_solver_agent_menu();
-	m_solver_switch_timer = new QTimer(this);
-	m_solver_switch_timer->setSingleShot(true);
-	m_solver_switch_timer->setInterval(15000);
-	connect(m_solver_switch_timer, &QTimer::timeout, this, &ImagerWindow::solver_switch_timeout);
 
 	sub_menu = menu->addMenu("&Guider Graph");
 

@@ -19,11 +19,9 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# Keep the architecture prefix like "arm64v8/debian:...", without it all architectures
+# share one local "debian:..." image and a build can get the platform of the previous one
 baseImage="$1"
-# If image contains an architecture prefix like "amd64/debian:...", strip the prefix
-if echo "$baseImage" | grep -q "/"; then
-	baseImage="${baseImage#*/}"
-fi
 
 # Local INDIGO version to build against, e.g. "2.0-364" or "3.0-1". The flavor
 # (indigo / indigo3) is inferred from its major version, so no separate flavor
