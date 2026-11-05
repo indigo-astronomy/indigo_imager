@@ -258,6 +258,8 @@ void ObjectOverlay::show(const preview_image &image, bool jnow, bool show_deep_s
 		double dec = jnow ? dso[i].dec_now : dso[i].dec;
 		double major_deg = dso[i].r1 / ARCMIN_PER_DEG;
 		double minor_deg = (dso[i].r2 > 0 ? dso[i].r2 : dso[i].r1) / ARCMIN_PER_DEG;
+		// outside of the galaxies an angle of 0 means an unknown orientation, an ellipse would show one the catalogue does not have
+		if (dso[i].type != GALAXY && dso[i].angle == 0) minor_deg = major_deg;
 
 		// a large object may reach the field with its center far outside
 		double reach = field_radius + major_deg / 2;
