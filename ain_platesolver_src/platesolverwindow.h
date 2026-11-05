@@ -84,6 +84,7 @@ private:
 
 	QTabWidget *m_tabs;
 	QPushButton *m_solve_button;
+	QLabel *m_index_warning;
 	QPushButton *m_abort_button;
 	QCheckBox *m_show_deep_sky;
 	QCheckBox *m_show_stars;

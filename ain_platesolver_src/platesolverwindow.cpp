@@ -139,6 +139,12 @@ QWidget *PlateSolverWindow::create_solve_tab() {
 	buttons->addWidget(m_abort_button);
 	layout->addLayout(buttons);
 
+	m_index_warning = new QLabel();
+	m_index_warning->setObjectName("index_warning");
+	m_index_warning->setWordWrap(true);
+	m_index_warning->setStyleSheet("color: #E0A000;");
+	layout->addWidget(m_index_warning);
+
 	QHBoxLayout *objects = new QHBoxLayout();
 	m_show_deep_sky = new QCheckBox(tr("Deep sky"));
 	m_show_deep_sky->setObjectName("show_deep_sky");
@@ -573,6 +579,12 @@ void PlateSolverWindow::update_controls() {
 	} else {
 		m_solve_button->setToolTip(QString());
 	}
+	if (m_use_index_boxes.isEmpty()) {
+		m_index_warning->setText(tr("No indexes installed, download the ones you need in the Indexes tab."));
+	} else {
+		m_index_warning->setText(tr("No indexes selected, select the ones you need in the Indexes tab."));
+	}
+	m_index_warning->setVisible(!any_used);
 }
 
 void PlateSolverWindow::log_message(const QString &message) {
