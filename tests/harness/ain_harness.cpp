@@ -62,12 +62,24 @@ static QPushButton *find_button(const QString &text) {
 	return nullptr;
 }
 
-static QTextEdit *find_log() {
+// the log of ain_imager is a QTextEdit, the one of ain_platesolver a QPlainTextEdit; read-only text in a dialog,
+// like Image Info of ain_platesolver, is not the log
+static bool find_log(QString *text) {
 	for (QWidget *widget : QApplication::allWidgets()) {
 		QTextEdit *edit = qobject_cast<QTextEdit *>(widget);
-		if (edit && edit->isReadOnly()) return edit;
+		if (edit && edit->isReadOnly() && qobject_cast<QMainWindow *>(edit->window())) {
+			*text = edit->toPlainText();
+			return true;
+		}
 	}
-	return nullptr;
+	for (QWidget *widget : QApplication::allWidgets()) {
+		QPlainTextEdit *edit = qobject_cast<QPlainTextEdit *>(widget);
+		if (edit && edit->isReadOnly() && qobject_cast<QMainWindow *>(edit->window())) {
+			*text = edit->toPlainText();
+			return true;
+		}
+	}
+	return false;
 }
 
 static void dump() {
@@ -106,6 +118,15 @@ static void run(const QString &line) {
 		QPushButton *button = find_button("Solve");
 		if (button) button->click();
 		else out("ERROR no Solve button");
+	} else if (cmd == "enabled") {
+		QPushButton *button = find_button(arg);
+		if (button) out(QString("ENABLED %1 %2").arg(arg).arg(button->isEnabled() ? 1 : 0));
+		else out("ERROR no button " + arg);
+	} else if (cmd == "open") {
+		next_file = arg;
+		QAction *action = find_action("Open Image...");
+		if (action) action->trigger();
+		else out("ERROR no Open Image action");
 	} else if (cmd == "loadseq") {
 		next_file = arg;
 		for (QWidget *widget : QApplication::allWidgets()) {
@@ -136,9 +157,9 @@ static void run(const QString &line) {
 	} else if (cmd == "dump") {
 		dump();
 	} else if (cmd == "log") {
-		QTextEdit *log = find_log();
+		QString text;
 		QFile file(arg);
-		if (log && file.open(QIODevice::WriteOnly | QIODevice::Text)) QTextStream(&file) << log->toPlainText();
+		if (find_log(&text) && file.open(QIODevice::WriteOnly | QIODevice::Text)) QTextStream(&file) << text;
 	} else if (cmd == "shot") {
 		for (QWidget *widget : QApplication::topLevelWidgets()) {
 			if (qobject_cast<QMainWindow *>(widget)) widget->grab().save(arg);

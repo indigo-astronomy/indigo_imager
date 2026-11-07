@@ -9,6 +9,7 @@
 # environment:
 #   INDIGO_ROOT          INDIGO checkout with a build (default: ../indigo)
 #   AIN_BIN              ain_imager binary (default: ../ain_imager_src/ain_imager)
+#   AIN_PLATESOLVER_BIN  ain_platesolver binary (default: ../ain_platesolver_src/ain_platesolver)
 #   AIN_TEST_IMAGE       FITS image with a WCS header, for the real solve cases
 #   AIN_TEST_INDEX_HOME  directory with astrometry/ and solver/ indexes (default: ~/.indigo)
 #
@@ -19,6 +20,7 @@ ROOT_DIR=$(dirname "$TESTS_DIR")
 export TESTS_DIR ROOT_DIR
 export INDIGO_ROOT=${INDIGO_ROOT:-$ROOT_DIR/indigo}
 export AIN_BIN=${AIN_BIN:-$ROOT_DIR/ain_imager_src/ain_imager}
+export AIN_PLATESOLVER_BIN=${AIN_PLATESOLVER_BIN:-$ROOT_DIR/ain_platesolver_src/ain_platesolver}
 export BUILD_DIR=$TESTS_DIR/build
 export AIN_TEST_REAL_HOME=$HOME
 export AIN_TEST_INDEX_HOME=${AIN_TEST_INDEX_HOME:-$HOME/.indigo}

@@ -2,13 +2,15 @@
 
 End to end tests of the Plate Solver setting, the solver steps of the sequencer and the meridian
 flip. They run the real `ain_imager` without a display against a real `indigo_server`, with
-simulators where hardware would be needed.
+simulators where hardware would be needed. `95_platesolver_save_wcs` runs `ain_platesolver` the
+same way, without a server.
 
 ```
 make                    # build the helpers
 make test-quick         # no indexes needed, about 4 minutes
 make test               # everything, about 17 minutes
 make test CASES="menu_switch 80"
+make test-unit          # unit tests, no server and no display, a few seconds
 ./run_tests.sh -l       # list the cases
 ```
 
@@ -37,8 +39,10 @@ run, which also happens if a real session solves at the same time.
 | `75_switch_relations` | a loaded agent is related to the mount and the source again, also during a sequence | indexes |
 | `80_meridian_flip` | flip with Use Solver during a batch on both agents | indexes |
 | `90_flip_failure` | a failed flip sets the sequence state to Alert only during a sequence | 421x indexes |
+| `95_platesolver_save_wcs` | Save WCS of `ain_platesolver` writes a .wcs file matching the WCS in the image header, also for a mirrored copy; replacing the file and a failed save | image, solver indexes |
 
-A case without what it needs is skipped, not failed. `AIN_TEST_IMAGE` must be a FITS image with
+A case without what it needs is skipped, not failed. `95_platesolver_save_wcs` needs `AIN_TEST_IMAGE` with
+a CD matrix in its header and `ain_platesolver` built (`AIN_PLATESOLVER_BIN` to use another one). `AIN_TEST_IMAGE` must be a FITS image with
 `CRVAL1`/`CRVAL2` near its centre, and for `60_solver_busy` narrower than the 421x indexes cover, so
 that solve-field keeps working on it.
 
@@ -47,6 +51,9 @@ that solve-field keeps working on it.
 - `harness/ain_harness.cpp` is preloaded into `ain_imager` and drives the real widgets from a command
   file. Only `QFileDialog::getOpenFileName` is replaced, as file dialogs can not be answered headless.
 - `harness/conf_offset.cpp` reports where the saved choice is in the config file.
+- `unit/wcs_file_test.cpp` checks the .wcs header of `ain_platesolver`: its FITS format and its
+  orientation against the coordinates the application shows under the mouse, for every rotation and
+  both parities.
 - `fake/fake_indigo_server.py` produces the failures a real server can not be made to produce.
 - `fake/send_script.py` runs a script in the Scripting Agent.
 
