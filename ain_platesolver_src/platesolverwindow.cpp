@@ -266,7 +266,17 @@ QWidget *PlateSolverWindow::create_index_tab() {
 
 QWidget *PlateSolverWindow::create_hints_tab() {
 	QWidget *content = new QWidget();
-	QFormLayout *hints_form = new QFormLayout(content);
+	// RA and Dec share a row, the other hints take the width of RA
+	QGridLayout *hints_grid = new QGridLayout(content);
+	hints_grid->setColumnStretch(1, 1);
+	hints_grid->setColumnStretch(2, 1);
+	int row = 0;
+	auto add_row = [hints_grid, &row](const QString &label, QWidget *field, QWidget *second = nullptr) {
+		hints_grid->addWidget(new QLabel(label), row, 0);
+		hints_grid->addWidget(field, row, 1);
+		if (second != nullptr) hints_grid->addWidget(second, row, 2);
+		row++;
+	};
 
 	m_hint_radius = new QDoubleSpinBox();
 	m_hint_radius->setRange(0, 360);
@@ -275,7 +285,7 @@ QWidget *PlateSolverWindow::create_hints_tab() {
 	m_hint_radius->setSpecialValueText(tr("Blind"));
 	m_hint_radius->setToolTip(tr("Search around RA and Dec, blind searches the whole sky"));
 	connect(m_hint_radius, &QDoubleSpinBox::editingFinished, this, &PlateSolverWindow::on_hints_edited);
-	hints_form->addRow(tr("Radius:"), m_hint_radius);
+	add_row(tr("Radius:"), m_hint_radius);
 
 	m_hint_ra = new QLineEdit();
 	m_hint_ra->setPlaceholderText("hh:mm:ss");
@@ -285,17 +295,14 @@ QWidget *PlateSolverWindow::create_hints_tab() {
 	m_hint_dec->setPlaceholderText("dd:mm:ss");
 	connect(m_hint_dec, &QLineEdit::editingFinished, this, &PlateSolverWindow::on_hints_edited);
 
-	QHBoxLayout *coordinates = new QHBoxLayout();
-	coordinates->addWidget(m_hint_ra, 1);
-	coordinates->addWidget(m_hint_dec, 1);
-	hints_form->addRow(tr("RA / Dec:"), coordinates);
+	add_row(tr("RA / Dec:"), m_hint_ra, m_hint_dec);
 
 	m_hint_epoch = new QComboBox();
 	m_hint_epoch->addItem(tr("J2000"), 2000.0);
 	m_hint_epoch->addItem(tr("JNow"), 0.0);
 	m_hint_epoch->setToolTip(tr("Epoch of RA and Dec above and of the solution"));
 	connect(m_hint_epoch, QOverload<int>::of(&QComboBox::activated), this, &PlateSolverWindow::on_hints_edited);
-	hints_form->addRow(tr("Epoch:"), m_hint_epoch);
+	add_row(tr("Epoch:"), m_hint_epoch);
 
 	m_hint_scale = new QDoubleSpinBox();
 	m_hint_scale->setRange(0, 18000);
@@ -304,33 +311,35 @@ QWidget *PlateSolverWindow::create_hints_tab() {
 	m_hint_scale->setSpecialValueText(tr("Unknown"));
 	m_hint_scale->setToolTip(tr("Tries the index fitting the field first"));
 	connect(m_hint_scale, &QDoubleSpinBox::editingFinished, this, &PlateSolverWindow::on_hints_edited);
-	hints_form->addRow(tr("Pixel scale:"), m_hint_scale);
+	add_row(tr("Pixel scale:"), m_hint_scale);
 
 	m_hint_parity = new QComboBox();
 	m_hint_parity->addItem(tr("Any"), 0.0);
 	m_hint_parity->addItem(tr("Normal"), -1.0);
 	m_hint_parity->addItem(tr("Mirrored"), 1.0);
 	connect(m_hint_parity, QOverload<int>::of(&QComboBox::activated), this, &PlateSolverWindow::on_hints_edited);
-	hints_form->addRow(tr("Parity:"), m_hint_parity);
+	add_row(tr("Parity:"), m_hint_parity);
 
 	m_hint_downsample = new QSpinBox();
 	m_hint_downsample->setRange(1, 16);
 	connect(m_hint_downsample, &QSpinBox::editingFinished, this, &PlateSolverWindow::on_hints_edited);
-	hints_form->addRow(tr("Downsample:"), m_hint_downsample);
+	add_row(tr("Downsample:"), m_hint_downsample);
 
 	m_hint_depth = new QSpinBox();
 	m_hint_depth->setRange(0, 1000);
 	m_hint_depth->setSpecialValueText(tr("Auto"));
 	m_hint_depth->setToolTip(tr("Tries the brightest stars first, then all detected stars"));
 	connect(m_hint_depth, &QSpinBox::editingFinished, this, &PlateSolverWindow::on_hints_edited);
-	hints_form->addRow(tr("Depth:"), m_hint_depth);
+	add_row(tr("Depth:"), m_hint_depth);
 
 	m_hint_cpu_limit = new QSpinBox();
 	m_hint_cpu_limit->setRange(0, 600);
 	m_hint_cpu_limit->setSuffix(" s");
 	m_hint_cpu_limit->setSpecialValueText(tr("None"));
 	connect(m_hint_cpu_limit, &QSpinBox::editingFinished, this, &PlateSolverWindow::on_hints_edited);
-	hints_form->addRow(tr("Time limit:"), m_hint_cpu_limit);
+	add_row(tr("Time limit:"), m_hint_cpu_limit);
+
+	hints_grid->setRowStretch(row, 1);
 
 	return create_scroll_area(content);
 }
