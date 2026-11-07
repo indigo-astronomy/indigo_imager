@@ -117,6 +117,12 @@ solved_count_is() {	# count: the log has that many solutions, the log keeps the 
 	[ "$(ain_log | grep -c "Solved:")" -eq "$1" ]
 }
 
+not_asked() {	# no question since the last check
+	local count
+	count=$(grep -c "^QUESTION" "$CASE_DIR/ain.out")
+	[ "$count" = "${ASKED:-0}" ]
+}
+
 solve_and_save() {	# name, solutions in the log after this one
 	ain_do open "$CASE_DIR/$1.fits"
 	check "$1: Save WCS is disabled before solving" wait_for 10 is_disabled "Save WCS"
@@ -124,6 +130,7 @@ solve_and_save() {	# name, solutions in the log after this one
 	check "$1: image is solved" wait_for 180 solved_count_is "$2"
 	check "$1: Save WCS is enabled after solving" wait_for 10 is_enabled "Save WCS"
 	ain_do button "Save WCS"
+	check "$1: no question for a new file" not_asked
 	check "$1: saving is logged" wait_for 10 log_has "Solution saved to $CASE_DIR/$1.wcs"
 	matches_header "$CASE_DIR/$1.fits" "$CASE_DIR/$1.wcs"
 	check "$1: the saved WCS matches the header" matches_header "$CASE_DIR/$1.fits" "$CASE_DIR/$1.wcs"
@@ -136,14 +143,23 @@ AIN_BIN=$AIN_PLATESOLVER_BIN start_ain
 solve_and_save image 1
 solve_and_save mirrored 2
 
-# saving again replaces the file, a path that can not be written is reported
+# saving again asks before replacing the file, a path that can not be written is reported
 BEFORE=$(stat -c %Y.%s "$CASE_DIR/mirrored.wcs")
 sleep 1.1
+ain_do answer No
 ain_do button "Save WCS"
-check "saving again replaces the file" wait_for 10 test "$(stat -c %Y.%s "$CASE_DIR/mirrored.wcs")" != "$BEFORE"
+ASKED=$((ASKED + 1))
+check "saving again asks to replace the file" grep -qF "QUESTION $CASE_DIR/mirrored.wcs already exists. Do you want to replace it?" "$CASE_DIR/ain.out"
+check "declining keeps the file" equals "$(stat -c %Y.%s "$CASE_DIR/mirrored.wcs")" "$BEFORE"
+check "declining is logged" wait_for 10 log_has "Solution not saved, $CASE_DIR/mirrored.wcs exists"
+ain_do answer Yes
+ain_do button "Save WCS"
+ASKED=$((ASKED + 1))
+check "accepting replaces the file" wait_for 10 test "$(stat -c %Y.%s "$CASE_DIR/mirrored.wcs")" != "$BEFORE"
 mv "$CASE_DIR/mirrored.wcs" "$CASE_DIR/mirrored.saved"
 mkdir "$CASE_DIR/mirrored.wcs"
 ain_do button "Save WCS"
+ASKED=$((ASKED + 1))
 check "a failed save is logged" wait_for 10 log_has "Failed to save $CASE_DIR/mirrored.wcs"
 
 stop_ain

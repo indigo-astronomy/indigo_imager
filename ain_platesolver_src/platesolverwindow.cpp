@@ -631,6 +631,19 @@ void PlateSolverWindow::on_copy_solution_clicked() {
 void PlateSolverWindow::on_save_wcs_clicked() {
 	const QFileInfo image(m_wcs_image);
 	const QString path = image.absolutePath() + "/" + image.completeBaseName() + ".wcs";
+	if (QFileInfo::exists(path)) {
+		QMessageBox::StandardButton answer = QMessageBox::question(
+			this,
+			tr("Save WCS"),
+			tr("%1 already exists.\nDo you want to replace it?").arg(QDir::toNativeSeparators(path)),
+			QMessageBox::Yes | QMessageBox::No,
+			QMessageBox::No
+		);
+		if (answer != QMessageBox::Yes) {
+			log_message(tr("Solution not saved, %1 exists").arg(QDir::toNativeSeparators(path)));
+			return;
+		}
+	}
 	QFile file(path);
 	if (!file.open(QIODevice::WriteOnly) || file.write(wcs_file_header(m_solution, image.fileName())) < 0 || !file.flush()) {
 		log_message(tr("Failed to save %1: %2").arg(QDir::toNativeSeparators(path), file.errorString()));

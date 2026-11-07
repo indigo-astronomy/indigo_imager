@@ -10,6 +10,7 @@ static QString cmd_path;
 static QString out_path;
 static qint64 cmd_pos = 0;
 static QString next_file;
+static QMessageBox::StandardButton next_answer = QMessageBox::No;
 
 static void out(const QString &line) {
 	QFile file(out_path);
@@ -25,6 +26,12 @@ static QString bare(QString text) {
 // File dialogs can not be answered headless, the code behind them still runs.
 QString QFileDialog::getOpenFileName(QWidget *, const QString &, const QString &, const QString &, QString *, QFileDialog::Options) {
 	return next_file;
+}
+
+// Questions are answered with what the last "answer" command set, No if none, and reported.
+QMessageBox::StandardButton QMessageBox::question(QWidget *, const QString &, const QString &text, QMessageBox::StandardButtons, QMessageBox::StandardButton) {
+	out("QUESTION " + QString(text).replace('\n', ' '));
+	return next_answer;
 }
 
 static QAction *find_action(const QString &text) {
@@ -164,6 +171,8 @@ static void run(const QString &line) {
 		for (QWidget *widget : QApplication::topLevelWidgets()) {
 			if (qobject_cast<QMainWindow *>(widget)) widget->grab().save(arg);
 		}
+	} else if (cmd == "answer") {
+		next_answer = arg == "Yes" ? QMessageBox::Yes : QMessageBox::No;
 	} else if (cmd == "sync") {
 		out("SYNC " + arg);
 	}
