@@ -50,6 +50,7 @@ private slots:
 	void on_abort_clicked();
 	void on_copy_coordinates_clicked();
 	void on_copy_solution_clicked();
+	void on_save_wcs_clicked();
 	void on_index_toggled(const QString &name, bool checked);
 	void on_use_index_toggled();
 	void on_hints_edited();
@@ -83,6 +84,7 @@ private:
 	double m_wcs_scale;
 	int m_wcs_parity;
 	bool m_wcs_jnow;
+	SolverSolution m_solution;
 	ObjectOverlay *m_objects;
 
 	QTabWidget *m_tabs;
@@ -107,6 +109,7 @@ private:
 	QVector<QPair<QString, QLabel *>> m_wcs_rows;
 	QPushButton *m_copy_coordinates_button;
 	QPushButton *m_copy_solution_button;
+	QPushButton *m_save_wcs_button;
 	QLabel *m_solution_led;
 	QLabel *m_solution_image;
 	QVBoxLayout *m_index_layout;

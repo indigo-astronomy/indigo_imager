@@ -33,6 +33,7 @@ SOURCES += \
 	$$PWD/../external/indigo_solver/indigo_solver_healpix.c \
 	$$PWD/platesolverwindow.cpp \
 	$$PWD/objectoverlay.cpp \
+	$$PWD/wcsfile.cpp \
 	$$PWD/../ain_viewer_src/textdialog.cpp \
 	$$PWD/../ain_viewer_src/viewerwindow.cpp \
 	$$PWD/../common_src/coordconv.c \
@@ -78,6 +79,7 @@ HEADERS += \
 	$$PWD/../external/indigo_solver/indigo_solver_healpix.h \
 	$$PWD/platesolverwindow.h \
 	$$PWD/objectoverlay.h \
+	$$PWD/wcsfile.h \
 	$$PWD/../ain_viewer_src/viewerwindow.h \
 	$$PWD/../ain_viewer_src/textdialog.h \
 	$$PWD/../ain_viewer_src/conf.h \

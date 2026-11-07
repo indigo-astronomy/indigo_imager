@@ -56,6 +56,10 @@ struct SolverSolution {
 	double scale = 0;        // degrees per pixel
 	int parity = 0;
 	float index = 0;         // the quad scale of the index, degrees
+	double ra_j2000 = 0;     // hours, the image center in J2000 whatever the epoch above
+	double dec_j2000 = 0;    // degrees
+	int image_width = 0;     // pixels
+	int image_height = 0;
 };
 
 struct SolverIndex {

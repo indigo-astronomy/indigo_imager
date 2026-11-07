@@ -20,6 +20,7 @@
 #include <QClipboard>
 #include <QDateTime>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QFormLayout>
 #include <QGuiApplication>
@@ -28,6 +29,7 @@
 #include <QSignalBlocker>
 #include <QStandardPaths>
 #include <platesolverwindow.h>
+#include <wcsfile.h>
 
 void write_conf();
 
@@ -206,6 +208,11 @@ QWidget *PlateSolverWindow::create_solve_tab() {
 	m_copy_solution_button->setToolTip(tr("Copy the whole solution to the clipboard"));
 	connect(m_copy_solution_button, &QPushButton::clicked, this, &PlateSolverWindow::on_copy_solution_clicked);
 	copy_buttons->addWidget(m_copy_solution_button);
+	m_save_wcs_button = new QPushButton(tr("Save WCS"));
+	m_save_wcs_button->setObjectName("save_wcs_button");
+	m_save_wcs_button->setToolTip(tr("Save the solution next to the image as a .wcs file, a FITS header as written by Astrometry.net and ASTAP"));
+	connect(m_save_wcs_button, &QPushButton::clicked, this, &PlateSolverWindow::on_save_wcs_clicked);
+	copy_buttons->addWidget(m_save_wcs_button);
 	solution_form->addRow(copy_buttons);
 	layout->addWidget(solution);
 
@@ -401,6 +408,7 @@ void PlateSolverWindow::clear_solution() {
 	set_file_label(m_solution_image, m_current_image);
 	m_copy_coordinates_button->setEnabled(false);
 	m_copy_solution_button->setEnabled(false);
+	m_save_wcs_button->setEnabled(false);
 }
 
 void PlateSolverWindow::on_solve_finished(bool solved, const SolverSolution &solution, const QString &message) {
@@ -428,6 +436,8 @@ void PlateSolverWindow::on_solve_finished(bool solved, const SolverSolution &sol
 		m_wcs_valid = true;
 		m_copy_coordinates_button->setEnabled(true);
 		m_copy_solution_button->setEnabled(true);
+		m_save_wcs_button->setEnabled(true);
+		m_solution = solution;
 		apply_wcs_to_image();
 	} else {
 		clear_solution();
@@ -616,6 +626,18 @@ void PlateSolverWindow::on_copy_solution_clicked() {
 	}
 	QGuiApplication::clipboard()->setText(lines.join("\n"));
 	log_message(tr("Solution copied to the clipboard"));
+}
+
+void PlateSolverWindow::on_save_wcs_clicked() {
+	const QFileInfo image(m_wcs_image);
+	const QString path = image.absolutePath() + "/" + image.completeBaseName() + ".wcs";
+	QFile file(path);
+	if (!file.open(QIODevice::WriteOnly) || file.write(wcs_file_header(m_solution, image.fileName())) < 0 || !file.flush()) {
+		log_message(tr("Failed to save %1: %2").arg(QDir::toNativeSeparators(path), file.errorString()));
+		return;
+	}
+	file.close();
+	log_message(tr("Solution saved to %1").arg(QDir::toNativeSeparators(path)));
 }
 
 void PlateSolverWindow::update_controls() {

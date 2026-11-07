@@ -675,6 +675,8 @@ SolverEngine::SolveResult SolverEngine::run_solve(const QByteArray &data, const 
 	{
 		double ra_hours = ra * RAD_TO_DEG / 15;
 		double dec_degrees = dec * RAD_TO_DEG;
+		result.solution.ra_j2000 = ra_hours;
+		result.solution.dec_j2000 = dec_degrees;
 		if (hints.epoch == 0) {
 			indigocat_j2k_to_jnow_pm(&ra_hours, &dec_degrees, 0, 0);
 			result.solution.epoch = 0;
@@ -686,6 +688,8 @@ SolverEngine::SolveResult SolverEngine::run_solve(const QByteArray &data, const 
 		result.solution.scale = pixel * RAD_TO_DEG / bin;
 		result.solution.width = full_width * result.solution.scale;
 		result.solution.height = full_height * result.solution.scale;
+		result.solution.image_width = full_width;
+		result.solution.image_height = full_height;
 		result.solution.angle = rotation * RAD_TO_DEG;
 		result.solution.parity = parity;
 		result.solution.index = fov;
