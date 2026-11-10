@@ -24,11 +24,9 @@
 #include <QFutureWatcher>
 #include <QMetaType>
 #include <QObject>
-#include <QProcess>
 #include <QString>
 #include <QStringList>
 #include <QVector>
-#include <atomic>
 
 extern "C" {
 #include <indigo_solver.h>
@@ -114,13 +112,12 @@ private:
 
 	QString index_path(float fov) const;
 	bool index_installed(float fov) const;
-	void remove_partial_index_files();
 	void free_catalog();
 	bool load_catalog(const char *path);
 	void rebuild_use_index();
 	void sync_installed_indexes();
 	void start_download(SolverIndex &index);
-	void download_finished(bool downloaded);
+	void download_finished(const QString &error);
 	void finish_index_change();
 	void unselect_missing_indexes();
 	bool limits_exceeded_or_aborted(indigo_solver_limits *limits) const;
@@ -129,13 +126,12 @@ private:
 	QString m_base_dir;
 	QVector<SolverIndex> m_indexes;
 	bool m_downloading;
-	QProcess *m_download;
+	indigo_solver_download m_download;
 	QFutureWatcher<QString> *m_download_watcher;
 	QString m_download_part;
 	QString m_download_url;
 	float m_download_fov;
 	int m_download_size_mb;
-	std::atomic<qint64> m_download_received;
 	bool m_download_aborted;
 	bool m_index_failed;
 	bool m_solving;

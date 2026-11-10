@@ -149,9 +149,7 @@ DISTFILES += \
 	$$PWD/LICENCE.md
 
 win32 {
-	DEFINES += INDIGO_WINDOWS SOLVER_USE_WININET
+	DEFINES += INDIGO_WINDOWS
 	INCLUDEPATH += "$$PWD/../external/indigo_sdk/include"
-	SOURCES += $$PWD/wininetdownload.cpp
-	HEADERS += $$PWD/wininetdownload.h
 	LIBS += -llz4 "$$PWD/../external/indigo_sdk/lib/libindigo_client.lib" "$$PWD/../external/indigo_sdk/lib/libindigocat.lib" -lws2_32 -lwininet
 }

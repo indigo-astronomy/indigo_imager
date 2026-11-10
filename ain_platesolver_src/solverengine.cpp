@@ -33,18 +33,11 @@
 #include <conf.h>
 #include <imagepreview.h>
 #include <solverengine.h>
-#if defined(SOLVER_USE_WININET)
-#include <wininetdownload.h>
-#endif
 
 // the solver needs only this function of indigo_timer.c, which is not in libindigo_client
 extern "C" double indigo_monotonic_time(void) {
 	return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
 }
-
-// Quad indexes built by indigo_solver_indexer are downloaded from here as index-<scale>deg-tyc2.isix (Tycho-2) and
-// index-<scale>deg-gaia.isix (Gaia DR3, scales below 1 degree), the scale zero padded so the files sort by it
-#define AGENT_SOLVER_INDEX_URL "https://github.com/indigo-astronomy/indigo/releases/download/index_release_v2"
 
 #define MAX_IMAGE_STAR_COUNT 500
 #define MAX_IMAGE_QUAD_COUNT 1000000
@@ -52,10 +45,6 @@ extern "C" double indigo_monotonic_time(void) {
 #define MAX_STAR_MATCH_COUNT 1000
 #define IMAGE_GRID_CELLS 10
 #define MAX_DEPTH_STAGES 3
-#define DOWNLOAD_STOP_TIMEOUT_MS 3000
-
-// approximate sizes in MB of the published index files, in the order of indigo_solver_index_fovs
-static const int index_sizes[INDIGO_SOLVER_INDEX_FOV_COUNT] = { 1216, 911, 538, 358, 178, 92, 36 };
 
 // INDEX_<scale>DEG_<CATALOG> as the file name: INDEX_00_2DEG_GAIA and INDEX_00_5DEG_GAIA for the Gaia DR3 indexes of
 // scale 0.2 and 0.5, INDEX_01DEG_TYC2 ... INDEX_20DEG_TYC2 for the Tycho-2 indexes, the scale zero padded so the names
@@ -77,21 +66,9 @@ static QString index_item_label(int index, bool with_size) {
 	QString result = QString::fromUtf8(label);
 	if (with_size && result.endsWith(')')) {
 		result.chop(1);
-		result += QString(", %1 MB)").arg(index_sizes[index]);
+		result += QString(", %1)").arg(indigo_solver_index_sizes[index]);
 	}
 	return result;
-}
-
-// a downloaded file is accepted only with a valid header for the requested scale
-static bool validate_index_file(const char *path, float fov) {
-	FILE *file = fopen(path, "rb");
-	if (file == NULL) {
-		return false;
-	}
-	indigo_solve_index_header header;
-	bool valid = indigo_solver_index_read_header(file, &header) && header.fov == fov && header.star_count > 0 && header.quad_count > 0;
-	fclose(file);
-	return valid;
 }
 
 // The image as RAW MONO16, opened by the same code as for the view: a Bayer mosaic with a known pattern is debayered,
@@ -244,11 +221,8 @@ static int depth_stages(int depth, int star_count, int *stages) {
 SolverEngine::SolverEngine(QObject *parent) :
 	QObject(parent),
 	m_downloading(false),
-	m_download(nullptr),
-	m_download_watcher(nullptr),
 	m_download_fov(0),
 	m_download_size_mb(0),
-	m_download_received(0),
 	m_download_aborted(false),
 	m_index_failed(false),
 	m_solving(false),
@@ -256,12 +230,13 @@ SolverEngine::SolverEngine(QObject *parent) :
 {
 	qRegisterMetaType<SolverSolution>("SolverSolution");
 	memset(&m_catalog, 0, sizeof(m_catalog));
+	memset(&m_download, 0, sizeof(m_download));
 	m_loaded_index[0] = 0;
 
 	const QString base = QProcessEnvironment::systemEnvironment().value("INDIGO_CACHE_BASE");
 	m_base_dir = base.isEmpty() ? QDir::homePath() + "/.indigo/solver" : base + "/solver";
 	QDir().mkpath(m_base_dir);
-	remove_partial_index_files();
+	indigo_solver_remove_partial_indexes(m_base_dir.toUtf8().constData());
 
 	for (int i = 0; i < INDIGO_SOLVER_INDEX_FOV_COUNT; i++) {
 		const float fov = indigo_solver_index_fovs[i];
@@ -269,16 +244,10 @@ SolverEngine::SolverEngine(QObject *parent) :
 		m_indexes.append({index_item_name(fov), index_item_label(i, false), index_item_label(i, true), fov, present, present, false});
 	}
 
-#if defined(SOLVER_USE_WININET)
 	m_download_watcher = new QFutureWatcher<QString>(this);
 	connect(m_download_watcher, &QFutureWatcher<QString>::finished, this, [this]() {
-		const QString error = m_download_watcher->result();
-		if (!error.isEmpty() && !m_download_aborted) {
-			emit message_received(error);
-		}
-		download_finished(error.isEmpty());
+		download_finished(m_download_watcher->result());
 	});
-#endif
 
 	m_watcher = new QFutureWatcher<SolveResult>(this);
 	connect(m_watcher, &QFutureWatcher<SolveResult>::finished, this, [this]() {
@@ -292,21 +261,10 @@ SolverEngine::~SolverEngine() {
 	m_abort_requested = true;
 	m_watcher->disconnect(this);
 	m_watcher->waitForFinished();
-#if defined(SOLVER_USE_WININET)
-	m_download_aborted = true;
+	// the download removes its partial file when it is stopped
 	m_download_watcher->disconnect(this);
-	wininet_cancel();
+	indigo_solver_abort_download(&m_download, true);
 	m_download_watcher->waitForFinished();
-#else
-	if (m_download != nullptr) {
-		m_download->disconnect(this);
-		m_download->kill();
-		m_download->waitForFinished(DOWNLOAD_STOP_TIMEOUT_MS);
-	}
-#endif
-	if (m_downloading) {
-		QFile::remove(m_download_part);
-	}
 	free_catalog();
 }
 
@@ -318,13 +276,6 @@ QString SolverEngine::index_path(float fov) const {
 
 bool SolverEngine::index_installed(float fov) const {
 	return QFileInfo(index_path(fov)).isReadable();
-}
-
-// an interrupted transfer is never taken for an installed index, so partial files are removed on start
-void SolverEngine::remove_partial_index_files() {
-	for (int i = 0; i < INDIGO_SOLVER_INDEX_FOV_COUNT; i++) {
-		QFile::remove(index_path(indigo_solver_index_fovs[i]) + ".part");
-	}
 }
 
 void SolverEngine::free_catalog() {
@@ -404,69 +355,54 @@ void SolverEngine::finish_index_change() {
 	emit indexes_changed();
 }
 
-// Fetches the index into the partial file as the agent does: with WinInet on Windows, otherwise with curl
+// The download of the solver library, as in the agent: with curl, with WinINet on Windows, into the partial file,
+// which becomes the index once its header is valid. It blocks, so it runs on a worker thread.
 void SolverEngine::start_download(SolverIndex &index) {
+	char url[4096];
+	indigo_solver_index_url(url, sizeof(url), NULL, index.fov);
 	const QString path = index_path(index.fov);
-	const QString file_name = QFileInfo(path).fileName();
 	m_download_part = path + ".part";
-	m_download_url = QString("%1/%2").arg(AGENT_SOLVER_INDEX_URL, file_name);
+	m_download_url = QString::fromUtf8(url);
 	m_download_fov = index.fov;
 	m_download_size_mb = 0;
 	for (int i = 0; i < INDIGO_SOLVER_INDEX_FOV_COUNT; i++) {
 		if (indigo_solver_index_fovs[i] == index.fov) {
-			m_download_size_mb = index_sizes[i];
+			m_download_size_mb = atoi(indigo_solver_index_sizes[i]);
 		}
 	}
-	m_download_received = 0;
-	emit message_received(QString("Downloading %1...").arg(file_name));
+	emit message_received(QString("Downloading %1...").arg(QFileInfo(path).fileName()));
 	m_downloading = true;
-#if defined(SOLVER_USE_WININET)
-	const QString url = m_download_url, part = m_download_part;
-	m_download_watcher->setFuture(QtConcurrent::run([this, url, part]() {
-		return wininet_download(url, part, &m_download_aborted, &m_download_received);
-	}));
-#else
-	m_download = new QProcess(this);
-	connect(m_download, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, [this](int exit_code, QProcess::ExitStatus status) {
-		download_finished(status == QProcess::NormalExit && exit_code == 0);
-	});
-	connect(m_download, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
-		if (error == QProcess::FailedToStart) {
-			emit message_received("curl is not available");
-			download_finished(false);
+	memset(&m_download, 0, sizeof(m_download));
+	const QByteArray directory = m_base_dir.toUtf8();
+	const float fov = index.fov;
+	m_download_watcher->setFuture(QtConcurrent::run([this, directory, fov]() {
+		const char *message = NULL;
+		if (indigo_solver_download_index(directory.constData(), NULL, fov, &m_download, &message)) {
+			return QString();
 		}
-	});
-	m_download->start("curl", QStringList() << "-L" << "-s" << "-f" << "-o" << m_download_part << m_download_url);
-#endif
+		return QString(message != NULL ? message : "the download failed");
+	}));
 	emit indexes_changed();
 }
 
-void SolverEngine::download_finished(bool downloaded) {
+// error is empty when the index is installed, "aborted" after an abort
+void SolverEngine::download_finished(const QString &error) {
 	m_downloading = false;
-	if (m_download != nullptr) {
-		m_download->disconnect(this);
-		m_download->deleteLater();
-		m_download = nullptr;
-	}
-	const QString path = index_path(m_download_fov);
-	if (m_download_aborted) {
-		QFile::remove(m_download_part);
+	if (m_download_aborted || error == "aborted") {
 		unselect_missing_indexes();
 		m_index_failed = true;
 		emit message_received("Index download aborted");
 		finish_index_change();
 		return;
 	}
-	QFile::remove(path);
-	if (!downloaded || !validate_index_file(m_download_part.toUtf8().constData(), m_download_fov) || !QFile::rename(m_download_part, path)) {
-		QFile::remove(m_download_part);
+	if (!error.isEmpty()) {
 		for (SolverIndex &index : m_indexes) {
 			if (index.fov == m_download_fov) {
 				index.wanted = false;
 			}
 		}
 		m_index_failed = true;
-		emit message_received(QString("Index download failed: '%1'").arg(m_download_url));
+		emit message_received(QString("Index download failed, %1: '%2'").arg(error, m_download_url));
 		finish_index_change();
 		return;
 	}
@@ -478,13 +414,10 @@ QString SolverEngine::download_name() const {
 	return QFileInfo(m_download_part).completeBaseName();
 }
 
+// the size through an open file: on Windows the directory entry of a file open for writing is not up to date
 int SolverEngine::download_received_mb() const {
-#if defined(SOLVER_USE_WININET)
-	// the size of a file open for writing is not up to date on Windows
-	return (int)(m_download_received / 1000000);
-#else
-	return (int)(QFileInfo(m_download_part).size() / 1000000);
-#endif
+	QFile part(m_download_part);
+	return part.open(QIODevice::ReadOnly) ? (int)(part.size() / 1000000) : 0;
 }
 
 void SolverEngine::set_index_wanted(const QString &name, bool wanted) {
@@ -516,13 +449,9 @@ void SolverEngine::set_index_used(const QString &name, bool used) {
 void SolverEngine::abort() {
 	m_abort_requested = true;
 	m_download_aborted = true;
-#if defined(SOLVER_USE_WININET)
-	wininet_cancel();
-#else
-	if (m_download != nullptr) {
-		m_download->kill();
+	if (m_downloading) {
+		indigo_solver_abort_download(&m_download, false);
 	}
-#endif
 }
 
 bool SolverEngine::solve(const unsigned char *data, size_t size, const QString &format, const SolverHints &hints) {
