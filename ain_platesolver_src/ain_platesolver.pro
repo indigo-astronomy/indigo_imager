@@ -3,8 +3,10 @@ CONFIG += c++11 debug
 
 unix:mac {
 	CONFIG += app_bundle
-	ICON=$$PWD/../resource/ain_viewer.icns
+	ICON=$$PWD/../resource/ain_platesolver.icns
 }
+
+win32:RC_ICONS = $$PWD/../windows/ain_platesolver.ico
 
 QMAKE_CXXFLAGS += -O3 -g
 QMAKE_CXXFLAGS_RELEASE += -O3
@@ -58,6 +60,7 @@ RESOURCES += \
 	$$PWD/../resource/fonts.qrc \
 	$$PWD/../qdarkstyle/style.qrc \
 	$$PWD/../resource/ain_viewer.qrc \
+	$$PWD/../resource/ain_platesolver.qrc \
 
 
 

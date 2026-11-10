@@ -12,7 +12,7 @@ BONJOUR_SERVICES=("_indigo._tcp")
 BUNDLE_IDS=("com.yourcompany.ain-imager" "com.yourcompany.ain-viewer" "com.yourcompany.ain-platesolver")
 SIGNING_IDENTITY="${SIGNING_IDENTITY:-Ain Local Sign}"
 APP_EXECUTABLES=("ain_imager" "ain_viewer" "ain_platesolver")
-APP_ICONS=("appicon.icns" "ain_viewer.icns" "ain_viewer.icns")
+APP_ICONS=("appicon.icns" "ain_viewer.icns" "ain_platesolver.icns")
 SIGNING_MODE="adhoc"
 
 resolve_signing_mode() {

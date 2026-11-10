@@ -67,8 +67,9 @@ Source: "{#MySourcePrefix}\ain_guidelog_viewer.exe"; DestDir: "{app}"; Component
 Source: "{#MySourcePrefix}\ain_platesolver.exe"; DestDir: "{app}"; Components: solver; Flags: ignoreversion
 Source: "{#MySourcePrefix}\libindigocat.dll"; DestDir: "{app}"; Components: solver; Flags: ignoreversion
 Source: "appicon.ico"; DestDir: "{app}"; Components: imager; Flags: ignoreversion
-Source: "ain_viewer.ico"; DestDir: "{app}"; Components: viewer or solver; Flags: ignoreversion
+Source: "ain_viewer.ico"; DestDir: "{app}"; Components: viewer; Flags: ignoreversion
 Source: "ain_guidelog_viewer.ico"; DestDir: "{app}"; Components: guidelog; Flags: ignoreversion
+Source: "ain_platesolver.ico"; DestDir: "{app}"; Components: solver; Flags: ignoreversion
 Source: "{#MySourcePrefix}\*"; DestDir: "{app}"; Excludes: "ain_imager.exe;ain_viewer.exe;ain_guidelog_viewer.exe;ain_platesolver.exe;libindigocat.dll"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
@@ -79,8 +80,9 @@ Type: files; Name: "{app}\ain_guidelog_viewer.exe"; Check: not WizardIsComponent
 Type: files; Name: "{app}\ain_platesolver.exe"; Check: not WizardIsComponentSelected('solver')
 Type: files; Name: "{app}\libindigocat.dll"; Check: not WizardIsComponentSelected('solver')
 Type: files; Name: "{app}\appicon.ico"; Check: not WizardIsComponentSelected('imager')
-Type: files; Name: "{app}\ain_viewer.ico"; Check: not WizardIsComponentSelected('viewer') and not WizardIsComponentSelected('solver')
+Type: files; Name: "{app}\ain_viewer.ico"; Check: not WizardIsComponentSelected('viewer')
 Type: files; Name: "{app}\ain_guidelog_viewer.ico"; Check: not WizardIsComponentSelected('guidelog')
+Type: files; Name: "{app}\ain_platesolver.ico"; Check: not WizardIsComponentSelected('solver')
 Type: files; Name: "{autoprograms}\{#MyAppName}.lnk"; Check: not WizardIsComponentSelected('imager')
 Type: files; Name: "{autoprograms}\{#MyViewerName}.lnk"; Check: not WizardIsComponentSelected('viewer')
 Type: files; Name: "{autoprograms}\{#MyGuideLogViewerName}.lnk"; Check: not WizardIsComponentSelected('guidelog')
@@ -97,8 +99,8 @@ Name: "{autoprograms}\{#MyViewerName}"; Filename: "{app}\{#MyViewerExeName}"; Ic
 Name: "{autodesktop}\{#MyViewerName}"; Filename: "{app}\{#MyViewerExeName}"; IconFilename: "{app}\ain_viewer.ico"; Components: viewer; Tasks: desktopicon
 Name: "{autoprograms}\{#MyGuideLogViewerName}"; Filename: "{app}\{#MyGuideLogViewerExeName}"; IconFilename: "{app}\ain_guidelog_viewer.ico"; Components: guidelog
 Name: "{autodesktop}\{#MyGuideLogViewerName}"; Filename: "{app}\{#MyGuideLogViewerExeName}"; IconFilename: "{app}\ain_guidelog_viewer.ico"; Components: guidelog; Tasks: desktopicon
-Name: "{autoprograms}\{#MyPlateSolverName}"; Filename: "{app}\{#MyPlateSolverExeName}"; IconFilename: "{app}\ain_viewer.ico"; Components: solver
-Name: "{autodesktop}\{#MyPlateSolverName}"; Filename: "{app}\{#MyPlateSolverExeName}"; IconFilename: "{app}\ain_viewer.ico"; Components: solver; Tasks: desktopicon
+Name: "{autoprograms}\{#MyPlateSolverName}"; Filename: "{app}\{#MyPlateSolverExeName}"; IconFilename: "{app}\ain_platesolver.ico"; Components: solver
+Name: "{autodesktop}\{#MyPlateSolverName}"; Filename: "{app}\{#MyPlateSolverExeName}"; IconFilename: "{app}\ain_platesolver.ico"; Components: solver; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Check: WizardIsComponentSelected('imager'); Flags: nowait postinstall skipifsilent

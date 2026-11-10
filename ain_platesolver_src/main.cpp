@@ -22,6 +22,7 @@
 #include <QStandardPaths>
 #include <QTextStream>
 #include <QVersionNumber>
+#include <QIcon>
 #include <platesolverwindow.h>
 #include <conf.h>
 
@@ -164,6 +165,7 @@ int main(int argc, char *argv[]) {
 	f.close();
 
 	PlateSolverWindow solver_window;
+	solver_window.setWindowIcon(QIcon(":/resource/ain_platesolver.png"));
 	solver_window.show();
 
 	// Schedule auto-save if requested

@@ -1,0 +1,5 @@
+<RCC>
+	<qresource prefix="/resource">
+		<file>ain_platesolver.png</file>
+	</qresource>
+</RCC>
