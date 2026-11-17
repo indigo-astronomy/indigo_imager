@@ -34,12 +34,32 @@
 #include <QWidgetAction>
 #include <QDateTimeEdit>
 #include <QTimeZone>
+#include <QRegularExpression>
 #include "SelectObject.h"
 
 IndigoSequenceItem::IndigoSequenceItem(const QString &type, QWidget *parent)
 	: QWidget(parent), type(type), overlay(nullptr), isEnabledState(true), m_omitted(false) {
 	setObjectName(type);
+	// a step is created in its sequence or in a repeat of it and follows its task mode
+	for (QWidget *p = parent; p; p = p->parentWidget()) {
+		if (IndigoSequence *sequence = qobject_cast<IndigoSequence*>(p)) {
+			m_taskMode = sequence->isTaskMode();
+			break;
+		}
+		if (IndigoSequenceItem *item = qobject_cast<IndigoSequenceItem*>(p)) {
+			m_taskMode = item->isTaskMode();
+			break;
+		}
+	}
 	setupUI();
+	// a new target step of a task observes the task target, and a new time step of a task
+	// that may run on any night takes a time of day
+	if (m_taskMode && m_targetButton) {
+		setTargetBound(true);
+	}
+	if (m_taskMode && m_dateButton) {
+		setTimeOfDay(true);
+	}
 
 	// Initialize statusButton checked state
 	statusButton->setChecked(false);
@@ -239,6 +259,11 @@ void IndigoSequenceItem::addInputWidget(const QString &paramName, const ParamWid
 			spin->setToolTip(QString("%1, range: [%2, %3] step: %4")
 				.arg(paramName).arg(range.first).arg(range.second)
 				.arg(model.getNumericIncrement(type, key)));
+			const auto& info = model.getWidgetTypes()[type].parameters[key];
+			if (info.optional) {
+				spin->setSpecialValueText(info.optionalText);
+				spin->setToolTip(spin->toolTip() + QString("\nAt %1 the value is not set (%2)").arg(range.first).arg(info.optionalText));
+			}
 		}
 	} else if (paramWidget == LineEdit) {
 		QLineEdit* line = qobject_cast<QLineEdit*>(input);
@@ -252,6 +277,21 @@ void IndigoSequenceItem::addInputWidget(const QString &paramName, const ParamWid
 			mainLayout->addWidget(label);
 		}
 		mainLayout->addWidget(input);
+		if (paramWidget == DateTimeEdit && m_dateButton == nullptr) {
+			m_dateButton = new QToolButton(this);
+			m_dateButton->setText("Date");
+			m_dateButton->setCheckable(true);
+			m_dateButton->setChecked(true);
+			m_dateButton->setToolTip("Checked: at this date and time (UTC)\nUnchecked: at the next occurrence of this time of day (UTC)");
+			connect(m_dateButton, &QToolButton::clicked, this, [this](bool checked) {
+				if (!isEnabledState) {
+					m_dateButton->setChecked(!m_timeOfDay);
+					return;
+				}
+				setTimeOfDay(!checked);
+			});
+			mainLayout->addWidget(m_dateButton);
+		}
 		parameterWidgets[key] = input;
 
 		int raIndex = -1;
@@ -299,8 +339,91 @@ void IndigoSequenceItem::addInputWidget(const QString &paramName, const ParamWid
 				delete menu;
 			});
 			mainLayout->addWidget(selectObjectButton);
+			m_selectObjectButton = selectObjectButton;
+
+			if (m_taskMode) {
+				m_targetButton = new QToolButton(this);
+				m_targetButton->setText("Task");
+				m_targetButton->setCheckable(true);
+				m_targetButton->setToolTip("Use the @target of the task (scheduler_task.ra, scheduler_task.dec)");
+				connect(m_targetButton, &QToolButton::clicked, this, [this](bool checked) {
+					if (!isEnabledState) {
+						m_targetButton->setChecked(m_targetBound);
+						return;
+					}
+					setTargetBound(checked);
+				});
+				mainLayout->addWidget(m_targetButton);
+			}
 		}
 	}
+}
+
+void IndigoSequenceItem::setTimeOfDay(bool timeOfDay) {
+	m_timeOfDay = timeOfDay;
+	if (m_dateButton) {
+		m_dateButton->setChecked(!timeOfDay);
+	}
+	for (auto it = parameterWidgets.begin(); it != parameterWidgets.end(); ++it) {
+		if (QDateTimeEdit *edit = qobject_cast<QDateTimeEdit*>(it.value())) {
+			edit->setDisplayFormat(timeOfDay ? "HH:mm:ss" : DATE_TIME_FORMAT);
+		}
+	}
+}
+
+void IndigoSequenceItem::setTargetBound(bool bound) {
+	m_targetBound = bound;
+	if (m_targetButton) {
+		m_targetButton->setChecked(bound);
+	}
+	updateTargetWidgets();
+}
+
+void IndigoSequenceItem::updateTargetWidgets() {
+	for (auto it = parameterWidgets.begin(); it != parameterWidgets.end(); ++it) {
+		if (QLineEditSG *sg = qobject_cast<QLineEditSG*>(it.value())) {
+			sg->setEnabled(isEnabledState && !m_targetBound);
+			sg->setPlaceholderText(m_targetBound ? "task target" : "");
+			if (m_targetBound) {
+				sg->clear();
+			}
+		}
+	}
+	if (m_selectObjectButton) {
+		m_selectObjectButton->setEnabled(isEnabledState && !m_targetBound);
+	}
+}
+
+QStringList IndigoSequenceItem::scriptParameters() const {
+	QStringList parameters;
+	const auto& widgetTypes = SequenceItemModel::instance().getWidgetTypes();
+	if (!widgetTypes.contains(type)) {
+		return parameters;
+	}
+	const auto& widgetInfo = widgetTypes[type];
+	int lastSet = -1;
+	for (auto paramIt = widgetInfo.parameters.constBegin(); paramIt != widgetInfo.parameters.constEnd(); ++paramIt) {
+		QVariant value = getParameter(paramIt.key());
+		const auto& info = paramIt.value();
+		if (value.type() == QVariant::Bool) {
+			parameters.append(value.toBool() ? "true" : "false");
+		} else if (info.paramWidget == LineEdit || info.paramWidget == ComboBox || info.paramWidget == DateTimeEdit) {
+			QString escapedValue = value.toString().replace("\"", "\\\"");
+			escapedValue.replace("'", "\\'");
+			parameters.append(QString("\"%1\"").arg(escapedValue));
+		} else {
+			parameters.append(value.toString());
+		}
+		bool atDefault = info.optional && value.toDouble() <= SequenceItemModel::instance().getNumericRange(type, paramIt.key()).first;
+		if (!atDefault) {
+			lastSet = parameters.size() - 1;
+		}
+	}
+	// only trailing optional parameters can be left out
+	while (parameters.size() > lastSet + 1 && parameters.size() > SequenceItemModel::instance().requiredParameterCount(type)) {
+		parameters.removeLast();
+	}
+	return parameters;
 }
 
 void IndigoSequenceItem::addItem(IndigoSequenceItem *item) {
@@ -335,7 +458,18 @@ void IndigoSequenceItem::setParameter(int paramName, const QVariant &value) {
 	if (!widget) return;
 
 	if (QLineEditSG *sg = qobject_cast<QLineEditSG*>(widget)) {
-		sg->setValue(value.toDouble());
+		QString text = value.toString();
+		if (text == TASK_TARGET_RA || text == TASK_TARGET_DEC) {
+			setTargetBound(true);
+		} else {
+			if (m_targetBound) {
+				setTargetBound(false);
+			}
+			// Sequencer.js also takes sexagesimal strings, such as "00:42:44.3"
+			bool ok = false;
+			double number = SexagesimalConverter::stringToDouble(text, &ok);
+			sg->setValue(ok ? number : value.toDouble());
+		}
 	} else if (QLineEdit *lineEdit = qobject_cast<QLineEdit*>(widget)) {
 		lineEdit->setText(value.toString());
 	} else if (QSpinBox *spinBox = qobject_cast<QSpinBox*>(widget)) {
@@ -349,9 +483,19 @@ void IndigoSequenceItem::setParameter(int paramName, const QVariant &value) {
 	} else if (QDateTimeEdit *dateTimeEdit = qobject_cast<QDateTimeEdit*>(widget)) {
 		bool ok;
 		qint64 timestamp = value.toLongLong(&ok);
-		if (ok) {
+		static const QRegularExpression clock(R"(^\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s*$)");
+		QRegularExpressionMatch clockMatch = clock.match(value.toString());
+		if (!ok && clockMatch.hasMatch()) {
+			setTimeOfDay(true);
+			QTime time(clockMatch.captured(1).toInt(), clockMatch.captured(2).toInt(), clockMatch.captured(3).toInt());
+			QDateTime today = QDateTime::currentDateTimeUtc();
+			today.setTime(time);
+			dateTimeEdit->setDateTime(today);
+		} else if (ok) {
+			setTimeOfDay(false);
 			dateTimeEdit->setDateTime(QDateTime::fromSecsSinceEpoch(timestamp, Qt::UTC));
 		} else {
+			setTimeOfDay(false);
 			QDateTime dt = QDateTime::fromString(value.toString(), DATE_TIME_FORMAT);
 			if (dt.isValid()) {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
@@ -372,6 +516,9 @@ QVariant IndigoSequenceItem::getParameter(const int paramID) const {
 	QWidget *widget = parameterWidgets[paramID];
 
 	if (QLineEditSG *sg = qobject_cast<QLineEditSG *>(widget)) {
+		if (m_targetBound) {
+			return sg->sgMode() == QLineEditSG::RA ? QString(TASK_TARGET_RA) : QString(TASK_TARGET_DEC);
+		}
 		return sg->value();
 	} else if (QLineEdit *lineEdit = qobject_cast<QLineEdit *>(widget)) {
 		return lineEdit->text().trimmed();
@@ -384,7 +531,7 @@ QVariant IndigoSequenceItem::getParameter(const int paramID) const {
 	} else if (QCheckBox *checkBox = qobject_cast<QCheckBox *>(widget)) {
 		return checkBox->isChecked();
 	} else if (QDateTimeEdit *dateTimeEdit = qobject_cast<QDateTimeEdit *>(widget)) {
-		return dateTimeEdit->dateTime().toString(DATE_TIME_FORMAT);
+		return dateTimeEdit->dateTime().toString(m_timeOfDay ? "hh:mm:ss" : DATE_TIME_FORMAT);
 	} else {
 		return QVariant();
 	}
@@ -910,7 +1057,7 @@ void IndigoSequenceItem::setIdle() {
 		statusButton->setIcon(QIcon(":/resource/recovery-point-grey.png"));
 	} else if (type == SC_RESUME_POINT) {
 		statusButton->setIcon(QIcon(":/resource/resume-grey.png"));
-	} else if (type == SC_BREAK_AT || type == SC_BREAK_AT_HA) {
+	} else if (type == SC_BREAK_AT || type == SC_BREAK_AT_HA || type == SC_BREAK_IF_TARGET_BELOW || type == SC_BREAK_IF_SUN_ABOVE) {
 		statusButton->setIcon(QIcon(":/resource/condition-grey.png"));
 	} else if (type == SC_CONTINUE_ON_FAILURE || type == SC_ABORT_ON_FAILURE || type == SC_RECOVER_ON_FAILURE) {
 		statusButton->setIcon(QIcon(":/resource/recovery_policy.png"));
@@ -930,7 +1077,7 @@ void IndigoSequenceItem::setBusy() {
 		statusButton->setIcon(QIcon(":/resource/recovery-point-grey.png"));
 	} else if (type == SC_RESUME_POINT) {
 		statusButton->setIcon(QIcon(":/resource/resume-orange.png"));
-	} else if (type == SC_BREAK_AT || type == SC_BREAK_AT_HA) {
+	} else if (type == SC_BREAK_AT || type == SC_BREAK_AT_HA || type == SC_BREAK_IF_TARGET_BELOW || type == SC_BREAK_IF_SUN_ABOVE) {
 		statusButton->setIcon(QIcon(":/resource/condition-orange.png"));
 	} else if (type == SC_CONTINUE_ON_FAILURE || type == SC_ABORT_ON_FAILURE || type == SC_RECOVER_ON_FAILURE) {
 		statusButton->setIcon(QIcon(":/resource/recovery_policy.png"));
@@ -950,7 +1097,7 @@ void IndigoSequenceItem::setAlert() {
 		statusButton->setIcon(QIcon(":/resource/recovery-point-grey.png"));
 	} else if (type == SC_RESUME_POINT) {
 		statusButton->setIcon(QIcon(":/resource/resume-red.png"));
-	} else if (type == SC_BREAK_AT || type == SC_BREAK_AT_HA) {
+	} else if (type == SC_BREAK_AT || type == SC_BREAK_AT_HA || type == SC_BREAK_IF_TARGET_BELOW || type == SC_BREAK_IF_SUN_ABOVE) {
 		statusButton->setIcon(QIcon(":/resource/condition-red.png"));
 	} else if (type == SC_CONTINUE_ON_FAILURE || type == SC_ABORT_ON_FAILURE || type == SC_RECOVER_ON_FAILURE) {
 		statusButton->setIcon(QIcon(":/resource/recovery_policy.png"));
@@ -970,7 +1117,7 @@ void IndigoSequenceItem::setOk() {
 		statusButton->setIcon(QIcon(":/resource/recovery-point-green.png"));
 	} else if (type == SC_RESUME_POINT) {
 		statusButton->setIcon(QIcon(":/resource/resume-green.png"));
-	} else if (type == SC_BREAK_AT || type == SC_BREAK_AT_HA) {
+	} else if (type == SC_BREAK_AT || type == SC_BREAK_AT_HA || type == SC_BREAK_IF_TARGET_BELOW || type == SC_BREAK_IF_SUN_ABOVE) {
 		statusButton->setIcon(QIcon(":/resource/condition-green.png"));
 	} else if (type == SC_CONTINUE_ON_FAILURE || type == SC_ABORT_ON_FAILURE || type == SC_RECOVER_ON_FAILURE) {
 		statusButton->setIcon(QIcon(":/resource/recovery_policy.png"));
@@ -1004,6 +1151,13 @@ void IndigoSequenceItem::setEnabledState(bool enabled) {
 			dateTimeEdit->setEnabled(enabled);
 		}
 	}
+	if (m_targetButton) {
+		m_targetButton->setEnabled(enabled);
+	}
+	if (m_dateButton) {
+		m_dateButton->setEnabled(enabled);
+	}
+	updateTargetWidgets();
 
 	if (type == SC_REPEAT && repeatLayout) {
 		for (int i = 0; i < repeatLayout->count(); ++i) {

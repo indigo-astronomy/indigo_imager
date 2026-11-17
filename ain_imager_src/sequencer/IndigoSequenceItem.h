@@ -64,6 +64,16 @@ public:
 
 	void setIteration(int count);
 
+	/* In a scheduler task the RA and Dec of a step can follow the @target of the
+	   task: they are written as scheduler_task.ra and scheduler_task.dec. */
+	bool isTaskMode() const { return m_taskMode; }
+	bool isTargetBound() const { return m_targetBound; }
+	void setTargetBound(bool bound);
+
+	/* The parameters of the step as they are written in the script, optional
+	   trailing parameters at their default left out. */
+	QStringList scriptParameters() const;
+
 	struct ParameterInfo {
 		QString label;
 		QString widgetType;
@@ -111,6 +121,18 @@ private:
 
 	bool isEnabledState;
 	bool m_omitted = false;
+	bool m_taskMode = false;
+	bool m_targetBound = false;
+	QToolButton *m_targetButton = nullptr;
+	QToolButton *m_selectObjectButton = nullptr;
+	void updateTargetWidgets();
+
+	/* A date and time step (wait_until, break_at) can also take a time of day,
+	   which Sequencer.js resolves to its next occurrence, as a task that runs
+	   every night needs. */
+	QToolButton *m_dateButton = nullptr;
+	bool m_timeOfDay = false;
+	void setTimeOfDay(bool timeOfDay);
 
 	void setupUI();
 	void addInputWidget(const QString &paramName, ParamWidget paramWidget, int key);

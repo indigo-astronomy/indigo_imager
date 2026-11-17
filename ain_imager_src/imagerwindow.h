@@ -83,6 +83,7 @@ class BalanceBar;
 #include "qaddcustomobject.h"
 #include "qconfigdialog.h"
 #include <IndigoSequence.h>
+#include <SchedulerWidget.h>
 
 class ImagerWindow : public QMainWindow {
 	Q_OBJECT
@@ -377,6 +378,8 @@ public slots:
 	void on_remove_synced_remote_files(bool clicked);
 
 	void on_scripting_agent_selected(int index);
+	void on_scheduler_agent_selected(const QString& agent);
+	void on_scheduler_send_requests(const QList<SchedulerRequest>& requests);
 
 	void on_focus_start_stop(bool clicked);
 	void on_focus_preview_start_stop(bool clicked);
@@ -1220,6 +1223,7 @@ private:
 	indigo_item *m_indigo_item;
 
 	IndigoSequence *m_sequence_editor2;
+	SchedulerWidget *m_scheduler;
 
 	QString m_image_key;
 	QString m_guider_key;
@@ -1253,6 +1257,10 @@ private:
 	void create_focuser_tab(QFrame *capture_frame);
 	void create_imager_tab(QFrame *camera_frame);
 	void create_sequence_tab(QFrame *sequence_frame);
+	void create_scheduler_tab(QFrame *scheduler_frame);
+	void scheduler_property_define(indigo_property *property);
+	void scheduler_property_change(indigo_property *property);
+	void scheduler_property_delete(indigo_property *property);
 	void create_guider_tab(QFrame *guider_frame);
 	void create_telescope_tab(QFrame *solver_frame);
 	void create_solver_tab(QFrame *telescope_frame);
@@ -1424,10 +1432,11 @@ private:
 enum {
 	CAPTURE_TAB = 0,
 	SEQUENCE_TAB = 1,
-	FOCUSER_TAB = 2,
-	GUIDER_TAB = 3,
-	TELESCOPE_TAB = 4,
-	SOLVER_TAB = 5
+	SCHEDULER_TAB = 2,
+	FOCUSER_TAB = 3,
+	GUIDER_TAB = 4,
+	TELESCOPE_TAB = 5,
+	SOLVER_TAB = 6
 };
 
 #endif // IMAGERWINDOW_H

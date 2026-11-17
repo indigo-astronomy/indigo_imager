@@ -106,6 +106,16 @@
 #define SC_BREAK_AT                 cs("break_at")
 #define SC_BREAK_AT_HA              cs("break_at_ha")
 #define SC_RESUME_POINT             cs("resume_point")
+#define SC_BREAK_IF_TARGET_BELOW    cs("break_if_target_altitude_below")
+#define SC_BREAK_IF_SUN_ABOVE       cs("break_if_solar_altitude_above")
+#define SC_WAIT_UNTIL_TARGET_ABOVE  cs("wait_until_target_altitude_above")
+#define SC_WAIT_UNTIL_SUN_BELOW     cs("wait_until_solar_altitude_below")
+
+/* A scheduler task defines scheduler_task before its body runs; RA/Dec parameters
+   bound to the task target are written as these expressions instead of numbers. */
+#define TASK_TARGET_RA              cs("scheduler_task.ra")
+#define TASK_TARGET_DEC             cs("scheduler_task.dec")
+#define TASK_SEQUENCE_NAME          cs("scheduler_task.name")
 
 #define CC_CAPTURE                  cs("Capture")
 #define CC_FILTER_WHEEL             cs("Filter Wheel")
@@ -143,6 +153,10 @@ public:
 		QPair<double, double> numericRange;
 		double numericDefaultValue = 0.0;
 		double numericIncrement;
+		/* An optional trailing parameter is left out of the call when its numeric
+		   widget is at the minimum, which the widget shows as optionalText. */
+		bool optional = false;
+		QString optionalText;
 
 		ParameterInfo(const QString& l = "", ParamWidget w = LineEdit) : label(l), paramWidget(w), numericRange(0.0, 100.0), numericIncrement(1.0) {}
 	};
@@ -171,6 +185,8 @@ public:
 	double getNumericIncrement(const QString& type, int paramId) const;
 	void setNumericDefaultValue(const QString& type, int paramId, double value);
 	double getNumericDefultValue(const QString& type, int paramId) const;
+	void setOptional(const QString& type, int paramId, const QString& text);
+	int requiredParameterCount(const QString& type) const;
 
 signals:
 	void numericRangeChanged(const QString& type, int paramId, double min, double max);

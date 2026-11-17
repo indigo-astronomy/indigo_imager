@@ -587,6 +587,12 @@ void IndigoSequence::viewFromFunctionCalls(const QVector<FunctionCall>& calls) {
 					item->setParameter(i, cleanedParam);
 				}
 			}
+			// an optional parameter left out of the call is not set
+			for (int i = call.parameters.size(); i < widgetInfo.parameters.size(); ++i) {
+				if (widgetInfo.parameters[i].optional) {
+					item->setParameter(i, SequenceItemModel::instance().getNumericRange(call.functionName, i).first);
+				}
+			}
 		}
 
 		if (call.functionName == "repeat" && !call.nestedCalls.isEmpty()) {
@@ -608,6 +614,11 @@ void IndigoSequence::viewFromFunctionCalls(const QVector<FunctionCall>& calls) {
 								nestedItem->setParameter(i, cleanedParam);
 							}
 						}
+						for (int i = nestedCall.parameters.size(); i < nestedWidgetInfo.parameters.size(); ++i) {
+							if (nestedWidgetInfo.parameters[i].optional) {
+								nestedItem->setParameter(i, SequenceItemModel::instance().getNumericRange(nestedCall.functionName, i).first);
+							}
+						}
 					}
 					item->addItem(nestedItem);
 				}
@@ -618,6 +629,25 @@ void IndigoSequence::viewFromFunctionCalls(const QVector<FunctionCall>& calls) {
 	}
 }
 
+static FunctionCall callFromItem(const IndigoSequenceItem* item, const QString& objectName) {
+	FunctionCall call;
+	call.objectName = objectName;
+	call.functionName = item->getType();
+	call.omitted = item->isOmitted();
+	call.parameters = item->scriptParameters();
+
+	if (item->getType() == SC_REPEAT) {
+		QVBoxLayout* repeatLayout = const_cast<IndigoSequenceItem*>(item)->getRepeatLayout();
+		for (int j = 0; j < repeatLayout->count(); ++j) {
+			IndigoSequenceItem* nestedItem = qobject_cast<IndigoSequenceItem*>(repeatLayout->itemAt(j)->widget());
+			if (nestedItem) {
+				call.nestedCalls.append(callFromItem(nestedItem, objectName));
+			}
+		}
+	}
+	return call;
+}
+
 const QVector<FunctionCall> IndigoSequence::functionCallsFromView(const QString& objectName) const {
 	QVector<FunctionCall> calls;
 	FunctionCall constructorCall;
@@ -625,82 +655,23 @@ const QVector<FunctionCall> IndigoSequence::functionCallsFromView(const QString&
 	constructorCall.functionName = "Sequence";
 	constructorCall.omitted = false; // Sequence constructor is never omitted
 
-	QString seqName = sequenceNameEdit->text().trimmed();
-	if (!seqName.isEmpty()) {
-		QString escapedSeqName = seqName.replace("\"", "\\\"");
-		escapedSeqName.replace("'", "\\'");
-		constructorCall.parameters.append("\"" + escapedSeqName + "\"");
+	if (m_taskMode) {
+		constructorCall.parameters.append(TASK_SEQUENCE_NAME);
+	} else {
+		QString seqName = sequenceNameEdit->text().trimmed();
+		if (!seqName.isEmpty()) {
+			QString escapedSeqName = seqName.replace("\"", "\\\"");
+			escapedSeqName.replace("'", "\\'");
+			constructorCall.parameters.append("\"" + escapedSeqName + "\"");
+		}
 	}
 	calls.append(constructorCall);
 
 	for (int i = 0; i < containerLayout->count(); ++i) {
-		QWidget* widget = containerLayout->itemAt(i)->widget();
-		IndigoSequenceItem* item = qobject_cast<IndigoSequenceItem*>(widget);
-		if (!item) continue;
-
-		FunctionCall call;
-		call.objectName = objectName;
-		call.functionName = item->getType();
-		call.omitted = item->isOmitted();
-
-		const auto& widgetTypes = SequenceItemModel::instance().getWidgetTypes();
-		if (widgetTypes.contains(item->getType())) {
-			const auto& widgetInfo = widgetTypes[item->getType()];
-			for (auto paramIt = widgetInfo.parameters.constBegin(); paramIt != widgetInfo.parameters.constEnd(); ++paramIt) {
-				QVariant value = item->getParameter(paramIt.key());
-				if (value.type() == QVariant::Bool) {
-					call.parameters.append(value.toBool() ? "true" : "false");
-				} else if (
-					paramIt.value().paramWidget == LineEdit ||
-					paramIt.value().paramWidget == ComboBox ||
-					paramIt.value().paramWidget == DateTimeEdit
-				)
-				{
-					QString escapedValue = value.toString().replace("\"", "\\\"");
-					escapedValue.replace("'", "\\'");
-					call.parameters.append(QString("\"%1\"").arg(escapedValue));
-				} else {
-					call.parameters.append(value.toString());
-				}
-			}
+		IndigoSequenceItem* item = qobject_cast<IndigoSequenceItem*>(containerLayout->itemAt(i)->widget());
+		if (item) {
+			calls.append(callFromItem(item, objectName));
 		}
-
-		if (item->getType() == "repeat") {
-			QVBoxLayout* repeatLayout = item->getRepeatLayout();
-			for (int j = 0; j < repeatLayout->count(); ++j) {
-				QWidget* nestedWidget = repeatLayout->itemAt(j)->widget();
-				IndigoSequenceItem* nestedItem = qobject_cast<IndigoSequenceItem*>(nestedWidget);
-				if (!nestedItem) continue;
-
-				FunctionCall nestedCall;
-				nestedCall.objectName = objectName;
-				nestedCall.functionName = nestedItem->getType();
-				nestedCall.omitted = nestedItem->isOmitted();
-
-				if (widgetTypes.contains(nestedItem->getType())) {
-					const auto& nestedWidgetInfo = widgetTypes[nestedItem->getType()];
-					for (auto paramIt = nestedWidgetInfo.parameters.constBegin(); paramIt != nestedWidgetInfo.parameters.constEnd(); ++paramIt) {
-						QVariant value = nestedItem->getParameter(paramIt.key());
-						if (value.type() == QVariant::Bool) {
-							nestedCall.parameters.append(value.toBool() ? "true" : "false");
-						} else if (
-							paramIt.value().paramWidget == LineEdit ||
-							paramIt.value().paramWidget == ComboBox ||
-							paramIt.value().paramWidget == DateTimeEdit
-						)
-						{
-							QString escapedValue = value.toString().replace("\"", "\\\"");
-							escapedValue.replace("'", "\\'");
-							nestedCall.parameters.append(QString("\"%1\"").arg(escapedValue));
-						} else {
-							nestedCall.parameters.append(value.toString());
-						}
-					}
-				}
-				call.nestedCalls.append(nestedCall);
-			}
-		}
-		calls.append(call);
 	}
 
 	FunctionCall startCall;
@@ -730,6 +701,49 @@ void IndigoSequence::loadScriptToView(const QString& script) {
 		errorMessage += validationErrors.join("\n");
 		QMessageBox::critical(this, tr("Validation Error"), errorMessage);
 	}
+}
+
+bool IndigoSequence::loadScriptExact(const QString& script, QString *error) {
+	IndigoSequenceParser parser;
+	QStringList validationErrors;
+	connect(&parser, &IndigoSequenceParser::validationError, [&validationErrors](const QString& message) {
+		validationErrors.append(message);
+	});
+
+	QVector<FunctionCall> calls = parser.parse(script);
+	QString problem;
+	if (!parser.unparsedCode().isEmpty()) {
+		QString code = parser.unparsedCode().first().simplified();
+		if (code.length() > 60) {
+			code = code.left(57) + "...";
+		}
+		problem = QString("not a sequence step: %1").arg(code);
+	} else if (!parser.validateCalls(calls)) {
+		problem = validationErrors.join("; ");
+	} else {
+		viewFromFunctionCalls(calls);
+		problem = IndigoSequenceParser::compareCalls(calls, parser.parse(makeScriptFromView()));
+	}
+	if (!problem.isEmpty()) {
+		clear();
+		if (error) {
+			*error = problem;
+		}
+		return false;
+	}
+	return true;
+}
+
+void IndigoSequence::setTaskMode(bool taskMode) {
+	m_taskMode = taskMode;
+	sequenceNameEdit->setVisible(!taskMode);
+	m_download_sequence_button->setVisible(!taskMode);
+	m_load_sequence_button->setVisible(!taskMode);
+	m_save_sequence_button->setVisible(!taskMode);
+}
+
+void IndigoSequence::clear() {
+	viewFromFunctionCalls(QVector<FunctionCall>());
 }
 
 QString IndigoSequence::makeScriptFromView() const {

@@ -36,7 +36,7 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 
 	m_agent_scripting_select = new QComboBox();
 	sequence_frame_layout->addWidget(m_agent_scripting_select, row, 0, 1, 4);
-	connect(m_agent_imager_select, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ImagerWindow::on_scripting_agent_selected);
+	connect(m_agent_scripting_select, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ImagerWindow::on_scripting_agent_selected);
 
 	row++;
 	QLabel *label = new QLabel("Image preview:");
@@ -206,6 +206,23 @@ void ImagerWindow::on_request_sequence() {
 }
 
 void ImagerWindow::on_sequence_start_stop(bool clicked) {
+	// the Scheduler Agent runs its tasks in the Scripting Agent of its server
+	char selected_agent[INDIGO_NAME_SIZE] = {0};
+	get_selected_scripting_agent(selected_agent);
+	if (m_scheduler->isRunning() && m_scheduler->scriptingAgent() == QString(selected_agent)) {
+		QString task = m_scheduler->runningTask();
+		if (!task.isEmpty()) {
+			QMessageBox::warning(this, "Sequence",
+				QString("The running sequence is the task '%1' of the scheduler.\n\nStop or abort it in the Scheduler tab.").arg(task));
+			return;
+		}
+		indigo_property *sequence_state = properties.get(selected_agent, "SEQUENCE_STATE");
+		bool sequence_running = sequence_state && sequence_state->state == INDIGO_BUSY_STATE;
+		if (!sequence_running && QMessageBox::question(this, "Sequence",
+			"The scheduler is running and uses this Scripting Agent: while this sequence runs, the scheduler starts no task.\n\nStart the sequence?") != QMessageBox::Yes) {
+			return;
+		}
+	}
 	m_sequence_editor2->enable(true);
 	exposure_start_stop(clicked, true);
 }

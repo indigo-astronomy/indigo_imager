@@ -106,6 +106,47 @@ static void dump() {
 	}
 }
 
+// ---- the Scheduler tab, found by the object names of its widgets
+
+static bool in_scheduler(QWidget *widget) {
+	for (QWidget *w = widget; w; w = w->parentWidget()) {
+		if (w->objectName() == "SchedulerView" || w->objectName() == "SchedulerControl") return true;
+	}
+	return false;
+}
+
+static QWidget *named(const QString &name) {
+	for (QWidget *widget : QApplication::allWidgets()) {
+		if (widget->objectName() == name) return widget;
+	}
+	return nullptr;
+}
+
+static QString plain(const QString &html) {
+	// an image of a label is an object replacement character in its text
+	return QTextDocumentFragment::fromHtml(html).toPlainText().remove(QChar(0xFFFC)).simplified();
+}
+
+// SCHED lines: the state, the lists and the editor
+static void sched_dump() {
+	out("SCHED_DUMP");
+	for (const char *name : { "SchedulerState", "SchedulerCurrent", "SchedulerReason", "SchedulerEditorTitle", "SchedulerEditorStatus" }) {
+		QLabel *label = qobject_cast<QLabel *>(named(name));
+		out(QString("SCHED %1 %2").arg(name, label ? plain(label->text()) : QString("?")));
+	}
+	QStackedWidget *pages = qobject_cast<QStackedWidget *>(named("SchedulerEditorPages"));
+	out(QString("SCHED EditorMode %1").arg(pages ? (pages->currentIndex() == 0 ? "visual" : "text") : "?"));
+	for (const char *name : { "SchedulerTasks", "SchedulerPlan", "SchedulerHistory" }) {
+		QTreeWidget *tree = qobject_cast<QTreeWidget *>(named(name));
+		for (int i = 0; tree && i < tree->topLevelItemCount(); i++) {
+			QStringList columns;
+			for (int c = 0; c < tree->columnCount(); c++) columns << tree->topLevelItem(i)->text(c);
+			out(QString("SCHED %1 %2").arg(name, columns.join(" | ")));
+		}
+	}
+	out("SCHED_END");
+}
+
 static void run(const QString &line) {
 	QString cmd = line.section(' ', 0, 0);
 	QString arg = line.section(' ', 1);
@@ -163,6 +204,57 @@ static void run(const QString &line) {
 		out("ERROR no tab " + arg);
 	} else if (cmd == "dump") {
 		dump();
+	} else if (cmd == "sched_dump") {
+		sched_dump();
+	} else if (cmd == "sched_click") {
+		// a push or tool button of the Scheduler tab by its text or tooltip
+		for (QWidget *widget : QApplication::allWidgets()) {
+			QAbstractButton *button = qobject_cast<QAbstractButton *>(widget);
+			if (button && in_scheduler(button) && (bare(button->text()) == arg || button->toolTip() == arg)) {
+				if (!button->isEnabled()) out("DISABLED " + arg);
+				else button->click();
+				return;
+			}
+		}
+		out("ERROR no scheduler button " + arg);
+	} else if (cmd == "sched_select" || cmd == "sched_edit") {
+		QTreeWidget *tree = qobject_cast<QTreeWidget *>(named("SchedulerTasks"));
+		for (int i = 0; tree && i < tree->topLevelItemCount(); i++) {
+			if (tree->topLevelItem(i)->text(0) == arg) {
+				tree->setCurrentItem(tree->topLevelItem(i));
+				if (cmd == "sched_edit") emit tree->itemActivated(tree->topLevelItem(i), 0);
+				return;
+			}
+		}
+		out("ERROR no scheduler task " + arg);
+	} else if (cmd == "sched_hook") {
+		// sched_hook ITEM task: the hook choice of the Settings page, as the user picks it
+		QComboBox *combo = qobject_cast<QComboBox *>(named("SchedulerHook_" + arg.section(' ', 0, 0)));
+		if (!combo) {
+			out("ERROR no hook " + arg);
+			return;
+		}
+		int index = combo->findText(arg.section(' ', 1));
+		if (index < 0) {
+			out("ERROR no hook choice " + arg);
+			return;
+		}
+		combo->setCurrentIndex(index);
+		emit combo->activated(index);
+	} else if (cmd == "sched_open") {
+		next_file = arg;
+		for (QWidget *widget : QApplication::allWidgets()) {
+			QToolButton *button = qobject_cast<QToolButton *>(widget);
+			if (button && in_scheduler(button) && button->toolTip() == "Open a task file") {
+				button->click();
+				return;
+			}
+		}
+		out("ERROR no open task button");
+	} else if (cmd == "sched_text") {
+		// the text of the editor in text mode, on one line
+		QPlainTextEdit *text = qobject_cast<QPlainTextEdit *>(named("SchedulerEditorText"));
+		out("SCHED_TEXT " + (text ? text->toPlainText().replace('\n', "\\n") : QString()));
 	} else if (cmd == "log") {
 		QString text;
 		QFile file(arg);

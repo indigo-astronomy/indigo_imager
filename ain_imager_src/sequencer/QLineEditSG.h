@@ -29,6 +29,7 @@ public:
 	explicit QLineEditSG(Mode mode, QWidget* parent = nullptr);
 	void setValue(double value);
 	double value() const;
+	Mode sgMode() const { return mode; }
 
 private:
 	Mode mode;

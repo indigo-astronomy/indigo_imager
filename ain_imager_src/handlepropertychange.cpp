@@ -701,11 +701,11 @@ void update_solver_agent_wcs(ImagerWindow *w, indigo_property *property) {
 		auto im = (preview_image &)w->m_guider_viewer->pixmapItem()->image();
 		im.set_wcs_data(ra * 15, dec, telescope_ra * 15, telescope_dec, angle, parity, scale);
 		w->m_guider_viewer->setImage(im);
-	} else if (w->m_visible_viewer != w->m_sequence_editor2) {
-		auto im = (preview_image &)((ImageViewer*)w->m_visible_viewer)->pixmapItem()->image();
+	} else if (ImageViewer *viewer = qobject_cast<ImageViewer*>(w->m_visible_viewer)) {
+		auto im = (preview_image &)viewer->pixmapItem()->image();
 		// if solved from file set telescope ra and dec to solved
 		im.set_wcs_data(ra * 15, dec, ra * 15, dec, angle, parity, scale);
-		((ImageViewer*)w->m_visible_viewer)->setImage(im);
+		viewer->setImage(im);
 	}
 
 	w->set_widget_state(w->m_mount_solve_and_center_button, property->state);
@@ -3537,9 +3537,12 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 			bool mount_not_loaded = true;
 			bool config_not_loaded = true;
 			bool scripting_not_loaded = true;
+			bool scheduler_not_loaded = false;
 
 			indigo_property *p = properties.get(property->device, "DRIVERS");
 			if (p) {
+				// the scheduler agent is loaded only by servers that have it
+				scheduler_not_loaded = indigo_get_item(p, "indigo_agent_scheduler") != nullptr && !indigo_get_switch(p, "indigo_agent_scheduler");
 				imager_not_loaded = !indigo_get_switch(p, "indigo_agent_imager");
 				guider_not_loaded = !indigo_get_switch(p, "indigo_agent_guider");
 				mount_not_loaded = !indigo_get_switch(p, "indigo_agent_mount");
@@ -3576,6 +3579,11 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 				if (scripting_not_loaded) {
 					static const char *items[] = { "DRIVER" };
 					static const char *values[] = { "indigo_agent_scripting" };
+					indigo_change_text_property(NULL, device_name, "LOAD", 1, items, values);
+				}
+				if (scheduler_not_loaded) {
+					static const char *items[] = { "DRIVER" };
+					static const char *values[] = { "indigo_agent_scheduler" };
 					indigo_change_text_property(NULL, device_name, "LOAD", 1, items, values);
 				}
 				pthread_mutex_unlock(&l_mutex);
@@ -4184,6 +4192,9 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 }
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
+	if (m_scheduler->wantsDevice(property->device)) {
+		scheduler_property_define(property);
+	}
 	property_define(property, message);
 	properties.create(property);
 
@@ -4223,6 +4234,9 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 
 void ImagerWindow::on_property_change(indigo_property* property, char *message) {
 	Q_UNUSED(message);
+	if (m_scheduler->wantsDevice(property->device)) {
+		scheduler_property_change(property);
+	}
 	if (!strncmp(property->device, "Server", 6) && !strcmp(property->name, "DRIVERS")) {
 		update_solver_switch(property);
 	}
@@ -5552,6 +5566,9 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 }
 
 void ImagerWindow::on_property_delete(indigo_property* property, char *message) {
+	if (m_scheduler->wantsDevice(property->device)) {
+		scheduler_property_delete(property);
+	}
 
 	if (
 		(strncmp(property->device, "Imager Agent", 12)) &&

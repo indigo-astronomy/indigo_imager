@@ -110,7 +110,11 @@ void SequenceItemModel::initializeModel() {
 		{SC_DISABLE_VERBOSE, {"Disable Verbose Logging", {}}},
 		{SC_BREAK_AT, {"Break If Past (Time)", {{0, {"Time (UTC)", DateTimeEdit}}}}},
 		{SC_BREAK_AT_HA, {"Break If Past (Hour Angle)", {{0, {"HA (hours)", LineEditSG_RA}}}}},
-		{SC_RESUME_POINT, {"Resume Point", {}}}
+		{SC_RESUME_POINT, {"Resume Point", {}}},
+		{SC_BREAK_IF_TARGET_BELOW, {"Break If Target Below Altitude", {{0, {"Altitude (°)", DoubleSpinBox}}, {1, {"RA", LineEditSG_RA}}, {2, {"Dec", LineEditSG_DEC}}}}},
+		{SC_BREAK_IF_SUN_ABOVE, {"Break If Sun Above Altitude", {{0, {"Altitude (°)", DoubleSpinBox}}}}},
+		{SC_WAIT_UNTIL_TARGET_ABOVE, {"Wait Until Target Above Altitude", {{0, {"Altitude (°)", DoubleSpinBox}}, {1, {"RA", LineEditSG_RA}}, {2, {"Dec", LineEditSG_DEC}}}}},
+		{SC_WAIT_UNTIL_SUN_BELOW, {"Wait Until Sun Below Altitude", {{0, {"Altitude (°)", DoubleSpinBox}}}}}
 	};
 
 	//{"select_imager_agent", {"Select Imager Agent", {{0, {"Agent", "QComboBox"}}}}},
@@ -326,6 +330,18 @@ void SequenceItemModel::initializeModel() {
 	setNumericRange(SC_START_GUIDING, 0, 0, 180.0);
 	setNumericIncrement(SC_START_GUIDING, 0, 0.1);
 	setNumericDefaultValue(SC_START_GUIDING, 0, 1.0);
+	// start_guiding() without an exposure keeps the exposure set in the Guider Agent
+	setOptional(SC_START_GUIDING, 0, "agent");
+
+	// Altitude limits
+	for (const char *type : { SC_BREAK_IF_TARGET_BELOW, SC_BREAK_IF_SUN_ABOVE, SC_WAIT_UNTIL_TARGET_ABOVE, SC_WAIT_UNTIL_SUN_BELOW }) {
+		setNumericRange(type, 0, -90.0, 90.0);
+		setNumericIncrement(type, 0, 1.0);
+	}
+	setNumericDefaultValue(SC_BREAK_IF_TARGET_BELOW, 0, 30.0);
+	setNumericDefaultValue(SC_WAIT_UNTIL_TARGET_ABOVE, 0, 30.0);
+	setNumericDefaultValue(SC_BREAK_IF_SUN_ABOVE, 0, -12.0);
+	setNumericDefaultValue(SC_WAIT_UNTIL_SUN_BELOW, 0, -12.0);
 
 	// Sync and goto
 	setNumericRange(SC_SYNC_CENTER, 0, 0, 180.0);
@@ -458,4 +474,27 @@ double SequenceItemModel::getNumericDefultValue(const QString& type, int paramId
 		}
 	}
 	return 0.0; // Default value
+}
+
+void SequenceItemModel::setOptional(const QString& type, int paramId, const QString& text) {
+	if (widgetTypeMap.contains(type)) {
+		if (widgetTypeMap[type].parameters.contains(paramId)) {
+			widgetTypeMap[type].parameters[paramId].optional = true;
+			widgetTypeMap[type].parameters[paramId].optionalText = text;
+		}
+	}
+}
+
+int SequenceItemModel::requiredParameterCount(const QString& type) const {
+	if (!widgetTypeMap.contains(type)) {
+		return 0;
+	}
+	int count = 0;
+	const auto& parameters = widgetTypeMap[type].parameters;
+	for (auto it = parameters.constBegin(); it != parameters.constEnd(); ++it) {
+		if (!it.value().optional) {
+			count = it.key() + 1;
+		}
+	}
+	return count;
 }

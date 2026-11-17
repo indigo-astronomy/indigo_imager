@@ -34,6 +34,7 @@ bool processed_device(char *device) {
 		strncmp(device, "Configuration agent", 19) &&
 		strncmp(device, "Configuration Agent", 19) &&
 		strncmp(device, "Scripting Agent", 15) &&
+		strncmp(device, "Scheduler Agent", 15) &&
 		strncmp(device, "Server", 6)
 	) {
 		return false;

@@ -12,14 +12,14 @@
 ROOT_DIR := $(abspath ..)
 INDIGO_ROOT ?= $(ROOT_DIR)/indigo
 BUILD_DIR := build
-QUICK_CASES := startup_load menu_switch switch_failures sequencer_script
+QUICK_CASES := startup_load menu_switch switch_failures sequencer_script scheduler
 
 QT_FLAGS := $(shell pkg-config --cflags Qt5Widgets)
 QT_LIBS := $(shell pkg-config --libs Qt5Widgets)
 AIN_INCLUDES := -I$(ROOT_DIR)/ain_imager_src -I$(ROOT_DIR)/common_src -I$(INDIGO_ROOT)/indigo_libs -I$(ROOT_DIR)/external -I$(ROOT_DIR)/external/libraw -I$(ROOT_DIR)/external/lz4 -I$(ROOT_DIR)/external/libjpeg -I$(ROOT_DIR)/object_data
 
 HELPERS := $(BUILD_DIR)/ain_harness.so $(BUILD_DIR)/conf_offset
-UNIT_TESTS := $(BUILD_DIR)/wcs_file_test
+UNIT_TESTS := $(BUILD_DIR)/wcs_file_test $(BUILD_DIR)/scheduler_task_test
 
 QTCORE_FLAGS := $(shell pkg-config --cflags Qt5Core)
 QTCORE_LIBS := $(shell pkg-config --libs Qt5Core)
@@ -39,6 +39,14 @@ $(BUILD_DIR)/wcs_file_test: unit/wcs_file_test.cpp $(ROOT_DIR)/ain_platesolver_s
 	@mkdir -p $(BUILD_DIR)
 	$(CC) -c -fPIC -O1 $(ROOT_DIR)/common_src/coordconv.c -o $(BUILD_DIR)/coordconv.o -I$(ROOT_DIR)/common_src
 	$(CXX) -fPIC -O1 -std=gnu++11 -Wall unit/wcs_file_test.cpp $(ROOT_DIR)/ain_platesolver_src/wcsfile.cpp $(BUILD_DIR)/coordconv.o -o $@ $(PLATESOLVER_INCLUDES) $(QTCORE_FLAGS) $(QTCORE_LIBS)
+
+# the scheduler task editor test links widgets of ain_imager and is built with qmake
+SCHEDULER_TASK_SOURCES := $(wildcard unit/scheduler_task/*.cpp unit/scheduler_task/*.pro $(ROOT_DIR)/ain_imager_src/scheduler/* $(ROOT_DIR)/ain_imager_src/sequencer/*)
+
+$(BUILD_DIR)/scheduler_task_test: $(SCHEDULER_TASK_SOURCES)
+	@mkdir -p $(BUILD_DIR)/scheduler_task
+	cd $(BUILD_DIR)/scheduler_task && qmake $(abspath unit/scheduler_task/scheduler_task_test.pro) && $(MAKE)
+	cp $(BUILD_DIR)/scheduler_task/scheduler_task_test $@
 
 test-unit: $(UNIT_TESTS)
 	@for test in $(UNIT_TESTS); do echo "=== $$(basename $$test)"; $$test || exit 1; done

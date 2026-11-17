@@ -42,6 +42,11 @@ static QString resolve_legacy_name(const QString &name) {
 }
 
 QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
+	m_unparsed.clear();
+	return parseCode(code);
+}
+
+QVector<FunctionCall> IndigoSequenceParser::parseCode(QString code) const {
 	const char lpMarker[] = "&<L*";
 	const char rpMarker[] = "&>R*";
 	const char commaMarker[] = "&C*";
@@ -76,18 +81,29 @@ QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
 	// The repeat body is matched with a recursive balanced-brace subpattern
 	// ((?&brace), defined at the end) so that repeat blocks nested inside other
 	// repeat blocks are captured whole instead of terminating at the first '}'.
-	QRegularExpression re(R"((?:\/\/\*)?\s*((?:\w+)\.(?:\w+)\((?:[^)]*)\);|(?:\w+)\.repeat\((?:\d+),\s*function\s*\(\)\s*(?&brace)\);|var\s+(?:\w+)\s*=\s*new\s+Sequence\((?:\"[^\"]*\")?\);)(?(DEFINE)(?<brace>\{(?:[^{}]|(?&brace))*\})))");
+	QRegularExpression re(R"((?:\/\/\*)?\s*((?:\w+)\.(?:\w+)\((?:[^)]*)\);|(?:\w+)\.repeat\((?:\d+),\s*function\s*\(\)\s*(?&brace)\);|var\s+(?:\w+)\s*=\s*new\s+Sequence\((?:\"[^\"]*\"|[\w.]+)?\);)(?(DEFINE)(?<brace>\{(?:[^{}]|(?&brace))*\})))");
 	QRegularExpressionMatchIterator it = re.globalMatch(processedCode);
+
+	auto keepUnparsed = [&](int from, int to) {
+		QString gap = processedCode.mid(from, to - from).trimmed();
+		if (!gap.isEmpty()) {
+			gap.replace(lpMarker, "(").replace(rpMarker, ")").replace(commaMarker, ",");
+			m_unparsed.append(gap);
+		}
+	};
+	int parsedTo = 0;
 
 	while (it.hasNext()) {
 		QRegularExpressionMatch match = it.next();
+		keepUnparsed(parsedTo, match.capturedStart(0));
+		parsedTo = match.capturedEnd(0);
 		QString fullCall = match.captured(0);
 		QString callBody = match.captured(1);
 
 		bool isOmitted = fullCall.trimmed().startsWith("//*");
 
 		// Now parse the call body using the original regex
-		QRegularExpression callRe(R"((\w+)\.(\w+)\(([^)]*)\);|(\w+)\.repeat\((\d+),\s*function\s*\(\)\s*\{((?:[^{}]|(?&brace))*)\}\);|var\s+(\w+)\s*=\s*new\s+Sequence\((\"[^\"]*\")?\);(?(DEFINE)(?<brace>\{(?:[^{}]|(?&brace))*\})))");
+		QRegularExpression callRe(R"((\w+)\.(\w+)\(([^)]*)\);|(\w+)\.repeat\((\d+),\s*function\s*\(\)\s*\{((?:[^{}]|(?&brace))*)\}\);|var\s+(\w+)\s*=\s*new\s+Sequence\((\"[^\"]*\"|[\w.]+)?\);(?(DEFINE)(?<brace>\{(?:[^{}]|(?&brace))*\})))");
 		QRegularExpressionMatch callMatch = callRe.match(callBody);
 
 		FunctionCall call;
@@ -101,7 +117,9 @@ QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
 			call.parameters.append("lambda"); // Placeholder for the lambda function
 
 			QString nestedCode = callMatch.captured(6).trimmed();
-			call.nestedCalls = parse(nestedCode);
+			// the markers are restored here as the nested parse replaces them again
+			nestedCode.replace(lpMarker, "(").replace(rpMarker, ")").replace(commaMarker, ",");
+			call.nestedCalls = parseCode(nestedCode);
 
 			// If the parent repeat is omitted, mark all nested calls as omitted
 			if (isOmitted) {
@@ -134,6 +152,7 @@ QVector<FunctionCall> IndigoSequenceParser::parse(QString code) const {
 
 		calls.append(call);
 	}
+	keepUnparsed(parsedTo, processedCode.length());
 
 	return calls;
 }
@@ -175,11 +194,20 @@ bool IndigoSequenceParser::validateCalls(const QVector<FunctionCall>& calls) con
 		}
 
 		const auto& widgetInfo = widgetTypeMap[call.functionName];
-		if (call.parameters.size() != widgetInfo.parameters.size()) {
-			emit validationError(QString("%1() accepts %2 parameters, got %3")
-				.arg(call.functionName)
-				.arg(widgetInfo.parameters.size())
-				.arg(call.parameters.size()));
+		int required = SequenceItemModel::instance().requiredParameterCount(call.functionName);
+		if (call.parameters.size() < required || call.parameters.size() > widgetInfo.parameters.size()) {
+			if (required == widgetInfo.parameters.size()) {
+				emit validationError(QString("%1() accepts %2 parameters, got %3")
+					.arg(call.functionName)
+					.arg(widgetInfo.parameters.size())
+					.arg(call.parameters.size()));
+			} else {
+				emit validationError(QString("%1() accepts %2 to %3 parameters, got %4")
+					.arg(call.functionName)
+					.arg(required)
+					.arg(widgetInfo.parameters.size())
+					.arg(call.parameters.size()));
+			}
 			return false;
 		}
 	}
@@ -221,4 +249,84 @@ QString IndigoSequenceParser::generate(const QVector<FunctionCall>& calls, int i
 	}
 
 	return script;
+}
+
+/* A parameter as a value: quotes and escapes removed, numbers and sexagesimal
+   values ("00:42:44.3", "-12:30") as numbers. */
+static QVariant parameterValue(const QString& parameter) {
+	QString text = parameter.trimmed();
+	if (text.length() >= 2 && ((text.startsWith('"') && text.endsWith('"')) || (text.startsWith('\'') && text.endsWith('\'')))) {
+		text = text.mid(1, text.length() - 2);
+		text.replace("\\'", "'").replace("\\\"", "\"");
+	}
+	bool ok;
+	double number = text.toDouble(&ok);
+	if (ok) {
+		return number;
+	}
+	static const QRegularExpression sexagesimal(R"(^\s*([+-]?)(\d+):(\d+)(?::(\d+(?:\.\d*)?))?\s*$)");
+	QRegularExpressionMatch match = sexagesimal.match(text);
+	if (match.hasMatch()) {
+		double value = match.captured(2).toDouble() + match.captured(3).toDouble() / 60.0 + match.captured(4).toDouble() / 3600.0;
+		return match.captured(1) == "-" ? -value : value;
+	}
+	if (text == "true" || text == "false") {
+		return text == "true";
+	}
+	return text;
+}
+
+static bool sameParameter(const QString& a, const QString& b) {
+	QVariant va = parameterValue(a);
+	QVariant vb = parameterValue(b);
+	if (va.type() == QVariant::Double && vb.type() == QVariant::Double) {
+		// the editor shows RA and Dec to 0.1 second of time or arc
+		return qAbs(va.toDouble() - vb.toDouble()) < 1e-4;
+	}
+	return va == vb;
+}
+
+QString IndigoSequenceParser::compareCalls(const QVector<FunctionCall>& a, const QVector<FunctionCall>& b) {
+	QVector<FunctionCall> stepsA, stepsB;
+	for (const FunctionCall& call : a) {
+		if (call.functionName != "Sequence") stepsA.append(call);
+	}
+	for (const FunctionCall& call : b) {
+		if (call.functionName != "Sequence") stepsB.append(call);
+	}
+	for (int i = 0; i < qMax(stepsA.size(), stepsB.size()); i++) {
+		if (i >= stepsA.size()) {
+			return QString("%1() is not in the original").arg(stepsB[i].functionName);
+		}
+		if (i >= stepsB.size()) {
+			return QString("%1() can not be shown").arg(stepsA[i].functionName);
+		}
+		const FunctionCall& ca = stepsA[i];
+		const FunctionCall& cb = stepsB[i];
+		if (ca.functionName != cb.functionName) {
+			return QString("%1() can not be shown").arg(ca.functionName);
+		}
+		if (ca.omitted != cb.omitted) {
+			return QString("%1(): the omitted flag can not be shown").arg(ca.functionName);
+		}
+		if (ca.functionName == "repeat") {
+			if (!sameParameter(ca.parameters.value(0), cb.parameters.value(0))) {
+				return QString("repeat(%1) can not be shown").arg(ca.parameters.value(0));
+			}
+			QString nested = compareCalls(ca.nestedCalls, cb.nestedCalls);
+			if (!nested.isEmpty()) {
+				return nested;
+			}
+			continue;
+		}
+		if (ca.parameters.size() != cb.parameters.size()) {
+			return QString("%1(%2) can not be shown").arg(ca.functionName, ca.parameters.join(", "));
+		}
+		for (int p = 0; p < ca.parameters.size(); p++) {
+			if (!sameParameter(ca.parameters[p], cb.parameters[p])) {
+				return QString("%1(): %2 can not be shown").arg(ca.functionName, ca.parameters[p]);
+			}
+		}
+	}
+	return QString();
 }

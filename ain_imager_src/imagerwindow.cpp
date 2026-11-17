@@ -505,6 +505,10 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_tools_tabbar->addTab(sequence_frame,  "Se&quence");
 	create_sequence_tab(sequence_frame);
 
+	QFrame *scheduler_frame = new QFrame;
+	m_tools_tabbar->addTab(scheduler_frame,  "Sc&heduler");
+	create_scheduler_tab(scheduler_frame);
+
 	QFrame *focuser_frame = new QFrame;
 	m_tools_tabbar->addTab(focuser_frame, "F&ocus");
 	create_focuser_tab(focuser_frame);
@@ -1019,6 +1023,7 @@ void ImagerWindow::play_sound(int alarm) {
 void ImagerWindow::show_selected_preview_in_solver_tab(QString &solver_source) {
 	if (solver_source.startsWith("Guider Agent") && m_visible_viewer != m_guider_viewer) {
 		m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_guider_viewer);
+		m_visible_viewer->setVisible(false);
 		m_visible_viewer = m_guider_viewer;
 		m_guider_viewer->setVisible(true);
 		m_imager_viewer->setVisible(false);
@@ -1028,8 +1033,8 @@ void ImagerWindow::show_selected_preview_in_solver_tab(QString &solver_source) {
 		m_visible_viewer = m_imager_viewer;
 		m_imager_viewer->setVisible(true);
 	}
-	if	(m_visible_viewer != m_sequence_editor2) {
-		((ImageViewer*)m_visible_viewer)->showWCS(true);
+	if (ImageViewer *viewer = qobject_cast<ImageViewer*>(m_visible_viewer)) {
+		viewer->showWCS(true);
 	}
 }
 
@@ -1043,6 +1048,7 @@ void ImagerWindow::on_tab_changed(int index) {
 			m_imager_viewer->setVisible(true);
 			m_guider_viewer->setVisible(false);
 			m_sequence_editor2->setVisible(false);
+			m_scheduler->setVisible(false);
 		}
 
 		if (index == TELESCOPE_TAB) {
@@ -1074,7 +1080,17 @@ void ImagerWindow::on_tab_changed(int index) {
 			m_visible_viewer = m_sequence_editor2;
 			m_guider_viewer->setVisible(false);
 			m_imager_viewer->setVisible(false);
+			m_scheduler->setVisible(false);
 			m_sequence_editor2->setVisible(true);
+		}
+	} else if (index == SCHEDULER_TAB) {
+		if (m_visible_viewer != m_scheduler) {
+			m_visible_viewer->parentWidget()->layout()->replaceWidget(m_visible_viewer, m_scheduler);
+			m_visible_viewer = m_scheduler;
+			m_guider_viewer->setVisible(false);
+			m_imager_viewer->setVisible(false);
+			m_sequence_editor2->setVisible(false);
+			m_scheduler->setVisible(true);
 		}
 	} else if (index == GUIDER_TAB) {
 		if (m_visible_viewer != m_guider_viewer) {
@@ -1083,6 +1099,7 @@ void ImagerWindow::on_tab_changed(int index) {
 			m_guider_viewer->setVisible(true);
 			m_imager_viewer->setVisible(false);
 			m_sequence_editor2->setVisible(false);
+			m_scheduler->setVisible(false);
 		}
 	} else if (index == SOLVER_TAB) {
 		QString solver_source = m_solver_source_select1->currentText();
@@ -1309,6 +1326,10 @@ void ImagerWindow::on_remove_preview(indigo_property *property, indigo_item *ite
 }
 
 void ImagerWindow::on_message_sent(indigo_property* property, char *message) {
+	// the message of a property arrives here before the property, which is handled without it
+	if (property && message && m_scheduler->wantsDevice(property->device)) {
+		m_scheduler->noteMessage(property->device, property->name, QString::fromUtf8(message));
+	}
 	on_window_log(property, message);
 	free(message);
 }
@@ -1320,6 +1341,11 @@ void ImagerWindow::on_message_received(char *device_name, char *property_name, i
 		snprintf(property->device, INDIGO_NAME_SIZE, "%s", device_name ? device_name : "");
 		snprintf(property->name, INDIGO_NAME_SIZE, "%s", property_name ? property_name : "");
 		property->state = (indigo_property_state)property_state;
+	}
+
+	// INDIGO 3 delivers the message of a property change apart from the change
+	if (device_name && property_name && message && m_scheduler->wantsDevice(device_name)) {
+		m_scheduler->noteMessage(device_name, property_name, QString::fromUtf8(message));
 	}
 
 	on_window_log(property, message);

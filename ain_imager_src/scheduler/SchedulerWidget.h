@@ -1,0 +1,158 @@
+// Copyright (c) 2026 Rumen G.Bogdanovski
+// All rights reserved.
+//
+// You can use this software under the terms of 'INDIGO Astronomy
+// open-source license' (see LICENSE.md).
+//
+// THIS SOFTWARE IS PROVIDED BY THE AUTHORS 'AS IS' AND ANY EXPRESS
+// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+// GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+#ifndef __SCHEDULERWIDGET_H
+#define __SCHEDULERWIDGET_H
+
+#include <QWidget>
+#include <QMap>
+#include "SchedulerProperty.h"
+
+class QComboBox;
+class QLabel;
+class QLineEdit;
+class QPushButton;
+class QToolButton;
+class QProgressBar;
+class QTabWidget;
+class QTreeWidget;
+class QTreeWidgetItem;
+class QCheckBox;
+class QDoubleSpinBox;
+class QFormLayout;
+class SchedulerTaskEditor;
+
+/* The user interface of the INDIGO Scheduler Agent: a control panel with the
+   state of the scheduler, and a view with the task list, the night plan, the
+   run history, the settings and the task editor.
+
+   The host passes the properties of the "Scheduler Agent" devices and of the
+   Scripting Agent on the same server, and sends the requests of sendRequests(). */
+class SchedulerWidget : public QWidget {
+	Q_OBJECT
+public:
+	explicit SchedulerWidget(QWidget *parent = nullptr);
+
+	QWidget *controlPanel() const { return m_control_panel; }
+
+	/* true for the devices whose properties the widget needs */
+	static bool isSchedulerDevice(const QString& device);
+	bool wantsDevice(const QString& device) const;
+
+	void defineProperty(const SchedulerProperty& property);
+	void updateProperty(const SchedulerProperty& property);
+	/* the message that came with a property of a scheduler agent, before the property itself */
+	void noteMessage(const QString& device, const QString& property, const QString& message);
+	/* an empty name deletes all properties of the device */
+	void deleteProperty(const QString& device, const QString& name);
+
+	QString selectedAgent() const;
+	/* "Scripting Agent" on the server of the selected scheduler */
+	QString scriptingAgent() const;
+	bool isRunning() const;
+	/* the task or hook the scheduler runs now, empty when none */
+	QString runningTask() const;
+
+signals:
+	void sendRequests(const QList<SchedulerRequest>& requests);
+	/* the host enumerates the properties of the newly selected agent */
+	void agentSelected(const QString& agent);
+
+private slots:
+	void onAgentSelected(int index);
+	void onTaskActivated(QTreeWidgetItem *item, int column);
+	void onTasksContextMenu(const QPoint& pos);
+	void onExportTasks();
+	void onImportTasks();
+
+private:
+	void buildControlPanel();
+	QWidget *buildTasksPage();
+	QWidget *buildPlanPage();
+	QWidget *buildHistoryPage();
+	QWidget *buildSettingsPage();
+
+	void handleProperty(const SchedulerProperty& property);
+	void handleScripting(const SchedulerProperty& property);
+	void clearAgent();
+
+	void updateState();
+	void updateTasks();
+	void updatePlan();
+	void updateHistory();
+	void updateSettings();
+	void updateEditorRunning();
+	void checkPendingResult(const SchedulerProperty& property);
+
+	QString taskProperty(const QString& taskName) const;
+	QString taskText(const QString& taskName) const;
+	QStringList storedTaskNames() const;
+	QString selectedTask() const;
+
+	void editTask(const QString& name);
+	void taskCommand(const QString& name, const QString& command);
+	void deleteTask(const QString& name);
+	void saveTaskToFile(const QString& name);
+	void send(const QList<SchedulerRequest>& requests);
+	void sendTask(const QString& property, const QString& text);
+
+	QWidget *m_control_panel;
+	QComboBox *m_agent_select;
+	QPushButton *m_start_button;
+	QPushButton *m_stop_button;
+	QPushButton *m_abort_button;
+	QLabel *m_state_label;
+	QLabel *m_current_label;
+	QLabel *m_reason_label;
+	QLabel *m_counters_label;
+	QLabel *m_next_label;
+	QLabel *m_sequence_label;
+	QProgressBar *m_sequence_progress;
+
+	QTabWidget *m_tabs;
+	QTreeWidget *m_tasks;
+	QTreeWidget *m_plan;
+	QTreeWidget *m_history;
+	SchedulerTaskEditor *m_editor;
+
+	QComboBox *m_night;
+	QMap<QString, QComboBox*> m_hooks;
+	QFormLayout *m_settings_layout;
+	QMap<QString, QDoubleSpinBox*> m_settings;
+	QMap<QString, QCheckBox*> m_data;
+	QLineEdit *m_data_dir;
+	QPushButton *m_settings_apply;
+	bool m_settings_edited = false;
+
+	// the properties of the selected scheduler agent by name
+	QMap<QString, SchedulerProperty> m_properties;
+	// the sequence state of the Scripting Agent on its server
+	SchedulerProperty m_sequence_state;
+	SchedulerProperty m_step_state;
+	SchedulerProperty m_loop_state;
+
+	// the property of the last task upload or edit sent from the editor, until its result arrives
+	QString m_pending_property;
+	// the last message of each property of the selected agent
+	QMap<QString, QString> m_messages;
+	// a result shown without a message; its message may come after the property
+	QString m_result_property;
+	bool m_result_ok = false;
+};
+
+#endif // __SCHEDULERWIDGET_H

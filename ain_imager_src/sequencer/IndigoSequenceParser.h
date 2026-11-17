@@ -39,8 +39,22 @@ public:
 	bool validateCalls(const QVector<FunctionCall>& calls) const;
 	QString generate(const QVector<FunctionCall>& calls, int indent = 0) const;
 
+	/* The code that the last parse() skipped because it is not a sequence call,
+	   such as a variable or an if statement. Loading such code into the editor
+	   would lose it. */
+	const QStringList& unparsedCode() const { return m_unparsed; }
+
+	/* Compares two parsed sequences by their steps and parameter values, so that
+	   "5" equals "5.0" and "00:42:44.3" equals 0.712306. The constructor is not
+	   compared. Returns an empty string when they are equal, or the difference. */
+	static QString compareCalls(const QVector<FunctionCall>& a, const QVector<FunctionCall>& b);
+
 signals:
 	void validationError(QString errorMessage) const;
+
+private:
+	QVector<FunctionCall> parseCode(QString code) const;
+	mutable QStringList m_unparsed;
 };
 
 #endif // __INDIGOSEQUENCEPARSER_H

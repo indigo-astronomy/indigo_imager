@@ -54,6 +54,11 @@ SOURCES += \
 	$$PWD/sequencer/IndigoSequenceParser.cpp \
 	$$PWD/sequencer/SexagesimalConverter.cpp \
 	$$PWD/sequencer/QLineEditSG.cpp \
+	$$PWD/scheduler/SchedulerTask.cpp \
+	$$PWD/scheduler/SchedulerTaskForm.cpp \
+	$$PWD/scheduler/SchedulerTaskEditor.cpp \
+	$$PWD/scheduler/SchedulerWidget.cpp \
+	$$PWD/scheduler_tab.cpp \
 	$$PWD/PolarAlignmentWidget/PolarAlignmentWidget.cpp \
 	$$PWD/../external/DomeView/DomeView.cpp \
 	$$PWD/../external/RotatorView/RotatorView.cpp \
@@ -118,6 +123,11 @@ HEADERS += \
 	$$PWD/sequencer/IndigoSequenceParser.h \
 	$$PWD/sequencer/SexagesimalConverter.h \
 	$$PWD/sequencer/QLineEditSG.h \
+	$$PWD/scheduler/SchedulerTask.h \
+	$$PWD/scheduler/SchedulerTaskForm.h \
+	$$PWD/scheduler/SchedulerTaskEditor.h \
+	$$PWD/scheduler/SchedulerWidget.h \
+	$$PWD/scheduler/SchedulerProperty.h \
 	$$PWD/PolarAlignmentWidget/PolarAlignmentWidget.h \
 	$$PWD/../external/DomeView/DomeView.h \
 	$$PWD/../external/RotatorView/RotatorView.h \
@@ -151,7 +161,8 @@ INCLUDEPATH += \
 	"$$PWD/../common_src" \
 	"$$PWD/../object_data" \
 	"$$PWD/../ain_imager_src" \
-	"$$PWD/../ain_imager_src/sequencer"
+	"$$PWD/../ain_imager_src/sequencer" \
+	"$$PWD/../ain_imager_src/scheduler"
 
 unix:!mac | win32 {
 	LIBS += -L"$$PWD/../external/libraw/lib" -L"$$PWD/../external/lz4" -lraw -lz

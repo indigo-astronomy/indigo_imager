@@ -59,6 +59,18 @@ public:
 	void loadScriptToView(const QString& script);
 	QString makeScriptFromView() const;
 
+	/* Loads the script only if the editor can show all of it: every statement is
+	   a known step and the script made from the view has the same steps and
+	   values. Otherwise the view is left empty and error says why. */
+	bool loadScriptExact(const QString& script, QString *error);
+
+	/* A scheduler task body: the sequence is named scheduler_task.name, target
+	   steps can use the task target, and the file and name tools are hidden, as
+	   the task editor has its own. Set before items are added. */
+	void setTaskMode(bool taskMode);
+	bool isTaskMode() const { return m_taskMode; }
+	void clear();
+
 	void setDragSourceWidget(IndigoSequenceItem* widget) { dragSourceWidget = widget; }
 	IndigoSequenceItem* getDragSourceWidget() const { return dragSourceWidget; }
 
@@ -105,6 +117,7 @@ private:
 	QLabel* overlayPrompt;
 
 	bool isEnabledState;
+	bool m_taskMode = false;
 };
 
 #endif // __INDIGOSEQUENCE_H
