@@ -977,7 +977,28 @@ void SchedulerWidget::onTasksContextMenu(const QPoint& pos) {
 		QString item_name = hook[0];
 		bool is_hook = hook_property.text(item_name) == name;
 		QAction *action = hooks->addAction(hook[1], this, [this, name, item_name, is_hook]() {
-			send({ SchedulerRequest::text(selectedAgent(), P_HOOKS, item_name, is_hook ? QString() : name) });
+			QList<SchedulerRequest> requests;
+			SchedulerTask task = SchedulerTask::fromText(taskText(name));
+			if (!is_hook && !task.has("hook")) {
+				// @hook first, so that a running scheduler does not pick the task as an ordinary one
+				QMessageBox::StandardButton answer = QMessageBox::question(this, "Use as hook",
+					QString("Mark '%1' as a hook-only task with @hook?\n\n"
+					"It is then never scheduled as an ordinary task, also when no hook names it.").arg(name),
+					QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel, QMessageBox::Yes);
+				if (answer == QMessageBox::Cancel) {
+					return;
+				}
+				if (answer == QMessageBox::Yes) {
+					QList<QPair<QString, QString>> header = task.header();
+					int at = 0;
+					while (at < header.size() && header[at].first != "task") at++;
+					header.insert(at < header.size() ? at + 1 : 0, qMakePair(QString("hook"), QString()));
+					task.setHeader(header);
+					requests.append(SchedulerRequest::text(selectedAgent(), taskProperty(name), "TASK", task.toText()));
+				}
+			}
+			requests.append(SchedulerRequest::text(selectedAgent(), P_HOOKS, item_name, is_hook ? QString() : name));
+			send(requests);
 		});
 		action->setCheckable(true);
 		action->setChecked(is_hook);

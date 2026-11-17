@@ -105,10 +105,13 @@ SchedulerTaskForm::SchedulerTaskForm(QWidget *parent) : QWidget(parent) {
 	m_name = new QLineEdit();
 	m_name->setMaxLength(40);
 	m_name->setPlaceholderText("required, unique, without '|'");
-	addField("task", "Name", "The name of the task, 1-40 bytes, without '|', unique", { m_name },
+	// @hook, a key without a value: the task runs only as a hook
+	m_hook = new QCheckBox("Hook");
+	m_hook->setToolTip("@hook: the task runs only as a hook, it is never scheduled as an ordinary task");
+	addField("task", "Name", "The name of the task, 1-40 bytes, without '|', unique", { m_name, m_hook },
 		[this]() { return m_name->text().trimmed(); },
 		[this](const QString& value) { m_name->setText(value); return true; },
-		[this]() { m_name->clear(); }
+		[this]() { m_name->clear(); m_hook->setChecked(false); }
 	);
 
 	// @priority
@@ -131,11 +134,13 @@ SchedulerTaskForm::SchedulerTaskForm(QWidget *parent) : QWidget(parent) {
 
 	// @target
 	m_target_ra = new QLineEditSG(QLineEditSG::RA);
-	m_target_ra->setPlaceholderText("RA hh:mm:ss");
+	m_target_ra->setPlaceholderText("RA");
+	m_target_ra->setToolTip("RA in hours, hh:mm:ss");
 	m_target_dec = new QLineEditSG(QLineEditSG::DEC);
-	m_target_dec->setPlaceholderText("Dec ±dd:mm:ss");
-	// wide enough for the longest values and their placeholders
-	int coordinate_width = fontMetrics().horizontalAdvance("Dec ±dd:mm:ss.ss") + 16;
+	m_target_dec->setPlaceholderText("Dec");
+	m_target_dec->setToolTip("Dec in degrees, ±dd:mm:ss");
+	// wide enough for the longest values
+	int coordinate_width = fontMetrics().horizontalAdvance("+00:00:00.00") + 16;
 	m_target_ra->setFixedWidth(coordinate_width);
 	m_target_dec->setFixedWidth(coordinate_width);
 	QToolButton *find = new QToolButton();
@@ -574,6 +579,15 @@ bool SchedulerTaskForm::setHeader(const QList<QPair<QString, QString>>& header, 
 	m_loading = true;
 	QString problem;
 	for (const auto& entry : header) {
+		if (entry.first == "hook") {
+			if (!entry.second.isEmpty()) {
+				problem = "@hook takes no value";
+				break;
+			}
+			m_hook->setChecked(true);
+			m_order.append(entry.first);
+			continue;
+		}
 		Field *f = field(entry.first);
 		if (f == nullptr) {
 			problem = QString("@%1 is not a known key").arg(entry.first);
@@ -604,6 +618,10 @@ QList<QPair<QString, QString>> SchedulerTaskForm::header() const {
 		if (!order.contains(key)) order.append(key);
 	}
 	for (const QString& key : order) {
+		if (key == "hook") {
+			if (isHook()) header.append(qMakePair(key, QString()));
+			continue;
+		}
 		const Field *f = field(key);
 		if (f == nullptr || (f->enable && !f->enable->isChecked())) continue;
 		QString value = f->format();
@@ -650,6 +668,10 @@ void SchedulerTaskForm::setGoto(bool precise, double exposure) {
 bool SchedulerTaskForm::hasTarget() const {
 	const Field *f = field("target");
 	return f && f->enable->isChecked();
+}
+
+bool SchedulerTaskForm::isHook() const {
+	return m_hook->isChecked();
 }
 
 void SchedulerTaskForm::setReadOnly(bool readOnly) {

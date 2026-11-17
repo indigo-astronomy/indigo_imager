@@ -52,6 +52,8 @@ public:
 	QString taskName() const;
 	void setTaskName(const QString& name);
 	bool hasTarget() const;
+	/* @hook: the task runs only as a hook */
+	bool isHook() const;
 	/* the first goto of the steps: a precise goto with the exposure, or a slew */
 	bool preciseGoto() const;
 	double preciseExposure() const;
@@ -96,6 +98,7 @@ private:
 	QStringList m_order;
 
 	QLineEdit *m_name;
+	QCheckBox *m_hook;
 	QComboBox *m_priority_class;
 	QSpinBox *m_priority_level;
 	QLineEditSG *m_target_ra;

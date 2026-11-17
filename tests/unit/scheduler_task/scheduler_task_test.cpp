@@ -18,6 +18,7 @@
 #include "IndigoSequenceParser.h"
 #include "QLineEditSG.h"
 #include <QCheckBox>
+#include <QLabel>
 #include <QDoubleSpinBox>
 
 static int failures = 0;
@@ -286,6 +287,43 @@ static void testTargetGoto() {
 	CHECK(editor.taskText() == with_precise, "loading does not change the steps:\n%s", u(editor.taskText()).constData());
 }
 
+/* @hook: the Hook check box adds and removes @hook and leaves the other keys alone */
+static void testHook() {
+	const char *hook_task =
+		"// @task     Park\n"
+		"// @hook\n"
+		"// @priority high\n"
+		"// @duration 2\n\n"
+		"var sequence = new Sequence(scheduler_task.name);\n"
+		"sequence.park();\n"
+		"sequence.start();\n";
+	SchedulerTaskEditor editor;
+	editor.loadTask(hook_task, "Park");
+	SchedulerTaskForm *form = editor.findChild<SchedulerTaskForm*>();
+	QCheckBox *hook = form ? checkBox(form, "Hook") : nullptr;
+	CHECK(editor.isVisualMode() && hook && hook->isChecked(), "a task with @hook is shown with Hook checked");
+	if (!hook) return;
+	CHECK(editor.taskText() == hook_task, "a hook task is written as loaded:\n%s", u(editor.taskText()).constData());
+	CHECK(!editor.isModified(), "and is not modified");
+	CHECK(checkBox(form, "Priority")->isEnabled() && checkBox(form, "Target")->isEnabled(), "the other keys stay editable");
+
+	hook->click();
+	SchedulerTask task = SchedulerTask::fromText(editor.taskText());
+	CHECK(!task.has("hook") && task.value("priority") == "high" && task.value("duration") == "2", "unchecked only @hook is removed:\n%s", u(editor.taskText()).constData());
+	hook->click();
+	CHECK(editor.taskText() == hook_task, "checked again the task is as loaded:\n%s", u(editor.taskText()).constData());
+
+	// a new hook writes @hook after @task
+	editor.newTask();
+	hook->click();
+	task = SchedulerTask::fromText(editor.taskText());
+	CHECK(task.header().size() == 2 && task.header()[1] == qMakePair(QString("hook"), QString()), "a new hook:\n%s", u(editor.taskText()).constData());
+
+	SchedulerTaskForm plain;
+	QString error;
+	CHECK(!plain.setHeader({ { "task", "A" }, { "hook", "yes" } }, &error), "@hook takes no value");
+}
+
 int main(int argc, char *argv[]) {
 	qputenv("QT_QPA_PLATFORM", "offscreen");
 	QApplication app(argc, argv);
@@ -296,6 +334,7 @@ int main(int argc, char *argv[]) {
 	testFallback();
 	testBuild();
 	testTargetGoto();
+	testHook();
 	fprintf(stderr, "%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;
 }

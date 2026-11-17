@@ -46,6 +46,16 @@ sequence.wait(1);
 sequence.start();
 EOF
 
+cat > "$CASE_DIR/hook.task" <<'EOF'
+// @task     Park
+// @hook
+// @duration 1
+
+var sequence = new Sequence(scheduler_task.name);
+sequence.wait(1);
+sequence.start();
+EOF
+
 rm -rf "$HOME"
 services local:$PORT
 make_config
@@ -141,6 +151,19 @@ ain_do answer Yes
 ain_do sched_select Test
 ain_do sched_click "Delete the task; a running task is aborted first"
 check "the task is deleted" wait_for 10 sched_lacks "SCHED SchedulerTasks Test"
+
+section "a hook task"
+ain_do sched_open "$CASE_DIR/hook.task"
+ain_do tab "Task editor"
+ain_do shot "$CASE_DIR/hook.png"
+check "it is shown in the visual editor" sched_has "SCHED EditorMode visual"
+ain_do sched_click "Add to scheduler"
+check "the scheduler accepts it" wait_for 10 sched_has "SCHED SchedulerEditorStatus Accepted"
+check "the task list shows it as a hook" wait_for 10 sched_has "SCHED SchedulerTasks Park | HOOK | hook"
+ain_do answer Yes
+ain_do sched_select Park
+ain_do sched_click "Delete the task; a running task is aborted first"
+check "it is deleted" wait_for 10 sched_lacks "SCHED SchedulerTasks Park"
 
 stop_ain
 stop_server

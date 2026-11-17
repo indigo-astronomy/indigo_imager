@@ -22,7 +22,7 @@
 
 const QStringList& SchedulerTask::knownKeys() {
 	static const QStringList keys = {
-		"task", "priority", "target", "altitude", "airmass", "ha", "moon", "illumination",
+		"task", "hook", "priority", "target", "altitude", "airmass", "ha", "moon", "illumination",
 		"twilight", "window", "duration", "repeat", "retry", "preempted", "enabled",
 		"folder", "observer", "pi", "project"
 	};
