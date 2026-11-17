@@ -310,7 +310,6 @@ void SchedulerWidget::buildControlPanel() {
 
 	layout->addItem(new QSpacerItem(1, 8), row++, 0);
 	QLabel *note = new QLabel("Times are UTC.");
-	note->setStyleSheet("color: grey;");
 	layout->addWidget(note, row++, 0, 1, 3);
 }
 

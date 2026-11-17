@@ -312,7 +312,10 @@ void IndigoSequenceItem::addInputWidget(const QString &paramName, const ParamWid
 			connect(selectObjectButton, &QToolButton::clicked, this, [this, selectObjectButton, raIndex, decIndex]() {
 				if (!isEnabledState) return;
 
-				QMenu *menu = new QMenu(this);
+				// The menu belongs to the window: a parent inside a tab widget, as in the
+				// scheduler task editor, would take the frame of the popup away
+				// (the style has "QTabWidget QFrame { border: 0 }").
+				QMenu *menu = new QMenu(window());
 				// No QObject parent: QWidgetAction::setDefaultWidget takes
 				// ownership, so the widget is freed together with the action
 				// (a child of menu) when the menu is deleted below.

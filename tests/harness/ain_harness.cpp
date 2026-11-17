@@ -134,8 +134,8 @@ static void sched_dump() {
 		QLabel *label = qobject_cast<QLabel *>(named(name));
 		out(QString("SCHED %1 %2").arg(name, label ? plain(label->text()) : QString("?")));
 	}
-	QStackedWidget *pages = qobject_cast<QStackedWidget *>(named("SchedulerEditorPages"));
-	out(QString("SCHED EditorMode %1").arg(pages ? (pages->currentIndex() == 0 ? "visual" : "text") : "?"));
+	QTabWidget *pages = qobject_cast<QTabWidget *>(named("SchedulerEditorPages"));
+	out(QString("SCHED EditorMode %1").arg(pages ? (pages->indexOf(named("SchedulerEditorText")) < 0 ? "visual" : "text") : "?"));
 	for (const char *name : { "SchedulerTasks", "SchedulerPlan", "SchedulerHistory" }) {
 		QTreeWidget *tree = qobject_cast<QTreeWidget *>(named(name));
 		for (int i = 0; tree && i < tree->topLevelItemCount(); i++) {
@@ -145,6 +145,15 @@ static void sched_dump() {
 		}
 	}
 	out("SCHED_END");
+}
+
+static QWidget *open_popup() {
+	// the offscreen platform may have no active popup: a visible menu is the popup
+	if (QWidget *popup = QApplication::activePopupWidget()) return popup;
+	for (QWidget *widget : QApplication::topLevelWidgets()) {
+		if (qobject_cast<QMenu *>(widget) && widget->isVisible()) return widget;
+	}
+	return nullptr;
 }
 
 static void run(const QString &line) {
@@ -201,22 +210,46 @@ static void run(const QString &line) {
 				}
 			}
 		}
+		// a tab bar of its own, like the pages of the scheduler task editor
+		for (QWidget *widget : QApplication::allWidgets()) {
+			QTabBar *bar = qobject_cast<QTabBar *>(widget);
+			if (!bar || qobject_cast<QTabWidget *>(bar->parentWidget())) continue;
+			for (int i = 0; i < bar->count(); i++) {
+				if (bare(bar->tabText(i)) == arg) {
+					bar->setCurrentIndex(i);
+					return;
+				}
+			}
+		}
 		out("ERROR no tab " + arg);
 	} else if (cmd == "dump") {
 		dump();
 	} else if (cmd == "sched_dump") {
 		sched_dump();
-	} else if (cmd == "sched_click") {
-		// a push or tool button of the Scheduler tab by its text or tooltip
+	} else if (cmd == "sched_click" || cmd == "sched_press") {
+		// a push or tool button of the Scheduler tab by its text or tooltip; sched_press
+		// clicks it from the event loop, for a button that opens a menu: the menu loop
+		// can not run the poll timer it was clicked from
 		for (QWidget *widget : QApplication::allWidgets()) {
 			QAbstractButton *button = qobject_cast<QAbstractButton *>(widget);
 			if (button && in_scheduler(button) && (bare(button->text()) == arg || button->toolTip() == arg)) {
 				if (!button->isEnabled()) out("DISABLED " + arg);
+				else if (cmd == "sched_press") QTimer::singleShot(0, button, &QAbstractButton::click);
 				else button->click();
 				return;
 			}
 		}
 		out("ERROR no scheduler button " + arg);
+	} else if (cmd == "sched_mode") {
+		// the Visual / Text selection of the task editor, as the user picks it
+		QComboBox *combo = qobject_cast<QComboBox *>(named("SchedulerEditorMode"));
+		int index = combo ? combo->findText(arg) : -1;
+		if (index < 0) {
+			out("ERROR no editor mode " + arg);
+			return;
+		}
+		combo->setCurrentIndex(index);
+		emit combo->activated(index);
 	} else if (cmd == "sched_select" || cmd == "sched_edit") {
 		QTreeWidget *tree = qobject_cast<QTreeWidget *>(named("SchedulerTasks"));
 		for (int i = 0; tree && i < tree->topLevelItemCount(); i++) {
@@ -263,6 +296,22 @@ static void run(const QString &line) {
 		for (QWidget *widget : QApplication::topLevelWidgets()) {
 			if (qobject_cast<QMainWindow *>(widget)) widget->grab().save(arg);
 		}
+	} else if (cmd == "popup_shot") {
+		// the open popup, and the frame width of the frames on it
+		QWidget *popup = open_popup();
+		if (!popup) {
+			out("ERROR no popup");
+			return;
+		}
+		popup->grab().save(arg);
+		// the frame of the widget the popup shows, not of the frames inside it
+		int frame = -1;
+		for (QWidgetAction *action : popup->findChildren<QWidgetAction *>()) {
+			if (QFrame *shown = qobject_cast<QFrame *>(action->defaultWidget())) frame = shown->frameWidth();
+		}
+		out(QString("POPUP frame %1").arg(frame));
+	} else if (cmd == "popup_close") {
+		if (QWidget *popup = open_popup()) popup->close();
 	} else if (cmd == "answer") {
 		next_answer = arg == "Yes" ? QMessageBox::Yes : QMessageBox::No;
 	} else if (cmd == "sync") {

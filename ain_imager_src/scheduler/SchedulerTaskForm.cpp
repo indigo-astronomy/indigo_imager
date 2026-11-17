@@ -138,7 +138,8 @@ SchedulerTaskForm::SchedulerTaskForm(QWidget *parent) : QWidget(parent) {
 	find->setIcon(QIcon(":resource/find.png"));
 	find->setToolTip("Select the object from the database; an empty task name is set to the object name");
 	connect(find, &QToolButton::clicked, this, [this, find]() {
-		QMenu *menu = new QMenu(this);
+		// a parent in the tab widget would take the frame of the popup away, as in IndigoSequenceItem
+		QMenu *menu = new QMenu(window());
 		SelectObjectWidget *select = new SelectObjectWidget();
 		QWidgetAction *action = new QWidgetAction(menu);
 		action->setDefaultWidget(select);

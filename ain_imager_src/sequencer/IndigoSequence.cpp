@@ -28,6 +28,7 @@
 #include <QWidget>
 #include <QScrollBar>
 #include <QFrame>
+#include <QStyle>
 #include <QDebug>
 #include <QPainter>
 #include <QPixmap>
@@ -740,6 +741,12 @@ void IndigoSequence::setTaskMode(bool taskMode) {
 	m_download_sequence_button->setVisible(!taskMode);
 	m_load_sequence_button->setVisible(!taskMode);
 	m_save_sequence_button->setVisible(!taskMode);
+	// a task is edited on a page of the task editor: its tab pane is the frame of the list
+	// and the hidden toolbar takes no space
+	int margin = style()->pixelMetric(QStyle::PM_LayoutLeftMargin);
+	layout->setContentsMargins(taskMode ? QMargins() : QMargins(margin, margin, margin, margin));
+	layout->setSpacing(taskMode ? 0 : -1);
+	scrollArea->setFrameShape(taskMode ? QFrame::NoFrame : QFrame::StyledPanel);
 }
 
 void IndigoSequence::clear() {

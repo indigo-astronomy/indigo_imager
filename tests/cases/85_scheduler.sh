@@ -63,10 +63,13 @@ ain_do sched_click "Add to scheduler"
 check "the scheduler accepts it" wait_for 10 sched_has "SCHED SchedulerEditorStatus Accepted"
 check "the task list shows it" wait_for 10 sched_has "SCHED SchedulerTasks Test | QUEUED"
 check "the editor now edits the stored task" sched_has "SCHED SchedulerEditorTitle Task 'Test'"
-ain_do sched_click Text
+ain_do sched_mode Text
 ain_do sched_text
+ain_do tab "Task editor"
+ain_do shot "$CASE_DIR/text.png"
+ain_do tab Tasks
 check "the stored task has the steps of the editor" grep -q '^SCHED_TEXT.*sequence.wait(3);' "$CASE_DIR/ain.out"
-ain_do sched_click Visual
+ain_do sched_mode Visual
 check "and is shown visually again" sched_has "SCHED EditorMode visual"
 
 section "a rejected task"
@@ -105,6 +108,15 @@ check "enable" wait_for 10 sched_has "SCHED SchedulerTasks Test | QUEUED"
 section "an edit of the stored task"
 ain_do sched_edit Test
 ain_do shot "$CASE_DIR/editor.png"
+ain_do tab Steps
+ain_do shot "$CASE_DIR/steps.png"
+ain_do tab Properties
+ain_do sched_click Target
+ain_do sched_press "Select the object from the database; an empty task name is set to the object name"
+ain_do popup_shot "$CASE_DIR/search.png"
+ain_do popup_close
+ain_do sched_click Target
+check "the object search has its frame" bash -c "grep '^POPUP frame' '$CASE_DIR/ain.out' | tail -1 | grep -qv 'frame [-0]'"
 ain_do sched_click "Apply to 'Test'"
 check "the edit is accepted" wait_for 10 sched_has "SCHED SchedulerEditorStatus Accepted"
 ain_do tab "Night plan"

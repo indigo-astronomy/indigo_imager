@@ -22,12 +22,12 @@
 #include <QWidget>
 #include <QVector>
 
+class QComboBox;
 class QLabel;
 class QToolButton;
 class QPushButton;
-class QStackedWidget;
+class QTabWidget;
 class QPlainTextEdit;
-class QSplitter;
 class IndigoSequence;
 class SchedulerTaskForm;
 
@@ -69,11 +69,8 @@ signals:
 	void applyTask(const QString& serverName, const QString& text);
 	void submitUrgent(const QString& text);
 
-protected:
-	void showEvent(QShowEvent *event) override;
-
 private slots:
-	void onToggleMode();
+	void onModeSelected(int index);
 	void onOpenFile();
 	void onSaveFile();
 	void onNew();
@@ -83,19 +80,23 @@ private:
 	void showText(const QString& text);
 	void updateTitle();
 	void updateButtons();
-	void setStatus(const QString& text, const QString& color = QString());
+	enum StatusKind { StatusInfo, StatusOk, StatusAlert };
+	void setStatus(const QString& text, StatusKind kind = StatusInfo);
+	void showVisualPage(QWidget *page);
+	void showPages(bool text);
 
 	QLabel *m_title;
 	QLabel *m_status;
-	QToolButton *m_mode_button;
+	QComboBox *m_mode_select;
 	QPushButton *m_upload_button;
 	QPushButton *m_apply_button;
 	QPushButton *m_urgent_button;
 	QToolButton *m_new_button;
 	QToolButton *m_open_button;
 	QToolButton *m_save_button;
-	QStackedWidget *m_pages;
-	QSplitter *m_visual;
+	QTabWidget *m_pages;
+	// the visual editor shows either the header form or the steps, each in the full width
+	QWidget *m_form_page;
 	SchedulerTaskForm *m_form;
 	IndigoSequence *m_body;
 	QPlainTextEdit *m_text;
@@ -105,7 +106,6 @@ private:
 	QString m_saved_text;
 	bool m_running = false;
 	bool m_loading = false;
-	bool m_split_done = false;
 };
 
 #endif // __SCHEDULERTASKEDITOR_H
