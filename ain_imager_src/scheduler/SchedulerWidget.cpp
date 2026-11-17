@@ -364,27 +364,30 @@ QWidget *SchedulerWidget::buildTasksPage() {
 	});
 	button("Edit", "Open the selected task in the editor", [this]() { editTask(selectedTask()); });
 	button("Reset", "Queue the task again with its run and retry counters cleared", [this]() { taskCommand(selectedTask(), "RESET"); });
-	button("Enable", "Allow the task to be selected", [this]() { taskCommand(selectedTask(), "ENABLE"); });
-	button("Disable", "Keep the task but never select it", [this]() { taskCommand(selectedTask(), "DISABLE"); });
 	QToolButton *up = button("", "Move up; the order only breaks ties", [this]() { taskCommand(selectedTask(), "MOVE_UP"); });
 	up->setIcon(QIcon(":resource/arrow-up.png"));
 	QToolButton *down = button("", "Move down; the order only breaks ties", [this]() { taskCommand(selectedTask(), "MOVE_DOWN"); });
 	down->setIcon(QIcon(":resource/arrow-down.png"));
-	button("Delete", "Delete the task; a running task is aborted first", [this]() { deleteTask(selectedTask()); });
+	QToolButton *remove = button("", "Delete the task; a running task is aborted first", [this]() { deleteTask(selectedTask()); });
+	remove->setIcon(QIcon(":resource/delete.png"));
 	buttons->addSpacing(12);
-	button("Export...", "Save all stored tasks as .task files to a folder", [this]() { onExportTasks(); });
-	button("Import...", "Add tasks from .task files", [this]() { onImportTasks(); });
+	QToolButton *import = button("", "Import tasks from .task files", [this]() { onImportTasks(); });
+	import->setIcon(QIcon(":resource/folder.png"));
+	QToolButton *exporting = button("", "Export all stored tasks as .task files to a folder", [this]() { onExportTasks(); });
+	exporting->setIcon(QIcon(":resource/save.png"));
 	buttons->addStretch();
 	button("Reset all", "Reset every task; the running task is left alone", [this]() {
 		if (QMessageBox::question(this, "Reset all tasks", "Reset the run and retry counters of all tasks?") == QMessageBox::Yes) {
 			send({ SchedulerRequest::switches1(selectedAgent(), P_TASK_COMMAND, "RESET_ALL") });
 		}
 	});
-	button("Delete all", "Delete every task except the hook tasks; only while the scheduler is stopped", [this]() {
+	QToolButton *remove_all = button("All", "Delete every task except the hook tasks; only while the scheduler is stopped", [this]() {
 		if (QMessageBox::question(this, "Delete all tasks", "Delete all tasks except the tasks used as hooks?\n\nThis can not be undone; export the tasks first to keep them.") == QMessageBox::Yes) {
 			send({ SchedulerRequest::switches1(selectedAgent(), P_TASK_COMMAND, "DELETE_ALL") });
 		}
 	});
+	remove_all->setIcon(QIcon(":resource/delete.png"));
+	remove_all->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 	layout->addLayout(buttons);
 	return page;
 }
@@ -964,8 +967,6 @@ void SchedulerWidget::onTasksContextMenu(const QPoint& pos) {
 	menu.addAction("Save to file...", this, [this, name]() { saveTaskToFile(name); })->setEnabled(stored);
 	menu.addSeparator();
 	menu.addAction("Reset", this, [this, name]() { taskCommand(name, "RESET"); });
-	menu.addAction("Enable", this, [this, name]() { taskCommand(name, "ENABLE"); });
-	menu.addAction("Disable", this, [this, name]() { taskCommand(name, "DISABLE"); });
 	menu.addAction("Move up", this, [this, name]() { taskCommand(name, "MOVE_UP"); });
 	menu.addAction("Move down", this, [this, name]() { taskCommand(name, "MOVE_DOWN"); });
 	menu.addSeparator();

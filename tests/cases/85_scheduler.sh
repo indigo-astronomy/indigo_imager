@@ -85,7 +85,7 @@ ain_do sched_click "Add to scheduler"
 check "it is stored" wait_for 10 sched_has "SCHED SchedulerTasks Code | QUEUED"
 ain_do sched_select Code
 ain_do answer Yes
-ain_do sched_click Delete
+ain_do sched_click "Delete the task; a running task is aborted first"
 check "it is deleted" wait_for 10 sched_lacks "SCHED SchedulerTasks Code"
 
 section "the scheduler runs the task"
@@ -100,10 +100,6 @@ section "task commands"
 ain_do sched_select Test
 ain_do sched_click Reset
 check "reset queues the task again" wait_for 10 sched_has "SCHED SchedulerTasks Test | QUEUED"
-ain_do sched_click Disable
-check "disable" wait_for 10 sched_has "SCHED SchedulerTasks Test | DISABLED"
-ain_do sched_click Enable
-check "enable" wait_for 10 sched_has "SCHED SchedulerTasks Test | QUEUED"
 
 section "an edit of the stored task"
 ain_do sched_edit Test
@@ -143,7 +139,7 @@ ain_do shot "$CASE_DIR/tasks.png"
 section "delete"
 ain_do answer Yes
 ain_do sched_select Test
-ain_do sched_click Delete
+ain_do sched_click "Delete the task; a running task is aborted first"
 check "the task is deleted" wait_for 10 sched_lacks "SCHED SchedulerTasks Test"
 
 stop_ain
