@@ -77,6 +77,10 @@ private slots:
 
 private:
 	bool showVisual(const QString& text, QString *error);
+	/* the form shows the kind of the first goto of the steps */
+	void showGotoOfSteps();
+	/* the first goto of the steps goes to the task target, added when there is none */
+	void applyTargetToSteps();
 	void showText(const QString& text);
 	void updateTitle();
 	void updateButtons();

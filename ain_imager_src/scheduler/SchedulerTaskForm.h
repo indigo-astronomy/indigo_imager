@@ -52,11 +52,17 @@ public:
 	QString taskName() const;
 	void setTaskName(const QString& name);
 	bool hasTarget() const;
+	/* the first goto of the steps: a precise goto with the exposure, or a slew */
+	bool preciseGoto() const;
+	double preciseExposure() const;
+	void setGoto(bool precise, double exposure);
 
 	void setReadOnly(bool readOnly);
 
 signals:
 	void changed();
+	/* the target or the kind of its goto was changed by the user, and the target is set */
+	void targetChanged();
 
 private:
 	struct Field {
@@ -72,6 +78,7 @@ private:
 	void addField(const QString& key, const QString& label, const QString& tooltip, QList<QWidget*> widgets,
 		std::function<QString()> format, std::function<bool(const QString&)> parse, std::function<void()> reset);
 	void updateEnabled();
+	void emitTargetChanged();
 	void connectChanged(QWidget *widget);
 	Field *field(const QString& key);
 	const Field *field(const QString& key) const;
@@ -81,6 +88,7 @@ private:
 	int m_row = 0;
 	bool m_readOnly = false;
 	bool m_loading = false;
+	bool m_target_edited = false;
 
 	// the loaded value of a key and how the form formats it, to write unchanged values back as loaded
 	QMap<QString, QPair<QString, QString>> m_loaded;
@@ -92,6 +100,8 @@ private:
 	QSpinBox *m_priority_level;
 	QLineEditSG *m_target_ra;
 	QLineEditSG *m_target_dec;
+	QCheckBox *m_precise_goto;
+	QDoubleSpinBox *m_precise_exposure;
 	QComboBox *m_window_kind;
 	QDateTimeEdit *m_window_start;
 	QDateTimeEdit *m_window_end;

@@ -16,6 +16,9 @@
 #include "IndigoSequence.h"
 #include "IndigoSequenceItem.h"
 #include "IndigoSequenceParser.h"
+#include "QLineEditSG.h"
+#include <QCheckBox>
+#include <QDoubleSpinBox>
 
 static int failures = 0;
 static int checks = 0;
@@ -203,6 +206,86 @@ static void testBuild() {
 	CHECK(qAbs(go->getParameter(1).toDouble() - 0.712306) < 1e-4, "sexagesimal RA: %f", go->getParameter(1).toDouble());
 }
 
+static QCheckBox *checkBox(QWidget *parent, const QString& text) {
+	for (QCheckBox *box : parent->findChildren<QCheckBox*>()) {
+		if (box->text() == text) return box;
+	}
+	return nullptr;
+}
+
+/* the target of the Properties page and its goto in the steps */
+static void testTargetGoto() {
+	const char *with_slew =
+		"// @task  M31\n"
+		"// @target 00:42:44.30 +41:16:09.00\n\n"
+		"var sequence = new Sequence(scheduler_task.name);\n"
+		"sequence.wait(1);\n"
+		"sequence.slew(\"1:00:00\", \"20:00:00\");\n"
+		"sequence.capture_batch(2, 10);\n"
+		"sequence.slew(\"2:00:00\", \"30:00:00\");\n"
+		"sequence.start();\n";
+	SchedulerTaskEditor editor;
+	editor.loadTask(with_slew, "M31");
+	SchedulerTaskForm *form = editor.findChild<SchedulerTaskForm*>();
+	QCheckBox *precise = form ? checkBox(form, "precise") : nullptr;
+	CHECK(editor.isVisualMode() && precise, "the target has a precise goto option");
+	if (!precise) return;
+	CHECK(!precise->isChecked(), "a slew is not a precise goto");
+
+	QDoubleSpinBox *exposure = nullptr;
+	for (QDoubleSpinBox *spin : form->findChildren<QDoubleSpinBox*>()) {
+		if (spin->suffix() == " s") exposure = spin;
+	}
+	CHECK(exposure, "the precise goto has an exposure");
+	if (!exposure) return;
+	exposure->setValue(5);
+	precise->click();
+	QString body = SchedulerTask::fromText(editor.taskText()).body();
+	CHECK(body.contains("sequence.wait(1);\nsequence.precise_goto(5, scheduler_task.ra, scheduler_task.dec);\nsequence.capture_batch(2, 10);"),
+		"the first slew becomes a precise goto to the target:\n%s", u(body).constData());
+	CHECK(body.contains("sequence.slew(\"2:00:00\", \"30:00:00\");") || body.contains("sequence.slew(2, 30);"), "the second goto is kept:\n%s", u(body).constData());
+
+	precise->click();
+	body = SchedulerTask::fromText(editor.taskText()).body();
+	CHECK(body.contains("sequence.wait(1);\nsequence.slew(scheduler_task.ra, scheduler_task.dec);"), "unchecked it is a slew:\n%s", u(body).constData());
+
+	// a task without a goto gets one as the first step when the target is set
+	const char *without_goto =
+		"// @task A\n\n"
+		"var sequence = new Sequence(scheduler_task.name);\n"
+		"sequence.capture_batch(2, 10);\n"
+		"sequence.start();\n";
+	editor.loadTask(without_goto, "A");
+	QLineEditSG *ra = nullptr, *dec = nullptr;
+	for (QLineEditSG *edit : form->findChildren<QLineEditSG*>()) {
+		if (edit->sgMode() == QLineEditSG::RA) ra = edit; else dec = edit;
+	}
+	CHECK(ra && dec, "the target has RA and Dec");
+	if (!ra || !dec) return;
+	checkBox(form, "Target")->click();
+	CHECK(!SchedulerTask::fromText(editor.taskText()).body().contains("slew"), "no goto before the target has coordinates");
+	ra->setText("10:00:00");
+	emit ra->textEdited(ra->text());
+	emit ra->editingFinished();
+	dec->setText("+20:00:00");
+	emit dec->textEdited(dec->text());
+	emit dec->editingFinished();
+	body = SchedulerTask::fromText(editor.taskText()).body();
+	CHECK(body.contains("Sequence(scheduler_task.name);\nsequence.slew(scheduler_task.ra, scheduler_task.dec);\nsequence.capture_batch(2, 10);"),
+		"a slew to the target is the first step:\n%s", u(body).constData());
+
+	// a loaded precise goto is shown
+	const char *with_precise =
+		"// @task   B\n"
+		"// @target 10:00:00.00 +20:00:00.00\n\n"
+		"var sequence = new Sequence(scheduler_task.name);\n"
+		"sequence.precise_goto(3, scheduler_task.ra, scheduler_task.dec);\n"
+		"sequence.start();\n";
+	editor.loadTask(with_precise, "B");
+	CHECK(precise->isChecked() && exposure->value() == 3, "the precise goto of the steps is shown");
+	CHECK(editor.taskText() == with_precise, "loading does not change the steps:\n%s", u(editor.taskText()).constData());
+}
+
 int main(int argc, char *argv[]) {
 	qputenv("QT_QPA_PLATFORM", "offscreen");
 	QApplication app(argc, argv);
@@ -212,6 +295,7 @@ int main(int argc, char *argv[]) {
 	testGuideTasks();
 	testFallback();
 	testBuild();
+	testTargetGoto();
 	fprintf(stderr, "%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;
 }

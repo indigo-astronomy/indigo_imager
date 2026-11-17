@@ -21,6 +21,7 @@
 #include "SchedulerTask.h"
 #include "IndigoSequence.h"
 #include "IndigoSequenceItem.h"
+#include "SequenceItemModel.h"
 
 #include <QDir>
 #include <QFile>
@@ -47,7 +48,6 @@ static QString s_last_dir;
 SchedulerTaskEditor::SchedulerTaskEditor(QWidget *parent) : QWidget(parent) {
 	setObjectName("SchedulerTaskEditor");
 	QVBoxLayout *layout = new QVBoxLayout(this);
-	layout->setContentsMargins(2, 2, 2, 2);
 
 	QHBoxLayout *toolbar = new QHBoxLayout();
 	toolbar->setContentsMargins(1, 1, 1, 1);
@@ -132,6 +132,13 @@ SchedulerTaskEditor::SchedulerTaskEditor(QWidget *parent) : QWidget(parent) {
 	m_form_page = form_scroll;
 	m_body = new IndigoSequence();
 	m_body->setTaskMode(true);
+	connect(m_form, &SchedulerTaskForm::targetChanged, this, &SchedulerTaskEditor::applyTargetToSteps);
+	// the steps may have been edited: the form shows the goto they have now
+	connect(m_pages, &QTabWidget::currentChanged, this, [this]() {
+		if (m_pages->currentWidget() == m_form_page) {
+			showGotoOfSteps();
+		}
+	});
 
 	m_text = new QPlainTextEdit();
 	m_text->setObjectName("SchedulerEditorText");
@@ -202,8 +209,65 @@ bool SchedulerTaskEditor::showVisual(const QString& text, QString *error) {
 		m_form->reset();
 		return false;
 	}
+	showGotoOfSteps();
 	showPages(false);
 	return true;
+}
+
+// the first goto of the steps that runs, a slew or a precise goto, in a repeat as well
+static FunctionCall *first_goto(QVector<FunctionCall>& calls) {
+	for (FunctionCall& call : calls) {
+		if (call.omitted) {
+			continue;
+		}
+		if (call.functionName == SC_SLEW || call.functionName == SC_PRECISE_GOTO) {
+			return &call;
+		}
+		if (FunctionCall *nested = first_goto(call.nestedCalls)) {
+			return nested;
+		}
+	}
+	return nullptr;
+}
+
+void SchedulerTaskEditor::showGotoOfSteps() {
+	QVector<FunctionCall> calls = m_body->functionCallsFromView();
+	FunctionCall *call = first_goto(calls);
+	bool precise = call && call->functionName == SC_PRECISE_GOTO && !call->parameters.isEmpty();
+	m_form->setGoto(precise, precise ? call->parameters.first().toDouble() : m_form->preciseExposure());
+}
+
+void SchedulerTaskEditor::applyTargetToSteps() {
+	// the first goto goes to the task target, a new one is the first step
+	QVector<FunctionCall> calls = m_body->functionCallsFromView();
+	FunctionCall *call = first_goto(calls);
+	FunctionCall target_goto;
+	target_goto.omitted = false;
+	target_goto.objectName = "sequence";
+	if (m_form->preciseGoto()) {
+		target_goto.functionName = SC_PRECISE_GOTO;
+		target_goto.parameters = QStringList() << QString::number(m_form->preciseExposure(), 'g', 10) << TASK_TARGET_RA << TASK_TARGET_DEC;
+	} else {
+		target_goto.functionName = SC_SLEW;
+		target_goto.parameters = QStringList() << TASK_TARGET_RA << TASK_TARGET_DEC;
+	}
+	if (call) {
+		if (call->functionName == target_goto.functionName && call->parameters == target_goto.parameters) {
+			return;
+		}
+		call->functionName = target_goto.functionName;
+		call->parameters = target_goto.parameters;
+	} else {
+		// after the constructor of the sequence
+		calls.insert(calls.isEmpty() ? 0 : 1, target_goto);
+	}
+	m_body->viewFromFunctionCalls(calls);
+	if (call) {
+		setStatus("The first goto of the steps now goes to the target.");
+	} else {
+		setStatus(QString("A %1 to the target is added as the first step.").arg(m_form->preciseGoto() ? "precise goto" : "slew"));
+	}
+	updateButtons();
 }
 
 void SchedulerTaskEditor::showText(const QString& text) {
@@ -231,6 +295,7 @@ void SchedulerTaskEditor::newTask() {
 	m_form->reset();
 	m_form->setTaskName("New task");
 	m_body->clear();
+	m_form->setGoto(false, 1);
 	showPages(false);
 	showVisualPage(m_form_page);
 	setStatus(QString());

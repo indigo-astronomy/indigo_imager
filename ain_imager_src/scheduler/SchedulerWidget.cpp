@@ -28,6 +28,7 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFormLayout>
+#include <QFrame>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -108,8 +109,26 @@ static QString ledHtml(int state) {
 	}
 }
 
+/* a page of the tabs as the pages of the other tabs of Ain: a styled panel with the default layout margins */
+static QFrame *makePage(QBoxLayout **layout) {
+	QFrame *page = new QFrame();
+	page->setFrameShape(QFrame::StyledPanel);
+	page->setContentsMargins(0, 0, 0, 0);
+	*layout = new QVBoxLayout(page);
+	return page;
+}
+
 static QTreeWidget *makeList(const QStringList& columns) {
 	QTreeWidget *list = new QTreeWidget();
+	// the style takes the frame of a list in a tab away, Ain draws it as for the object list
+	// and the column titles get room at the sides, not above and below
+	list->setStyleSheet("QTreeWidget {border: 1px solid #404040;} QHeaderView::section {padding: 0px 4px;}");
+	// the header is as high as a row, a row with the state light of the lists
+	QTreeWidgetItem *probe = new QTreeWidgetItem(list, QStringList("Xg"));
+	probe->setIcon(0, QIcon(":resource/led-grey.png"));
+	list->ensurePolished();
+	list->header()->setFixedHeight(list->sizeHintForRow(0));
+	delete probe;
 	list->setColumnCount(columns.size());
 	list->setHeaderLabels(columns);
 	list->setRootIsDecorated(false);
@@ -316,9 +335,8 @@ void SchedulerWidget::buildControlPanel() {
 // MARK: Pages
 
 QWidget *SchedulerWidget::buildTasksPage() {
-	QWidget *page = new QWidget();
-	QVBoxLayout *layout = new QVBoxLayout(page);
-	layout->setContentsMargins(2, 2, 2, 2);
+	QBoxLayout *layout;
+	QFrame *page = makePage(&layout);
 
 	m_tasks = makeList({ "Task", "State", "Priority", "Runs", "Retries", "Duration" });
 	m_tasks->setObjectName("SchedulerTasks");
@@ -378,13 +396,15 @@ QWidget *SchedulerWidget::buildPlanPage() {
 	connect(m_plan, &QTreeWidget::itemActivated, this, [this](QTreeWidgetItem *item) {
 		editTask(item->data(0, Qt::UserRole).toString());
 	});
-	return m_plan;
+	QBoxLayout *layout;
+	QFrame *page = makePage(&layout);
+	layout->addWidget(m_plan);
+	return page;
 }
 
 QWidget *SchedulerWidget::buildHistoryPage() {
-	QWidget *page = new QWidget();
-	QVBoxLayout *layout = new QVBoxLayout(page);
-	layout->setContentsMargins(2, 2, 2, 2);
+	QBoxLayout *layout;
+	QFrame *page = makePage(&layout);
 	m_history = makeList({ "When (UTC)", "Task", "Run", "Kind", "Result", "Reason" });
 	m_history->setObjectName("SchedulerHistory");
 	m_history->setToolTip("The finished runs, newest first");

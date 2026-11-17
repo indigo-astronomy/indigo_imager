@@ -134,6 +134,10 @@ SchedulerTaskForm::SchedulerTaskForm(QWidget *parent) : QWidget(parent) {
 	m_target_ra->setPlaceholderText("RA hh:mm:ss");
 	m_target_dec = new QLineEditSG(QLineEditSG::DEC);
 	m_target_dec->setPlaceholderText("Dec ±dd:mm:ss");
+	// wide enough for the longest values and their placeholders
+	int coordinate_width = fontMetrics().horizontalAdvance("Dec ±dd:mm:ss.ss") + 16;
+	m_target_ra->setFixedWidth(coordinate_width);
+	m_target_dec->setFixedWidth(coordinate_width);
 	QToolButton *find = new QToolButton();
 	find->setIcon(QIcon(":resource/find.png"));
 	find->setToolTip("Select the object from the database; an empty task name is set to the object name");
@@ -152,11 +156,33 @@ SchedulerTaskForm::SchedulerTaskForm(QWidget *parent) : QWidget(parent) {
 			}
 			menu->close();
 			emit changed();
+			emitTargetChanged();
 		});
 		menu->exec(find->mapToGlobal(QPoint(0, find->height())));
 		delete menu;
 	});
-	addField("target", "Target", "J2000 coordinates, RA in hours and Dec in degrees.\nThe body uses them as scheduler_task.ra and scheduler_task.dec.", { m_target_ra, m_target_dec, find },
+	// the first goto of the steps goes to the target: a precise goto with this exposure, or a slew
+	m_precise_goto = new QCheckBox("precise");
+	m_precise_goto->setToolTip("The first goto of the steps goes to the target.\nChecked: a precise goto that plate solves exposures of this length to center the target.\nUnchecked: a slew.");
+	m_precise_exposure = doubleSpin(0, 80, 1, 1, 1);
+	m_precise_exposure->setSuffix(" s");
+	m_precise_exposure->setToolTip("The exposure of the precise goto");
+	connect(m_precise_goto, &QCheckBox::toggled, this, [this]() {
+		updateEnabled();
+		emitTargetChanged();
+	});
+	connect(m_precise_exposure, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &SchedulerTaskForm::emitTargetChanged);
+	// a typed coordinate counts when the edit is finished
+	for (QLineEditSG *edit : { m_target_ra, m_target_dec }) {
+		connect(edit, &QLineEdit::textEdited, this, [this]() { m_target_edited = true; });
+		connect(edit, &QLineEdit::editingFinished, this, [this]() {
+			if (m_target_edited) {
+				m_target_edited = false;
+				emitTargetChanged();
+			}
+		});
+	}
+	addField("target", "Target", "J2000 coordinates, RA in hours and Dec in degrees.\nThe body uses them as scheduler_task.ra and scheduler_task.dec: the first goto of the steps goes to them.", { m_target_ra, m_target_dec, find, m_precise_goto, m_precise_exposure },
 		[this]() {
 			return SexagesimalConverter::doubleToString(m_target_ra->value(), 2) + " " + SexagesimalConverter::doubleToString(m_target_dec->value(), 2, true);
 		},
@@ -456,9 +482,10 @@ void SchedulerTaskForm::addField(const QString& key, const QString& label, const
 	} else {
 		field.enable = new QCheckBox(label);
 		field.enable->setToolTip(QString("@%1: %2\nUnchecked: not set, the scheduler uses its default").arg(key, tooltip));
-		connect(field.enable, &QCheckBox::toggled, this, [this]() {
+		connect(field.enable, &QCheckBox::toggled, this, [this, key]() {
 			updateEnabled();
 			if (!m_loading) emit changed();
+			if (key == "target") emitTargetChanged();
 		});
 		m_layout->addWidget(field.enable, m_row, 0);
 	}
@@ -595,6 +622,29 @@ QString SchedulerTaskForm::taskName() const {
 
 void SchedulerTaskForm::setTaskName(const QString& name) {
 	m_name->setText(name);
+}
+
+void SchedulerTaskForm::emitTargetChanged() {
+	if (!m_loading && hasTarget() && !m_target_ra->text().trimmed().isEmpty() && !m_target_dec->text().trimmed().isEmpty()) {
+		emit targetChanged();
+	}
+}
+
+bool SchedulerTaskForm::preciseGoto() const {
+	return m_precise_goto->isChecked();
+}
+
+double SchedulerTaskForm::preciseExposure() const {
+	return m_precise_exposure->value();
+}
+
+void SchedulerTaskForm::setGoto(bool precise, double exposure) {
+	bool loading = m_loading;
+	m_loading = true;
+	m_precise_goto->setChecked(precise);
+	if (precise) m_precise_exposure->setValue(exposure);
+	m_loading = loading;
+	updateEnabled();
 }
 
 bool SchedulerTaskForm::hasTarget() const {

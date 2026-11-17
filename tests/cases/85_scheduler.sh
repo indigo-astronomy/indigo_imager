@@ -112,6 +112,7 @@ ain_do tab Steps
 ain_do shot "$CASE_DIR/steps.png"
 ain_do tab Properties
 ain_do sched_click Target
+ain_do shot "$CASE_DIR/target.png"
 ain_do sched_press "Select the object from the database; an empty task name is set to the object name"
 ain_do popup_shot "$CASE_DIR/search.png"
 ain_do popup_close
@@ -134,7 +135,10 @@ check "the task list shows the hook" wait_for 10 sched_has "SCHED SchedulerTasks
 ain_do sched_hook IDLE ""
 ain_do sched_click Apply
 check "the hook is cleared" wait_for 10 sched_has "SCHED SchedulerTasks Test | QUEUED"
+ain_do tab History
+ain_do shot "$CASE_DIR/history.png"
 ain_do tab Tasks
+ain_do shot "$CASE_DIR/tasks.png"
 
 section "delete"
 ain_do answer Yes
