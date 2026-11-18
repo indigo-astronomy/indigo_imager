@@ -15,6 +15,7 @@ SOURCES += \
 	$$SRC/scheduler/SchedulerTask.cpp \
 	$$SRC/scheduler/SchedulerTaskForm.cpp \
 	$$SRC/scheduler/SchedulerTaskEditor.cpp \
+	$$SRC/scheduler/SchedulerSkyChart.cpp \
 	$$SRC/sequencer/IndigoSequence.cpp \
 	$$SRC/sequencer/IndigoSequenceItem.cpp \
 	$$SRC/sequencer/IndigoSequenceParser.cpp \
@@ -26,6 +27,7 @@ HEADERS += \
 	$$SRC/scheduler/SchedulerTask.h \
 	$$SRC/scheduler/SchedulerTaskForm.h \
 	$$SRC/scheduler/SchedulerTaskEditor.h \
+	$$SRC/scheduler/SchedulerSkyChart.h \
 	$$SRC/sequencer/IndigoSequence.h \
 	$$SRC/sequencer/IndigoSequenceItem.h \
 	$$SRC/sequencer/IndigoSequenceParser.h \

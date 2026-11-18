@@ -5,6 +5,7 @@
 // same steps, and a task it can not show must stay complete as text.
 
 #include <QApplication>
+#include <QDateTime>
 #include <QComboBox>
 #include <QTabWidget>
 #include <QFile>
@@ -15,6 +16,7 @@
 #include "SchedulerTask.h"
 #include "SchedulerTaskForm.h"
 #include "SchedulerTaskEditor.h"
+#include "SchedulerSkyChart.h"
 #include "IndigoSequence.h"
 #include "IndigoSequenceItem.h"
 #include "IndigoSequenceParser.h"
@@ -361,6 +363,30 @@ static void testHook() {
 	CHECK(!plain.setHeader({ { "task", "A" }, { "hook", "" } }, &error), "@hook is not a key any more");
 }
 
+/* the positions of the chart, against values of the precise routines of INDIGO */
+static void testSky() {
+	const qint64 t = QDateTime(QDate(2026, 11, 18), QTime(18, 0), Qt::UTC).toSecsSinceEpoch();
+	double sun = SchedulerSky::sunAltitude(t, 42.7, 23.3);
+	CHECK(sun < -30 && sun > -45, "the Sun at 18 UTC in Sofia in November is well below the horizon: %.1f", sun);
+	double noon = SchedulerSky::sunAltitude(QDateTime(QDate(2026, 3, 20), QTime(12, 7), Qt::UTC).toSecsSinceEpoch(), 0, 0);
+	CHECK(noon > 88, "the Sun at noon on the equator at the equinox is near the zenith: %.1f", noon);
+	double ra, dec, parallax;
+	SchedulerSky::moon(t, &ra, &dec, &parallax);
+	CHECK(parallax > 0.89 && parallax < 1.02 && dec > -30 && dec < 30, "the Moon has its parallax and declination: %.2f %.1f", parallax, dec);
+	// M31 transits near the zenith of Sofia
+	double best = -90;
+	for (qint64 s = t - 12 * 3600; s < t + 12 * 3600; s += 300) best = qMax(best, SchedulerSky::targetAltitude(0.7122, 41.269, s, 42.7, 23.3));
+	CHECK(best > 87 && best < 89, "M31 culminates at 90 - |42.7 - 41.3| degrees: %.1f", best);
+
+	QPair<qint64, qint64> night = SchedulerSky::nightWindow(QDateTime(QDate(2026, 11, 18), QTime(12, 0), Qt::UTC).toSecsSinceEpoch(), 42.7, 23.3);
+	QDateTime start = QDateTime::fromSecsSinceEpoch(night.first, Qt::UTC), end = QDateTime::fromSecsSinceEpoch(night.second, Qt::UTC);
+	CHECK(start.time() == QTime(14, 0) && end.date() == QDate(2026, 11, 19) && end.time() == QTime(7, 0),
+		"the night in Sofia, sunset 15:00 and sunrise 05:15 UTC, is shown from an hour before to an hour after: %s - %s", u(start.toString(Qt::ISODate)).constData(), u(end.toString(Qt::ISODate)).constData());
+	qint64 polar_now = QDateTime(QDate(2026, 12, 21), QTime(12, 0), Qt::UTC).toSecsSinceEpoch();
+	QPair<qint64, qint64> polar = SchedulerSky::nightWindow(polar_now, 80, 15);
+	CHECK(polar.second - polar.first == 24 * 3600 && polar.first <= polar_now, "a night without end shows a day");
+}
+
 int main(int argc, char *argv[]) {
 	qputenv("QT_QPA_PLATFORM", "offscreen");
 	QApplication app(argc, argv);
@@ -372,6 +398,7 @@ int main(int argc, char *argv[]) {
 	testBuild();
 	testTargetGoto();
 	testHook();
+	testSky();
 	fprintf(stderr, "%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;
 }

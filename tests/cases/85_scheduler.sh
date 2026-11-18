@@ -61,6 +61,16 @@ sequence.capture_batch(2, 2);
 sequence.start();
 EOF
 
+cat > "$CASE_DIR/m31.task" <<'EOF'
+// @task     M31
+// @target   00:42:44 +41:16:09
+// @altitude > 30
+
+var sequence = new Sequence(scheduler_task.name);
+sequence.wait(1);
+sequence.start();
+EOF
+
 cat > "$CASE_DIR/flats.task" <<'EOF'
 // @task     Flats
 // @priority normal 40
@@ -264,8 +274,24 @@ ain_do sched_select Park
 ain_do sched_click "Delete the task; a running task is aborted first"
 check "it is deleted" wait_for 10 sched_lacks "SCHED SchedulerTasks Park"
 
+section "the chart of the night"
+prop_set "Mount Agent.GEOGRAPHIC_COORDINATES.LATITUDE=42.7;LONGITUDE=23.3"
+check "it has the site of the Mount Agent" wait_for 10 sched_has "SCHED SchedulerChart site 42.7 23.3"
+ain_do sched_open "$CASE_DIR/m31.task"
+ain_do sched_click Apply
+check "the task is stored" wait_for 10 sched_has "SCHED SchedulerTasks M31 | QUEUED"
+ain_do tab Tasks
+ain_do sched_select M31
+check "it shows the target of the task, the selected task over the others" wait_for 10 sched_has_all "| targets M31 |" "| highlighted M31"
+check "and its run in the night plan" wait_for 10 sched_has "| runs M31 |"
+ain_do shot "$CASE_DIR/chart.png"
+ain_do answer Yes
+ain_do sched_click "Delete the task; a running task is aborted first"
+check "a deleted task is not shown" wait_for 10 sched_has "| targets  |"
+
 section "a task made a hook by mistake"
 ain_do sched_open "$CASE_DIR/flats.task"
+ain_do tab "Task editor"
 ain_do sched_page Properties
 ain_do sched_combo normal hook
 ain_do sched_page Text

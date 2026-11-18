@@ -58,6 +58,7 @@ SOURCES += \
 	$$PWD/scheduler/SchedulerTaskForm.cpp \
 	$$PWD/scheduler/SchedulerTaskEditor.cpp \
 	$$PWD/scheduler/SchedulerWidget.cpp \
+	$$PWD/scheduler/SchedulerSkyChart.cpp \
 	$$PWD/scheduler_tab.cpp \
 	$$PWD/PolarAlignmentWidget/PolarAlignmentWidget.cpp \
 	$$PWD/../external/DomeView/DomeView.cpp \
@@ -127,6 +128,7 @@ HEADERS += \
 	$$PWD/scheduler/SchedulerTaskForm.h \
 	$$PWD/scheduler/SchedulerTaskEditor.h \
 	$$PWD/scheduler/SchedulerWidget.h \
+	$$PWD/scheduler/SchedulerSkyChart.h \
 	$$PWD/scheduler/SchedulerProperty.h \
 	$$PWD/PolarAlignmentWidget/PolarAlignmentWidget.h \
 	$$PWD/../external/DomeView/DomeView.h \

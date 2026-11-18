@@ -20,6 +20,8 @@
 #include "SchedulerTaskEditor.h"
 #include "SchedulerTask.h"
 #include "SchedulerTaskForm.h"
+#include "SchedulerSkyChart.h"
+#include "SexagesimalConverter.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -38,6 +40,7 @@
 #include <QLineEdit>
 #include <QMenu>
 #include <QMessageBox>
+#include <QDateTime>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QRegularExpression>
@@ -55,6 +58,7 @@
 #define SCHEDULER_AGENT_PREFIX     "Scheduler Agent"
 #define SCRIPTING_AGENT_PREFIX     "Scripting Agent"
 #define IMAGER_AGENT_PREFIX        "Imager Agent"
+#define MOUNT_AGENT_PREFIX         "Mount Agent"
 
 #define P_ADD_TASK         "AGENT_SCHEDULER_ADD_TASK"
 #define P_TASK_PREFIX      "AGENT_SCHEDULER_TASK_"
@@ -240,6 +244,14 @@ QString SchedulerWidget::imagerAgent() const {
 	return IMAGER_AGENT_PREFIX + agent.mid(strlen(SCHEDULER_AGENT_PREFIX));
 }
 
+QString SchedulerWidget::mountAgent() const {
+	QString agent = selectedAgent();
+	if (agent.isEmpty()) {
+		return QString();
+	}
+	return MOUNT_AGENT_PREFIX + agent.mid(strlen(SCHEDULER_AGENT_PREFIX));
+}
+
 bool SchedulerWidget::wantsDevice(const QString& device) const {
 	return isSchedulerDevice(device) || (!selectedAgent().isEmpty() && device == scriptingAgent());
 }
@@ -248,7 +260,13 @@ bool SchedulerWidget::wantsProperty(const QString& device, const QString& name) 
 	if (wantsDevice(device)) {
 		return true;
 	}
-	return !selectedAgent().isEmpty() && device == imagerAgent() &&
+	if (selectedAgent().isEmpty()) {
+		return false;
+	}
+	if (device == mountAgent()) {
+		return name.isEmpty() || name == "GEOGRAPHIC_COORDINATES";
+	}
+	return device == imagerAgent() &&
 		(name.isEmpty() || name == "AGENT_START_PROCESS" || name == "AGENT_IMAGER_STATS" || name == "AGENT_IMAGER_BATCH");
 }
 
@@ -356,7 +374,15 @@ void SchedulerWidget::buildControlPanel() {
 	resetProgress();
 
 	layout->addItem(new QSpacerItem(1, 8), row++, 0);
-	QLabel *note = new QLabel("Times are UTC.");
+	title = new QLabel("Tonight:");
+	title->setStyleSheet("font-weight: bold;");
+	layout->addWidget(title, row++, 0, 1, 3);
+	m_chart = new SchedulerSkyChart();
+	m_chart->setToolTip("The altitude of the targets of the tasks over the night");
+	layout->addWidget(m_chart, row, 0, 1, 3);
+	layout->setRowStretch(row++, 1);
+	QLabel *note = new QLabel("Times are UTC. The thick parts are the runs of the night plan, the dashed curve is the Moon, the shading is the twilight.");
+	note->setWordWrap(true);
 	layout->addWidget(note, row++, 0, 1, 3);
 }
 
@@ -371,6 +397,8 @@ QWidget *SchedulerWidget::buildTasksPage() {
 	m_tasks->setContextMenuPolicy(Qt::CustomContextMenu);
 	m_tasks->setToolTip("The tasks in list order; the list order only breaks ties of priority and sky score.\nDouble click a task to edit it.");
 	connect(m_tasks, &QTreeWidget::itemActivated, this, &SchedulerWidget::onTaskActivated);
+	m_chart->setAccentSource(m_tasks);
+	connect(m_tasks, &QTreeWidget::currentItemChanged, this, [this]() { if (!m_tasks->property("rebuilding").toBool()) updateChart(); });
 	connect(m_tasks, &QTreeWidget::customContextMenuRequested, this, &SchedulerWidget::onTasksContextMenu);
 	layout->addWidget(m_tasks);
 
@@ -584,6 +612,7 @@ void SchedulerWidget::clearAgent() {
 	m_imager_process = SchedulerProperty();
 	m_imager_stats = SchedulerProperty();
 	m_imager_batch = SchedulerProperty();
+	m_site = SchedulerProperty();
 	m_progress_current.clear();
 	m_progress_shown = false;
 	m_task_started = false;
@@ -598,6 +627,7 @@ void SchedulerWidget::clearAgent() {
 	updateHistory();
 	updateSettings();
 	handleScripting(SchedulerProperty());
+	updateChart();
 }
 
 void SchedulerWidget::noteMessage(const QString& device, const QString& property, const QString& message) {
@@ -622,6 +652,8 @@ void SchedulerWidget::defineProperty(const SchedulerProperty& property) {
 		handleScripting(property);
 	} else if (property.device == imagerAgent()) {
 		handleImager(property);
+	} else if (property.device == mountAgent()) {
+		handleMount(property);
 	}
 }
 
@@ -632,6 +664,8 @@ void SchedulerWidget::updateProperty(const SchedulerProperty& property) {
 		handleScripting(property);
 	} else if (property.device == imagerAgent()) {
 		handleImager(property);
+	} else if (property.device == mountAgent()) {
+		handleMount(property);
 	}
 }
 
@@ -656,6 +690,9 @@ void SchedulerWidget::deleteProperty(const QString& device, const QString& name)
 		m_imager_process = SchedulerProperty();
 		m_imager_stats = SchedulerProperty();
 		m_imager_batch = SchedulerProperty();
+	} else if (device == mountAgent() && (name.isEmpty() || name == "GEOGRAPHIC_COORDINATES")) {
+		m_site = SchedulerProperty();
+		updateChart();
 	}
 	if (name.isEmpty() && isSchedulerDevice(device)) {
 		int index = m_agent_select->findData(device);
@@ -672,16 +709,20 @@ void SchedulerWidget::handleProperty(const SchedulerProperty& property) {
 		updateState();
 		updateEditorRunning();
 		updateTaskProgress();
+		updateChart();
 	} else if (name == P_TASK_STATE) {
 		updateTasks();
+		updateChart();
 	} else if (name == P_PLAN) {
 		updatePlan();
 		updateState();
+		updateChart();
 	} else if (name == P_HISTORY) {
 		updateHistory();
 	} else if (name == P_SETTINGS || name == P_HOOKS || name == P_NIGHT || name == P_DATA || name == P_DATA_DIR) {
 		updateSettings();
 	} else if (isTaskProperty(name)) {
+		updateChart();
 		// a stored task changed elsewhere, show it again unless it has local changes
 		if (m_editor->serverName() == property.label && !m_editor->isModified() && name != m_pending_property) {
 			QString text = property.text("TASK");
@@ -755,6 +796,70 @@ void SchedulerWidget::handleImager(const SchedulerProperty& property) {
 		return;
 	}
 	updateExposureProgress();
+}
+
+void SchedulerWidget::handleMount(const SchedulerProperty& property) {
+	if (property.name == "GEOGRAPHIC_COORDINATES") {
+		m_site = property;
+		updateChart();
+	}
+}
+
+/* The chart shows the targets of the stored tasks, the runs of the night plan, and the
+   task selected in the list and the running one over the others */
+void SchedulerWidget::updateChart() {
+	if (m_site.name.isEmpty() || m_site.item("LATITUDE") == nullptr) {
+		m_chart->setSite(false);
+	} else {
+		double longitude = m_site.number("LONGITUDE");
+		if (longitude > 180) longitude -= 360;
+		m_chart->setSite(true, m_site.number("LATITUDE"), longitude);
+	}
+
+	QList<SchedulerSkyChart::Target> targets;
+	for (const QString& name : storedTaskNames()) {
+		SchedulerTask task = SchedulerTask::fromText(taskText(name));
+		QStringList coordinates = task.value("target").split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+		if (coordinates.size() != 2) continue;
+		bool ok_ra, ok_dec;
+		SchedulerSkyChart::Target target;
+		target.name = name;
+		target.ra = SexagesimalConverter::stringToDouble(coordinates[0], &ok_ra);
+		target.dec = SexagesimalConverter::stringToDouble(coordinates[1], &ok_dec);
+		if (!ok_ra || !ok_dec) continue;
+		QString altitude = task.value("altitude");
+		altitude.remove(QRegularExpression("[<>=\\s]"));
+		bool ok_altitude;
+		double min_altitude = altitude.toDouble(&ok_altitude);
+		if (ok_altitude) target.minAltitude = min_altitude;
+		targets.append(target);
+	}
+	m_chart->setTargets(targets);
+
+	// the plan has "yyyy-MM-dd HH:mm-HH:mm | name | ...", a run that ends before it starts ends the next day
+	static const QRegularExpression when(R"(^(\d{4}-\d\d-\d\d) (\d\d:\d\d)-(\d\d:\d\d)$)");
+	QList<SchedulerSkyChart::Run> runs;
+	for (const SchedulerItem& item : m_properties.value(P_PLAN).items) {
+		QStringList columns = scheduler_label_columns(item.label);
+		QRegularExpressionMatch match = when.match(columns.value(0).trimmed());
+		if (!match.hasMatch()) continue;
+		QDateTime start = QDateTime::fromString(match.captured(1) + " " + match.captured(2), "yyyy-MM-dd HH:mm");
+		QDateTime end = QDateTime::fromString(match.captured(1) + " " + match.captured(3), "yyyy-MM-dd HH:mm");
+		start.setTimeSpec(Qt::UTC);
+		end.setTimeSpec(Qt::UTC);
+		if (end < start) end = end.addDays(1);
+		SchedulerSkyChart::Run run;
+		run.name = columns.value(1).trimmed();
+		run.start = start.toSecsSinceEpoch();
+		run.end = end.toSecsSinceEpoch();
+		runs.append(run);
+	}
+	m_chart->setRuns(runs);
+
+	QStringList highlighted;
+	if (m_tasks->currentItem()) highlighted << m_tasks->currentItem()->data(0, Qt::UserRole).toString();
+	if (!runningTask().isEmpty()) highlighted << runningTask();
+	m_chart->setHighlighted(highlighted);
 }
 
 void SchedulerWidget::resetProgress() {

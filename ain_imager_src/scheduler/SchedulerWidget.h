@@ -36,6 +36,7 @@ class QCheckBox;
 class QDoubleSpinBox;
 class QFormLayout;
 class SchedulerTaskEditor;
+class SchedulerSkyChart;
 
 /* The user interface of the INDIGO Scheduler Agent: a control panel with the
    state of the scheduler, and a view with the task list, the night plan, the
@@ -68,6 +69,8 @@ public:
 	QString scriptingAgent() const;
 	/* "Imager Agent" on the server of the selected scheduler */
 	QString imagerAgent() const;
+	/* "Mount Agent" on the server of the selected scheduler, it has the site */
+	QString mountAgent() const;
 	bool isRunning() const;
 	/* the task or hook the scheduler runs now, empty when none */
 	QString runningTask() const;
@@ -94,6 +97,8 @@ private:
 	void handleProperty(const SchedulerProperty& property);
 	void handleScripting(const SchedulerProperty& property);
 	void handleImager(const SchedulerProperty& property);
+	void handleMount(const SchedulerProperty& property);
+	void updateChart();
 	void updateTaskProgress();
 	void updateExposureProgress();
 	void resetProgress();
@@ -136,6 +141,7 @@ private:
 	QProgressBar *m_exposure_progress;
 	QProgressBar *m_batch_progress;
 	QProgressBar *m_sequence_progress;
+	SchedulerSkyChart *m_chart;
 
 	QTabWidget *m_tabs;
 	QTreeWidget *m_tasks;
@@ -160,6 +166,8 @@ private:
 	SchedulerProperty m_imager_process;
 	SchedulerProperty m_imager_stats;
 	SchedulerProperty m_imager_batch;
+	// the site of the Mount Agent on its server
+	SchedulerProperty m_site;
 	// the progress shows the last task the scheduler ran, from the start of its sequence to its end
 	QString m_progress_current;
 	bool m_progress_shown = false;

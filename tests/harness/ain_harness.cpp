@@ -166,6 +166,10 @@ static void sched_dump() {
 		QProgressBar *progress = qobject_cast<QProgressBar *>(named(name));
 		out(QString("SCHED %1 %2").arg(name, progress ? progress->text() : QString("?")));
 	}
+	QWidget *chart = named("SchedulerSkyChart");
+	QString chart_text;
+	if (chart) QMetaObject::invokeMethod(chart, "describe", Qt::DirectConnection, Q_RETURN_ARG(QString, chart_text));
+	out(QString("SCHED SchedulerChart %1").arg(chart ? chart_text : QString("?")));
 	QTabWidget *pages = qobject_cast<QTabWidget *>(named("SchedulerEditorPages"));
 	QWidget *editor = named("SchedulerTaskEditor");
 	if (editor) out("SCHED EditorSteps " + step_states(editor));
