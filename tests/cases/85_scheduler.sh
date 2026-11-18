@@ -73,13 +73,13 @@ ain_do sched_click "Add to scheduler"
 check "the scheduler accepts it" wait_for 10 sched_has "SCHED SchedulerEditorStatus Accepted"
 check "the task list shows it" wait_for 10 sched_has "SCHED SchedulerTasks Test | QUEUED"
 check "the editor now edits the stored task" sched_has "SCHED SchedulerEditorTitle Task 'Test'"
-ain_do sched_mode Text
+ain_do sched_page Text
 ain_do sched_text
 ain_do tab "Task editor"
 ain_do shot "$CASE_DIR/text.png"
 ain_do tab Tasks
 check "the stored task has the steps of the editor" grep -q '^SCHED_TEXT.*sequence.wait(3);' "$CASE_DIR/ain.out"
-ain_do sched_mode Visual
+ain_do sched_page Steps
 check "and is shown visually again" sched_has "SCHED EditorMode visual"
 
 section "a rejected task"
@@ -91,6 +91,9 @@ check "it is not stored" sched_lacks "SCHED SchedulerTasks Bad"
 section "a task with code besides steps"
 ain_do sched_open "$CASE_DIR/code.task"
 check "it is edited as text" sched_has "SCHED EditorMode text"
+ain_do sched_page Steps
+check "the forms refuse it and say why" sched_has "SCHED EditorMode text"
+check "the reason is shown" sched_has "SCHED SchedulerEditorStatus The task can only be edited as text"
 ain_do sched_click "Add to scheduler"
 check "it is stored" wait_for 10 sched_has "SCHED SchedulerTasks Code | QUEUED"
 ain_do sched_select Code
@@ -116,6 +119,8 @@ ain_do sched_edit Test
 ain_do shot "$CASE_DIR/editor.png"
 ain_do tab Steps
 ain_do shot "$CASE_DIR/steps.png"
+ain_do tab Extra
+ain_do shot "$CASE_DIR/extra.png"
 ain_do tab Properties
 ain_do sched_click Target
 ain_do shot "$CASE_DIR/target.png"

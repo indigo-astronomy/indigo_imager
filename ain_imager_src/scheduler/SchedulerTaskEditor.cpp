@@ -38,7 +38,6 @@
 #include <QScrollBar>
 #include <QTabBar>
 #include <QTabWidget>
-#include <QComboBox>
 #include <QTextStream>
 #include <QToolButton>
 #include <QVBoxLayout>
@@ -55,15 +54,6 @@ SchedulerTaskEditor::SchedulerTaskEditor(QWidget *parent) : QWidget(parent) {
 	m_title->setObjectName("SchedulerEditorTitle");
 	m_title->setStyleSheet("QLabel { font-weight: bold; }");
 	toolbar->addWidget(m_title, 1);
-
-	m_mode_select = new QComboBox();
-	m_mode_select->setObjectName("SchedulerEditorMode");
-	m_mode_select->addItem("Visual");
-	m_mode_select->addItem("Text");
-	m_mode_select->setToolTip("Visual: edit the properties and the steps of the task in forms.\nText: edit the task as JavaScript with its // @key header.\nA task with code other than steps can only be edited as text.");
-	connect(m_mode_select, QOverload<int>::of(&QComboBox::activated), this, &SchedulerTaskEditor::onModeSelected);
-	toolbar->addWidget(m_mode_select);
-	toolbar->addSpacing(12);
 
 	m_new_button = new QToolButton();
 	m_new_button->setText("New");
@@ -117,7 +107,8 @@ SchedulerTaskEditor::SchedulerTaskEditor(QWidget *parent) : QWidget(parent) {
 	m_status->setVisible(false);
 	layout->addWidget(m_status);
 
-	// the visual editor has the pages Properties and Steps, the text editor the page Text
+	// Steps, Properties and Extra edit the task in forms, Text edits all of it as JavaScript;
+	// the pages of the side that is not edited are filled from the other one when shown
 	m_pages = new QTabWidget();
 	m_pages->setObjectName("SchedulerEditorPages");
 	// the pages fill the tab pane, as the sequence editor fills its frame in the Sequence tab
@@ -130,15 +121,15 @@ SchedulerTaskEditor::SchedulerTaskEditor(QWidget *parent) : QWidget(parent) {
 	form_scroll->setWidgetResizable(true);
 	form_scroll->setFrameShape(QFrame::NoFrame);
 	m_form_page = form_scroll;
+	QScrollArea *observer_scroll = new QScrollArea();
+	observer_scroll->setWidget(m_form->observerPage());
+	observer_scroll->setWidgetResizable(true);
+	observer_scroll->setFrameShape(QFrame::NoFrame);
+	m_observer_page = observer_scroll;
 	m_body = new IndigoSequence();
 	m_body->setTaskMode(true);
 	connect(m_form, &SchedulerTaskForm::targetChanged, this, &SchedulerTaskEditor::applyTargetToSteps);
-	// the steps may have been edited: the form shows the goto they have now
-	connect(m_pages, &QTabWidget::currentChanged, this, [this]() {
-		if (m_pages->currentWidget() == m_form_page) {
-			showGotoOfSteps();
-		}
-	});
+	connect(m_pages, &QTabWidget::currentChanged, this, &SchedulerTaskEditor::onPageChanged);
 
 	m_text = new QPlainTextEdit();
 	m_text->setObjectName("SchedulerEditorText");
@@ -146,36 +137,51 @@ SchedulerTaskEditor::SchedulerTaskEditor(QWidget *parent) : QWidget(parent) {
 	m_text->setLineWrapMode(QPlainTextEdit::NoWrap);
 	m_text->setTabStopDistance(4 * m_text->fontMetrics().horizontalAdvance(' '));
 
-	showPages(false);
+	m_pages->addTab(m_body, "Steps");
+	m_pages->setTabToolTip(0, "The sequence the task runs");
+	m_pages->addTab(m_form_page, "Properties");
+	m_pages->setTabToolTip(1, "The header of the task: when and how the scheduler runs it");
+	m_pages->addTab(m_observer_page, "Extra");
+	m_pages->setTabToolTip(2, "The observer, PI and project written to the FITS headers of the frames");
+	m_pages->addTab(m_text, "Text");
+	m_pages->setTabToolTip(3, "The whole task as JavaScript with its // @key header.\nA task with code other than steps can only be edited as text.");
+
 	newTask();
 }
 
-void SchedulerTaskEditor::showPages(bool text) {
-	m_mode_select->setCurrentIndex(text ? 1 : 0);
-	// the tab widget keeps the widgets of the pages it does not show
-	if (text == (m_pages->indexOf(m_text) >= 0) && m_pages->count() > 0) {
-		return;
-	}
-	m_pages->clear();
-	if (text) {
-		m_pages->addTab(m_text, "Text");
-	} else {
-		m_pages->addTab(m_form_page, "Properties");
-		m_pages->setTabToolTip(0, "The header of the task: when and how the scheduler runs it");
-		m_pages->addTab(m_body, "Steps");
-		m_pages->setTabToolTip(1, "The sequence the task runs");
-	}
-	m_text->setVisible(text);
-	m_form_page->setVisible(!text);
-	m_body->setVisible(!text);
+void SchedulerTaskEditor::showPage(QWidget *page) {
+	m_switching = true;
+	m_pages->setCurrentWidget(page);
+	m_switching = false;
 }
 
-void SchedulerTaskEditor::showVisualPage(QWidget *page) {
-	m_pages->setCurrentWidget(page);
+void SchedulerTaskEditor::onPageChanged() {
+	if (m_switching) {
+		return;
+	}
+	QWidget *page = m_pages->currentWidget();
+	if (page == m_text) {
+		if (!m_text_mode) {
+			m_text->setPlainText(taskText());
+			m_text_mode = true;
+		}
+	} else if (m_text_mode) {
+		QString error;
+		if (!showVisual(m_text->toPlainText(), &error, page)) {
+			showPage(m_text);
+			setStatus(QString("The task can only be edited as text, the forms can not show it: %1.").arg(error), StatusAlert);
+			return;
+		}
+		setStatus(QString());
+	} else if (page == m_form_page) {
+		// the steps may have been edited: the form shows the goto they have now
+		showGotoOfSteps();
+	}
+	updateButtons();
 }
 
 bool SchedulerTaskEditor::isVisualMode() const {
-	return m_pages->indexOf(m_text) < 0;
+	return !m_text_mode;
 }
 
 QString SchedulerTaskEditor::taskText() const {
@@ -192,7 +198,7 @@ bool SchedulerTaskEditor::isModified() const {
 	return taskText() != m_saved_text;
 }
 
-bool SchedulerTaskEditor::showVisual(const QString& text, QString *error) {
+bool SchedulerTaskEditor::showVisual(const QString& text, QString *error, QWidget *page) {
 	SchedulerTask task = SchedulerTask::fromText(text);
 	// the sequence editor drops comments, notes in the body would be lost
 	static const QRegularExpression comment(R"(^\s*//(?!\*))", QRegularExpression::MultilineOption);
@@ -210,7 +216,12 @@ bool SchedulerTaskEditor::showVisual(const QString& text, QString *error) {
 		return false;
 	}
 	showGotoOfSteps();
-	showPages(false);
+	m_text_mode = false;
+	if (page) {
+		showPage(page);
+	} else if (m_pages->currentWidget() == m_text) {
+		showPage(m_body);
+	}
 	return true;
 }
 
@@ -272,17 +283,22 @@ void SchedulerTaskEditor::applyTargetToSteps() {
 
 void SchedulerTaskEditor::showText(const QString& text) {
 	m_text->setPlainText(text);
-	showPages(true);
+	m_text_mode = true;
+	showPage(m_text);
 }
 
 void SchedulerTaskEditor::loadTask(const QString& text, const QString& serverName) {
 	m_loading = true;
+	// another task opens on its steps, the same task shown again keeps its page
+	bool other = serverName.isEmpty() || serverName != m_server_name;
 	m_server_name = serverName;
 	setStatus(QString());
 	QString error;
 	if (!showVisual(text, &error)) {
 		showText(text);
 		setStatus(QString("Shown as text, the visual editor can not show it: %1.").arg(error));
+	} else if (other) {
+		showPage(m_body);
 	}
 	m_saved_text = taskText();
 	m_loading = false;
@@ -296,8 +312,8 @@ void SchedulerTaskEditor::newTask() {
 	m_form->setTaskName("New task");
 	m_body->clear();
 	m_form->setGoto(false, 1);
-	showPages(false);
-	showVisualPage(m_form_page);
+	m_text_mode = false;
+	showPage(m_body);
 	setStatus(QString());
 	m_saved_text = taskText();
 	updateTitle();
@@ -316,26 +332,6 @@ void SchedulerTaskEditor::onNew() {
 	if (confirmDiscard()) {
 		newTask();
 	}
-}
-
-void SchedulerTaskEditor::onModeSelected(int index) {
-	bool to_text = index == 1;
-	if (to_text != isVisualMode()) {
-		return;
-	}
-	if (to_text) {
-		showText(taskText());
-		return;
-	}
-	QString text = m_text->toPlainText();
-	QString error;
-	if (!showVisual(text, &error)) {
-		showText(text);
-		QMessageBox::warning(this, "Visual editor",
-			QString("The visual editor can not show this task without losing a part of it:\n\n%1\n\nKeep editing it as text.").arg(error));
-		return;
-	}
-	setStatus(QString());
 }
 
 void SchedulerTaskEditor::onOpenFile() {
@@ -407,7 +403,7 @@ void SchedulerTaskEditor::setRunning(bool running) {
 	m_running = running;
 	if (running && isVisualMode()) {
 		// the steps show the progress of the run
-		showVisualPage(m_body);
+		showPage(m_body);
 	}
 	m_form->setReadOnly(running);
 	emit m_body->enable(!running);
@@ -452,7 +448,11 @@ void SchedulerTaskEditor::updateButtons() {
 	m_apply_button->setEnabled(!m_running);
 	m_upload_button->setEnabled(!m_running);
 	m_urgent_button->setEnabled(!m_running);
-	m_mode_select->setEnabled(!m_running);
+	// a running task stays on the side it is shown on
+	for (int i = 0; i < m_pages->count(); i++) {
+		bool text_page = m_pages->widget(i) == m_text;
+		m_pages->setTabEnabled(i, !m_running || text_page == m_text_mode);
+	}
 	m_new_button->setEnabled(true);
 	m_open_button->setEnabled(true);
 }

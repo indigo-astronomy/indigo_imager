@@ -70,13 +70,14 @@ signals:
 	void submitUrgent(const QString& text);
 
 private slots:
-	void onModeSelected(int index);
+	void onPageChanged();
 	void onOpenFile();
 	void onSaveFile();
 	void onNew();
 
 private:
-	bool showVisual(const QString& text, QString *error);
+	/* shows the text in the forms, on the page given or the one shown */
+	bool showVisual(const QString& text, QString *error, QWidget *page = nullptr);
 	/* the form shows the kind of the first goto of the steps */
 	void showGotoOfSteps();
 	/* the first goto of the steps goes to the task target, added when there is none */
@@ -86,12 +87,10 @@ private:
 	void updateButtons();
 	enum StatusKind { StatusInfo, StatusOk, StatusAlert };
 	void setStatus(const QString& text, StatusKind kind = StatusInfo);
-	void showVisualPage(QWidget *page);
-	void showPages(bool text);
+	void showPage(QWidget *page);
 
 	QLabel *m_title;
 	QLabel *m_status;
-	QComboBox *m_mode_select;
 	QPushButton *m_upload_button;
 	QPushButton *m_apply_button;
 	QPushButton *m_urgent_button;
@@ -101,9 +100,13 @@ private:
 	QTabWidget *m_pages;
 	// the visual editor shows either the header form or the steps, each in the full width
 	QWidget *m_form_page;
+	QWidget *m_observer_page;
 	SchedulerTaskForm *m_form;
 	IndigoSequence *m_body;
 	QPlainTextEdit *m_text;
+	// the text page holds the task, the forms are filled from it when shown
+	bool m_text_mode = false;
+	bool m_switching = false;
 
 	QString m_server_name;
 	// the task as it was loaded, sent or saved, to tell whether it has been changed since

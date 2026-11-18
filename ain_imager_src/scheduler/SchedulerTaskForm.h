@@ -60,6 +60,8 @@ public:
 	void setGoto(bool precise, double exposure);
 
 	void setReadOnly(bool readOnly);
+	/* the page with @observer, @pi and @project, shown apart from the form */
+	QWidget *observerPage() const { return m_observer_page; }
 
 signals:
 	void changed();
@@ -86,6 +88,9 @@ private:
 	const Field *field(const QString& key) const;
 
 	QGridLayout *m_layout;
+	QGridLayout *m_main_layout = nullptr;
+	int m_main_row = 0;
+	QWidget *m_observer_page = nullptr;
 	QList<Field> m_fields;
 	int m_row = 0;
 	bool m_readOnly = false;

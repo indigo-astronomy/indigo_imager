@@ -135,7 +135,7 @@ static void sched_dump() {
 		out(QString("SCHED %1 %2").arg(name, label ? plain(label->text()) : QString("?")));
 	}
 	QTabWidget *pages = qobject_cast<QTabWidget *>(named("SchedulerEditorPages"));
-	out(QString("SCHED EditorMode %1").arg(pages ? (pages->indexOf(named("SchedulerEditorText")) < 0 ? "visual" : "text") : "?"));
+	out(QString("SCHED EditorMode %1").arg(pages ? (pages->currentWidget() == named("SchedulerEditorText") ? "text" : "visual") : "?"));
 	for (const char *name : { "SchedulerTasks", "SchedulerPlan", "SchedulerHistory" }) {
 		QTreeWidget *tree = qobject_cast<QTreeWidget *>(named(name));
 		for (int i = 0; tree && i < tree->topLevelItemCount(); i++) {
@@ -240,16 +240,16 @@ static void run(const QString &line) {
 			}
 		}
 		out("ERROR no scheduler button " + arg);
-	} else if (cmd == "sched_mode") {
-		// the Visual / Text selection of the task editor, as the user picks it
-		QComboBox *combo = qobject_cast<QComboBox *>(named("SchedulerEditorMode"));
-		int index = combo ? combo->findText(arg) : -1;
-		if (index < 0) {
-			out("ERROR no editor mode " + arg);
-			return;
+	} else if (cmd == "sched_page") {
+		// a page of the task editor, as the user picks its tab
+		QTabWidget *pages = qobject_cast<QTabWidget *>(named("SchedulerEditorPages"));
+		for (int i = 0; pages && i < pages->count(); i++) {
+			if (pages->tabText(i) == arg) {
+				pages->setCurrentIndex(i);
+				return;
+			}
 		}
-		combo->setCurrentIndex(index);
-		emit combo->activated(index);
+		out("ERROR no editor page " + arg);
 	} else if (cmd == "sched_select" || cmd == "sched_edit") {
 		QTreeWidget *tree = qobject_cast<QTreeWidget *>(named("SchedulerTasks"));
 		for (int i = 0; tree && i < tree->topLevelItemCount(); i++) {

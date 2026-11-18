@@ -114,24 +114,6 @@ SchedulerTaskForm::SchedulerTaskForm(QWidget *parent) : QWidget(parent) {
 		[this]() { m_name->clear(); m_hook->setChecked(false); }
 	);
 
-	// @priority
-	m_priority_class = combo({ "urgent", "high", "normal", "low" });
-	m_priority_level = intSpin(0, 100, 50);
-	connect(m_priority_class, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]() { updateEnabled(); });
-	addField("priority", "Priority", "The class decides first; the level 0-100 and the sky bonuses decide within a class.\nThe level of an urgent task is ignored.", { m_priority_class, m_priority_level },
-		[this]() {
-			if (m_priority_class->currentText() == "urgent") return QString("urgent");
-			return m_priority_class->currentText() + " " + QString::number(m_priority_level->value());
-		},
-		[this](const QString& value) {
-			QStringList tokens = value.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
-			if (tokens.isEmpty() || tokens.size() > 2 || !setCombo(m_priority_class, tokens[0])) return false;
-			m_priority_level->setValue(50);
-			return tokens.size() == 1 || setSpin(m_priority_level, tokens[1]);
-		},
-		[this]() { m_priority_class->setCurrentText("normal"); m_priority_level->setValue(50); }
-	);
-
 	// @target
 	m_target_ra = new QLineEditSG(QLineEditSG::RA);
 	m_target_ra->setPlaceholderText("RA");
@@ -203,6 +185,33 @@ SchedulerTaskForm::SchedulerTaskForm(QWidget *parent) : QWidget(parent) {
 			return true;
 		},
 		[this]() { m_target_ra->clear(); m_target_dec->clear(); }
+	);
+
+	// @priority
+	m_priority_class = combo({ "urgent", "high", "normal", "low" });
+	m_priority_level = intSpin(0, 100, 50);
+	connect(m_priority_class, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]() { updateEnabled(); });
+	addField("priority", "Priority", "The class decides first; the level 0-100 and the sky bonuses decide within a class.\nThe level of an urgent task is ignored.", { m_priority_class, m_priority_level },
+		[this]() {
+			if (m_priority_class->currentText() == "urgent") return QString("urgent");
+			return m_priority_class->currentText() + " " + QString::number(m_priority_level->value());
+		},
+		[this](const QString& value) {
+			QStringList tokens = value.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+			if (tokens.isEmpty() || tokens.size() > 2 || !setCombo(m_priority_class, tokens[0])) return false;
+			m_priority_level->setValue(50);
+			return tokens.size() == 1 || setSpin(m_priority_level, tokens[1]);
+		},
+		[this]() { m_priority_class->setCurrentText("normal"); m_priority_level->setValue(50); }
+	);
+
+	// @duration
+	QSpinBox *duration = intSpin(1, 1440, 60);
+	duration->setSuffix(" min");
+	addField("duration", "Duration", "The expected run time; without it the scheduler estimates it from the sequence.\nIt is not a time limit.", { duration },
+		[duration]() { return QString::number(duration->value()); },
+		[duration](const QString& value) { return setSpin(duration, value.trimmed()); },
+		[duration]() { duration->setValue(60); }
 	);
 
 	// @altitude
@@ -303,6 +312,11 @@ SchedulerTaskForm::SchedulerTaskForm(QWidget *parent) : QWidget(parent) {
 		m_window_start->setDisplayFormat(format);
 		m_window_end->setDisplayFormat(format);
 	};
+	// wide enough for an absolute date in both kinds
+	for (QDateTimeEdit *edit : { m_window_start, m_window_end }) {
+		edit->setDisplayFormat("yyyy-MM-dd HH:mm");
+		edit->setMinimumWidth(edit->sizeHint().width());
+	}
 	connect(m_window_kind, QOverload<int>::of(&QComboBox::currentIndexChanged), this, window_format);
 	connect(m_window_has_start, &QCheckBox::toggled, this, [this]() { updateEnabled(); });
 	connect(m_window_has_end, &QCheckBox::toggled, this, [this]() { updateEnabled(); });
@@ -353,15 +367,6 @@ SchedulerTaskForm::SchedulerTaskForm(QWidget *parent) : QWidget(parent) {
 	);
 	m_fields.last().widgets.removeOne(m_window_start);
 	m_fields.last().widgets.removeOne(m_window_end);
-
-	// @duration
-	QSpinBox *duration = intSpin(1, 1440, 60);
-	duration->setSuffix(" min");
-	addField("duration", "Duration", "The expected run time; without it the scheduler estimates it from the sequence.\nIt is not a time limit.", { duration },
-		[duration]() { return QString::number(duration->value()); },
-		[duration](const QString& value) { return setSpin(duration, value.trimmed()); },
-		[duration]() { duration->setValue(60); }
-	);
 
 	// @repeat
 	QSpinBox *repeat = intSpin(1, 10000, 2);
@@ -434,6 +439,18 @@ SchedulerTaskForm::SchedulerTaskForm(QWidget *parent) : QWidget(parent) {
 		{ "project", "Project", "The project or proposal identifier, written as the FITS header PROPID", 56 },
 	};
 	for (const TextKey& text_key : text_keys) {
+		if (QString(text_key.key) == "observer") {
+			// the observer, PI and project have their own page
+			m_main_layout = m_layout;
+			m_main_row = m_row;
+			m_observer_page = new QWidget(this);
+			m_layout = new QGridLayout(m_observer_page);
+			m_layout->setContentsMargins(m_main_layout->contentsMargins());
+			m_layout->setVerticalSpacing(m_main_layout->verticalSpacing());
+			m_layout->setColumnStretch(1, 1);
+			m_layout->setAlignment(Qt::AlignTop);
+			m_row = 0;
+		}
 		QLineEdit *edit = new QLineEdit();
 		edit->setMaxLength(text_key.length);
 		addField(text_key.key, text_key.label, text_key.tooltip, { edit },
@@ -442,6 +459,8 @@ SchedulerTaskForm::SchedulerTaskForm(QWidget *parent) : QWidget(parent) {
 			[edit]() { edit->clear(); }
 		);
 	}
+	m_layout = m_main_layout;
+	m_row = m_main_row;
 
 	reset();
 }
