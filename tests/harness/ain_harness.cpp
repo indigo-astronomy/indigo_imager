@@ -134,7 +134,24 @@ static void sched_dump() {
 		QLabel *label = qobject_cast<QLabel *>(named(name));
 		out(QString("SCHED %1 %2").arg(name, label ? plain(label->text()) : QString("?")));
 	}
+	QLabel *sequence = qobject_cast<QLabel *>(named("SchedulerSequence"));
+	out(QString("SCHED SchedulerSequence %1").arg(sequence ? plain(sequence->text()) : QString("?")));
+	QProgressBar *progress = qobject_cast<QProgressBar *>(named("SchedulerProgress"));
+	out(QString("SCHED SchedulerProgress %1").arg(progress ? progress->text() : QString("?")));
 	QTabWidget *pages = qobject_cast<QTabWidget *>(named("SchedulerEditorPages"));
+	// the states of the steps of the task editor, top to bottom, as their status icons show them
+	QWidget *editor = named("SchedulerTaskEditor");
+	if (editor) {
+		QList<QPair<int, QString>> steps;
+		for (QToolButton *button : editor->findChildren<QToolButton *>()) {
+			QVariant state = button->property("stepState");
+			if (state.isValid()) steps.append(qMakePair(button->mapTo(editor, QPoint(0, 0)).y(), state.toString()));
+		}
+		std::sort(steps.begin(), steps.end());
+		QStringList states;
+		for (const auto &step : steps) states << step.second;
+		out("SCHED EditorSteps " + states.join(" "));
+	}
 	out(QString("SCHED EditorMode %1").arg(pages ? (pages->currentWidget() == named("SchedulerEditorText") ? "text" : "visual") : "?"));
 	for (const char *name : { "SchedulerTasks", "SchedulerPlan", "SchedulerHistory" }) {
 		QTreeWidget *tree = qobject_cast<QTreeWidget *>(named(name));

@@ -10,6 +10,14 @@ sched_has() {	# text, the SCHED lines contain it
 	sched | grep -qF "$1"
 }
 
+sched_has_all() {	# texts, the SCHED lines of one dump contain all of them
+	local lines
+	lines=$(sched)
+	for text in "$@"; do
+		grep -qF "$text" <<< "$lines" || return 1
+	done
+}
+
 sched_lacks() {
 	! sched_has "$1"
 }
@@ -23,6 +31,7 @@ cat > "$CASE_DIR/test.task" <<'EOF'
 // @duration 1
 
 var sequence = new Sequence(scheduler_task.name);
+sequence.wait(2);
 sequence.wait(3);
 sequence.start();
 EOF
@@ -69,7 +78,7 @@ check "the scheduler is selected and not started" wait_for 20 sched_has "SCHED S
 section "a task from a file is added"
 ain_do sched_open "$CASE_DIR/test.task"
 check "it is shown in the visual editor" sched_has "SCHED EditorMode visual"
-ain_do sched_click "Add to scheduler"
+ain_do sched_click Apply
 check "the scheduler accepts it" wait_for 10 sched_has "SCHED SchedulerEditorStatus Accepted"
 check "the task list shows it" wait_for 10 sched_has "SCHED SchedulerTasks Test | QUEUED"
 check "the editor now edits the stored task" sched_has "SCHED SchedulerEditorTitle Task 'Test'"
@@ -84,7 +93,7 @@ check "and is shown visually again" sched_has "SCHED EditorMode visual"
 
 section "a rejected task"
 ain_do sched_open "$CASE_DIR/bad.task"
-ain_do sched_click "Add to scheduler"
+ain_do sched_click Apply
 check "the reason is shown" wait_for 10 sched_has "unknown key"
 check "it is not stored" sched_lacks "SCHED SchedulerTasks Bad"
 
@@ -94,7 +103,7 @@ check "it is edited as text" sched_has "SCHED EditorMode text"
 ain_do sched_page Steps
 check "the forms refuse it and say why" sched_has "SCHED EditorMode text"
 check "the reason is shown" sched_has "SCHED SchedulerEditorStatus The task can only be edited as text"
-ain_do sched_click "Add to scheduler"
+ain_do sched_click Apply
 check "it is stored" wait_for 10 sched_has "SCHED SchedulerTasks Code | QUEUED"
 ain_do sched_select Code
 ain_do answer Yes
@@ -102,11 +111,21 @@ ain_do sched_click "Delete the task; a running task is aborted first"
 check "it is deleted" wait_for 10 sched_lacks "SCHED SchedulerTasks Code"
 
 section "the scheduler runs the task"
+ain_do sched_edit Test
+ain_do tab "Task editor"
+ain_do sched_page Properties
+check "the editor shows the steps of the stored task" sched_has "SCHED EditorSteps idle idle"
 ain_do sched_click Start
 check "the task runs" wait_for 30 sched_has "SCHED SchedulerCurrent Running: Test"
+check "the editor shows it running and read only" wait_for 10 sched_has "SCHED SchedulerEditorTitle Task 'Test' - running, read only"
+check "the editor switches to the steps" sched_has "SCHED EditorMode visual"
+check "the first step is busy, the panel shows it" wait_for 10 sched_has_all "SCHED EditorSteps busy idle" "SCHED SchedulerSequence Step 1," "SCHED SchedulerProgress 0% complete"
+check "the second step is busy after the first is done, the panel shows it" wait_for 10 sched_has_all "SCHED EditorSteps ok busy" "SCHED SchedulerSequence Step 2," "SCHED SchedulerProgress 50% complete"
 ain_do shot "$CASE_DIR/running.png"
 check "the history shows the run" wait_for 30 sched_has "| Test | run 1 | task | SUCCEEDED"
 check "the task is done" wait_for 10 sched_has "SCHED SchedulerTasks Test | DONE"
+check "the editor allows edits again" wait_for 10 sched_lacks "running, read only"
+ain_do tab Tasks
 check "the scheduler stops by itself" wait_for 15 sched_has "SCHED SchedulerState Stopped"
 
 section "task commands"
@@ -129,8 +148,12 @@ ain_do popup_shot "$CASE_DIR/search.png"
 ain_do popup_close
 ain_do sched_click Target
 check "the object search has its frame" bash -c "grep '^POPUP frame' '$CASE_DIR/ain.out' | tail -1 | grep -qv 'frame [-0]'"
-ain_do sched_click "Apply to 'Test'"
+ain_do sched_click Apply
 check "the edit is accepted" wait_for 10 sched_has "SCHED SchedulerEditorStatus Accepted"
+ain_do sched_open "$CASE_DIR/test.task"
+ain_do sched_click Apply
+check "a file with the name of a stored task updates it" wait_for 10 sched_has "SCHED SchedulerEditorStatus Accepted"
+check "and adds no other task" equals "$(sched | grep -c '^SCHED SchedulerTasks Test |')" 1
 ain_do tab "Night plan"
 ain_do shot "$CASE_DIR/plan.png"
 
@@ -160,7 +183,7 @@ ain_do sched_open "$CASE_DIR/hook.task"
 ain_do tab "Task editor"
 ain_do shot "$CASE_DIR/hook.png"
 check "it is shown in the visual editor" sched_has "SCHED EditorMode visual"
-ain_do sched_click "Add to scheduler"
+ain_do sched_click Apply
 check "the scheduler accepts it" wait_for 10 sched_has "SCHED SchedulerEditorStatus Accepted"
 check "the task list shows it as a hook" wait_for 10 sched_has "SCHED SchedulerTasks Park | HOOK | hook"
 ain_do answer Yes

@@ -76,18 +76,11 @@ SchedulerTaskEditor::SchedulerTaskEditor(QWidget *parent) : QWidget(parent) {
 	toolbar->addSpacing(12);
 
 	m_apply_button = new QPushButton("Apply");
-	m_apply_button->setToolTip("Replace the stored task on the server with this text; its state and counters are kept");
+	m_apply_button->setToolTip("Store the task in the scheduler: the stored task it was opened from, or the one with its name, is updated\nand keeps its state and counters; otherwise it is added as a new task");
 	connect(m_apply_button, &QPushButton::clicked, this, [this]() {
 		emit applyTask(m_server_name, taskText());
 	});
 	toolbar->addWidget(m_apply_button);
-
-	m_upload_button = new QPushButton("Add to scheduler");
-	m_upload_button->setToolTip("Store this task in the scheduler as a new task");
-	connect(m_upload_button, &QPushButton::clicked, this, [this]() {
-		emit uploadTask(taskText());
-	});
-	toolbar->addWidget(m_upload_button);
 
 	m_urgent_button = new QPushButton("Submit urgent");
 	m_urgent_button->setToolTip("Run this task once as urgent: it interrupts the running task as soon as its own constraints hold.\nIt is not stored and is removed after its run.");
@@ -443,10 +436,7 @@ void SchedulerTaskEditor::updateTitle() {
 }
 
 void SchedulerTaskEditor::updateButtons() {
-	m_apply_button->setVisible(!m_server_name.isEmpty());
-	m_apply_button->setText(QString("Apply to '%1'").arg(m_server_name));
 	m_apply_button->setEnabled(!m_running);
-	m_upload_button->setEnabled(!m_running);
 	m_urgent_button->setEnabled(!m_running);
 	// a running task stays on the side it is shown on
 	for (int i = 0; i < m_pages->count(); i++) {

@@ -1050,6 +1050,8 @@ void IndigoSequenceItem::updateNestedComboOptions(const QString& type, int param
 }
 
 void IndigoSequenceItem::setIdle() {
+	// the state as text, for tools that can not see the icon
+	statusButton->setProperty("stepState", "idle");
 	if (m_omitted && type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/led-noexec-cb.png"));
 	} else if (m_omitted) {
@@ -1070,6 +1072,8 @@ void IndigoSequenceItem::setIdle() {
 }
 
 void IndigoSequenceItem::setBusy() {
+	// the state as text, for tools that can not see the icon
+	statusButton->setProperty("stepState", "busy");
 	if (m_omitted && type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/led-noexec-cb.png"));
 	} else if (m_omitted) {
@@ -1090,6 +1094,8 @@ void IndigoSequenceItem::setBusy() {
 }
 
 void IndigoSequenceItem::setAlert() {
+	// the state as text, for tools that can not see the icon
+	statusButton->setProperty("stepState", "alert");
 	if (m_omitted && type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/led-noexec-cb.png"));
 	} else if (m_omitted) {
@@ -1110,6 +1116,8 @@ void IndigoSequenceItem::setAlert() {
 }
 
 void IndigoSequenceItem::setOk() {
+	// the state as text, for tools that can not see the icon
+	statusButton->setProperty("stepState", "ok");
 	if (m_omitted && type == SC_REPEAT) {
 		statusButton->setIcon(QIcon(":/resource/led-noexec-cb.png"));
 	} else if (m_omitted) {

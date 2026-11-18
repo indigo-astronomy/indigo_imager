@@ -65,7 +65,7 @@ public:
 	bool isVisualMode() const;
 
 signals:
-	void uploadTask(const QString& text);
+	/* stores the task: updates the stored task serverName or the one with its name, or adds it */
 	void applyTask(const QString& serverName, const QString& text);
 	void submitUrgent(const QString& text);
 
@@ -91,7 +91,6 @@ private:
 
 	QLabel *m_title;
 	QLabel *m_status;
-	QPushButton *m_upload_button;
 	QPushButton *m_apply_button;
 	QPushButton *m_urgent_button;
 	QToolButton *m_new_button;

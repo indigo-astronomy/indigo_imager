@@ -196,16 +196,14 @@ SchedulerWidget::SchedulerWidget(QWidget *parent) : QWidget(parent) {
 	m_tabs->addTab(buildSettingsPage(), "Settings");
 	layout->addWidget(m_tabs);
 
-	connect(m_editor, &SchedulerTaskEditor::uploadTask, this, [this](const QString& text) {
-		sendTask(P_ADD_TASK, text);
-	});
 	connect(m_editor, &SchedulerTaskEditor::applyTask, this, [this](const QString& name, const QString& text) {
-		QString property = taskProperty(name);
+		// the stored task the editor shows, else the one with the name of the task, else a new one
+		QString property = name.isEmpty() ? QString() : taskProperty(name);
 		if (property.isEmpty()) {
-			m_editor->setResult(false, QString("Task '%1' is not in the scheduler, add it instead").arg(name));
-			return;
+			QString task_name = SchedulerTask::fromText(text).name().trimmed();
+			if (!task_name.isEmpty()) property = taskProperty(task_name);
 		}
-		sendTask(property, text);
+		sendTask(property.isEmpty() ? QString(P_ADD_TASK) : property, text);
 	});
 	connect(m_editor, &SchedulerTaskEditor::submitUrgent, this, [this](const QString& text) {
 		sendTask(P_URGENT_TASK, text);
@@ -321,9 +319,11 @@ void SchedulerWidget::buildControlPanel() {
 	title->setStyleSheet("font-weight: bold;");
 	layout->addWidget(title, row++, 0, 1, 3);
 	m_sequence_progress = new QProgressBar();
+	m_sequence_progress->setObjectName("SchedulerProgress");
 	m_sequence_progress->setRange(0, 100);
 	layout->addWidget(m_sequence_progress, row++, 0, 1, 3);
 	m_sequence_label = new QLabel();
+	m_sequence_label->setObjectName("SchedulerSequence");
 	m_sequence_label->setWordWrap(true);
 	layout->addWidget(m_sequence_label, row++, 0, 1, 3);
 
