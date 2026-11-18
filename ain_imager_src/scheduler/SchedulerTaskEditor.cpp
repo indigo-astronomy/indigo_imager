@@ -317,8 +317,12 @@ bool SchedulerTaskEditor::confirmDiscard() {
 	if (!isModified()) {
 		return true;
 	}
+	// the name the task has in the editor, it may have been renamed
+	QString name = SchedulerTask::fromText(taskText()).name().trimmed();
+	if (name.isEmpty()) name = m_server_name;
+	QString task = name.isEmpty() ? QString("The task being edited") : QString("The task '%1' is being edited and").arg(name);
 	return QMessageBox::question(this, "Task modified",
-		"The task in the editor has changes that are not sent to the scheduler or saved.\n\nDiscard them?") == QMessageBox::Yes;
+		QString("%1 has changes that are not sent to the scheduler or saved.\n\nAre you sure you want to discard them?").arg(task)) == QMessageBox::Yes;
 }
 
 void SchedulerTaskEditor::onNew() {
