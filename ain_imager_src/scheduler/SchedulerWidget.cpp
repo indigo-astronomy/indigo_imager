@@ -428,12 +428,9 @@ QWidget *SchedulerWidget::buildHistoryPage() {
 }
 
 QWidget *SchedulerWidget::buildSettingsPage() {
+	// like the rest of Ain, every change is sent to the agent right away
 	QWidget *content = new QWidget();
 	QHBoxLayout *columns = new QHBoxLayout(content);
-	auto edited = [this]() {
-		m_settings_edited = true;
-		m_settings_apply->setEnabled(true);
-	};
 
 	QVBoxLayout *left = new QVBoxLayout();
 	QGroupBox *night_box = new QGroupBox("Night");
@@ -443,7 +440,9 @@ QWidget *SchedulerWidget::buildSettingsPage() {
 	m_night->addItem("Nautical (Sun below -12°)", "NAUTICAL");
 	m_night->addItem("Astronomical (Sun below -18°)", "ASTRONOMICAL");
 	m_night->setToolTip("How dark it must be for the night of the night hooks; each task keeps its own @twilight");
-	connect(m_night, QOverload<int>::of(&QComboBox::activated), this, edited);
+	connect(m_night, QOverload<int>::of(&QComboBox::activated), this, [this]() {
+		send({ SchedulerRequest::switches1(selectedAgent(), P_NIGHT, m_night->currentData().toString()) });
+	});
 	night_layout->addRow("Night limit:", m_night);
 	left->addWidget(night_box);
 
@@ -455,8 +454,8 @@ QWidget *SchedulerWidget::buildSettingsPage() {
 		box->setEditable(true);
 		box->setInsertPolicy(QComboBox::NoInsert);
 		box->setMinimumContentsLength(16);
-		connect(box, QOverload<int>::of(&QComboBox::activated), this, edited);
-		connect(box->lineEdit(), &QLineEdit::textEdited, this, edited);
+		connect(box, QOverload<int>::of(&QComboBox::activated), this, &SchedulerWidget::sendHooks);
+		connect(box->lineEdit(), &QLineEdit::editingFinished, this, &SchedulerWidget::sendHooks);
 		box->setObjectName(QString("SchedulerHook_") + hook[0]);
 		m_hooks[hook[0]] = box;
 		hooks_layout->addRow(QString(hook[1]) + ":", box);
@@ -467,7 +466,17 @@ QWidget *SchedulerWidget::buildSettingsPage() {
 	QFormLayout *data_layout = new QFormLayout(data_box);
 	for (const char *item : { "OBJECT", "FITS", "FOLDER" }) {
 		QCheckBox *check = new QCheckBox();
-		connect(check, &QCheckBox::clicked, this, edited);
+		connect(check, &QCheckBox::clicked, this, [this]() {
+			SchedulerRequest data;
+			data.type = SchedulerRequest::Switch;
+			data.device = selectedAgent();
+			data.property = P_DATA;
+			for (auto it = m_data.begin(); it != m_data.end(); ++it) {
+				data.items.append(it.key());
+				data.switches.append(it.value()->isChecked());
+			}
+			send({ data });
+		});
 		m_data[item] = check;
 		data_layout->addRow(check);
 	}
@@ -477,7 +486,12 @@ QWidget *SchedulerWidget::buildSettingsPage() {
 	m_data_dir = new QLineEdit();
 	m_data_dir->setPlaceholderText("folder of the Imager Agent");
 	m_data_dir->setToolTip("Parent folder of the task folders on the server; empty for the folder the Imager Agent had when the scheduler was started");
-	connect(m_data_dir, &QLineEdit::textEdited, this, edited);
+	connect(m_data_dir, &QLineEdit::editingFinished, this, [this]() {
+		QString base = m_data_dir->text().trimmed();
+		if (base != m_properties.value(P_DATA_DIR).text("BASE")) {
+			send({ SchedulerRequest::text(selectedAgent(), P_DATA_DIR, "BASE", base) });
+		}
+	});
 	data_layout->addRow("Base folder:", m_data_dir);
 	left->addWidget(data_box);
 	left->addStretch();
@@ -487,59 +501,6 @@ QWidget *SchedulerWidget::buildSettingsPage() {
 	QGroupBox *settings_box = new QGroupBox("Scheduler settings");
 	m_settings_layout = new QFormLayout(settings_box);
 	right->addWidget(settings_box);
-
-	QHBoxLayout *buttons = new QHBoxLayout();
-	buttons->addStretch();
-	QPushButton *revert = new QPushButton("Revert");
-	revert->setToolTip("Show the settings of the scheduler again");
-	connect(revert, &QPushButton::clicked, this, [this]() {
-		m_settings_edited = false;
-		m_settings_apply->setEnabled(false);
-		updateSettings();
-	});
-	buttons->addWidget(revert);
-	m_settings_apply = new QPushButton("Apply");
-	m_settings_apply->setEnabled(false);
-	connect(m_settings_apply, &QPushButton::clicked, this, [this]() {
-		QString agent = selectedAgent();
-		QList<SchedulerRequest> requests;
-		requests.append(SchedulerRequest::switches1(agent, P_NIGHT, m_night->currentData().toString()));
-
-		QStringList items, values;
-		for (const auto& hook : hook_items) {
-			items.append(hook[0]);
-			values.append(m_hooks[hook[0]]->currentText().trimmed());
-		}
-		requests.append(SchedulerRequest::text(agent, P_HOOKS, items, values));
-
-		SchedulerRequest data;
-		data.type = SchedulerRequest::Switch;
-		data.device = agent;
-		data.property = P_DATA;
-		for (auto it = m_data.begin(); it != m_data.end(); ++it) {
-			data.items.append(it.key());
-			data.switches.append(it.value()->isChecked());
-		}
-		requests.append(data);
-		requests.append(SchedulerRequest::text(agent, P_DATA_DIR, "BASE", m_data_dir->text().trimmed()));
-
-		if (!m_settings.isEmpty()) {
-			SchedulerRequest settings;
-			settings.type = SchedulerRequest::Number;
-			settings.device = agent;
-			settings.property = P_SETTINGS;
-			for (auto it = m_settings.begin(); it != m_settings.end(); ++it) {
-				settings.items.append(it.key());
-				settings.numbers.append(it.value()->value());
-			}
-			requests.append(settings);
-		}
-		send(requests);
-		m_settings_edited = false;
-		m_settings_apply->setEnabled(false);
-	});
-	buttons->addWidget(m_settings_apply);
-	right->addLayout(buttons);
 	right->addStretch();
 	columns->addLayout(right);
 
@@ -547,6 +508,36 @@ QWidget *SchedulerWidget::buildSettingsPage() {
 	scroll->setWidget(content);
 	scroll->setWidgetResizable(true);
 	return scroll;
+}
+
+void SchedulerWidget::sendHooks() {
+	const SchedulerProperty hooks = m_properties.value(P_HOOKS);
+	QStringList items, values;
+	bool changed = false;
+	for (const auto& hook : hook_items) {
+		QString value = m_hooks[hook[0]]->currentText().trimmed();
+		changed |= value != hooks.text(hook[0]);
+		items.append(hook[0]);
+		values.append(value);
+	}
+	if (changed) {
+		send({ SchedulerRequest::text(selectedAgent(), P_HOOKS, items, values) });
+	}
+}
+
+void SchedulerWidget::sendSettings() {
+	if (m_settings.isEmpty()) {
+		return;
+	}
+	SchedulerRequest settings;
+	settings.type = SchedulerRequest::Number;
+	settings.device = selectedAgent();
+	settings.property = P_SETTINGS;
+	for (auto it = m_settings.begin(); it != m_settings.end(); ++it) {
+		settings.items.append(it.key());
+		settings.numbers.append(it.value()->value());
+	}
+	send({ settings });
 }
 
 // MARK: Properties
@@ -568,7 +559,6 @@ void SchedulerWidget::clearAgent() {
 	updateTasks();
 	updatePlan();
 	updateHistory();
-	m_settings_edited = false;
 	updateSettings();
 	handleScripting(SchedulerProperty());
 }
@@ -812,9 +802,7 @@ void SchedulerWidget::updateHistory() {
 }
 
 void SchedulerWidget::updateSettings() {
-	if (m_settings_edited) {
-		return;
-	}
+	// a field being typed in keeps its text until it is finished
 	const SchedulerProperty night = m_properties.value(P_NIGHT);
 	for (const SchedulerItem& item : night.items) {
 		if (item.on) {
@@ -825,14 +813,14 @@ void SchedulerWidget::updateSettings() {
 
 	const SchedulerProperty hooks = m_properties.value(P_HOOKS);
 	for (auto it = m_hooks.begin(); it != m_hooks.end(); ++it) {
-		it.value()->setCurrentText(hooks.text(it.key()));
+		if (!it.value()->lineEdit()->hasFocus()) it.value()->setCurrentText(hooks.text(it.key()));
 	}
 
 	const SchedulerProperty data = m_properties.value(P_DATA);
 	for (auto it = m_data.begin(); it != m_data.end(); ++it) {
 		it.value()->setChecked(data.on(it.key()));
 	}
-	m_data_dir->setText(m_properties.value(P_DATA_DIR).text("BASE"));
+	if (!m_data_dir->hasFocus()) m_data_dir->setText(m_properties.value(P_DATA_DIR).text("BASE"));
 
 	const SchedulerProperty settings = m_properties.value(P_SETTINGS);
 	if (settings.items.size() != m_settings.size()) {
@@ -846,22 +834,19 @@ void SchedulerWidget::updateSettings() {
 			spin->setSingleStep(item.step > 0 ? item.step : 1);
 			spin->setDecimals(item.step > 0 && item.step < 1 ? 1 : 0);
 			spin->setToolTip(item.name);
-			connect(spin, &QDoubleSpinBox::editingFinished, this, [this]() {
-				m_settings_edited = true;
-				m_settings_apply->setEnabled(true);
-			});
+			spin->setKeyboardTracking(false);
+			connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &SchedulerWidget::sendSettings);
 			m_settings[item.name] = spin;
 			m_settings_layout->addRow(item.label + ":", spin);
 		}
 	}
 	for (const SchedulerItem& item : settings.items) {
-		if (m_settings.contains(item.name)) {
+		if (m_settings.contains(item.name) && !m_settings[item.name]->hasFocus()) {
 			m_settings[item.name]->blockSignals(true);
 			m_settings[item.name]->setValue(item.number);
 			m_settings[item.name]->blockSignals(false);
 		}
 	}
-	m_settings_apply->setEnabled(false);
 }
 
 void SchedulerWidget::updateEditorRunning() {

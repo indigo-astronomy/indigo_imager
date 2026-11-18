@@ -96,6 +96,8 @@ private:
 	void updatePlan();
 	void updateHistory();
 	void updateSettings();
+	void sendHooks();
+	void sendSettings();
 	void updateEditorRunning();
 	void checkPendingResult(const SchedulerProperty& property);
 
@@ -136,8 +138,6 @@ private:
 	QMap<QString, QDoubleSpinBox*> m_settings;
 	QMap<QString, QCheckBox*> m_data;
 	QLineEdit *m_data_dir;
-	QPushButton *m_settings_apply;
-	bool m_settings_edited = false;
 
 	// the properties of the selected scheduler agent by name
 	QMap<QString, SchedulerProperty> m_properties;

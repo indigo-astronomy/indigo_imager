@@ -132,14 +132,12 @@ ain_do shot "$CASE_DIR/plan.png"
 section "settings"
 ain_do tab Settings
 ain_do sched_hook IDLE Test
-ain_do sched_click Apply
 check "the hook is set" wait_for 10 hook_is IDLE '"Test"'
 check "the settings keep their values" equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_SETTINGS' IDLE_CHECK_INTERVAL)" 30
 check "the night limit is kept" equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_NIGHT' NAUTICAL)" ON
 check "the data switches are kept" equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_DATA' OBJECT)$(item 'Scheduler Agent.AGENT_SCHEDULER_DATA' FOLDER)" ONOFF
 check "the task list shows the hook" wait_for 10 sched_has "SCHED SchedulerTasks Test | HOOK"
 ain_do sched_hook IDLE ""
-ain_do sched_click Apply
 check "the hook is cleared" wait_for 10 sched_has "SCHED SchedulerTasks Test | QUEUED"
 ain_do tab History
 ain_do shot "$CASE_DIR/history.png"
