@@ -77,7 +77,8 @@ private slots:
 
 private:
 	/* shows the text in the forms, on the page given or the one shown */
-	bool showVisual(const QString& text, QString *error, QWidget *page = nullptr);
+	/* keepHookKeys: the text was made from the forms, the keys a hook does not write come back */
+	bool showVisual(const QString& text, QString *error, QWidget *page = nullptr, bool keepHookKeys = false);
 	/* the form shows the kind of the first goto of the steps */
 	void showGotoOfSteps();
 	/* the first goto of the steps goes to the task target, added when there is none */

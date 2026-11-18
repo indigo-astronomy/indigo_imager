@@ -45,7 +45,11 @@ public:
 
 	/* Shows the header. Returns false, with the reason in error, when a key is
 	   unknown or a value can not be shown; the form is then reset. */
-	bool setHeader(const QList<QPair<QString, QString>>& header, QString *error);
+	bool setHeader(const QList<QPair<QString, QString>>& header, QString *error, bool restoreKept = false);
+	/* A hook task does not write the keys it can not have, but the form keeps them for another
+	   class. Before the task is edited as text, keepHookKeys() saves them; setHeader() with
+	   restoreKept shows them again when the text is still a hook. */
+	void keepHookKeys();
 	QList<QPair<QString, QString>> header() const;
 	void reset();
 
@@ -103,6 +107,18 @@ private:
 	QMap<QString, QPair<QString, QString>> m_loaded;
 	// the keys of the loaded header in their order, the other keys follow in the order of the form
 	QStringList m_order;
+
+	struct KeptKey {
+		QString key;
+		bool checked = false;
+		QString value;
+		bool loaded = false;
+		QPair<QString, QString> loaded_value;
+	};
+	// the keys a hook task does not write, saved by keepHookKeys()
+	QList<KeptKey> m_kept;
+	QStringList m_kept_order;
+	int m_kept_level = -1;
 
 	QLineEdit *m_name;
 	QComboBox *m_priority_class;

@@ -311,6 +311,19 @@ static void run(const QString &line) {
 		}
 		combo->setCurrentIndex(index);
 		emit combo->activated(index);
+	} else if (cmd == "sched_combo") {
+		// sched_combo FROM TO: the choice of a combo box of the scheduler showing FROM, as the user picks it
+		QString from = arg.section(' ', 0, 0), to = arg.section(' ', 1);
+		for (QWidget *widget : QApplication::allWidgets()) {
+			QComboBox *combo = qobject_cast<QComboBox *>(widget);
+			if (!combo || !in_scheduler(combo) || !combo->isVisible() || combo->currentText() != from) continue;
+			int index = combo->findText(to);
+			if (index < 0) continue;
+			combo->setCurrentIndex(index);
+			emit combo->activated(index);
+			return;
+		}
+		out("ERROR no combo " + arg);
 	} else if (cmd == "sched_open") {
 		next_file = arg;
 		for (QWidget *widget : QApplication::allWidgets()) {

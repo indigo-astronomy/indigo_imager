@@ -155,12 +155,13 @@ void SchedulerTaskEditor::onPageChanged() {
 	QWidget *page = m_pages->currentWidget();
 	if (page == m_text) {
 		if (!m_text_mode) {
+			m_form->keepHookKeys();
 			m_text->setPlainText(taskText());
 			m_text_mode = true;
 		}
 	} else if (m_text_mode) {
 		QString error;
-		if (!showVisual(m_text->toPlainText(), &error, page)) {
+		if (!showVisual(m_text->toPlainText(), &error, page, true)) {
 			showPage(m_text);
 			setStatus(QString("The task can only be edited as text, the forms can not show it: %1.").arg(error), StatusAlert);
 			return;
@@ -191,7 +192,7 @@ bool SchedulerTaskEditor::isModified() const {
 	return taskText() != m_saved_text;
 }
 
-bool SchedulerTaskEditor::showVisual(const QString& text, QString *error, QWidget *page) {
+bool SchedulerTaskEditor::showVisual(const QString& text, QString *error, QWidget *page, bool keepHookKeys) {
 	SchedulerTask task = SchedulerTask::fromText(text);
 	// the sequence editor drops comments, notes in the body would be lost
 	static const QRegularExpression comment(R"(^\s*//(?!\*))", QRegularExpression::MultilineOption);
@@ -199,7 +200,7 @@ bool SchedulerTaskEditor::showVisual(const QString& text, QString *error, QWidge
 		if (error) *error = "the body has comments";
 		return false;
 	}
-	if (!m_form->setHeader(task.header(), error)) {
+	if (!m_form->setHeader(task.header(), error, keepHookKeys)) {
 		return false;
 	}
 	if (task.body().trimmed().isEmpty()) {

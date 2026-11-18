@@ -6,6 +6,7 @@
 
 #include <QApplication>
 #include <QComboBox>
+#include <QTabWidget>
 #include <QFile>
 #include <QRegularExpression>
 #include <QTextStream>
@@ -336,6 +337,22 @@ static void testHook() {
 	CHECK(task.value("priority") == "hook" && !task.has("repeat"), "a hook has no @repeat:\n%s", u(editor.taskText()).constData());
 	priority->setCurrentText("normal");
 	CHECK(editor.taskText() == repeated, "another class gets it back:\n%s", u(editor.taskText()).constData());
+
+	// and also after the task was shown as text
+	editor.loadTask(repeated, "Flats");
+	QTabWidget *pages = editor.findChild<QTabWidget*>("SchedulerEditorPages");
+	priority->setCurrentText("hook");
+	pages->setCurrentIndex(pages->count() - 1);
+	CHECK(!editor.isVisualMode() && !SchedulerTask::fromText(editor.taskText()).has("repeat"), "the text of a hook has no @repeat:\n%s", u(editor.taskText()).constData());
+	pages->setCurrentIndex(1);
+	CHECK(editor.isVisualMode() && priority->currentText() == "hook", "back on the forms it is a hook");
+	priority->setCurrentText("normal");
+	CHECK(editor.taskText() == repeated, "another class after the text gets the keys and the level back:\n%s", u(editor.taskText()).constData());
+
+	// a task loaded next does not get them
+	editor.loadTask(hook_task, "Park");
+	priority->setCurrentText("normal");
+	CHECK(!SchedulerTask::fromText(editor.taskText()).has("repeat"), "another task does not get them:\n%s", u(editor.taskText()).constData());
 
 	SchedulerTaskForm plain;
 	QString error;

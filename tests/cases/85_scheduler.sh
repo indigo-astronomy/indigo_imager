@@ -61,6 +61,17 @@ sequence.capture_batch(2, 2);
 sequence.start();
 EOF
 
+cat > "$CASE_DIR/flats.task" <<'EOF'
+// @task     Flats
+// @priority normal 40
+// @twilight nautical
+// @repeat   3
+
+var sequence = new Sequence(scheduler_task.name);
+sequence.wait(1);
+sequence.start();
+EOF
+
 cat > "$CASE_DIR/code.task" <<'EOF'
 // @task Code
 
@@ -252,6 +263,19 @@ ain_do answer Yes
 ain_do sched_select Park
 ain_do sched_click "Delete the task; a running task is aborted first"
 check "it is deleted" wait_for 10 sched_lacks "SCHED SchedulerTasks Park"
+
+section "a task made a hook by mistake"
+ain_do sched_open "$CASE_DIR/flats.task"
+ain_do sched_page Properties
+ain_do sched_combo normal hook
+ain_do sched_page Text
+ain_do sched_text
+check "the text of the hook has no scheduling keys" bash -c "grep '^SCHED_TEXT' '$CASE_DIR/ain.out' | tail -1 | grep -v 'repeat' | grep -q 'priority hook'"
+ain_do sched_page Properties
+ain_do sched_combo hook normal
+ain_do sched_page Text
+ain_do sched_text
+check "another class gets the keys and the level back" bash -c "grep '^SCHED_TEXT' '$CASE_DIR/ain.out' | tail -1 | grep -qF 'priority normal 40\\n// @twilight nautical\\n// @repeat   3'"
 
 stop_ain
 stop_server

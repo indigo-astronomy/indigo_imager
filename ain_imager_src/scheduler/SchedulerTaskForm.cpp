@@ -604,7 +604,34 @@ void SchedulerTaskForm::reset() {
 	updateEnabled();
 }
 
-bool SchedulerTaskForm::setHeader(const QList<QPair<QString, QString>>& header, QString *error) {
+void SchedulerTaskForm::keepHookKeys() {
+	m_kept.clear();
+	m_kept_order.clear();
+	m_kept_level = -1;
+	if (!isHook()) {
+		return;
+	}
+	m_kept_level = m_priority_level->value();
+	for (const QString& key : hookRejectedKeys()) {
+		const Field *f = field(key);
+		if (!f || !f->enable) continue;
+		KeptKey kept;
+		kept.key = key;
+		kept.checked = f->enable->isChecked();
+		kept.value = f->format();
+		kept.loaded = m_loaded.contains(key);
+		if (kept.loaded) kept.loaded_value = m_loaded.value(key);
+		m_kept.append(kept);
+	}
+	m_kept_order = m_order;
+}
+
+bool SchedulerTaskForm::setHeader(const QList<QPair<QString, QString>>& header, QString *error, bool restoreKept) {
+	if (!restoreKept) {
+		m_kept.clear();
+		m_kept_order.clear();
+		m_kept_level = -1;
+	}
 	reset();
 	m_loading = true;
 	QString problem;
@@ -636,6 +663,30 @@ bool SchedulerTaskForm::setHeader(const QList<QPair<QString, QString>>& header, 
 		reset();
 		if (error) *error = problem;
 		return false;
+	}
+	if (restoreKept && isHook()) {
+		m_loading = true;
+		if (m_kept_level >= 0) m_priority_level->setValue(m_kept_level);
+		for (const KeptKey& kept : m_kept) {
+			Field *f = field(kept.key);
+			if (!f || !f->parse(kept.value)) continue;
+			f->enable->setChecked(kept.checked);
+			if (kept.loaded) m_loaded[kept.key] = kept.loaded_value;
+			if (kept.checked && !m_order.contains(kept.key)) {
+				// at its place among the keys it followed before
+				int at = m_kept_order.indexOf(kept.key);
+				int insert = m_order.size();
+				for (int i = at + 1; at >= 0 && i < m_kept_order.size(); i++) {
+					int next = m_order.indexOf(m_kept_order[i]);
+					if (next >= 0) {
+						insert = next;
+						break;
+					}
+				}
+				m_order.insert(insert, kept.key);
+			}
+		}
+		m_loading = false;
 	}
 	updateEnabled();
 	return true;
