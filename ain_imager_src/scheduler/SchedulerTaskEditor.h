@@ -52,9 +52,10 @@ public:
 	/* The result of an upload or an edit sent from this editor. */
 	void setResult(bool ok, const QString& message);
 
-	/* The stored task is running: the editor shows its progress and does not
-	   allow edits until the run ends. */
-	void setRunning(bool running);
+	/* The task the scheduler runs, empty when none. While the editor shows it, the
+	   editor shows its progress and does not allow edits until the run ends; any
+	   other task, new or stored, can be edited and sent meanwhile. */
+	void setRunningTask(const QString& name);
 	bool isRunning() const { return m_running; }
 	void showStepStates(const QVector<int>& states, int loopStep, int loopIteration);
 
@@ -112,6 +113,12 @@ private:
 	// the task as it was loaded, sent or saved, to tell whether it has been changed since
 	QString m_saved_text;
 	bool m_running = false;
+	QString m_running_task;
+	QVector<int> m_step_states;
+	int m_loop_step = -1;
+	int m_loop_iteration = 0;
+	void setRunning(bool running);
+	void updateRunning();
 	bool m_loading = false;
 };
 

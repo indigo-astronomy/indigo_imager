@@ -5,6 +5,9 @@
 // same steps, and a task it can not show must stay complete as text.
 
 #include <QApplication>
+#include <QAbstractSpinBox>
+#include <QPlainTextEdit>
+#include <QPushButton>
 #include <QDateTime>
 #include <QComboBox>
 #include <QTabWidget>
@@ -387,6 +390,54 @@ static void testSky() {
 	CHECK(polar.second - polar.first == 24 * 3600 && polar.first <= polar_now, "a night without end shows a day");
 }
 
+static bool busyStep(QWidget *step) {
+	for (QWidget *child : step->findChildren<QWidget*>()) {
+		if (child->property("stepState").toString() == "busy") return true;
+	}
+	return false;
+}
+
+/* only the task the scheduler runs is read only, any other can be edited and sent meanwhile */
+static void testRunning() {
+	const char *a = "// @task A\n\nvar sequence = new Sequence(scheduler_task.name);\nsequence.wait(1);\nsequence.start();\n";
+	const char *b = "// @task B\n\nvar sequence = new Sequence(scheduler_task.name);\nsequence.wait(2);\nsequence.start();\n";
+	SchedulerTaskEditor editor;
+	QPushButton *apply = nullptr;
+	for (QPushButton *button : editor.findChildren<QPushButton*>()) if (button->text() == "Apply") apply = button;
+	editor.loadTask(a, "A");
+	editor.setRunningTask("A");
+	CHECK(editor.isRunning() && apply && !apply->isEnabled(), "the running task is read only");
+	if (!apply) return;
+	// its text can be seen but not edited, and the steps come back read only with the progress
+	QTabWidget *pages = editor.findChild<QTabWidget*>("SchedulerEditorPages");
+	QPlainTextEdit *text = editor.findChild<QPlainTextEdit*>("SchedulerEditorText");
+	bool all_tabs = true;
+	for (int i = 0; i < pages->count(); i++) all_tabs = all_tabs && pages->isTabEnabled(i);
+	CHECK(all_tabs, "all the pages of the running task can be shown");
+	editor.showStepStates({ 2 }, -1, 0);
+	pages->setCurrentWidget(text);
+	CHECK(!editor.isVisualMode() && text->isReadOnly(), "its text is shown read only");
+	pages->setCurrentIndex(0);
+	IndigoSequence *steps = editor.findChild<IndigoSequence*>();
+	IndigoSequenceItem *step = steps ? steps->getItemAt(0) : nullptr;
+	CHECK(editor.isVisualMode() && editor.isRunning() && step && step->findChild<QAbstractSpinBox*>() && !step->findChild<QAbstractSpinBox*>()->isEnabled() && busyStep(step),
+		"its steps are shown again read only with their state");
+
+	editor.newTask();
+	CHECK(!editor.isRunning() && apply->isEnabled(), "a new task can be edited and sent while A runs");
+	editor.loadTask(b, "B");
+	CHECK(!editor.isRunning() && apply->isEnabled(), "another stored task can be edited and sent while A runs");
+	editor.loadTask(a, QString());
+	CHECK(!editor.isRunning() && apply->isEnabled(), "a task from a file can be edited and sent while A runs");
+	editor.setResult(true, QString());
+	CHECK(editor.isRunning() && !apply->isEnabled(), "a file that is sent as the running task is read only");
+	editor.loadTask(b, "B");
+	editor.setRunningTask("B");
+	CHECK(editor.isRunning(), "the next running task is read only");
+	editor.setRunningTask(QString());
+	CHECK(!editor.isRunning() && apply->isEnabled(), "and editable again when the run ends");
+}
+
 int main(int argc, char *argv[]) {
 	qputenv("QT_QPA_PLATFORM", "offscreen");
 	QApplication app(argc, argv);
@@ -399,6 +450,7 @@ int main(int argc, char *argv[]) {
 	testTargetGoto();
 	testHook();
 	testSky();
+	testRunning();
 	fprintf(stderr, "%d checks, %d failures\n", checks, failures);
 	return failures ? 1 : 0;
 }

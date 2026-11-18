@@ -167,6 +167,11 @@ void SchedulerTaskEditor::onPageChanged() {
 			return;
 		}
 		setStatus(QString());
+		if (m_running) {
+			// the steps were loaded again: read only, with the progress of the run
+			emit m_body->enable(false);
+			showStepStates(m_step_states, m_loop_step, m_loop_iteration);
+		}
 	} else if (page == m_form_page) {
 		// the steps may have been edited: the form shows the goto they have now
 		showGotoOfSteps();
@@ -296,6 +301,7 @@ void SchedulerTaskEditor::loadTask(const QString& text, const QString& serverNam
 	}
 	m_saved_text = taskText();
 	m_loading = false;
+	updateRunning();
 	updateTitle();
 	updateButtons();
 }
@@ -310,6 +316,7 @@ void SchedulerTaskEditor::newTask() {
 	showPage(m_body);
 	setStatus(QString());
 	m_saved_text = taskText();
+	updateRunning();
 	updateTitle();
 	updateButtons();
 }
@@ -390,8 +397,18 @@ void SchedulerTaskEditor::setResult(bool ok, const QString& message) {
 	} else {
 		setStatus(message.isEmpty() ? "Rejected by the scheduler" : message, StatusAlert);
 	}
+	updateRunning();
 	updateTitle();
 	updateButtons();
+}
+
+void SchedulerTaskEditor::setRunningTask(const QString& name) {
+	m_running_task = name;
+	updateRunning();
+}
+
+void SchedulerTaskEditor::updateRunning() {
+	setRunning(!m_running_task.isEmpty() && m_running_task.compare(m_server_name, Qt::CaseInsensitive) == 0);
 }
 
 void SchedulerTaskEditor::setRunning(bool running) {
@@ -408,12 +425,17 @@ void SchedulerTaskEditor::setRunning(bool running) {
 	m_text->setReadOnly(running);
 	if (!running) {
 		m_body->setIdle();
+		m_step_states.clear();
 	}
 	updateTitle();
 	updateButtons();
 }
 
 void SchedulerTaskEditor::showStepStates(const QVector<int>& states, int loopStep, int loopIteration) {
+	// kept to show them again when the steps are shown after the text
+	m_step_states = states;
+	m_loop_step = loopStep;
+	m_loop_iteration = loopIteration;
 	if (!m_running || !isVisualMode() || states.size() != m_body->executedItemCount()) {
 		return;
 	}
@@ -443,11 +465,6 @@ void SchedulerTaskEditor::updateTitle() {
 void SchedulerTaskEditor::updateButtons() {
 	m_apply_button->setEnabled(!m_running);
 	m_urgent_button->setEnabled(!m_running);
-	// a running task stays on the side it is shown on
-	for (int i = 0; i < m_pages->count(); i++) {
-		bool text_page = m_pages->widget(i) == m_text;
-		m_pages->setTabEnabled(i, !m_running || text_page == m_text_mode);
-	}
 	m_new_button->setEnabled(true);
 	m_open_button->setEnabled(true);
 }

@@ -173,6 +173,13 @@ static void sched_dump() {
 	QTabWidget *pages = qobject_cast<QTabWidget *>(named("SchedulerEditorPages"));
 	QWidget *editor = named("SchedulerTaskEditor");
 	if (editor) out("SCHED EditorSteps " + step_states(editor));
+	if (pages) {
+		QStringList tabs;
+		for (int i = 0; i < pages->count(); i++) tabs << QString("%1:%2").arg(pages->tabText(i)).arg(pages->isTabEnabled(i) ? "on" : "off");
+		out("SCHED EditorTabs " + tabs.join(" "));
+	}
+	QPlainTextEdit *task_text = qobject_cast<QPlainTextEdit *>(named("SchedulerEditorText"));
+	if (task_text) out(QString("SCHED EditorText %1").arg(task_text->isReadOnly() ? "read only" : "editable"));
 	out(QString("SCHED EditorMode %1").arg(pages ? (pages->currentWidget() == named("SchedulerEditorText") ? "text" : "visual") : "?"));
 	for (const char *name : { "SchedulerTasks", "SchedulerPlan", "SchedulerHistory" }) {
 		QTreeWidget *tree = qobject_cast<QTreeWidget *>(named(name));

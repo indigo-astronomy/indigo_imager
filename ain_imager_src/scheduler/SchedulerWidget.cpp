@@ -1117,7 +1117,7 @@ void SchedulerWidget::updateSettings() {
 
 void SchedulerWidget::updateEditorRunning() {
 	QString running = m_properties.value(P_CURRENT).text("CURRENT");
-	m_editor->setRunning(!running.isEmpty() && running == m_editor->serverName());
+	m_editor->setRunningTask(running);
 }
 
 // MARK: Tasks

@@ -61,6 +61,24 @@ sequence.capture_batch(2, 2);
 sequence.start();
 EOF
 
+cat > "$CASE_DIR/long.task" <<'EOF'
+// @task Long
+
+var sequence = new Sequence(scheduler_task.name);
+sequence.wait(120);
+sequence.start();
+EOF
+
+cat > "$CASE_DIR/standby.task" <<'EOF'
+// @task     Standby
+// @priority hook
+// @duration 1
+
+var sequence = new Sequence(scheduler_task.name);
+sequence.wait(1);
+sequence.start();
+EOF
+
 cat > "$CASE_DIR/m31.task" <<'EOF'
 // @task     M31
 // @target   00:42:44 +41:16:09
@@ -203,6 +221,49 @@ ain_do answer Yes
 ain_do sched_select Capture
 ain_do sched_click "Delete the task; a running task is aborted first"
 check "it is deleted" wait_for 10 sched_lacks "SCHED SchedulerTasks Capture"
+
+section "edits while a task runs"
+ain_do sched_open "$CASE_DIR/long.task"
+ain_do tab "Task editor"
+ain_do sched_click Apply
+check "the long task is stored" wait_for 10 sched_has "SCHED SchedulerTasks Long | QUEUED"
+ain_do sched_click Start
+check "it runs" wait_for 30 sched_has "SCHED SchedulerCurrent Running: Long"
+check "the editor shows it read only" wait_for 10 sched_has "SCHED SchedulerEditorTitle Task 'Long' - running, read only"
+check "all its pages can be shown" sched_has "SCHED EditorTabs Steps:on Properties:on Extra:on Text:on"
+ain_do sched_page Text
+check "its text is shown read only" sched_has_all "SCHED EditorMode text" "SCHED EditorText read only"
+ain_do sched_page Steps
+check "and its steps again" sched_has_all "SCHED EditorMode visual" "SCHED EditorSteps busy" "running, read only"
+ain_do sched_click New
+check "a new task can be edited" sched_has "SCHED SchedulerEditorTitle New task"
+ain_do sched_open "$CASE_DIR/standby.task"
+ain_do sched_click Apply
+check "a task from a file is uploaded" wait_for 10 sched_has "SCHED SchedulerTasks Standby | HOOK"
+ain_do sched_page Properties
+ain_do sched_click Duration
+ain_do sched_click Apply
+check "the stored task is edited" wait_for 10 sched_has "SCHED SchedulerEditorStatus Accepted"
+ain_do sched_edit Standby
+ain_do sched_page Text
+ain_do sched_text
+check "the scheduler has the edit" bash -c "grep '^SCHED_TEXT' '$CASE_DIR/ain.out' | tail -1 | grep 'Standby' | grep -qv 'duration'"
+check "Apply was never disabled" bash -c "! grep -q '^DISABLED Apply' '$CASE_DIR/ain.out'"
+check "the long task still runs" sched_has "SCHED SchedulerCurrent Running: Long"
+ain_do sched_edit Long
+check "and is read only when shown again" wait_for 10 sched_has "SCHED SchedulerEditorTitle Task 'Long' - running, read only"
+ain_do sched_click Apply
+check "and can not be sent" bash -c "grep -q '^DISABLED Apply' '$CASE_DIR/ain.out'"
+ain_do answer Yes
+ain_do sched_click "Abort the running task at once, run the shutdown hook and stop"
+check "the scheduler is aborted" wait_for 30 sched_has "SCHED SchedulerState Stopped"
+ain_do tab Tasks
+for task in Long Standby; do
+	ain_do answer Yes
+	ain_do sched_select $task
+	ain_do sched_click "Delete the task; a running task is aborted first"
+	check "$task is deleted" wait_for 10 sched_lacks "SCHED SchedulerTasks $task"
+done
 
 section "task commands"
 ain_do sched_select Test
