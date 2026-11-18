@@ -4257,7 +4257,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 }
 
 void ImagerWindow::on_property_define(indigo_property* property, char *message) {
-	if (m_scheduler->wantsDevice(property->device)) {
+	if (m_scheduler->wantsProperty(property->device, property->name)) {
 		scheduler_property_define(property);
 	}
 	property_define(property, message);
@@ -4299,7 +4299,7 @@ void ImagerWindow::on_property_define(indigo_property* property, char *message) 
 
 void ImagerWindow::on_property_change(indigo_property* property, char *message) {
 	Q_UNUSED(message);
-	if (m_scheduler->wantsDevice(property->device)) {
+	if (m_scheduler->wantsProperty(property->device, property->name)) {
 		scheduler_property_change(property);
 	}
 	if (!strncmp(property->device, "Server", 6) && !strcmp(property->name, "DRIVERS")) {
@@ -5632,7 +5632,7 @@ void ImagerWindow::property_delete(indigo_property* property, char *message) {
 }
 
 void ImagerWindow::on_property_delete(indigo_property* property, char *message) {
-	if (m_scheduler->wantsDevice(property->device)) {
+	if (m_scheduler->wantsProperty(property->device, property->name)) {
 		scheduler_property_delete(property);
 	}
 

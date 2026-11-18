@@ -53,6 +53,7 @@
 
 #define SCHEDULER_AGENT_PREFIX     "Scheduler Agent"
 #define SCRIPTING_AGENT_PREFIX     "Scripting Agent"
+#define IMAGER_AGENT_PREFIX        "Imager Agent"
 
 #define P_ADD_TASK         "AGENT_SCHEDULER_ADD_TASK"
 #define P_TASK_PREFIX      "AGENT_SCHEDULER_TASK_"
@@ -229,8 +230,25 @@ QString SchedulerWidget::scriptingAgent() const {
 	return SCRIPTING_AGENT_PREFIX + agent.mid(strlen(SCHEDULER_AGENT_PREFIX));
 }
 
+QString SchedulerWidget::imagerAgent() const {
+	QString agent = selectedAgent();
+	if (agent.isEmpty()) {
+		return QString();
+	}
+	// the sequences of the tasks use the Imager Agent of the server by default
+	return IMAGER_AGENT_PREFIX + agent.mid(strlen(SCHEDULER_AGENT_PREFIX));
+}
+
 bool SchedulerWidget::wantsDevice(const QString& device) const {
 	return isSchedulerDevice(device) || (!selectedAgent().isEmpty() && device == scriptingAgent());
+}
+
+bool SchedulerWidget::wantsProperty(const QString& device, const QString& name) const {
+	if (wantsDevice(device)) {
+		return true;
+	}
+	return !selectedAgent().isEmpty() && device == imagerAgent() &&
+		(name.isEmpty() || name == "AGENT_START_PROCESS" || name == "AGENT_IMAGER_STATS" || name == "AGENT_IMAGER_BATCH");
 }
 
 bool SchedulerWidget::isRunning() const {
@@ -315,17 +333,26 @@ void SchedulerWidget::buildControlPanel() {
 
 	layout->addItem(new QSpacerItem(1, 8), row++, 0);
 
-	title = new QLabel("Running task:");
+	title = new QLabel("Task progress:");
 	title->setStyleSheet("font-weight: bold;");
-	layout->addWidget(title, row++, 0, 1, 3);
+	layout->addWidget(title, row, 0);
+	m_task_status = new QLabel();
+	m_task_status->setObjectName("SchedulerTaskStatus");
+	layout->addWidget(m_task_status, row++, 1, 1, 2);
+	m_exposure_progress = new QProgressBar();
+	m_exposure_progress->setObjectName("SchedulerExposure");
+	layout->addWidget(m_exposure_progress, row++, 0, 1, 3);
+	m_batch_progress = new QProgressBar();
+	m_batch_progress->setObjectName("SchedulerBatch");
+	layout->addWidget(m_batch_progress, row++, 0, 1, 3);
 	m_sequence_progress = new QProgressBar();
 	m_sequence_progress->setObjectName("SchedulerProgress");
-	m_sequence_progress->setRange(0, 100);
 	layout->addWidget(m_sequence_progress, row++, 0, 1, 3);
 	m_sequence_label = new QLabel();
 	m_sequence_label->setObjectName("SchedulerSequence");
 	m_sequence_label->setWordWrap(true);
 	layout->addWidget(m_sequence_label, row++, 0, 1, 3);
+	resetProgress();
 
 	layout->addItem(new QSpacerItem(1, 8), row++, 0);
 	QLabel *note = new QLabel("Times are UTC.");
@@ -553,6 +580,15 @@ void SchedulerWidget::clearAgent() {
 	m_sequence_state = SchedulerProperty();
 	m_step_state = SchedulerProperty();
 	m_loop_state = SchedulerProperty();
+	m_imager_process = SchedulerProperty();
+	m_imager_stats = SchedulerProperty();
+	m_imager_batch = SchedulerProperty();
+	m_progress_current.clear();
+	m_progress_shown = false;
+	m_task_started = false;
+	m_task_finished = false;
+	m_exposure_running = false;
+	resetProgress();
 	m_pending_property.clear();
 	m_messages.clear();
 	updateState();
@@ -583,6 +619,8 @@ void SchedulerWidget::defineProperty(const SchedulerProperty& property) {
 		handleProperty(property);
 	} else if (property.device == scriptingAgent()) {
 		handleScripting(property);
+	} else if (property.device == imagerAgent()) {
+		handleImager(property);
 	}
 }
 
@@ -591,6 +629,8 @@ void SchedulerWidget::updateProperty(const SchedulerProperty& property) {
 		handleProperty(property);
 	} else if (property.device == scriptingAgent()) {
 		handleScripting(property);
+	} else if (property.device == imagerAgent()) {
+		handleImager(property);
 	}
 }
 
@@ -611,6 +651,10 @@ void SchedulerWidget::deleteProperty(const QString& device, const QString& name)
 		}
 	} else if (device == scriptingAgent() && name.isEmpty()) {
 		handleScripting(SchedulerProperty());
+	} else if (device == imagerAgent() && name.isEmpty()) {
+		m_imager_process = SchedulerProperty();
+		m_imager_stats = SchedulerProperty();
+		m_imager_batch = SchedulerProperty();
 	}
 	if (name.isEmpty() && isSchedulerDevice(device)) {
 		int index = m_agent_select->findData(device);
@@ -626,6 +670,7 @@ void SchedulerWidget::handleProperty(const SchedulerProperty& property) {
 	if (name == P_STATE || name == P_CURRENT) {
 		updateState();
 		updateEditorRunning();
+		updateTaskProgress();
 	} else if (name == P_TASK_STATE) {
 		updateTasks();
 	} else if (name == P_PLAN) {
@@ -673,29 +718,7 @@ void SchedulerWidget::handleScripting(const SchedulerProperty& property) {
 		return;
 	}
 
-	bool scheduler_task = !m_properties.value(P_CURRENT).text("CURRENT").isEmpty();
-	if (m_sequence_state.name.isEmpty() || !scheduler_task) {
-		m_sequence_progress->setValue(0);
-		m_sequence_progress->setFormat("Idle");
-		m_sequence_label->clear();
-	} else {
-		double progress = m_sequence_state.number("PROGRESS");
-		double total = m_sequence_state.number("PROGRESS_TOTAL");
-		int percent = total > 0 ? int(progress / total * 100 + 0.5) : 0;
-		m_sequence_progress->setValue(percent);
-		if (m_sequence_state.state == SCHEDULER_ALERT) {
-			m_sequence_progress->setFormat("Failed (%p%)");
-		} else {
-			m_sequence_progress->setFormat("%p% complete");
-		}
-		double exposure = m_sequence_state.number("EXPOSURE");
-		double exposure_total = m_sequence_state.number("EXPOSURE_TOTAL");
-		double remaining = qMax(0.0, exposure_total - exposure);
-		m_sequence_label->setText(QString("Step %1, exposure %2 of %3 remaining")
-			.arg(int(m_sequence_state.number("STEP")) + 1)
-			.arg(QString("%1:%2").arg(int(remaining / 3600)).arg(int(remaining / 60) % 60, 2, 10, QChar('0')))
-			.arg(QString("%1:%2").arg(int(exposure_total / 3600)).arg(int(exposure_total / 60) % 60, 2, 10, QChar('0'))));
-	}
+	updateTaskProgress();
 
 	if (!m_step_state.name.isEmpty() && m_editor->isRunning()) {
 		QVector<int> states;
@@ -705,6 +728,143 @@ void SchedulerWidget::handleScripting(const SchedulerProperty& property) {
 		int loop_step = m_loop_state.name.isEmpty() ? -1 : int(m_loop_state.number("STEP"));
 		int loop_count = m_loop_state.name.isEmpty() ? 0 : int(m_loop_state.number("COUNT"));
 		m_editor->showStepStates(states, loop_step, loop_count);
+	}
+}
+
+static QString hms(double seconds) {
+	int s = int(qMax(0.0, seconds) + 0.5);
+	return QString("%1:%2:%3").arg(s / 3600, 2, 10, QChar('0')).arg(s / 60 % 60, 2, 10, QChar('0')).arg(s % 60, 2, 10, QChar('0'));
+}
+
+static void setProgress(QProgressBar *bar, int max, int value, const QString& format) {
+	bar->setRange(0, max);
+	bar->setValue(value);
+	bar->setFormat(format);
+}
+
+void SchedulerWidget::handleImager(const SchedulerProperty& property) {
+	if (property.name == "AGENT_START_PROCESS") {
+		m_imager_process = property;
+	} else if (property.name == "AGENT_IMAGER_STATS") {
+		m_imager_stats = property;
+	} else if (property.name == "AGENT_IMAGER_BATCH") {
+		m_imager_batch = property;
+		return;
+	} else {
+		return;
+	}
+	updateExposureProgress();
+}
+
+void SchedulerWidget::resetProgress() {
+	m_task_status->setText(ledHtml(SCHEDULER_IDLE) + " Idle");
+	setProgress(m_exposure_progress, 1, 0, "Exposure: Idle");
+	setProgress(m_batch_progress, 1, 0, "Batch: Idle");
+	setProgress(m_sequence_progress, 1, 0, "Task: Idle");
+	m_sequence_label->setText("Total exposure: " + hms(0));
+}
+
+/* The progress of the task the scheduler runs, as the Sequence tab shows the sequence of Ain.
+   The Scripting Agent runs other sequences too: its state is followed from the start of the
+   sequence of a task to its end, and the end of the last task is shown until the next one. */
+void SchedulerWidget::updateTaskProgress() {
+	QString current = m_properties.value(P_CURRENT).text("CURRENT");
+	if (current != m_progress_current) {
+		if (!current.isEmpty()) {
+			// a new task: the state of the last sequence is not its own until its sequence starts
+			m_progress_shown = true;
+			m_task_started = false;
+			m_task_finished = false;
+			m_exposure_running = false;
+			resetProgress();
+			m_task_status->setText(ledHtml(SCHEDULER_BUSY) + " Starting");
+		} else if (!m_task_started) {
+			// the task ended before its sequence started
+			resetProgress();
+		}
+		m_progress_current = current;
+	}
+	if (!m_progress_shown || m_sequence_state.name.isEmpty()) {
+		return;
+	}
+	if (!m_task_started) {
+		if (current.isEmpty() || m_sequence_state.state != SCHEDULER_BUSY) {
+			return;
+		}
+		m_task_started = true;
+	}
+	// the end of the sequence may come after the scheduler is done with the task
+	if (m_task_finished || (current.isEmpty() && m_sequence_state.state == SCHEDULER_BUSY)) {
+		return;
+	}
+
+	double progress = m_sequence_state.number("PROGRESS");
+	double total = m_sequence_state.number("PROGRESS_TOTAL");
+	int percent = total > 0 ? int(progress / total * 100 + 0.5) : 0;
+	double exposure = m_sequence_state.number("EXPOSURE");
+	double exposure_total = m_sequence_state.number("EXPOSURE_TOTAL");
+	switch (m_sequence_state.state) {
+		case SCHEDULER_BUSY:
+			if (int(m_sequence_state.number("STEP")) == 0 && progress == 0) {
+				setProgress(m_exposure_progress, 1, 0, "Exposure: Idle");
+				setProgress(m_batch_progress, 1, 0, "Batch: Idle");
+			}
+			m_task_status->setText(ledHtml(SCHEDULER_BUSY) + " In progress");
+			setProgress(m_sequence_progress, 100, percent, "Task: %v% complete");
+			m_sequence_label->setText(QString("Total exposure: %1    (%2 remaining)").arg(hms(exposure_total)).arg(hms(exposure_total - exposure)));
+			break;
+		case SCHEDULER_OK:
+			m_task_finished = true;
+			m_task_status->setText(ledHtml(SCHEDULER_OK) + " Complete");
+			setProgress(m_sequence_progress, 100, percent, "Task: %v% complete");
+			m_sequence_label->setText("Total exposure: " + hms(exposure_total));
+			break;
+		case SCHEDULER_ALERT:
+			m_task_finished = true;
+			m_task_status->setText(ledHtml(SCHEDULER_ALERT) + " Failed");
+			setProgress(m_sequence_progress, 100, percent, "Task: Failed (%v% complete)");
+			m_sequence_label->setText("Total exposure: " + hms(exposure_total));
+			break;
+		default:
+			break;
+	}
+}
+
+/* The exposures of the Imager Agent while the sequence of a task runs */
+void SchedulerWidget::updateExposureProgress() {
+	if (!m_task_started || m_task_finished || m_imager_process.name.isEmpty()) {
+		return;
+	}
+	const SchedulerItem *exposure = m_imager_process.item("EXPOSURE");
+	int frames_complete = int(m_imager_stats.number("FRAME"));
+	int frames_total = int(m_imager_stats.number("FRAMES"));
+	if (m_imager_process.state == SCHEDULER_BUSY) {
+		if (!exposure || !exposure->on) {
+			return;
+		}
+		m_exposure_running = true;
+		const SchedulerItem *batch_exposure = m_imager_batch.item("EXPOSURE");
+		int exposure_time = batch_exposure ? int(batch_exposure->target) : 1;
+		int elapsed = int(exposure_time - m_imager_stats.number("EXPOSURE"));
+		setProgress(m_exposure_progress, exposure_time, qBound(0, elapsed, exposure_time), "Exposure: %v of %m seconds elapsed...");
+		if (frames_total < 0) {
+			setProgress(m_batch_progress, frames_complete, frames_complete - 1, "Batch: exposure %v complete...");
+		} else {
+			setProgress(m_batch_progress, frames_total, frames_complete - 1, "Batch: exposure %v of %m complete...");
+		}
+	} else if (m_exposure_running) {
+		m_exposure_running = false;
+		if (m_imager_process.state == SCHEDULER_OK) {
+			setProgress(m_exposure_progress, 100, 100, "Exposure: Complete");
+			setProgress(m_batch_progress, 100, 100, "Batch: Complete");
+		} else {
+			setProgress(m_exposure_progress, 1, 0, "Exposure: Aborted");
+			if (frames_total < 0) {
+				setProgress(m_batch_progress, frames_complete, frames_complete - 1, "Batch: exposure %v complete");
+			} else {
+				setProgress(m_batch_progress, frames_total, frames_complete - 1, "Batch: exposure %v of %m complete");
+			}
+		}
 	}
 }
 

@@ -53,6 +53,8 @@ public:
 	/* true for the devices whose properties the widget needs */
 	static bool isSchedulerDevice(const QString& device);
 	bool wantsDevice(const QString& device) const;
+	/* the properties the widget needs: of the scheduler and Scripting Agent, and the exposure ones of the Imager Agent */
+	bool wantsProperty(const QString& device, const QString& name) const;
 
 	void defineProperty(const SchedulerProperty& property);
 	void updateProperty(const SchedulerProperty& property);
@@ -64,6 +66,8 @@ public:
 	QString selectedAgent() const;
 	/* "Scripting Agent" on the server of the selected scheduler */
 	QString scriptingAgent() const;
+	/* "Imager Agent" on the server of the selected scheduler */
+	QString imagerAgent() const;
 	bool isRunning() const;
 	/* the task or hook the scheduler runs now, empty when none */
 	QString runningTask() const;
@@ -89,6 +93,10 @@ private:
 
 	void handleProperty(const SchedulerProperty& property);
 	void handleScripting(const SchedulerProperty& property);
+	void handleImager(const SchedulerProperty& property);
+	void updateTaskProgress();
+	void updateExposureProgress();
+	void resetProgress();
 	void clearAgent();
 
 	void updateState();
@@ -123,7 +131,10 @@ private:
 	QLabel *m_reason_label;
 	QLabel *m_counters_label;
 	QLabel *m_next_label;
+	QLabel *m_task_status;
 	QLabel *m_sequence_label;
+	QProgressBar *m_exposure_progress;
+	QProgressBar *m_batch_progress;
 	QProgressBar *m_sequence_progress;
 
 	QTabWidget *m_tabs;
@@ -145,6 +156,16 @@ private:
 	SchedulerProperty m_sequence_state;
 	SchedulerProperty m_step_state;
 	SchedulerProperty m_loop_state;
+	// the exposure state of the Imager Agent on its server
+	SchedulerProperty m_imager_process;
+	SchedulerProperty m_imager_stats;
+	SchedulerProperty m_imager_batch;
+	// the progress shows the last task the scheduler ran, from the start of its sequence to its end
+	QString m_progress_current;
+	bool m_progress_shown = false;
+	bool m_task_started = false;
+	bool m_task_finished = false;
+	bool m_exposure_running = false;
 
 	// the property of the last task upload or edit sent from the editor, until its result arrives
 	QString m_pending_property;

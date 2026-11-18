@@ -40,6 +40,7 @@ struct SchedulerItem {
 	QString label;
 	QString text;
 	double number = 0;
+	double target = 0;
 	double min = 0;
 	double max = 0;
 	double step = 0;

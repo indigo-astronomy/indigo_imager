@@ -44,6 +44,7 @@ static SchedulerProperty scheduler_property(indigo_property *property) {
 				break;
 			case INDIGO_NUMBER_VECTOR:
 				copy_item.number = item->number.value;
+				copy_item.target = item->number.target;
 				copy_item.min = item->number.min;
 				copy_item.max = item->number.max;
 				copy_item.step = item->number.step;

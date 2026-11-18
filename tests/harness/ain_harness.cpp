@@ -156,14 +156,16 @@ static void seq_dump() {
 // SCHED lines: the state, the lists and the editor
 static void sched_dump() {
 	out("SCHED_DUMP");
-	for (const char *name : { "SchedulerState", "SchedulerCurrent", "SchedulerReason", "SchedulerEditorTitle", "SchedulerEditorStatus" }) {
+	for (const char *name : { "SchedulerState", "SchedulerCurrent", "SchedulerReason", "SchedulerEditorTitle", "SchedulerEditorStatus", "SchedulerTaskStatus" }) {
 		QLabel *label = qobject_cast<QLabel *>(named(name));
 		out(QString("SCHED %1 %2").arg(name, label ? plain(label->text()) : QString("?")));
 	}
 	QLabel *sequence = qobject_cast<QLabel *>(named("SchedulerSequence"));
 	out(QString("SCHED SchedulerSequence %1").arg(sequence ? plain(sequence->text()) : QString("?")));
-	QProgressBar *progress = qobject_cast<QProgressBar *>(named("SchedulerProgress"));
-	out(QString("SCHED SchedulerProgress %1").arg(progress ? progress->text() : QString("?")));
+	for (const char *name : { "SchedulerExposure", "SchedulerBatch", "SchedulerProgress" }) {
+		QProgressBar *progress = qobject_cast<QProgressBar *>(named(name));
+		out(QString("SCHED %1 %2").arg(name, progress ? progress->text() : QString("?")));
+	}
 	QTabWidget *pages = qobject_cast<QTabWidget *>(named("SchedulerEditorPages"));
 	QWidget *editor = named("SchedulerTaskEditor");
 	if (editor) out("SCHED EditorSteps " + step_states(editor));
