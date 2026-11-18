@@ -24,6 +24,7 @@
 #include "widget_state.h"
 #include <balancebar.h>
 #include <QStringList>
+#include <QRegularExpression>
 #include <SequenceItemModel.h>
 
 static void get_flip_string(bool flip_enambled, double flip_time, char *message) {
@@ -2573,7 +2574,70 @@ void update_ccd_exposure(ImagerWindow *w, indigo_property *property) {
 	w->set_widget_state(w->m_preview_button, property->state);
 }
 
+// the name of the sequence in the AinSequence script of the agent, a null string when there is none
+static QString ain_sequence_name(const char *agent) {
+	char script_name[INDIGO_NAME_SIZE] = {0};
+	for (int i = 0; i < 32; i++) {
+		snprintf(script_name, sizeof(script_name), AGENT_SCRIPTING_SCRIPT_PROPERTY_NAME, i);
+		indigo_property *p = properties.get((char *)agent, script_name);
+		if (!p || strcmp(p->label, AIN_SEQUENCE_NAME)) continue;
+		for (int j = 0; j < p->count; j++) {
+			if (!client_match_item(&p->items[j], AGENT_SCRIPTING_SCRIPT_ITEM_NAME)) continue;
+			static const QRegularExpression constructor(R"re(new\s+Sequence\s*\(\s*(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')?\s*\))re");
+			QRegularExpressionMatch match = constructor.match(QString(indigo_get_text_item_value(&p->items[j])));
+			if (!match.hasMatch()) return QString();
+			QString name = match.captured(1).isNull() ? match.captured(2) : match.captured(1);
+			name.replace(QRegularExpression(R"(\\(.))"), "\\1");
+			return name.isNull() ? QString("") : name;
+		}
+	}
+	return QString();
+}
+
+// whether the sequence of the Scripting Agent is the one of the Sequence tab and not one
+// run by another client, like a task of the Scheduler Agent
+static bool is_ain_sequence(const char *agent) {
+	indigo_property *name_p = properties.get((char *)agent, "SEQUENCE_NAME");
+	if (!name_p || name_p->count < 1) {
+		// a Sequencer.js without the name: every sequence is shown, as before
+		return true;
+	}
+	QString ain_name = ain_sequence_name(agent);
+	return !ain_name.isNull() && ain_name == QString(indigo_get_text_item_value(&name_p->items[0]));
+}
+
 void update_scripting_sequence_state(ImagerWindow *w, indigo_property *property) {
+	if (!strcmp(property->name, "SEQUENCE_NAME")) {
+		// Sequencer.js sends the state of a new run before its name: show the run once it is known
+		indigo_property *state_p = properties.get(property->device, "SEQUENCE_STATE");
+		if (!state_p) return;
+		if (is_ain_sequence(property->device)) {
+			update_scripting_sequence_state(w, state_p);
+			indigo_property *step_state_p = properties.get(property->device, "SEQUENCE_STEP_STATE");
+			if (step_state_p) update_scripting_sequence_state(w, step_state_p);
+		} else {
+			// another sequence runs or ran last: its start may have been taken for the sequence of the tab
+			emit w->m_sequence_editor2->enable(true);
+			emit w->m_sequence_editor2->setSequenceIdle();
+			w->set_widget_state(w->m_seq_start_button, INDIGO_OK_STATE);
+			w->m_seq_start_button->setIcon(QIcon(":resource/record.png"));
+			w->set_text(w->m_imager_status_label, "<img src=\":resource/led-grey.png\"> Idle");
+			w->m_seq_exposure_progress->setRange(0, 1);
+			w->m_seq_exposure_progress->setValue(0);
+			w->m_seq_exposure_progress->setFormat("Exposure: Idle");
+			w->m_seq_batch_progress->setRange(0, 1);
+			w->m_seq_batch_progress->setValue(0);
+			w->m_seq_batch_progress->setFormat("Process: Idle");
+			w->m_seq_sequence_progress->setRange(0, 100);
+			w->m_seq_sequence_progress->setValue(0);
+			w->m_seq_sequence_progress->setFormat("Sequence: Idle");
+			w->on_recalculate_exposure();
+		}
+		return;
+	}
+	if (!is_ain_sequence(property->device)) {
+		return;
+	}
 
 	if (!strcmp(property->name, "SEQUENCE_STATE")) {
 		int sequence_step = -1;
@@ -3850,7 +3914,7 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 
 	// Scripting Agent
 	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE")) {
-		if (property->state == INDIGO_BUSY_STATE) {
+		if (property->state == INDIGO_BUSY_STATE && is_ain_sequence(property->device)) {
 			// On reconnect: if the editor is empty, or if the local script matches the server's
 			// script, load the sequence from the server so running state is shown correctly.
 			// If the editor has different (locally edited) content, leave it untouched.
@@ -3883,7 +3947,8 @@ void ImagerWindow::property_define(indigo_property* property, char *message) {
 		update_scripting_sequence_state(this, property);
 	}
 	if (client_match_device_property(property, selected_scripting_agent, "LOOP_0") ||
-	    client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STEP_STATE")) {
+	    client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STEP_STATE") ||
+	    client_match_device_property(property, selected_scripting_agent, "SEQUENCE_NAME")) {
 		update_scripting_sequence_state(this, property);
 	}
 	if (client_match_device_property(property, selected_scripting_agent, "FLIPPER_STATE")) {
@@ -4413,7 +4478,8 @@ void ImagerWindow::on_property_change(indigo_property* property, char *message) 
 	// Scripting Agent
 	if (client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STATE") ||
 	    client_match_device_property(property, selected_scripting_agent, "LOOP_0") ||
-	    client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STEP_STATE")) {
+	    client_match_device_property(property, selected_scripting_agent, "SEQUENCE_STEP_STATE") ||
+	    client_match_device_property(property, selected_scripting_agent, "SEQUENCE_NAME")) {
 		update_scripting_sequence_state(this, property);
 	}
 	if (client_match_device_property(property, selected_scripting_agent, AGENT_SCRIPTING_ON_LOAD_SCRIPT_PROPERTY_NAME)) {

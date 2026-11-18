@@ -18,6 +18,15 @@ sched_has_all() {	# texts, the SCHED lines of one dump contain all of them
 	done
 }
 
+seq() {	# the SEQ lines of a new dump of the Sequence tab
+	ain_do seq_dump
+	tac "$CASE_DIR/ain.out" | sed '/^SEQ_DUMP/q' | tac | grep '^SEQ '
+}
+
+seq_has() {
+	seq | grep -qF "$1"
+}
+
 sched_lacks() {
 	! sched_has "$1"
 }
@@ -32,6 +41,13 @@ cat > "$CASE_DIR/test.task" <<'EOF'
 
 var sequence = new Sequence(scheduler_task.name);
 sequence.wait(2);
+sequence.wait(3);
+sequence.start();
+EOF
+
+cat > "$CASE_DIR/ain.js" <<'EOF'
+var sequence = new Sequence("ain test");
+sequence.wait(1);
 sequence.wait(3);
 sequence.start();
 EOF
@@ -110,7 +126,17 @@ ain_do answer Yes
 ain_do sched_click "Delete the task; a running task is aborted first"
 check "it is deleted" wait_for 10 sched_lacks "SCHED SchedulerTasks Code"
 
+section "the Sequence tab runs its own sequence"
+ain_do tab Sequence
+ain_do loadseq "$CASE_DIR/ain.js"
+sleep 2
+ain_do button Run
+check "it shows the progress of its run" wait_for 15 seq_has "SEQ SequenceSteps ok busy"
+check "and the end of it" wait_for 15 seq_has "SEQ SequenceStatus Complete"
+seq >/dev/null
+
 section "the scheduler runs the task"
+ain_do tab Scheduler
 ain_do sched_edit Test
 ain_do tab "Task editor"
 ain_do sched_page Properties
@@ -121,6 +147,8 @@ check "the editor shows it running and read only" wait_for 10 sched_has "SCHED S
 check "the editor switches to the steps" sched_has "SCHED EditorMode visual"
 check "the first step is busy, the panel shows it" wait_for 10 sched_has_all "SCHED EditorSteps busy idle" "SCHED SchedulerSequence Step 1," "SCHED SchedulerProgress 0% complete"
 check "the second step is busy after the first is done, the panel shows it" wait_for 10 sched_has_all "SCHED EditorSteps ok busy" "SCHED SchedulerSequence Step 2," "SCHED SchedulerProgress 50% complete"
+seq > "$CASE_DIR/seq_running.txt"
+check "the Sequence tab does not show the task of the scheduler" bash -c "! grep -qE 'busy|In progress|Sequence: [1-9]' '$CASE_DIR/seq_running.txt'"
 ain_do shot "$CASE_DIR/running.png"
 check "the history shows the run" wait_for 30 sched_has "| Test | run 1 | task | SUCCEEDED"
 check "the task is done" wait_for 10 sched_has "SCHED SchedulerTasks Test | DONE"

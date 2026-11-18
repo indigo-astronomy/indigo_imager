@@ -127,6 +127,32 @@ static QString plain(const QString &html) {
 	return QTextDocumentFragment::fromHtml(html).toPlainText().remove(QChar(0xFFFC)).simplified();
 }
 
+// the states of the steps of a sequence editor, top to bottom, as their status icons show them
+static QString step_states(QWidget *editor) {
+	QList<QPair<int, QString>> steps;
+	for (QToolButton *button : editor->findChildren<QToolButton *>()) {
+		QVariant state = button->property("stepState");
+		if (state.isValid()) steps.append(qMakePair(button->mapTo(editor, QPoint(0, 0)).y(), state.toString()));
+	}
+	// a page that was never shown has no layout: its steps are not in order
+	std::stable_sort(steps.begin(), steps.end(), [](const QPair<int, QString> &a, const QPair<int, QString> &b) { return a.first < b.first; });
+	QStringList states;
+	for (const auto &step : steps) states << step.second;
+	return states.join(" ");
+}
+
+// SEQ lines: the state of the Sequence tab
+static void seq_dump() {
+	out("SEQ_DUMP");
+	QLabel *status = qobject_cast<QLabel *>(named("SequenceStatus"));
+	out(QString("SEQ SequenceStatus %1").arg(status ? plain(status->text()) : QString("?")));
+	QProgressBar *progress = qobject_cast<QProgressBar *>(named("SequenceProgress"));
+	out(QString("SEQ SequenceProgress %1").arg(progress ? progress->text() : QString("?")));
+	QWidget *editor = named("SequenceEditor");
+	out(QString("SEQ SequenceSteps %1").arg(editor ? step_states(editor) : QString("?")));
+	out("SEQ_END");
+}
+
 // SCHED lines: the state, the lists and the editor
 static void sched_dump() {
 	out("SCHED_DUMP");
@@ -139,19 +165,8 @@ static void sched_dump() {
 	QProgressBar *progress = qobject_cast<QProgressBar *>(named("SchedulerProgress"));
 	out(QString("SCHED SchedulerProgress %1").arg(progress ? progress->text() : QString("?")));
 	QTabWidget *pages = qobject_cast<QTabWidget *>(named("SchedulerEditorPages"));
-	// the states of the steps of the task editor, top to bottom, as their status icons show them
 	QWidget *editor = named("SchedulerTaskEditor");
-	if (editor) {
-		QList<QPair<int, QString>> steps;
-		for (QToolButton *button : editor->findChildren<QToolButton *>()) {
-			QVariant state = button->property("stepState");
-			if (state.isValid()) steps.append(qMakePair(button->mapTo(editor, QPoint(0, 0)).y(), state.toString()));
-		}
-		std::sort(steps.begin(), steps.end());
-		QStringList states;
-		for (const auto &step : steps) states << step.second;
-		out("SCHED EditorSteps " + states.join(" "));
-	}
+	if (editor) out("SCHED EditorSteps " + step_states(editor));
 	out(QString("SCHED EditorMode %1").arg(pages ? (pages->currentWidget() == named("SchedulerEditorText") ? "text" : "visual") : "?"));
 	for (const char *name : { "SchedulerTasks", "SchedulerPlan", "SchedulerHistory" }) {
 		QTreeWidget *tree = qobject_cast<QTreeWidget *>(named(name));
@@ -203,9 +218,10 @@ static void run(const QString &line) {
 		else out("ERROR no Open Image action");
 	} else if (cmd == "loadseq") {
 		next_file = arg;
-		for (QWidget *widget : QApplication::allWidgets()) {
-			QToolButton *button = qobject_cast<QToolButton *>(widget);
-			if (button && button->toolTip() == "Load sequence from file") {
+		// the one of the Sequence tab, the task editor of the scheduler has one too
+		QWidget *editor = named("SequenceEditor");
+		for (QToolButton *button : editor ? editor->findChildren<QToolButton *>() : QList<QToolButton *>()) {
+			if (button->toolTip() == "Load sequence from file") {
 				button->click();
 				return;
 			}
@@ -241,6 +257,8 @@ static void run(const QString &line) {
 		out("ERROR no tab " + arg);
 	} else if (cmd == "dump") {
 		dump();
+	} else if (cmd == "seq_dump") {
+		seq_dump();
 	} else if (cmd == "sched_dump") {
 		sched_dump();
 	} else if (cmd == "sched_click" || cmd == "sched_press") {

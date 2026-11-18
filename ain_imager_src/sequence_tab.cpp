@@ -95,6 +95,7 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 	label->setStyleSheet(QString("QLabel { font-weight: bold; }"));
 	sequence_frame_layout->addWidget(label, row, 0, 1, 2);
 	m_imager_status_label = new QLabel("<img src=\":resource/led-grey.png\"> Idle");
+	m_imager_status_label->setObjectName("SequenceStatus");
 	sequence_frame_layout->addWidget(m_imager_status_label, row, 2, 1, 2);
 
 	row++;
@@ -113,6 +114,7 @@ void ImagerWindow::create_sequence_tab(QFrame *sequence_frame) {
 
 	row++;
 	m_seq_sequence_progress = new QProgressBar();
+	m_seq_sequence_progress->setObjectName("SequenceProgress");
 	sequence_frame_layout->addWidget(m_seq_sequence_progress, row, 0, 1, 4);
 	m_seq_sequence_progress->setMaximum(1);
 	m_seq_sequence_progress->setValue(0);

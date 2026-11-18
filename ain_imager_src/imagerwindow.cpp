@@ -559,6 +559,7 @@ ImagerWindow::ImagerWindow(QWidget *parent) : QMainWindow(parent) {
 	m_guider_viewer->setVisible(false);
 
 	m_sequence_editor2 = new IndigoSequence();
+	m_sequence_editor2->setObjectName("SequenceEditor");
 
 	QSplitter* hSplitter = new QSplitter;
 	hSplitter->addWidget(tools_panel);
