@@ -19,6 +19,7 @@
 #include "SchedulerWidget.h"
 #include "SchedulerTaskEditor.h"
 #include "SchedulerTask.h"
+#include "SchedulerTaskForm.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -1124,20 +1125,39 @@ void SchedulerWidget::onTasksContextMenu(const QPoint& pos) {
 		QAction *action = hooks->addAction(hook[1], this, [this, name, item_name, is_hook]() {
 			QList<SchedulerRequest> requests;
 			SchedulerTask task = SchedulerTask::fromText(taskText(name));
-			if (!is_hook && !task.has("hook")) {
-				// @hook first, so that a running scheduler does not pick the task as an ordinary one
-				QMessageBox::StandardButton answer = QMessageBox::question(this, "Use as hook",
-					QString("Mark '%1' as a hook-only task with @hook?\n\n"
-					"It is then never scheduled as an ordinary task, also when no hook names it.").arg(name),
+			if (!is_hook && task.value("priority").trimmed() != "hook") {
+				// @priority hook first, so that a running scheduler does not pick the task as an ordinary one
+				QStringList dropped;
+				for (const auto& entry : task.header()) {
+					if (SchedulerTaskForm::hookRejectedKeys().contains(entry.first)) dropped.append("@" + entry.first);
+				}
+				QString question = QString("Mark '%1' as a hook-only task with @priority hook?\n\n"
+					"It is then never scheduled as an ordinary task, also when no hook names it.").arg(name);
+				if (!dropped.isEmpty()) {
+					question += QString("\n\nA hook task has no scheduling keys: %1 will be removed.").arg(dropped.join(", "));
+				}
+				QMessageBox::StandardButton answer = QMessageBox::question(this, "Use as hook", question,
 					QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel, QMessageBox::Yes);
 				if (answer == QMessageBox::Cancel) {
 					return;
 				}
 				if (answer == QMessageBox::Yes) {
-					QList<QPair<QString, QString>> header = task.header();
-					int at = 0;
-					while (at < header.size() && header[at].first != "task") at++;
-					header.insert(at < header.size() ? at + 1 : 0, qMakePair(QString("hook"), QString()));
+					QList<QPair<QString, QString>> header;
+					bool has_priority = false;
+					for (const auto& entry : task.header()) {
+						if (SchedulerTaskForm::hookRejectedKeys().contains(entry.first)) continue;
+						if (entry.first == "priority") {
+							header.append(qMakePair(entry.first, QString("hook")));
+							has_priority = true;
+						} else {
+							header.append(entry);
+						}
+					}
+					if (!has_priority) {
+						int at = 0;
+						while (at < header.size() && header[at].first != "task") at++;
+						header.insert(at < header.size() ? at + 1 : 0, qMakePair(QString("priority"), QString("hook")));
+					}
 					task.setHeader(header);
 					requests.append(SchedulerRequest::text(selectedAgent(), taskProperty(name), "TASK", task.toText()));
 				}

@@ -5,6 +5,7 @@
 // same steps, and a task it can not show must stay complete as text.
 
 #include <QApplication>
+#include <QComboBox>
 #include <QFile>
 #include <QRegularExpression>
 #include <QTextStream>
@@ -18,6 +19,7 @@
 #include "IndigoSequenceParser.h"
 #include "QLineEditSG.h"
 #include <QCheckBox>
+#include <QComboBox>
 #include <QLabel>
 #include <QDoubleSpinBox>
 
@@ -287,12 +289,18 @@ static void testTargetGoto() {
 	CHECK(editor.taskText() == with_precise, "loading does not change the steps:\n%s", u(editor.taskText()).constData());
 }
 
-/* @hook: the Hook check box adds and removes @hook and leaves the other keys alone */
+static QComboBox *priorityClass(QWidget *form) {
+	for (QComboBox *box : form->findChildren<QComboBox*>()) {
+		if (box->findText("hook") >= 0 && box->findText("urgent") >= 0) return box;
+	}
+	return nullptr;
+}
+
+/* @priority hook: a class without a level and without the scheduling keys */
 static void testHook() {
 	const char *hook_task =
 		"// @task     Park\n"
-		"// @hook\n"
-		"// @priority high\n"
+		"// @priority hook\n"
 		"// @duration 2\n\n"
 		"var sequence = new Sequence(scheduler_task.name);\n"
 		"sequence.park();\n"
@@ -300,28 +308,40 @@ static void testHook() {
 	SchedulerTaskEditor editor;
 	editor.loadTask(hook_task, "Park");
 	SchedulerTaskForm *form = editor.findChild<SchedulerTaskForm*>();
-	QCheckBox *hook = form ? checkBox(form, "Hook") : nullptr;
-	CHECK(editor.isVisualMode() && hook && hook->isChecked(), "a task with @hook is shown with Hook checked");
-	if (!hook) return;
+	QComboBox *priority = form ? priorityClass(form) : nullptr;
+	CHECK(editor.isVisualMode() && priority && priority->currentText() == "hook" && form->isHook(), "a task with @priority hook is shown as a hook");
+	if (!priority) return;
 	CHECK(editor.taskText() == hook_task, "a hook task is written as loaded:\n%s", u(editor.taskText()).constData());
 	CHECK(!editor.isModified(), "and is not modified");
-	CHECK(checkBox(form, "Priority")->isEnabled() && checkBox(form, "Target")->isEnabled(), "the other keys stay editable");
+	CHECK(!checkBox(form, "Repeat")->isEnabled() && !checkBox(form, "Time window")->isEnabled() && !checkBox(form, "Enabled")->isEnabled(), "the scheduling keys are disabled");
+	CHECK(checkBox(form, "Target")->isEnabled() && checkBox(form, "Duration")->isEnabled(), "the target and the duration stay editable");
 
-	hook->click();
+	priority->setCurrentText("high");
 	SchedulerTask task = SchedulerTask::fromText(editor.taskText());
-	CHECK(!task.has("hook") && task.value("priority") == "high" && task.value("duration") == "2", "unchecked only @hook is removed:\n%s", u(editor.taskText()).constData());
-	hook->click();
-	CHECK(editor.taskText() == hook_task, "checked again the task is as loaded:\n%s", u(editor.taskText()).constData());
+	CHECK(task.value("priority") == "high 50" && task.value("duration") == "2", "another class has a level:\n%s", u(editor.taskText()).constData());
+	CHECK(checkBox(form, "Repeat")->isEnabled(), "and the scheduling keys");
+	priority->setCurrentText("hook");
+	CHECK(editor.taskText() == hook_task, "hook again, the task is as loaded:\n%s", u(editor.taskText()).constData());
 
-	// a new hook writes @hook after @task
-	editor.newTask();
-	hook->click();
+	// the scheduling keys of a task made a hook are not written, and come back with another class
+	const char *repeated =
+		"// @task     Flats\n"
+		"// @priority normal 40\n"
+		"// @repeat   3\n\n"
+		"var sequence = new Sequence(scheduler_task.name);\n"
+		"sequence.start();\n";
+	editor.loadTask(repeated, "Flats");
+	priority->setCurrentText("hook");
 	task = SchedulerTask::fromText(editor.taskText());
-	CHECK(task.header().size() == 2 && task.header()[1] == qMakePair(QString("hook"), QString()), "a new hook:\n%s", u(editor.taskText()).constData());
+	CHECK(task.value("priority") == "hook" && !task.has("repeat"), "a hook has no @repeat:\n%s", u(editor.taskText()).constData());
+	priority->setCurrentText("normal");
+	CHECK(editor.taskText() == repeated, "another class gets it back:\n%s", u(editor.taskText()).constData());
 
 	SchedulerTaskForm plain;
 	QString error;
-	CHECK(!plain.setHeader({ { "task", "A" }, { "hook", "yes" } }, &error), "@hook takes no value");
+	CHECK(!plain.setHeader({ { "task", "A" }, { "priority", "hook 50" } }, &error), "@priority hook takes no level");
+	CHECK(!plain.setHeader({ { "task", "A" }, { "priority", "hook" }, { "repeat", "2" } }, &error) && error.contains("@repeat"), "a hook with @repeat is refused: %s", u(error).constData());
+	CHECK(!plain.setHeader({ { "task", "A" }, { "hook", "" } }, &error), "@hook is not a key any more");
 }
 
 int main(int argc, char *argv[]) {

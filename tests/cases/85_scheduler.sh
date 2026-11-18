@@ -82,7 +82,7 @@ EOF
 
 cat > "$CASE_DIR/hook.task" <<'EOF'
 // @task     Park
-// @hook
+// @priority hook
 // @duration 1
 
 var sequence = new Sequence(scheduler_task.name);
@@ -203,12 +203,12 @@ ain_do popup_shot "$CASE_DIR/search.png"
 ain_do popup_close
 ain_do sched_click Target
 check "the object search has its frame" bash -c "grep '^POPUP frame' '$CASE_DIR/ain.out' | tail -1 | grep -qv 'frame [-0]'"
-ain_do sched_click Hook
+ain_do sched_click Repeat
 ain_do answer No
 ain_do sched_click New
 check "a new task asks to discard the changes of the task by its name" bash -c "grep '^QUESTION' '$CASE_DIR/ain.out' | tail -1 | grep -qF \"The task 'Test' is being edited and has changes\""
 check "and keeps them when not agreed" sched_has "SCHED SchedulerEditorTitle Task 'Test'"
-ain_do sched_click Hook
+ain_do sched_click Repeat
 ain_do sched_click Apply
 check "the edit is accepted" wait_for 10 sched_has "SCHED SchedulerEditorStatus Accepted"
 ain_do sched_open "$CASE_DIR/test.task"
@@ -242,6 +242,7 @@ check "the task is deleted" wait_for 10 sched_lacks "SCHED SchedulerTasks Test"
 section "a hook task"
 ain_do sched_open "$CASE_DIR/hook.task"
 ain_do tab "Task editor"
+ain_do sched_page Properties
 ain_do shot "$CASE_DIR/hook.png"
 check "it is shown in the visual editor" sched_has "SCHED EditorMode visual"
 ain_do sched_click Apply

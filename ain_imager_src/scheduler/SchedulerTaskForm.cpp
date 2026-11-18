@@ -105,13 +105,10 @@ SchedulerTaskForm::SchedulerTaskForm(QWidget *parent) : QWidget(parent) {
 	m_name = new QLineEdit();
 	m_name->setMaxLength(40);
 	m_name->setPlaceholderText("required, unique, without '|'");
-	// @hook, a key without a value: the task runs only as a hook
-	m_hook = new QCheckBox("Hook");
-	m_hook->setToolTip("@hook: the task runs only as a hook, it is never scheduled as an ordinary task");
-	addField("task", "Name", "The name of the task, 1-40 bytes, without '|', unique", { m_name, m_hook },
+	addField("task", "Name", "The name of the task, 1-40 bytes, without '|', unique", { m_name },
 		[this]() { return m_name->text().trimmed(); },
 		[this](const QString& value) { m_name->setText(value); return true; },
-		[this]() { m_name->clear(); m_hook->setChecked(false); }
+		[this]() { m_name->clear(); }
 	);
 
 	// @target
@@ -188,17 +185,18 @@ SchedulerTaskForm::SchedulerTaskForm(QWidget *parent) : QWidget(parent) {
 	);
 
 	// @priority
-	m_priority_class = combo({ "urgent", "high", "normal", "low" });
+	m_priority_class = combo({ "urgent", "high", "normal", "low", "hook" });
 	m_priority_level = intSpin(0, 100, 50);
 	connect(m_priority_class, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]() { updateEnabled(); });
-	addField("priority", "Priority", "The class decides first; the level 0-100 and the sky bonuses decide within a class.\nThe level of an urgent task is ignored.", { m_priority_class, m_priority_level },
+	addField("priority", "Priority", "The class decides first; the level 0-100 and the sky bonuses decide within a class.\nThe level of an urgent task is ignored.\nhook: the task runs only as a hook and is never scheduled as an ordinary task;\nit has no level and no scheduling keys.", { m_priority_class, m_priority_level },
 		[this]() {
-			if (m_priority_class->currentText() == "urgent") return QString("urgent");
+			if (m_priority_class->currentText() == "urgent" || m_priority_class->currentText() == "hook") return m_priority_class->currentText();
 			return m_priority_class->currentText() + " " + QString::number(m_priority_level->value());
 		},
 		[this](const QString& value) {
 			QStringList tokens = value.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
 			if (tokens.isEmpty() || tokens.size() > 2 || !setCombo(m_priority_class, tokens[0])) return false;
+			if (tokens[0] == "hook" && tokens.size() > 1) return false;
 			m_priority_level->setValue(50);
 			return tokens.size() == 1 || setSpin(m_priority_level, tokens[1]);
 		},
@@ -563,8 +561,21 @@ void SchedulerTaskForm::updateEnabled() {
 			}
 		}
 	}
+	// a hook task has none of the scheduling keys
+	if (isHook()) {
+		for (const QString& key : hookRejectedKeys()) {
+			Field *f = field(key);
+			if (!f) continue;
+			if (f->enable) f->enable->setEnabled(false);
+			for (QWidget *row : f->rows) {
+				for (QWidget *child : row->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly)) {
+					child->setEnabled(false);
+				}
+			}
+		}
+	}
 	// the dependent parts of composite values
-	m_priority_level->setEnabled(m_priority_level->isEnabled() && m_priority_class->currentText() != "urgent");
+	m_priority_level->setEnabled(m_priority_level->isEnabled() && m_priority_class->currentText() != "urgent" && m_priority_class->currentText() != "hook");
 	m_window_start->setEnabled(m_window_start->isEnabled() && m_window_has_start->isChecked());
 	m_window_end->setEnabled(m_window_end->isEnabled() && m_window_has_end->isChecked());
 	for (QCheckBox *option : findChildren<QCheckBox*>()) {
@@ -598,15 +609,6 @@ bool SchedulerTaskForm::setHeader(const QList<QPair<QString, QString>>& header, 
 	m_loading = true;
 	QString problem;
 	for (const auto& entry : header) {
-		if (entry.first == "hook") {
-			if (!entry.second.isEmpty()) {
-				problem = "@hook takes no value";
-				break;
-			}
-			m_hook->setChecked(true);
-			m_order.append(entry.first);
-			continue;
-		}
 		Field *f = field(entry.first);
 		if (f == nullptr) {
 			problem = QString("@%1 is not a known key").arg(entry.first);
@@ -621,6 +623,15 @@ bool SchedulerTaskForm::setHeader(const QList<QPair<QString, QString>>& header, 
 		m_order.append(entry.first);
 	}
 	m_loading = false;
+	if (problem.isEmpty() && isHook()) {
+		for (const QString& key : hookRejectedKeys()) {
+			const Field *f = field(key);
+			if (f && f->enable && f->enable->isChecked()) {
+				problem = QString("@priority hook does not take @%1").arg(key);
+				break;
+			}
+		}
+	}
 	if (!problem.isEmpty()) {
 		reset();
 		if (error) *error = problem;
@@ -633,14 +644,12 @@ bool SchedulerTaskForm::setHeader(const QList<QPair<QString, QString>>& header, 
 QList<QPair<QString, QString>> SchedulerTaskForm::header() const {
 	QList<QPair<QString, QString>> header;
 	QStringList order = m_order;
+	bool hook = isHook();
 	for (const QString& key : SchedulerTask::knownKeys()) {
 		if (!order.contains(key)) order.append(key);
 	}
 	for (const QString& key : order) {
-		if (key == "hook") {
-			if (isHook()) header.append(qMakePair(key, QString()));
-			continue;
-		}
+		if (hook && hookRejectedKeys().contains(key)) continue;
 		const Field *f = field(key);
 		if (f == nullptr || (f->enable && !f->enable->isChecked())) continue;
 		QString value = f->format();
@@ -690,7 +699,15 @@ bool SchedulerTaskForm::hasTarget() const {
 }
 
 bool SchedulerTaskForm::isHook() const {
-	return m_hook->isChecked();
+	const Field *f = field("priority");
+	return f && f->enable && f->enable->isChecked() && m_priority_class->currentText() == "hook";
+}
+
+const QStringList& SchedulerTaskForm::hookRejectedKeys() {
+	static const QStringList keys = {
+		"repeat", "retry", "enabled", "window", "altitude", "airmass", "ha", "moon", "illumination", "twilight", "preempted"
+	};
+	return keys;
 }
 
 void SchedulerTaskForm::setReadOnly(bool readOnly) {
