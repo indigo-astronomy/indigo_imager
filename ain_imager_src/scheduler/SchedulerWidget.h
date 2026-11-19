@@ -34,7 +34,7 @@ class QTreeWidget;
 class QTreeWidgetItem;
 class QCheckBox;
 class QDoubleSpinBox;
-class QFormLayout;
+class QGridLayout;
 class SchedulerTaskEditor;
 class SchedulerSkyChart;
 
@@ -151,8 +151,13 @@ private:
 
 	QComboBox *m_night;
 	QMap<QString, QComboBox*> m_hooks;
-	QFormLayout *m_settings_layout;
+	// the items of AGENT_SCHEDULER_SETTINGS at their place on the page, the items this
+	// version does not know are added under "Other"
 	QMap<QString, QDoubleSpinBox*> m_settings;
+	QMap<QString, QLabel*> m_setting_labels;
+	QGridLayout *m_other_layout;
+	QLabel *m_other_title;
+	QStringList m_other_settings;
 	QMap<QString, QCheckBox*> m_data;
 	QLineEdit *m_data_dir;
 

@@ -30,10 +30,8 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
-#include <QFormLayout>
 #include <QFrame>
 #include <QGridLayout>
-#include <QGroupBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
@@ -195,6 +193,7 @@ SchedulerWidget::SchedulerWidget(QWidget *parent) : QWidget(parent) {
 	// the editor has a page of its own, the header form and the steps need the room
 	m_editor = new SchedulerTaskEditor();
 	m_tabs = new QTabWidget();
+	m_tabs->setObjectName("SchedulerTabs");
 	m_tabs->addTab(buildTasksPage(), "Tasks");
 	m_tabs->addTab(m_editor, "Task editor");
 	m_tabs->addTab(buildPlanPage(), "Night plan");
@@ -483,45 +482,90 @@ QWidget *SchedulerWidget::buildHistoryPage() {
 	return page;
 }
 
+/* the items of AGENT_SCHEDULER_SETTINGS that have a place on the page */
+static const char *setting_items[][3] = {
+	{ "NIGHT_START_OFFSET", "Night start offset (min)", "Shift of the night start for the night hooks; negative is earlier" },
+	{ "NIGHT_END_OFFSET", "Night end offset (min)", "Shift of the night end for the night hooks; negative is earlier" },
+	{ "SETTING_WEIGHT", "Setting soonest weight", "How strongly tasks whose constraints end soon are preferred within a priority class:\nup to 100 × weight points, 0 lets the level decide" },
+	{ "ALTITUDE_WEIGHT", "Altitude weight", "How strongly targets near their own culmination are preferred within a priority class:\nup to 100 × weight points, 0 lets the level decide" },
+	{ "DEFER", "Wait for a better slot (%)", "0 is off: the best task starts at once.\nOtherwise a task may wait for a slot later tonight nearer its culmination, when no run is lost;\na higher value waits for a smaller gain, 20% of the culmination altitude at 1 down to 1% at 100" },
+	{ "IDLE_PARK_AFTER", "Idle hook after (min)", "Time without an eligible task before the Idle hook runs" },
+	{ "IDLE_CHECK_INTERVAL", "Check interval (s)", "How often the scheduler checks the constraints while it waits,\nand checks for urgent tasks while a task runs" },
+	{ "START_TIMEOUT", "Start timeout (s)", "Time allowed for a started task's sequence to begin" },
+	{ "STOP_TIMEOUT", "Stop timeout (s)", "Time allowed for an aborted sequence and its agents to stop" },
+	{ "FRAME_OVERHEAD", "Overhead per frame (s)", "Time added per frame in the duration estimate (download, saving, dithering)" },
+	{ "OPERATION_OVERHEAD", "Overhead per operation (s)", "Time added per slew, centering, focus or guiding start in the duration estimate" },
+};
+
+/* a column of the page as the settings of the other tabs of Ain: bold section titles,
+   the labels on the left, the values in the last column */
+static QGridLayout *makeSettingsColumn() {
+	QGridLayout *layout = new QGridLayout();
+	layout->setAlignment(Qt::AlignTop);
+	layout->setColumnStretch(0, 3);
+	layout->setColumnStretch(1, 1);
+	layout->setColumnStretch(2, 1);
+	layout->setColumnStretch(3, 1);
+	return layout;
+}
+
+static void addSection(QGridLayout *layout, int *row, const QString& title) {
+	if (*row > 0) {
+		layout->addItem(new QSpacerItem(1, 10, QSizePolicy::Minimum, QSizePolicy::Fixed), (*row)++, 0);
+	}
+	QLabel *label = new QLabel(title);
+	label->setStyleSheet("QLabel { font-weight: bold; }");
+	layout->addWidget(label, (*row)++, 0, 1, 4);
+}
+
 QWidget *SchedulerWidget::buildSettingsPage() {
 	// like the rest of Ain, every change is sent to the agent right away
+	QBoxLayout *page_layout;
+	QFrame *page = makePage(&page_layout);
+	page_layout->setContentsMargins(0, 0, 0, 0);
 	QWidget *content = new QWidget();
-	QHBoxLayout *columns = new QHBoxLayout(content);
+	// one column as the settings of the other tabs, the page scrolls when it is not tall enough
+	QGridLayout *layout = makeSettingsColumn();
+	content->setLayout(layout);
+	int row = 0;
 
-	QVBoxLayout *left = new QVBoxLayout();
-	QGroupBox *night_box = new QGroupBox("Night");
-	QFormLayout *night_layout = new QFormLayout(night_box);
-	m_night = new QComboBox();
-	m_night->addItem("Civil (Sun below -6°)", "CIVIL");
-	m_night->addItem("Nautical (Sun below -12°)", "NAUTICAL");
-	m_night->addItem("Astronomical (Sun below -18°)", "ASTRONOMICAL");
-	m_night->setToolTip("How dark it must be for the night of the night hooks; each task keeps its own @twilight");
-	connect(m_night, QOverload<int>::of(&QComboBox::activated), this, [this]() {
-		send({ SchedulerRequest::switches1(selectedAgent(), P_NIGHT, m_night->currentData().toString()) });
-	});
-	night_layout->addRow("Night limit:", m_night);
-	left->addWidget(night_box);
+	auto addSetting = [this](QGridLayout *grid, int *row, const char *name) {
+		for (const auto& item : setting_items) {
+			if (strcmp(item[0], name)) continue;
+			QLabel *label = new QLabel(QString(item[1]) + ":");
+			label->setToolTip(item[2]);
+			grid->addWidget(label, *row, 0, 1, 2);
+			QDoubleSpinBox *spin = new QDoubleSpinBox();
+			spin->setObjectName(QString("SchedulerSetting_") + name);
+			spin->setToolTip(item[2]);
+			spin->setKeyboardTracking(false);
+			spin->setEnabled(false);
+			connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &SchedulerWidget::sendSettings);
+			grid->addWidget(spin, (*row)++, 2, 1, 2);
+			m_settings[name] = spin;
+			m_setting_labels[name] = label;
+		}
+	};
 
-	QGroupBox *hooks_box = new QGroupBox("Hooks");
-	hooks_box->setToolTip("Stored tasks run at special moments; a hook task is never scheduled as an ordinary task");
-	QFormLayout *hooks_layout = new QFormLayout(hooks_box);
+	addSection(layout, &row, "Event hooks:");
 	for (const auto& hook : hook_items) {
 		QComboBox *box = new QComboBox();
 		box->setEditable(true);
 		box->setInsertPolicy(QComboBox::NoInsert);
-		box->setMinimumContentsLength(16);
+		box->setToolTip("The stored task that runs at this moment; a hook task is never scheduled as an ordinary task");
 		connect(box, QOverload<int>::of(&QComboBox::activated), this, &SchedulerWidget::sendHooks);
 		connect(box->lineEdit(), &QLineEdit::editingFinished, this, &SchedulerWidget::sendHooks);
 		box->setObjectName(QString("SchedulerHook_") + hook[0]);
 		m_hooks[hook[0]] = box;
-		hooks_layout->addRow(QString(hook[1]) + ":", box);
+		layout->addWidget(new QLabel(QString(hook[1]) + ":"), row, 0, 1, 2);
+		layout->addWidget(box, row++, 2, 1, 2);
 	}
-	left->addWidget(hooks_box);
+	addSetting(layout, &row, "IDLE_PARK_AFTER");
 
-	QGroupBox *data_box = new QGroupBox("Observation data");
-	QFormLayout *data_layout = new QFormLayout(data_box);
+	addSection(layout, &row, "Observation data:");
 	for (const char *item : { "OBJECT", "FITS", "FOLDER" }) {
 		QCheckBox *check = new QCheckBox();
+		check->setObjectName(QString("SchedulerData_") + item);
 		connect(check, &QCheckBox::clicked, this, [this]() {
 			SchedulerRequest data;
 			data.type = SchedulerRequest::Switch;
@@ -534,12 +578,13 @@ QWidget *SchedulerWidget::buildSettingsPage() {
 			send({ data });
 		});
 		m_data[item] = check;
-		data_layout->addRow(check);
+		layout->addWidget(check, row++, 0, 1, 4);
 	}
 	m_data["OBJECT"]->setText("Task name as object name");
 	m_data["FITS"]->setText("Task FITS keywords (SCHTASK, SCHRUN, SCHNIGHT...)");
 	m_data["FOLDER"]->setText("Folder per task");
 	m_data_dir = new QLineEdit();
+	m_data_dir->setObjectName("SchedulerDataDir");
 	m_data_dir->setPlaceholderText("folder of the Imager Agent");
 	m_data_dir->setToolTip("Parent folder of the task folders on the server; empty for the folder the Imager Agent had when the scheduler was started");
 	connect(m_data_dir, &QLineEdit::editingFinished, this, [this]() {
@@ -548,22 +593,56 @@ QWidget *SchedulerWidget::buildSettingsPage() {
 			send({ SchedulerRequest::text(selectedAgent(), P_DATA_DIR, "BASE", base) });
 		}
 	});
-	data_layout->addRow("Base folder:", m_data_dir);
-	left->addWidget(data_box);
-	left->addStretch();
-	columns->addLayout(left);
+	layout->addWidget(new QLabel("Base folder:"), row, 0, 1, 2);
+	layout->addWidget(m_data_dir, row++, 2, 1, 2);
 
-	QVBoxLayout *right = new QVBoxLayout();
-	QGroupBox *settings_box = new QGroupBox("Scheduler settings");
-	m_settings_layout = new QFormLayout(settings_box);
-	right->addWidget(settings_box);
-	right->addStretch();
-	columns->addLayout(right);
+	addSection(layout, &row, "Night:");
+	m_night = new QComboBox();
+	m_night->setObjectName("SchedulerNight");
+	m_night->addItem("Civil (Sun below -6°)", "CIVIL");
+	m_night->addItem("Nautical (Sun below -12°)", "NAUTICAL");
+	m_night->addItem("Astronomical (Sun below -18°)", "ASTRONOMICAL");
+	m_night->setToolTip("How dark it must be for the night of the night hooks; each task keeps its own @twilight");
+	connect(m_night, QOverload<int>::of(&QComboBox::activated), this, [this]() {
+		send({ SchedulerRequest::switches1(selectedAgent(), P_NIGHT, m_night->currentData().toString()) });
+	});
+	layout->addWidget(new QLabel("Night limit:"), row, 0, 1, 2);
+	layout->addWidget(m_night, row++, 2, 1, 2);
+	addSetting(layout, &row, "NIGHT_START_OFFSET");
+	addSetting(layout, &row, "NIGHT_END_OFFSET");
+
+	addSection(layout, &row, "Task selection:");
+	addSetting(layout, &row, "SETTING_WEIGHT");
+	addSetting(layout, &row, "ALTITUDE_WEIGHT");
+	addSetting(layout, &row, "DEFER");
+
+	addSection(layout, &row, "Timings:");
+	addSetting(layout, &row, "IDLE_CHECK_INTERVAL");
+	addSetting(layout, &row, "START_TIMEOUT");
+	addSetting(layout, &row, "STOP_TIMEOUT");
+
+	addSection(layout, &row, "Task duration estimate:");
+	addSetting(layout, &row, "FRAME_OVERHEAD");
+	addSetting(layout, &row, "OPERATION_OVERHEAD");
+
+	// the settings of a newer agent
+	layout->addItem(new QSpacerItem(1, 10, QSizePolicy::Minimum, QSizePolicy::Fixed), row++, 0);
+	m_other_title = new QLabel("Other:");
+	m_other_title->setStyleSheet("QLabel { font-weight: bold; }");
+	m_other_title->hide();
+	layout->addWidget(m_other_title, row++, 0, 1, 4);
+	m_other_layout = makeSettingsColumn();
+	m_other_layout->setContentsMargins(0, 0, 0, 0);
+	layout->addLayout(m_other_layout, row++, 0, 1, 4);
+
 
 	QScrollArea *scroll = new QScrollArea();
+	scroll->setFrameShape(QFrame::NoFrame);
 	scroll->setWidget(content);
 	scroll->setWidgetResizable(true);
-	return scroll;
+	scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	page_layout->addWidget(scroll);
+	return page;
 }
 
 void SchedulerWidget::sendHooks() {
@@ -582,18 +661,21 @@ void SchedulerWidget::sendHooks() {
 }
 
 void SchedulerWidget::sendSettings() {
-	if (m_settings.isEmpty()) {
-		return;
-	}
+	// only the items of the agent, an older one does not have all of them
+	const SchedulerProperty property = m_properties.value(P_SETTINGS);
 	SchedulerRequest settings;
 	settings.type = SchedulerRequest::Number;
 	settings.device = selectedAgent();
 	settings.property = P_SETTINGS;
-	for (auto it = m_settings.begin(); it != m_settings.end(); ++it) {
-		settings.items.append(it.key());
-		settings.numbers.append(it.value()->value());
+	for (const SchedulerItem& item : property.items) {
+		if (m_settings.contains(item.name)) {
+			settings.items.append(item.name);
+			settings.numbers.append(m_settings[item.name]->value());
+		}
 	}
-	send({ settings });
+	if (!settings.items.isEmpty()) {
+		send({ settings });
+	}
 }
 
 // MARK: Properties
@@ -1089,29 +1171,48 @@ void SchedulerWidget::updateSettings() {
 	if (!m_data_dir->hasFocus()) m_data_dir->setText(m_properties.value(P_DATA_DIR).text("BASE"));
 
 	const SchedulerProperty settings = m_properties.value(P_SETTINGS);
-	if (settings.items.size() != m_settings.size()) {
-		while (m_settings_layout->rowCount() > 0) {
-			m_settings_layout->removeRow(0);
+	// the items this version does not know, under "Other"
+	QStringList other;
+	for (const SchedulerItem& item : settings.items) {
+		if (!m_settings.contains(item.name) || m_other_settings.contains(item.name)) other.append(item.name);
+	}
+	if (other != m_other_settings) {
+		for (const QString& name : m_other_settings) {
+			delete m_settings.take(name);
+			delete m_setting_labels.take(name);
 		}
-		m_settings.clear();
-		for (const SchedulerItem& item : settings.items) {
+		m_other_settings = other;
+		int row = 0;
+		for (const QString& name : other) {
+			const SchedulerItem *item = settings.item(name);
+			QLabel *label = new QLabel(item->label + ":");
+			m_other_layout->addWidget(label, row, 0, 1, 2);
 			QDoubleSpinBox *spin = new QDoubleSpinBox();
-			spin->setRange(item.min, item.max);
-			spin->setSingleStep(item.step > 0 ? item.step : 1);
-			spin->setDecimals(item.step > 0 && item.step < 1 ? 1 : 0);
-			spin->setToolTip(item.name);
+			spin->setObjectName("SchedulerSetting_" + name);
+			spin->setToolTip(name);
 			spin->setKeyboardTracking(false);
 			connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &SchedulerWidget::sendSettings);
-			m_settings[item.name] = spin;
-			m_settings_layout->addRow(item.label + ":", spin);
+			m_other_layout->addWidget(spin, row++, 2, 1, 2);
+			m_settings[name] = spin;
+			m_setting_labels[name] = label;
 		}
+		m_other_title->setVisible(!other.isEmpty());
 	}
-	for (const SchedulerItem& item : settings.items) {
-		if (m_settings.contains(item.name) && !m_settings[item.name]->hasFocus()) {
-			m_settings[item.name]->blockSignals(true);
-			m_settings[item.name]->setValue(item.number);
-			m_settings[item.name]->blockSignals(false);
-		}
+	// the ranges come from the agent, an item an older agent does not have is hidden
+	for (auto it = m_settings.begin(); it != m_settings.end(); ++it) {
+		const SchedulerItem *item = settings.item(it.key());
+		QDoubleSpinBox *spin = it.value();
+		bool shown = item != nullptr || settings.items.isEmpty();
+		spin->setVisible(shown);
+		m_setting_labels[it.key()]->setVisible(shown);
+		spin->setEnabled(item != nullptr);
+		if (item == nullptr || spin->hasFocus()) continue;
+		spin->blockSignals(true);
+		spin->setDecimals(item->step > 0 && item->step < 1 ? 1 : 0);
+		spin->setRange(item->min, item->max);
+		spin->setSingleStep(item->step > 0 ? item->step : 1);
+		spin->setValue(item->number);
+		spin->blockSignals(false);
 	}
 }
 

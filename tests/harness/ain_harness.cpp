@@ -180,6 +180,16 @@ static void sched_dump() {
 	}
 	QPlainTextEdit *task_text = qobject_cast<QPlainTextEdit *>(named("SchedulerEditorText"));
 	if (task_text) out(QString("SCHED EditorText %1").arg(task_text->isReadOnly() ? "read only" : "editable"));
+	// the settings of the agent, a hidden one is not in it
+	QList<QDoubleSpinBox *> settings;
+	for (QWidget *widget : QApplication::allWidgets()) {
+		QDoubleSpinBox *spin = qobject_cast<QDoubleSpinBox *>(widget);
+		if (spin && spin->objectName().startsWith("SchedulerSetting_") && !spin->isHidden()) settings.append(spin);
+	}
+	std::sort(settings.begin(), settings.end(), [](QDoubleSpinBox *a, QDoubleSpinBox *b) { return a->objectName() < b->objectName(); });
+	for (QDoubleSpinBox *spin : settings) {
+		out(QString("SCHED Setting %1 %2 %3").arg(spin->objectName().mid(17), spin->text(), spin->isEnabled() ? "on" : "off"));
+	}
 	out(QString("SCHED EditorMode %1").arg(pages ? (pages->currentWidget() == named("SchedulerEditorText") ? "text" : "visual") : "?"));
 	for (const char *name : { "SchedulerTasks", "SchedulerPlan", "SchedulerHistory" }) {
 		QTreeWidget *tree = qobject_cast<QTreeWidget *>(named(name));
@@ -246,6 +256,14 @@ static void run(const QString &line) {
 		if (index >= 0) combo->setCurrentIndex(index);
 		else out("ERROR no source " + arg);
 	} else if (cmd == "tab") {
+		// the tabs of the scheduler first: "Settings" is also a tab of the guider
+		QTabWidget *scheduler_tabs = qobject_cast<QTabWidget *>(named("SchedulerTabs"));
+		for (int i = 0; scheduler_tabs && i < scheduler_tabs->count(); i++) {
+			if (scheduler_tabs->tabText(i) == arg) {
+				scheduler_tabs->setCurrentIndex(i);
+				return;
+			}
+		}
 		for (QWidget *widget : QApplication::allWidgets()) {
 			QTabWidget *tabs = qobject_cast<QTabWidget *>(widget);
 			if (!tabs) continue;
@@ -322,6 +340,14 @@ static void run(const QString &line) {
 		}
 		combo->setCurrentIndex(index);
 		emit combo->activated(index);
+	} else if (cmd == "sched_setting") {
+		// sched_setting ITEM value: a setting of the Settings page, as the user types it
+		QDoubleSpinBox *spin = qobject_cast<QDoubleSpinBox *>(named("SchedulerSetting_" + arg.section(' ', 0, 0)));
+		if (!spin || spin->isHidden()) {
+			out("ERROR no setting " + arg);
+			return;
+		}
+		spin->setValue(arg.section(' ', 1).toDouble());
 	} else if (cmd == "sched_combo") {
 		// sched_combo FROM TO: the choice of a combo box of the scheduler showing FROM, as the user picks it
 		QString from = arg.section(' ', 0, 0), to = arg.section(' ', 1);
