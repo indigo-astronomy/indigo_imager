@@ -307,17 +307,25 @@ check "the hook is set" wait_for 10 hook_is IDLE '"Test"'
 check "the settings keep their values" equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_SETTINGS' IDLE_CHECK_INTERVAL)" 30
 check "the night limit is kept" equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_NIGHT' NAUTICAL)" ON
 check "the data switches are kept" equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_DATA' OBJECT)$(item 'Scheduler Agent.AGENT_SCHEDULER_DATA' FOLDER)" ONOFF
-check "the page shows the settings of the agent" sched_has_all "SCHED Setting DEFER 0 on" "SCHED Setting IDLE_CHECK_INTERVAL 30 on" "SCHED Setting SETTING_WEIGHT 1.0 on" "SCHED Setting NIGHT_START_OFFSET 0 on"
-check "every setting has its place" equals "$(sched | grep -c '^SCHED Setting ')" 11
-ain_do sched_setting DEFER 79
+check "the page shows the settings of the agent" sched_has_all "SCHED Setting IDLE_CHECK_INTERVAL 30 on" "SCHED Setting SETTING_WEIGHT 1.0 on" "SCHED Setting NIGHT_START_OFFSET 0 on" "SCHED SchedulerStrategy COMPACT on"
+check "every setting has its place" equals "$(sched | grep -c '^SCHED Setting ')" 10
 setting_is() {	# item, value
 	equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_SETTINGS' "$1")" "$2"
 }
-check "wait for a better slot is sent" wait_for 10 setting_is DEFER 79
+ain_do sched_setting IDLE_PARK_AFTER 45
+check "a setting is sent" wait_for 10 setting_is IDLE_PARK_AFTER 45
 check "and the other settings are kept" equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_SETTINGS' IDLE_CHECK_INTERVAL)" 30
-check "the page shows the new value" wait_for 10 sched_has "SCHED Setting DEFER 79 on"
-ain_do sched_setting DEFER 0
-check "and it is set back" wait_for 10 setting_is DEFER 0
+check "the page shows the new value" wait_for 10 sched_has "SCHED Setting IDLE_PARK_AFTER 45 on"
+ain_do sched_setting IDLE_PARK_AFTER 30
+check "and it is set back" wait_for 10 setting_is IDLE_PARK_AFTER 30
+strategy_is() {	# item that is on
+	equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_STRATEGY' "$1")" ON
+}
+ain_do sched_choose SchedulerStrategy VISIBILITY
+check "the best visibility strategy is sent" wait_for 10 strategy_is VISIBILITY
+check "the page shows it" wait_for 10 sched_has "SCHED SchedulerStrategy VISIBILITY on"
+ain_do sched_choose SchedulerStrategy COMPACT
+check "and compact is set back" wait_for 10 strategy_is COMPACT
 ain_do shot "$CASE_DIR/settings.png"
 check "the task list shows the hook" wait_for 10 sched_has "SCHED SchedulerTasks Test | HOOK"
 ain_do sched_hook IDLE ""

@@ -71,6 +71,7 @@
 #define P_SETTINGS         "AGENT_SCHEDULER_SETTINGS"
 #define P_HOOKS            "AGENT_SCHEDULER_HOOKS"
 #define P_NIGHT            "AGENT_SCHEDULER_NIGHT"
+#define P_STRATEGY         "AGENT_SCHEDULER_STRATEGY"
 #define P_DATA             "AGENT_SCHEDULER_DATA"
 #define P_DATA_DIR         "AGENT_SCHEDULER_DATA_DIR"
 #define P_HISTORY          "AGENT_SCHEDULER_HISTORY"
@@ -488,7 +489,6 @@ static const char *setting_items[][3] = {
 	{ "NIGHT_END_OFFSET", "Night end offset (min)", "Shift of the night end for the night hooks; negative is earlier" },
 	{ "SETTING_WEIGHT", "Setting soonest weight", "How strongly tasks whose constraints end soon are preferred within a priority class:\nup to 100 × weight points, 0 lets the level decide" },
 	{ "ALTITUDE_WEIGHT", "Altitude weight", "How strongly targets near their own culmination are preferred within a priority class:\nup to 100 × weight points, 0 lets the level decide" },
-	{ "DEFER", "Wait for a better slot (%)", "0 is off: the best task starts at once.\nOtherwise a task may wait for a slot later tonight nearer its culmination, when no run is lost;\na higher value waits for a smaller gain, 20% of the culmination altitude at 1 down to 1% at 100" },
 	{ "IDLE_PARK_AFTER", "Idle hook after (min)", "Time without an eligible task before the Idle hook runs" },
 	{ "IDLE_CHECK_INTERVAL", "Check interval (s)", "How often the scheduler checks the constraints while it waits,\nand checks for urgent tasks while a task runs" },
 	{ "START_TIMEOUT", "Start timeout (s)", "Time allowed for a started task's sequence to begin" },
@@ -615,9 +615,23 @@ QWidget *SchedulerWidget::buildSettingsPage() {
 	addSetting(layout, &row, "NIGHT_END_OFFSET");
 
 	addSection(layout, &row, "Task selection:");
+	m_strategy = new QComboBox();
+	m_strategy->setObjectName("SchedulerStrategy");
+	m_strategy->addItem("Compact", "COMPACT");
+	m_strategy->addItem("Best visibility", "VISIBILITY");
+	m_strategy->setToolTip(
+		"Compact: the best task starts as soon as one can run, the night fills from dusk.\n"
+		"Best visibility: the scheduler plans the whole night, never with fewer runs than Compact,\n"
+		"and places the runs where their targets stand highest; it may wait for a planned run.");
+	connect(m_strategy, QOverload<int>::of(&QComboBox::activated), this, [this]() {
+		send({ SchedulerRequest::switches1(selectedAgent(), P_STRATEGY, m_strategy->currentData().toString()) });
+	});
+	m_strategy_label = new QLabel("Strategy:");
+	m_strategy_label->setToolTip(m_strategy->toolTip());
+	layout->addWidget(m_strategy_label, row, 0, 1, 2);
+	layout->addWidget(m_strategy, row++, 2, 1, 2);
 	addSetting(layout, &row, "SETTING_WEIGHT");
 	addSetting(layout, &row, "ALTITUDE_WEIGHT");
-	addSetting(layout, &row, "DEFER");
 
 	addSection(layout, &row, "Timings:");
 	addSetting(layout, &row, "IDLE_CHECK_INTERVAL");
@@ -804,7 +818,7 @@ void SchedulerWidget::handleProperty(const SchedulerProperty& property) {
 		updateChart();
 	} else if (name == P_HISTORY) {
 		updateHistory();
-	} else if (name == P_SETTINGS || name == P_HOOKS || name == P_NIGHT || name == P_DATA || name == P_DATA_DIR) {
+	} else if (name == P_SETTINGS || name == P_HOOKS || name == P_NIGHT || name == P_STRATEGY || name == P_DATA || name == P_DATA_DIR) {
 		updateSettings();
 	} else if (isTaskProperty(name)) {
 		updateChart();
@@ -1159,6 +1173,19 @@ void SchedulerWidget::updateSettings() {
 		if (item.on) {
 			int index = m_night->findData(item.name);
 			if (index >= 0) m_night->setCurrentIndex(index);
+		}
+	}
+
+	// an agent without strategies is always compact
+	const SchedulerProperty strategy = m_properties.value(P_STRATEGY);
+	bool has_strategy = !strategy.items.isEmpty() || m_properties.value(P_SETTINGS).items.isEmpty();
+	m_strategy->setVisible(has_strategy);
+	m_strategy_label->setVisible(has_strategy);
+	m_strategy->setEnabled(!strategy.items.isEmpty());
+	for (const SchedulerItem& item : strategy.items) {
+		if (item.on) {
+			int index = m_strategy->findData(item.name);
+			if (index >= 0) m_strategy->setCurrentIndex(index);
 		}
 	}
 

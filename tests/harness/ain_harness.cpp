@@ -180,6 +180,11 @@ static void sched_dump() {
 	}
 	QPlainTextEdit *task_text = qobject_cast<QPlainTextEdit *>(named("SchedulerEditorText"));
 	if (task_text) out(QString("SCHED EditorText %1").arg(task_text->isReadOnly() ? "read only" : "editable"));
+	// the choices of the Settings page by their item names
+	for (const char *name : { "SchedulerNight", "SchedulerStrategy" }) {
+		QComboBox *combo = qobject_cast<QComboBox *>(named(name));
+		if (combo && !combo->isHidden()) out(QString("SCHED %1 %2 %3").arg(name, combo->currentData().toString(), combo->isEnabled() ? "on" : "off"));
+	}
 	// the settings of the agent, a hidden one is not in it
 	QList<QDoubleSpinBox *> settings;
 	for (QWidget *widget : QApplication::allWidgets()) {
@@ -348,6 +353,16 @@ static void run(const QString &line) {
 			return;
 		}
 		spin->setValue(arg.section(' ', 1).toDouble());
+	} else if (cmd == "sched_choose") {
+		// sched_choose NAME ITEM: the choice of a combo box by its object name and item name, as the user picks it
+		QComboBox *combo = qobject_cast<QComboBox *>(named(arg.section(' ', 0, 0)));
+		int index = combo ? combo->findData(arg.section(' ', 1)) : -1;
+		if (index < 0) {
+			out("ERROR no choice " + arg);
+			return;
+		}
+		combo->setCurrentIndex(index);
+		emit combo->activated(index);
 	} else if (cmd == "sched_combo") {
 		// sched_combo FROM TO: the choice of a combo box of the scheduler showing FROM, as the user picks it
 		QString from = arg.section(' ', 0, 0), to = arg.section(' ', 1);

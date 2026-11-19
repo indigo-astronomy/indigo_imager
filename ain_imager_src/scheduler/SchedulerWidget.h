@@ -150,6 +150,9 @@ private:
 	SchedulerTaskEditor *m_editor;
 
 	QComboBox *m_night;
+	// AGENT_SCHEDULER_STRATEGY, hidden for an agent without it
+	QComboBox *m_strategy;
+	QLabel *m_strategy_label;
 	QMap<QString, QComboBox*> m_hooks;
 	// the items of AGENT_SCHEDULER_SETTINGS at their place on the page, the items this
 	// version does not know are added under "Other"
