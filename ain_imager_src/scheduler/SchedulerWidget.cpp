@@ -123,6 +123,28 @@ static QFrame *makePage(QBoxLayout **layout) {
 	return page;
 }
 
+/* The choices of a switch property as add_items_to_combobox() makes them for the other tabs:
+   the labels of the items with their names as the data, the item that is on selected. The
+   items are added again only when they change, an open popup stays as it is. */
+static void setComboItems(QComboBox *combo, const SchedulerProperty& property) {
+	bool same = combo->count() == property.items.size();
+	for (int i = 0; same && i < combo->count(); i++) {
+		same = combo->itemData(i).toString() == property.items[i].name && combo->itemText(i) == property.items[i].label;
+	}
+	combo->blockSignals(true);
+	if (!same) {
+		combo->clear();
+		for (const SchedulerItem& item : property.items) {
+			combo->addItem(item.label, item.name);
+		}
+	}
+	for (int i = 0; i < property.items.size(); i++) {
+		if (property.items[i].on) combo->setCurrentIndex(i);
+	}
+	combo->blockSignals(false);
+	combo->setEnabled(!property.items.isEmpty());
+}
+
 static QTreeWidget *makeList(const QStringList& columns) {
 	QTreeWidget *list = new QTreeWidget();
 	// the style takes the frame of a list in a tab away, Ain draws it as for the object list
@@ -493,8 +515,8 @@ static const char *setting_items[][3] = {
 	{ "IDLE_CHECK_INTERVAL", "Check interval (s)", "How often the scheduler checks the constraints while it waits,\nand checks for urgent tasks while a task runs" },
 	{ "START_TIMEOUT", "Start timeout (s)", "Time allowed for a started task's sequence to begin" },
 	{ "STOP_TIMEOUT", "Stop timeout (s)", "Time allowed for an aborted sequence and its agents to stop" },
-	{ "FRAME_OVERHEAD", "Overhead per frame (s)", "Time added per frame in the duration estimate (download, saving, dithering)" },
-	{ "OPERATION_OVERHEAD", "Overhead per operation (s)", "Time added per slew, centering, focus or guiding start in the duration estimate" },
+	{ "FRAME_OVERHEAD", "Estimate overhead per frame (s)", "Time added per frame in the duration estimate (download, saving, dithering)" },
+	{ "OPERATION_OVERHEAD", "Estimate overhead per operation (s)", "Time added per slew, centering, focus or guiding start in the duration estimate" },
 };
 
 /* a column of the page as the settings of the other tabs of Ain: bold section titles,
@@ -602,9 +624,6 @@ QWidget *SchedulerWidget::buildSettingsPage() {
 	addSection(layout, &row, "Night:");
 	m_night = new QComboBox();
 	m_night->setObjectName("SchedulerNight");
-	m_night->addItem("Civil (Sun below -6°)", "CIVIL");
-	m_night->addItem("Nautical (Sun below -12°)", "NAUTICAL");
-	m_night->addItem("Astronomical (Sun below -18°)", "ASTRONOMICAL");
 	m_night->setToolTip("How dark it must be for the night of the night hooks; each task keeps its own @twilight");
 	connect(m_night, QOverload<int>::of(&QComboBox::activated), this, [this]() {
 		send({ SchedulerRequest::switches1(selectedAgent(), P_NIGHT, m_night->currentData().toString()) });
@@ -617,11 +636,9 @@ QWidget *SchedulerWidget::buildSettingsPage() {
 	addSection(layout, &row, "Task selection:");
 	m_strategy = new QComboBox();
 	m_strategy->setObjectName("SchedulerStrategy");
-	m_strategy->addItem("Compact", "COMPACT");
-	m_strategy->addItem("Best visibility", "VISIBILITY");
 	m_strategy->setToolTip(
 		"Compact: the best task starts as soon as one can run, the night fills from dusk.\n"
-		"Best visibility: the scheduler plans the whole night, never with fewer runs than Compact,\n"
+		"Best visibility: the scheduler plans the whole night, never with fewer runs than compact,\n"
 		"and places the runs where their targets stand highest; it may wait for a planned run.");
 	connect(m_strategy, QOverload<int>::of(&QComboBox::activated), this, [this]() {
 		send({ SchedulerRequest::switches1(selectedAgent(), P_STRATEGY, m_strategy->currentData().toString()) });
@@ -1168,26 +1185,14 @@ void SchedulerWidget::updateHistory() {
 
 void SchedulerWidget::updateSettings() {
 	// a field being typed in keeps its text until it is finished
-	const SchedulerProperty night = m_properties.value(P_NIGHT);
-	for (const SchedulerItem& item : night.items) {
-		if (item.on) {
-			int index = m_night->findData(item.name);
-			if (index >= 0) m_night->setCurrentIndex(index);
-		}
-	}
+	setComboItems(m_night, m_properties.value(P_NIGHT));
 
 	// an agent without strategies is always compact
 	const SchedulerProperty strategy = m_properties.value(P_STRATEGY);
 	bool has_strategy = !strategy.items.isEmpty() || m_properties.value(P_SETTINGS).items.isEmpty();
 	m_strategy->setVisible(has_strategy);
 	m_strategy_label->setVisible(has_strategy);
-	m_strategy->setEnabled(!strategy.items.isEmpty());
-	for (const SchedulerItem& item : strategy.items) {
-		if (item.on) {
-			int index = m_strategy->findData(item.name);
-			if (index >= 0) m_strategy->setCurrentIndex(index);
-		}
-	}
+	setComboItems(m_strategy, strategy);
 
 	const SchedulerProperty hooks = m_properties.value(P_HOOKS);
 	for (auto it = m_hooks.begin(); it != m_hooks.end(); ++it) {
@@ -1235,6 +1240,8 @@ void SchedulerWidget::updateSettings() {
 		bool shown = item != nullptr || settings.items.isEmpty();
 		spin->setVisible(shown);
 		m_setting_labels[it.key()]->setVisible(shown);
+		// the label of the item as the agent names it
+		if (item != nullptr) m_setting_labels[it.key()]->setText(item->label + ":");
 		spin->setEnabled(item != nullptr);
 		if (item == nullptr || spin->hasFocus()) continue;
 		spin->blockSignals(true);
