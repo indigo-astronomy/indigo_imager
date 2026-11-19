@@ -101,11 +101,20 @@ SchedulerTaskForm::SchedulerTaskForm(QWidget *parent) : QWidget(parent) {
 	m_layout->setColumnStretch(1, 1);
 	m_layout->setAlignment(Qt::AlignTop);
 
+	// the value columns are as wide as the widest value, an absolute time of a window,
+	// the join column as the widest check box between two values
+	QDateTimeEdit probe_time;
+	probe_time.setDisplayFormat("yyyy-MM-dd HH:mm");
+	QComboBox probe_combo;
+	probe_combo.addItem("astronomical");
+	m_value_width = qMax(probe_time.sizeHint().width(), probe_combo.sizeHint().width());
+	m_join_width = QCheckBox("precise").sizeHint().width();
+
 	// @task
 	m_name = new QLineEdit();
 	m_name->setMaxLength(40);
 	m_name->setPlaceholderText("required, unique, without '|'");
-	addField("task", "Name", "The name of the task, 1-40 bytes, without '|', unique", { m_name },
+	addField("task", "Task name", "The name of the task, 1-40 bytes, without '|', unique", { m_name },
 		[this]() { return m_name->text().trimmed(); },
 		[this](const QString& value) { m_name->setText(value); return true; },
 		[this]() { m_name->clear(); }
@@ -118,10 +127,6 @@ SchedulerTaskForm::SchedulerTaskForm(QWidget *parent) : QWidget(parent) {
 	m_target_dec = new QLineEditSG(QLineEditSG::DEC);
 	m_target_dec->setPlaceholderText("Dec");
 	m_target_dec->setToolTip("Dec in degrees, ±dd:mm:ss");
-	// wide enough for the longest values
-	int coordinate_width = fontMetrics().horizontalAdvance("+00:00:00.00") + 16;
-	m_target_ra->setFixedWidth(coordinate_width);
-	m_target_dec->setFixedWidth(coordinate_width);
 	QToolButton *find = new QToolButton();
 	find->setIcon(QIcon(":resource/find.png"));
 	find->setToolTip("Select the object from the database; an empty task name is set to the object name");
@@ -166,7 +171,7 @@ SchedulerTaskForm::SchedulerTaskForm(QWidget *parent) : QWidget(parent) {
 			}
 		});
 	}
-	addField("target", "Target", "J2000 coordinates, RA in hours and Dec in degrees.\nThe body uses them as scheduler_task.ra and scheduler_task.dec: the first goto of the steps goes to them.", { m_target_ra, m_target_dec, find, m_precise_goto, m_precise_exposure },
+	addField("target", "Target", "J2000 coordinates, RA in hours and Dec in degrees.\nThe body uses them as scheduler_task.ra and scheduler_task.dec: the first goto of the steps goes to them.", { m_target_ra, m_target_dec, find, nullptr, m_precise_goto, m_precise_exposure },
 		[this]() {
 			return SexagesimalConverter::doubleToString(m_target_ra->value(), 2) + " " + SexagesimalConverter::doubleToString(m_target_dec->value(), 2, true);
 		},
@@ -310,11 +315,6 @@ SchedulerTaskForm::SchedulerTaskForm(QWidget *parent) : QWidget(parent) {
 		m_window_start->setDisplayFormat(format);
 		m_window_end->setDisplayFormat(format);
 	};
-	// wide enough for an absolute date in both kinds
-	for (QDateTimeEdit *edit : { m_window_start, m_window_end }) {
-		edit->setDisplayFormat("yyyy-MM-dd HH:mm");
-		edit->setMinimumWidth(edit->sizeHint().width());
-	}
 	connect(m_window_kind, QOverload<int>::of(&QComboBox::currentIndexChanged), this, window_format);
 	connect(m_window_has_start, &QCheckBox::toggled, this, [this]() { updateEnabled(); });
 	connect(m_window_has_end, &QCheckBox::toggled, this, [this]() { updateEnabled(); });
@@ -328,7 +328,7 @@ SchedulerTaskForm::SchedulerTaskForm(QWidget *parent) : QWidget(parent) {
 		m_window_has_end->setChecked(true);
 	};
 	window_reset();
-	addField("window", "Time window", "Time window in UTC; the whole run must fit in it", { m_window_kind, nullptr, m_window_has_start, m_window_start, m_window_has_end, m_window_end },
+	addField("window", "Time window", "Time window in UTC; the whole run must fit in it", { m_window_kind, m_window_has_start, m_window_start, nullptr, m_window_has_end, m_window_end },
 		[this]() {
 			QString format = m_window_kind->currentText() == "nightly" ? "HH:mm" : "yyyy-MM-dd HH:mm";
 			QString start = m_window_has_start->isChecked() ? m_window_start->dateTime().toUTC().toString(format) : QString();
@@ -472,16 +472,21 @@ void SchedulerTaskForm::addField(const QString& key, const QString& label, const
 	field.reset = reset;
 	field.widgets = widgets;
 
-	// a null widget starts a new line of the field
+	/* A null widget starts a new line of the field. The lines of all fields share the columns:
+	   a value, a join (a word or a check box such as "every"), a value, then the buttons. A
+	   missing value or join leaves its column empty, a text spans the columns of the values. */
+	const int spacing = 4;
 	QWidget *row = nullptr;
 	QHBoxLayout *row_layout = nullptr;
+	bool expect_value = true;
 	auto new_row = [&]() {
 		if (row_layout) row_layout->addStretch();
 		row = new QWidget();
 		row_layout = new QHBoxLayout(row);
 		row_layout->setContentsMargins(0, 0, 0, 0);
-		row_layout->setSpacing(4);
+		row_layout->setSpacing(spacing);
 		field.rows.append(row);
+		expect_value = true;
 	};
 	new_row();
 	field.widgets.clear();
@@ -491,8 +496,26 @@ void SchedulerTaskForm::addField(const QString& key, const QString& label, const
 			continue;
 		}
 		field.widgets.append(widget);
-		row_layout->addWidget(widget);
 		connectChanged(widget);
+		if (qobject_cast<QToolButton*>(widget)) {
+			row_layout->addWidget(widget);
+			continue;
+		}
+		bool is_join = qobject_cast<QCheckBox*>(widget) || qobject_cast<QLabel*>(widget);
+		if (is_join == expect_value) {
+			// the empty column, the layout adds no spacing next to a spacing
+			row_layout->addSpacing((expect_value ? m_value_width : m_join_width) + spacing);
+			expect_value = !expect_value;
+		}
+		QLineEdit *text = qobject_cast<QLineEdit*>(widget);
+		if (text && !qobject_cast<QLineEditSG*>(widget)) {
+			widget->setFixedWidth(2 * m_value_width + m_join_width + 2 * spacing);
+		} else {
+			widget->setFixedWidth(is_join ? m_join_width : m_value_width);
+		}
+		if (QLabel *word = qobject_cast<QLabel*>(widget)) word->setAlignment(Qt::AlignCenter);
+		row_layout->addWidget(widget);
+		expect_value = !expect_value;
 	}
 	row_layout->addStretch();
 

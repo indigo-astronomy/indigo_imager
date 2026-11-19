@@ -222,7 +222,7 @@ static QCheckBox *checkBox(QWidget *parent, const QString& text) {
 	return nullptr;
 }
 
-/* the target of the Properties page and its goto in the steps */
+/* the target of the Scheduling page and its goto in the steps */
 static void testTargetGoto() {
 	const char *with_slew =
 		"// @task  M31\n"
@@ -349,7 +349,7 @@ static void testHook() {
 	priority->setCurrentText("hook");
 	pages->setCurrentIndex(pages->count() - 1);
 	CHECK(!editor.isVisualMode() && !SchedulerTask::fromText(editor.taskText()).has("repeat"), "the text of a hook has no @repeat:\n%s", u(editor.taskText()).constData());
-	pages->setCurrentIndex(1);
+	pages->setCurrentIndex(0);
 	CHECK(editor.isVisualMode() && priority->currentText() == "hook", "back on the forms it is a hook");
 	priority->setCurrentText("normal");
 	CHECK(editor.taskText() == repeated, "another class after the text gets the keys and the level back:\n%s", u(editor.taskText()).constData());
@@ -417,7 +417,7 @@ static void testRunning() {
 	editor.showStepStates({ 2 }, -1, 0);
 	pages->setCurrentWidget(text);
 	CHECK(!editor.isVisualMode() && text->isReadOnly(), "its text is shown read only");
-	pages->setCurrentIndex(0);
+	pages->setCurrentIndex(1);
 	IndigoSequence *steps = editor.findChild<IndigoSequence*>();
 	IndigoSequenceItem *step = steps ? steps->getItemAt(0) : nullptr;
 	CHECK(editor.isVisualMode() && editor.isRunning() && step && step->findChild<QAbstractSpinBox*>() && !step->findChild<QAbstractSpinBox*>()->isEnabled() && busyStep(step),

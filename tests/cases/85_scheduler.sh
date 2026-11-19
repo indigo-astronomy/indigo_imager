@@ -188,7 +188,7 @@ section "the scheduler runs the task"
 ain_do tab Scheduler
 ain_do sched_edit Test
 ain_do tab "Task editor"
-ain_do sched_page Properties
+ain_do sched_page Scheduling
 check "the editor shows the steps of the stored task" sched_has "SCHED EditorSteps idle idle"
 ain_do sched_click Start
 check "the task runs" wait_for 30 sched_has "SCHED SchedulerCurrent Running: Test"
@@ -230,7 +230,7 @@ check "the long task is stored" wait_for 10 sched_has "SCHED SchedulerTasks Long
 ain_do sched_click Start
 check "it runs" wait_for 30 sched_has "SCHED SchedulerCurrent Running: Long"
 check "the editor shows it read only" wait_for 10 sched_has "SCHED SchedulerEditorTitle Task 'Long' - running, read only"
-check "all its pages can be shown" sched_has "SCHED EditorTabs Steps:on Properties:on Extra:on Text:on"
+check "all its pages can be shown" sched_has "SCHED EditorTabs Scheduling:on Steps:on Extra:on Text:on"
 ain_do sched_page Text
 check "its text is shown read only" sched_has_all "SCHED EditorMode text" "SCHED EditorText read only"
 ain_do sched_page Steps
@@ -240,7 +240,7 @@ check "a new task can be edited" sched_has "SCHED SchedulerEditorTitle New task"
 ain_do sched_open "$CASE_DIR/standby.task"
 ain_do sched_click Apply
 check "a task from a file is uploaded" wait_for 10 sched_has "SCHED SchedulerTasks Standby | HOOK"
-ain_do sched_page Properties
+ain_do sched_page Scheduling
 ain_do sched_click Duration
 ain_do sched_click Apply
 check "the stored task is edited" wait_for 10 sched_has "SCHED SchedulerEditorStatus Accepted"
@@ -277,7 +277,7 @@ ain_do tab Steps
 ain_do shot "$CASE_DIR/steps.png"
 ain_do tab Extra
 ain_do shot "$CASE_DIR/extra.png"
-ain_do tab Properties
+ain_do tab Scheduling
 ain_do sched_click Target
 ain_do shot "$CASE_DIR/target.png"
 ain_do sched_press "Select the object from the database; an empty task name is set to the object name"
@@ -336,7 +336,7 @@ check "the task is deleted" wait_for 10 sched_lacks "SCHED SchedulerTasks Test"
 section "a hook task"
 ain_do sched_open "$CASE_DIR/hook.task"
 ain_do tab "Task editor"
-ain_do sched_page Properties
+ain_do sched_page Scheduling
 ain_do shot "$CASE_DIR/hook.png"
 check "it is shown in the visual editor" sched_has "SCHED EditorMode visual"
 ain_do sched_click Apply
@@ -365,12 +365,12 @@ check "a deleted task is not shown" wait_for 10 sched_has "| targets  |"
 section "a task made a hook by mistake"
 ain_do sched_open "$CASE_DIR/flats.task"
 ain_do tab "Task editor"
-ain_do sched_page Properties
+ain_do sched_page Scheduling
 ain_do sched_combo normal hook
 ain_do sched_page Text
 ain_do sched_text
 check "the text of the hook has no scheduling keys" bash -c "grep '^SCHED_TEXT' '$CASE_DIR/ain.out' | tail -1 | grep -v 'repeat' | grep -q 'priority hook'"
-ain_do sched_page Properties
+ain_do sched_page Scheduling
 ain_do sched_combo hook normal
 ain_do sched_page Text
 ain_do sched_text

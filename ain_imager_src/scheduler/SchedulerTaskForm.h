@@ -99,6 +99,9 @@ private:
 	QWidget *m_observer_page = nullptr;
 	QList<Field> m_fields;
 	int m_row = 0;
+	// the columns of the values: a value, a word or a check box that joins it to the next value, a value
+	int m_value_width = 0;
+	int m_join_width = 0;
 	bool m_readOnly = false;
 	bool m_loading = false;
 	bool m_target_edited = false;

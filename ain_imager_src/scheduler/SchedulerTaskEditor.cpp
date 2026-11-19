@@ -100,7 +100,7 @@ SchedulerTaskEditor::SchedulerTaskEditor(QWidget *parent) : QWidget(parent) {
 	m_status->setVisible(false);
 	layout->addWidget(m_status);
 
-	// Steps, Properties and Extra edit the task in forms, Text edits all of it as JavaScript;
+	// Scheduling, Steps and Extra edit the task in forms, Text edits all of it as JavaScript;
 	// the pages of the side that is not edited are filled from the other one when shown
 	m_pages = new QTabWidget();
 	m_pages->setObjectName("SchedulerEditorPages");
@@ -130,10 +130,10 @@ SchedulerTaskEditor::SchedulerTaskEditor(QWidget *parent) : QWidget(parent) {
 	m_text->setLineWrapMode(QPlainTextEdit::NoWrap);
 	m_text->setTabStopDistance(4 * m_text->fontMetrics().horizontalAdvance(' '));
 
+	m_pages->addTab(m_form_page, "Scheduling");
+	m_pages->setTabToolTip(0, "The header of the task: when and how the scheduler runs it");
 	m_pages->addTab(m_body, "Steps");
-	m_pages->setTabToolTip(0, "The sequence the task runs");
-	m_pages->addTab(m_form_page, "Properties");
-	m_pages->setTabToolTip(1, "The header of the task: when and how the scheduler runs it");
+	m_pages->setTabToolTip(1, "The sequence the task runs");
 	m_pages->addTab(m_observer_page, "Extra");
 	m_pages->setTabToolTip(2, "The observer, PI and project written to the FITS headers of the frames");
 	m_pages->addTab(m_text, "Text");
