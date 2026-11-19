@@ -593,8 +593,11 @@ QWidget *SchedulerWidget::buildSettingsPage() {
 			send({ SchedulerRequest::text(selectedAgent(), P_DATA_DIR, "BASE", base) });
 		}
 	});
-	layout->addWidget(new QLabel("Base folder:"), row, 0, 1, 2);
-	layout->addWidget(m_data_dir, row++, 2, 1, 2);
+	// a path, it takes the width of the page after its label
+	QHBoxLayout *data_dir_layout = new QHBoxLayout();
+	data_dir_layout->addWidget(new QLabel("Base folder:"));
+	data_dir_layout->addWidget(m_data_dir, 1);
+	layout->addLayout(data_dir_layout, row++, 0, 1, 4);
 
 	addSection(layout, &row, "Night:");
 	m_night = new QComboBox();
