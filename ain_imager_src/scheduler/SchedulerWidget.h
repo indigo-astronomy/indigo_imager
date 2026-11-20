@@ -92,7 +92,9 @@ private:
 	QWidget *buildTasksPage();
 	QWidget *buildPlanPage();
 	QWidget *buildHistoryPage();
+	QWidget *buildHooksPage();
 	QWidget *buildSettingsPage();
+	void addSetting(QGridLayout *grid, int *row, const char *name);
 
 	void handleProperty(const SchedulerProperty& property);
 	void handleScripting(const SchedulerProperty& property);

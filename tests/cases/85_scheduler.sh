@@ -300,8 +300,8 @@ check "and adds no other task" equals "$(sched | grep -c '^SCHED SchedulerTasks 
 ain_do tab "Night plan"
 ain_do shot "$CASE_DIR/plan.png"
 
-section "settings"
-ain_do tab Settings
+section "hooks and settings"
+ain_do tab Hooks
 ain_do sched_hook IDLE Test
 check "the hook is set" wait_for 10 hook_is IDLE '"Test"'
 check "the settings keep their values" equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_SETTINGS' IDLE_CHECK_INTERVAL)" 30
@@ -312,12 +312,14 @@ check "every setting has its place" equals "$(sched | grep -c '^SCHED Setting ')
 setting_is() {	# item, value
 	equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_SETTINGS' "$1")" "$2"
 }
-ain_do sched_setting IDLE_PARK_AFTER 45
-check "a setting is sent" wait_for 10 setting_is IDLE_PARK_AFTER 45
+ain_do sched_setting IDLE_HOOK_DELAY 45
+check "a setting is sent" wait_for 10 setting_is IDLE_HOOK_DELAY 45
 check "and the other settings are kept" equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_SETTINGS' IDLE_CHECK_INTERVAL)" 30
-check "the page shows the new value" wait_for 10 sched_has "SCHED Setting IDLE_PARK_AFTER 45 on"
-ain_do sched_setting IDLE_PARK_AFTER 30
-check "and it is set back" wait_for 10 setting_is IDLE_PARK_AFTER 30
+check "the page shows the new value" wait_for 10 sched_has "SCHED Setting IDLE_HOOK_DELAY 45 on"
+ain_do sched_setting IDLE_HOOK_DELAY 30
+check "and it is set back" wait_for 10 setting_is IDLE_HOOK_DELAY 30
+ain_do shot "$CASE_DIR/hooks.png"
+ain_do tab Settings
 strategy_is() {	# item that is on
 	equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_STRATEGY' "$1")" ON
 }

@@ -81,9 +81,9 @@
 static const char *hook_items[][2] = {
 	{ "STARTUP", "Startup" },
 	{ "SHUTDOWN", "Shutdown" },
-	{ "IDLE", "Idle" },
 	{ "NIGHT_START", "Night start" },
 	{ "NIGHT_END", "Night end" },
+	{ "IDLE", "Idle" },
 	{ "RESUME", "Resume" },
 };
 
@@ -221,6 +221,7 @@ SchedulerWidget::SchedulerWidget(QWidget *parent) : QWidget(parent) {
 	m_tabs->addTab(m_editor, "Task editor");
 	m_tabs->addTab(buildPlanPage(), "Night plan");
 	m_tabs->addTab(buildHistoryPage(), "History");
+	m_tabs->addTab(buildHooksPage(), "Hooks");
 	m_tabs->addTab(buildSettingsPage(), "Settings");
 	layout->addWidget(m_tabs);
 
@@ -511,7 +512,7 @@ static const char *setting_items[][3] = {
 	{ "NIGHT_END_OFFSET", "Night end offset (min)", "Shift of the night end for the night hooks; negative is earlier" },
 	{ "SETTING_WEIGHT", "Setting soonest weight", "How strongly tasks whose constraints end soon are preferred within a priority class:\nup to 100 × weight points, 0 lets the level decide" },
 	{ "ALTITUDE_WEIGHT", "Altitude weight", "How strongly targets near their own culmination are preferred within a priority class:\nup to 100 × weight points, 0 lets the level decide" },
-	{ "IDLE_PARK_AFTER", "Idle hook after (min)", "Time without an eligible task before the Idle hook runs" },
+	{ "IDLE_HOOK_DELAY", "Idle hook delay (min)", "Time without an eligible task before the Idle hook runs" },
 	{ "IDLE_CHECK_INTERVAL", "Check interval (s)", "How often the scheduler checks the constraints while it waits,\nand checks for urgent tasks while a task runs" },
 	{ "START_TIMEOUT", "Start timeout (s)", "Time allowed for a started task's sequence to begin" },
 	{ "STOP_TIMEOUT", "Stop timeout (s)", "Time allowed for an aborted sequence and its agents to stop" },
@@ -540,34 +541,45 @@ static void addSection(QGridLayout *layout, int *row, const QString& title) {
 	layout->addWidget(label, (*row)++, 0, 1, 4);
 }
 
-QWidget *SchedulerWidget::buildSettingsPage() {
-	// like the rest of Ain, every change is sent to the agent right away
+/* a spin box for an item of AGENT_SCHEDULER_SETTINGS, with its label on the left */
+void SchedulerWidget::addSetting(QGridLayout *grid, int *row, const char *name) {
+	for (const auto& item : setting_items) {
+		if (strcmp(item[0], name)) continue;
+		QLabel *label = new QLabel(QString(item[1]) + ":");
+		label->setToolTip(item[2]);
+		grid->addWidget(label, *row, 0, 1, 2);
+		QDoubleSpinBox *spin = new QDoubleSpinBox();
+		spin->setObjectName(QString("SchedulerSetting_") + name);
+		spin->setToolTip(item[2]);
+		spin->setKeyboardTracking(false);
+		spin->setEnabled(false);
+		connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &SchedulerWidget::sendSettings);
+		grid->addWidget(spin, (*row)++, 2, 1, 2);
+		m_settings[name] = spin;
+		m_setting_labels[name] = label;
+	}
+}
+
+/* a page with one column as the settings of the other tabs, it scrolls when it is not tall enough */
+static QFrame *makeSettingsPage(QGridLayout *layout) {
 	QBoxLayout *page_layout;
 	QFrame *page = makePage(&page_layout);
 	page_layout->setContentsMargins(0, 0, 0, 0);
 	QWidget *content = new QWidget();
-	// one column as the settings of the other tabs, the page scrolls when it is not tall enough
-	QGridLayout *layout = makeSettingsColumn();
 	content->setLayout(layout);
-	int row = 0;
+	QScrollArea *scroll = new QScrollArea();
+	scroll->setFrameShape(QFrame::NoFrame);
+	scroll->setWidget(content);
+	scroll->setWidgetResizable(true);
+	scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	page_layout->addWidget(scroll);
+	return page;
+}
 
-	auto addSetting = [this](QGridLayout *grid, int *row, const char *name) {
-		for (const auto& item : setting_items) {
-			if (strcmp(item[0], name)) continue;
-			QLabel *label = new QLabel(QString(item[1]) + ":");
-			label->setToolTip(item[2]);
-			grid->addWidget(label, *row, 0, 1, 2);
-			QDoubleSpinBox *spin = new QDoubleSpinBox();
-			spin->setObjectName(QString("SchedulerSetting_") + name);
-			spin->setToolTip(item[2]);
-			spin->setKeyboardTracking(false);
-			spin->setEnabled(false);
-			connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &SchedulerWidget::sendSettings);
-			grid->addWidget(spin, (*row)++, 2, 1, 2);
-			m_settings[name] = spin;
-			m_setting_labels[name] = label;
-		}
-	};
+/* the hook tasks and when they run, like the rest of Ain every change is sent to the agent right away */
+QWidget *SchedulerWidget::buildHooksPage() {
+	QGridLayout *layout = makeSettingsColumn();
+	int row = 0;
 
 	addSection(layout, &row, "Event hooks:");
 	for (const auto& hook : hook_items) {
@@ -582,7 +594,26 @@ QWidget *SchedulerWidget::buildSettingsPage() {
 		layout->addWidget(new QLabel(QString(hook[1]) + ":"), row, 0, 1, 2);
 		layout->addWidget(box, row++, 2, 1, 2);
 	}
-	addSetting(layout, &row, "IDLE_PARK_AFTER");
+
+	addSection(layout, &row, "Hook timing:");
+	m_night = new QComboBox();
+	m_night->setObjectName("SchedulerNight");
+	m_night->setToolTip("How dark it must be for the night of the night hooks; each task keeps its own @twilight");
+	connect(m_night, QOverload<int>::of(&QComboBox::activated), this, [this]() {
+		send({ SchedulerRequest::switches1(selectedAgent(), P_NIGHT, m_night->currentData().toString()) });
+	});
+	layout->addWidget(new QLabel("Night limit:"), row, 0, 1, 2);
+	layout->addWidget(m_night, row++, 2, 1, 2);
+	addSetting(layout, &row, "NIGHT_START_OFFSET");
+	addSetting(layout, &row, "NIGHT_END_OFFSET");
+	addSetting(layout, &row, "IDLE_HOOK_DELAY");
+	return makeSettingsPage(layout);
+}
+
+QWidget *SchedulerWidget::buildSettingsPage() {
+	// like the rest of Ain, every change is sent to the agent right away
+	QGridLayout *layout = makeSettingsColumn();
+	int row = 0;
 
 	addSection(layout, &row, "Observation data:");
 	for (const char *item : { "OBJECT", "FITS", "FOLDER" }) {
@@ -621,18 +652,6 @@ QWidget *SchedulerWidget::buildSettingsPage() {
 	data_dir_layout->addWidget(m_data_dir, 1);
 	layout->addLayout(data_dir_layout, row++, 0, 1, 4);
 
-	addSection(layout, &row, "Night:");
-	m_night = new QComboBox();
-	m_night->setObjectName("SchedulerNight");
-	m_night->setToolTip("How dark it must be for the night of the night hooks; each task keeps its own @twilight");
-	connect(m_night, QOverload<int>::of(&QComboBox::activated), this, [this]() {
-		send({ SchedulerRequest::switches1(selectedAgent(), P_NIGHT, m_night->currentData().toString()) });
-	});
-	layout->addWidget(new QLabel("Night limit:"), row, 0, 1, 2);
-	layout->addWidget(m_night, row++, 2, 1, 2);
-	addSetting(layout, &row, "NIGHT_START_OFFSET");
-	addSetting(layout, &row, "NIGHT_END_OFFSET");
-
 	addSection(layout, &row, "Task selection:");
 	m_strategy = new QComboBox();
 	m_strategy->setObjectName("SchedulerStrategy");
@@ -668,15 +687,7 @@ QWidget *SchedulerWidget::buildSettingsPage() {
 	m_other_layout = makeSettingsColumn();
 	m_other_layout->setContentsMargins(0, 0, 0, 0);
 	layout->addLayout(m_other_layout, row++, 0, 1, 4);
-
-
-	QScrollArea *scroll = new QScrollArea();
-	scroll->setFrameShape(QFrame::NoFrame);
-	scroll->setWidget(content);
-	scroll->setWidgetResizable(true);
-	scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	page_layout->addWidget(scroll);
-	return page;
+	return makeSettingsPage(layout);
 }
 
 void SchedulerWidget::sendHooks() {
