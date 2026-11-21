@@ -512,6 +512,7 @@ static const char *setting_items[][3] = {
 	{ "NIGHT_END_OFFSET", "Night end offset (min)", "Shift of the night end for the night hooks; negative is earlier" },
 	{ "SETTING_WEIGHT", "Setting soonest weight", "How strongly tasks whose constraints end soon are preferred within a priority class:\nup to 100 × weight points, 0 lets the level decide" },
 	{ "ALTITUDE_WEIGHT", "Altitude weight", "How strongly targets near their own culmination are preferred within a priority class:\nup to 100 × weight points, 0 lets the level decide" },
+	{ "VISIBILITY_FLIP_PENALTY", "Best visibility: meridian flip penalty (min)", "Best visibility only: the minutes of full-quality imaging given up to avoid one meridian flip,\n0 switches the cost off; ignored while the flip is disabled" },
 	{ "IDLE_HOOK_DELAY", "Idle hook delay (min)", "Time without an eligible task before the Idle hook runs" },
 	{ "IDLE_CHECK_INTERVAL", "Check interval (s)", "How often the scheduler checks the constraints while it waits,\nand checks for urgent tasks while a task runs" },
 	{ "START_TIMEOUT", "Start timeout (s)", "Time allowed for a started task's sequence to begin" },
@@ -668,6 +669,7 @@ QWidget *SchedulerWidget::buildSettingsPage() {
 	layout->addWidget(m_strategy, row++, 2, 1, 2);
 	addSetting(layout, &row, "SETTING_WEIGHT");
 	addSetting(layout, &row, "ALTITUDE_WEIGHT");
+	addSetting(layout, &row, "VISIBILITY_FLIP_PENALTY");
 
 	addSection(layout, &row, "Timings:");
 	addSetting(layout, &row, "IDLE_CHECK_INTERVAL");

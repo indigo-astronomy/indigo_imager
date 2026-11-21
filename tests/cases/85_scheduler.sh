@@ -307,8 +307,8 @@ check "the hook is set" wait_for 10 hook_is IDLE '"Test"'
 check "the settings keep their values" equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_SETTINGS' IDLE_CHECK_INTERVAL)" 30
 check "the night limit is kept" equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_NIGHT' NAUTICAL)" ON
 check "the data switches are kept" equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_DATA' OBJECT)$(item 'Scheduler Agent.AGENT_SCHEDULER_DATA' FOLDER)" ONOFF
-check "the page shows the settings of the agent" sched_has_all "SCHED Setting IDLE_CHECK_INTERVAL 30 on" "SCHED Setting SETTING_WEIGHT 1.0 on" "SCHED Setting NIGHT_START_OFFSET 0 on" "SCHED SchedulerStrategy COMPACT on"
-check "every setting has its place" equals "$(sched | grep -c '^SCHED Setting ')" 10
+check "the page shows the settings of the agent" sched_has_all "SCHED Setting IDLE_CHECK_INTERVAL 30 on" "SCHED Setting SETTING_WEIGHT 1.0 on" "SCHED Setting VISIBILITY_FLIP_PENALTY 10 on" "SCHED Setting NIGHT_START_OFFSET 0 on" "SCHED SchedulerStrategy COMPACT on"
+check "every setting has its place" equals "$(sched | grep -c '^SCHED Setting ')" 11
 setting_is() {	# item, value
 	equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_SETTINGS' "$1")" "$2"
 }
