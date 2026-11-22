@@ -181,7 +181,7 @@ static void sched_dump() {
 	QPlainTextEdit *task_text = qobject_cast<QPlainTextEdit *>(named("SchedulerEditorText"));
 	if (task_text) out(QString("SCHED EditorText %1").arg(task_text->isReadOnly() ? "read only" : "editable"));
 	// the choices of the Settings page by their item names
-	for (const char *name : { "SchedulerNight", "SchedulerStrategy" }) {
+	for (const char *name : { "SchedulerNight", "SchedulerStrategy", "SchedulerSafetyMissing" }) {
 		QComboBox *combo = qobject_cast<QComboBox *>(named(name));
 		if (combo && !combo->isHidden()) out(QString("SCHED %1 %2 %3").arg(name, combo->currentData().toString(), combo->isEnabled() ? "on" : "off"));
 	}

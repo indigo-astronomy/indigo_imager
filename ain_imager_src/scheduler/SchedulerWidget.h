@@ -156,6 +156,10 @@ private:
 	QComboBox *m_strategy;
 	QLabel *m_strategy_label;
 	QMap<QString, QComboBox*> m_hooks;
+	QMap<QString, QLabel*> m_hook_labels;
+	QComboBox *m_safety_missing;
+	QLabel *m_safety_missing_label;
+	QLabel *m_safety_title;
 	// the items of AGENT_SCHEDULER_SETTINGS at their place on the page, the items this
 	// version does not know are added under "Other"
 	QMap<QString, QDoubleSpinBox*> m_settings;

@@ -77,6 +77,7 @@
 #define P_HISTORY          "AGENT_SCHEDULER_HISTORY"
 #define P_CLEAR_HISTORY    "AGENT_SCHEDULER_CLEAR_HISTORY"
 #define P_PLAN             "AGENT_SCHEDULER_PLAN"
+#define P_SAFETY_MISSING   "AGENT_SCHEDULER_SAFETY_MISSING"
 
 static const char *hook_items[][2] = {
 	{ "STARTUP", "Startup" },
@@ -85,7 +86,14 @@ static const char *hook_items[][2] = {
 	{ "NIGHT_END", "Night end" },
 	{ "IDLE", "Idle" },
 	{ "RESUME", "Resume" },
+	{ "UNSAFE", "Unsafe" },
+	{ "SAFE", "Safe" },
 };
+
+/* a hook the agent has, all of them before its hooks arrive; an older agent has fewer */
+static bool hasHook(const SchedulerProperty& hooks, const char *name) {
+	return hooks.items.isEmpty() || hooks.item(name) != nullptr;
+}
 
 /* AGENT_SCHEDULER_TASK_<n>, a stored task, not AGENT_SCHEDULER_TASK_STATE and the like */
 static bool isTaskProperty(const QString& name) {
@@ -513,6 +521,7 @@ static const char *setting_items[][3] = {
 	{ "SETTING_WEIGHT", "Setting soonest weight", "How strongly tasks whose constraints end soon are preferred within a priority class:\nup to 100 × weight points, 0 lets the level decide" },
 	{ "ALTITUDE_WEIGHT", "Altitude weight", "How strongly targets near their own culmination are preferred within a priority class:\nup to 100 × weight points, 0 lets the level decide" },
 	{ "VISIBILITY_FLIP_PENALTY", "Best visibility: meridian flip penalty (min)", "Best visibility only: the minutes of full-quality imaging given up to avoid one meridian flip,\n0 switches the cost off; ignored while the flip is disabled" },
+	{ "SAFE_DELAY", "Safe delay (min)", "How long the conditions must be safe without interruption\nbefore the unsafe hold ends or a waiting start begins" },
 	{ "IDLE_HOOK_DELAY", "Idle hook delay (min)", "Time without an eligible task before the Idle hook runs" },
 	{ "IDLE_CHECK_INTERVAL", "Check interval (s)", "How often the scheduler checks the constraints while it waits,\nand checks for urgent tasks while a task runs" },
 	{ "START_TIMEOUT", "Start timeout (s)", "Time allowed for a started task's sequence to begin" },
@@ -533,13 +542,14 @@ static QGridLayout *makeSettingsColumn() {
 	return layout;
 }
 
-static void addSection(QGridLayout *layout, int *row, const QString& title) {
+static QLabel *addSection(QGridLayout *layout, int *row, const QString& title) {
 	if (*row > 0) {
 		layout->addItem(new QSpacerItem(1, 10, QSizePolicy::Minimum, QSizePolicy::Fixed), (*row)++, 0);
 	}
 	QLabel *label = new QLabel(title);
 	label->setStyleSheet("QLabel { font-weight: bold; }");
 	layout->addWidget(label, (*row)++, 0, 1, 4);
+	return label;
 }
 
 /* a spin box for an item of AGENT_SCHEDULER_SETTINGS, with its label on the left */
@@ -592,7 +602,9 @@ QWidget *SchedulerWidget::buildHooksPage() {
 		connect(box->lineEdit(), &QLineEdit::editingFinished, this, &SchedulerWidget::sendHooks);
 		box->setObjectName(QString("SchedulerHook_") + hook[0]);
 		m_hooks[hook[0]] = box;
-		layout->addWidget(new QLabel(QString(hook[1]) + ":"), row, 0, 1, 2);
+		QLabel *label = new QLabel(QString(hook[1]) + ":");
+		m_hook_labels[hook[0]] = label;
+		layout->addWidget(label, row, 0, 1, 2);
 		layout->addWidget(box, row++, 2, 1, 2);
 	}
 
@@ -608,6 +620,7 @@ QWidget *SchedulerWidget::buildHooksPage() {
 	addSetting(layout, &row, "NIGHT_START_OFFSET");
 	addSetting(layout, &row, "NIGHT_END_OFFSET");
 	addSetting(layout, &row, "IDLE_HOOK_DELAY");
+	addSetting(layout, &row, "SAFE_DELAY");
 	return makeSettingsPage(layout);
 }
 
@@ -671,6 +684,20 @@ QWidget *SchedulerWidget::buildSettingsPage() {
 	addSetting(layout, &row, "ALTITUDE_WEIGHT");
 	addSetting(layout, &row, "VISIBILITY_FLIP_PENALTY");
 
+	m_safety_title = addSection(layout, &row, "Safety:");
+	m_safety_missing = new QComboBox();
+	m_safety_missing->setObjectName("SchedulerSafetyMissing");
+	m_safety_missing->setToolTip(
+		"What no safety information means: no Auxiliary Agent, no AGENT_AUX_SAFETY or an Idle light.\n"
+		"Treated as unsafe, the scheduler holds until a safe signal arrives.");
+	connect(m_safety_missing, QOverload<int>::of(&QComboBox::activated), this, [this]() {
+		send({ SchedulerRequest::switches1(selectedAgent(), P_SAFETY_MISSING, m_safety_missing->currentData().toString()) });
+	});
+	m_safety_missing_label = new QLabel("Missing safety information:");
+	m_safety_missing_label->setToolTip(m_safety_missing->toolTip());
+	layout->addWidget(m_safety_missing_label, row, 0, 1, 2);
+	layout->addWidget(m_safety_missing, row++, 2, 1, 2);
+
 	addSection(layout, &row, "Timings:");
 	addSetting(layout, &row, "IDLE_CHECK_INTERVAL");
 	addSetting(layout, &row, "START_TIMEOUT");
@@ -697,6 +724,7 @@ void SchedulerWidget::sendHooks() {
 	QStringList items, values;
 	bool changed = false;
 	for (const auto& hook : hook_items) {
+		if (!hasHook(hooks, hook[0])) continue;
 		QString value = m_hooks[hook[0]]->currentText().trimmed();
 		changed |= value != hooks.text(hook[0]);
 		items.append(hook[0]);
@@ -848,7 +876,7 @@ void SchedulerWidget::handleProperty(const SchedulerProperty& property) {
 		updateChart();
 	} else if (name == P_HISTORY) {
 		updateHistory();
-	} else if (name == P_SETTINGS || name == P_HOOKS || name == P_NIGHT || name == P_STRATEGY || name == P_DATA || name == P_DATA_DIR) {
+	} else if (name == P_SETTINGS || name == P_HOOKS || name == P_NIGHT || name == P_STRATEGY || name == P_SAFETY_MISSING || name == P_DATA || name == P_DATA_DIR) {
 		updateSettings();
 	} else if (isTaskProperty(name)) {
 		updateChart();
@@ -1207,8 +1235,19 @@ void SchedulerWidget::updateSettings() {
 	m_strategy_label->setVisible(has_strategy);
 	setComboItems(m_strategy, strategy);
 
+	// an agent without safety information never holds
+	const SchedulerProperty safety_missing = m_properties.value(P_SAFETY_MISSING);
+	bool has_safety = !safety_missing.items.isEmpty() || m_properties.value(P_SETTINGS).items.isEmpty();
+	m_safety_missing->setVisible(has_safety);
+	m_safety_missing_label->setVisible(has_safety);
+	m_safety_title->setVisible(has_safety);
+	setComboItems(m_safety_missing, safety_missing);
+
 	const SchedulerProperty hooks = m_properties.value(P_HOOKS);
 	for (auto it = m_hooks.begin(); it != m_hooks.end(); ++it) {
+		bool shown = hasHook(hooks, it.key().toUtf8().constData());
+		it.value()->setVisible(shown);
+		m_hook_labels[it.key()]->setVisible(shown);
 		if (!it.value()->lineEdit()->hasFocus()) it.value()->setCurrentText(hooks.text(it.key()));
 	}
 
@@ -1376,6 +1415,7 @@ void SchedulerWidget::onTasksContextMenu(const QPoint& pos) {
 	hooks->setEnabled(stored);
 	const SchedulerProperty hook_property = m_properties.value(P_HOOKS);
 	for (const auto& hook : hook_items) {
+		if (!hasHook(hook_property, hook[0])) continue;
 		QString item_name = hook[0];
 		bool is_hook = hook_property.text(item_name) == name;
 		QAction *action = hooks->addAction(hook[1], this, [this, name, item_name, is_hook]() {

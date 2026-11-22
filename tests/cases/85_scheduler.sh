@@ -307,8 +307,8 @@ check "the hook is set" wait_for 10 hook_is IDLE '"Test"'
 check "the settings keep their values" equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_SETTINGS' IDLE_CHECK_INTERVAL)" 30
 check "the night limit is kept" equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_NIGHT' NAUTICAL)" ON
 check "the data switches are kept" equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_DATA' OBJECT)$(item 'Scheduler Agent.AGENT_SCHEDULER_DATA' FOLDER)" ONOFF
-check "the page shows the settings of the agent" sched_has_all "SCHED Setting IDLE_CHECK_INTERVAL 30 on" "SCHED Setting SETTING_WEIGHT 1.0 on" "SCHED Setting VISIBILITY_FLIP_PENALTY 10 on" "SCHED Setting NIGHT_START_OFFSET 0 on" "SCHED SchedulerStrategy COMPACT on"
-check "every setting has its place" equals "$(sched | grep -c '^SCHED Setting ')" 11
+check "the page shows the settings of the agent" sched_has_all "SCHED Setting IDLE_CHECK_INTERVAL 30 on" "SCHED Setting SETTING_WEIGHT 1.0 on" "SCHED Setting VISIBILITY_FLIP_PENALTY 10 on" "SCHED Setting NIGHT_START_OFFSET 0 on" "SCHED SchedulerStrategy COMPACT on" "SCHED SchedulerSafetyMissing SAFE on" "SCHED Setting SAFE_DELAY 10.0 on"
+check "every setting has its place" equals "$(sched | grep -c '^SCHED Setting ')" 12
 setting_is() {	# item, value
 	equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_SETTINGS' "$1")" "$2"
 }
@@ -318,6 +318,11 @@ check "and the other settings are kept" equals "$(item 'Scheduler Agent.AGENT_SC
 check "the page shows the new value" wait_for 10 sched_has "SCHED Setting IDLE_HOOK_DELAY 45 on"
 ain_do sched_setting IDLE_HOOK_DELAY 30
 check "and it is set back" wait_for 10 setting_is IDLE_HOOK_DELAY 30
+ain_do sched_hook UNSAFE Test
+check "a safety hook is set" wait_for 10 hook_is UNSAFE '"Test"'
+check "and the other hooks are kept" wait_for 10 hook_is IDLE '"Test"'
+ain_do sched_hook UNSAFE ""
+check "and it is cleared" wait_for 10 hook_is UNSAFE '""'
 ain_do shot "$CASE_DIR/hooks.png"
 ain_do tab Settings
 strategy_is() {	# item that is on
@@ -328,6 +333,14 @@ check "the best visibility strategy is sent" wait_for 10 strategy_is VISIBILITY
 check "the page shows it" wait_for 10 sched_has "SCHED SchedulerStrategy VISIBILITY on"
 ain_do sched_choose SchedulerStrategy COMPACT
 check "and compact is set back" wait_for 10 strategy_is COMPACT
+safety_missing_is() {	# item that is on
+	equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_SAFETY_MISSING' "$1")" ON
+}
+ain_do sched_choose SchedulerSafetyMissing UNSAFE
+check "missing safety information treated as unsafe is sent" wait_for 10 safety_missing_is UNSAFE
+check "the page shows it" wait_for 10 sched_has "SCHED SchedulerSafetyMissing UNSAFE on"
+ain_do sched_choose SchedulerSafetyMissing SAFE
+check "and safe is set back" wait_for 10 safety_missing_is SAFE
 ain_do shot "$CASE_DIR/settings.png"
 check "the task list shows the hook" wait_for 10 sched_has "SCHED SchedulerTasks Test | HOOK"
 ain_do sched_hook IDLE ""
