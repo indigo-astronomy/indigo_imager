@@ -50,6 +50,8 @@
 #include <QTreeWidget>
 #include <QVBoxLayout>
 #include <QScrollBar>
+#include <QPainter>
+#include <QStyledItemDelegate>
 #include <cstring>
 #include <functional>
 
@@ -153,25 +155,183 @@ static void setComboItems(QComboBox *combo, const SchedulerProperty& property) {
 	combo->setEnabled(!property.items.isEmpty());
 }
 
-static QTreeWidget *makeList(const QStringList& columns) {
+/* The rows of the task list, the night plan and the history drawn as cards like the properties of
+   the INDIGO Control Panel: a panel tinted by the state light with the light, the name in bold and
+   the time or state on the right, the other columns below it and the reason on a line of its own.
+   The columns stay in the model, hidden, so the lists keep their selection, their activation and
+   their context menu. */
+class SchedulerCardDelegate : public QStyledItemDelegate {
+public:
+	enum Kind { TaskCard, PlanCard, HistoryCard };
+
+	SchedulerCardDelegate(Kind kind, QObject *parent) : QStyledItemDelegate(parent), m_kind(kind) {
+	}
+
+	QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override {
+		QFontMetrics metrics(option.font);
+		int lines = reason(index).isEmpty() ? 2 : 3;
+		return QSize(200, 2 * MARGIN_Y + 2 * PADDING_Y + lines * metrics.height() + (lines - 1) * LINE_GAP);
+	}
+
+	void paint(QPainter *painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override {
+		painter->save();
+		painter->setRenderHint(QPainter::Antialiasing, true);
+		painter->setFont(option.font);
+		// over the row background and the selection the view draws
+		painter->fillRect(option.rect, option.palette.color(QPalette::Base));
+
+		bool enabled = option.state & QStyle::State_Enabled;
+		bool selected = option.state & QStyle::State_Selected;
+		bool hover = option.state & QStyle::State_MouseOver;
+		int light = index.data(Qt::UserRole + 2).toInt();
+		QColor background = cardColor(light);
+		QColor border = selected ? option.palette.color(QPalette::Highlight) : background.lighter(hover ? 190 : 140);
+
+		QRectF card = QRectF(option.rect).adjusted(MARGIN_X + 0.5, MARGIN_Y + 0.5, -MARGIN_X - 0.5, -MARGIN_Y - 0.5);
+		painter->setPen(QPen(border, selected ? 2 : 1));
+		painter->setBrush(background);
+		painter->drawRoundedRect(card, 3, 3);
+
+		QFontMetrics metrics(option.font);
+		QColor text = option.palette.color(enabled ? QPalette::Active : QPalette::Disabled, QPalette::Text);
+		QColor dim = text;
+		dim.setAlpha(150);
+		QRect content = card.toRect().adjusted(PADDING_X, PADDING_Y, -PADDING_X, -PADDING_Y);
+		int line = metrics.height() + LINE_GAP;
+
+		// first line: the light, the name and on the right the time or the state
+		QRect first(content.left(), content.top(), content.width(), metrics.height());
+		QIcon icon = qvariant_cast<QIcon>(index.data(Qt::DecorationRole));
+		int led_size = 10;
+		icon.paint(painter, QRect(first.left(), first.center().y() - led_size / 2 + 1, led_size, led_size));
+		first.setLeft(first.left() + led_size + 6);
+		QString right = column(index, m_kind == TaskCard ? 1 : 0);
+		if (m_kind != TaskCard && !right.isEmpty()) right += " UTC";
+		int right_width = right.isEmpty() ? 0 : qMin(metrics.horizontalAdvance(right) + 2, first.width() / 2);
+		painter->setPen(enabled ? stateTextColor(light, text) : text);
+		painter->drawText(first, Qt::AlignRight | Qt::AlignVCenter, metrics.elidedText(right, Qt::ElideRight, right_width));
+		QFont bold = option.font;
+		bold.setBold(true);
+		QFontMetrics bold_metrics(bold);
+		painter->setFont(bold);
+		painter->setPen(text);
+		QRect name_rect = first.adjusted(0, 0, -(right_width + (right_width ? 12 : 0)), 0);
+		painter->drawText(name_rect, Qt::AlignLeft | Qt::AlignVCenter, bold_metrics.elidedText(title(index), Qt::ElideRight, name_rect.width()));
+		painter->setFont(option.font);
+
+		// second line: the other columns, a label only where the value does not say what it is
+		QRect second(content.left() + led_size + 6, content.top() + line, content.width() - led_size - 6, metrics.height());
+		int x = second.left();
+		bool first_part = true;
+		for (const auto& part : details(index)) {
+			if (part.second.isEmpty()) continue;
+			QString separator = first_part ? QString() : QString("  ·  ");
+			QString label = part.first.isEmpty() ? QString() : part.first + " ";
+			int width = second.right() - x;
+			if (width <= 0) break;
+			painter->setPen(dim);
+			QString head = metrics.elidedText(separator + label, Qt::ElideRight, width);
+			painter->drawText(QRect(x, second.top(), width, second.height()), Qt::AlignLeft | Qt::AlignVCenter, head);
+			x += metrics.horizontalAdvance(head);
+			width = second.right() - x;
+			if (width <= 0) break;
+			painter->setPen(text);
+			QString value = metrics.elidedText(part.second, Qt::ElideRight, width);
+			painter->drawText(QRect(x, second.top(), width, second.height()), Qt::AlignLeft | Qt::AlignVCenter, value);
+			x += metrics.horizontalAdvance(value);
+			first_part = false;
+		}
+
+		// third line: the reason, the tooltip has all of it
+		QString why = reason(index);
+		if (!why.isEmpty()) {
+			QRect third(second.left(), content.top() + 2 * line, second.width(), metrics.height());
+			QFont italic = option.font;
+			italic.setItalic(true);
+			painter->setFont(italic);
+			painter->setPen(dim);
+			painter->drawText(third, Qt::AlignLeft | Qt::AlignVCenter, QFontMetrics(italic).elidedText(why, Qt::ElideRight, third.width()));
+		}
+		painter->restore();
+	}
+
+private:
+	static const int MARGIN_X = 4;
+	static const int MARGIN_Y = 2;
+	static const int PADDING_X = 6;
+	static const int PADDING_Y = 4;
+	static const int LINE_GAP = 1;
+
+	/* the colors of the property panels of the INDIGO Control Panel */
+	static QColor cardColor(int light) {
+		switch (light) {
+			case SCHEDULER_OK: return QColor(0x20, 0x32, 0x20);
+			case SCHEDULER_BUSY: return QColor(0x35, 0x35, 0x20);
+			case SCHEDULER_ALERT: return QColor(0x35, 0x22, 0x22);
+			default: return QColor(0x27, 0x27, 0x27);
+		}
+	}
+
+	static QColor stateTextColor(int light, const QColor& text) {
+		switch (light) {
+			case SCHEDULER_OK: return QColor(0x90, 0xd0, 0x90);
+			case SCHEDULER_BUSY: return QColor(0xe0, 0xd0, 0x70);
+			case SCHEDULER_ALERT: return QColor(0xe8, 0x88, 0x88);
+			default: return text;
+		}
+	}
+
+	static QString column(const QModelIndex& index, int column) {
+		return index.sibling(index.row(), column).data(Qt::DisplayRole).toString();
+	}
+
+	QString title(const QModelIndex& index) const {
+		if (m_kind == TaskCard) return column(index, 0);
+		// a plan line without a task, like the night hooks without a night, is named by its state
+		QString name = column(index, 1);
+		return name.isEmpty() ? column(index, 4) : name;
+	}
+
+	QList<QPair<QString, QString>> details(const QModelIndex& index) const {
+		switch (m_kind) {
+			case TaskCard:
+				// "run 1/3", "retries left 2" and "1h30 estimate" say what they are
+				return { { "Priority", column(index, 2) }, { "", column(index, 3) }, { "", column(index, 4) }, { "", column(index, 5) } };
+			case PlanCard:
+				return { { "", column(index, 2) }, { "Priority", column(index, 3) }, { "", column(index, 1).isEmpty() ? QString() : column(index, 4) } };
+			default:
+				return { { "", column(index, 2) }, { "", column(index, 3) }, { "", column(index, 4) } };
+		}
+	}
+
+	QString reason(const QModelIndex& index) const {
+		return m_kind == TaskCard ? QString() : column(index, 5);
+	}
+
+	Kind m_kind;
+};
+
+static QTreeWidget *makeList(const QStringList& columns, SchedulerCardDelegate::Kind kind) {
 	QTreeWidget *list = new QTreeWidget();
 	// the style takes the frame of a list in a tab away, Ain draws it as for the object list
-	// and the column titles get room at the sides, not above and below
-	list->setStyleSheet("QTreeWidget {border: 1px solid #404040;} QHeaderView::section {padding: 0px 4px;}");
-	// the header is as high as a row, a row with the state light of the lists
-	QTreeWidgetItem *probe = new QTreeWidgetItem(list, QStringList("Xg"));
-	probe->setIcon(0, QIcon(":resource/led-grey.png"));
-	list->ensurePolished();
-	list->header()->setFixedHeight(list->sizeHintForRow(0));
-	delete probe;
+	list->setStyleSheet("QTreeWidget {border: 1px solid #404040;}");
 	list->setColumnCount(columns.size());
 	list->setHeaderLabels(columns);
+	// one card per row in the first column, the others are only data for the card and the tooltip
+	list->setHeaderHidden(true);
+	for (int i = 1; i < columns.size(); i++) {
+		list->setColumnHidden(i, true);
+	}
+	list->header()->setSectionResizeMode(0, QHeaderView::Stretch);
+	list->setItemDelegate(new SchedulerCardDelegate(kind, list));
 	list->setRootIsDecorated(false);
-	list->setUniformRowHeights(true);
-	list->setAlternatingRowColors(true);
+	list->setIndentation(0);
+	list->setUniformRowHeights(false);
+	list->setAlternatingRowColors(false);
+	list->setMouseTracking(true);
+	list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	list->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
 	list->setSelectionMode(QAbstractItemView::SingleSelection);
-	list->header()->setStretchLastSection(true);
-	list->header()->setSectionResizeMode(QHeaderView::Interactive);
 	// the agent redefines a list when a label changes, the selection the user made is kept by name
 	QObject::connect(list, &QTreeWidget::currentItemChanged, list, [list](QTreeWidgetItem *current) {
 		if (current && !list->property("rebuilding").toBool()) {
@@ -198,8 +358,16 @@ static void fillList(QTreeWidget *list, const SchedulerProperty *property, int n
 		QString name = label.value(nameColumn);
 		row->setData(0, Qt::UserRole, name);
 		row->setData(0, Qt::UserRole + 1, item.name);
+		row->setData(0, Qt::UserRole + 2, item.light);
 		row->setIcon(0, led(item.light));
-		row->setToolTip(row->columnCount() - 1, row->text(row->columnCount() - 1));
+		// the card cuts long texts, the tooltip has every column with its title
+		QStringList tooltip;
+		for (int c = 0; c < row->columnCount(); c++) {
+			if (!row->text(c).isEmpty()) {
+				tooltip << QString("<b>%1:</b> %2").arg(list->headerItem()->text(c).toHtmlEscaped(), row->text(c).toHtmlEscaped());
+			}
+		}
+		row->setToolTip(0, tooltip.join("<br>"));
 		list->addTopLevelItem(row);
 		if (!selected.isEmpty() && name == selected && current == nullptr) {
 			current = row;
@@ -423,7 +591,7 @@ QWidget *SchedulerWidget::buildTasksPage() {
 	QBoxLayout *layout;
 	QFrame *page = makePage(&layout);
 
-	m_tasks = makeList({ "Task", "State", "Priority", "Runs", "Retries", "Duration" });
+	m_tasks = makeList({ "Task", "State", "Priority", "Runs", "Retries", "Duration" }, SchedulerCardDelegate::TaskCard);
 	m_tasks->setObjectName("SchedulerTasks");
 	m_tasks->setContextMenuPolicy(Qt::CustomContextMenu);
 	m_tasks->setToolTip("The tasks in list order; the list order only breaks ties of priority and sky score.\nDouble click a task to edit it.");
@@ -480,7 +648,7 @@ QWidget *SchedulerWidget::buildTasksPage() {
 }
 
 QWidget *SchedulerWidget::buildPlanPage() {
-	m_plan = makeList({ "When (UTC)", "Task", "Run", "Priority", "State", "Reason" });
+	m_plan = makeList({ "When (UTC)", "Task", "Run", "Priority", "State", "Reason" }, SchedulerCardDelegate::PlanCard);
 	m_plan->setObjectName("SchedulerPlan");
 	m_plan->setToolTip("The forecast of the rest of the night: it assumes every run succeeds and takes its expected duration.\nDouble click a run to edit its task.");
 	connect(m_plan, &QTreeWidget::itemActivated, this, [this](QTreeWidgetItem *item) {
@@ -495,9 +663,12 @@ QWidget *SchedulerWidget::buildPlanPage() {
 QWidget *SchedulerWidget::buildHistoryPage() {
 	QBoxLayout *layout;
 	QFrame *page = makePage(&layout);
-	m_history = makeList({ "When (UTC)", "Task", "Run", "Kind", "Result", "Reason" });
+	m_history = makeList({ "When (UTC)", "Task", "Run", "Kind", "Result", "Reason" }, SchedulerCardDelegate::HistoryCard);
 	m_history->setObjectName("SchedulerHistory");
-	m_history->setToolTip("The finished runs, newest first");
+	m_history->setToolTip("The finished runs, newest first.\nDouble click a run to edit its task.");
+	connect(m_history, &QTreeWidget::itemActivated, this, [this](QTreeWidgetItem *item) {
+		editTask(item->data(0, Qt::UserRole).toString());
+	});
 	layout->addWidget(m_history);
 	QHBoxLayout *buttons = new QHBoxLayout();
 	buttons->addStretch();
@@ -1191,7 +1362,6 @@ void SchedulerWidget::updateTasks() {
 	fillList(m_tasks, property, 0, [](const QStringList& c) {
 		return QStringList{ c[0], c[1], c[2], c[3], c[4], c[5] };
 	});
-	m_tasks->resizeColumnToContents(0);
 
 	// the hook choices are the stored task names
 	QStringList names = storedTaskNames();
@@ -1211,8 +1381,6 @@ void SchedulerWidget::updatePlan() {
 	fillList(m_plan, property, 1, [](const QStringList& c) {
 		return QStringList{ c[0], c[1], c[2], c[3], c[4], c[5] };
 	});
-	m_plan->resizeColumnToContents(0);
-	m_plan->resizeColumnToContents(1);
 }
 
 void SchedulerWidget::updateHistory() {
@@ -1220,8 +1388,6 @@ void SchedulerWidget::updateHistory() {
 	fillList(m_history, property, 1, [](const QStringList& c) {
 		return QStringList{ c[0], c[1], c[2], c[3], c[4], c[5] };
 	});
-	m_history->resizeColumnToContents(0);
-	m_history->resizeColumnToContents(1);
 }
 
 void SchedulerWidget::updateSettings() {
