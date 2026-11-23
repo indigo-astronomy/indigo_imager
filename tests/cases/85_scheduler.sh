@@ -199,8 +199,11 @@ check "the second step is busy after the first is done, the panel shows it" wait
 seq > "$CASE_DIR/seq_running.txt"
 check "the Sequence tab does not show the task of the scheduler" bash -c "! grep -qE 'busy|In progress|Sequence: [1-9]' '$CASE_DIR/seq_running.txt'"
 ain_do shot "$CASE_DIR/running.png"
+ain_do sched_deselect
+check "Escape clears the selection, the running task is not highlighted unless selected" sched_has_all "SCHED SchedulerTasksSelected none" "| highlighted  |"
 check "the history shows the run" wait_for 30 sched_has "| Test | run 1 | task | SUCCEEDED"
 check "the task is done" wait_for 10 sched_has "SCHED SchedulerTasks Test | DONE"
+check "the chart shows the finished run in green" sched_has "| ran Test:ok"
 check "the editor allows edits again" wait_for 10 sched_lacks "running, read only"
 check "the panel shows the end of the task" sched_has_all "SCHED SchedulerTaskStatus Complete" "SCHED SchedulerProgress Task: 100% complete"
 ain_do tab Tasks
@@ -380,10 +383,14 @@ ain_do tab Tasks
 ain_do sched_select M31
 check "it shows the target of the task, the selected task over the others" wait_for 10 sched_has_all "| targets M31 |" "| highlighted M31"
 check "and its run in the night plan" wait_for 10 sched_has "| runs M31 |"
+check "a queued task keeps the colors of the chart" sched_has "| colors M31:idle"
 check "the night plan selects its run" sched_has "SCHED SchedulerPlanSelected M31"
 ain_do tab "Night plan"
 ain_do sched_plan_select M31
 check "a run selected in the night plan selects its task, the chart shows it" sched_has_all "SCHED SchedulerTasksSelected M31" "| highlighted M31"
+ain_do sched_deselect plan
+check "Escape in the night plan clears the selection of both lists and the chart" sched_has_all "SCHED SchedulerPlanSelected none" "SCHED SchedulerTasksSelected none" "| highlighted  |"
+ain_do sched_select M31
 ain_do tab Tasks
 ain_do shot "$CASE_DIR/chart.png"
 ain_do answer Yes

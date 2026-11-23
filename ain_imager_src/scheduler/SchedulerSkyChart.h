@@ -24,6 +24,7 @@
 #include <QStringList>
 #include <QPair>
 #include <QPointer>
+#include <QMap>
 
 class QTimer;
 
@@ -59,6 +60,8 @@ public:
 		QString name;
 		qint64 start = 0;
 		qint64 end = 0;
+		// the light of a finished run in the history, SchedulerState; a planned run has the color of its task
+		int state = 0;
 	};
 
 	explicit SchedulerSkyChart(QWidget *parent = nullptr);
@@ -66,7 +69,12 @@ public:
 	void setSite(bool known, double latitude = 0, double longitude = 0);
 	void setTargets(const QList<Target>& targets);
 	void setRuns(const QList<Run>& runs);
-	/* the selected and the running task are drawn over the others */
+	/* the finished runs of the history, in the color of their result */
+	void setHistoryRuns(const QList<Run>& runs);
+	/* the lights of the tasks by name, SchedulerState: the runs of a running task are yellow, of a done
+	   one green, of a failed one red, the others have the color of the curve */
+	void setTaskStates(const QMap<QString, int>& states);
+	/* the selected task is drawn over the others */
 	void setHighlighted(const QStringList& names);
 	/* the theme sets its accent in the style sheet: the selection color of this widget is used */
 	void setAccentSource(QWidget *widget);
@@ -91,6 +99,8 @@ private:
 	double m_longitude = 0;
 	QList<Target> m_targets;
 	QList<Run> m_runs;
+	QList<Run> m_history_runs;
+	QMap<QString, int> m_task_states;
 	QStringList m_highlighted;
 	QPointer<QWidget> m_accent_source;
 	qint64 m_now = 0;

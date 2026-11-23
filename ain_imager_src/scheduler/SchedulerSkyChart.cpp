@@ -17,6 +17,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SchedulerSkyChart.h"
+#include "SchedulerProperty.h"
 
 #include <QDateTime>
 #include <QMouseEvent>
@@ -154,6 +155,36 @@ void SchedulerSkyChart::setRuns(const QList<Run>& runs) {
 	update();
 }
 
+void SchedulerSkyChart::setHistoryRuns(const QList<Run>& runs) {
+	m_history_runs = runs;
+	update();
+}
+
+void SchedulerSkyChart::setTaskStates(const QMap<QString, int>& states) {
+	if (states == m_task_states) return;
+	m_task_states = states;
+	update();
+}
+
+/* the colors of the states in the task list: busy yellow, ok green, alert red, idle the given one */
+static QColor stateColor(int state, const QColor& idle) {
+	switch (state) {
+		case SCHEDULER_OK: return QColor(0x90, 0xd0, 0x90);
+		case SCHEDULER_BUSY: return QColor(0xe0, 0xd0, 0x70);
+		case SCHEDULER_ALERT: return QColor(0xe8, 0x88, 0x88);
+		default: return idle;
+	}
+}
+
+static const char *stateName(int state) {
+	switch (state) {
+		case SCHEDULER_OK: return "ok";
+		case SCHEDULER_BUSY: return "busy";
+		case SCHEDULER_ALERT: return "alert";
+		default: return "idle";
+	}
+}
+
 void SchedulerSkyChart::setHighlighted(const QStringList& names) {
 	if (names == m_highlighted) return;
 	m_highlighted = names;
@@ -174,12 +205,16 @@ QString SchedulerSkyChart::describe() const {
 	if (!m_site_known) {
 		return "no site";
 	}
-	QStringList targets, runs;
-	for (const Target& target : m_targets) targets << target.name;
+	QStringList targets, runs, ran, colors;
+	for (const Target& target : m_targets) {
+		targets << target.name;
+		colors << QString("%1:%2").arg(target.name, stateName(m_task_states.value(target.name, SCHEDULER_IDLE)));
+	}
 	for (const Run& run : m_runs) runs << run.name;
-	return QString("site %1 %2 | targets %3 | runs %4 | highlighted %5")
+	for (const Run& run : m_history_runs) ran << QString("%1:%2").arg(run.name, stateName(run.state));
+	return QString("site %1 %2 | targets %3 | runs %4 | highlighted %5 | ran %6 | colors %7")
 		.arg(m_latitude, 0, 'f', 1).arg(m_longitude, 0, 'f', 1)
-		.arg(targets.join(",")).arg(runs.join(",")).arg(m_highlighted.join(","));
+		.arg(targets.join(",")).arg(runs.join(",")).arg(m_highlighted.join(",")).arg(ran.join(",")).arg(colors.join(","));
 }
 
 qint64 SchedulerSkyChart::now() const {
@@ -300,15 +335,22 @@ void SchedulerSkyChart::paintEvent(QPaintEvent *event) {
 	p.setPen(QPen(moon_color, 1.2, Qt::DashLine));
 	p.drawPath(curve([&](qint64 t) { return SchedulerSky::moonAltitude(t, m_latitude, m_longitude); }, window.first, window.second));
 
-	// the targets, the highlighted ones last; a planned run is the thick part of the curve
+	// the targets, the running one over the others and the highlighted ones last; a planned or a finished
+	// run is the thick part of the curve in the color of its state in the task list or the history, a queued
+	// one in the color of the curve; the name of the running task is shown also when there are many targets
+	auto running = [this](const Target& target) { return m_task_states.value(target.name, SCHEDULER_IDLE) == SCHEDULER_BUSY; };
 	QList<const Target*> order;
-	for (const Target& target : m_targets) if (!m_highlighted.contains(target.name)) order.append(&target);
+	for (const Target& target : m_targets) if (!m_highlighted.contains(target.name) && !running(target)) order.append(&target);
+	for (const Target& target : m_targets) if (!m_highlighted.contains(target.name) && running(target)) order.append(&target);
 	for (const Target& target : m_targets) if (m_highlighted.contains(target.name)) order.append(&target);
 	QColor other = text;
 	other.setAlpha(150);
 	for (const Target *target : order) {
 		bool marked = m_highlighted.contains(target->name);
+		bool busy = running(*target);
 		QColor color = marked ? highlight : other;
+		// a run has the color of its state: running yellow, done green, failed red
+		QColor run_color = stateColor(m_task_states.value(target->name, SCHEDULER_IDLE), color);
 		auto altitude_at = [&](qint64 t) { return SchedulerSky::targetAltitude(target->ra, target->dec, t, m_latitude, m_longitude); };
 		if (marked && target->minAltitude > 0) {
 			QColor limit = highlight;
@@ -318,9 +360,14 @@ void SchedulerSkyChart::paintEvent(QPaintEvent *event) {
 		}
 		p.setPen(QPen(color, marked ? 2.0 : 1.2));
 		p.drawPath(curve(altitude_at, window.first, window.second));
+		for (const Run& run : m_history_runs) {
+			if (run.name != target->name || run.end < window.first || run.start > window.second) continue;
+			p.setPen(QPen(stateColor(run.state, color), marked ? 5.0 : 4.0, Qt::SolidLine, Qt::RoundCap));
+			p.drawPath(curve(altitude_at, qMax(run.start, window.first), qMin(run.end, window.second)));
+		}
 		for (const Run& run : m_runs) {
 			if (run.name != target->name || run.end < window.first || run.start > window.second) continue;
-			p.setPen(QPen(color, marked ? 5.0 : 4.0, Qt::SolidLine, Qt::RoundCap));
+			p.setPen(QPen(run_color, marked ? 5.0 : 4.0, Qt::SolidLine, Qt::RoundCap));
 			p.drawPath(curve(altitude_at, qMax(run.start, window.first), qMin(run.end, window.second)));
 		}
 		// the name at the highest point
@@ -333,7 +380,7 @@ void SchedulerSkyChart::paintEvent(QPaintEvent *event) {
 				best = t;
 			}
 		}
-		if (best_altitude > 0 && (marked || m_targets.size() <= 6)) {
+		if (best_altitude > 0 && (marked || busy || m_targets.size() <= 6)) {
 			QString name = metrics.elidedText(target->name, Qt::ElideRight, r.width() / 3);
 			double width = metrics.horizontalAdvance(name);
 			double x = qBound(double(r.left() + 2), x_of(best) - width / 2, r.right() - width - 2);
@@ -344,12 +391,18 @@ void SchedulerSkyChart::paintEvent(QPaintEvent *event) {
 	}
 	p.restore();
 
-	// the planned runs of all tasks, under the time axis
-	for (const Run& run : m_runs) {
-		if (run.end < window.first || run.start > window.second) continue;
-		QColor color = m_highlighted.contains(run.name) ? highlight : other;
+	// the finished and the planned runs of all tasks, under the time axis: a finished run in the color
+	// of its result, a planned one in the color of its task
+	auto bar = [&](const Run& run, const QColor& color) {
+		if (run.end < window.first || run.start > window.second) return;
 		double x1 = qMax(double(r.left()), x_of(run.start)), x2 = qMin(double(r.right()), x_of(qMax(run.end, run.start + 60)));
 		p.fillRect(QRectF(x1, r.bottom() + 2, qMax(2.0, x2 - x1), 4), color);
+	};
+	for (const Run& run : m_history_runs) {
+		bar(run, stateColor(run.state, other));
+	}
+	for (const Run& run : m_runs) {
+		bar(run, stateColor(m_task_states.value(run.name, SCHEDULER_IDLE), m_highlighted.contains(run.name) ? highlight : other));
 	}
 
 	// now
@@ -380,8 +433,11 @@ void SchedulerSkyChart::mouseMoveEvent(QMouseEvent *event) {
 	double moon = SchedulerSky::moonAltitude(t, m_latitude, m_longitude);
 	lines << QString("Moon: %1").arg(moon > 0 ? QString("%1°").arg(moon, 0, 'f', 0) : QString("below the horizon"));
 	lines << QString("Sun: %1°").arg(SchedulerSky::sunAltitude(t, m_latitude, m_longitude), 0, 'f', 0);
+	for (const Run& run : m_history_runs) {
+		if (t >= run.start && t <= run.end) lines << QString("%1: %2").arg(run.state == SCHEDULER_OK ? "Succeeded" : run.state == SCHEDULER_ALERT ? "Failed" : "Ran", run.name);
+	}
 	for (const Run& run : m_runs) {
-		if (t >= run.start && t <= run.end) lines << QString("Planned: %1").arg(run.name);
+		if (t >= run.start && t <= run.end) lines << QString("%1: %2").arg(m_task_states.value(run.name) == SCHEDULER_BUSY ? "Running" : "Planned", run.name);
 	}
 	QToolTip::showText(event->globalPos(), lines.join("\n"), this);
 }

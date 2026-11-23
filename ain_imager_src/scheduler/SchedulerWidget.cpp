@@ -34,9 +34,11 @@
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QHeaderView>
+#include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
+#include <QMouseEvent>
 #include <QMessageBox>
 #include <QDateTime>
 #include <QProgressBar>
@@ -311,6 +313,40 @@ private:
 	Kind m_kind;
 };
 
+/* Escape, a click on the empty space under the cards or a Ctrl+click on the selected card clears the
+   selection of a list, and with it the selection of the other list and the highlight in the chart */
+class SchedulerDeselectFilter : public QObject {
+public:
+	explicit SchedulerDeselectFilter(QTreeWidget *list) : QObject(list), m_list(list) {
+	}
+
+	bool eventFilter(QObject *watched, QEvent *event) override {
+		if (event->type() == QEvent::KeyPress && watched == m_list && static_cast<QKeyEvent *>(event)->key() == Qt::Key_Escape && m_list->currentItem()) {
+			deselect();
+			return true;
+		}
+		if (event->type() == QEvent::MouseButtonPress && watched == m_list->viewport()) {
+			QMouseEvent *mouse = static_cast<QMouseEvent *>(event);
+			QTreeWidgetItem *item = m_list->itemAt(mouse->pos());
+			bool empty = item == nullptr;
+			bool toggle = item != nullptr && item == m_list->currentItem() && (mouse->modifiers() & Qt::ControlModifier);
+			if (mouse->button() == Qt::LeftButton && (empty || toggle)) {
+				if (m_list->currentItem()) deselect();
+				return true;
+			}
+		}
+		return false;
+	}
+
+private:
+	QTreeWidget *m_list;
+
+	void deselect() {
+		m_list->setCurrentItem(nullptr);
+		m_list->clearSelection();
+	}
+};
+
 static QTreeWidget *makeList(const QStringList& columns, SchedulerCardDelegate::Kind kind) {
 	QTreeWidget *list = new QTreeWidget();
 	// the style takes the frame of a list in a tab away, Ain draws it as for the object list
@@ -334,10 +370,13 @@ static QTreeWidget *makeList(const QStringList& columns, SchedulerCardDelegate::
 	list->setSelectionMode(QAbstractItemView::SingleSelection);
 	// the agent redefines a list when a label changes, the selection the user made is kept by name
 	QObject::connect(list, &QTreeWidget::currentItemChanged, list, [list](QTreeWidgetItem *current) {
-		if (current && !list->property("rebuilding").toBool()) {
-			list->setProperty("selectedName", current->data(0, Qt::UserRole));
+		if (!list->property("rebuilding").toBool()) {
+			list->setProperty("selectedName", current ? current->data(0, Qt::UserRole) : QVariant());
 		}
 	});
+	SchedulerDeselectFilter *deselect = new SchedulerDeselectFilter(list);
+	list->installEventFilter(deselect);
+	list->viewport()->installEventFilter(deselect);
 	return list;
 }
 
@@ -580,7 +619,7 @@ void SchedulerWidget::buildControlPanel() {
 	m_chart->setToolTip("The altitude of the targets of the tasks over the night");
 	layout->addWidget(m_chart, row, 0, 1, 3);
 	layout->setRowStretch(row++, 1);
-	QLabel *note = new QLabel("Times are UTC. The thick parts are the runs of the night plan, the dashed curve is the Moon, the shading is the twilight.");
+	QLabel *note = new QLabel("Times are UTC. The thick parts and the bars are the runs of the night plan and the finished runs; a running run is yellow, a done one green, a failed one red. The dashed curve is the Moon, the shading is the twilight.");
 	note->setWordWrap(true);
 	layout->addWidget(note, row++, 0, 1, 3);
 }
@@ -594,7 +633,7 @@ QWidget *SchedulerWidget::buildTasksPage() {
 	m_tasks = makeList({ "Task", "State", "Priority", "Runs", "Retries", "Duration" }, SchedulerCardDelegate::TaskCard);
 	m_tasks->setObjectName("SchedulerTasks");
 	m_tasks->setContextMenuPolicy(Qt::CustomContextMenu);
-	m_tasks->setToolTip("The tasks in list order; the list order only breaks ties of priority and sky score.\nDouble click a task to edit it.");
+	m_tasks->setToolTip("The tasks in list order; the list order only breaks ties of priority and sky score.\nDouble click a task to edit it, press Escape, click the empty space or Ctrl+click the selected task to clear the selection.");
 	connect(m_tasks, &QTreeWidget::itemActivated, this, &SchedulerWidget::onTaskActivated);
 	m_chart->setAccentSource(m_tasks);
 	connect(m_tasks, &QTreeWidget::currentItemChanged, this, [this]() { selectionChanged(m_tasks); });
@@ -650,7 +689,7 @@ QWidget *SchedulerWidget::buildTasksPage() {
 QWidget *SchedulerWidget::buildPlanPage() {
 	m_plan = makeList({ "When (UTC)", "Task", "Run", "Priority", "State", "Reason" }, SchedulerCardDelegate::PlanCard);
 	m_plan->setObjectName("SchedulerPlan");
-	m_plan->setToolTip("The forecast of the rest of the night: it assumes every run succeeds and takes its expected duration.\nDouble click a run to edit its task.");
+	m_plan->setToolTip("The forecast of the rest of the night: it assumes every run succeeds and takes its expected duration.\nDouble click a run to edit its task, press Escape, click the empty space or Ctrl+click the selected run to clear the selection.");
 	connect(m_plan, &QTreeWidget::itemActivated, this, [this](QTreeWidgetItem *item) {
 		editTask(item->data(0, Qt::UserRole).toString());
 	});
@@ -1048,6 +1087,7 @@ void SchedulerWidget::handleProperty(const SchedulerProperty& property) {
 		updateChart();
 	} else if (name == P_HISTORY) {
 		updateHistory();
+		updateChart();
 	} else if (name == P_SETTINGS || name == P_HOOKS || name == P_NIGHT || name == P_STRATEGY || name == P_SAFETY_MISSING || name == P_DATA || name == P_DATA_DIR) {
 		updateSettings();
 	} else if (isTaskProperty(name)) {
@@ -1165,31 +1205,42 @@ void SchedulerWidget::updateChart() {
 	}
 	m_chart->setTargets(targets);
 
-	// the plan has "yyyy-MM-dd HH:mm-HH:mm | name | ...", a run that ends before it starts ends the next day
-	static const QRegularExpression when(R"(^(\d{4}-\d\d-\d\d) (\d\d:\d\d)-(\d\d:\d\d)$)");
-	QList<SchedulerSkyChart::Run> runs;
-	for (const SchedulerItem& item : m_properties.value(P_PLAN).items) {
-		QStringList columns = scheduler_label_columns(item.label);
-		QRegularExpressionMatch match = when.match(columns.value(0).trimmed());
-		if (!match.hasMatch()) continue;
-		QDateTime start = QDateTime::fromString(match.captured(1) + " " + match.captured(2), "yyyy-MM-dd HH:mm");
-		QDateTime end = QDateTime::fromString(match.captured(1) + " " + match.captured(3), "yyyy-MM-dd HH:mm");
-		start.setTimeSpec(Qt::UTC);
-		end.setTimeSpec(Qt::UTC);
-		if (end < start) end = end.addDays(1);
-		SchedulerSkyChart::Run run;
-		run.name = columns.value(1).trimmed();
-		run.start = start.toSecsSinceEpoch();
-		run.end = end.toSecsSinceEpoch();
-		runs.append(run);
+	// the plan and the history have "yyyy-MM-dd HH:mm-HH:mm | name | ...", a run that ends before it starts ends the next day
+	auto runs = [this](const char *property) {
+		static const QRegularExpression when(R"(^(\d{4}-\d\d-\d\d) (\d\d:\d\d)-(\d\d:\d\d)$)");
+		QList<SchedulerSkyChart::Run> runs;
+		for (const SchedulerItem& item : m_properties.value(property).items) {
+			QStringList columns = scheduler_label_columns(item.label);
+			QRegularExpressionMatch match = when.match(columns.value(0).trimmed());
+			if (!match.hasMatch()) continue;
+			QDateTime start = QDateTime::fromString(match.captured(1) + " " + match.captured(2), "yyyy-MM-dd HH:mm");
+			QDateTime end = QDateTime::fromString(match.captured(1) + " " + match.captured(3), "yyyy-MM-dd HH:mm");
+			start.setTimeSpec(Qt::UTC);
+			end.setTimeSpec(Qt::UTC);
+			if (end < start) end = end.addDays(1);
+			SchedulerSkyChart::Run run;
+			run.name = columns.value(1).trimmed();
+			run.start = start.toSecsSinceEpoch();
+			run.end = end.toSecsSinceEpoch();
+			run.state = item.light;
+			runs.append(run);
+		}
+		return runs;
+	};
+	m_chart->setRuns(runs(P_PLAN));
+	m_chart->setHistoryRuns(runs(P_HISTORY));
+
+	// the colors of the tasks are the lights of the task list
+	QMap<QString, int> states;
+	for (const SchedulerItem& item : m_properties.value(P_TASK_STATE).items) {
+		states[scheduler_label_columns(item.label).value(0)] = item.light;
 	}
-	m_chart->setRuns(runs);
+	m_chart->setTaskStates(states);
 
 	QStringList highlighted;
 	// the task selected in the task list or in the night plan, the lists select the same task
 	QTreeWidgetItem *selected = m_tasks->currentItem() ? m_tasks->currentItem() : m_plan->currentItem();
 	if (selected && !selected->data(0, Qt::UserRole).toString().isEmpty()) highlighted << selected->data(0, Qt::UserRole).toString();
-	if (!runningTask().isEmpty()) highlighted << runningTask();
 	m_chart->setHighlighted(highlighted);
 }
 

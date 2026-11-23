@@ -334,6 +334,15 @@ static void run(const QString &line) {
 			}
 		}
 		out("ERROR no scheduler task " + arg);
+	} else if (cmd == "sched_deselect") {
+		// sched_deselect [plan]: Escape in the task list or in the night plan, as the user clears the selection
+		QTreeWidget *tree = qobject_cast<QTreeWidget *>(named(arg == "plan" ? "SchedulerPlan" : "SchedulerTasks"));
+		if (!tree) {
+			out("ERROR no scheduler list " + arg);
+			return;
+		}
+		QKeyEvent press(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+		QApplication::sendEvent(tree, &press);
 	} else if (cmd == "sched_plan_select") {
 		// sched_plan_select TASK [RUN]: a run of the night plan by its task, the first one or the one with that run column
 		QTreeWidget *tree = qobject_cast<QTreeWidget *>(named("SchedulerPlan"));
