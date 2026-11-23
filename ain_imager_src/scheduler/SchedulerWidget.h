@@ -101,6 +101,7 @@ private:
 	void handleImager(const SchedulerProperty& property);
 	void handleMount(const SchedulerProperty& property);
 	void updateChart();
+	void selectionChanged(QTreeWidget *from);
 	void updateTaskProgress();
 	void updateExposureProgress();
 	void resetProgress();
@@ -188,6 +189,8 @@ private:
 	bool m_task_started = false;
 	bool m_task_finished = false;
 	bool m_exposure_running = false;
+	// a selection made in one list while the other list follows it
+	bool m_syncing_selection = false;
 
 	// the property of the last task upload or edit sent from the editor, until its result arrives
 	QString m_pending_property;

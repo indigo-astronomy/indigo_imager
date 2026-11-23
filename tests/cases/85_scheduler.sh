@@ -380,6 +380,11 @@ ain_do tab Tasks
 ain_do sched_select M31
 check "it shows the target of the task, the selected task over the others" wait_for 10 sched_has_all "| targets M31 |" "| highlighted M31"
 check "and its run in the night plan" wait_for 10 sched_has "| runs M31 |"
+check "the night plan selects its run" sched_has "SCHED SchedulerPlanSelected M31"
+ain_do tab "Night plan"
+ain_do sched_plan_select M31
+check "a run selected in the night plan selects its task, the chart shows it" sched_has_all "SCHED SchedulerTasksSelected M31" "| highlighted M31"
+ain_do tab Tasks
 ain_do shot "$CASE_DIR/chart.png"
 ain_do answer Yes
 ain_do sched_click "Delete the task; a running task is aborted first"

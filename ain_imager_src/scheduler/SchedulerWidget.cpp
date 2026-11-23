@@ -597,7 +597,7 @@ QWidget *SchedulerWidget::buildTasksPage() {
 	m_tasks->setToolTip("The tasks in list order; the list order only breaks ties of priority and sky score.\nDouble click a task to edit it.");
 	connect(m_tasks, &QTreeWidget::itemActivated, this, &SchedulerWidget::onTaskActivated);
 	m_chart->setAccentSource(m_tasks);
-	connect(m_tasks, &QTreeWidget::currentItemChanged, this, [this]() { if (!m_tasks->property("rebuilding").toBool()) updateChart(); });
+	connect(m_tasks, &QTreeWidget::currentItemChanged, this, [this]() { selectionChanged(m_tasks); });
 	connect(m_tasks, &QTreeWidget::customContextMenuRequested, this, &SchedulerWidget::onTasksContextMenu);
 	layout->addWidget(m_tasks);
 
@@ -654,6 +654,7 @@ QWidget *SchedulerWidget::buildPlanPage() {
 	connect(m_plan, &QTreeWidget::itemActivated, this, [this](QTreeWidgetItem *item) {
 		editTask(item->data(0, Qt::UserRole).toString());
 	});
+	connect(m_plan, &QTreeWidget::currentItemChanged, this, [this]() { selectionChanged(m_plan); });
 	QBoxLayout *layout;
 	QFrame *page = makePage(&layout);
 	layout->addWidget(m_plan);
@@ -1185,9 +1186,40 @@ void SchedulerWidget::updateChart() {
 	m_chart->setRuns(runs);
 
 	QStringList highlighted;
-	if (m_tasks->currentItem()) highlighted << m_tasks->currentItem()->data(0, Qt::UserRole).toString();
+	// the task selected in the task list or in the night plan, the lists select the same task
+	QTreeWidgetItem *selected = m_tasks->currentItem() ? m_tasks->currentItem() : m_plan->currentItem();
+	if (selected && !selected->data(0, Qt::UserRole).toString().isEmpty()) highlighted << selected->data(0, Qt::UserRole).toString();
 	if (!runningTask().isEmpty()) highlighted << runningTask();
 	m_chart->setHighlighted(highlighted);
+}
+
+/* a task selected in the task list is selected in the night plan, its first run, and the other way
+   round; a list without the task has no selection, the chart shows the task over the others */
+void SchedulerWidget::selectionChanged(QTreeWidget *from) {
+	if (from->property("rebuilding").toBool() || m_syncing_selection) {
+		return;
+	}
+	QTreeWidget *other = from == m_tasks ? m_plan : m_tasks;
+	QString name = from->currentItem() ? from->currentItem()->data(0, Qt::UserRole).toString() : QString();
+	QTreeWidgetItem *current = other->currentItem();
+	if (!current || current->data(0, Qt::UserRole).toString() != name) {
+		QTreeWidgetItem *match = nullptr;
+		for (int i = 0; !name.isEmpty() && i < other->topLevelItemCount() && !match; i++) {
+			if (other->topLevelItem(i)->data(0, Qt::UserRole).toString() == name) match = other->topLevelItem(i);
+		}
+		m_syncing_selection = true;
+		if (match) {
+			other->setCurrentItem(match);
+			other->scrollToItem(match);
+		} else {
+			other->setCurrentItem(nullptr);
+			other->clearSelection();
+		}
+		m_syncing_selection = false;
+		// kept by name when the agent redefines the list
+		other->setProperty("selectedName", match ? QVariant(name) : QVariant());
+	}
+	updateChart();
 }
 
 void SchedulerWidget::resetProgress() {

@@ -203,6 +203,9 @@ static void sched_dump() {
 			for (int c = 0; c < tree->columnCount(); c++) columns << tree->topLevelItem(i)->text(c);
 			out(QString("SCHED %1 %2").arg(name, columns.join(" | ")));
 		}
+		// the selected row: its task and its first column
+		QTreeWidgetItem *current = tree ? tree->currentItem() : nullptr;
+		if (tree) out(QString("SCHED %1Selected %2").arg(name, current ? current->data(0, Qt::UserRole).toString() + " | " + current->text(0) : QString("none")));
 	}
 	out("SCHED_END");
 }
@@ -331,6 +334,18 @@ static void run(const QString &line) {
 			}
 		}
 		out("ERROR no scheduler task " + arg);
+	} else if (cmd == "sched_plan_select") {
+		// sched_plan_select TASK [RUN]: a run of the night plan by its task, the first one or the one with that run column
+		QTreeWidget *tree = qobject_cast<QTreeWidget *>(named("SchedulerPlan"));
+		QString task = arg.section(' ', 0, 0), run = arg.section(' ', 1);
+		for (int i = 0; tree && i < tree->topLevelItemCount(); i++) {
+			QTreeWidgetItem *item = tree->topLevelItem(i);
+			if (item->text(1) == task && (run.isEmpty() || item->text(2) == run)) {
+				tree->setCurrentItem(item);
+				return;
+			}
+		}
+		out("ERROR no night plan run " + arg);
 	} else if (cmd == "sched_hook") {
 		// sched_hook ITEM task: the hook choice of the Settings page, as the user picks it
 		QComboBox *combo = qobject_cast<QComboBox *>(named("SchedulerHook_" + arg.section(' ', 0, 0)));
