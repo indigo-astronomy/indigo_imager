@@ -233,7 +233,9 @@ QRect SchedulerSkyChart::plotRect() const {
 	QFontMetrics metrics(font());
 	int left = metrics.horizontalAdvance("90°") + 8;
 	int bottom = metrics.height() + 10;
-	return QRect(left, metrics.height() / 2 + 2, width() - left - 6, height() - bottom - metrics.height() / 2 - 2);
+	// on the right the half of an hour label centered on the last hour
+	int right = qMax(6, metrics.horizontalAdvance("00") / 2 + 2);
+	return QRect(left, metrics.height() / 2 + 2, width() - left - right, height() - bottom - metrics.height() / 2 - 2);
 }
 
 void SchedulerSkyChart::paintEvent(QPaintEvent *event) {
