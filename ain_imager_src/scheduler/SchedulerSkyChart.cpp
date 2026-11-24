@@ -416,8 +416,22 @@ void SchedulerSkyChart::paintEvent(QPaintEvent *event) {
 }
 
 void SchedulerSkyChart::mouseMoveEvent(QMouseEvent *event) {
+	showInfo(event->pos(), event->globalPos());
+}
+
+/* the hover delay brings a tooltip event, it shows the same text as the mouse moves, not a fixed tooltip
+   of this widget or of its parents over it */
+bool SchedulerSkyChart::event(QEvent *event) {
+	if (event->type() == QEvent::ToolTip) {
+		QHelpEvent *help = static_cast<QHelpEvent *>(event);
+		showInfo(help->pos(), help->globalPos());
+		return true;
+	}
+	return QWidget::event(event);
+}
+
+void SchedulerSkyChart::showInfo(const QPoint& pos, const QPoint& global) {
 	QRect r = plotRect();
-	QPoint pos = event->pos();
 	if (!m_site_known || !r.contains(pos)) {
 		QToolTip::hideText();
 		return;
@@ -439,5 +453,5 @@ void SchedulerSkyChart::mouseMoveEvent(QMouseEvent *event) {
 	for (const Run& run : m_runs) {
 		if (t >= run.start && t <= run.end) lines << QString("%1: %2").arg(m_task_states.value(run.name) == SCHEDULER_BUSY ? "Running" : "Planned", run.name);
 	}
-	QToolTip::showText(event->globalPos(), lines.join("\n"), this);
+	QToolTip::showText(global, lines.join("\n"), this);
 }

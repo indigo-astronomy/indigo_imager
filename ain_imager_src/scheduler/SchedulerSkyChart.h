@@ -89,10 +89,13 @@ public:
 protected:
 	void paintEvent(QPaintEvent *event) override;
 	void mouseMoveEvent(QMouseEvent *event) override;
+	bool event(QEvent *event) override;
 
 private:
 	qint64 now() const;
 	QRect plotRect() const;
+	/* the time, the altitudes and the runs under the mouse */
+	void showInfo(const QPoint& pos, const QPoint& global);
 
 	bool m_site_known = false;
 	double m_latitude = 0;

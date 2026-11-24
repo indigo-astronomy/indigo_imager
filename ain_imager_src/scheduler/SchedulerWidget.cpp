@@ -53,7 +53,10 @@
 #include <QVBoxLayout>
 #include <QScrollBar>
 #include <QPainter>
+#include <QPainterPath>
 #include <QStyledItemDelegate>
+#include <QImage>
+#include <QTimer>
 #include <cstring>
 #include <functional>
 
@@ -172,7 +175,9 @@ public:
 	QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override {
 		QFontMetrics metrics(option.font);
 		int lines = reason(index).isEmpty() ? 2 : 3;
-		return QSize(200, 2 * MARGIN_Y + 2 * PADDING_Y + lines * metrics.height() + (lines - 1) * LINE_GAP);
+		// below the bar as much room as on the right of the card
+		int bar = hasRun(index) ? BAR_GAP + BAR_HEIGHT + PADDING_X - PADDING_Y : 0;
+		return QSize(200, 2 * MARGIN_Y + 2 * PADDING_Y + lines * metrics.height() + (lines - 1) * LINE_GAP + bar);
 	}
 
 	void paint(QPainter *painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override {
@@ -254,10 +259,78 @@ public:
 			painter->setPen(dim);
 			painter->drawText(third, Qt::AlignLeft | Qt::AlignVCenter, QFontMetrics(italic).elidedText(why, Qt::ElideRight, third.width()));
 		}
+
+		if (hasRun(index)) {
+			QRect bar(second.left(), content.bottom() - (PADDING_X - PADDING_Y) - BAR_HEIGHT + 1, second.width(), BAR_HEIGHT);
+			paintNight(painter, option, index, bar, text, light);
+		}
 		painter->restore();
 	}
 
 private:
+	/* The night of the chart under a run of the night plan: the shading of the twilight, the interval
+	   of the run in the color of its state and the present time */
+	void paintNight(QPainter *painter, const QStyleOptionViewItem& option, const QModelIndex& index, const QRect& bar, const QColor& text, int light) const {
+		QWidget *view = qobject_cast<QWidget *>(parent());
+		if (!view || !view->property("siteKnown").toBool() || bar.width() < 10) {
+			return;
+		}
+		double latitude = view->property("latitude").toDouble();
+		double longitude = view->property("longitude").toDouble();
+		qint64 now = QDateTime::currentSecsSinceEpoch();
+		// the window and the shading change slowly, they are computed again once a minute or for a new size
+		QColor accent = option.palette.color(QPalette::Highlight);
+		QString key = QString("%1 %2 %3 %4 %5").arg(now / 60).arg(latitude).arg(longitude).arg(bar.width()).arg(accent.rgba());
+		if (key != m_night_key) {
+			m_night_key = key;
+			m_night = SchedulerSky::nightWindow(now, latitude, longitude);
+			double span = double(m_night.second - m_night.first);
+			m_night_strip = QImage(bar.width(), 1, QImage::Format_ARGB32_Premultiplied);
+			m_night_strip.fill(option.palette.color(QPalette::Base));
+			QPainter strip(&m_night_strip);
+			for (int x = 0; x < bar.width(); x += 2) {
+				double sun = SchedulerSky::sunAltitude(m_night.first + qint64((x + 1) / double(bar.width()) * span), latitude, longitude);
+				int alpha = sun >= 0 ? 170 : sun >= -6 ? 120 : sun >= -12 ? 75 : sun >= -18 ? 35 : 0;
+				if (alpha) {
+					QColor sky = accent;
+					sky.setAlpha(alpha);
+					strip.fillRect(QRect(x, 0, 2, 1), sky);
+				}
+			}
+		}
+		double span = double(m_night.second - m_night.first);
+		auto x_of = [&](qint64 t) { return bar.left() + qBound(0.0, (t - m_night.first) / span, 1.0) * bar.width(); };
+		// a frame with round corners, the night and the run inside it
+		QPainterPath frame_path;
+		frame_path.addRoundedRect(QRectF(bar).adjusted(0.5, 0.5, -0.5, -0.5), 2, 2);
+		painter->save();
+		painter->setClipPath(frame_path);
+		painter->setRenderHint(QPainter::Antialiasing, false);
+		painter->drawImage(bar, m_night_strip);
+
+		QPair<qint64, qint64> times = runTimes(index);
+		double x1 = x_of(times.first), x2 = x_of(qMax(times.second, times.first + 60));
+		QColor run = text;
+		run.setAlpha(200);
+		painter->fillRect(QRectF(x1, bar.top() + 1, qMax(2.0, x2 - x1), bar.height() - 2), stateTextColor(light, run));
+		if (now >= m_night.first && now <= m_night.second) {
+			painter->fillRect(QRectF(x_of(now), bar.top(), 1, bar.height()), text);
+		}
+		painter->restore();
+		QColor frame = text;
+		frame.setAlpha(70);
+		painter->setRenderHint(QPainter::Antialiasing, true);
+		painter->setPen(frame);
+		painter->setBrush(Qt::NoBrush);
+		painter->drawPath(frame_path);
+	}
+
+	static const int BAR_HEIGHT = 7;
+	static const int BAR_GAP = 4;
+	mutable QString m_night_key;
+	mutable QPair<qint64, qint64> m_night;
+	mutable QImage m_night_strip;
+
 	static const int MARGIN_X = 4;
 	static const int MARGIN_Y = 2;
 	static const int PADDING_X = 6;
@@ -300,14 +373,36 @@ private:
 				// "run 1/3", "retries left 2" and "1h30 estimate" say what they are
 				return { { "Priority", column(index, 2) }, { "", column(index, 3) }, { "", column(index, 4) }, { "", column(index, 5) } };
 			case PlanCard:
-				return { { "", column(index, 2) }, { "Priority", column(index, 3) }, { "", column(index, 1).isEmpty() ? QString() : column(index, 4) } };
+				// a run of tonight has the night bar in place of the reason line, its reason, like a meridian flip, is a detail
+				return { { "", column(index, 2) }, { "Priority", column(index, 3) }, { "", column(index, 1).isEmpty() ? QString() : column(index, 4) },
+					{ "", hasRun(index) ? column(index, 5) : QString() } };
 			default:
 				return { { "", column(index, 2) }, { "", column(index, 3) }, { "", column(index, 4) } };
 		}
 	}
 
+	/* a planned or a running run of the night plan, it has a time; a task not tonight has none */
+	bool hasRun(const QModelIndex& index) const {
+		return m_kind == PlanCard && runTimes(index).first > 0;
+	}
+
+	/* the start and the end of a run, "yyyy-MM-dd HH:mm-HH:mm" in UTC; a run that ends before it starts ends the next day */
+	static QPair<qint64, qint64> runTimes(const QModelIndex& index) {
+		static const QRegularExpression when(R"(^(\d{4}-\d\d-\d\d) (\d\d:\d\d)-(\d\d:\d\d)$)");
+		QRegularExpressionMatch match = when.match(column(index, 0));
+		if (!match.hasMatch()) {
+			return qMakePair(qint64(0), qint64(0));
+		}
+		QDateTime start = QDateTime::fromString(match.captured(1) + " " + match.captured(2), "yyyy-MM-dd HH:mm");
+		QDateTime end = QDateTime::fromString(match.captured(1) + " " + match.captured(3), "yyyy-MM-dd HH:mm");
+		start.setTimeSpec(Qt::UTC);
+		end.setTimeSpec(Qt::UTC);
+		if (end < start) end = end.addDays(1);
+		return qMakePair(start.toSecsSinceEpoch(), end.toSecsSinceEpoch());
+	}
+
 	QString reason(const QModelIndex& index) const {
-		return m_kind == TaskCard ? QString() : column(index, 5);
+		return m_kind == TaskCard || hasRun(index) ? QString() : column(index, 5);
 	}
 
 	Kind m_kind;
@@ -616,12 +711,8 @@ void SchedulerWidget::buildControlPanel() {
 	title->setStyleSheet("font-weight: bold;");
 	layout->addWidget(title, row++, 0, 1, 3);
 	m_chart = new SchedulerSkyChart();
-	m_chart->setToolTip("The altitude of the targets of the tasks over the night");
 	layout->addWidget(m_chart, row, 0, 1, 3);
 	layout->setRowStretch(row++, 1);
-	QLabel *note = new QLabel("Times are UTC. The thick parts and the bars are the runs of the night plan and the finished runs; a running run is yellow, a done one green, a failed one red. The dashed curve is the Moon, the shading is the twilight.");
-	note->setWordWrap(true);
-	layout->addWidget(note, row++, 0, 1, 3);
 }
 
 // MARK: Pages
@@ -689,6 +780,10 @@ QWidget *SchedulerWidget::buildTasksPage() {
 QWidget *SchedulerWidget::buildPlanPage() {
 	m_plan = makeList({ "When (UTC)", "Task", "Run", "Priority", "State", "Reason" }, SchedulerCardDelegate::PlanCard);
 	m_plan->setObjectName("SchedulerPlan");
+	// the present time of the night bars
+	QTimer *night_timer = new QTimer(m_plan);
+	connect(night_timer, &QTimer::timeout, m_plan->viewport(), QOverload<>::of(&QWidget::update));
+	night_timer->start(60 * 1000);
 	m_plan->setToolTip("The forecast of the rest of the night: it assumes every run succeeds and takes its expected duration.\nDouble click a run to edit its task, press Escape, click the empty space or Ctrl+click the selected run to clear the selection.");
 	connect(m_plan, &QTreeWidget::itemActivated, this, [this](QTreeWidgetItem *item) {
 		editTask(item->data(0, Qt::UserRole).toString());
@@ -1236,6 +1331,13 @@ void SchedulerWidget::updateChart() {
 		states[scheduler_label_columns(item.label).value(0)] = item.light;
 	}
 	m_chart->setTaskStates(states);
+
+	// the night bar of the runs of the night plan
+	m_plan->setProperty("siteKnown", !m_site.name.isEmpty() && m_site.item("LATITUDE") != nullptr);
+	double longitude = m_site.number("LONGITUDE");
+	m_plan->setProperty("latitude", m_site.number("LATITUDE"));
+	m_plan->setProperty("longitude", longitude > 180 ? longitude - 360 : longitude);
+	m_plan->viewport()->update();
 
 	QStringList highlighted;
 	// the task selected in the task list or in the night plan, the lists select the same task
