@@ -71,6 +71,8 @@ public:
 	double latitude() const { return m_latitude; }
 	double longitude() const { return m_longitude; }
 	void setTargets(const QList<Target>& targets);
+	/* the global altitude limits of the agent, 0 and 90 without */
+	void setAltitudeLimits(double minimum, double maximum);
 	void setRuns(const QList<Run>& runs);
 	/* the finished runs of the history, in the color of their result */
 	void setHistoryRuns(const QList<Run>& runs);
@@ -104,6 +106,8 @@ private:
 	double m_latitude = 0;
 	double m_longitude = 0;
 	QList<Target> m_targets;
+	double m_min_altitude = 0;
+	double m_max_altitude = 90;
 	QList<Run> m_runs;
 	QList<Run> m_history_runs;
 	QMap<QString, int> m_task_states;

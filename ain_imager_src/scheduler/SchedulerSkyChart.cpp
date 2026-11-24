@@ -150,6 +150,13 @@ void SchedulerSkyChart::setTargets(const QList<Target>& targets) {
 	update();
 }
 
+void SchedulerSkyChart::setAltitudeLimits(double minimum, double maximum) {
+	if (minimum == m_min_altitude && maximum == m_max_altitude) return;
+	m_min_altitude = minimum;
+	m_max_altitude = maximum;
+	update();
+}
+
 void SchedulerSkyChart::setRuns(const QList<Run>& runs) {
 	m_runs = runs;
 	update();
@@ -212,9 +219,10 @@ QString SchedulerSkyChart::describe() const {
 	}
 	for (const Run& run : m_runs) runs << run.name;
 	for (const Run& run : m_history_runs) ran << QString("%1:%2").arg(run.name, stateName(run.state));
-	return QString("site %1 %2 | targets %3 | runs %4 | highlighted %5 | ran %6 | colors %7")
+	return QString("site %1 %2 | targets %3 | runs %4 | highlighted %5 | ran %6 | colors %7 | limits %8-%9")
 		.arg(m_latitude, 0, 'f', 1).arg(m_longitude, 0, 'f', 1)
-		.arg(targets.join(",")).arg(runs.join(",")).arg(m_highlighted.join(",")).arg(ran.join(",")).arg(colors.join(","));
+		.arg(targets.join(",")).arg(runs.join(",")).arg(m_highlighted.join(",")).arg(ran.join(",")).arg(colors.join(","))
+		.arg(m_min_altitude, 0, 'f', 0).arg(m_max_altitude, 0, 'f', 0);
 }
 
 qint64 SchedulerSkyChart::now() const {
@@ -284,6 +292,12 @@ void SchedulerSkyChart::paintEvent(QPaintEvent *event) {
 	for (int altitude : { 30, 60 }) {
 		p.drawLine(QPointF(r.left(), y_of(altitude)), QPointF(r.right(), y_of(altitude)));
 	}
+	// the global altitude limits of the agent, no target is scheduled outside them
+	QColor limits = text;
+	limits.setAlpha(150);
+	p.setPen(QPen(limits, 1.2, Qt::DotLine));
+	if (m_min_altitude > 0) p.drawLine(QPointF(r.left(), y_of(m_min_altitude)), QPointF(r.right(), y_of(m_min_altitude)));
+	if (m_max_altitude < 90) p.drawLine(QPointF(r.left(), y_of(m_max_altitude)), QPointF(r.right(), y_of(m_max_altitude)));
 	QFontMetrics metrics(font());
 	p.setPen(text);
 	for (int altitude : { 0, 30, 60, 90 }) {
@@ -354,7 +368,8 @@ void SchedulerSkyChart::paintEvent(QPaintEvent *event) {
 		// a run has the color of its state: running yellow, done green, failed red
 		QColor run_color = stateColor(m_task_states.value(target->name, SCHEDULER_IDLE), color);
 		auto altitude_at = [&](qint64 t) { return SchedulerSky::targetAltitude(target->ra, target->dec, t, m_latitude, m_longitude); };
-		if (marked && target->minAltitude > 0) {
+		// the own @altitude of the selected task where it is above the global minimum
+		if (marked && target->minAltitude > m_min_altitude) {
 			QColor limit = highlight;
 			limit.setAlpha(140);
 			p.setPen(QPen(limit, 1, Qt::DotLine));

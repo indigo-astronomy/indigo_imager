@@ -827,6 +827,8 @@ static const char *setting_items[][3] = {
 	{ "NIGHT_END_OFFSET", "Night end offset (min)", "Shift of the night end for the night hooks; negative is earlier" },
 	{ "SETTING_WEIGHT", "Setting soonest weight", "How strongly tasks whose constraints end soon are preferred within a priority class:\nup to 100 × weight points, 0 lets the level decide" },
 	{ "ALTITUDE_WEIGHT", "Altitude weight", "How strongly targets near their own culmination are preferred within a priority class:\nup to 100 × weight points, 0 lets the level decide" },
+	{ "MIN_ALTITUDE", "Minimum altitude (°)", "Targets are scheduled only above this altitude; a task's own @altitude can only raise it.\nA task whose target never gets above it is unreachable" },
+	{ "MAX_ALTITUDE", "Maximum altitude (°)", "Targets are scheduled only below this altitude, for example to avoid the zenith.\nA task whose target never gets below it is unreachable" },
 	{ "VISIBILITY_FLIP_PENALTY", "Best visibility: meridian flip penalty (min)", "Best visibility only: the minutes of full-quality imaging given up to avoid one meridian flip,\n0 switches the cost off; ignored while the flip is disabled" },
 	{ "SAFE_DELAY", "Safe delay (min)", "How long the conditions must be safe without interruption\nbefore the unsafe hold ends or a waiting start begins" },
 	{ "IDLE_HOOK_DELAY", "Idle hook delay (min)", "Time without an eligible task before the Idle hook runs" },
@@ -990,6 +992,10 @@ QWidget *SchedulerWidget::buildSettingsPage() {
 	addSetting(layout, &row, "SETTING_WEIGHT");
 	addSetting(layout, &row, "ALTITUDE_WEIGHT");
 	addSetting(layout, &row, "VISIBILITY_FLIP_PENALTY");
+
+	addSection(layout, &row, "Target altitude:");
+	addSetting(layout, &row, "MIN_ALTITUDE");
+	addSetting(layout, &row, "MAX_ALTITUDE");
 
 	m_safety_title = addSection(layout, &row, "Safety:");
 	m_safety_missing = new QComboBox();
@@ -1184,7 +1190,10 @@ void SchedulerWidget::handleProperty(const SchedulerProperty& property) {
 	} else if (name == P_HISTORY) {
 		updateHistory();
 		updateChart();
-	} else if (name == P_SETTINGS || name == P_HOOKS || name == P_NIGHT || name == P_STRATEGY || name == P_SAFETY_MISSING || name == P_DATA || name == P_DATA_DIR) {
+	} else if (name == P_SETTINGS) {
+		updateSettings();
+		updateChart();
+	} else if (name == P_HOOKS || name == P_NIGHT || name == P_STRATEGY || name == P_SAFETY_MISSING || name == P_DATA || name == P_DATA_DIR) {
 		updateSettings();
 	} else if (isTaskProperty(name)) {
 		updateChart();
@@ -1340,6 +1349,11 @@ void SchedulerWidget::updateChart() {
 		targets.append(target);
 	}
 	m_chart->setTargets(targets);
+	// the altitude limits of the agent for every target, an older agent has none
+	const SchedulerProperty settings = m_properties.value(P_SETTINGS);
+	const SchedulerItem *min_altitude = settings.item("MIN_ALTITUDE");
+	const SchedulerItem *max_altitude = settings.item("MAX_ALTITUDE");
+	m_chart->setAltitudeLimits(min_altitude ? min_altitude->number : 0, max_altitude ? max_altitude->number : 90);
 
 	// the colors of the tasks are the lights of the task list
 	QMap<QString, int> states;

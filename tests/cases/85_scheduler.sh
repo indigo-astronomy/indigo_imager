@@ -319,8 +319,8 @@ check "the hook is set" wait_for 10 hook_is IDLE '"Test"'
 check "the settings keep their values" equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_SETTINGS' IDLE_CHECK_INTERVAL)" 30
 check "the night limit is kept" equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_NIGHT' NAUTICAL)" ON
 check "the data switches are kept" equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_DATA' OBJECT)$(item 'Scheduler Agent.AGENT_SCHEDULER_DATA' FOLDER)" ONOFF
-check "the page shows the settings of the agent" sched_has_all "SCHED Setting IDLE_CHECK_INTERVAL 30 on" "SCHED Setting SETTING_WEIGHT 1.0 on" "SCHED Setting VISIBILITY_FLIP_PENALTY 10 on" "SCHED Setting NIGHT_START_OFFSET 0 on" "SCHED SchedulerStrategy COMPACT on" "SCHED SchedulerSafetyMissing SAFE on" "SCHED Setting SAFE_DELAY 10.0 on"
-check "every setting has its place" equals "$(sched | grep -c '^SCHED Setting ')" 12
+check "the page shows the settings of the agent" sched_has_all "SCHED Setting IDLE_CHECK_INTERVAL 30 on" "SCHED Setting SETTING_WEIGHT 1.0 on" "SCHED Setting VISIBILITY_FLIP_PENALTY 10 on" "SCHED Setting NIGHT_START_OFFSET 0 on" "SCHED SchedulerStrategy COMPACT on" "SCHED SchedulerSafetyMissing SAFE on" "SCHED Setting SAFE_DELAY 10.0 on" "SCHED Setting MIN_ALTITUDE 20 on" "SCHED Setting MAX_ALTITUDE 90 on"
+check "every setting has its place" equals "$(sched | grep -c '^SCHED Setting ')" 14
 setting_is() {	# item, value
 	equals "$(item 'Scheduler Agent.AGENT_SCHEDULER_SETTINGS' "$1")" "$2"
 }
@@ -330,6 +330,17 @@ check "and the other settings are kept" equals "$(item 'Scheduler Agent.AGENT_SC
 check "the page shows the new value" wait_for 10 sched_has "SCHED Setting IDLE_HOOK_DELAY 45 on"
 ain_do sched_setting IDLE_HOOK_DELAY 30
 check "and it is set back" wait_for 10 setting_is IDLE_HOOK_DELAY 30
+ain_do sched_setting MIN_ALTITUDE 35
+check "the minimum altitude is sent" wait_for 10 setting_is MIN_ALTITUDE 35
+check "the chart shows the new limit" wait_for 10 sched_has "| limits 35-90"
+ain_do sched_setting MAX_ALTITUDE 80
+check "the maximum altitude is sent" wait_for 10 setting_is MAX_ALTITUDE 80
+check "the chart shows both limits" wait_for 10 sched_has "| limits 35-80"
+ain_do sched_setting MIN_ALTITUDE 85
+check "a minimum above the maximum is refused, the agent keeps its value" wait_for 10 sched_has "SCHED Setting MIN_ALTITUDE 35 on"
+ain_do sched_setting MIN_ALTITUDE 20
+ain_do sched_setting MAX_ALTITUDE 90
+check "and they are set back" wait_for 10 sched_has "| limits 20-90"
 ain_do sched_hook UNSAFE Test
 check "a safety hook is set" wait_for 10 hook_is UNSAFE '"Test"'
 check "and the other hooks are kept" wait_for 10 hook_is IDLE '"Test"'
@@ -385,6 +396,7 @@ check "it is deleted" wait_for 10 sched_lacks "SCHED SchedulerTasks Park"
 section "the chart of the night"
 prop_set "Mount Agent.GEOGRAPHIC_COORDINATES.LATITUDE=42.7;LONGITUDE=23.3"
 check "it has the site of the Mount Agent" wait_for 10 sched_has "SCHED SchedulerChart site 42.7 23.3"
+check "and the altitude limits of the agent" sched_has "| limits 20-90"
 ain_do sched_open "$CASE_DIR/m31.task"
 ain_do sched_click Apply
 check "the task is stored" wait_for 10 sched_has "SCHED SchedulerTasks M31 | QUEUED"
@@ -394,7 +406,7 @@ check "it shows the target of the task, the selected task over the others" wait_
 check "and its run in the night plan" wait_for 10 sched_has "| runs M31 |"
 ain_do sched_open "$CASE_DIR/south.task"
 ain_do sched_click Apply
-check "a task not tonight is stored" wait_for 10 sched_has "| South | run 0/1 | normal 50 | NOT TONIGHT"
+check "a task whose target never rises is stored as unreachable" wait_for 10 sched_has "| South | run 0/1 | normal 50 | UNREACHABLE"
 check "the chart does not show it" sched_has "| targets M31 |"
 ain_do tab Tasks
 ain_do sched_select M31
