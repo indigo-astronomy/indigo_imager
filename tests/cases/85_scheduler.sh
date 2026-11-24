@@ -89,6 +89,15 @@ sequence.wait(1);
 sequence.start();
 EOF
 
+cat > "$CASE_DIR/south.task" <<'EOF'
+// @task     South
+// @target   12:30:00 -80:00:00
+
+var sequence = new Sequence(scheduler_task.name);
+sequence.wait(1);
+sequence.start();
+EOF
+
 cat > "$CASE_DIR/flats.task" <<'EOF'
 // @task     Flats
 // @priority normal 40
@@ -383,6 +392,12 @@ ain_do tab Tasks
 ain_do sched_select M31
 check "it shows the target of the task, the selected task over the others" wait_for 10 sched_has_all "| targets M31 |" "| highlighted M31"
 check "and its run in the night plan" wait_for 10 sched_has "| runs M31 |"
+ain_do sched_open "$CASE_DIR/south.task"
+ain_do sched_click Apply
+check "a task not tonight is stored" wait_for 10 sched_has "| South | run 0/1 | normal 50 | NOT TONIGHT"
+check "the chart does not show it" sched_has "| targets M31 |"
+ain_do tab Tasks
+ain_do sched_select M31
 check "a queued task keeps the colors of the chart" sched_has "| colors M31:idle"
 check "the night plan selects its run" sched_has "SCHED SchedulerPlanSelected M31"
 ain_do tab "Night plan"

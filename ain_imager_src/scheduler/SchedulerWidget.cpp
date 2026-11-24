@@ -52,6 +52,7 @@
 #include <QTreeWidget>
 #include <QVBoxLayout>
 #include <QScrollBar>
+#include <QSet>
 #include <QPainter>
 #include <QPainterPath>
 #include <QStyledItemDelegate>
@@ -1280,25 +1281,6 @@ void SchedulerWidget::updateChart() {
 		m_chart->setSite(true, m_site.number("LATITUDE"), longitude);
 	}
 
-	QList<SchedulerSkyChart::Target> targets;
-	for (const QString& name : storedTaskNames()) {
-		SchedulerTask task = SchedulerTask::fromText(taskText(name));
-		QStringList coordinates = task.value("target").split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
-		if (coordinates.size() != 2) continue;
-		bool ok_ra, ok_dec;
-		SchedulerSkyChart::Target target;
-		target.name = name;
-		target.ra = SexagesimalConverter::stringToDouble(coordinates[0], &ok_ra);
-		target.dec = SexagesimalConverter::stringToDouble(coordinates[1], &ok_dec);
-		if (!ok_ra || !ok_dec) continue;
-		QString altitude = task.value("altitude");
-		altitude.remove(QRegularExpression("[<>=\\s]"));
-		bool ok_altitude;
-		double min_altitude = altitude.toDouble(&ok_altitude);
-		if (ok_altitude) target.minAltitude = min_altitude;
-		targets.append(target);
-	}
-	m_chart->setTargets(targets);
 
 	// the plan and the history have "yyyy-MM-dd HH:mm-HH:mm | name | ...", a run that ends before it starts ends the next day
 	auto runs = [this](const char *property) {
@@ -1322,8 +1304,42 @@ void SchedulerWidget::updateChart() {
 		}
 		return runs;
 	};
-	m_chart->setRuns(runs(P_PLAN));
-	m_chart->setHistoryRuns(runs(P_HISTORY));
+	QList<SchedulerSkyChart::Run> plan_runs = runs(P_PLAN);
+	QList<SchedulerSkyChart::Run> history_runs = runs(P_HISTORY);
+	m_chart->setRuns(plan_runs);
+	m_chart->setHistoryRuns(history_runs);
+
+	// only the targets of the tasks of tonight: with a run in the night plan or a finished run in the night of the chart
+	QSet<QString> tonight;
+	for (const SchedulerSkyChart::Run& run : plan_runs) {
+		tonight.insert(run.name);
+	}
+	if (m_chart->siteKnown()) {
+		qint64 night_start = SchedulerSky::nightWindow(QDateTime::currentSecsSinceEpoch(), m_chart->latitude(), m_chart->longitude()).first;
+		for (const SchedulerSkyChart::Run& run : history_runs) {
+			if (run.end >= night_start) tonight.insert(run.name);
+		}
+	}
+	QList<SchedulerSkyChart::Target> targets;
+	for (const QString& name : storedTaskNames()) {
+		if (!tonight.contains(name)) continue;
+		SchedulerTask task = SchedulerTask::fromText(taskText(name));
+		QStringList coordinates = task.value("target").split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+		if (coordinates.size() != 2) continue;
+		bool ok_ra, ok_dec;
+		SchedulerSkyChart::Target target;
+		target.name = name;
+		target.ra = SexagesimalConverter::stringToDouble(coordinates[0], &ok_ra);
+		target.dec = SexagesimalConverter::stringToDouble(coordinates[1], &ok_dec);
+		if (!ok_ra || !ok_dec) continue;
+		QString altitude = task.value("altitude");
+		altitude.remove(QRegularExpression("[<>=\\s]"));
+		bool ok_altitude;
+		double min_altitude = altitude.toDouble(&ok_altitude);
+		if (ok_altitude) target.minAltitude = min_altitude;
+		targets.append(target);
+	}
+	m_chart->setTargets(targets);
 
 	// the colors of the tasks are the lights of the task list
 	QMap<QString, int> states;

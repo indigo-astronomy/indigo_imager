@@ -337,7 +337,7 @@ void SchedulerSkyChart::paintEvent(QPaintEvent *event) {
 
 	// the targets, the running one over the others and the highlighted ones last; a planned or a finished
 	// run is the thick part of the curve in the color of its state in the task list or the history, a queued
-	// one in the color of the curve; the name of the running task is shown also when there are many targets
+	// one in the color of the curve; only the selected and the running task are named
 	auto running = [this](const Target& target) { return m_task_states.value(target.name, SCHEDULER_IDLE) == SCHEDULER_BUSY; };
 	QList<const Target*> order;
 	for (const Target& target : m_targets) if (!m_highlighted.contains(target.name) && !running(target)) order.append(&target);
@@ -380,7 +380,8 @@ void SchedulerSkyChart::paintEvent(QPaintEvent *event) {
 				best = t;
 			}
 		}
-		if (best_altitude > 0 && (marked || busy || m_targets.size() <= 6)) {
+		// only the selected and the running task are named
+		if (best_altitude > 0 && (marked || busy)) {
 			QString name = metrics.elidedText(target->name, Qt::ElideRight, r.width() / 3);
 			double width = metrics.horizontalAdvance(name);
 			double x = qBound(double(r.left() + 2), x_of(best) - width / 2, r.right() - width - 2);

@@ -67,6 +67,9 @@ public:
 	explicit SchedulerSkyChart(QWidget *parent = nullptr);
 
 	void setSite(bool known, double latitude = 0, double longitude = 0);
+	bool siteKnown() const { return m_site_known; }
+	double latitude() const { return m_latitude; }
+	double longitude() const { return m_longitude; }
 	void setTargets(const QList<Target>& targets);
 	void setRuns(const QList<Run>& runs);
 	/* the finished runs of the history, in the color of their result */
