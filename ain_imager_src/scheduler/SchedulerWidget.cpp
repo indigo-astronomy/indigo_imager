@@ -804,7 +804,8 @@ QWidget *SchedulerWidget::buildHistoryPage() {
 	m_history->setObjectName("SchedulerHistory");
 	m_history->setToolTip("The finished runs, newest first.\nDouble click a run to edit its task.");
 	connect(m_history, &QTreeWidget::itemActivated, this, [this](QTreeWidgetItem *item) {
-		editTask(item->data(0, Qt::UserRole).toString());
+		// the history has the name of the task when it ran, and if it was an urgent one
+		editTask(item->data(0, Qt::UserRole).toString(), item->text(3) == "urgent");
 	});
 	layout->addWidget(m_history);
 	QHBoxLayout *buttons = new QHBoxLayout();
@@ -1730,12 +1731,16 @@ void SchedulerWidget::onTaskActivated(QTreeWidgetItem *item, int column) {
 	editTask(item->data(0, Qt::UserRole).toString());
 }
 
-void SchedulerWidget::editTask(const QString& name) {
+void SchedulerWidget::editTask(const QString& name, bool urgent) {
 	if (name.isEmpty()) {
 		return;
 	}
 	if (taskProperty(name).isEmpty()) {
-		QMessageBox::information(this, "Edit task", QString("'%1' is a one-off urgent task, it is not stored and can not be edited.").arg(name));
+		if (urgent) {
+			QMessageBox::information(this, "Edit task", QString("'%1' is a one-off urgent task, it is not stored and can not be edited.").arg(name));
+		} else {
+			QMessageBox::information(this, "Edit task", QString("There is no task '%1' any more, it was renamed or deleted after this run.").arg(name));
+		}
 		return;
 	}
 	if (m_editor->serverName() == name && !m_editor->isModified()) {

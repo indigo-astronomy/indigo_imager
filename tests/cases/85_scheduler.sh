@@ -386,6 +386,8 @@ ain_do answer Yes
 ain_do sched_select Test
 ain_do sched_click "Delete the task; a running task is aborted first"
 check "the task is deleted" wait_for 10 sched_lacks "SCHED SchedulerTasks Test"
+ain_do sched_history_edit Test
+check "its run in the history is not taken for an urgent task" bash -c "grep '^INFORMATION' '$CASE_DIR/ain.out' | tail -1 | grep -qF \"There is no task 'Test' any more, it was renamed or deleted after this run.\""
 
 section "a hook task"
 ain_do sched_open "$CASE_DIR/hook.task"

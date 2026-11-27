@@ -122,7 +122,8 @@ private:
 	QStringList storedTaskNames() const;
 	QString selectedTask() const;
 
-	void editTask(const QString& name);
+	/* urgent: a run of the history of a one-off urgent task, which is not stored */
+	void editTask(const QString& name, bool urgent = false);
 	void taskCommand(const QString& name, const QString& command);
 	void deleteTask(const QString& name);
 	void saveTaskToFile(const QString& name);

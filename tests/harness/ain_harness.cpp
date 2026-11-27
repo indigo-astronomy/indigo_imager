@@ -34,6 +34,12 @@ QMessageBox::StandardButton QMessageBox::question(QWidget *, const QString &, co
 	return next_answer;
 }
 
+// Information boxes are reported and closed at once.
+QMessageBox::StandardButton QMessageBox::information(QWidget *, const QString &, const QString &text, QMessageBox::StandardButtons, QMessageBox::StandardButton) {
+	out("INFORMATION " + QString(text).replace('\n', ' '));
+	return QMessageBox::Ok;
+}
+
 static QAction *find_action(const QString &text) {
 	for (QWidget *widget : QApplication::allWidgets()) {
 		for (QAction *action : widget->actions()) {
@@ -334,6 +340,17 @@ static void run(const QString &line) {
 			}
 		}
 		out("ERROR no scheduler task " + arg);
+	} else if (cmd == "sched_history_edit") {
+		// double clicks the newest run of a task in the history
+		QTreeWidget *tree = qobject_cast<QTreeWidget *>(named("SchedulerHistory"));
+		for (int i = 0; tree && i < tree->topLevelItemCount(); i++) {
+			if (tree->topLevelItem(i)->data(0, Qt::UserRole).toString() == arg) {
+				tree->setCurrentItem(tree->topLevelItem(i));
+				emit tree->itemActivated(tree->topLevelItem(i), 0);
+				return;
+			}
+		}
+		out("ERROR no history run of " + arg);
 	} else if (cmd == "sched_deselect") {
 		// sched_deselect [plan]: Escape in the task list or in the night plan, as the user clears the selection
 		QTreeWidget *tree = qobject_cast<QTreeWidget *>(named(arg == "plan" ? "SchedulerPlan" : "SchedulerTasks"));
