@@ -55,9 +55,9 @@ private:
 	QString m_body;
 };
 
-/* The columns of an item label of AGENT_SCHEDULER_TASK_STATE, AGENT_SCHEDULER_PLAN
-   and AGENT_SCHEDULER_HISTORY: six columns joined by " | ", the last one may
-   contain " | " itself. "-" stands for an empty column. */
-QStringList scheduler_label_columns(const QString& label);
+/* The columns of an item label of AGENT_SCHEDULER_TASK_STATE (seven), AGENT_SCHEDULER_PLAN
+   and AGENT_SCHEDULER_HISTORY (six): columns joined by " | ", the last one may
+   contain " | " itself. "-" stands for an empty column, missing columns are empty. */
+QStringList scheduler_label_columns(const QString& label, int count = 6);
 
 #endif // __SCHEDULERTASK_H

@@ -362,10 +362,7 @@ private:
 	}
 
 	QString title(const QModelIndex& index) const {
-		if (m_kind == TaskCard) return column(index, 0);
-		// a plan line without a task, like the night hooks without a night, is named by its state
-		QString name = column(index, 1);
-		return name.isEmpty() ? column(index, 4) : name;
+		return column(index, m_kind == TaskCard ? 0 : 1);
 	}
 
 	QList<QPair<QString, QString>> details(const QModelIndex& index) const {
@@ -374,15 +371,14 @@ private:
 				// "run 1/3", "retries left 2" and "1h30 estimate" say what they are
 				return { { "Priority", column(index, 2) }, { "", column(index, 3) }, { "", column(index, 4) }, { "", column(index, 5) } };
 			case PlanCard:
-				// a run of tonight has the night bar in place of the reason line, its reason, like a meridian flip, is a detail
-				return { { "", column(index, 2) }, { "Priority", column(index, 3) }, { "", column(index, 1).isEmpty() ? QString() : column(index, 4) },
-					{ "", hasRun(index) ? column(index, 5) : QString() } };
+				// a run has the night bar in place of the reason line, its reason, like a meridian flip, is a detail
+				return { { "", column(index, 2) }, { "Priority", column(index, 3) }, { "", column(index, 4) }, { "", column(index, 5) } };
 			default:
 				return { { "", column(index, 2) }, { "", column(index, 3) }, { "", column(index, 4) } };
 		}
 	}
 
-	/* a planned or a running run of the night plan, it has a time; a task not tonight has none */
+	/* a planned or a running run of the night plan, the plan lists only those */
 	bool hasRun(const QModelIndex& index) const {
 		return m_kind == PlanCard && runTimes(index).first > 0;
 	}
@@ -403,7 +399,11 @@ private:
 	}
 
 	QString reason(const QModelIndex& index) const {
-		return m_kind == TaskCard || hasRun(index) ? QString() : column(index, 5);
+		switch (m_kind) {
+			case TaskCard: return column(index, 6);
+			case HistoryCard: return column(index, 5);
+			default: return QString();
+		}
 	}
 
 	Kind m_kind;
@@ -488,7 +488,8 @@ static void fillList(QTreeWidget *list, const SchedulerProperty *property, int n
 	}
 	QTreeWidgetItem *current = nullptr;
 	for (const SchedulerItem& item : property->items) {
-		QStringList label = scheduler_label_columns(item.label);
+		// as many columns as the list has, the last one keeps its separators
+		QStringList label = scheduler_label_columns(item.label, list->columnCount());
 		QTreeWidgetItem *row = new QTreeWidgetItem(columns(label));
 		QString name = label.value(nameColumn);
 		row->setData(0, Qt::UserRole, name);
@@ -722,7 +723,7 @@ QWidget *SchedulerWidget::buildTasksPage() {
 	QBoxLayout *layout;
 	QFrame *page = makePage(&layout);
 
-	m_tasks = makeList({ "Task", "State", "Priority", "Runs", "Retries", "Duration" }, SchedulerCardDelegate::TaskCard);
+	m_tasks = makeList({ "Task", "State", "Priority", "Runs", "Retries", "Duration", "Reason" }, SchedulerCardDelegate::TaskCard);
 	m_tasks->setObjectName("SchedulerTasks");
 	m_tasks->setContextMenuPolicy(Qt::CustomContextMenu);
 	m_tasks->setToolTip("The tasks in list order; the list order only breaks ties of priority and sky score.\nDouble click a task to edit it, press Escape, click the empty space or Ctrl+click the selected task to clear the selection.");
@@ -1575,7 +1576,8 @@ void SchedulerWidget::updateState() {
 void SchedulerWidget::updateTasks() {
 	const SchedulerProperty *property = m_properties.contains(P_TASK_STATE) ? &m_properties[P_TASK_STATE] : nullptr;
 	fillList(m_tasks, property, 0, [](const QStringList& c) {
-		return QStringList{ c[0], c[1], c[2], c[3], c[4], c[5] };
+		// the reason of an unplanned or unreachable task is the last column, empty from an older agent
+		return QStringList{ c[0], c[1], c[2], c[3], c[4], c[5], c[6] };
 	});
 
 	// the hook choices are the stored task names

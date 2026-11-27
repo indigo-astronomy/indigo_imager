@@ -98,6 +98,12 @@ static void testLabels() {
 	CHECK(columns[5] == "by SN | 2026abc", "the reason keeps its separators: '%s'", u(columns[5]).constData());
 	columns = scheduler_label_columns("Park | HOOK | hook shutdown | - | - | -");
 	CHECK(columns[3].isEmpty() && columns[5].isEmpty(), "'-' is an empty column");
+	columns = scheduler_label_columns("Park | HOOK | hook shutdown | - | - | - | -", 7);
+	CHECK(columns.size() == 7 && columns[5].isEmpty() && columns[6].isEmpty(), "seven columns of a task: '%s'", u(columns.join("|")).constData());
+	columns = scheduler_label_columns("South | UNREACHABLE | normal 50 | run 0/1 | retries left 0 | 0h01 estimated | never rises above the horizon", 7);
+	CHECK(columns[5] == "0h01 estimated" && columns[6] == "never rises above the horizon", "the reason of a task is its own column");
+	columns = scheduler_label_columns("Old | QUEUED | normal 50 | run 0/1 | retries left 0 | 0h01 estimated", 7);
+	CHECK(columns.size() == 7 && columns[6].isEmpty(), "an older agent without the reason");
 }
 
 static void testForm() {

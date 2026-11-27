@@ -120,10 +120,10 @@ void SchedulerTask::remove(const QString& key) {
 	}
 }
 
-QStringList scheduler_label_columns(const QString& label) {
+QStringList scheduler_label_columns(const QString& label, int count) {
 	QStringList columns;
 	int start = 0;
-	for (int i = 0; i < 5; i++) {
+	for (int i = 0; i < count - 1; i++) {
 		int separator = label.indexOf(" | ", start);
 		if (separator < 0) {
 			break;
@@ -132,7 +132,7 @@ QStringList scheduler_label_columns(const QString& label) {
 		start = separator + 3;
 	}
 	columns.append(label.mid(start));
-	while (columns.size() < 6) {
+	while (columns.size() < count) {
 		columns.append("-");
 	}
 	for (QString& column : columns) {

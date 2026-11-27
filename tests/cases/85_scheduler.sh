@@ -27,6 +27,14 @@ seq_has() {
 	seq | grep -qF "$1"
 }
 
+sched_line() {	# text, a SCHED line is exactly it
+	sched | grep -qxF "$1"
+}
+
+sched_match() {	# extended regular expression, a SCHED line matches it
+	sched | grep -qE "$1"
+}
+
 sched_lacks() {
 	! sched_has "$1"
 }
@@ -388,6 +396,7 @@ check "it is shown in the visual editor" sched_has "SCHED EditorMode visual"
 ain_do sched_click Apply
 check "the scheduler accepts it" wait_for 10 sched_has "SCHED SchedulerEditorStatus Accepted"
 check "the task list shows it as a hook" wait_for 10 sched_has "SCHED SchedulerTasks Park | HOOK | hook"
+check "its empty columns are empty, not '-'" sched_match '^SCHED SchedulerTasks Park \| HOOK \| hook[a-z ]* \|  \|  \|  \| $'
 ain_do answer Yes
 ain_do sched_select Park
 ain_do sched_click "Delete the task; a running task is aborted first"
@@ -406,7 +415,7 @@ check "it shows the target of the task, the selected task over the others" wait_
 check "and its run in the night plan" wait_for 10 sched_has "| runs M31 |"
 ain_do sched_open "$CASE_DIR/south.task"
 ain_do sched_click Apply
-check "a task whose target never rises is stored as unreachable" wait_for 10 sched_has "| South | run 0/1 | normal 50 | UNREACHABLE"
+check "a task whose target never rises is stored as unreachable, its card has the reason" wait_for 10 sched_line "SCHED SchedulerTasks South | UNREACHABLE | normal 50 | run 0/1 | retries left 0 | 0h01 estimated | never rises above the horizon"
 check "the chart does not show it" sched_has "| targets M31 |"
 ain_do tab Tasks
 ain_do sched_select M31
