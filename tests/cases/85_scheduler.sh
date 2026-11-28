@@ -218,7 +218,7 @@ check "the Sequence tab does not show the task of the scheduler" bash -c "! grep
 ain_do shot "$CASE_DIR/running.png"
 ain_do sched_deselect
 check "Escape clears the selection, the running task is not highlighted unless selected" sched_has_all "SCHED SchedulerTasksSelected none" "| highlighted  |"
-check "the history shows the run" wait_for 30 sched_has "| Test | run 1 | task | SUCCEEDED"
+check "the history shows the run" wait_for 30 sched_has "| Test | run 1/1 | normal 50 | SUCCEEDED"
 check "the task is done" wait_for 10 sched_has "SCHED SchedulerTasks Test | DONE"
 check "the chart shows the finished run in green" sched_has "| ran Test:ok"
 check "the editor allows edits again" wait_for 10 sched_lacks "running, read only"

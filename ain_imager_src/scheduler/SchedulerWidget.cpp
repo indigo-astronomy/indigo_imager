@@ -368,14 +368,21 @@ private:
 	QList<QPair<QString, QString>> details(const QModelIndex& index) const {
 		switch (m_kind) {
 			case TaskCard:
-				// "run 1/3", "retries left 2" and "1h30 estimate" say what they are
-				return { { "Priority", column(index, 2) }, { "", column(index, 3) }, { "", column(index, 4) }, { "", column(index, 5) } };
+				// "retries left 2" and "1h30 estimate" say what they are
+				return { { "Priority", column(index, 2) }, run(column(index, 3)), { "", column(index, 4) }, { "", column(index, 5) } };
 			case PlanCard:
 				// a run has the night bar in place of the reason line, its reason, like a meridian flip, is a detail
-				return { { "", column(index, 2) }, { "Priority", column(index, 3) }, { "", column(index, 4) }, { "", column(index, 5) } };
+				return { { "Priority", column(index, 3) }, run(column(index, 2)), { "", column(index, 4) }, { "", column(index, 5) } };
 			default:
-				return { { "", column(index, 2) }, { "", column(index, 3) }, { "", column(index, 4) } };
+				// the columns of the plan: the priority, like "normal 50", "urgent" or "hook night end", "run 1/3" or empty for a hook, and the result
+				return { { "Priority", column(index, 3) }, run(column(index, 2)), { "", column(index, 4) } };
 		}
+	}
+
+	/* "run 1/3" as a dim "run" and its numbers, like the label of the priority */
+	static QPair<QString, QString> run(const QString& text) {
+		if (text.startsWith("run ")) return { "run", text.mid(4) };
+		return { "", text };
 	}
 
 	/* a planned or a running run of the night plan, the plan lists only those */
@@ -800,11 +807,11 @@ QWidget *SchedulerWidget::buildPlanPage() {
 QWidget *SchedulerWidget::buildHistoryPage() {
 	QBoxLayout *layout;
 	QFrame *page = makePage(&layout);
-	m_history = makeList({ "When (UTC)", "Task", "Run", "Kind", "Result", "Reason" }, SchedulerCardDelegate::HistoryCard);
+	m_history = makeList({ "When (UTC)", "Task", "Run", "Priority", "Result", "Reason" }, SchedulerCardDelegate::HistoryCard);
 	m_history->setObjectName("SchedulerHistory");
 	m_history->setToolTip("The finished runs, newest first.\nDouble click a run to edit its task.");
 	connect(m_history, &QTreeWidget::itemActivated, this, [this](QTreeWidgetItem *item) {
-		// the history has the name of the task when it ran, and if it was an urgent one
+		// the history has the name of the task when it ran, and if it was an urgent one: "urgent" as its priority
 		editTask(item->data(0, Qt::UserRole).toString(), item->text(3) == "urgent");
 	});
 	layout->addWidget(m_history);
@@ -1174,8 +1181,29 @@ void SchedulerWidget::deleteProperty(const QString& device, const QString& name)
 	}
 }
 
+/* AGENT_SCHEDULER_HISTORY is a text with one line per run, oldest first, in the columns of the
+   night plan; the lines become items like the lights of an older agent, Ok for a success and
+   Alert for every other result, as in the timeline of the agent */
+static SchedulerProperty history_runs(const SchedulerProperty& property) {
+	const SchedulerItem *entries = property.item("ENTRIES");
+	if (entries == nullptr) {
+		return property;
+	}
+	SchedulerProperty runs = property;
+	runs.items.clear();
+	const QStringList lines = entries->text.split('\n', Qt::SkipEmptyParts);
+	for (int i = 0; i < lines.size(); i++) {
+		SchedulerItem item;
+		item.name = QString("RUN_%1").arg(i + 1);
+		item.label = lines[i];
+		item.light = scheduler_label_columns(lines[i]).value(4) == "SUCCEEDED" ? SCHEDULER_OK : SCHEDULER_ALERT;
+		runs.items.append(item);
+	}
+	return runs;
+}
+
 void SchedulerWidget::handleProperty(const SchedulerProperty& property) {
-	m_properties[property.name] = property;
+	m_properties[property.name] = property.name == P_HISTORY ? history_runs(property) : property;
 	const QString& name = property.name;
 	if (name == P_STATE || name == P_CURRENT) {
 		updateState();
